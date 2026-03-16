@@ -1,0 +1,1204 @@
+{% with title="Wallet", meta_description="Access your POOOL wallet to manage deposits, withdrawals, and view your
+transaction history securely.", no_index=True, extra_css=['wallet', 'bem/table', 'bem/table-wallet', 'htmx-fixes',
+'mobile-wallet'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation'],
+external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="wallet-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="wallet-page">
+    <div class="wallet-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main class="ds-main wallet-main">
+
+      <div class="wallet-container">
+        <!-- Wallet Header -->
+        <div id="wallet-header" class="ds-page-header wallet-header">
+          <div class="ds-page-header__title-row wallet-header-left">
+            <div id="wallet-page-icon" class="ds-page-header__icon wallet-page-icon">
+              <img loading="lazy" src="/images/wallet-02.svg" alt="Wallet" width="32" height="32" />
+            </div>
+            <h1 id="wallet-page-title" class="ds-page-header__title wallet-page-title">Wallet</h1>
+          </div>
+          <div id="wallet-header-actions" class="ds-page-header__actions wallet-header-actions">
+            <button id="deposit-btn" class="ds-btn ds-btn--primary wallet-header-btn wallet-header-btn--primary">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>Deposit</span>
+            </button>
+            <button id="withdraw-btn" class="ds-btn ds-btn--secondary wallet-header-btn wallet-header-btn--secondary">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>Withdraw</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mobile Wallet Header -->
+        <div id="mobile-wallet-title" class="mobile-wallet-title">
+          <img class="mobile-wallet-title__icon" src="/images/wallet-02.svg" alt="Wallet" width="24" height="24" />
+          <div class="mobile-wallet-title__text">Wallet</div>
+        </div>
+
+        <!-- Phase 4: State Layers -->
+        <!-- 1. LOADING STATE (skeleton) -->
+        <div id="wallet-loading-layer" class="wallet-loading-layer hidden">
+          <div class="sk-cards-row">
+            <div class="skeleton-box sk-card"></div>
+            <div class="skeleton-box sk-card"></div>
+          </div>
+          <div class="sk-columns">
+            <div class="skeleton-box sk-table"></div>
+            <div class="skeleton-box sk-sidebar"></div>
+          </div>
+        </div>
+
+        <!-- 2. ERROR STATE -->
+        <div id="wallet-error-layer" class="wallet-error-layer hidden">
+          <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <h3 class="state-title">Failed to load wallet</h3>
+          <p class="state-desc">We couldn't fetch your wallet data. Please try again or contact support if the problem
+            persists.</p>
+          <button class="retry-btn" onclick="location.reload()">Retry</button>
+        </div>
+
+        <!-- 3. EMPTY STATE -->
+        <div id="wallet-empty-layer" class="wallet-empty-layer hidden">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+            <path d="M18 12a2 2 0 0 0 0 4h4v-4z" />
+          </svg>
+          <h3 class="state-title">Your wallet is empty</h3>
+          <p class="state-desc">Deposit funds to get started with investing on POOOL.</p>
+          <button id="empty-deposit-btn" class="retry-btn" onclick="openDepositModal()" style="cursor: pointer">Make a
+            Deposit</button>
+        </div>
+
+        <!-- Desktop Content -->
+        <div id="wallet-balances" class="wallet-balances wallet-balance-card-container">
+          <div id="wallet-cash-balance" class="wallet-cash-balance">
+            <div id="wallet-balance-card-cash" class="wallet-balance-card">
+              <div id="wallet-balance-card-cash-content" class="wallet-balance-card-content">
+                <div id="wallet-balance-card-cash-label" class="wallet-balance-card-label">
+                  <span id="wallet-balance-card-cash-label-text" class="wallet-balance-card-label-text">Cash
+                    balance</span>
+                </div>
+                <div id="wallet-balance-card-cash-amount" class="wallet-balance-card-amount">{{ cash_balance }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="wallet-rewards-balance" class="wallet-rewards-balance">
+            <div id="wallet-balance-card-rewards" class="wallet-balance-card">
+              <div id="wallet-balance-card-rewards-content" class="wallet-balance-card-content">
+                <div id="wallet-balance-card-rewards-label" class="wallet-balance-card-label">
+                  <span id="wallet-balance-card-rewards-label-text" class="wallet-balance-card-label-text">Rewards
+                    balance</span>
+                  <div id="wallet-balance-card-rewards-help-icon" class="wallet-balance-card-help-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="7" cy="7" r="6" stroke="#A4A7AE" stroke-width="1.33333"></circle>
+                      <path
+                        d="M5.25 5.25C5.25 4.42157 5.92157 3.75 6.75 3.75H7.25C8.07843 3.75 8.75 4.42157 8.75 5.25C8.75 6.07843 8.07843 6.75 7.25 6.75H7V8.25"
+                        stroke="#A4A7AE" stroke-width="1.33333" stroke-linecap="round"></path>
+                      <circle cx="7" cy="10.5" r="0.5" fill="#A4A7AE"></circle>
+                    </svg>
+                  </div>
+                </div>
+                <div id="wallet-balance-card-rewards-amount" class="wallet-balance-card-amount">{{ rewards_balance
+                  }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BLOCKCHAIN: Security Info Alert -->
+        <div id="blockchain-wallet-info" style="
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 16px 20px;
+          margin-bottom: 16px;
+          background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(16, 185, 129, 0.04));
+          border: 1px solid rgba(99, 102, 241, 0.12);
+          border-radius: 12px;
+        ">
+          <div style="
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(99, 102, 241, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          ">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+          <div>
+            <h4 style="font-size: 13px; font-weight: 700; color: #181D27; margin: 0 0 4px;">Your tokens are secured on-chain</h4>
+            <p style="font-size: 12px; color: #535862; margin: 0; line-height: 1.5;">
+              All your property tokens are stored on the Base blockchain as ERC-3643 security tokens.
+              Your ownership is immutable and independently verifiable — even if POOOL ceases operations,
+              your tokens remain safely on the blockchain and can be verified at any time via
+              <a href="https://basescan.org" target="_blank" style="color: #6366f1; text-decoration: none; font-weight: 600;">Basescan ↗</a>.
+            </p>
+          </div>
+        </div>
+
+        <!-- Transactions Section (full width) -->
+        <div class="wallet-transactions-full">
+          <div id="wallet-transactions-title-wrapper" class="wallet-transactions-header">
+            <h2 id="wallet-transactions-title" class="wallet-transactions-title">
+              Transactions
+            </h2>
+          </div>
+          <div id="wallet-transactions-section" class="wallet-transactions-section">
+            <div id="transactions-table" class="table__wrapper table__wrapper--wallet">
+              <div id="wallet-transactions-container" class="table__container">
+                <div id="wallet-transactions-header" class="table__header-row">
+                  <div class="table__header-cell table__header-cell--type">
+                    <div class="table__header-content"><span class="table__header-text">Type</span></div>
+                  </div>
+                  <div class="table__header-cell table__header-cell--status">
+                    <div class="table__header-content">
+                      <img loading="lazy" src="/static/images/bookmark-check.svg" alt="Status" width="16"
+                        height="16" /><span class="table__header-text">Status</span>
+                    </div>
+                  </div>
+                  <div class="table__header-cell table__header-cell--date">
+                    <div class="table__header-content">
+                      <img loading="lazy" src="/static/images/calendar-check-02.svg" alt="Date" width="16"
+                        height="16" /><span class="table__header-text">Date</span>
+                    </div>
+                  </div>
+                  <div class="table__header-cell table__header-cell--wallet">
+                    <div class="table__header-content">
+                      <img loading="lazy" src="/static/images/wallet-04.svg" alt="Wallet" width="16"
+                        height="16" /><span class="table__header-text">Wallet</span>
+                    </div>
+                  </div>
+                  <div class="table__header-cell table__header-cell--amount">
+                    <div class="table__header-content">
+                      <img loading="lazy" src="/static/images/coins-stacked-03.svg" alt="Amount" width="16"
+                        height="16" /><span class="table__header-text">Amount</span>
+                    </div>
+                  </div>
+                  <div class="table__header-cell table__header-cell--actions">
+                    <div class="table__header-content">
+                      <span class="table__header-text">Actions</span><img loading="lazy"
+                        src="/static/images/arrow-down.svg" alt="Sort" width="12" height="12" />
+                    </div>
+                  </div>
+                </div>
+                <div id="wallet-transactions-body" class="table__body">
+                  {% if has_transactions %}
+                  {% for tx in transactions %}
+                  <div id="wallet-transactions-row-{{ tx.index }}" class="table__row">
+                    <div class="table__cell table__cell--type">
+                      <div class="wallet-transaction-type-icon">
+                        <div class="featured-icon">
+                          {% if tx.tx_type_icon == "deposit" %}
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="#717680" stroke-width="1.66667"
+                              stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          {% elif tx.tx_type_icon == "withdrawal" %}
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="#717680" stroke-width="1.66667"
+                              stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          {% elif tx.tx_type_icon == "dividend" %}
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path
+                              d="M2.5 10C2.5 10 5 7.5 10 7.5C15 7.5 17.5 10 17.5 10M2.5 10V15C2.5 16.3807 3.61929 17.5 5 17.5H15C16.3807 17.5 17.5 16.3807 17.5 15V10"
+                              stroke="#717680" stroke-width="1.66667" stroke-linecap="round"
+                              stroke-linejoin="round" />
+                            <circle cx="10" cy="5" r="2.5" stroke="#717680" stroke-width="1.66667" />
+                          </svg>
+                          {% else %}
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path
+                              d="M2.5 7.5L10 2.5L17.5 7.5V16.25C17.5 16.5815 17.3683 16.8995 17.1339 17.1339C16.8995 17.3683 16.5815 17.5 16.25 17.5H3.75C3.41848 17.5 3.10054 17.3683 2.86612 17.1339C2.6317 16.8995 2.5 16.5815 2.5 16.25V7.5Z"
+                              stroke="#717680" stroke-width="1.66667" stroke-linecap="round"
+                              stroke-linejoin="round" />
+                            <path d="M7.5 17.5V10H12.5V17.5" stroke="#717680" stroke-width="1.66667"
+                              stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <span class="wallet-transaction-type-text">{{ tx.tx_type_label }}</span>
+                    </div>
+                    <div class="table__cell table__cell--status">
+                      <div class="wallet-transaction-status-badge {{ tx.status_css }}">
+                        <div class="wallet-transaction-status-dot"></div>
+                        <span class="wallet-transaction-status-text">{{ tx.status_label }}</span>
+                      </div>
+                    </div>
+                    <div class="table__cell table__cell--date">
+                      <span class="table__cell-text-value">{{ tx.date_display }}</span>
+                    </div>
+                    <div class="table__cell table__cell--wallet">
+                      <span class="table__cell-text-value">{{ tx.wallet_label }}</span>
+                    </div>
+                    <div class="table__cell table__cell--amount">
+                      <span class="{{ tx.amount_css }}">{{ tx.amount_prefix }} {{ tx.amount_display }}</span>
+                    </div>
+                    <div class="table__cell table__cell--actions">
+                      <button class="wallet-transaction-action-btn">
+                        View details
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                          xmlns="http://www.w3.org/2000/svg">
+                          <path d="M6 12L10 8L6 4" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                  {% else %}
+                  <div class="table__row"
+                    style="justify-content: center; padding: 64px 24px; border-bottom: none; width: 100%;">
+                    <div
+                      style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 12px; text-align: center;">
+                      <div
+                        style="width: 48px; height: 48px; border-radius: 50%; background: #F2F4F7; border: 8px solid #F9FAFB; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                          <line x1="16" y1="13" x2="8" y2="13"></line>
+                          <line x1="16" y1="17" x2="8" y2="17"></line>
+                          <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                      </div>
+                      <span style="color: #101828; font-size: 16px; font-weight: 600;">No transactions yet</span>
+                      <span style="color: #667085; font-size: 14px; max-width: 250px;">Your transactions will
+                        appear here once you make a deposit or withdraw.</span>
+                    </div>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="wallet-pagination-container" class="wallet-pagination-container"></div>
+          <div id="wallet-transactions-footer" class="wallet-transactions-footer">
+            <button id="wallet-transactions-see-all" class="wallet-transactions-see-all">
+              See all transactions
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 12L10 8L6 4" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <!-- end wallet-transactions-full -->
+
+        <!-- Payment Methods Row (Cards & Banks side by side) -->
+        <div class="wallet-payment-methods-row">
+          <div id="wallet-cards-section" class="wallet-cards-section">
+            <div id="wallet-payment-cards-section" class="wallet-payment-section">
+              <h3 id="wallet-payment-cards-title" class="wallet-payment-title">Cards</h3>
+              <div id="wallet-payment-cards-card" class="wallet-payment-card">
+                <div id="wallet-payment-cards-items" class="wallet-payment-items">
+                  {{ cards_html | safe }}
+                </div>
+                <button id="wallet-payment-cards-add-button" class="wallet-payment-add-button"
+                  onclick="openCardModal()">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 5V15M5 10H15" stroke="#000000" stroke-width="1.66667" stroke-linecap="round">
+                    </path>
+                  </svg>
+                  <span class="wallet-payment-add-text">Add new card</span>
+                  <span class="wallet-payment-add-spacer"></span>
+                  <img src="/static/images/visa.webp" alt="Visa" height="18" class="wallet-accepted-card-icon" />
+                  <img src="/static/images/mastercard.svg" alt="Mastercard" height="18" class="wallet-accepted-card-icon" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <div id="wallet-banks-section" class="wallet-banks-section">
+            <div id="wallet-payment-banks-section" class="wallet-payment-section">
+              <h3 id="wallet-payment-banks-title" class="wallet-payment-title">Banks</h3>
+              <div id="wallet-payment-banks-card" class="wallet-payment-card">
+                <div id="wallet-payment-banks-items" class="wallet-payment-items">
+                  {{ banks_html | safe }}
+                </div>
+                <button id="wallet-payment-banks-add-button" class="wallet-payment-add-button"
+                  onclick="openBankModal()">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 5V15M5 10H15" stroke="#000000" stroke-width="1.66667" stroke-linecap="round">
+                    </path>
+                  </svg>
+                  <span class="wallet-payment-add-text">Add new bank</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- end wallet-payment-methods-row -->
+        <!-- Mobile Cash Balance Card -->
+        <div class="mobile-cash-balance-card">
+          <div class="mobile-cash-balance-card__text">
+            <p class="mobile-cash-balance-card__label">Cash balance</p>
+            <h2 class="mobile-cash-balance-card__amount">{{ cash_balance }}</h2>
+          </div>
+          <div class="mobile-cash-balance-card__actions">
+            <button class="mobile-cash-balance-card__button--primary">
+              <span class="mobile-cash-balance-card__button-text--primary">Deposit</span>
+            </button>
+            <button class="mobile-cash-balance-card__button--secondary">
+              <span class="mobile-cash-balance-card__button-text--secondary">Withdraw</span>
+            </button>
+          </div>
+        </div>
+        <!-- Mobile Rewards Balance Card -->
+        <div class="mobile-rewards-balance-card">
+          <div class="mobile-rewards-balance-card__text">
+            <div class="mobile-rewards-balance-card__label-row">
+              <p class="mobile-rewards-balance-card__label">Rewards balance</p>
+              <svg class="mobile-rewards-balance-card__help-icon" width="14" height="14" viewBox="0 0 14 14" fill="none"
+                xmlns="http://www.w3.org/2000/svg">
+                <circle cx="7" cy="7" r="6.33333" stroke="#A4A7AE" stroke-width="1.33333"></circle>
+                <path
+                  d="M5.25 5.25C5.25 4.42157 5.92157 3.75 6.75 3.75H7.25C8.07843 3.75 8.75 4.42157 8.75 5.25C8.75 6.07843 8.07843 6.75 7.25 6.75H6.75V8.25"
+                  stroke="#A4A7AE" stroke-width="1.33333" stroke-linecap="round"></path>
+                <circle cx="7" cy="10.5" r="0.5" fill="#A4A7AE"></circle>
+              </svg>
+            </div>
+            <h2 class="mobile-rewards-balance-card__amount">{{ rewards_balance }}</h2>
+          </div>
+          <div class="mobile-rewards-balance-card__icon">
+            <div class="mobile-rewards-balance-card__icon-bg"></div>
+            <div class="mobile-rewards-balance-card__icon-wrapper">
+              <svg class="mobile-rewards-balance-card__star-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"
+                xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M10 1.66666L12.575 6.89166L18.3333 7.72499L14.1667 11.7833L15.15 17.5167L10 14.8083L4.84999 17.5167L5.83333 11.7833L1.66666 7.72499L7.42499 6.89166L10 1.66666Z"
+                  stroke="#98FB96" stroke-width="1.336" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Mobile Transactions Section -->
+        <div class="mobile-transactions-section">
+          <h2 class="mobile-transactions-title">Transactions</h2>
+          <div class="mobile-transactions-table-wrapper">
+            <div id="wallet-transactions-wrapper" class="table__wrapper table__wrapper--wallet">
+              <div class="table__container">
+                <div class="table__header-row">
+                  <div class="table__header-cell table__header-cell--type" style="width: 182px">
+                    <div class="table__header-content"><span class="table__header-text">Type</span></div>
+                  </div>
+                  <div class="table__header-cell table__header-cell--status" style="width: 163px">
+                    <div class="table__header-content"><img loading="lazy" src="/static/images/bookmark-check.svg"
+                        alt="Status" width="16" height="16" /><span class="table__header-text">Status</span></div>
+                  </div>
+                  <div class="table__header-cell table__header-cell--date" style="width: 200px">
+                    <div class="table__header-content"><img loading="lazy" src="/static/images/calendar-check-02.svg"
+                        alt="Date" width="16" height="16" /><span class="table__header-text">Date</span></div>
+                  </div>
+                  <div class="table__header-cell table__header-cell--wallet" style="width: 180px">
+                    <div class="table__header-content"><img loading="lazy" src="/static/images/wallet-04.svg"
+                        alt="Wallet" width="16" height="16" /><span class="table__header-text">Wallet</span></div>
+                  </div>
+                  <div class="table__header-cell table__header-cell--amount" style="width: 183px">
+                    <div class="table__header-content"><img loading="lazy" src="/static/images/coins-stacked-03.svg"
+                        alt="Amount" width="16" height="16" /><span class="table__header-text">Amount</span></div>
+                  </div>
+                  <div class="table__header-cell table__header-cell--actions" style="width: 188px">
+                    <div class="table__header-content"><span class="table__header-text">Actions</span><img
+                        loading="lazy" src="/static/images/arrow-down.svg" alt="Sort" width="12" height="12" />
+                    </div>
+                  </div>
+                </div>
+                <div id="mobile-wallet-transactions-body" class="table__body">
+                  {% if has_transactions %}
+                  {% for tx in transactions %}
+                  <div class="table__row">
+                    <div class="table__cell table__cell--type" style="width: 182px">
+                      <div class="wallet-transaction-type-icon">
+                        <div class="featured-icon">
+                          {% if tx.tx_type_icon == "deposit" %}
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="#717680" stroke-width="1.66667"
+                              stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          {% elif tx.tx_type_icon == "withdrawal" %}
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="#717680" stroke-width="1.66667"
+                              stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          {% elif tx.tx_type_icon == "dividend" %}
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path
+                              d="M2.5 10C2.5 10 5 7.5 10 7.5C15 7.5 17.5 10 17.5 10M2.5 10V15C2.5 16.3807 3.61929 17.5 5 17.5H15C16.3807 17.5 17.5 16.3807 17.5 15V10"
+                              stroke="#717680" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+                            <circle cx="10" cy="5" r="2.5" stroke="#717680" stroke-width="1.66667" />
+                          </svg>
+                          {% else %}
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path
+                              d="M2.5 7.5L10 2.5L17.5 7.5V16.25C17.5 16.5815 17.3683 16.8995 17.1339 17.1339C16.8995 17.3683 16.5815 17.5 16.25 17.5H3.75C3.41848 17.5 3.10054 17.3683 2.86612 17.1339C2.6317 16.8995 2.5 16.5815 2.5 16.25V7.5Z"
+                              stroke="#717680" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M7.5 17.5V10H12.5V17.5" stroke="#717680" stroke-width="1.66667"
+                              stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <span class="wallet-transaction-type-text">{{ tx.tx_type_label }}</span>
+                    </div>
+                    <div class="table__cell table__cell--status" style="width: 163px">
+                      <div class="wallet-transaction-status-badge {{ tx.status_css }}">
+                        <div class="wallet-transaction-status-dot"></div><span class="wallet-transaction-status-text">{{
+                          tx.status_label }}</span>
+                      </div>
+                    </div>
+                    <div class="table__cell table__cell--date" style="width: 200px"><span
+                        class="table__cell-text-value">{{
+                        tx.date_display }}</span></div>
+                    <div class="table__cell table__cell--wallet" style="width: 180px"><span
+                        class="table__cell-text-value">{{
+                        tx.wallet_label }}</span></div>
+                    <div class="table__cell table__cell--amount" style="width: 183px"><span
+                        class="{{ tx.amount_css }}">{{
+                        tx.amount_prefix }} {{ tx.amount_display }}</span></div>
+                    <div class="table__cell table__cell--actions" style="width: 188px">
+                      <button class="wallet-transaction-action-btn">View details <svg width="16" height="16"
+                          viewBox="0 0 16 16" fill="none">
+                          <path d="M6 12L10 8L6 4" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        </svg></button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                  {% else %}
+                  <div class="table__row" style="justify-content: center; padding: 48px 16px; border-bottom: none;">
+                    <div
+                      style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                      </svg>
+                      <span style="color: #101828; font-size: 14px; font-weight: 600;">No transactions yet</span>
+                    </div>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="wallet-transactions-footer">
+              <button class="wallet-transactions-see-all" onclick="window.location.href='/transactions'">
+                See all transactions
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 12L10 8L6 4" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round"
+                    stroke-linejoin="round">
+                  </path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Mobile Cards Section -->
+        <div class="mobile-cards-section">
+          <h2 class="mobile-cards-title">Cards</h2>
+          {{ mobile_cards_html | safe }}
+          <div class="mobile-card-item">
+            <button class="mobile-add-card-button" onclick="openCardModal()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 4.16667V15.8333M4.16667 10H15.8333" stroke="#0000FF" stroke-width="1.66667"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>Add new card</span>
+            </button>
+          </div>
+        </div>
+        <!-- Mobile Banks Section -->
+        <div class="mobile-banks-section">
+          <h2 class="mobile-banks-title">Banks</h2>
+          {{ mobile_banks_html | safe }}
+          <div class="mobile-bank-item">
+            <button class="mobile-add-bank-button" onclick="openBankModal()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 4.16667V15.8333M4.16667 10H15.8333" stroke="#000000" stroke-width="1.66667"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>Add new bank</span>
+            </button>
+          </div>
+        </div>
+      </div> <!-- end wallet-content-layer -->
+  </div> <!-- end wallet-container -->
+  </main> <!-- end wallet-main -->
+
+  <div id="deposit-modal" class="bank-modal-overlay" style="display: none">
+    <div class="bank-modal-container">
+      <div class="bank-modal-header">
+        <h2 class="bank-modal-title">Deposit Funds</h2>
+        <button class="bank-modal-close" onclick="closeDepositModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+      <div class="bank-modal-body">
+        <form action="/wallet/deposit" method="POST" class="bank-modal-form"
+          onsubmit="const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Processing...'; return true;">
+          <div class="form-group">
+            <label class="form-label">Payment Method</label>
+            <select name="payment_method_id" class="form-input" style="width: 100%; height: 44px">
+              {{ payment_method_options | safe }}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Amount (USD)</label>
+            <input type="number" name="amount" min="1" step="0.01" required class="form-input"
+              style="width: 100%; height: 44px" placeholder="e.g. 1000" />
+          </div>
+          <button type="submit" class="ds-btn ds-btn--primary ds-btn--full">Confirm Deposit</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="withdraw-modal" class="bank-modal-overlay" style="display: none">
+    <div class="bank-modal-container">
+      <div class="bank-modal-header">
+        <h2 class="bank-modal-title">Withdraw Funds</h2>
+        <button class="bank-modal-close" onclick="closeWithdrawModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="#717680" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+      <div class="bank-modal-body">
+        <form action="/wallet/withdraw" method="POST" class="bank-modal-form"
+          onsubmit="const btn=this.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Processing...'; return true;">
+          <div class="form-group">
+            <label class="form-label">Withdraw to</label>
+            <select name="payment_method_id" class="form-input" style="width: 100%; height: 44px">
+              {{ payment_method_options | safe }}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Amount (USD)</label>
+            <input type="number" name="amount" min="1" step="0.01" required class="form-input"
+              style="width: 100%; height: 44px" placeholder="e.g. 500" />
+          </div>
+          <button type="submit" id="withdraw-submit-btn" class="ds-btn ds-btn--primary ds-btn--full">Confirm Withdrawal</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Card Modal -->
+  <div id="add-card-modal" class="bank-modal-overlay" style="display: none">
+    <div class="bank-modal-container">
+      <div class="bank-modal-header">
+        <h2 class="bank-modal-title">Add Card</h2>
+        <button class="bank-modal-close" onclick="closeCardModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="#98A2B3" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+      <div class="bank-modal-body">
+        <p class="bank-modal-desc">Add your credit or debit card details.</p>
+        
+        <!-- Warning alert if Stripe is missing -->
+        {% if not stripe_publishable_key or stripe_publishable_key == "" %}
+        <div style="background: #FFF4ED; border: 1px solid #F9DBAF; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #B54708;">
+          <strong>Developer mode:</strong> Stripe publishable key is missing. Using manual card form instead of Stripe Elements.
+        </div>
+        {% endif %}
+
+        <form id="add-card-form" class="bank-modal-form">
+          <div class="form-group">
+            <label class="form-label">Cardholder Name <span style="color:#d92d20">*</span></label>
+            <input type="text" id="card-holder-name" name="holder_name" placeholder="John Doe" class="form-input" required />
+          </div>
+
+          <!-- Stripe Elements Container -->
+          <div id="stripe-element-container" style="display: none;">
+            <div class="form-group">
+              <label class="form-label">Card Details <span style="color:#d92d20">*</span></label>
+              <div id="card-element" class="form-input" style="padding: 12px; height: 44px; border: 1px solid #D0D5DD; border-radius: 8px; background: #fff;"></div>
+            </div>
+            
+            <div id="stripe-card-brand" style="display: flex; align-items: center; gap: 8px; margin-top: 8px; margin-bottom: 16px; min-height: 24px;">
+              <span id="stripe-brand-text" style="font-size: 13px; color: #667085;">Recognizing card...</span>
+            </div>
+          </div>
+
+          <!-- Manual Fallback Container -->
+          <div id="manual-card-container" style="display: none;">
+            <div class="form-group">
+              <label class="form-label">Card Number <span style="color:#d92d20">*</span></label>
+              <div style="position: relative">
+                <input type="text" id="card-number" name="card_number" placeholder="4242 4242 4242 4242" class="form-input"
+                  maxlength="19" autocomplete="cc-number" inputmode="numeric" style="padding-right: 56px" />
+                <div id="card-brand-icon" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); height: 24px; display: flex; align-items: center; opacity: 0; transition: opacity 0.2s ease;">
+                  <img id="card-brand-img" src="" alt="" height="24" style="height: 24px; width: auto; border-radius: 3px;" />
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 16px">
+              <div class="form-group" style="flex: 1">
+                <label class="form-label">Expiry Date <span style="color:#d92d20">*</span></label>
+                <input type="text" id="card-expiry" name="expiry" placeholder="MM / YY" class="form-input"
+                  maxlength="7" autocomplete="cc-exp" inputmode="numeric" />
+              </div>
+              <div class="form-group" style="flex: 1">
+                <label class="form-label">CVV <span style="color:#d92d20">*</span></label>
+                <input type="password" id="card-cvv" name="cvv" placeholder="•••" class="form-input"
+                  maxlength="4" autocomplete="cc-csc" inputmode="numeric" />
+              </div>
+            </div>
+          </div>
+
+          <div id="card-errors" role="alert" style="color: #F04438; font-size: 14px; margin-top: 4px; min-height: 20px"></div>
+          <div class="form-actions" style="margin-top: 24px">
+            <button type="submit" id="submit-card-btn" class="ds-btn ds-btn--primary ds-btn--full">Save Card</button>
+          </div>
+        </form>
+
+        <script src="https://js.stripe.com/v3/"></script>
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            var stripeKey = "{{ stripe_publishable_key | default('') }}";
+            var useStripe = !!stripeKey;
+            
+            var stripeElementContainer = document.getElementById("stripe-element-container");
+            var manualCardContainer = document.getElementById("manual-card-container");
+            
+            var manualCardNum = document.getElementById("card-number");
+            var manualCardExp = document.getElementById("card-expiry");
+            var manualCardCvv = document.getElementById("card-cvv");
+            
+            var stripe, elements, cardElement;
+            var detectedBrand = "";
+
+            if (useStripe) {
+              stripeElementContainer.style.display = "block";
+              try {
+                stripe = Stripe(stripeKey);
+                elements = stripe.elements();
+                var style = {
+                  base: {
+                    color: '#101828',
+                    fontFamily: '"TT Norms Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    fontSmoothing: 'antialiased',
+                    fontSize: '15px',
+                    '::placeholder': { color: '#98A2B3' }
+                  },
+                  invalid: { color: '#F04438', iconColor: '#F04438' }
+                };
+                cardElement = elements.create('card', { style: style, hidePostalCode: true });
+                cardElement.mount('#card-element');
+                
+                // Real-time card brand and validation error display
+                cardElement.on('change', function(event) {
+                  var displayError = document.getElementById('card-errors');
+                  if (event.error) {
+                    displayError.textContent = event.error.message;
+                  } else {
+                    displayError.textContent = '';
+                  }
+                  
+                  // Update card brand UI
+                  var brandText = document.getElementById('stripe-brand-text');
+                  if (event.brand && event.brand !== "unknown") {
+                    var brandMap = {
+                      'visa': { name: 'Visa', icon: '💳' },
+                      'mastercard': { name: 'Mastercard', icon: '💳' },
+                      'amex': { name: 'American Express', icon: '💳' },
+                      'discover': { name: 'Discover', icon: '💳' },
+                      'diners': { name: 'Diners Club', icon: '💳' },
+                      'jcb': { name: 'JCB', icon: '💳' },
+                      'unionpay': { name: 'UnionPay', icon: '💳' }
+                    };
+                    var b = brandMap[event.brand] || { name: event.brand, icon: '💳' };
+                    brandText.textContent = b.icon + " " + b.name;
+                    brandText.style.color = "#0369A1";
+                    detectedBrand = b.name;
+                  } else {
+                    brandText.textContent = "Supported: Visa, Mastercard, Amex, Discover";
+                    brandText.style.color = "#667085";
+                    detectedBrand = "";
+                  }
+                });
+              } catch (e) {
+                console.error("Stripe initialization failed", e);
+                // Fallback if Stripe script was blocked or failed
+                useStripe = false;
+                stripeElementContainer.style.display = "none";
+                manualCardContainer.style.display = "block";
+                makeManualFieldsRequired();
+              }
+            } else {
+              manualCardContainer.style.display = "block";
+              makeManualFieldsRequired();
+            }
+
+            function makeManualFieldsRequired() {
+              if(manualCardNum) manualCardNum.required = true;
+              if(manualCardExp) manualCardExp.required = true;
+              if(manualCardCvv) manualCardCvv.required = true;
+            }
+
+            // ----------------------------------------------------
+            // Manual Card Logic (Formatting & Brand Detection)
+            // ----------------------------------------------------
+            var CARD_BRANDS = [
+              { name: "Visa",       pattern: /^4/,                         img: "/static/images/visa.webp" },
+              { name: "Mastercard", pattern: /^5[1-5]|^2(2[2-9]|[3-6]|7[01]|720)/, img: "/static/images/mastercard.svg" },
+              { name: "Amex",       pattern: /^3[47]/,                     img: "/static/images/card-default.svg" },
+              { name: "Discover",   pattern: /^6(?:011|5)/,                img: "/static/images/card-default.svg" },
+            ];
+
+            function detectManualCardBrand(num) {
+              var digits = num.replace(/\s/g, "");
+              for (var i = 0; i < CARD_BRANDS.length; i++) {
+                if (CARD_BRANDS[i].pattern.test(digits)) return CARD_BRANDS[i];
+              }
+              return null;
+            }
+
+            var brandIcon = document.getElementById("card-brand-icon");
+            var brandImg = document.getElementById("card-brand-img");
+
+            if (manualCardNum) {
+              manualCardNum.addEventListener("input", function (e) {
+                var v = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+                var parts = v.match(/.{1,4}/g);
+                e.target.value = parts ? parts.join(" ") : "";
+                
+                var brand = detectManualCardBrand(v);
+                if (brand) {
+                  brandImg.src = brand.img;
+                  brandImg.alt = brand.name;
+                  brandIcon.style.opacity = "1";
+                  detectedBrand = brand.name;
+                } else {
+                  brandIcon.style.opacity = "0";
+                  detectedBrand = "";
+                }
+              });
+            }
+
+            if (manualCardExp) {
+              manualCardExp.addEventListener("input", function (e) {
+                var v = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
+                if (v.length >= 2) {
+                  e.target.value = v.substring(0, 2) + " / " + v.substring(2, 4);
+                }
+              });
+            }
+
+            // ----------------------------------------------------
+            // Form Submission (handles both Stripe & Manual forms)
+            // ----------------------------------------------------
+            var cardForm = document.getElementById("add-card-form");
+            if (cardForm) {
+              cardForm.addEventListener("submit", async function (e) {
+                e.preventDefault();
+                var btn = document.getElementById("submit-card-btn");
+                var errEl = document.getElementById("card-errors");
+                var holderName = document.getElementById("card-holder-name").value;
+                
+                btn.disabled = true; 
+                btn.textContent = "Processing...";
+                errEl.textContent = "";
+
+                if (useStripe && stripe && cardElement) {
+                  // === STRIPE ELEMENTS FLOW ===
+                  try {
+                    var { paymentMethod, error } = await stripe.createPaymentMethod({
+                      type: 'card',
+                      card: cardElement,
+                      billing_details: { name: holderName }
+                    });
+                    
+                    if (error) {
+                      errEl.textContent = error.message;
+                      btn.disabled = false; btn.textContent = "Save Card";
+                      return;
+                    }
+                    
+                    var brand = detectedBrand || (paymentMethod.card.brand ? paymentMethod.card.brand.charAt(0).toUpperCase() + paymentMethod.card.brand.slice(1) : "Card");
+                    var last4 = paymentMethod.card.last4;
+                    
+                    submitCardToBackend(paymentMethod.id, holderName, brand, last4, btn, errEl);
+                  } catch (err) {
+                    errEl.textContent = "Stripe integration error. Please try again.";
+                    btn.disabled = false; btn.textContent = "Save Card";
+                  }
+                } else {
+                  // === MANUAL FALLBACK FLOW ===
+                  var cardNumber = manualCardNum.value.replace(/\s/g, "");
+                  if (cardNumber.length < 13) { 
+                    errEl.textContent = "Please enter a valid card number."; 
+                    btn.disabled = false; btn.textContent = "Save Card"; 
+                    return; 
+                  }
+                  
+                  var brand = detectedBrand || "Card";
+                  var last4 = cardNumber.slice(-4);
+                  // Generate an obvious mock token
+                  var stripeId = "manual_" + brand.toLowerCase() + "_" + last4 + "_" + Date.now();
+                  
+                  submitCardToBackend(stripeId, holderName, brand, last4, btn, errEl);
+                }
+              });
+            }
+
+            function submitCardToBackend(stripeId, holderName, brand, last4, btn, errEl) {
+              var encodedLabel = encodeURIComponent(brand + " ending in " + last4);
+              var body = "stripe_payment_method_id=" + encodeURIComponent(stripeId)
+                + "&holder_name=" + encodeURIComponent(holderName)
+                + "&label=" + encodedLabel;
+
+              fetch("/api/payment-methods/card", { 
+                method: "POST", 
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }, 
+                body: body 
+              })
+              .then(function (res) {
+                if (res.ok) { 
+                  closeCardModal(); 
+                  window.location.reload(); 
+                } else { 
+                  return res.text().then(function (t) { errEl.innerHTML = t || "Error saving card to server"; }); 
+                }
+                btn.disabled = false; btn.textContent = "Save Card";
+              })
+              .catch(function () { 
+                errEl.textContent = "A network error occurred. Please try again."; 
+                btn.disabled = false; btn.textContent = "Save Card"; 
+              });
+            }
+          });
+        </script>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Bank Details Modal -->
+  <div id="add-bank-modal" class="bank-modal-overlay" style="display: none">
+    <div class="bank-modal-container" style="max-width: 520px">
+      <div class="bank-modal-header">
+        <h2 class="bank-modal-title">Add Bank Account</h2>
+        <button class="bank-modal-close" onclick="closeBankModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="#98A2B3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+      <div class="bank-modal-body">
+        <p class="bank-modal-desc">Your details are stored securely and used only for withdrawals.</p>
+        <form id="bank-modal-form" class="bank-modal-form">
+          <!-- Hidden system field set by JS -->
+          <input type="hidden" id="bank-system-field" name="bank_system" value="swift" />
+
+          <!-- Account Holder -->
+          <div class="form-group">
+            <label class="form-label">Account Holder Name <span style="color:#d92d20">*</span></label>
+            <input type="text" name="account_holder_name" id="bank-holder-name" placeholder="Full legal name" class="form-input" required />
+          </div>
+
+          <!-- Country -->
+          <div class="form-group">
+            <label class="form-label">Country <span style="color:#d92d20">*</span></label>
+            <select name="bank_country" id="bank-country-select" class="form-input" style="height:44px">
+              <optgroup label="── Common ──">
+                <option value="US">🇺🇸 United States (ACH)</option>
+                <option value="GB">🇬🇧 United Kingdom (BACS)</option>
+                <option value="AU">🇦🇺 Australia (BSB)</option>
+                <option value="IN">🇮🇳 India (IFSC)</option>
+              </optgroup>
+              <optgroup label="── SEPA Zone ──">
+                <option value="DE">🇩🇪 Germany</option>
+                <option value="FR">🇫🇷 France</option>
+                <option value="IT">🇮🇹 Italy</option>
+                <option value="ES">🇪🇸 Spain</option>
+                <option value="NL">🇳🇱 Netherlands</option>
+                <option value="BE">🇧🇪 Belgium</option>
+                <option value="AT">🇦🇹 Austria</option>
+                <option value="PT">🇵🇹 Portugal</option>
+                <option value="IE">🇮🇪 Ireland</option>
+                <option value="FI">🇫🇮 Finland</option>
+                <option value="SE">🇸🇪 Sweden</option>
+                <option value="DK">🇩🇰 Denmark</option>
+                <option value="NO">🇳🇴 Norway</option>
+                <option value="CH">🇨🇭 Switzerland</option>
+                <option value="PL">🇵🇱 Poland</option>
+                <option value="CZ">🇨🇿 Czech Republic</option>
+                <option value="HU">🇭🇺 Hungary</option>
+                <option value="RO">🇷🇴 Romania</option>
+                <option value="GR">🇬🇷 Greece</option>
+                <option value="LU">🇱🇺 Luxembourg</option>
+              </optgroup>
+              <optgroup label="── Asia-Pacific ──">
+                <option value="SG">🇸🇬 Singapore</option>
+                <option value="HK">🇭🇰 Hong Kong</option>
+                <option value="JP">🇯🇵 Japan</option>
+                <option value="KR">🇰🇷 South Korea</option>
+                <option value="NZ">🇳🇿 New Zealand</option>
+              </optgroup>
+              <optgroup label="── Americas ──">
+                <option value="CA">🇨🇦 Canada</option>
+                <option value="BR">🇧🇷 Brazil</option>
+                <option value="MX">🇲🇽 Mexico</option>
+              </optgroup>
+              <optgroup label="── Middle East & Africa ──">
+                <option value="AE">🇦🇪 UAE</option>
+                <option value="SA">🇸🇦 Saudi Arabia</option>
+                <option value="ZA">🇿🇦 South Africa</option>
+                <option value="NG">🇳🇬 Nigeria</option>
+                <option value="KE">🇰🇪 Kenya</option>
+              </optgroup>
+              <option value="OTHER">🌍 Other country (SWIFT/BIC)</option>
+            </select>
+          </div>
+
+          <!-- Bank Name -->
+          <div class="form-group">
+            <label class="form-label">Bank Name <span style="color:#d92d20">*</span></label>
+            <input type="text" name="bank_name" id="bank-name-input" placeholder="e.g. Chase, Barclays, Wise" class="form-input" required />
+          </div>
+
+          <!-- Dynamic fields injected here -->
+          <div id="bank-dynamic-fields"></div>
+
+          <!-- Label (optional) -->
+          <div class="form-group">
+            <label class="form-label">Nickname <span style="color:#667085;font-weight:400">(optional)</span></label>
+            <input type="text" name="label" placeholder="e.g. My Savings Account" class="form-input" />
+          </div>
+
+          <div id="bank-errors" role="alert" style="color:#F04438;font-size:14px;margin-top:4px;min-height:20px"></div>
+          <div class="form-actions" style="margin-top:24px">
+            <button type="submit" id="submit-bank-btn" class="ds-btn ds-btn--primary ds-btn--full">Save Bank Account</button>
+          </div>
+        </form>
+
+        <script>
+          // Banking system definitions per country code
+          var BANK_SYSTEMS = {
+            // US – ACH
+            US: { system: "ach", fields: [
+              { name: "routing_code", label: "Routing Number (ABA)", placeholder: "e.g. 021000021", help: "9-digit ABA routing number", maxlen: 9, pattern: /^\d{9}$/, patternMsg: "Must be exactly 9 digits" },
+              { name: "account_number", label: "Account Number", placeholder: "e.g. 1234567890", help: "Your checking or savings account number", maxlen: 17, pattern: /^\d{4,17}$/, patternMsg: "4–17 digits" }
+            ]},
+            // UK – BACS / FPS
+            GB: { system: "bacs", fields: [
+              { name: "routing_code", label: "Sort Code", placeholder: "e.g. 20-00-00", help: "6-digit sort code (with or without dashes)", maxlen: 8, pattern: /^\d{2}-?\d{2}-?\d{2}$/, patternMsg: "Format: XX-XX-XX" },
+              { name: "account_number", label: "Account Number", placeholder: "e.g. 12345678", help: "8-digit UK account number", maxlen: 8, pattern: /^\d{8}$/, patternMsg: "Must be exactly 8 digits" }
+            ]},
+            // Australia – BSB
+            AU: { system: "bsb", fields: [
+              { name: "routing_code", label: "BSB Number", placeholder: "e.g. 062-000", help: "6-digit Bank-State-Branch code", maxlen: 7, pattern: /^\d{3}-?\d{3}$/, patternMsg: "Format: XXX-XXX" },
+              { name: "account_number", label: "Account Number", placeholder: "e.g. 12345678", help: "6–10 digit account number", maxlen: 10, pattern: /^\d{6,10}$/, patternMsg: "6–10 digits" }
+            ]},
+            // India – IFSC
+            IN: { system: "ifsc", fields: [
+              { name: "routing_code", label: "IFSC Code", placeholder: "e.g. HDFC0001234", help: "11-character Indian Financial System Code", maxlen: 11, pattern: /^[A-Z]{4}0[A-Z0-9]{6}$/, patternMsg: "Format: 4 letters + 0 + 6 alphanumeric" },
+              { name: "account_number", label: "Account Number", placeholder: "e.g. 1234567890", help: "9–18 digit account number", maxlen: 18, pattern: /^\d{9,18}$/, patternMsg: "9–18 digits" }
+            ]},
+            // SEPA countries – IBAN + optional BIC
+            SEPA: { system: "sepa", fields: [
+              { name: "account_number", label: "IBAN", placeholder: "e.g. DE89370400440532013000", help: "International Bank Account Number (up to 34 chars)", maxlen: 34, pattern: /^[A-Z]{2}\d{2}[A-Z0-9]{11,28}$/, patternMsg: "Starts with 2-letter country code then digits" },
+              { name: "routing_code", label: "BIC / SWIFT Code", placeholder: "e.g. DEUTDEDB", help: "8 or 11 character Bank Identifier Code (optional for SEPA)", maxlen: 11, pattern: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/, patternMsg: "8 or 11 characters", optional: true }
+            ]},
+            // Default – SWIFT international wire
+            SWIFT: { system: "swift", fields: [
+              { name: "routing_code", label: "SWIFT / BIC Code", placeholder: "e.g. CHASUS33", help: "8 or 11 character Bank Identifier Code", maxlen: 11, pattern: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/, patternMsg: "8 or 11 characters" },
+              { name: "account_number", label: "IBAN or Account Number", placeholder: "e.g. GB29NWBK60161331926819", help: "IBAN (if available) or local account number", maxlen: 34, pattern: /.{4,}/, patternMsg: "At least 4 characters" }
+            ]}
+          };
+
+          var SEPA_COUNTRIES = ["DE","FR","IT","ES","NL","BE","AT","PT","IE","FI","SE","DK","NO","CH","PL","CZ","HU","RO","GR","LU","SG","HK","JP","KR","NZ","CA","BR","MX","AE","SA","ZA","NG","KE"];
+
+          function getBankConfig(countryCode) {
+            if (BANK_SYSTEMS[countryCode]) return BANK_SYSTEMS[countryCode];
+            if (SEPA_COUNTRIES.indexOf(countryCode) >= 0) return BANK_SYSTEMS.SEPA;
+            return BANK_SYSTEMS.SWIFT;
+          }
+
+          function renderBankFields(countryCode) {
+            var config = getBankConfig(countryCode);
+            document.getElementById("bank-system-field").value = config.system;
+            var container = document.getElementById("bank-dynamic-fields");
+            container.innerHTML = "";
+            config.fields.forEach(function(f) {
+              var grp = document.createElement("div");
+              grp.className = "form-group";
+              var labelEl = document.createElement("label");
+              labelEl.className = "form-label";
+              labelEl.innerHTML = f.label + (f.optional ? ' <span style="color:#667085;font-weight:400">(optional)</span>' : ' <span style="color:#d92d20">*</span>');
+              var input = document.createElement("input");
+              input.type = "text";
+              input.name = f.name;
+              input.placeholder = f.placeholder;
+              input.className = "form-input";
+              input.style.textTransform = "uppercase";
+              if (!f.optional) input.required = true;
+              if (f.maxlen) input.maxLength = f.maxlen;
+              var hint = document.createElement("p");
+              hint.style.cssText = "font-size:12px;color:#667085;margin:4px 0 0 0";
+              hint.textContent = f.help;
+              grp.appendChild(labelEl);
+              grp.appendChild(input);
+              grp.appendChild(hint);
+              container.appendChild(grp);
+            });
+            // Add system badge
+            var badge = document.createElement("div");
+            badge.style.cssText = "display:inline-flex;align-items:center;gap:6px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:6px;padding:4px 10px;font-size:12px;color:#0369A1;margin-bottom:8px;font-weight:500";
+            var systemLabel = { ach:"ACH Transfer", bacs:"BACS / Faster Payments", bsb:"BSB (Australia)", ifsc:"NEFT/RTGS (India)", sepa:"SEPA Transfer", swift:"SWIFT International Wire" };
+            badge.textContent = "🏦 " + (systemLabel[config.system] || config.system.toUpperCase());
+            container.insertBefore(badge, container.firstChild);
+          }
+
+          document.addEventListener("DOMContentLoaded", function () {
+            var countrySelect = document.getElementById("bank-country-select");
+            if (countrySelect) {
+              countrySelect.addEventListener("change", function() { renderBankFields(this.value); });
+              renderBankFields(countrySelect.value); // render initial
+            }
+
+            document.getElementById("bank-modal-form").addEventListener("submit", async function(e) {
+              e.preventDefault();
+              var btn = document.getElementById("submit-bank-btn");
+              var errorDiv = document.getElementById("bank-errors");
+              btn.disabled = true; btn.textContent = "Saving...";
+              errorDiv.textContent = "";
+
+              // Client-side validation of dynamic fields
+              var countryCode = document.getElementById("bank-country-select").value;
+              var config = getBankConfig(countryCode);
+              var valid = true;
+              config.fields.forEach(function(f) {
+                var input = document.querySelector("#bank-dynamic-fields input[name='" + f.name + "']");
+                if (!input) return;
+                var val = input.value.trim().replace(/\s/g, "").toUpperCase();
+                if (!f.optional && !val) { errorDiv.textContent = f.label + " is required."; valid = false; return; }
+                if (val && f.pattern && !f.pattern.test(val)) { errorDiv.textContent = f.label + ": " + f.patternMsg; valid = false; }
+              });
+              if (!valid) { btn.disabled = false; btn.textContent = "Save Bank Account"; return; }
+
+              var formData = new FormData(e.target);
+              var encoded = new URLSearchParams(formData).toString();
+              try {
+                var response = await fetch("/api/payment-methods/bank", { method: "POST", headers: {"Content-Type": "application/x-www-form-urlencoded"}, body: encoded });
+                if (response.ok) { closeBankModal(); window.location.reload(); }
+                else { var t = await response.text(); errorDiv.textContent = t || "An error occurred"; }
+              } catch(err) { errorDiv.textContent = "An error occurred. Please try again."; }
+              btn.disabled = false; btn.textContent = "Save Bank Account";
+            });
+          });
+        </script>
+      </div>
+    </div>
+  </div>
+
+    <!-- Wallet Actions & Initialization -->
+    <script>
+      function openDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
+      function closeDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
+      function openWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
+      function closeWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
+      function openBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
+      function closeBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
+      function openCardModal() {
+        var m = document.getElementById("add-card-modal");
+        if (m) {
+          m.style.display = "flex";
+          document.body.style.overflow = "hidden";
+        }
+      }
+      function closeCardModal() { var m = document.getElementById("add-card-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const depositBtn = document.getElementById("deposit-btn");
+        if (depositBtn) { depositBtn.addEventListener("click", openDepositModal); depositBtn.removeAttribute("disabled"); depositBtn.style.cursor = "pointer"; }
+        const emptyDepositBtn = document.getElementById("empty-deposit-btn");
+        if (emptyDepositBtn) { emptyDepositBtn.addEventListener("click", openDepositModal); }
+        const withdrawBtn = document.getElementById("withdraw-btn");
+        if (withdrawBtn) { withdrawBtn.addEventListener("click", openWithdrawModal); withdrawBtn.removeAttribute("disabled"); withdrawBtn.style.cursor = "pointer"; }
+        document.querySelectorAll(".mobile-cash-balance-card__button--primary").forEach(btn => btn.addEventListener("click", openDepositModal));
+        document.querySelectorAll(".mobile-cash-balance-card__button--secondary").forEach(btn => btn.addEventListener("click", openWithdrawModal));
+        document.querySelectorAll("#wallet-payment-banks-add-button, .mobile-add-bank-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openBankModal(); }); });
+        document.querySelectorAll("#wallet-transactions-see-all").forEach(btn => { btn.addEventListener("click", () => { window.location.href = "/transactions"; }); });
+
+        // "View details" on each transaction row → navigate to /transactions
+        document.body.addEventListener("click", function (e) {
+          var actionBtn = e.target.closest(".wallet-transaction-action-btn");
+          if (!actionBtn) return;
+          var row = actionBtn.closest("[id^='wallet-transactions-row-']");
+          var rowId = row && row.id ? row.id.replace("wallet-transactions-row-", "") : "";
+          window.location.href = rowId ? "/transactions#tx-" + rowId : "/transactions";
+        });
+
+        // Click-outside-to-close for all modals (replaces Alpine @click.away)
+        ["deposit-modal", "withdraw-modal", "add-card-modal", "add-bank-modal"].forEach(function(id) {
+          var overlay = document.getElementById(id);
+          if (overlay) {
+            overlay.addEventListener("click", function(e) {
+              if (e.target === overlay) {
+                overlay.style.display = "none";
+                document.body.style.overflow = "";
+              }
+            });
+          }
+        });
+      });
+    </script>
+
+    <!-- Error Toast: handles ?error= query param from server -->
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var error = params.get('error');
+        if (!error) return;
+        var messages = { 'insufficient_funds': 'Insufficient funds. Please deposit before withdrawing.', 'withdraw_failed': 'Withdrawal failed. Please try again or contact support.', 'deposit_failed': 'Deposit failed. Please try again.' };
+        var msg = messages[error] || 'An error occurred. Please try again.';
+        var toast = document.createElement('div');
+        toast.setAttribute('role', 'alert');
+        toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:99999;background:#F04438;color:#fff;padding:14px 20px;border-radius:10px;font-family:TT Norms Pro,sans-serif;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.18);max-width:360px;line-height:1.4;animation:slideIn 0.3s ease-out';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(function () { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(function () { toast.remove(); }, 300); }, 5000);
+        history.replaceState({}, '', '/wallet');
+      })();
+    </script>
+
+    <!-- Wallet Data Service & UI Controller -->
+    <script src="/static/js/wallet-service.js"></script>
+    <script src="/static/js/wallet.js"></script>
+
+</body>
+
+</html>

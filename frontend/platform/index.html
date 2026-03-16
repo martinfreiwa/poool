@@ -1,0 +1,396 @@
+{% with title="Marketplace", extra_css=['marketplace', 'wallet', 'portfolio', 'cart', 'assets-table-populated', 'htmx-fixes'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'marketplace-search'] %}{% include "components/head.html" %}{% endwith %}
+
+  <body id="marketplace-body" class="fouc-guard">
+    {% include 'components/mobile-menu.html' %}
+    <div id="marketplace-page" class="marketplace-page">
+      <!-- Sidebar Navigation -->
+      <div id="marketplace-sidebar" class="marketplace-sidebar">
+        <!-- Container that will show only one sidebar at a time -->
+        {% include 'components/sidebar.html' %}
+      </div>
+      <!-- Main Content Area -->
+      <main id="marketplace-main" class="ds-main marketplace-main">
+        <!-- Get all page data --><!-- KYC Notification Bar -->
+        <!-- Marketplace Content with Padding -->
+        <div class="marketplace-content-wrapper">
+          <!-- Page Title -->
+          <div id="marketplace-page-header" class="page-header">
+            <h1 id="marketplace-page-title" class="page-title">Properties</h1>
+          </div>
+          <!-- Filter Bar --><!-- Status Tabs -->
+          <div id="filter-bar-status-tabs" class="status-tabs">
+            <button
+              id="filter-bar-tab-available"
+              class="status-tab active"
+              hx-get="/marketplace/tab?tab=available"
+              hx-target="#marketplace-content-wrapper"
+              hx-swap="innerHTML"
+            >
+              Available
+            </button>
+            <button
+              id="filter-bar-tab-funded"
+              class="status-tab"
+              hx-get="/marketplace/tab?tab=funded"
+              hx-target="#marketplace-content-wrapper"
+              hx-swap="innerHTML"
+            >
+              Funded
+            </button>
+            <button
+              id="filter-bar-tab-exited"
+              class="status-tab"
+              hx-get="/marketplace/tab?tab=exited"
+              hx-target="#marketplace-content-wrapper"
+              hx-swap="innerHTML"
+            >
+              Exited
+            </button>
+          </div>
+          <div id="filter-bar-container" class="filter-bar-container">
+            <!-- Filters Section -->
+            <div id="filter-bar-filters" class="filter-controls">
+              <!-- Dropdowns Container -->
+              <div id="filter-bar-dropdowns" class="filter-dropdowns">
+                <!-- Location Dropdown -->
+                <div id="filter-bar-location" class="filter-dropdown">
+                  <label id="filter-bar-location-label" class="filter-label"
+                    ><span class="filter-label-text">Location</span></label
+                  >
+                  <div
+                    id="filter-bar-location-dropdown"
+                    class="dropdown-wrapper"
+                  >
+                    <img loading="lazy"
+                      id="filter-bar-location-icon"
+                      src="/images/ID.webp"
+                      alt=""
+                      class="dropdown-icon"
+                    />
+                    <select
+                      id="filter-bar-location-select"
+                      class="dropdown-select"
+                    >
+                      <option value="bali-canggu" selected>Bali, Canggu</option>
+                      <option value="bali-uluwatu">Bali, Uluwatu</option>
+                      <option value="bali-ubud">Bali, Ubud</option>
+                      <option value="bali">Bali</option>
+                    </select>
+                    <svg
+                      id="filter-bar-location-chevron"
+                      class="dropdown-chevron"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M5 7.5L10 12.5L15 7.5"
+                        stroke="#717680"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      ></path>
+                    </svg>
+                  </div>
+                </div>
+                <!-- Investment Type Dropdown -->
+                <div id="filter-bar-investment" class="filter-dropdown">
+                  <label id="filter-bar-investment-label" class="filter-label"
+                    ><span class="filter-label-text">Investment type</span>
+                    <svg
+                      id="filter-bar-investment-help"
+                      class="help-icon"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <circle
+                        cx="8"
+                        cy="8"
+                        r="6.67"
+                        stroke="#A4A7AE"
+                        stroke-width="1.33"
+                      ></circle>
+                      <path
+                        d="M8 11.33V11.34"
+                        stroke="#A4A7AE"
+                        stroke-width="1.33"
+                        stroke-linecap="round"
+                      ></path>
+                      <path
+                        d="M8 8.67V5.33"
+                        stroke="#A4A7AE"
+                        stroke-width="1.33"
+                        stroke-linecap="round"
+                      ></path></svg
+                  ></label>
+                  <div
+                    id="filter-bar-investment-dropdown"
+                    class="dropdown-wrapper"
+                  >
+                    <img loading="lazy"
+                      id="filter-bar-investment-icon"
+                      src="/images/dollar.svg"
+                      alt=""
+                      class="dropdown-icon"
+                    />
+                    <select
+                      id="filter-bar-investment-select"
+                      class="dropdown-select"
+                    >
+                      <option value="any">Any type</option>
+                      <option value="short-term">Short term</option>
+                      <option value="long-term">Long term</option>
+                      <option value="flipping">Flipping</option>
+                    </select>
+                    <svg
+                      id="filter-bar-investment-chevron"
+                      class="dropdown-chevron"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M5 7.5L10 12.5L15 7.5"
+                        stroke="#717680"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      ></path>
+                    </svg>
+                  </div>
+                </div>
+                <!-- Property Type Dropdown -->
+                <div id="filter-bar-property" class="filter-dropdown">
+                  <label id="filter-bar-property-label" class="filter-label"
+                    ><span class="filter-label-text">Type of property</span>
+                    <svg
+                      id="filter-bar-property-help"
+                      class="help-icon"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <circle
+                        cx="8"
+                        cy="8"
+                        r="6.67"
+                        stroke="#A4A7AE"
+                        stroke-width="1.33"
+                      ></circle>
+                      <path
+                        d="M8 11.33V11.34"
+                        stroke="#A4A7AE"
+                        stroke-width="1.33"
+                        stroke-linecap="round"
+                      ></path>
+                      <path
+                        d="M8 8.67V5.33"
+                        stroke="#A4A7AE"
+                        stroke-width="1.33"
+                        stroke-linecap="round"
+                      ></path></svg
+                  ></label>
+                  <div
+                    id="filter-bar-property-dropdown"
+                    class="dropdown-wrapper"
+                  >
+                    <img loading="lazy"
+                      id="filter-bar-property-icon"
+                      src="/images/home-03.svg"
+                      alt=""
+                      class="dropdown-icon"
+                    />
+                    <select
+                      id="filter-bar-property-select"
+                      class="dropdown-select"
+                    >
+                      <option value="any">Any type</option>
+                      <option value="residential">Residential</option>
+                      <option value="commercial">Commercial</option>
+                      <option value="villa">Villa</option>
+                    </select>
+                    <svg
+                      id="filter-bar-property-chevron"
+                      class="dropdown-chevron"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M5 7.5L10 12.5L15 7.5"
+                        stroke="#717680"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      ></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <!-- More Filters Button --><button
+                id="filter-bar-more-filters"
+                class="more-filters-btn"
+              >
+                <svg
+                  id="filter-bar-more-filters-icon"
+                  class="more-filters-btn-icon"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                >
+                  <path
+                    d="M4 7H16M7 12H13M9 17H11"
+                    stroke="#414651"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                  ></path>
+                </svg>
+                <span class="more-filters-btn-text">More filters</span>
+              </button>
+            </div>
+            <!-- Search Bar -->
+            <div id="filter-bar-search" class="search-bar">
+              <div
+                id="filter-bar-search-input-wrapper"
+                class="search-input-wrapper"
+              >
+                <svg
+                  id="filter-bar-search-icon"
+                  class="search-icon"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                >
+                  <circle
+                    cx="9"
+                    cy="9"
+                    r="6"
+                    stroke="#717680"
+                    stroke-width="1.67"
+                  ></circle>
+                  <path
+                    d="M13 13L17 17"
+                    stroke="#717680"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                  ></path>
+                </svg>
+                <input
+                  id="filter-bar-search-input"
+                  type="search"
+                  placeholder="Search"
+                  class="search-input"
+                />
+              </div>
+              <button id="filter-bar-clear-btn" class="clear-btn">Clear</button>
+              <button id="filter-bar-search-btn" class="search-btn">
+                Search
+              </button>
+            </div>
+          </div>
+          <!-- Properties Grid for Infinite Scroll -->
+          <div id="marketplace-content-wrapper">
+            <!-- Properties Grid -->
+            <div id="marketplace-properties-section" class="properties-section">
+              <div id="property-grid" class="property-grid">
+{% for asset in assets %}
+    {% set funded_percentage = 0 %}
+    {% if asset.tokens_total > 0 %}
+        {% set funded_percentage = ((asset.tokens_total - asset.tokens_available) / asset.tokens_total * 100) | round %}
+    {% endif %}
+
+    <div
+      class="property-card"
+      data-property-id="{{ asset.slug }}"
+      onclick="window.location.href = '/property/{{ asset.slug }}'"
+    >
+      <div class="property-gallery">
+        <div class="property-image-container">
+          <div
+            class="property-image active"
+            style="background-image: url('{{ asset.cover_image_url | default('/images/villa1.webp') }}'); background-size: cover; background-position: center;"
+            aria-label="{{ asset.title }}"
+          ></div>
+        </div>
+        <div class="property-badge ds-badge ds-badge--overlay ds-badge--funding">
+          <div class="badge-icon-wrapper">
+             <img src="/images/chart-line-up.svg" alt="chart">
+          </div>
+          <span class="badge-text">{% if asset.funding_status == "funding_in_progress" %}Funding In Progress{% elif asset.funding_status == "funded" %}Fully Funded{% elif asset.funding_status == "upcoming" %}Upcoming{% else %}{{ asset.funding_status | capitalize }}{% endif %}</span>
+        </div>
+      </div>
+      <div class="property-content">
+        <div class="property-categories">
+          <div class="category">
+            <span class="category-text">Location: {{ asset.location_city }}, {{ asset.location_country }}</span>
+          </div>
+          <div class="category-separator"></div>
+          <div class="category">
+            <span class="category-text">{% if asset.asset_type == "real_estate" %}Real Estate{% elif asset.asset_type == "commodity" %}Commodity{% else %}{{ asset.asset_type | capitalize }}{% endif %}</span>
+          </div>
+        </div>
+
+        <div class="property-heading">
+          <h3 class="property-title">
+            {{ asset.title }}
+          </h3>
+        </div>
+
+        <div class="property-pricing">
+          <div class="price-wrapper">
+            <span class="property-price">${{ ((asset.total_value_cents / 100) | round | int) }}</span>
+            <span class="funded-percentage">{{ (funded_percentage | round(1)) }}% funded</span>
+          </div>
+          <div class="property-progress ds-progress">
+            <div
+              class="ds-progress__fill"
+              style="width: {{ funded_percentage }}%"
+            ></div>
+          </div>
+        </div>
+
+        <div class="investment-details">
+          <div class="investment-row">
+            <span class="investment-label">Token Price</span>
+            <span class="investment-value">${{ ((asset.token_price_cents / 100) | round(2)) }}</span>
+          </div>
+          <div class="investment-row">
+            <span class="investment-label">Annual Yield</span>
+            <span class="investment-value">
+              {% if asset.annual_yield_bps %}
+                {{ (asset.annual_yield_bps / 100) }}%
+              {% else %}
+                N/A
+              {% endif %}
+            </span>
+          </div>
+          <div class="investment-row">
+            <span class="investment-label">Capital Appreciation</span>
+            <span class="investment-value">
+              {% if asset.capital_appreciation_bps %}
+                {{ (asset.capital_appreciation_bps / 100) }}%
+              {% else %}
+                N/A
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+{% endfor %}
+</div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

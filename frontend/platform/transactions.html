@@ -1,0 +1,194 @@
+{% with title="Transactions", meta_description="View your full POOOL transaction history including deposits,
+withdrawals, and platform investments.", extra_css=['wallet', 'bem/table', 'bem/table-wallet', 'htmx-fixes',
+'mobile-wallet'], extra_js=['htmx-init', 'profile-dropdown',
+'legal-enhancements', 'mobile-navigation', 'transactions'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="wallet-body" class="fouc-guard">
+
+    {% include 'components/mobile-menu.html' %}
+
+    <div id="wallet-page" class="wallet-page">
+        <!-- Sidebar Navigation -->
+        <div id="wallet-sidebar" class="wallet-sidebar">
+            {% include 'components/sidebar.html' %}
+        </div>
+
+        <!-- Main Content Area -->
+        <main id="transactions-main" class="ds-main wallet-main">
+
+            <div class="wallet-container">
+
+                <!-- Loading Skeleton -->
+                <div id="transactions-loading-skeleton">
+                    <div style="margin-bottom: 24px;">
+                        <div style="height: 40px; width: 260px; background: linear-gradient(90deg, #e9eaeb 25%, #f3f4f6 50%, #e9eaeb 75%); background-size: 1200px 100%; animation: shimmer 1.4s infinite linear; border-radius: 8px;"></div>
+                    </div>
+                    <div style="background: #fff; border: 1px solid #e9eaeb; border-radius: 12px; box-shadow: 0px 1px 2px rgba(10,13,18,0.05); overflow: hidden;">
+                        <div style="height: 44px; background: #fafafa; border-bottom: 1px solid #e9eaeb;"></div>
+                        <div style="display: flex; flex-direction: column;">
+                            <div style="height: 72px; border-bottom: 1px solid #e9eaeb;"></div>
+                            <div style="height: 72px; border-bottom: 1px solid #e9eaeb;"></div>
+                            <div style="height: 72px; border-bottom: 1px solid #e9eaeb;"></div>
+                            <div style="height: 72px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fetch Error State -->
+                <div id="transactions-fetch-error" class="hidden">
+                    <div class="wallet-transactions-table" style="margin-top: 24px;">
+                        <div class="wallet-transactions-empty-state">
+                            <div class="wallet-transactions-empty-content">
+                                <div
+                                    style="width: 48px; height: 48px; background: #FEF3C7; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path
+                                            d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                    </svg>
+                                </div>
+                                <div class="wallet-transactions-empty-text">
+                                    <span class="wallet-transactions-empty-title">Failed to load transactions</span>
+                                    <span class="wallet-transactions-empty-message">We couldn't retrieve your transactions
+                                        at this time. Please try again.</span>
+                                </div>
+                                <button onclick="loadTransactions()"
+                                    class="wallet-header-btn wallet-header-btn--primary"
+                                    style="width: auto; padding: 10px 18px;">
+                                    <span>Retry</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div id="transactions-content" class="hidden">
+
+                    <!-- Header -->
+                    <div class="wallet-header" style="margin-bottom: 24px;">
+                        <div class="wallet-header-left">
+                            <div class="wallet-page-icon">
+                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                                    <path
+                                        d="M21.3333 11.3145V6.64869C21.3333 5.53971 21.3333 4.98522 21.0997 4.64445C20.8957 4.34672 20.5795 4.14448 20.2237 4.08392C19.8163 4.01463 19.313 4.24698 18.3061 4.71171L6.47869 10.1705C5.58067 10.5849 5.13166 10.7922 4.8028 11.1136C4.51208 11.3977 4.29016 11.7445 4.154 12.1276C4 12.5609 4 13.0554 4 14.0444V20.6479M22 19.9811H22.0133M4 15.5811L4 24.3811C4 25.8746 4 26.6213 4.29065 27.1918C4.54631 27.6936 4.94825 28.0955 5.45003 28.3512C6.02046 28.6479 6.7672 28.6479 8.26067 28.6479H23.7327C25.2262 28.6479 25.9729 28.6479 26.5433 28.3512C27.0451 28.0955 27.447 27.6936 27.7027 27.1918C28 26.6213 28 25.8746 28 24.3811V15.5811C28 14.0877 28 13.3409 27.7027 12.7705C27.447 12.2687 27.0451 11.8668 26.5433 11.6111C25.9729 11.3145 25.2262 11.3145 23.7327 11.3145L8.26067 11.3145C6.7672 11.3145 6.02046 11.3145 5.45003 11.6111C4.94825 11.8668 4.54631 12.2687 4.29065 12.7705C4 13.3409 4 14.0877 4 15.5811ZM22.6667 19.9811C22.6667 20.3493 22.3682 20.6479 22 20.6479C21.6318 20.6479 21.3333 20.3493 21.3333 19.9811C21.3333 19.613 21.6318 19.3145 22 19.3145C22.3682 19.3145 22.6667 19.613 22.6667 19.9811Z"
+                                        stroke="#101828" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </div>
+                            <h1 class="wallet-page-title">Transactions</h1>
+                        </div>
+                    </div>
+
+                    <!-- No Transactions Empty State -->
+                    <div id="wallet-transactions-empty" class="hidden">
+                        <div class="table__wrapper table__wrapper--wallet ds-table-container">
+                            <div class="table__container">
+                                <div class="table__row"
+                                    style="justify-content: center; padding: 64px 24px; border-bottom: none; width: 100%; min-height: 300px;">
+                                    <div
+                                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 12px; text-align: center;">
+                                        <div
+                                            style="width: 48px; height: 48px; border-radius: 50%; background: #F2F4F7; border: 8px solid #F9FAFB; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                                stroke="#475467" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z">
+                                                </path>
+                                                <polyline points="14 2 14 8 20 8"></polyline>
+                                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                            </svg>
+                                        </div>
+                                        <span
+                                            style="color: #101828; font-size: 16px; font-weight: 600;">No transactions
+                                            yet</span>
+                                        <span style="color: #667085; font-size: 14px; max-width: 250px;">Your
+                                            transactions will appear here
+                                            once you make a deposit or withdrawal.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transactions Table (BEM Table) -->
+                    <div id="wallet-transactions-list-container">
+                        <div class="table__wrapper table__wrapper--wallet ds-table-container">
+                            <div class="table__container">
+                                <!-- Header Row -->
+                                <div class="table__header-row">
+                                    <div class="table__header-cell table__header-cell--type">
+                                        <div class="table__header-content">
+                                            <span class="table__header-text">Type</span>
+                                        </div>
+                                    </div>
+                                    <div class="table__header-cell table__header-cell--status">
+                                        <div class="table__header-content">
+                                            <img loading="lazy" src="/static/images/bookmark-check.svg" alt="Status"
+                                                width="16" height="16" /><span
+                                                class="table__header-text">Status</span>
+                                        </div>
+                                    </div>
+                                    <div class="table__header-cell table__header-cell--date">
+                                        <div class="table__header-content">
+                                            <img loading="lazy" src="/static/images/calendar-check-02.svg" alt="Date"
+                                                width="16" height="16" /><span class="table__header-text">Date</span>
+                                        </div>
+                                    </div>
+                                    <div class="table__header-cell table__header-cell--wallet">
+                                        <div class="table__header-content">
+                                            <img loading="lazy" src="/static/images/wallet-04.svg" alt="Wallet"
+                                                width="16" height="16" /><span
+                                                class="table__header-text">Wallet</span>
+                                        </div>
+                                    </div>
+                                    <div class="table__header-cell table__header-cell--amount">
+                                        <div class="table__header-content">
+                                            <img loading="lazy" src="/static/images/coins-stacked-03.svg" alt="Amount"
+                                                width="16" height="16" /><span
+                                                class="table__header-text">Amount</span>
+                                        </div>
+                                    </div>
+                                    <div class="table__header-cell" style="min-width: 130px;">
+                                        <div class="table__header-content">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                              <path d="M2 17l10 5 10-5" />
+                                              <path d="M2 12l10 5 10-5" />
+                                            </svg>
+                                            <span class="table__header-text" style="color: #6366f1;">Blockchain TX</span>
+                                        </div>
+                                    </div>
+                                    <div class="table__header-cell table__header-cell--actions">
+                                        <div class="table__header-content">
+                                            <span class="table__header-text">Actions</span><img loading="lazy"
+                                                src="/static/images/arrow-down.svg" alt="Sort" width="12"
+                                                height="12" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Body: rows inserted dynamically by transactions.js -->
+                                <div id="wallet-transactions-list-body" class="table__body">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /#transactions-content -->
+
+            </div><!-- /.wallet-container -->
+
+        </main>
+    </div>
+
+    <style>
+        @keyframes shimmer {
+            0% { background-position: -600px 0; }
+            100% { background-position: 600px 0; }
+        }
+    </style>
+
+</body>
+
+</html>

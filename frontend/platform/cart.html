@@ -1,0 +1,138 @@
+{% with title="Cart", meta_description="Review your selected investments and proceed to secure checkout on POOOL.",
+extra_css=['cart', 'mobile-cart', 'checkout'] %}{% include "components/head.html" %}{% endwith %}
+
+  <!-- Custom POOOL Icon Styles -->
+  <style>
+    .poool-icon-custom {
+      background-color: var(--btn-primary-bg, #0000FF) !important;
+      stroke: #03FF88 !important;
+      border-radius: 8px !important;
+      padding: 6px !important;
+      flex-shrink: 0;
+      width: 28px !important;
+      height: 28px !important;
+      box-sizing: border-box !important;
+    }
+    .poool-icon-custom path, .poool-icon-custom circle, .poool-icon-custom rect, .poool-icon-custom polyline, .poool-icon-custom line, .poool-icon-custom polygon {
+      stroke: #03FF88 !important;
+    }
+    .ds-page-header__icon.poool-icon-custom {
+      width: 44px !important;
+      height: 44px !important;
+      padding: 9px !important;
+      border-radius: 10px !important;
+    }
+  </style>
+
+<body id="cart-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+  <div id="cart-app" class="cart-app">
+    <div id="cart-page" class="cart-page">
+      <div id="cart-page-sidebar" class="cart-page-sidebar">
+        {% include 'components/sidebar.html' %}
+      </div>
+      <!-- Main Content -->
+      <main id="cart-main" class="ds-main cart-page-main">
+        <!-- Cart Content Wrapper for HTMX Updates -->
+        <div id="cart-content-wrapper">
+          <!-- Cart Header -->
+          <div id="cart-page-header" class="ds-page-header cart-page-header">
+            <div class="ds-page-header__title-row cart-title-wrapper">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round" class="ds-page-header__icon poool-icon-custom">
+                <circle cx="9" cy="21" r="1"/>
+                <circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+              </svg>
+              <h1 id="cart-page-title" class="ds-page-header__title cart-page-title">
+                Cart
+              </h1>
+            </div>
+            <div class="checkout-steps">
+              <span class="checkout-steps__step checkout-steps__step--active">Cart</span>
+              <span class="checkout-steps__divider">→</span>
+              <span class="checkout-steps__step">Payment</span>
+              <span class="checkout-steps__divider">→</span>
+              <span class="checkout-steps__step">Confirmation</span>
+            </div>
+          </div>
+          <hr class="page-header-divider">
+          <!-- Cart Content -->
+          <div id="cart-page-content" class="cart-page-content">
+            <!-- Populated Cart State (Default for now) -->
+            <div id="cart-page-items-container" class="cart-items-container">
+              <div class="cart-items-list"></div>
+            </div>
+
+            <!-- Empty Cart State -->
+            <div id="cart-page-empty-container" class="cart-empty-wrapper" style="display: none">
+              <div id="cart-empty-container" class="cart-empty-container">
+                <!-- Icon -->
+                <div class="cart-empty-icon-wrapper">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"/>
+                    <circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                  </svg>
+                </div>
+
+                <!-- Heading -->
+                <h2 id="cart-empty-heading" class="cart-empty-heading">
+                  Your cart is empty
+                </h2>
+
+                <!-- Description -->
+                <p id="cart-empty-description" class="cart-empty-description">
+                  You haven't added any investment properties yet.<br>
+                  Browse our marketplace to find your next opportunity.
+                </p>
+
+                <!-- CTA Button — POOOL standard primary button -->
+                <a href="/marketplace" class="proceed-payment-btn" style="background:var(--primary-color, #0000FF); max-width: 280px;">
+                  <span class="button-text" style="color:#62F7A4;">Browse Properties</span>
+                  <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#62F7A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+
+                <!-- Secondary link -->
+                <a href="/portfolio" class="cart-empty-secondary-link">
+                  or view your portfolio →
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <!-- Mobile Cart Content (only visible on mobile) -->
+        <div class="mobile-cart-wrapper">
+          <div class="mobile-cart-content">
+            <!-- Mobile Empty Cart State -->
+            <div class="mobile-cart-empty-container" style="display: none">
+              <div class="cart-empty-icon-wrapper" style="width:64px;height:64px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="9" cy="21" r="1"/>
+                  <circle cx="20" cy="21" r="1"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+              </div>
+              <h2 class="mobile-cart-empty-heading">Your cart is empty</h2>
+              <p class="mobile-cart-empty-description">
+                Browse our marketplace to find your next investment opportunity.
+              </p>
+              <a href="/marketplace" class="proceed-payment-btn" style="background:var(--primary-color, #0000FF); width:100%; max-width:280px;">
+                <span class="button-text" style="color:#62F7A4;">Browse Properties</span>
+                <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#62F7A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <!-- Cart JavaScript -->
+  <script src="/static/js/cart.js"></script>
+  <!-- Mobile Navigation JavaScript -->
+  <script src="/static/js/legal-enhancements.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
+</body>
+
+</html>

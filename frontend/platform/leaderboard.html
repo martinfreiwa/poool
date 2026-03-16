@@ -1,0 +1,207 @@
+{% with title="Leaderboard", meta_description="See how you rank among POOOL investors. Track your investor score and compete for top positions.",
+extra_css=['marketplace', 'wallet', 'portfolio', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown',
+'marketplace-search', 'poool-dropdown'] %}{%
+include
+"components/head.html" %}{% endwith %}
+
+<body id="leaderboard-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="lb-page">
+    <div class="lb-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <main class="ds-main lb-main">
+      <div class="lb-container">
+        <div class="ds-page-header lb-page-header">
+          <div class="ds-page-header__title-row lb-title-wrapper">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" class="ds-page-header__icon">
+              <path d="M8 21h8M12 17v4M7 4h10M17 4v8a5 5 0 0 1-10 0V4M3 4h4v5H3zM17 4h4v5h-4z" />
+            </svg>
+            <h1 class="ds-page-header__title lb-title">Leaderboard</h1>
+          </div>
+          <span id="lb-last-updated" class="lb-last-updated"></span>
+        </div>
+
+        <!-- 1. LOADING STATE (Skeleton) -->
+        <div id="lb-loading-layer" class="lb-loading-layer">
+          <div class="lb-skeleton-podium">
+            <div class="skeleton-box sk-podium-item"></div>
+            <div class="skeleton-box sk-podium-item sk-podium-first"></div>
+            <div class="skeleton-box sk-podium-item"></div>
+          </div>
+          <div class="skeleton-box sk-rank-card"></div>
+          <div class="skeleton-box sk-table"></div>
+        </div>
+
+        <!-- 2. ERROR STATE -->
+        <div id="lb-error-layer" class="lb-error-layer">
+          <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <h3 class="state-title">Failed to load leaderboard</h3>
+          <p class="state-desc">We couldn't fetch the rankings. Please try again or contact support.</p>
+          <button class="ds-btn ds-btn--secondary retry-btn" onclick="location.reload()">Retry Connection</button>
+        </div>
+
+        <!-- 3. EMPTY STATE -->
+        <div id="lb-empty-layer" class="lb-empty-layer">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 21h8M12 17v4M7 4h10M17 4v8a5 5 0 0 1-10 0V4" />
+          </svg>
+          <h3 class="state-title">Be the first on the leaderboard</h3>
+          <p class="state-desc">Start investing to earn your Investor Score and climb the rankings.</p>
+          <a href="/marketplace" class="ds-btn ds-btn--primary retry-btn" style="text-decoration:none;">Explore Marketplace</a>
+        </div>
+
+        <!-- 4. CONTENT STATE -->
+        <div id="lb-content-layer" class="lb-content-layer hidden">
+
+          <!-- Timeframe Toggle -->
+          <div class="lb-timeframe-bar">
+            <button class="ds-btn ds-btn--primary lb-tf-btn active" data-tf="alltime" onclick="switchTimeframe(this)">All Time</button>
+            <button class="ds-btn ds-btn--secondary lb-tf-btn" data-tf="monthly" onclick="switchTimeframe(this)">This Month</button>
+            <button class="ds-btn ds-btn--secondary lb-tf-btn" data-tf="weekly" onclick="switchTimeframe(this)">This Week</button>
+          </div>
+
+          <!-- Podium: Top 3 -->
+          <div class="lb-podium" id="lb-podium">
+            <!-- #2 -->
+            <div class="lb-podium-slot lb-podium-second" id="lb-podium-2">
+              <div class="lb-podium-avatar-wrap silver">
+                <img id="lb-podium-2-avatar" src="/images/Image.webp" alt="2nd place" class="lb-podium-avatar" />
+                <div class="lb-podium-medal">2</div>
+              </div>
+              <span id="lb-podium-2-name" class="lb-podium-name">—</span>
+              <span id="lb-podium-2-score" class="lb-podium-score">—</span>
+              <span id="lb-podium-2-tier" class="lb-podium-tier-badge"></span>
+            </div>
+            <!-- #1 -->
+            <div class="lb-podium-slot lb-podium-first" id="lb-podium-1">
+              <div class="lb-podium-crown">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
+                  <path d="M5 16h14v4H5z" />
+                </svg>
+              </div>
+              <div class="lb-podium-avatar-wrap gold">
+                <img id="lb-podium-1-avatar" src="/images/Image.webp" alt="1st place" class="lb-podium-avatar" />
+                <div class="lb-podium-medal">1</div>
+              </div>
+              <span id="lb-podium-1-name" class="lb-podium-name">—</span>
+              <span id="lb-podium-1-score" class="lb-podium-score">—</span>
+              <span id="lb-podium-1-tier" class="lb-podium-tier-badge"></span>
+            </div>
+            <!-- #3 -->
+            <div class="lb-podium-slot lb-podium-third" id="lb-podium-3">
+              <div class="lb-podium-avatar-wrap bronze">
+                <img id="lb-podium-3-avatar" src="/images/Image.webp" alt="3rd place" class="lb-podium-avatar" />
+                <div class="lb-podium-medal">3</div>
+              </div>
+              <span id="lb-podium-3-name" class="lb-podium-name">—</span>
+              <span id="lb-podium-3-score" class="lb-podium-score">—</span>
+              <span id="lb-podium-3-tier" class="lb-podium-tier-badge"></span>
+            </div>
+          </div>
+
+          <!-- Your Rank Card -->
+          <div class="lb-your-rank-card" id="lb-my-rank-card">
+            <div class="lb-yr-left">
+              <span class="lb-yr-label">Your Position</span>
+              <div class="lb-yr-rank-row">
+                <span class="lb-yr-rank" id="lb-my-rank">#—</span>
+                <span class="lb-yr-delta" id="lb-my-delta"></span>
+              </div>
+            </div>
+            <div class="lb-yr-center">
+              <span class="lb-yr-score-label">Total Score</span>
+              <span class="lb-yr-score" id="lb-my-score">0</span>
+            </div>
+            <div class="lb-yr-right">
+              <div class="lb-yr-breakdown" id="lb-my-breakdown">
+                <div class="lb-yr-bar-item">
+                  <span class="lb-yr-bar-label">Investment</span>
+                  <div class="lb-yr-bar ds-progress ds-progress--sm"><div class="lb-yr-bar-fill ds-progress__fill invest" id="lb-bar-invest" style="width: 0%"></div></div>
+                </div>
+                <div class="lb-yr-bar-item">
+                  <span class="lb-yr-bar-label">Referrals</span>
+                  <div class="lb-yr-bar ds-progress ds-progress--sm"><div class="lb-yr-bar-fill ds-progress__fill referral" id="lb-bar-referral" style="width: 0%"></div></div>
+                </div>
+                <div class="lb-yr-bar-item">
+                  <span class="lb-yr-bar-label">Tier</span>
+                  <div class="lb-yr-bar ds-progress ds-progress--sm"><div class="lb-yr-bar-fill ds-progress__fill tier" id="lb-bar-tier" style="width: 0%"></div></div>
+                </div>
+                <div class="lb-yr-bar-item">
+                  <span class="lb-yr-bar-label">Diversity</span>
+                  <div class="lb-yr-bar ds-progress ds-progress--sm"><div class="lb-yr-bar-fill ds-progress__fill diversity" id="lb-bar-diversity" style="width: 0%"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="lb-yr-visibility">
+              <label class="lb-toggle-label">
+                <input type="checkbox" id="lb-visibility-toggle" onchange="toggleVisibility(this)" />
+                <span class="lb-toggle-slider"></span>
+              </label>
+              <span class="lb-yr-vis-text">Show my name</span>
+            </div>
+          </div>
+
+          <!-- Rankings Table -->
+          <div class="lb-table-card">
+            <div class="lb-table-header">
+              <h3>Rankings</h3>
+              <div class="lb-table-filters">
+                <div class="lb-search-wrap">
+                  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" id="lb-search-input" placeholder="Search investor..." onkeyup="debounceSearch(event)" />
+                </div>
+                <select id="lb-tier-filter" class="lb-select" onchange="applyFilters()">
+                  <option value="">All Tiers</option>
+                  <option value="5">Premium</option>
+                  <option value="4">Elite</option>
+                  <option value="3">Pro</option>
+                  <option value="2">Plus</option>
+                  <option value="1">Intro</option>
+                </select>
+              </div>
+            </div>
+            <div class="lb-table-meta">
+              <span id="lb-total-participants" class="lb-participants-count"></span>
+            </div>
+            <table class="lb-table" id="lb-rankings-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Investor</th>
+                  <th>Score</th>
+                  <th>Tier</th>
+                </tr>
+              </thead>
+              <tbody id="lb-rankings-body">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+            <div class="lb-load-more" id="lb-load-more-container">
+              <button id="lb-load-more-btn" class="ds-btn ds-btn--secondary" onclick="loadMore()">Load More Rankings</button>
+            </div>
+          </div>
+
+        </div> <!-- end lb-content-layer -->
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/leaderboard.js?v=2"></script>
+  <script src="/static/js/legal-enhancements.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
+</body>
+
+</html>
