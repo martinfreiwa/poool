@@ -191,7 +191,8 @@
   }
 
   async function saveProfile() {
-    const btn = event && event.target;
+    const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
+    const btn = e && e.target;
     setButtonState(btn, true, "Saving...");
 
     const body = {
@@ -285,7 +286,8 @@
   }
 
   async function savePreferences() {
-    const btn = event && event.target;
+    const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
+    const btn = e && e.target;
     setButtonState(btn, true, "Saving...");
 
     const body = {
@@ -321,7 +323,8 @@
   }
 
   async function saveNotifications() {
-    const btn = event && event.target;
+    const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
+    const btn = e && e.target;
     setButtonState(btn, true, "Saving...");
 
     const body = {
@@ -482,7 +485,8 @@
 
   async function disable2FA() {
     if (!confirm("Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.")) return;
-    const btn = event && event.target;
+    const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
+    const btn = e && e.target;
     setButtonState(btn, true, "Disabling...");
 
     const res = await SettingsDataService.disable2FA();
