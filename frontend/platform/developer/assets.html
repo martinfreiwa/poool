@@ -55,17 +55,11 @@
             {% set funded_percentage = asset.funding_pct %}
           {% endif %}
           {% set is_funded = funded_percentage >= 100 %}
-          {% set status_label = "Under review" %}
-          {% set status_class = "badge-orange" %}
-          {% if asset.status == "approved" or asset.status == "active" %}
-            {% set status_label = "Approved" %}
-            {% set status_class = "badge-green" %}
-          {% elif asset.status == "funded" or is_funded %}
-            {% set status_label = "Fully Funded" %}
-            {% set status_class = "badge-green" %}
-          {% elif asset.status == "rejected" %}
-            {% set status_label = "Rejected" %}
-            {% set status_class = "badge-red" %}
+          {% set funding_status_label = "Available" %}
+          {% if asset.status == "funded" or is_funded %}{% set funding_status_label = "Funded" %}
+          {% elif asset.status == "rented" %}{% set funding_status_label = "Rented" %}
+          {% elif asset.status == "exited" %}{% set funding_status_label = "Exited" %}
+          {% elif asset.status == "upcoming" %}{% set funding_status_label = "Upcoming" %}
           {% endif %}
 
           {% set lease_label = "Standard Leasehold" %}
@@ -105,8 +99,8 @@
                 <div class="card-meta-divider"></div>
                 {% endif %}
                 <div class="card-meta-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{% if status_label == 'Approved' or status_label == 'Fully Funded' %}#03FF88{% elif status_label == 'Rejected' %}#FF4444{% else %}#F79009{% endif %}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                  <span style="color: {% if status_label == 'Approved' or status_label == 'Fully Funded' %}#027a48{% elif status_label == 'Rejected' %}#b42318{% else %}#b54708{% endif %}; font-weight: 500;">{{ status_label }}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  <span>{{ funding_status_label }}</span>
                 </div>
                 {% if asset.city %}
                 <div class="card-meta-divider"></div>
