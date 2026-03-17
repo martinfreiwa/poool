@@ -1,0 +1,688 @@
+{% with title="Property Details", extra_css=['property-detail', 'marketplace', 'property-detail-mobile', 'mobile-investment-type', 'mobile-funding-timeline', 'mobile-leasing-strategy', 'mobile-financial', 'mobile-location', 'mobile-developer', 'mobile-documents', 'mobile-risk-notification', 'mobile-faq', 'mobile-contact', 'mobile-similar-properties', 'mobile-youtube-modal'], extra_js=['property-detail', 'property-detail-cart', 'property-price-sticky', 'profile-dropdown', 'marketplace', 'legal-enhancements', 'mobile-navigation', 'property-detail-mobile', 'mobile-calculator', 'mobile-financial', 'mobile-documents', 'mobile-faq'] %}{% include "components/head.html" %}{% endwith %}
+  <body class="app-body fouc-guard">
+    {% include 'components/mobile-menu.html' %}
+    <div id="app-wrapper" class="app-wrapper">
+      <div id="property-page-sidebar" class="property-page-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+      <!-- Main Content -->
+      <main id="app-content" class="ds-main app-content">
+        <!-- Property Detail Content -->
+        <div class="property-detail-wrapper">
+          <div class="property-detail-container">
+            <div class="property-detail-content">
+              <!-- 1. Breadcrumbs -->
+              <nav id="property-breadcrumbs">
+                <div class="breadcrumb-button-base hidden">
+                  <svg class="chevron-right hidden" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 12L10 8L6 4" stroke="#D5D7DA" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"></path>
+                  </svg>
+                </div>
+                <div class="breadcrumb-button-base">
+                  <span class="breadcrumb-text">Marketplace</span>
+                </div>
+                <svg class="chevron-right" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 12L10 8L6 4" stroke="#D5D7DA" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <div class="breadcrumb-button-base hidden"></div>
+                <svg class="chevron-right hidden" width="16" height="16" viewBox="0 0 16 16" fill="none"></svg>
+                <div class="breadcrumb-button-base hidden"></div>
+                <svg class="chevron-right hidden" width="16" height="16" viewBox="0 0 16 16" fill="none"></svg>
+                <div class="breadcrumb-button-base current">
+                  <span class="breadcrumb-text-current">{{ asset.title | default('Property Details') }}</span>
+                </div>
+              </nav>
+
+              <!-- 2. Top Action Button -->
+              <button id="property-action-button"><span>Share Property</span></button>
+
+              <!-- 3. Image Gallery -->
+              {% include 'components/property/gallery.html' %}
+
+              <!-- 9. Property Main Content Card -->
+              <div id="property-main-card">
+                <!-- 1. Heading and Icon Section -->
+                <div id="property-heading-section" class="heading-and-icon">
+                  <h1 id="property-title">{{ asset.title | default('Modern Architectural Villa in Central Denpasar') }}</h1>
+                </div>
+
+                <!-- 2. Categories Section -->
+                <div id="property-categories" class="categories-section">
+                  <div class="category-badge">
+                    <img loading="lazy" src="/images/Bed.svg" alt="Beds" class="badge-icon" width="24" height="24" />
+                    <span class="badge-text">{{ asset.bedrooms | default(4) }}</span>
+                  </div>
+                  <div class="category-separator"></div>
+                  <div class="category-badge">
+                    <img loading="lazy" src="/images/bookmark-check.svg" alt="Ready" class="badge-icon" width="16" height="16" />
+                    <span class="badge-text">Ready</span>
+                  </div>
+                  <div class="category-separator"></div>
+                  <div class="category-badge">
+                    <img loading="lazy" src="/images/prop-details/maximize-02.svg" alt="Area" class="badge-icon" width="16" height="16" />
+                    <span class="badge-text">1,376 Sq Ft</span>
+                  </div>
+                  <div class="category-separator"></div>
+                  <div class="category-badge">
+                    <img loading="lazy" src="/images/prop-details/markerpin.svg" alt="Location" class="badge-icon" width="16" height="16" />
+                    <span class="badge-text" id="property-location">{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</span>
+                  </div>
+                </div>
+
+                <!-- 3. Info Div Section -->
+                <div id="property-info-div" class="info-div">
+                  <div class="info-badge">
+                    <div class="info-badge-icon">
+                      <img loading="lazy" src="/images/prop-details/ID.webp" alt="Indonesia" width="36" height="36" />
+                    </div>
+                    <div class="info-badge-text">
+                      <h4>{{ asset.location_country | default('Indonesia') }}, {{ asset.location_city | default('Bali') }}</h4>
+                      <p>A mature real estate market with a high return on investment</p>
+                    </div>
+                  </div>
+                  <div class="info-badge">
+                    <div class="info-badge-icon">
+                      <img loading="lazy" src="/images/prop-details/house.webp" alt="Rented" width="36" height="36" />
+                    </div>
+                    <div class="info-badge-text">
+                      <h4>Rented</h4>
+                      <p>Currently occupied and professionally managed by our team</p>
+                    </div>
+                  </div>
+                  <div class="info-badge">
+                    <div class="info-badge-icon">
+                      <img loading="lazy" src="/images/prop-details/coins-stacked-02.webp" alt="Rent" width="36" height="36" />
+                    </div>
+                    <div class="info-badge-text">
+                      <h4>Current rent is USD 5,479 per month</h4>
+                      <p>Distributed monthly among all investors after standard charges and fees</p>
+                    </div>
+                  </div>
+                  <div class="info-badge">
+                    <div class="info-badge-icon">
+                      <img loading="lazy" src="/images/prop-details/line-chart-up-02.webp" alt="Yield" width="36" height="36" />
+                    </div>
+                    <div class="info-badge-text">
+                      <h4>7.45% annual gross yield</h4>
+                      <p>With a net yield of 5.49 and a price per square foot of USD 1,344</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- BLOCKCHAIN: Security Token Info Box -->
+                <div id="blockchain-info-section" style="
+                  margin-top: 24px;
+                  padding: 20px 24px;
+                  background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(16, 185, 129, 0.04));
+                  border: 1px solid rgba(99, 102, 241, 0.15);
+                  border-radius: 16px;
+                  display: flex;
+                  gap: 16px;
+                  align-items: flex-start;
+                ">
+                  <div style="
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 12px;
+                    background: rgba(99, 102, 241, 0.1);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                  ">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="M2 17l10 5 10-5" />
+                      <path d="M2 12l10 5 10-5" />
+                    </svg>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <h4 style="font-size: 14px; font-weight: 700; color: #181D27; margin: 0 0 6px;">
+                      🔒 Blockchain-Secured Asset
+                    </h4>
+                    <p style="font-size: 13px; color: #535862; margin: 0 0 12px; line-height: 1.5;">
+                      This property is tokenized as a Security Token (ERC-3643) on the Base blockchain.
+                      Your ownership is cryptographically secured and independently verifiable.
+                    </p>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap; font-size: 12px;">
+                      <div>
+                        <span style="color: #717680;">Contract:</span>
+                        <a href="https://basescan.org/address/0xABC123456789abcdef0123456789ABCDEF012345" target="_blank"
+                          style="font-family: 'SF Mono', monospace; color: #6366f1; text-decoration: none;">
+                          0xABC1...2345 ↗
+                        </a>
+                      </div>
+                      <div>
+                        <span style="color: #717680;">Network:</span>
+                        <span style="font-weight: 600; color: #181D27;">Base (Ethereum L2)</span>
+                      </div>
+                    </div>
+                    <!-- Token Supply Bar -->
+                    <div style="margin-top: 12px;">
+                      <div style="display: flex; justify-content: space-between; font-size: 11px; color: #717680; margin-bottom: 4px;">
+                        <span>2,950 of 3,000 tokens available</span>
+                        <span style="font-weight: 600; color: #6366f1;">1.7% sold</span>
+                      </div>
+                      <div style="height: 6px; border-radius: 3px; background: #E9EAEB; overflow: hidden;">
+                        <div style="width: 1.7%; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #6366f1, #10b981);"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4. How it Works -->
+                {% include 'components/property/how-it-works.html' %}
+
+                <!-- 5. Property Overview Section -->
+                <div id="property-overview-section">
+                  <h2 id="property-heading">Property Overview</h2>
+                  <div id="property-video">
+                    <div class="video-container" id="video-play-button">
+                      <img class="video-thumbnail" src="https://img.youtube.com/vi/GTSeeou3Wg8/hqdefault.jpg" alt="Property video" loading="lazy" />
+                      <div class="play-button">
+                        <svg class="play-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                          <path d="M4 2L18 10L4 18V2Z" fill="white"></path>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="property-description" class="property-about-description">
+                    <p>{{ asset.short_description | default('Contemporary villa steps from Echo Beach, Canggu\'s most popular surf break.') }}</p>
+                    <p>Check out Villa Janoor, a stylish 3-bedroom villa in the popular Batu Belig area. It's the perfect spot for a modern and luxurious getaway in one of Bali's liveliest neighborhoods.</p>
+                    <p>Just a short walk to Batu Belig Beach and a quick drive to the area's buzzing restaurants and nightlife, Villa Janoor offers the best of both worlds—convenience and peace.</p>
+                    <p>This lovely villa sits on a 300-square-meter lot with 220 square meters of living space. It features three roomy bedrooms, three and a half bathrooms, a cozy lounge, and a private swimming pool. The open living area flows right into the dining space and fully equipped kitchen, making it a great place to chill or host friends.</p>
+                  </div>
+                </div>
+
+                <!-- 6. Investment Type -->
+                {% include 'components/property/investment-type.html' %}
+
+                <!-- 7. Funding Timeline -->
+                {% include 'components/property/funding-timeline.html' %}
+
+                <!-- 8. Leasing Strategy -->
+                {% include 'components/property/leasing-strategy.html' %}
+
+                <!-- 9. Investment Calculator -->
+                <div id="calculator-section">
+                  <div class="section-header">
+                    <img loading="lazy" src="/static/images/Portfolio asset details/settings-04.svg" alt="Investment Calculator" class="section-icon" width="24" height="24" />
+                    <h2>Investment Calculator</h2>
+                  </div>
+                  <div class="calculator-div">
+                    <div class="calc-gradient-1"></div>
+                    <div class="calc-gradient-2"></div>
+                    <div class="calc-main-title">Projected investment return of</div>
+                    <div class="calc-main-value" id="calc-main-value">USD 121,051 in 5 years</div>
+                    <!-- Statistics Card -->
+                    <div class="calc-statistics-card" id="calc-statistics-card">
+                      <div class="calc-stat-item">
+                        <div class="calc-stat-legend">
+                          <div class="calc-stat-color investment"></div>
+                          <span class="calc-stat-label">Investment</span>
+                        </div>
+                        <div class="calc-stat-value" id="calc-stat-investment">$100,000</div>
+                      </div>
+                      <div class="calc-stat-item">
+                        <div class="calc-stat-legend">
+                          <div class="calc-stat-color appreciation"></div>
+                          <span class="calc-stat-label">Value appreciation</span>
+                        </div>
+                        <div class="calc-stat-value" id="calc-stat-appreciation">$61,051</div>
+                      </div>
+                      <div class="calc-stat-item">
+                        <div class="calc-stat-legend">
+                          <div class="calc-stat-color rental"></div>
+                          <span class="calc-stat-label">Total rental income</span>
+                        </div>
+                        <div class="calc-stat-value" id="calc-stat-rental">$60,000</div>
+                      </div>
+                    </div>
+                    <div class="calc-chart-container">
+                      <div class="calc-chart-content">
+                        <div class="calc-y-axis" id="calc-y-axis">
+                          <div class="calc-y-axis-line"><span class="calc-y-axis-number">150k</span><div class="calc-y-axis-divider"></div></div>
+                          <div class="calc-y-axis-line"><span class="calc-y-axis-number">120k</span><div class="calc-y-axis-divider"></div></div>
+                          <div class="calc-y-axis-line"><span class="calc-y-axis-number">90k</span><div class="calc-y-axis-divider"></div></div>
+                          <div class="calc-y-axis-line"><span class="calc-y-axis-number">60k</span><div class="calc-y-axis-divider"></div></div>
+                          <div class="calc-y-axis-line"><span class="calc-y-axis-number">30k</span><div class="calc-y-axis-divider"></div></div>
+                          <div class="calc-y-axis-line"><span class="calc-y-axis-number">0</span><div class="calc-y-axis-divider"></div></div>
+                        </div>
+                        <div class="calc-chart-bars" id="calc-chart-bars">
+                          <div class="calc-bar"><div class="calc-chart-bar"><div class="calc-series series-3"></div><div class="calc-series series-2"></div><div class="calc-series series-1"></div></div></div>
+                          <div class="calc-bar"><div class="calc-chart-bar"><div class="calc-series series-3"></div><div class="calc-series series-2"></div><div class="calc-series series-1"></div></div></div>
+                          <div class="calc-bar"><div class="calc-chart-bar"><div class="calc-series series-3"></div><div class="calc-series series-2"></div><div class="calc-series series-1"></div></div></div>
+                          <div class="calc-bar"><div class="calc-chart-bar"><div class="calc-series series-3"></div><div class="calc-series series-2"></div><div class="calc-series series-1"></div></div></div>
+                          <div class="calc-bar"><div class="calc-chart-bar"><div class="calc-series series-3"></div><div class="calc-series series-2"></div><div class="calc-series series-1"></div></div></div>
+                        </div>
+                        <div class="calc-x-axis" id="calc-x-axis">
+                          <span>2026</span><span>2027</span><span>2028</span><span>2029</span><span>2030</span>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Sliders -->
+                    <div class="calc-slider-section slider-1">
+                      <div class="calc-slider-labels"><span>Amount of Investment</span><span class="calc-slider-value" id="calc-slider-value-1">USD 100,000</span></div>
+                      <input type="range" class="calc-slider" id="calc-slider-1" min="500" max="590000" value="100000" />
+                      <div class="calc-slider-limits"><span>$500</span><span>$590,000</span></div>
+                    </div>
+                    <div class="calc-slider-section slider-2">
+                      <div class="calc-slider-labels">
+                        <span class="calc-slider-label-wrapper">Property value growth (1 year)
+                          <span class="calc-help-tooltip-container">
+                            <svg class="calc-help-tooltip-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <circle cx="8" cy="8" r="7" stroke="#A4A7AE" stroke-width="1.33"></circle>
+                              <path d="M6 6C6 4.89543 6.89543 4 8 4C9.10457 4 10 4.89543 10 6C10 7.10457 9.10457 8 8 8V9" stroke="#A4A7AE" stroke-width="1.33" stroke-linecap="round"></path>
+                              <circle cx="8" cy="11" r="0.5" fill="#A4A7AE"></circle>
+                            </svg>
+                            <span class="calc-help-tooltip"><span class="calc-help-tooltip-text">Estimated annual rate at which the property value is expected to increase based on market data and historical performance.</span></span>
+                          </span>
+                        </span>
+                        <span class="calc-slider-value" id="calc-slider-value-2">10%</span>
+                      </div>
+                      <input type="range" class="calc-slider" id="calc-slider-2" min="1" max="20" value="10" />
+                      <div class="calc-slider-limits"><span>1%</span><span>20%</span></div>
+                    </div>
+                    <div class="calc-slider-section slider-3">
+                      <div class="calc-slider-labels">
+                        <span class="calc-slider-label-wrapper">Expected annual rental yield
+                          <span class="calc-help-tooltip-container">
+                            <svg class="calc-help-tooltip-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <circle cx="8" cy="8" r="7" stroke="#A4A7AE" stroke-width="1.33"></circle>
+                              <path d="M6 6C6 4.89543 6.89543 4 8 4C9.10457 4 10 4.89543 10 6C10 7.10457 9.10457 8 8 8V9" stroke="#A4A7AE" stroke-width="1.33" stroke-linecap="round"></path>
+                              <circle cx="8" cy="11" r="0.5" fill="#A4A7AE"></circle>
+                            </svg>
+                            <span class="calc-help-tooltip"><span class="calc-help-tooltip-text">The projected annual rental income as a percentage of the property value, based on current market conditions.</span></span>
+                          </span>
+                        </span>
+                        <span class="calc-slider-value" id="calc-slider-value-3">12%</span>
+                      </div>
+                      <input type="range" class="calc-slider" id="calc-slider-3" min="1" max="20" value="12" step="0.01" />
+                      <div class="calc-slider-limits"><span>1%</span><span>20%</span></div>
+                    </div>
+                    <!-- Disclaimer -->
+                    <div class="calc-help-button">
+                      <span class="calc-help-text">Default values are provided by analytics company REID</span>
+                      <svg class="calc-help-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <circle cx="6" cy="6" r="5" stroke="#A4A7AE" stroke-width="1.33" fill="none"></circle>
+                        <path d="M4.5 4.5C4.5 3.67157 5.17157 3 6 3C6.82843 3 7.5 3.67157 7.5 4.5C7.5 5.32843 6.82843 6 6 6V7" stroke="#A4A7AE" stroke-width="1.33" stroke-linecap="round"></path>
+                        <circle cx="6" cy="8.5" r="0.5" fill="#A4A7AE"></circle>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 10. Financials Section -->
+                <div class="financial-section">
+                  <div class="financial-header">
+                    <img loading="lazy" src="/static/images/Portfolio asset details/coins-stacked-02.svg" alt="Financials" class="financial-icon" width="24" height="24" />
+                    <h2 class="financial-title">Financials</h2>
+                  </div>
+                  <div class="financial-content">
+                    <div class="financial-tabs">
+                      <button class="financial-tab active" data-tab="property-cost"><span class="tab-text">Property cost</span></button>
+                      <button class="financial-tab" data-tab="rental-income"><span class="tab-text">Rental income (Year 1)</span></button>
+                    </div>
+                    <div class="financial-info" id="property-cost-content">
+                      <div class="financial-row">
+                        <span class="financial-label">Property price</span>
+                        <div class="financial-value-group"><span class="financial-value">USD 895,000</span></div>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">Transaction costs</span>
+                        <div class="financial-value-group"><span class="financial-value">+ USD 212,146</span></div>
+                      </div>
+                      <div class="financial-divider"></div>
+                      <div class="financial-row">
+                        <span class="financial-label">Investment cost</span>
+                        <div class="financial-value-group"><span class="financial-value total">= USD 1,062,146</span></div>
+                      </div>
+                      <div class="financial-info-bar">
+                        <span class="info-bar-text">Includes POOOL's 5% Fee</span>
+                      </div>
+                    </div>
+                    <div class="financial-info" id="rental-income-content" style="display: none">
+                      <div class="financial-row">
+                        <span class="financial-label">Monthly rental income</span>
+                        <div class="financial-value-group"><span class="financial-value">USD 4,100</span></div>
+                      </div>
+                      <div class="financial-row">
+                        <span class="financial-label">Management fees</span>
+                        <div class="financial-value-group"><span class="financial-value">- USD 410</span></div>
+                      </div>
+                      <div class="financial-divider"></div>
+                      <div class="financial-row">
+                        <span class="financial-label">Net rental income (Year 1)</span>
+                        <div class="financial-value-group"><span class="financial-value total">= USD 44,280</span></div>
+                      </div>
+                      <div class="financial-info-bar">
+                        <span class="info-bar-text">Based on 5.5% annual rental yield</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 11. Location Section -->
+                <div class="location-section">
+                  <div class="location-header">
+                    <img loading="lazy" src="/static/images/Portfolio asset details/marker-pin-04.svg" alt="Location" class="location-icon" width="24" height="24" />
+                    <h2 class="location-title">Location</h2>
+                  </div>
+                  <h3 class="location-subtitle">{{ asset.location_city | default('Uluwatu') }}, {{ asset.location_country | default('Bali, Indonesia') }}</h3>
+                  <div class="location-map">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d31543.27726847932!2d115.08739467431641!3d-8.809396989999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd24ffc20cb8191%3A0xcb98d1ba7db0495!2sUluwatu%2C%20South%20Kuta%2C%20Badung%20Regency%2C%20Bali%2C%20Indonesia!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid"
+                      width="100%" height="400" style="border: 0; border-radius: 12px" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                      title="Property Location - {{ asset.location_city | default('Uluwatu') }}, {{ asset.location_country | default('Bali, Indonesia') }}"></iframe>
+                  </div>
+                  <p class="location-description">
+                    Uluwatu is one of Bali's most prestigious and sought-after areas, perched on dramatic clifftops overlooking the Indian Ocean. This exclusive enclave in the southern peninsula of Bali is renowned for its world-class surf breaks, pristine beaches, and luxury resorts. The area offers a perfect blend of natural beauty and modern amenities, with stunning ocean views, tropical landscapes, and proximity to Bali's finest beach clubs and restaurants.
+                  </p>
+                </div>
+
+                <!-- 12. Property Developer -->
+                <div id="developer-section" class="developer-section">
+                  <div class="developer-header">
+                    <img loading="lazy" src="/static/images/Portfolio asset details/building-03.svg" alt="Property Developer" class="developer-icon" width="24" height="24" />
+                    <h3 class="developer-heading">Property developer</h3>
+                  </div>
+                  <div class="developer-card">
+                    <div class="developer-logo-wrapper">
+                      <div class="developer-logo"><img src="/images/alexvillas.webp" alt="Alex Villas Logo" /></div>
+                    </div>
+                    <div class="developer-text">
+                      <h4 class="developer-name">ALEX VILLAS</h4>
+                      <p class="developer-description">At Alex Villas, we believe in complete control over the quality of our projects.<br /><br />That's why we've taken the innovative step of establishing our own production<br />facilities, including a concrete factory and a furniture factory.</p>
+                    </div>
+                    <div class="developer-social">
+                      <div class="developer-website">
+                        <span class="social-label">Website</span>
+                        <a href="https://alexvillasgroup.com" class="website-link" target="_blank">
+                          <svg class="globe-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="8" r="7" stroke="#0000FF" stroke-width="1.5"></circle>
+                            <path d="M2 8H14M8 1C8 1 5 4 5 8C5 12 8 15 8 15C8 15 11 12 11 8C11 4 8 1 8 1Z" stroke="#0000FF" stroke-width="1.5"></path>
+                          </svg>
+                          <span>alexvillasgroup.com</span>
+                        </a>
+                      </div>
+                      <div class="developer-socials">
+                        <span class="social-label">Social media</span>
+                        <div class="social-icons">
+                          <a href="#" class="social-icon facebook"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M20 10C20 4.477 15.523 0 10 0S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z" fill="#0000FF"></path></svg></a>
+                          <a href="#" class="social-icon instagram"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="4" stroke="#0000FF" stroke-width="2"></rect><circle cx="10" cy="10" r="3" stroke="#0000FF" stroke-width="2"></circle><circle cx="14.5" cy="5.5" r="1.5" fill="#0000FF"></circle></svg></a>
+                          <a href="#" class="social-icon youtube"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M19.543 5.491C19.353 4.766 18.784 4.197 18.059 4.007C16.728 3.667 10 3.667 10 3.667s-6.728 0-8.059.34C1.216 4.197.647 4.766.457 5.491.167 6.822.167 10 .167 10s0 3.178.29 4.509c.19.725.759 1.294 1.484 1.484C3.272 16.333 10 16.333 10 16.333s6.728 0 8.059-.34c.725-.19 1.294-.759 1.484-1.484.29-1.331.29-4.509.29-4.509s0-3.178-.29-4.509zM8 12.5V7.5l5.5 2.5L8 12.5z" fill="#0000FF"></path></svg></a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 13. Documents Section -->
+                <div id="documents-section" class="documents-section">
+                  <div class="documents-header">
+                    <img loading="lazy" src="/static/images/Portfolio%20asset%20details/Star%205.svg" alt="Documents" class="documents-icon" width="16" height="16" />
+                    <h3 class="documents-heading">Documents</h3>
+                  </div>
+                  <div class="documents-tabs">
+                    <button class="documents-tab active" id="tab-smart-contract"><span class="tab-text">Smart Contract</span></button>
+                    <button class="documents-tab" id="tab-due-diligence"><span class="tab-text">Due Diligence</span></button>
+                    <button class="documents-tab" id="tab-property"><span class="tab-text">Property</span></button>
+                  </div>
+                  <div class="documents-list">
+                    <div class="document-item">
+                      <div class="document-info">
+                        <div class="document-icon"><img loading="lazy" src="/static/images/Portfolio asset details/File type icon.svg" alt="Document" width="24" height="24" /></div>
+                        <span class="document-name">Smart Contract</span>
+                      </div>
+                      <button class="download-button"><img loading="lazy" src="/static/images/Portfolio asset details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
+                    </div>
+                    <div class="document-item">
+                      <div class="document-info">
+                        <div class="document-icon"><img loading="lazy" src="/static/images/Portfolio asset details/File type icon.svg" alt="Document" width="24" height="24" /></div>
+                        <span class="document-name">Token Registration</span>
+                      </div>
+                      <button class="download-button"><img loading="lazy" src="/static/images/Portfolio asset details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
+                    </div>
+                    <div class="document-item">
+                      <div class="document-info">
+                        <div class="document-icon"><img loading="lazy" src="/static/images/Portfolio asset details/File type icon.svg" alt="Document" width="24" height="24" /></div>
+                        <span class="document-name">Articles_of_Organization_LLC.pdf</span>
+                      </div>
+                      <button class="download-button"><img loading="lazy" src="/static/images/Portfolio asset details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 14. Risk Notification -->
+                {% include 'components/property/risk-notification.html' %}
+
+                <!-- 15. FAQ -->
+                {% include 'components/property/faq.html' %}
+
+                <!-- 16. Contact -->
+                {% include 'components/property/contact.html' %}
+
+              </div>
+              <!-- End of property-main-card -->
+
+              <!-- Price Card (Sidebar on desktop) -->
+              <div id="property-price-card">
+                <div class="price-card-content">
+                  <div class="price-card-heading">
+                    <div class="price-card-main-content">
+                      <div class="price-card-text-section">
+                        <div class="price-card-icon">
+                          <div class="icon-background"></div>
+                          <div class="icon-glass">
+                            <img loading="lazy" src="/static/images/Portfolio asset details/bank-note-03.svg" alt="Property Price" width="20" height="20" />
+                          </div>
+                        </div>
+                        <div class="price-card-supporting-text">Property price</div>
+                        <div class="price-card-price-text">
+                          <span class="price-currency">USD</span>
+                          <span class="price-amount">{{ asset.total_value_usd }}</span>
+                        </div>
+                      </div>
+                      <div class="price-card-loading-bar">
+                        <div class="loading-container"><div class="loading-fill" style="width: {{ asset.funded_percentage_display }}%"></div></div>
+                        <div class="loading-text">
+                          <div class="funded-text">{{ asset.funded_percentage_display }}% funded</div>
+                          <div class="available-text-wrapper">
+                            <span class="available-text">USD {{ asset.available_usd }} available</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="price-card-investors">
+                      <div class="investors-left">
+                        <img loading="lazy" src="/static/images/Portfolio asset details/users-check.svg" alt="Investors" class="users-icon" width="20" height="20" />
+                        <span class="investors-number">{{ asset.investor_count }}</span>
+                        <span class="investors-label">investors</span>
+                      </div>
+                      <div class="price-per-sqft-badge">
+                        <img loading="lazy" src="/static/images/Portfolio asset details/currency-dollar-circle.svg" alt="Dollar" class="dollar-icon" width="12" height="12" />
+                        <span class="badge-text">USD {{ asset.price_per_sqft }}</span>
+                        <span class="badge-suffix">/sqft</span>
+                      </div>
+                    </div>
+                    <div class="price-card-returns">
+                      <div class="returns-row">
+                        <span class="returns-label">5 year total return</span>
+                        <span class="returns-value">{{ asset.five_year_total_return_percent }}%</span>
+                      </div>
+                      <div class="returns-row">
+                        <span class="returns-label">Projected return</span>
+                        <span class="returns-value">{{ asset.projected_return_percent }}%</span>
+                      </div>
+                      <div class="returns-row">
+                        <span class="returns-label">Projected annualised net return</span>
+                        <span class="returns-value">{{ asset.annualised_net_return_percent }}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="price-card-investment">
+                    <div class="investment-input">
+                      <div class="input-dropdown"><span class="currency-label">USD</span></div>
+                      <div class="input-field">
+                        <input type="text" id="investment-amount-input" value="2,000" class="amount-input" />
+                      </div>
+                    </div>
+                    <button class="add-to-cart-btn" id="add-to-cart-main-btn">
+                      <span class="btn-text">Add to cart</span>
+                    </button>
+                  </div>
+                  <div class="price-card-buttons">
+                    <div class="amount-buttons">
+                      <button class="amount-badge quick-add-btn" data-amount="500">+ USD 500</button>
+                      <button class="amount-badge quick-add-btn" data-amount="2000">+ USD 2000</button>
+                      <button class="amount-badge quick-add-btn" data-amount="5000">+ USD 5000</button>
+                    </div>
+                    <div class="disclaimer-text">You won't be charged yet</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Similar Properties -->
+              <div class="similar-properties-wrapper">
+                <h3 class="similar-heading">Similar Properties</h3>
+                <div class="section-divider"></div>
+                <div class="similar-properties-section">
+                  <div id="property-grid-container" class="property-grid-container">
+                    <div id="property-grid-content" class="property-grid-content">
+                      <!-- Similar properties will be loaded dynamically -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Mobile Content (visible only on mobile, outside app-wrapper) -->
+    <div class="mobile-property-content">
+      <div class="mobile-image-gallery">
+        <div class="mobile-gallery-container">
+          <button class="lightbox-prev mobile-gallery-prev" onclick="scrollGallery(-1)" aria-label="Previous image">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+          <button class="lightbox-next mobile-gallery-next" onclick="scrollGallery(1)" aria-label="Next image">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+          <div class="mobile-gallery-scroll" id="mobileGalleryScroll">
+            <div class="mobile-gallery-slide" data-index="0">
+              <img src="{{ asset.cover_image_url | default('/images/villa8.webp') }}" alt="{{ asset.title }}" class="mobile-gallery-img gallery-clickable" loading="lazy" data-lightbox-index="0" />
+            </div>
+            <div class="mobile-gallery-slide" data-index="1">
+              <img src="/images/villa3_2.webp" alt="{{ asset.title }} interior" class="mobile-gallery-img gallery-clickable" loading="lazy" data-lightbox-index="1" />
+            </div>
+          </div>
+          <div class="mobile-gallery-indicators" id="mobileGalleryIndicators">
+            <span class="mobile-gallery-dot gallery-dot-clickable active" data-slide-index="0"></span>
+            <span class="mobile-gallery-dot gallery-dot-clickable" data-slide-index="1"></span>
+          </div>
+        </div>
+      </div>
+      <div id="mobile-property-price-card" class="mobile-price-card">
+        <div class="mobile-card-buttons">
+          <button class="mobile-gallery-btn" onclick="openLightbox(0)">
+            <img loading="lazy" src="/images/prop-details/Iconimage.webp" alt="Photos" width="20" height="20" />
+            <span>12 photos</span>
+          </button>
+          <div class="mobile-btn-divider"></div>
+          <button class="mobile-gallery-btn" onclick="openVirtualTour()">
+            <img loading="lazy" src="/images/prop-details/Iconcube.webp" alt="Virtual tour" width="20" height="20" />
+            <span>Virtual tour</span>
+          </button>
+        </div>
+        <div class="mobile-card-content">
+          <div class="mobile-card-heading">
+            <div class="mobile-main-content">
+              <div class="mobile-text-section">
+                <div class="mobile-card-icon">
+                  <div class="icon-background"></div>
+                  <div class="icon-glass">
+                    <img loading="lazy" src="/static/images/Portfolio asset details/bank-note-03.svg" alt="Property Price" width="20" height="20" />
+                  </div>
+                </div>
+                <div class="mobile-supporting-text">Property price</div>
+                <div class="mobile-price-text">
+                  <span class="price-currency">USD</span>
+                  <span class="price-amount">{{ asset.total_value_usd }}</span>
+                </div>
+              </div>
+              <div class="mobile-loading-bar">
+                <div class="loading-container"><div class="loading-fill" style="width: {{ asset.funded_percentage_display }}%"></div></div>
+                <div class="loading-text">
+                  <div class="funded-text">{{ asset.funded_percentage_display }}% funded</div>
+                  <div class="available-text-wrapper">
+                    <span class="available-text">USD {{ asset.available_usd }} available</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mobile-investors">
+              <div class="investors-left">
+                <img loading="lazy" src="/static/images/Portfolio asset details/users-check.svg" alt="Investors" class="users-icon" width="20" height="20" />
+                <span class="investors-number">{{ asset.investor_count }}</span>
+                <span class="investors-label">investors</span>
+              </div>
+              <div class="price-per-sqft-badge">
+                <img loading="lazy" src="/static/images/Portfolio asset details/currency-dollar-circle.svg" alt="Dollar" class="dollar-icon" width="12" height="12" />
+                <span class="badge-text">USD {{ asset.price_per_sqft }}</span>
+                <span class="badge-suffix">/sqft</span>
+              </div>
+            </div>
+            <div class="mobile-returns">
+              <div class="returns-row"><span class="returns-label">5 year total return</span><span class="returns-value">{{ asset.five_year_total_return_percent }}%</span></div>
+              <div class="returns-row"><span class="returns-label">Projected return</span><span class="returns-value">{{ asset.projected_return_percent }}%</span></div>
+              <div class="returns-row"><span class="returns-label">Projected annualised net return</span><span class="returns-value">{{ asset.annualised_net_return_percent }}%</span></div>
+            </div>
+          </div>
+          <div class="mobile-investment">
+            <div class="investment-input">
+              <div class="input-dropdown"><span class="currency-label">USD</span></div>
+              <div class="input-field"><input type="text" id="mobile-investment-amount" value="2,000" class="amount-input" /></div>
+            </div>
+            <button class="add-to-cart-btn" id="mobile-add-to-cart-btn"><span class="btn-text">Add to cart</span></button>
+          </div>
+          <div class="mobile-buttons">
+            <div class="amount-buttons">
+              <button class="amount-badge mobile-quick-btn" data-amount="500">+ USD 500</button>
+              <button class="amount-badge mobile-quick-btn" data-amount="2000">+ USD 2000</button>
+              <button class="amount-badge mobile-quick-btn" data-amount="5000">+ USD 5000</button>
+            </div>
+            <div class="disclaimer-text">You won't be charged yet</div>
+          </div>
+        </div>
+      </div>
+      <div class="mobile-property-details">
+        <div class="mobile-details-header">
+          <h1 class="mobile-property-title">{{ asset.title | default('Villa Janoor, Uluwatu - Golf Estates residence, Bay area') }}</h1>
+        </div>
+        <div class="mobile-categories">
+          <div class="mobile-category-badge"><img loading="lazy" src="/images/Bed.svg" alt="Beds" width="24" height="24" /><span>{{ asset.bedrooms | default(4) }}</span></div>
+          <div class="mobile-category-divider"></div>
+          <div class="mobile-category-badge"><img loading="lazy" src="/images/bookmark-check.svg" alt="Ready" width="16" height="16" /><span>Ready</span></div>
+          <div class="mobile-category-divider"></div>
+          <div class="mobile-category-badge"><img loading="lazy" src="/images/prop-details/maximize-02.svg" alt="Area" width="16" height="16" /><span>1,376 Sq Ft</span></div>
+          <div class="mobile-category-divider"></div>
+          <div class="mobile-category-badge"><img loading="lazy" src="/images/prop-details/markerpin.svg" alt="Location" width="16" height="16" /><span>{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modals -->
+    {% include 'components/property/modals.html' %}
+
+  <script>
+    function openVirtualTour() {
+      var toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181D27;color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+      toast.textContent = 'Virtual tour coming soon!';
+      document.body.appendChild(toast);
+      setTimeout(function() { toast.remove(); }, 3000);
+    }
+  </script>
+  </body>
+</html>
