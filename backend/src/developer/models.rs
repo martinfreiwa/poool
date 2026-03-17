@@ -2,9 +2,13 @@
 use serde::{Deserialize, Serialize};
 
 /// Form payload for creating a new draft asset.
+/// Financial fields are optional with defaults so that "Save & Exit" works
+/// even when the user hasn't filled in pricing yet.
 #[derive(Debug, Deserialize)]
 pub struct CreateDraftAsset {
+    #[serde(default = "default_draft_title")]
     pub title: String,
+    #[serde(default = "default_asset_type")]
     pub asset_type: String,
     // Property details
     pub property_type: Option<String>,
@@ -20,10 +24,29 @@ pub struct CreateDraftAsset {
     pub bathrooms: Option<i32>,
     pub construction_status: Option<String>,
     pub year_built: Option<i32>,
-    // Financials
+    // Financials — default to 0 so Save & Exit doesn't fail on partial forms
+    #[serde(default)]
     pub total_value_cents: i64,
+    #[serde(default = "default_token_price")]
     pub token_price_cents: i64,
+    #[serde(default = "default_tokens_total")]
     pub tokens_total: i64,
+}
+
+fn default_draft_title() -> String {
+    "Untitled Draft".to_string()
+}
+
+fn default_asset_type() -> String {
+    "real_estate".to_string()
+}
+
+fn default_token_price() -> i64 {
+    50000 // $500 minimum in cents
+}
+
+fn default_tokens_total() -> i64 {
+    1
 }
 
 /// A single metric card on the developer dashboard.
