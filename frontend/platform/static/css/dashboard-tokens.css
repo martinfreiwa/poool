@@ -1,0 +1,604 @@
+/* ================================================================
+   POOOL Dashboard Design System — Global Tokens
+   ================================================================
+   This file defines ALL design tokens for the dashboard layout.
+   Every dashboard page MUST reference these tokens.
+   NO hardcoded pixel values for spacing or typography are allowed.
+   ================================================================ */
+
+:root {
+    /* ── 1. Page-Level Layout ─────────────────────────────────────── */
+    --sidebar-width: 256px;
+    --content-bg: #FAFAFA;
+    --page-padding-top: 48px;
+    --page-padding-bottom: 48px;
+    --page-padding-x: 32px;
+    --page-max-width: 1200px;
+
+    /* ── 2. KYC / Notification Banner ─────────────────────────────── */
+    --banner-padding-y: 12px;
+    --banner-padding-x: 16px;
+    --banner-margin-bottom: 24px;
+    --banner-bg: #EEF4FF;
+    --banner-border-radius: 12px;
+
+    /* ── 3. Page Title ────────────────────────────────────────────── */
+    --page-title-icon-size: 28px;
+    --page-title-icon-gap: 12px;
+    --page-title-font-size: 36px;
+    --page-title-font-weight: 700;
+    --page-title-color: #181D27;
+    --page-title-line-height: 1.2;
+    --page-title-margin-bottom: 0;
+
+    /* ── 4. Subtitle / Description ────────────────────────────────── */
+    --page-subtitle-font-size: 15px;
+    --page-subtitle-font-weight: 400;
+    --page-subtitle-color: #475467;
+    --page-subtitle-gap: 8px;
+    --subtitle-to-content-gap: 24px;
+
+    /* ── 5. Navigation Tabs ───────────────────────────────────────── */
+    --tabs-margin-bottom: 24px;
+    --tab-font-size: 15px;
+    --tab-font-weight-active: 600;
+    --tab-font-weight-inactive: 400;
+    --tab-color-active: #1B2559;
+    --tab-color-inactive: #667085;
+    --tab-indicator-color: #1B2559;
+    --tab-gap: 32px;
+
+    /* ── 6. Section & Card Spacing ────────────────────────────────── */
+    --section-gap: 24px;
+    --card-padding: 24px;
+    --card-border-radius: 12px;
+    --card-border-color: #E5E7EB;
+    --card-bg: #FFFFFF;
+    --card-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    --card-gap-horizontal: 24px;
+
+    /* ── 7. Section Titles (H2) ───────────────────────────────────── */
+    --section-title-font-size: 20px;
+    --section-title-font-weight: 700;
+    --section-title-color: #101828;
+    --section-title-margin-bottom: 16px;
+
+    /* ── 8. Breadcrumbs ───────────────────────────────────────────── */
+    --breadcrumb-font-size: 14px;
+    --breadcrumb-color: #475467;
+    --breadcrumb-active-color: #1B2559;
+    --breadcrumb-margin-bottom: 12px;
+
+    /* ── 9. Global Typography ─────────────────────────────────────── */
+    --font-family: 'TT Norms Pro', sans-serif;
+    --body-font-size: 14px;
+    --body-color: #344054;
+    --label-font-size: 14px;
+    --label-color: #475467;
+    --value-font-size: 36px;
+    --value-font-weight: 600;
+    --value-color: #101828;
+
+    /* ── 10. Header Action Buttons ────────────────────────────────── */
+    --header-action-height: 40px;
+    --header-action-font-size: 14px;
+    --header-action-border-radius: 8px;
+
+    /* ── 11. Button System ────────────────────────────────────────── */
+    --btn-font-weight: 600;
+    --btn-border-radius: 8px;
+    --btn-transition: all 0.15s ease;
+    --btn-icon-gap: 8px;
+
+    /* Sizes: Small */
+    --btn-sm-height: 32px;
+    --btn-sm-padding: 6px 12px;
+    --btn-sm-font-size: 13px;
+    /* Sizes: Medium (default) */
+    --btn-md-height: 40px;
+    --btn-md-padding: 10px 18px;
+    --btn-md-font-size: 14px;
+    /* Sizes: Large */
+    --btn-lg-height: 48px;
+    --btn-lg-padding: 12px 24px;
+    --btn-lg-font-size: 16px;
+
+    /* Primary (electric blue bg, green text) */
+    --btn-primary-bg: #0000FF;
+    --btn-primary-color: #98FB96;
+    --btn-primary-hover-bg: #0000CC;
+    --btn-primary-active-bg: #0000AA;
+    /* Secondary (green bg, blue text) */
+    --btn-secondary-bg: #98FB96;
+    --btn-secondary-color: #0000FF;
+    --btn-secondary-border: transparent;
+    --btn-secondary-hover-bg: #7BE079;
+    --btn-secondary-active-bg: #60C85E;
+    /* Danger (red filled) */
+    --btn-danger-bg: #D92D20;
+    --btn-danger-color: #FFFFFF;
+    --btn-danger-hover-bg: #B42318;
+    --btn-danger-active-bg: #912018;
+    /* Ghost (text-only) */
+    --btn-ghost-bg: transparent;
+    --btn-ghost-color: #475467;
+    --btn-ghost-hover-bg: #F2F4F7;
+    --btn-ghost-active-bg: #E4E7EC;
+
+    /* ── 12. Card System ──────────────────────────────────────────── */
+    /* (tokens already exist in section 6 — kept for reference) */
+
+    /* ── 13. Badge / Status System ────────────────────────────────── */
+    --badge-font-size: 12px;
+    --badge-font-weight: 500;
+    --badge-padding: 2px 8px;
+    --badge-border-radius: 16px;
+    --badge-success-bg: #ECFDF3;
+    --badge-success-color: #027A48;
+    --badge-warning-bg: #FFFAEB;
+    --badge-warning-color: #B54708;
+    --badge-danger-bg: #FEF3F2;
+    --badge-danger-color: #B42318;
+    --badge-info-bg: #EEF4FF;
+    --badge-info-color: #1B2559;
+    --badge-neutral-bg: #F2F4F7;
+    --badge-neutral-color: #344054;
+
+    /* Property-type badge variants */
+    --badge-leasehold-bg: #EEF4FF;
+    --badge-leasehold-border: #C7D7FE;
+    --badge-leasehold-color: #3538CD;
+    --badge-freehold-bg: #FEF6EE;
+    --badge-freehold-border: #F9DBAF;
+    --badge-freehold-color: #B54708;
+    --badge-commercial-bg: #D5D9EB;
+    --badge-commercial-border: #3E4784;
+    --badge-commercial-color: #3E4784;
+    --badge-commodity-bg: #F0F4FF;
+    --badge-commodity-border: #C7D7FE;
+    --badge-commodity-color: #3538CD;
+    --badge-funding-bg: rgba(3, 255, 136, 0.15);
+    --badge-funding-border: rgba(3, 255, 136, 0.4);
+    --badge-funding-color: #027A48;
+
+    /* ── 14. Form Inputs ──────────────────────────────────────────── */
+    --input-height: 44px;
+    --input-padding: 10px 14px;
+    --input-font-size: 14px;
+    --input-border-radius: 8px;
+    --input-border-color: #D0D5DD;
+    --input-border-focus: #0000FF;
+    --input-bg: #FFFFFF;
+    --input-placeholder-color: #667085;
+    --input-text-color: #101828;
+
+    /* ── 15. Table System ────────────────────────────────────────── */
+    --table-header-bg: #FAFAFA;
+    --table-header-font-size: 12px;
+    --table-header-font-weight: 600;
+    --table-header-color: #717680;
+    --table-header-height: 44px;
+    --table-header-padding: 12px 24px;
+    --table-cell-padding: 16px 24px;
+    --table-cell-font-size: 14px;
+    --table-cell-color: #535862;
+    --table-border-color: #E9EAEB;
+    --table-row-hover-bg: #F8F9FC;
+
+    /* ── 16. Progress Bar System ──────────────────────────────────── */
+    --progress-track-bg: #D5D7DA;
+    --progress-fill-bg: rgb(152, 251, 150);       /* Brand green */
+    --progress-border-radius: 30px;
+    /* Sizes */
+    --progress-sm-height: 6px;
+    --progress-md-height: 8px;
+    --progress-lg-height: 12px;
+}
+
+
+/* ================================================================
+   Dashboard Content Layout — Standard Wrapper
+   ================================================================
+   Every page's <main> area uses this class. It creates a flex column
+   that spaces children correctly. When a banner is hidden, the gap
+   collapses naturally — no phantom whitespace.
+   ================================================================ */
+
+.dashboard-content {
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    min-height: 100vh;
+    padding: var(--page-padding-top) var(--page-padding-x) var(--page-padding-bottom);
+    background: var(--content-bg);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+
+/* ================================================================
+   Page Banner (KYC / Notification)
+   ================================================================ */
+
+.page-banner {
+    display: none;
+    /* Hidden by default — JS reveals when needed */
+    padding: var(--banner-padding-y) var(--banner-padding-x);
+    background: var(--banner-bg);
+    border-radius: var(--banner-border-radius);
+    margin-bottom: var(--banner-margin-bottom);
+    align-items: center;
+    gap: 12px;
+}
+
+.page-banner.visible {
+    display: flex;
+}
+
+
+/* ================================================================
+   Page Header (Icon + Title + optional actions)
+   ================================================================ */
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--page-title-margin-bottom);
+}
+
+.page-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--page-title-icon-gap);
+}
+
+.page-header-icon {
+    width: var(--page-title-icon-size);
+    height: var(--page-title-icon-size);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-header-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.page-title {
+    font-family: var(--font-family);
+    font-size: var(--page-title-font-size);
+    font-weight: var(--page-title-font-weight);
+    color: var(--page-title-color);
+    line-height: var(--page-title-line-height);
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+
+/* ================================================================
+   Page Subtitle
+   ================================================================ */
+
+.page-subtitle {
+    font-family: var(--font-family);
+    font-size: var(--page-subtitle-font-size);
+    font-weight: var(--page-subtitle-font-weight);
+    color: var(--page-subtitle-color);
+    margin: calc(-1 * var(--page-title-margin-bottom) + var(--page-subtitle-gap)) 0 var(--subtitle-to-content-gap);
+    line-height: 1.5;
+}
+
+
+/* ================================================================
+   Navigation Tabs
+   ================================================================ */
+
+.page-tabs {
+    display: flex;
+    align-items: center;
+    gap: var(--tab-gap);
+    border-bottom: 1px solid var(--card-border-color);
+    margin-top: calc(-1 * var(--page-title-margin-bottom) + var(--page-subtitle-gap));
+    margin-bottom: var(--tabs-margin-bottom);
+    padding-bottom: 0;
+}
+
+.page-tabs .tab {
+    font-family: var(--font-family);
+    font-size: var(--tab-font-size);
+    font-weight: var(--tab-font-weight-inactive);
+    color: var(--tab-color-inactive);
+    text-decoration: none;
+    padding-bottom: 12px;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.page-tabs .tab:hover {
+    color: var(--tab-color-active);
+}
+
+.page-tabs .tab.active {
+    font-weight: var(--tab-font-weight-active);
+    color: var(--tab-color-active);
+    border-bottom-color: var(--tab-indicator-color);
+}
+
+
+/* ================================================================
+   Page Body (Content Sections)
+   ================================================================ */
+
+.page-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--section-gap);
+}
+
+.page-body-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--section-gap);
+}
+
+
+/* ================================================================
+   Breadcrumbs
+   ================================================================ */
+
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: var(--breadcrumb-margin-bottom);
+    font-size: var(--breadcrumb-font-size);
+    color: var(--breadcrumb-color);
+}
+
+.breadcrumbs a {
+    color: var(--breadcrumb-color);
+    text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+    color: var(--breadcrumb-active-color);
+}
+
+.breadcrumbs .current {
+    color: var(--breadcrumb-active-color);
+    font-weight: 600;
+}
+
+
+/* ================================================================
+   Section Titles (H2 inside cards)
+   ================================================================ */
+
+.section-title-std {
+    font-family: var(--font-family);
+    font-size: var(--section-title-font-size);
+    font-weight: var(--section-title-font-weight);
+    color: var(--section-title-color);
+    margin: 0 0 var(--section-title-margin-bottom);
+    line-height: 1.3;
+}
+
+
+/* ================================================================
+   11. UNIVERSAL PAGE TITLE STANDARDIZATION
+   ================================================================
+   Every page currently uses its own class for H1 titles.
+   These rules enforce a single, unified style across ALL pages
+   without touching the HTML.
+   ================================================================ */
+
+.portfolio-page-title,
+.wallet-page-title,
+.rewards-title,
+.support-page-title,
+.settings-topbar__title-h1,
+.dashboard-title,
+.cart-page-title,
+.kyc-title,
+.admin-page-title,
+.page-title,
+.application-form-title,
+.document-upload-title,
+.add-asset-title,
+.submission-title,
+.property-content-title {
+    font-family: var(--font-family) !important;
+    font-size: var(--page-title-font-size) !important;
+    font-weight: var(--page-title-font-weight) !important;
+    color: var(--page-title-color) !important;
+    line-height: var(--page-title-line-height) !important;
+    letter-spacing: -0.02em !important;
+    margin: 0 !important;
+}
+
+
+/* ================================================================
+   12. UNIVERSAL PAGE HEADER (Icon + Title) STANDARDIZATION
+   ================================================================
+   Ensures the icon + title row has consistent gap and alignment
+   across portfolio, wallet, rewards, support, settings headers.
+   ================================================================ */
+
+.portfolio-header,
+.wallet-header,
+.rewards-title-wrapper,
+.support-page-header,
+.settings-topbar__title,
+.dashboard-header,
+.cart-page-header,
+.cart-title-wrapper,
+.kyc-page-header,
+.kyc-title-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--page-title-icon-gap) !important;
+}
+
+/* Standardize page header icons */
+.portfolio-page-icon,
+.wallet-page-icon,
+.rewards-trophy-icon,
+.support-page-icon,
+.settings-topbar__icon,
+.cart-icon,
+.kyc-page-icon {
+    width: var(--page-title-icon-size) !important;
+    height: var(--page-title-icon-size) !important;
+    flex-shrink: 0 !important;
+}
+
+
+/* ================================================================
+   13. UNIVERSAL MAIN CONTENT AREA STANDARDIZATION
+   ================================================================
+   All main content areas get consistent padding and background.
+   Targets existing page-specific class names.
+   ================================================================ */
+
+.portfolio-main,
+.wallet-main,
+.rewards-main,
+.dashboard-main,
+.cart-page-main,
+.kyc-main {
+    padding: var(--page-padding-top) var(--page-padding-x) var(--page-padding-bottom);
+    background: var(--content-bg);
+    box-sizing: border-box;
+}
+
+/* Sidebar standardization — all pages */
+.portfolio-sidebar,
+.wallet-sidebar,
+.rewards-sidebar,
+.marketplace-sidebar,
+.cart-page-sidebar,
+.kyc-sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+}
+
+
+/* ================================================================
+   14. UNIVERSAL SECTION SPACING
+   ================================================================
+   Consistent gaps between sections & cards on every page.
+   ================================================================ */
+
+.portfolio-container,
+.wallet-container,
+.rewards-container,
+.dashboard-container,
+.support-wrapper,
+.cart-page-content,
+.kyc-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--section-gap);
+}
+
+
+/* ================================================================
+   15. UNIVERSAL SECTION TITLE (H2) STANDARDIZATION
+   ================================================================ */
+
+.section-title,
+.wallet-transactions-title,
+.wallet-payment-title,
+.assets-section-title {
+    font-family: var(--font-family);
+    font-size: var(--section-title-font-size);
+    font-weight: var(--section-title-font-weight);
+    color: var(--section-title-color);
+    margin: 0 0 var(--section-title-margin-bottom);
+    line-height: 1.3;
+}
+
+
+/* ================================================================
+   Anti-Flicker: FOUC Prevention
+   ================================================================
+   Opt-in approach: only hides pages that explicitly use the
+   .fouc-guard class. See bundle.css for the canonical rule.
+   ================================================================ */
+
+/* Opt-in FOUC guard */
+body.fouc-guard:not(.dom-ready) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+body.dom-ready {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.15s ease-in;
+}
+
+/* Legacy support: body.loading class */
+body.loading {
+    opacity: 0 !important;
+}
+
+body {
+    transition: opacity 0.15s ease-in;
+}
+
+
+/* ================================================================
+   Responsive
+   ================================================================ */
+
+@media (max-width: 768px) {
+    .dashboard-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 16px;
+        padding-top: 80px;
+    }
+
+    .page-body-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-title,
+    .portfolio-page-title,
+    .wallet-page-title,
+    .rewards-title,
+    .support-page-title,
+    .settings-topbar__title-h1,
+    .dashboard-title,
+    .cart-page-title,
+    .kyc-title,
+    .admin-page-title,
+    .application-form-title,
+    .document-upload-title,
+    .add-asset-title,
+    .submission-title,
+    .property-content-title {
+        font-size: 28px !important;
+    }
+
+    .portfolio-main,
+    .wallet-main,
+    .rewards-main,
+    .dashboard-main,
+    .cart-page-main,
+    .kyc-main {
+        padding: 16px;
+        padding-top: 80px;
+    }
+}

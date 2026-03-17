@@ -1,0 +1,782 @@
+/* ===========================
+   POOOL Sidebar Navigation
+   Exact Figma Design Implementation
+   =========================== */
+
+/* Import TT Norms Pro Font */
+
+/* ===========================
+   Sidebar Container
+   =========================== */
+.sidebar-navigation {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  position: fixed;
+  width: 256px;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  background: #ffffff;
+  border-right: 1px solid #e9eaeb;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0px;
+  width: 256px;
+  height: 100vh;
+  flex: 1;
+  order: 0;
+  align-self: stretch;
+}
+
+/* ===========================
+   Navigation Section
+   =========================== */
+.sidebar-navigation-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px 0px 0px;
+  gap: 16px;
+  isolation: isolate;
+  width: 256px;
+  flex: 1 1 auto;
+  min-height: 0;
+  order: 0;
+  align-self: stretch;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ===========================
+   Header Section
+   =========================== */
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 16px;
+  gap: 16px;
+  width: 256px;
+  min-height: 96.4px;
+  flex: 0 0 auto;
+  order: 0;
+  align-self: stretch;
+  z-index: 1;
+}
+
+/* Logo */
+.sidebar-logo {
+  display: block;
+  width: 139px;
+  height: 37px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  position: relative;
+}
+
+.sidebar-logo img {
+  width: 139px;
+  height: 37px;
+  display: block;
+}
+
+/* ===========================
+   Search Input
+   =========================== */
+.sidebar-search-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 8px;
+  width: 216px;
+  height: 34px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.sidebar-search {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 10px;
+  gap: 8px;
+  width: 216px;
+  height: 34px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.sidebar-search-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  width: 232px;
+  height: 24px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+}
+
+.sidebar-search-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.sidebar-search-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-search-icon path {
+  stroke: #717680;
+  stroke-width: 1.66667px;
+}
+
+.sidebar-search-input {
+  width: 204px;
+  height: 24px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181d27;
+  border: none;
+  outline: none;
+  background: transparent;
+  flex: none;
+  order: 1;
+  flex-grow: 1;
+}
+
+.sidebar-search-input::placeholder {
+  color: #717680;
+}
+
+/* ===========================
+   Navigation Menu
+   =========================== */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 16px;
+  width: 224px;
+  height: auto;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  z-index: 0;
+}
+
+/* Nav Item Base */
+.nav-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 0px;
+  width: 224px;
+  height: 38px;
+  flex: none;
+  align-self: stretch;
+  flex-grow: 0;
+  position: relative;
+}
+
+.nav-item-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 10px;
+  gap: 8px;
+  width: 224px;
+  height: 36px;
+  background: #ffffff;
+  border-radius: 6px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  position: relative;
+}
+
+.nav-item-content:hover {
+  background: #f5f5f6;
+}
+
+/* Active State */
+.nav-item.active .nav-item-content {
+  background: rgba(3, 255, 136, 0.15);
+  /* Light version of brand lime */
+}
+
+/* Text and Icon Container */
+.nav-text-icon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  width: 184px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+}
+
+/* Icon Wrapper */
+.nav-icon-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 2px 0px 0px;
+  width: 22px;
+  height: 20px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  display: block;
+}
+
+/* Icon image filters for active state */
+.nav-item.active .nav-icon {
+  filter: brightness(0) saturate(100%) invert(11%) sepia(97%) saturate(7484%) hue-rotate(247deg) brightness(94%) contrast(148%);
+}
+
+/* Default icon color filter */
+.nav-item:not(.active) .nav-icon {
+  filter: brightness(0) saturate(100%) invert(46%) sepia(7%) saturate(568%) hue-rotate(185deg) brightness(92%) contrast(86%);
+}
+
+/* Nav Text */
+.nav-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  /* Gray/700 */
+  flex: none;
+  order: 2;
+  flex-grow: 0;
+}
+
+.nav-item.active .nav-text {
+  color: var(--brand-dark-blue);
+  /* Text Dark Blue */
+}
+
+/* Badge (base styles) */
+.nav-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  height: 22px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  margin-left: auto;
+  flex-shrink: 0;
+  order: 1;
+}
+
+/* ===========================
+   Footer Section
+   =========================== */
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 16px 16px;
+  gap: 16px;
+  margin-top: auto;
+  width: 256px;
+  flex: 0 0 auto;
+  order: 1;
+  align-self: stretch;
+}
+
+/* Footer Navigation */
+.footer-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: 256px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Support Badge with Status */
+.support-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 6px;
+  gap: 4px;
+  width: 61px;
+  height: 22px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+  order: 1;
+}
+
+.support-status-dot {
+  width: 8px;
+  height: 8px;
+  position: relative;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.support-status-dot::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  left: 1px;
+  top: 1px;
+  background: #17b26a;
+  border-radius: 50%;
+}
+
+.support-badge-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* ===========================
+   Community Card
+   =========================== */
+.nav-featured-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 16px 16px;
+  gap: 12px;
+  isolation: isolate;
+  width: 224px;
+  height: auto;
+  background: rgba(3, 255, 136, 0.1);
+  /* Light brand lime */
+  border-radius: 12px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  position: relative;
+}
+
+/* Close Button */
+.featured-card-close {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  right: 8px;
+  top: 8px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.featured-card-close img {
+  width: 36px;
+  height: 36px;
+}
+
+/* Card Text Content */
+.featured-card-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 4px;
+  width: 232px;
+  height: 84px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  z-index: 1;
+}
+
+.featured-card-title {
+  width: 224px;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+}
+
+.featured-card-description {
+  width: 232px;
+  height: 60px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #000000;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Card Image */
+.featured-card-image {
+  width: 232px;
+  height: 144px;
+  border-radius: 6px;
+  flex: none;
+  order: 2;
+  align-self: stretch;
+  flex-grow: 0;
+  z-index: 2;
+  position: relative;
+}
+
+.featured-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/* Play button using image */
+.featured-card-play-button {
+  position: absolute !important;
+  width: 48px !important;
+  height: 48px !important;
+  left: 12px !important;
+  bottom: 12px !important;
+  cursor: pointer;
+  z-index: 10;
+  object-fit: contain;
+}
+
+/* Card Actions */
+.featured-card-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 10px;
+  width: 152px;
+  height: 20px;
+  flex: none;
+  order: 3;
+  flex-grow: 0;
+  z-index: 3;
+}
+
+.featured-card-button {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  height: 20px;
+  flex: none;
+  flex-grow: 0;
+  cursor: pointer;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.featured-card-button.dismiss {
+  color: #535862;
+}
+
+.featured-card-button.action {
+  color: var(--primary-color);
+}
+
+.featured-card-button:hover {
+  opacity: 0.8;
+}
+
+/* ===========================
+   Account Card
+   =========================== */
+.nav-account-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 12px;
+  gap: 16px;
+  isolation: isolate;
+  width: 224px;
+  height: 64px;
+  margin: 0 16px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  flex: none;
+  order: 2;
+  align-self: stretch;
+  flex-grow: 0;
+  position: relative;
+}
+
+/* Avatar label group */
+.account-avatar-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  width: 200px;
+  height: 40px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+  z-index: 0;
+}
+
+.account-avatar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Contrast border */
+.account-avatar::after {
+  content: "";
+  box-sizing: border-box;
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  bottom: 0px;
+  opacity: 0.08;
+  border: 0.75px solid #000000;
+  border-radius: 200px;
+  pointer-events: none;
+}
+
+/* Avatar online indicator */
+.account-online-indicator {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  right: 0px;
+  bottom: 0px;
+  background: #17b26a;
+  border: 1.5px solid #ffffff;
+  border-radius: 5px;
+}
+
+/* Text and supporting text */
+.account-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: auto;
+  height: 40px;
+  flex: none;
+  order: 1;
+  flex-grow: 1;
+}
+
+.account-name {
+  width: auto;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181d27;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.account-email {
+  width: auto;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Account Menu Button */
+.account-menu-button {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  right: 6px;
+  top: 6px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  z-index: 1;
+}
+
+.account-menu-button-inner {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  padding: 6px;
+  row-gap: 0px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.account-menu-button-inner:hover {
+  background: #f5f5f6;
+}
+
+.account-menu-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.account-menu-icon path {
+  stroke: #a4a7ae;
+  stroke-width: 1.66667px;
+}
+
+/* Soon badge for Rewards and Leaderboard - Investor sidebar */
+/* Position relative removed - badges now use flexbox */
+
+.soon-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  gap: 4px;
+  width: 42px;
+  height: 22px;
+  background: #e5e5ff;
+  border: 1px solid #a7a7ff;
+  border-radius: 6px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: var(--primary-color);
+  margin-left: auto;
+  flex-shrink: 0;
+  z-index: 1;
+}

@@ -1,0 +1,58 @@
+warning: unused variable: `is_admin`
+   --> src/auth/routes.rs:151:9
+    |
+151 |     let is_admin = service::is_admin(&state.db, user.id).await?;
+    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_is_admin`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `poool-backend` (bin "poool-backend") generated 1 warning (run `cargo fix --bin "poool-backend" -p poool-backend` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.66s
+warning: the following packages contain code that will be rejected by a future version of Rust: redis v0.24.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running `target/debug/poool-backend`
+[2m2026-03-11T13:16:47.466578Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Starting POOOL Backend...
+[2m2026-03-11T13:16:47.468195Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Connecting to database...
+[2m2026-03-11T13:16:47.479520Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Database connection established ✓
+[2m2026-03-11T13:16:47.480309Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "is_2fa_verified" of relation "user_sessions" already exists, skipping
+[2m2026-03-11T13:16:47.480970Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Ensured is_2fa_verified column exists in user_sessions
+[2m2026-03-11T13:16:47.481361Z[0m [32m INFO[0m [2mpoool_backend::templates[0m[2m:[0m Template engine initialized ✓
+[2m2026-03-11T13:16:47.481387Z[0m [32m INFO[0m [2mpoool_backend::email[0m[2m:[0m Starting POOOL Email Drips Scheduler...
+[2m2026-03-11T13:16:47.485765Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Server listening on http://0.0.0.0:8888
+[2m2026-03-11T13:17:04.829887Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:17:05.199515Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:17:05.200591Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:17:25.079860Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session bQJ6JUhDLIdlDiw2eVSpw-dexsaLGdL5PUAqniYNMcp7wEw-fcZt7HEDmWD8wyKcISS3hh9pfvjmA_Pq7OBc1Q valid for user admin@poool.app
+[2m2026-03-11T13:17:25.154103Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session bQJ6JUhDLIdlDiw2eVSpw-dexsaLGdL5PUAqniYNMcp7wEw-fcZt7HEDmWD8wyKcISS3hh9pfvjmA_Pq7OBc1Q valid for user admin@poool.app
+[2m2026-03-11T13:17:25.154344Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session bQJ6JUhDLIdlDiw2eVSpw-dexsaLGdL5PUAqniYNMcp7wEw-fcZt7HEDmWD8wyKcISS3hh9pfvjmA_Pq7OBc1Q valid for user admin@poool.app
+[2m2026-03-11T13:17:28.046187Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:17:28.221676Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:17:28.238457Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:17:41.213858Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:17:57.263056Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:17:57.524294Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:17:57.525556Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:07.125764Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:07.323160Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:07.323662Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:23.629576Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:23.881209Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:23.885476Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:36.119198Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:36.347458Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:36.347893Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:50.227973Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:50.342703Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:50.344134Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:59.268810Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:59.304855Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:18:59.306613Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:19:00.559574Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:19:00.767672Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:19:00.769985Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:19:13.026144Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:19:13.063060Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:19:13.063658Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:20:48.520604Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:20:48.558270Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app
+[2m2026-03-11T13:20:48.558996Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 8xtokosQcR7-6cxhtUPKN0FBYAi4ZaR8Ad1vme_vqfXeIU_p3loMdWAfOd54FATpJk4NfJKCe3KgDjw59QM9DA valid for user admin@poool.app

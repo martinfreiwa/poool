@@ -1,0 +1,1214 @@
+/* Mobile Portfolio Page Styles */
+
+/* Mobile elements styling and visibility */
+@media (max-width: 768px) {
+  /* Mobile Portfolio Title */
+  .mobile-portfolio-title-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+    position: relative;
+    width: 130px;
+    height: 32px;
+    left: 0;
+    top: 20px;
+    margin-bottom: 28px;
+  }
+
+  .mobile-portfolio-icon {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-portfolio-title {
+    width: 102px;
+    height: 32px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 32px;
+    color: #181d27;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+    margin: 0;
+  }
+
+  /* Mobile Portfolio Value Card */
+  .mobile-portfolio-value-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 32px 16px;
+    gap: 10px;
+    width: 100%;
+    height: 196px;
+    margin: 0 0 24px 0;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 12px;
+    transition: height 0.3s ease;
+    position: relative;
+  }
+
+  /* Expanded state */
+  .mobile-portfolio-value-card.expanded {
+    height: 480px; /* Increased to accommodate x-axis labels */
+  }
+
+  .mobile-portfolio-value-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    padding-bottom: 56px; /* Space for absolutely positioned button */
+    gap: 24px;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Chart section inside the card */
+  .mobile-portfolio-chart-section {
+    width: 100%;
+    height: 260px; /* Increased to accommodate x-axis labels */
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .mobile-portfolio-value-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 10px;
+    width: 261px;
+    height: 68px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-portfolio-value-label-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+    width: 114px;
+    height: 20px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-portfolio-value-label {
+    width: 96px;
+    height: 20px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-portfolio-help-icon {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-portfolio-value-amount-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 16px;
+    width: 261px;
+    height: 38px;
+    flex: none;
+    order: 1;
+    align-self: stretch;
+    flex-grow: 0;
+  }
+
+  .mobile-portfolio-value-amount {
+    width: 129px;
+    height: 38px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 38px;
+    color: #181d27;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-portfolio-value-badge {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 2px 10px 2px 8px;
+    gap: 4px;
+    width: 72px;
+    height: 24px;
+    background: #ecfdf3;
+    border: 1px solid #abefc6;
+    border-radius: 16px;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-portfolio-arrow-icon {
+    width: 12px;
+    height: 12px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-portfolio-value-change {
+    width: 38px;
+    height: 20px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    color: #067647;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-portfolio-action-button {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 14px;
+    gap: 4px;
+    width: calc(100% - 32px); /* Account for card padding */
+    height: 40px;
+    background: var(--primary-color);
+    border: 1px solid #d5d7da;
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #ffffff;
+    /* Position absolutely at bottom */
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+  }
+
+  /* Chart Area */
+  .mobile-portfolio-chart {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    overflow: hidden;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  /* Grid Lines */
+  .mobile-chart-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .mobile-chart-grid-line {
+    width: 100%;
+    height: 0px;
+    border-top: 1px solid #f5f5f5;
+  }
+
+  .mobile-chart-grid-line-bottom {
+    border-color: #e9eaeb;
+  }
+
+  /* Bar Chart */
+  .mobile-chart-bars {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0px;
+    gap: 2px;
+  }
+
+  .mobile-chart-bar {
+    flex: 1;
+    max-width: 4px;
+    background: #7be579;
+    border-radius: 2px 2px 0px 0px;
+    transition: height 0.3s ease;
+  }
+
+  /* Trend Line */
+  .mobile-chart-trend-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  /* X-axis Labels */
+  .mobile-chart-x-axis {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 8px;
+    gap: 24px;
+    width: 100%;
+    height: 11px;
+    margin-top: 2px;
+  }
+
+  .mobile-chart-x-axis span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    color: #535862;
+    flex: none;
+  }
+
+  /* Key Financials Section */
+  .mobile-section-title {
+    width: 240px;
+    height: 30px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 50px 0 0px 0;
+  }
+
+  .mobile-key-financials-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0px;
+    gap: 12px;
+    width: 100%;
+    margin: 0;
+  }
+
+  .mobile-financial-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 24px;
+    gap: 16px;
+    isolation: isolate;
+    width: 100%;
+    height: 108px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 12px;
+    flex: none;
+    align-self: stretch;
+    flex-grow: 0;
+  }
+
+  .mobile-financial-icon-section {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 16px;
+    height: 60px;
+    flex: 1;
+    min-width: 0;
+    order: 1;
+    align-self: stretch;
+    z-index: 1;
+  }
+
+  .mobile-financial-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    position: relative;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-financial-icon-bg {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    left: 0.4px;
+    top: -7.6px;
+    background: var(--primary-color);
+    border-radius: 6px;
+    transform: rotate(15deg);
+  }
+
+  .mobile-financial-icon-glass {
+    box-sizing: border-box;
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    left: 0px;
+    top: 0px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 0.75px solid rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-financial-icon {
+    position: relative;
+    z-index: 1;
+  }
+
+  .mobile-financial-text-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    height: 60px;
+    order: 1;
+    align-self: stretch;
+  }
+
+  .mobile-financial-label-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+    height: 20px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-financial-label {
+    height: 20px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-financial-help-icon {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-financial-value-wrapper {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    align-content: flex-start;
+    padding: 0px;
+    gap: 12px 16px;
+    height: 32px;
+    flex: none;
+    order: 1;
+    align-self: stretch;
+    flex-grow: 0;
+  }
+
+  .mobile-financial-value {
+    height: 32px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 32px;
+    color: #181d27;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-financial-change-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 0px;
+    gap: 16px;
+    margin: 0;
+    height: 60px;
+    flex-shrink: 0;
+    order: 2;
+    z-index: 2;
+  }
+
+  .mobile-financial-change-badge {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 2px 8px 2px 6px;
+    gap: 4px;
+    height: 24px;
+    background: #ffffff;
+    border: 1px solid #d5d7da;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 6px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-financial-change-text {
+    height: 20px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    color: #414651;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-financial-period {
+    height: 20px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: right;
+    color: #535862;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+    margin-right: 0;
+  }
+
+  /* Hide desktop sidebar */
+  #portfolio-sidebar,
+  .portfolio-sidebar {
+    display: none !important;
+  }
+
+  /* Hide ALL desktop portfolio content */
+  .portfolio-header,
+  #portfolio-header,
+  .portfolio-value-section,
+  #portfolio-value-section,
+  .key-financials-section,
+  #key-financials-section,
+  .insights-limit-section,
+  #insights-limit-section,
+  .assets-section,
+  #assets-section,
+  .section-title,
+  .key-financials-grid,
+  .quick-insights-wrapper,
+  .investment-limit-wrapper,
+  .assets-show-all-footer,
+  .portfolio-page-icon,
+  .portfolio-page-title {
+    display: none !important;
+  }
+
+  /* Show mobile portfolio wrapper */
+  .mobile-portfolio-wrapper {
+    display: block !important;
+    width: 100%;
+    padding: 35px 16px;
+    box-sizing: border-box;
+    min-height: calc(100vh - 64px - 48px);
+    position: relative;
+  }
+
+  /* Reset main container */
+  #portfolio-main,
+  .portfolio-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    position: relative !important;
+    min-height: calc(100vh - 64px - 48px);
+  }
+
+  #portfolio-page,
+  .portfolio-page {
+    display: block !important;
+    width: 100% !important;
+    padding-top: 0 !important;
+  }
+
+  /* Hide desktop KYC banner on mobile (using mobile version instead) */
+  #portfolio-main .kyc-banner-container {
+    display: none !important;
+  }
+
+  /* Quick Insights Section */
+  .mobile-quick-insights-wrapper {
+    width: calc(100% + 32px);
+    margin-left: -16px;
+    margin-top: 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    margin-bottom: 32px;
+  }
+
+  .mobile-quick-insights-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-quick-insights-container {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    padding: 0 16px;
+    min-width: fit-content;
+  }
+
+  .mobile-insight-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    gap: 10px;
+    width: 157px;
+    min-width: 157px;
+    height: 144px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 12px;
+    flex: none;
+  }
+
+  .mobile-insight-card:nth-child(2) {
+    width: 159px;
+    min-width: 159px;
+  }
+
+  .mobile-insight-card:nth-child(3) {
+    width: 158px;
+    min-width: 158px;
+  }
+
+  .mobile-insight-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 12px;
+    margin: 0 auto;
+    width: 100%;
+    height: 128px;
+    flex: none;
+    order: 0;
+    flex-grow: 1;
+  }
+
+  .mobile-insight-icon {
+    box-sizing: border-box;
+    width: 40px;
+    height: 40px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-insight-text {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+    width: 100%;
+    height: 40px;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-insight-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    flex: 1;
+  }
+
+  .mobile-insight-help-icon {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-insight-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: right;
+    color: #181d27;
+    flex: none;
+    order: 2;
+    flex-grow: 0;
+  }
+
+  /* Assets Table Section */
+  .mobile-assets-table-wrapper {
+    box-sizing: border-box;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    margin-bottom: 24px;
+  }
+
+  .mobile-assets-table-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-assets-table {
+    min-width: 836px;
+    width: auto;
+    border-collapse: collapse;
+  }
+
+  /* Table Headers */
+  .mobile-assets-table thead tr {
+    background: #fafafa;
+  }
+
+  .mobile-assets-table thead tr th:first-child {
+    border-top-left-radius: 12px;
+  }
+
+  .mobile-assets-table thead tr th:last-child {
+    border-top-right-radius: 12px;
+  }
+
+  .mobile-assets-table th {
+    box-sizing: border-box;
+    padding: 12px 24px;
+    gap: 12px;
+    height: 44px;
+    background: #fafafa;
+    border-bottom: 1px solid #e9eaeb;
+    text-align: left;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+  }
+
+  .mobile-assets-header-property {
+    width: 233px;
+  }
+
+  .mobile-assets-header-investment {
+    width: 200px;
+  }
+
+  .mobile-assets-header-rental {
+    width: 180px;
+  }
+
+  .mobile-assets-header-status {
+    width: 223px;
+  }
+
+  .mobile-assets-header-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+  }
+
+  .mobile-assets-header-content span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 18px;
+    color: #717680;
+  }
+
+  /* Table Rows */
+  .mobile-assets-row {
+    background: #ffffff;
+  }
+
+  .mobile-assets-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .mobile-assets-table td {
+    box-sizing: border-box;
+    padding: 16px 24px;
+    height: 72px;
+    border-bottom: 1px solid #e9eaeb;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+  }
+
+  /* Property Cell */
+  .mobile-assets-property-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 8px;
+  }
+
+  .mobile-assets-property-image {
+    width: 58px;
+    height: 41px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-assets-property-text-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-assets-property-line {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 18px;
+    color: #181d27;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Keep old class for backwards compatibility */
+  .mobile-assets-property-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 18px;
+    color: #181d27;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  /* Investment Cell */
+  .mobile-assets-investment-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-assets-investment-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #000000;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-assets-change-badge {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 2px 8px 2px 6px;
+    gap: 4px;
+    height: 24px;
+    background: #ffffff;
+    border: 1px solid #d5d7da;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 6px;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-assets-change-badge span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    color: #414651;
+  }
+
+  /* Rental Income Cell */
+  .mobile-assets-rental-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+  }
+
+  /* Status Badges */
+  .mobile-assets-status-badge {
+    box-sizing: border-box;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 2px 8px 2px 6px;
+    gap: 4px;
+    height: 22px;
+    border-radius: 16px;
+  }
+
+  .mobile-assets-status-badge span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  .mobile-assets-status-funded {
+    background: #ecfdf3;
+    border: 1px solid #abefc6;
+  }
+
+  .mobile-assets-status-funded span {
+    color: #067647;
+  }
+
+  .mobile-assets-status-payout {
+    background: #ffffff;
+    border: 1px solid #d5d7da;
+  }
+
+  .mobile-assets-status-payout span {
+    color: #000000;
+  }
+
+  .mobile-assets-status-rented {
+    background: #ecfdf3;
+    border: 1px solid #abefc6;
+  }
+
+  .mobile-assets-status-rented span {
+    color: #067647;
+  }
+
+  .mobile-assets-status-progress {
+    background: #fef0c7;
+    border: 1px solid #fec84b;
+  }
+
+  .mobile-assets-status-progress span {
+    color: #000000;
+  }
+
+  /* Show All Button */
+
+
+  /* Mobile Investment Limit Section */
+  .mobile-investment-limit-title-wrapper {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .mobile-investment-help-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .mobile-investment-limit-card {
+    box-sizing: border-box;
+    position: relative;
+    width: 100%;
+    height: 302px;
+    padding: 24px 16px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 12px;
+    margin-bottom: 24px;
+  }
+
+  /* Logo Section */
+  .mobile-investment-limit-logo {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0px;
+    gap: 8px;
+    width: 100%;
+    height: 24px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .mobile-investment-limit-logo img {
+    height: 24px;
+    width: 119px;
+  }
+
+  /* Divider after logo */
+  .mobile-investment-limit-logo::after {
+    content: "";
+    position: absolute;
+    width: calc(100% + 32px);
+    height: 1px;
+    left: -16px;
+    bottom: -20px;
+    background: #e9eaeb;
+  }
+
+  /* Progress Section */
+  .mobile-investment-progress-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 12px;
+    width: 100%;
+    margin-top: 45px;
+    margin-bottom: 24px;
+  }
+
+  .mobile-investment-progress-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: #000000;
+    text-align: right;
+    width: 100%;
+  }
+
+  .mobile-investment-progress-bar {
+    width: 100%;
+    height: 12px;
+    background: #d5d7da;
+    border-radius: 30px;
+    overflow: hidden;
+  }
+
+  .mobile-investment-progress-track {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .mobile-investment-progress-fill {
+    height: 100%;
+    background: var(--accent-color);
+    border-radius: 30px;
+    transition: width 0.3s ease;
+  }
+
+  /* Details Section */
+  .mobile-investment-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .mobile-investment-detail-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px;
+    width: 100%;
+    height: 28px;
+  }
+
+  /* Special styling for row with wrapped text */
+  .mobile-investment-detail-row:nth-child(2) {
+    height: 56px;
+    align-items: center;
+  }
+
+  .mobile-investment-detail-label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 6px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 28px;
+    color: #535862;
+    flex: 1;
+  }
+
+  /* Allow text to wrap for second row */
+  .mobile-investment-detail-row:nth-child(2) .mobile-investment-detail-label {
+    align-items: center;
+    max-width: 203px;
+  }
+
+  .mobile-investment-detail-row:nth-child(2)
+    .mobile-investment-detail-label
+    span {
+    line-height: 28px;
+  }
+
+  .mobile-investment-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .mobile-investment-bullet {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .mobile-investment-bullet-invested {
+    background: var(--accent-color);
+  }
+
+  .mobile-investment-bullet-available {
+    background: var(--accent-color);
+  }
+
+  .mobile-investment-detail-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 28px;
+    color: #000000;
+    text-align: right;
+    flex-shrink: 0;
+  }
+} /* End of mobile media query */
+
+/* Hide mobile elements on desktop */
+@media (min-width: 769px) {
+  .mobile-portfolio-wrapper {
+    display: none !important;
+  }
+}

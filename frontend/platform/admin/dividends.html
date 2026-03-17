@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dividend Tool | Admin | POOOL</title>
+  <meta name="description"
+    content="POOOL Admin — Calculate and process rental dividend distributions to token holders." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <style>
+    .dividend-config-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .summary-card {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-lg);
+      padding: 24px;
+    }
+
+    .split-table-container {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-lg);
+      overflow: hidden;
+    }
+
+    .progress-stepper {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .step {
+      flex: 1;
+      padding: 12px;
+      border-bottom: 3px solid var(--admin-border);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--admin-text-muted);
+      text-align: center;
+    }
+
+    .step.active {
+      border-color: var(--admin-accent);
+      color: var(--admin-text-primary);
+    }
+
+    .step.completed {
+      border-color: var(--admin-success);
+      color: var(--admin-success);
+    }
+  </style>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- SIDEBAR -->
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <span class="current">Dividend Tool</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Dividend Distribution Tool</h1>
+          <p class="admin-page-subtitle">
+            Prorated rental income distribution for token holders based on
+            current ownership.
+          </p>
+        </div>
+
+        <!-- BLOCKCHAIN: On-chain snapshot note -->
+        <div style="
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 14px 18px;
+          margin-bottom: 20px;
+          background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(16, 185, 129, 0.04));
+          border: 1px solid rgba(99, 102, 241, 0.12);
+          border-radius: 10px;
+        ">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+          <div>
+            <div style="font-size: 12px; font-weight: 700; color: var(--admin-text-primary); margin-bottom: 2px;">
+              ⛓ On-Chain Ownership Snapshot
+            </div>
+            <p style="font-size: 11px; color: var(--admin-text-secondary); margin: 0; line-height: 1.5;">
+              Distribution splits are calculated from the on-chain token ownership recorded in the ERC-3643 smart contract.
+              The snapshot is taken at the time you click "Preview Distributions" — ensuring accurate, tamper-proof allocation.
+            </p>
+          </div>
+        </div>
+
+        <div class="progress-stepper">
+          <div class="step active" id="step-1-label">1. Configure Payout</div>
+          <div class="step" id="step-2-label">2. Preview Splits</div>
+          <div class="step" id="step-3-label">3. Process Batch</div>
+        </div>
+
+        <div class="dividend-config-grid">
+          <!-- LEFT: CONFIG -->
+          <div class="summary-card">
+            <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 20px">
+              Distribution Details
+            </h3>
+
+            <div style="margin-bottom: 16px">
+              <label class="info-label">Select Asset</label>
+              <select id="asset-select" class="admin-select" style="width: 100%">
+                <option value="">Loading assets...</option>
+              </select>
+            </div>
+
+            <div style="margin-bottom: 20px">
+              <label class="info-label">Total Distribution Amount ($)</label>
+              <input type="number" id="total-amount" class="admin-input"
+                style="width: 100%; font-size: 18px; font-weight: 700" placeholder="0.00" step="0.01" />
+            </div>
+
+            <button class="admin-btn admin-btn--primary" style="width: 100%; height: 44px" id="btn-preview">
+              Preview Distributions
+            </button>
+          </div>
+
+          <!-- RIGHT: PREVIEW / PROGRESS -->
+          <div class="split-table-container">
+            <div id="preview-placeholder" style="
+                  padding: 60px;
+                  text-align: center;
+                  color: var(--admin-text-muted);
+                ">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
+                style="margin-bottom: 12px; opacity: 0.3">
+                <path
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <p>Select an asset and enter an amount to preview splits.</p>
+            </div>
+
+            <div id="preview-data" style="display: none">
+              <div style="
+                    padding: 16px 24px;
+                    border-bottom: 1px solid var(--admin-border);
+                    background: var(--admin-bg);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                  ">
+                <h3 style="font-size: 14px; font-weight: 700; margin: 0">
+                  Prorated Splits Preview
+                </h3>
+                <div style="
+                      font-size: 13px;
+                      font-weight: 600;
+                      color: var(--admin-text-muted);
+                    " id="tokens-total-label">
+                  Total Tokens: 0
+                </div>
+              </div>
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Investor</th>
+                    <th>Tokens Owned</th>
+                    <th>Share %</th>
+                    <th style="text-align: right">Payout Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="splits-body">
+                  <!-- Dynamic -->
+                </tbody>
+              </table>
+              <div style="
+                    padding: 24px;
+                    background: var(--admin-bg);
+                    border-top: 1px solid var(--admin-border);
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
+                  ">
+                <button class="admin-btn admin-btn--secondary" id="btn-cancel">
+                  Discard
+                </button>
+                <button class="admin-btn admin-btn--primary" id="btn-process" style="padding: 0 32px">
+                  Confirm & Distribute Funds
+                </button>
+              </div>
+            </div>
+
+            <div id="processing-overlay" style="display: none; padding: 80px 40px; text-align: center">
+              <div class="loading-spinner" style="margin-bottom: 20px"></div>
+              <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 12px">
+                Processing Batch...
+              </h2>
+              <p style="color: var(--admin-text-muted); font-size: 14px">
+                Updating wallets and generating transaction records. Do not
+                close this page.
+              </p>
+            </div>
+
+            <div id="success-message" style="display: none; padding: 80px 40px; text-align: center">
+              <div style="
+                    width: 64px;
+                    height: 64px;
+                    background: rgba(16, 185, 129, 0.1);
+                    color: #10b981;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 20px;
+                  ">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 12px">
+                Distribution Successful!
+              </h2>
+              <p style="
+                    color: var(--admin-text-muted);
+                    font-size: 14px;
+                    margin-bottom: 24px;
+                  " id="final-summary-text"></p>
+              <button class="admin-btn admin-btn--secondary" onclick="window.location.reload()">
+                Start New Distribution
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DISTRIBUTION TRACKING SECTION -->
+        <div class="admin-card" style="margin-top: 24px">
+          <div class="admin-card-header" style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              ">
+            <h2 class="admin-card-title">Distribution Request Tracking</h2>
+            <a href="/admin/approvals" class="admin-btn admin-btn--secondary admin-btn--sm">View All Approvals</a>
+          </div>
+          <div class="admin-card-body" style="padding: 0">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Request ID</th>
+                  <th>Asset Title</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="distribution-tracking-body">
+                <tr>
+                  <td colspan="5" style="
+                        text-align: center;
+                        padding: 24px;
+                        color: var(--admin-text-muted);
+                      ">
+                    Loading tracking data...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/admin-dividends.js"></script>
+</body>
+
+</html>

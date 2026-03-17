@@ -1,0 +1,109 @@
+/* Mobile Leasing Strategy Section */
+@media (max-width: 768px) {
+  .mobile-leasing-strategy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px 16px;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 32px;
+    margin-top: 75px;
+  }
+
+  /* Header with icon */
+  .mobile-leasing-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+  }
+
+  .mobile-leasing-header img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-leasing-header h2 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  /* Content Box */
+  .mobile-leasing-content-box {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 20px;
+    width: 100%;
+    background: #fcfcfd; /* Gray blue/25 */
+    border: 1px solid #d5d9eb; /* Gray blue/200 */
+    border-radius: 12px;
+  }
+
+  /* Leasing Item */
+  .mobile-leasing-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* Item Header with Icon */
+  .mobile-leasing-item-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .home-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  /* Headings */
+  .mobile-leasing-item h3,
+  .mobile-leasing-item-header h3 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 28px;
+    color: #181d27;
+    margin: 0;
+    flex: 1;
+  }
+
+  /* Descriptions */
+  .mobile-leasing-item p {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    margin: 0;
+  }
+
+  /* Divider */
+  .mobile-leasing-divider {
+    width: 100%;
+    height: 1px;
+    background: #e9eaeb;
+  }
+}

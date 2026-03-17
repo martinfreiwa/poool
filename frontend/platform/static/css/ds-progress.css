@@ -1,0 +1,150 @@
+/* ================================================================
+   POOOL Design System — Progress Bars (.ds-progress)
+   ================================================================
+   Standardised progress bar for the entire dashboard.
+   Used for funding bars, upload progress, tier progress, 
+   investment limits, etc.
+
+   Usage:
+     <div class="ds-progress">
+       <div class="ds-progress__fill" style="width: 65%"></div>
+     </div>
+
+     <!-- Small variant (e.g. inside table rows) -->
+     <div class="ds-progress ds-progress--sm">
+       <div class="ds-progress__fill" style="width: 40%"></div>
+     </div>
+
+     <!-- Large variant (e.g. investment limit) -->
+     <div class="ds-progress ds-progress--lg">
+       <div class="ds-progress__fill" style="width: 80%"></div>
+     </div>
+
+     <!-- With label -->
+     <div class="ds-progress-wrapper">
+       <div class="ds-progress-label">
+         <span class="ds-progress-label__text">Funded</span>
+         <span class="ds-progress-label__value">65%</span>
+       </div>
+       <div class="ds-progress">
+         <div class="ds-progress__fill" style="width: 65%"></div>
+       </div>
+     </div>
+
+   RULES:
+   - No !important in this file
+   - All values use CSS custom properties from dashboard-tokens.css
+   - Every progress bar on the platform should use these classes
+   ================================================================ */
+
+
+/* ── Track (background) ──────────────────────────────────────── */
+
+.ds-progress {
+    width: 100%;
+    height: var(--progress-md-height);
+    background: var(--progress-track-bg);
+    border-radius: var(--progress-border-radius);
+    overflow: hidden;
+    position: relative;
+}
+
+
+/* ── Fill (foreground bar) ───────────────────────────────────── */
+
+.ds-progress__fill {
+    height: 100%;
+    background: var(--progress-fill-bg);
+    border-radius: var(--progress-border-radius);
+    min-width: 0;
+    transition: width 0.6s ease;
+}
+
+
+/* ── Size Variants ───────────────────────────────────────────── */
+
+/* Small — compact tables, file uploads */
+.ds-progress--sm {
+    height: var(--progress-sm-height);
+}
+
+/* Large — investment limits, hero progress */
+.ds-progress--lg {
+    height: var(--progress-lg-height);
+}
+
+
+/* ── Color Variants ──────────────────────────────────────────── */
+
+/* Default is green (--progress-fill-bg). These override for special cases. */
+
+/* Blue — for tier progress or primary-branded bars */
+.ds-progress--blue .ds-progress__fill {
+    background: var(--btn-primary-bg, #0000FF);
+}
+
+/* Warning — approaching limits */
+.ds-progress--warning .ds-progress__fill {
+    background: var(--badge-warning-color, #B54708);
+}
+
+/* Danger — exceeded or error states */
+.ds-progress--danger .ds-progress__fill {
+    background: var(--btn-danger-bg, #D92D20);
+}
+
+
+/* ── Progress Label Wrapper ──────────────────────────────────── */
+
+.ds-progress-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.ds-progress-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ds-progress-label__text {
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: 13px;
+    font-weight: 500;
+    color: #535862;
+}
+
+.ds-progress-label__value {
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: 13px;
+    font-weight: 600;
+    color: #181D27;
+}
+
+
+/* ── Animated Indeterminate (optional — for unknown progress) ── */
+
+.ds-progress--indeterminate .ds-progress__fill {
+    width: 30%;
+    animation: ds-progress-indeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes ds-progress-indeterminate {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(400%);
+    }
+}
+
+
+/* ── Responsive ──────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .ds-progress--lg {
+        height: var(--progress-md-height);
+    }
+}

@@ -1,0 +1,171 @@
+/* Mobile Contact Section - Questions */
+.mobile-contact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0px;
+  gap: 16px;
+  width: 100%;
+  margin: 75px 0 32px 0;
+}
+
+/* Questions Container */
+.mobile-contact-header {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px 16px;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Avatar */
+.mobile-contact-avatar {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  background: #e0e0e0;
+  border-radius: 200px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.mobile-contact-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 200px;
+}
+
+.mobile-avatar-contrast-border {
+  box-sizing: border-box;
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  bottom: 0px;
+  opacity: 0.08;
+  border: 0.75px solid #000000;
+  border-radius: 200px;
+}
+
+/* Contact div */
+.mobile-contact-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 8px;
+  flex: 1;
+  order: 1;
+  flex-grow: 1;
+}
+
+/* Heading */
+.mobile-contact-heading {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 28px;
+  color: #181d27;
+  margin: 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  width: 100%;
+}
+
+/* Contact our real estate experts */
+.mobile-contact-subtitle {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+  margin: 0;
+}
+
+/* Contact us - Buttons Container */
+.mobile-contact-buttons {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0px 16px 70px;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Buttons/Button */
+.mobile-contact-button {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 4px;
+  width: 100%;
+  height: 36px;
+  border: 1px solid #252b37;
+  border-radius: 8px;
+  flex: none;
+  align-self: stretch;
+  flex-grow: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mobile-contact-button:first-child {
+  order: 0;
+}
+
+.mobile-contact-button:last-child {
+  order: 1;
+}
+
+/* Icon */
+.mobile-contact-button svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Text padding */
+.mobile-contact-button > span {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px 2px;
+  height: 20px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Text */
+.mobile-contact-button span {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #252b37;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}

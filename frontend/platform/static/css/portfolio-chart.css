@@ -1,0 +1,204 @@
+/* ─── Chart Bar Tooltip ──────────────────────────────────────── */
+
+.chart-bar-tooltip {
+  position: absolute;
+  background: #181d27;
+  color: #ffffff;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 20;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.15s ease;
+}
+
+.chart-bar-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #181d27 transparent transparent transparent;
+}
+
+/* ─── Chart Filter Dropdown ──────────────────────────────────── */
+
+.chart-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 100;
+  width: 240px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 0;
+  overflow: hidden;
+  animation: filterDropdownIn 0.2s ease-out;
+}
+
+@keyframes filterDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chart-filter-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #f2f4f7;
+}
+
+.chart-filter-dropdown-header span {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #181d27;
+}
+
+.chart-filter-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.chart-filter-close:hover {
+  background: #f2f4f7;
+}
+
+.chart-filter-options {
+  padding: 8px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chart-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  color: #414651;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+
+.chart-filter-option:hover {
+  background: #f8f9fc;
+}
+
+.chart-filter-option input[type="checkbox"] {
+  display: none;
+}
+
+.chart-filter-checkbox {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #d5d7da;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+
+.chart-filter-option input[type="checkbox"]:checked + .chart-filter-checkbox {
+  background: #079455;
+  border-color: #079455;
+}
+
+.chart-filter-option input[type="checkbox"]:checked + .chart-filter-checkbox::after {
+  content: "";
+  width: 10px;
+  height: 6px;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: rotate(-45deg) translateY(-1px);
+}
+
+/* Color dot indicator */
+.chart-filter-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── Chart Bar Active / Hover States ────────────────────────── */
+
+.chart-bar-week {
+  position: relative;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.chart-bar-week:hover {
+  filter: brightness(1.15) !important;
+  transform: scaleY(1.05);
+  transform-origin: bottom;
+}
+
+/* ─── Show More Button Enhanced ──────────────────────────────── */
+
+.portfolio-show-more-btn svg {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ─── Tab Active Indicator ───────────────────────────────────── */
+
+.chart-tab {
+  position: relative;
+  transition: all 0.2s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.chart-tab.active {
+  color: #181d27;
+}
+
+.chart-tab:hover:not(.active) {
+  color: #535862;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* ─── Filter Button Hover ────────────────────────────────────── */
+
+.portfolio-chart-filter {
+  transition: all 0.2s ease;
+}
+
+.portfolio-chart-filter:hover {
+  background: #f8f9fc;
+  border-color: #c0c2c6;
+}
+
+.portfolio-chart-filter:active {
+  background: #f2f4f7;
+  transform: scale(0.98);
+}

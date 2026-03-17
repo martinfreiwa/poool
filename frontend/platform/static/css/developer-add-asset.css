@@ -1,0 +1,160 @@
+/* ===========================
+   Developer Add Asset Page Styles
+   Updated to use cart/checkout layout system
+   =========================== */
+
+/* ===========================
+   1. Asset Type Grid — flow-based, left-aligned
+   =========================== */
+.asset-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 1096px;
+}
+
+/* ===========================
+   2. Asset Type Card
+   =========================== */
+.asset-type-card {
+  box-sizing: border-box;
+  width: 100%;
+  height: 178px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.asset-type-card:hover {
+  box-shadow:
+    0px 4px 6px -1px rgba(10, 13, 18, 0.1),
+    0px 2px 4px -2px rgba(10, 13, 18, 0.06);
+  transform: translateY(-2px);
+}
+
+.asset-type-card.selected,
+.asset-type-card.js-selected {
+  border: 1px solid var(--primary-color);
+  box-shadow:
+    0px 4px 6px -1px rgba(10, 13, 18, 0.1),
+    0px 2px 4px -2px rgba(10, 13, 18, 0.06);
+}
+
+/* ===========================
+   3. Card Image Background
+   =========================== */
+.asset-type-image {
+  position: absolute;
+  width: 100%;
+  height: 100px;
+  left: 0;
+  top: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.asset-type-glass {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(2px);
+}
+
+/* ===========================
+   4. Icon Wrapper
+   =========================== */
+.asset-type-icon-wrapper {
+  position: absolute;
+  width: 35px;
+  height: 35px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asset-type-icon {
+  width: 35px;
+  height: 35px;
+}
+
+/* ===========================
+   5. Card Content
+   =========================== */
+.asset-type-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.asset-type-title {
+  width: 100%;
+  height: 30px;
+  margin: 14px 0 0 0;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 30px;
+  text-align: center;
+  color: var(--primary-color);
+}
+
+.asset-type-description {
+  width: 100%;
+  height: 20px;
+  margin: 0 0 14px 0;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #000000;
+}
+
+/* ===========================
+   6. Coming Soon State
+   =========================== */
+.asset-type-card.coming-soon {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: default;
+}
+
+.asset-type-card.coming-soon:hover {
+  transform: none;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+}
+
+.coming-soon-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  padding: 2px 10px;
+  background: #414651;
+  border-radius: 100px;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 18px;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}

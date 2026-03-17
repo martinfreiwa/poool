@@ -1,0 +1,144 @@
+{% with title="Scheduled Maintenance | POOOL", meta_description="POOOL is temporarily down for scheduled maintenance.
+We'll be back shortly.", no_index=True, extra_css=['error-pages'] %}{% include "components/head.html" %}{% endwith %}
+
+<body>
+  <main class="error-page" id="maintenance-page">
+
+    <!-- Logo -->
+    <a class="error-logo" href="/" aria-label="POOOL Home">
+      <img src="/static/images/logo-pool.svg" alt="POOOL" />
+    </a>
+
+    <!-- Illustration -->
+    <div class="error-icon-wrap" aria-hidden="true">
+      <div class="error-icon-ring error-icon-ring--blue">
+        <div class="error-icon-inner error-icon-inner--blue">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M20 3.333v3.334M20 33.333v3.334M33.333 20h3.334M3.333 20h3.334M28.535 11.465l2.358-2.358M9.107 30.893l2.358-2.358M28.535 28.535l2.358 2.358M9.107 9.107l2.358 2.358"
+              stroke="#0000FF" stroke-width="2.5" stroke-linecap="round" />
+            <circle cx="20" cy="20" r="6.5" stroke="#0000FF" stroke-width="2.5" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badge -->
+    <span class="error-code error-code--blue">Scheduled Maintenance</span>
+
+    <!-- Text -->
+    <h1 class="error-title">We'll be right back</h1>
+    <p class="error-subtitle">
+      POOOL is undergoing scheduled maintenance to give you a better experience. We'll be back online shortly.
+    </p>
+
+    <!-- Progress -->
+    <div class="maintenance-progress" role="progressbar" aria-label="Maintenance in progress">
+      <div class="maintenance-progress-bar"></div>
+    </div>
+
+    <!-- Countdown (JS-driven) -->
+    <div class="countdown" id="maintenance-countdown" aria-live="polite">
+      <div class="countdown-item">
+        <span class="countdown-number" id="countdown-h">--</span>
+        <span class="countdown-label">Hours</span>
+      </div>
+      <span class="countdown-sep">:</span>
+      <div class="countdown-item">
+        <span class="countdown-number" id="countdown-m">--</span>
+        <span class="countdown-label">Minutes</span>
+      </div>
+      <span class="countdown-sep">:</span>
+      <div class="countdown-item">
+        <span class="countdown-number" id="countdown-s">--</span>
+        <span class="countdown-label">Seconds</span>
+      </div>
+    </div>
+
+    <!-- Notify form -->
+    <form class="notify-form" id="maintenance-notify-form">
+      <input id="maintenance-notify-email" class="notify-input" type="email" placeholder="Get notified when we're back"
+        autocomplete="email" required />
+      <button type="submit" class="notify-submit" id="maintenance-notify-submit">Notify me</button>
+    </form>
+    <p class="notify-success" id="maintenance-notify-success">
+      ✅ You'll be notified at <strong id="maintenance-notify-email-confirm"></strong>
+    </p>
+
+    <!-- Status grid -->
+    <div class="status-grid">
+      <div class="status-item">
+        <div class="status-item-label">API</div>
+        <div class="status-item-value">
+          <span class="status-dot status-dot--yellow"></span>Maintenance
+        </div>
+      </div>
+      <div class="status-item">
+        <div class="status-item-label">Database</div>
+        <div class="status-item-value">
+          <span class="status-dot status-dot--green"></span>Operational
+        </div>
+      </div>
+      <div class="status-item">
+        <div class="status-item-label">CDN</div>
+        <div class="status-item-value">
+          <span class="status-dot status-dot--green"></span>Operational
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer hint -->
+    <p class="error-footer">
+      Follow <a href="https://twitter.com/pooolfinance" target="_blank" rel="noopener">@pooolfinance</a> for live
+      updates.
+    </p>
+
+  </main>
+
+  <script>
+    // ── Countdown Timer ───────────────────────────────────────────────────
+    // Target: 2 hours from page load (change MAINTENANCE_END_UTC for real deployments)
+    const MAINTENANCE_DURATION_MS = 2 * 60 * 60 * 1000;
+    const savedEnd = sessionStorage.getItem("poool_maintenance_end");
+    const endTime = savedEnd ? parseInt(savedEnd, 10) : Date.now() + MAINTENANCE_DURATION_MS;
+    if (!savedEnd) sessionStorage.setItem("poool_maintenance_end", endTime);
+
+    function pad(n) { return String(n).padStart(2, "0"); }
+
+    function tick() {
+      const remaining = Math.max(0, endTime - Date.now());
+      const h = Math.floor(remaining / 3600000);
+      const m = Math.floor((remaining % 3600000) / 60000);
+      const s = Math.floor((remaining % 60000) / 1000);
+      document.getElementById("countdown-h").textContent = pad(h);
+      document.getElementById("countdown-m").textContent = pad(m);
+      document.getElementById("countdown-s").textContent = pad(s);
+
+      if (remaining > 0) {
+        requestAnimationFrame(tick);
+      } else {
+        document.getElementById("maintenance-countdown").innerHTML =
+          "<span style='color:#0000ff;font-weight:600;font-size:18px'>Maintenance complete — refreshing…</span>";
+        setTimeout(() => window.location.reload(), 3000);
+      }
+    }
+    tick();
+
+    // ── Notify form ───────────────────────────────────────────────────────
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("maintenance-notify-form");
+      if (form) {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          const email = document.getElementById("maintenance-notify-email").value;
+          document.getElementById("maintenance-notify-form").style.display = "none";
+          document.getElementById("maintenance-notify-email-confirm").textContent = email;
+          const success = document.getElementById("maintenance-notify-success");
+          success.classList.add("shown");
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>

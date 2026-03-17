@@ -1,0 +1,150 @@
+/* ===========================
+   Developer Submission Success Page Styles
+   =========================== */
+
+/* Remove default main layout paddings for this specific page */
+.full-height-main {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 80px) !important;
+  padding: 0 20px !important;
+}
+
+.success-center-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  z-index: 10;
+}
+
+/* ===========================
+   Main Content Card
+   =========================== */
+.submission-card {
+  position: relative;
+  max-width: 600px;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 12px 24px rgba(10, 13, 18, 0.04), 0px 4px 8px rgba(10, 13, 18, 0.02);
+  border-radius: 24px;
+  padding: 60px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* Gradient Blur Effects - Contained within card for cleaner look */
+.gradient-blur-1 {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  left: -100px;
+  top: -100px;
+  background: rgba(0, 0, 255, 0.06);
+  filter: blur(80px);
+  z-index: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.gradient-blur-2 {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  right: -50px;
+  bottom: -50px;
+  background: rgba(3, 255, 136, 0.08); /* Green tint */
+  filter: blur(60px);
+  z-index: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Logo icon */
+.submission-logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  z-index: 1;
+}
+
+/* Typography */
+.submission-title {
+  position: relative;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 700;
+  font-size: 32px;
+  color: #181d27;
+  margin: 0 0 16px 0;
+  line-height: 1.2;
+  z-index: 1;
+}
+
+.submission-subtitle {
+  position: relative;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 600;
+  font-size: 16px;
+  color: #0000FF; /* Electric Blue */
+  margin: 0 0 16px 0;
+  z-index: 1;
+}
+
+.submission-description {
+  position: relative;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #535862;
+  margin: 0 0 32px 0;
+  max-width: 480px;
+  z-index: 1;
+}
+
+.submission-contact {
+  position: relative;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #717680;
+  margin: 0 0 40px 0;
+  max-width: 440px;
+  z-index: 1;
+}
+
+.submission-contact a {
+  color: #0000FF; /* Electric Blue */
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.submission-contact a:hover {
+  text-decoration: underline;
+  color: #0000CC;
+}
+
+/* Dashboard Button Override */
+.submission-cta {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  z-index: 1;
+  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05), inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18), inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+}
+
+.submission-cta:hover {
+  box-shadow: 0px 4px 12px rgba(0, 0, 255, 0.25), inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18), inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+}
+

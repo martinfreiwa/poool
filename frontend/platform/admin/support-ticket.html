@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support Ticket | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — View and respond to support tickets." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+
+  <!-- Quill Rich Text Editor -->
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet" />
+  <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+  <style>
+    .msg-bubble {
+      padding: 16px;
+      border-radius: var(--admin-radius-lg);
+      max-width: 85%;
+      margin-bottom: 24px;
+      line-height: 1.5;
+      font-size: 13.5px;
+      position: relative;
+    }
+
+    .msg-bubble--customer {
+      background: var(--admin-hover-overlay);
+      color: var(--admin-text-primary);
+      border: 1px solid var(--admin-border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg-bubble--agent {
+      background: var(--admin-accent-bg);
+      color: var(--admin-text-primary);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-bottom-right-radius: 4px;
+      margin-left: auto;
+    }
+
+    .msg-bubble--note {
+      background: var(--admin-warning-bg);
+      color: var(--admin-warning);
+      border: 1px dashed var(--admin-warning);
+      margin-left: auto;
+      margin-right: auto;
+      max-width: 95%;
+    }
+
+    .msg-meta {
+      font-size: 11px;
+      color: var(--admin-text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .msg-bubble--agent .msg-meta {
+      justify-content: flex-end;
+    }
+  </style>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a><span class="separator">›</span><a href="/admin/support.html">Support</a><span
+              class="separator">›</span><span class="current" id="bc-title">Ticket</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <div style="display: flex; align-items: center; gap: 16px">
+            <a href="/admin/support.html" class="admin-btn admin-btn--secondary admin-btn--icon" title="Back"><svg
+                width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M15 10H5M10 5L5 10l5 5" />
+              </svg></a>
+            <div>
+              <h1 class="admin-page-title" id="ticket-title" style="margin-bottom: 4px">
+                Loading Ticket…
+              </h1>
+              <p class="admin-page-subtitle" id="ticket-id-meta">—</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px">
+          <!-- Left: Thread -->
+          <div style="display: flex; flex-direction: column; gap: 16px">
+            <div class="admin-card">
+              <div class="admin-card-body" id="ticket-thread"
+                style="max-height: 600px; overflow-y: auto; padding: 24px">
+                <div style="
+                      text-align: center;
+                      padding: 40px;
+                      color: var(--admin-text-muted);
+                    ">
+                  Loading conversation...
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-card" id="reply-box-container" style="display: none">
+              <div class="admin-card-body">
+                <div style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      margin-bottom: 12px;
+                    ">
+                  <label class="admin-form-label" style="margin: 0">Reply to Customer</label>
+
+                  <select class="admin-select admin-select--sm" id="canned-responses"
+                    onchange="insertCannedResponse(this.value)">
+                    <option value="">Insert Canned Response...</option>
+                    <option value="greeting">Standard Greeting</option>
+                    <option value="closing">Standard Closing</option>
+                    <option value="investigating">Investigating Issue</option>
+                    <option value="resolved">Issue Resolved</option>
+                    <option value="kyc_request">Request KYC Document</option>
+                  </select>
+                </div>
+
+                <div id="quill-editor" style="
+                      height: 150px;
+                      margin-bottom: 12px;
+                      font-family: var(--admin-font);
+                      font-size: 13.5px;
+                      border-radius: var(--admin-radius-md);
+                    "></div>
+
+                <div style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      margin-top: 12px;
+                    ">
+                  <div style="display: flex; align-items: center; gap: 16px">
+                    <label style="
+                          display: flex;
+                          align-items: center;
+                          gap: 6px;
+                          font-size: 13px;
+                          color: var(--admin-text-secondary);
+                          opacity: 0;
+                          pointer-events: none;
+                          width: 0;
+                          overflow: hidden;
+                        ">
+                      <input type="checkbox" id="reply-is-note" style="accent-color: var(--admin-warning)" />
+                    </label>
+
+                    <!-- File Attachment Button (UI Only) -->
+                    <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="
+                          document.getElementById('file-attachment').click()
+                        " title="Attach File">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path
+                          d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                        </path>
+                      </svg>
+                      Attach
+                    </button>
+                    <input type="file" id="file-attachment" style="display: none" multiple />
+                  </div>
+                  <div style="display: flex; gap: 8px">
+                    <button type="button" class="admin-btn admin-btn--primary" id="btn-send-reply">
+                      Send Reply
+                    </button>
+                  </div>
+                </div>
+                <div id="attachment-list" style="
+                      margin-top: 10px;
+                      display: flex;
+                      gap: 8px;
+                      flex-wrap: wrap;
+                    "></div>
+              </div>
+            </div>
+
+            <!-- Client Notes -->
+            <div class="admin-card">
+              <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="admin-card-title" style="display: flex; align-items: center; gap: 8px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  Client Notes
+                </h3>
+              </div>
+              <div class="admin-card-body">
+                <div id="internal-notes-list" style="margin-bottom: 16px; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+                  <div style="text-align: center; color: var(--admin-text-muted); padding: 20px;">No notes yet.</div>
+                </div>
+                <textarea id="note-input" class="admin-input" placeholder="Write an internal note..." style="width: 100%; min-height: 80px; margin-bottom: 8px; resize: vertical; font-size: 13px;" onkeypress="if(event.ctrlKey && event.key === 'Enter') addInternalNote()"></textarea>
+                <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" style="width: 100%; border-color: var(--admin-warning); color: var(--admin-warning);" id="btn-add-note" onclick="addInternalNote()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  Save Note
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Meta -->
+          <div>
+            <div class="admin-card" style="margin-bottom: 16px">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Ticket Details</h3>
+              </div>
+              <div class="admin-card-body">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Status</label>
+                  <select class="admin-select" id="sel-status" style="width: 100%"
+                    onchange="updateTicketField('status', this.value)">
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Priority</label>
+                  <select class="admin-select" id="sel-priority" style="width: 100%"
+                    onchange="updateTicketField('priority', this.value)">
+                    <option value="urgent">Urgent</option>
+                    <option value="high">High</option>
+                    <option value="normal">Normal</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Assignee</label>
+                  <select class="admin-select" id="sel-assignee" style="width: 100%"
+                    onchange="updateTicketField('assigned_to', this.value)">
+                    <option value="">-- Unassigned --</option>
+                    <option value="admin_1">Admin User</option>
+                    <option value="admin_2">Sarah Jenkins (Support)</option>
+                    <option value="admin_3">Compliance Team</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-card" style="margin-bottom: 16px">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Customer Profile</h3>
+              </div>
+              <div class="admin-card-body" id="customer-profile-card">
+                Loading...
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 9999;
+      "></div>
+
+  <script src="/static/js/admin-support-ticket.js?v=3"></script>
+</body>
+
+</html>

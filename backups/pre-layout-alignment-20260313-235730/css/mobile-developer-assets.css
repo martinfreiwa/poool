@@ -1,0 +1,396 @@
+/* ===========================
+   Mobile Responsive Design for Developer Assets
+   =========================== */
+@media (max-width: 768px) {
+
+  /* NUCLEAR OVERRIDE - Force all cards to be 100% width */
+  * [class*="property-card"],
+  * [class*="dev-asset-card"],
+  * [class*="property-gallery"],
+  * [class*="property-image"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Remove all text selection and tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    -khtml-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+  }
+
+  /* Hide desktop sidebar */
+  .marketplace-sidebar {
+    display: none !important;
+  }
+
+  /* Adjust main content for mobile - with consistent margins */
+  .marketplace-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    padding-top: 0 !important;
+    min-height: calc(100vh - 64px);
+    min-width: unset !important;
+  }
+
+  /* Adjust content wrapper - add horizontal padding here */
+  .marketplace-content-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 113px 16px 0 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Hide filter controls on mobile, keep only status tabs */
+  .filter-bar-container,
+  .filter-controls,
+  .filter-dropdowns,
+  .search-container {
+    display: none !important;
+  }
+
+  /* Show only status tabs on mobile - Responsive - More specific to override desktop absolute positioning */
+  .marketplace-page .status-tabs,
+  #filter-bar-status-tabs {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 4px !important;
+    gap: 8px !important;
+
+    position: relative !important;
+    width: 100% !important;
+    height: 44px !important;
+    margin: 16px 0 24px 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+
+    background: #ffffff !important;
+    border: 1px solid #e9eaeb !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 32px !important;
+  }
+
+  .status-tab {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 8px !important;
+    gap: 8px !important;
+
+    height: 36px !important;
+    flex: 1 !important;
+    /* Tabs grow equally to fill container */
+    align-self: stretch !important;
+
+    border-radius: 30px !important;
+    border: none !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+
+    /* Text xs/Semibold */
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    line-height: 18px !important;
+    color: #000000 !important;
+    background: transparent !important;
+  }
+
+  .status-tab.active {
+    background: rgba(3, 255, 136, 0.18) !important;
+    /* Brand Green Accent - soft tint */
+    border: 1.5px solid rgba(3, 255, 136, 0.5) !important;
+    box-shadow: 0 0 0 3px rgba(3, 255, 136, 0.08) !important;
+    color: #08232F !important;
+    /* Dark brand color for contrast */
+    font-weight: 700 !important;
+  }
+
+  /* Page header - Mobile layout per design specs */
+  .page-header,
+  .dev-assets-header {
+    position: relative !important;
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .page-title {
+    /* Display xs/Bold per specs */
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    line-height: 32px !important;
+    color: #181d27 !important;
+    width: auto !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Developer-specific: Change layout - title and button separate */
+  .dev-assets-header {
+    position: relative !important;
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    height: auto !important;
+    display: block !important;
+    /* Changed from flex to block for vertical stacking */
+    margin-bottom: 0 !important;
+  }
+
+  /* Add Asset Button - Responsive width */
+  .dev-assets-header .add-asset-btn {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 10px 16px !important;
+    gap: 6px !important;
+
+    width: 100% !important;
+    height: 44px !important;
+    margin: 12px 0 0 0 !important;
+
+    background: var(--primary-color) !important;
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 8px !important;
+    border: none !important;
+  }
+
+  .dev-assets-header .add-asset-icon {
+    width: 20px !important;
+    height: 20px !important;
+    flex: none !important;
+    order: 0 !important;
+    flex-grow: 0 !important;
+  }
+
+  .dev-assets-header .add-asset-text {
+    width: 80px !important;
+    height: 24px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+    color: #ffffff !important;
+    flex: none !important;
+    order: 1 !important;
+    flex-grow: 0 !important;
+    padding: 0px 2px !important;
+  }
+
+  /* Inner marketplace wrapper - remove any spacing */
+  #marketplace-content-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Properties section - RELATIVE positioning - More specific to override desktop */
+  .marketplace-page .properties-section,
+  #marketplace-properties-section {
+    position: relative !important;
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 0 96px 0 !important;
+  }
+
+  /* Property grid - Single column, full width responsive */
+  .property-grid,
+  .property-grid-content {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    gap: 16px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .property-grid-container {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* FIX: Override the hardcoded 344px width from marketplace.css line 730 */
+  .property-grid-item {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Property card - responsive width that scales with screen size */
+  .marketplace-main .property-card,
+  .marketplace-main .dev-asset-card,
+  #developer-assets-page .property-card,
+  #developer-assets-page .dev-asset-card,
+  #developer-assets-page .marketplace-main .marketplace-content-wrapper .properties-section .property-grid-container .property-grid-content .dev-asset-card,
+  #developer-assets-page .marketplace-main .marketplace-content-wrapper .properties-section .property-grid-container .property-grid-content .property-card,
+  #marketplace-properties-section .property-grid-content .property-card,
+  #marketplace-properties-section .property-grid-content .dev-asset-card,
+  .properties-section .property-card,
+  .properties-section .dev-asset-card,
+  .property-grid-content .property-card,
+  .property-grid-content .dev-asset-card,
+  .property-card,
+  .dev-asset-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    flex-basis: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+
+  /* Gallery elements - FULL SPECIFICITY CHAIN */
+  .marketplace-main .property-gallery,
+  .dev-asset-card .property-gallery,
+  .property-card .property-gallery,
+  .property-gallery {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 0 !important;
+    padding-bottom: 72.09% !important;
+    /* 248/344 = 72.09% aspect ratio */
+    position: relative !important;
+    box-sizing: border-box !important;
+  }
+
+  .marketplace-main .property-image-container,
+  .dev-asset-card .property-image-container,
+  .property-card .property-image-container,
+  .property-image-container {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .marketplace-main .property-image,
+  .dev-asset-card .property-image,
+  .property-card .property-image,
+  .property-gallery .property-image,
+  .property-image-container .property-image,
+  .property-image {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Card content - FULL SPECIFICITY CHAIN */
+  .marketplace-main .property-content,
+  .dev-asset-card .property-content,
+  .property-card .property-content,
+  .property-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: auto !important;
+    height: auto !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Pricing section - FULL SPECIFICITY CHAIN */
+  .marketplace-main .property-pricing,
+  .dev-asset-card .property-pricing,
+  .property-card .property-pricing,
+  .property-pricing {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: auto !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  /* All inner elements */
+  .marketplace-main .property-categories,
+  .marketplace-main .property-heading,
+  .marketplace-main .investment-details,
+  .dev-asset-card .property-categories,
+  .dev-asset-card .property-heading,
+  .property-categories,
+  .property-heading,
+  .investment-details {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Always show navigation arrows on mobile */
+  .property-nav-arrow {
+    opacity: 1 !important;
+    display: flex !important;
+  }
+
+  .property-nav-arrow--prev,
+  .property-nav-arrow--next {
+    opacity: 1 !important;
+    display: flex !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* Mobile header - FULL WIDTH, no 375px constraint */
+  .mobile-header {
+    display: flex !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure body/page containers are full width */
+  body,
+  html,
+  #developer-assets-body,
+  .marketplace-page,
+  #developer-assets-page {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}

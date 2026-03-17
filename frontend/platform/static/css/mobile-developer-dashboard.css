@@ -1,0 +1,518 @@
+/* Mobile Developer Dashboard CSS - Based on source design specifications */
+
+/* Hide cart icon on all developer pages */
+@media (max-width: 768px) {
+  /* Keep icons aligned to the right */
+  body[id*="developer"] .mobile-header__icons,
+  #developer-dashboard-body .mobile-header__icons,
+  #developer-assets-body .mobile-header__icons {
+    justify-content: flex-end !important;
+  }
+
+  /* Hide cart button on developer pages */
+  body[id*="developer"] .mobile-header__icon-btn--cart,
+  #developer-dashboard-body .mobile-header__icon-btn--cart,
+  #developer-assets-body .mobile-header__icon-btn--cart {
+    display: none !important;
+  }
+}
+
+/* Mobile-specific styles for developer dashboard */
+@media (max-width: 768px) {
+  /* Add padding to parent main container */
+  #developer-dashboard-main {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    overflow-x: visible !important;
+  }
+
+  /* Make dashboard content mobile-responsive instead of hiding */
+  .dashboard-main-content {
+    padding: 0 !important;
+    background: #fafafa !important;
+    min-height: calc(100vh - 64px) !important; /* Account for mobile header */
+    max-width: 100% !important;
+    overflow-x: visible !important;
+  }
+
+  .dashboard-header {
+    margin-bottom: 16px !important;
+    margin-top: 30px;
+  }
+
+  /* Page Title - from design specs */
+  .dashboard-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    line-height: 32px !important;
+    color: #181d27 !important;
+    margin: 0 0 16px 0 !important;
+  }
+
+  /* Mobile metrics container - responsive */
+  .mobile-metrics-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 12px;
+    width: 100%;
+    margin: 0;
+  }
+
+  /* Mobile metric card - responsive */
+  .mobile-metric-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+    gap: 20px;
+    isolation: isolate;
+
+    width: 100%;
+    height: 154px;
+
+    /* Base/White */
+    background: #ffffff;
+    /* Gray/200 */
+    border: 1px solid #e9eaeb;
+    /* Shadows/shadow-xs */
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 12px;
+
+    position: relative;
+  }
+
+  /* Override desktop metric cards on mobile */
+  .metric-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+    gap: 20px;
+    isolation: isolate;
+
+    width: 100% !important;
+    height: 154px !important;
+    margin: 0 !important;
+
+    /* Base/White */
+    background: #ffffff;
+    /* Gray/200 */
+    border: 1px solid #e9eaeb;
+    /* Shadows/shadow-xs */
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 12px;
+  }
+
+  /* Desktop metrics grid - make vertical on mobile */
+  .metrics-section {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .metrics-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Bottom cards row - stack vertically */
+  .bottom-cards-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin: 12px 0 0 0 !important;
+  }
+
+  .bottom-metric-card {
+    width: 100% !important;
+  }
+
+  /* Show sales chart on mobile with mobile-specific styling */
+  .sales-chart-section {
+    display: block !important;
+    width: 100% !important;
+    margin: 12px 0 !important;
+  }
+
+  /* Mobile sales chart card */
+  .sales-chart-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px !important;
+    gap: 6px;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 436px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 12px;
+    margin: 75px 0px 75px;
+  }
+
+  /* Chart header - mobile layout */
+  .chart-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 16px;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Chart title section - horizontal layout with amount and badge */
+  .chart-title-section {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 16px;
+    width: 100% !important;
+    height: 32px;
+  }
+
+  .chart-title {
+    width: auto !important;
+    height: 32px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    line-height: 32px !important;
+    color: #181d27 !important;
+    margin: 0 !important;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .chart-percentage {
+    display: flex !important;
+    flex-direction: row;
+    align-items: center;
+    padding: 2px 10px 2px 8px;
+    gap: 4px;
+    height: 24px;
+    background: #ecfdf3;
+    border: 1px solid #abefc6;
+    border-radius: 16px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    color: #067647;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  /* Mobile chart tabs - horizontal scrolling container */
+  .chart-tabs {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 1px;
+    gap: 2px;
+    width: 100% !important;
+    min-height: 38px;
+    height: auto;
+    background: #fafafa;
+    border: 1px solid #e9eaeb;
+    border-radius: 8px;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .chart-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chart-tab {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 8px;
+    min-height: 36px;
+    height: 36px;
+    flex: none;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #717680;
+    cursor: pointer;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  /* Tab specific widths from design */
+  .chart-tab:nth-child(1) {
+    min-width: 75px;
+    width: 75px;
+  }
+
+  .chart-tab:nth-child(2) {
+    min-width: 64px;
+    width: 64px;
+  }
+
+  .chart-tab:nth-child(3) {
+    min-width: 79px;
+    width: 79px;
+  }
+
+  .chart-tab:nth-child(4) {
+    min-width: 69px;
+    width: 69px;
+  }
+
+  .chart-tab:nth-child(5) {
+    min-width: 85px;
+    width: 85px;
+  }
+
+  .chart-tab.active {
+    background: #ffffff;
+    border: 1px solid #d5d7da;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    color: #414651;
+  }
+
+  /* Text and percentage section - below tabs, above chart */
+  .chart-text-section {
+    display: flex !important;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 16px;
+    width: 100% !important;
+    height: 28px;
+    margin-top: 24px;
+    flex: none;
+    order: 0;
+    align-self: stretch;
+    flex-grow: 0;
+  }
+
+  .chart-text-and-percentage {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+    width: 100%;
+    height: 28px;
+    flex: none;
+    order: 0;
+    flex-grow: 1;
+  }
+
+  .chart-text-label {
+    width: 66px;
+    height: 28px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 28px;
+    color: #181d27;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .chart-text-percentage {
+    width: 60px;
+    height: 28px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 28px;
+    color: #079455;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  /* Chart container - mobile dimensions */
+  .chart-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 20px;
+    width: 100% !important;
+    height: auto !important;
+    position: relative;
+  }
+
+  /* Chart Y-axis - mobile positioning */
+  .chart-y-axis {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0px;
+    gap: 0px;
+    position: absolute !important;
+    left: 0;
+    top: 0;
+    width: 40px;
+    height: 222px;
+    z-index: 10;
+  }
+
+  .chart-y-axis span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px !important;
+    line-height: 18px;
+    text-align: right;
+    color: #535862;
+    width: 40px;
+    height: 18px;
+  }
+
+  /* Chart area - mobile layout */
+  .chart-area {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 0px;
+    width: 100% !important;
+    height: 240px;
+    position: relative;
+  }
+
+  .chart-area svg {
+    width: calc(100% - 48px) !important;
+    height: 222px !important;
+    margin-left: 48px;
+  }
+
+  /* Chart X-axis - mobile layout */
+  .chart-x-axis {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 0px 0px 38px;
+    gap: 24px;
+    width: 100% !important;
+    height: 18px;
+    margin-top: 0px;
+    position: static !important;
+    left: 0 !important;
+    bottom: auto !important;
+    flex: none;
+    order: 1;
+    align-self: stretch;
+    flex-grow: 0;
+    z-index: 1;
+  }
+
+  .chart-x-axis span {
+    margin: 0 auto;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px !important;
+    line-height: 18px;
+    text-align: right;
+    color: #535862;
+    flex: none;
+    flex-grow: 0;
+  }
+
+  /* Hide some months on mobile to fit properly - show Jan, Mar, May, Jul, Sep, Nov, Dec */
+  .chart-x-axis span:nth-child(2),  /* Feb */
+  .chart-x-axis span:nth-child(4),  /* Apr */
+  .chart-x-axis span:nth-child(6),  /* Jun */
+  .chart-x-axis span:nth-child(8),  /* Aug */
+  .chart-x-axis span:nth-child(10) /* Oct */ {
+    display: none;
+  }
+
+  .assets-section-title {
+    font-size: 20px !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* Mobile assets table wrapper - edge-to-edge on right */
+  .mobile-assets-table-wrapper {
+    box-sizing: border-box;
+    width: 100%;
+    margin-left: 0;
+    margin-right: -16px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    border-right: none;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 12px 0 0 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-assets-table-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Override desktop table styles for mobile */
+  .mobile-assets-table-wrapper .table {
+    min-width: 600px;
+    width: auto !important;
+  }
+
+  .mobile-assets-table-wrapper .table__row {
+    height: 72px;
+  }
+
+  /* Hide table header on mobile */
+  .mobile-assets-table-wrapper .table__header {
+    display: none !important;
+  }
+
+  .mobile-assets-table-wrapper .table__cell {
+    padding: 16px 24px;
+    font-size: 14px;
+  }
+}
+
+/* Desktop - hide mobile content */
+@media (min-width: 769px) {
+  .mobile-developer-dashboard {
+    display: none !important;
+  }
+}

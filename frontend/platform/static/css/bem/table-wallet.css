@@ -1,0 +1,240 @@
+/* ===========================
+   Wallet Table Variant Styles
+   BEM Modifier: table__wrapper--wallet
+   =========================== */
+
+/* Wallet variant specific styling */
+.table__wrapper--wallet {
+  /* Wallet tables have specific width but must remain responsive */
+  width: 100%;
+}
+
+/* Wallet-specific column widths - proportional flex sizing */
+.table__wrapper--wallet .table__header-cell--type,
+.table__wrapper--wallet .table__cell--type {
+  flex: 2.2;
+  min-width: 0;
+}
+
+.table__wrapper--wallet .table__header-cell--status,
+.table__wrapper--wallet .table__cell--status {
+  flex: 1.6;
+  min-width: 0;
+}
+
+.table__wrapper--wallet .table__header-cell--date,
+.table__wrapper--wallet .table__cell--date {
+  flex: 2;
+  min-width: 0;
+}
+
+.table__wrapper--wallet .table__header-cell--wallet,
+.table__wrapper--wallet .table__cell--wallet {
+  flex: 1.5;
+  min-width: 0;
+}
+
+.table__wrapper--wallet .table__header-cell--amount,
+.table__wrapper--wallet .table__cell--amount {
+  flex: 1.5;
+  min-width: 0;
+}
+
+.table__wrapper--wallet .table__header-cell--actions,
+.table__wrapper--wallet .table__cell--actions {
+  flex: 1.8;
+  min-width: 0;
+}
+
+/* Wallet-specific cell alignment */
+.table__wrapper--wallet .table__cell {
+  display: flex;
+  align-items: center;
+}
+
+/* Type column with icon and text */
+.table__wrapper--wallet .table__cell--type {
+  gap: 12px;
+}
+
+/* Transaction type icon styles */
+.table__wrapper--wallet .wallet-transaction-type-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table__wrapper--wallet .featured-icon {
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  background: #f3f4f6;
+  border: 1px solid #e9eaeb;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.table__wrapper--wallet .featured-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.table__wrapper--wallet .wallet-transaction-type-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181d27;
+}
+
+/* Status badge styling */
+.table__wrapper--wallet .wallet-transaction-status-badge {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 6px;
+  gap: 4px;
+  height: 22px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+}
+
+.table__wrapper--wallet .wallet-transaction-status-dot {
+  width: 8px;
+  height: 8px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table__wrapper--wallet .wallet-transaction-status-dot::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.table__wrapper--wallet .wallet-transaction-status-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #414651;
+}
+
+/* Status variants */
+.table__wrapper--wallet
+  .status-completed
+  .wallet-transaction-status-dot::after {
+  background: #17b26a;
+}
+
+.table__wrapper--wallet
+  .status-in-process
+  .wallet-transaction-status-dot::after {
+  background: #f79009;
+}
+
+.table__wrapper--wallet .status-declined .wallet-transaction-status-dot::after {
+  background: #f04438;
+}
+
+/* Date and wallet columns */
+.table__wrapper--wallet .table__cell--date,
+.table__wrapper--wallet .table__cell--wallet {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+/* Amount styling */
+.table__wrapper--wallet .amount-positive {
+  color: #249d19;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.table__wrapper--wallet .amount-negative {
+  color: #181d27;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* Action button styling */
+.table__wrapper--wallet .wallet-transaction-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #717680;
+  cursor: pointer;
+}
+
+.table__wrapper--wallet .wallet-transaction-action-btn:hover {
+  color: #535862;
+}
+
+/* Footer styles specific to wallet */
+.table__wrapper--wallet + .wallet-transactions-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 10px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+  height: auto;
+}
+
+.table__wrapper--wallet
+  + .wallet-transactions-footer
+  .wallet-transactions-see-all {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  white-space: nowrap;
+  height: 20px;
+  background: none;
+  border: none;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 14px;
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.table__wrapper--wallet
+  + .wallet-transactions-footer
+  .wallet-transactions-see-all:hover {
+  opacity: 0.8;
+}

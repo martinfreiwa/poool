@@ -1,0 +1,200 @@
+document.addEventListener("alpine:init", () => {
+  Alpine.data("emailApp", () => ({
+    activeTab: "overview",
+    templateSearch: "",
+
+    // Data
+    templates: [],
+    logs: [],
+    templatePage: 1,
+    templatePageSize: 10,
+    logPage: 1,
+    logPageSize: 15,
+    stats: {
+      deliveryRate: "--",
+      deliveryTrend: 0,
+      openRate: "--",
+      clickRate: "--",
+      bounceRate: "--",
+      bouncesTotal: 0,
+      totalSent: 0,
+    },
+
+    // Editor State
+    editingTemplate: false,
+    currentTemplate: {
+      id: null,
+      name: "",
+      subject: "",
+      description: "",
+      html_template: "",
+    },
+
+    // Campaign State
+    sending: false,
+    campaign: {
+      audience: "all",
+      templateId: "",
+    },
+
+    // Toast
+    toast: {
+      show: false,
+      message: "",
+      type: "success",
+    },
+
+    async init() {
+      await this.loadData();
+    },
+
+    async loadData() {
+      try {
+        const resp = await fetch("/api/admin/emails");
+        if (!resp.ok) throw new Error("Failed to load email data");
+        const data = await resp.json();
+
+        this.templates = data.templates || [];
+        // Update stats block with server data if available
+        if (data.stats) {
+          this.stats = { ...this.stats, ...data.stats };
+        }
+        if (data.logs) {
+          this.logs = data.logs;
+        }
+      } catch (err) {
+        this.showToast("Failed to connect to email server.", "error");
+      }
+    },
+
+    get filteredTemplates() {
+      let res = this.templates;
+      if (this.templateSearch) {
+        const s = this.templateSearch.toLowerCase();
+        res = res.filter(
+          (t) =>
+            (t.name && t.name.toLowerCase().includes(s)) ||
+            (t.subject && t.subject.toLowerCase().includes(s)),
+        );
+      }
+      return res;
+    },
+
+    get paginatedTemplates() {
+      const start = (this.templatePage - 1) * this.templatePageSize;
+      return this.filteredTemplates.slice(start, start + this.templatePageSize);
+    },
+
+    get paginatedLogs() {
+      const start = (this.logPage - 1) * this.logPageSize;
+      return this.logs.slice(start, start + this.logPageSize);
+    },
+
+    startNewTemplate() {
+      this.currentTemplate = {
+        id: null,
+        name: "",
+        subject: "",
+        description: "",
+        html_template:
+          "<h1>Welcome {{first_name}}</h1>\n<p>Start editing here...</p>",
+      };
+      this.editingTemplate = true;
+    },
+
+    editTemplate(t) {
+      this.currentTemplate = {
+        id: t.id,
+        name: t.name,
+        subject: t.subject,
+        description: t.description || "",
+        // we won't have the html_template from the overview endpoint, we should probably fetch it deep
+        // but for now let's just use what's returned. We should make sure the GET /api/admin/emails includes HTML.
+        html_template: t.html_template || "<h1>" + t.subject + "</h1>",
+      };
+      this.editingTemplate = true;
+    },
+
+    cancelEdit() {
+      this.editingTemplate = false;
+    },
+
+    async saveTemplate() {
+      if (
+        !this.currentTemplate.name ||
+        !this.currentTemplate.subject ||
+        !this.currentTemplate.html_template
+      ) {
+        this.showToast(
+          "Name, Subject, and HTML Content are required.",
+          "error",
+        );
+        return;
+      }
+
+      try {
+        const isNew = !this.currentTemplate.id;
+        const method = isNew ? "POST" : "PUT";
+        // If it's new, we post to /api/admin/emails/templates
+        // If it's updating, we put to /api/admin/emails/templates/:id
+        const url = isNew
+          ? "/api/admin/emails/templates"
+          : `/api/admin/emails/templates/${this.currentTemplate.id}`;
+
+        const resp = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(this.currentTemplate),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.error || "Failed to save template");
+        }
+
+        await this.loadData();
+        this.editingTemplate = false;
+        this.showToast("Template saved successfully!");
+      } catch (err) {
+        this.showToast(err.message, "error");
+      }
+    },
+
+    async sendCampaign() {
+      if (!this.campaign.templateId) return;
+      this.sending = true;
+      try {
+        const resp = await fetch("/api/admin/emails/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(this.campaign),
+        });
+        if (!resp.ok) {
+          throw new Error("Failed to start campaign.");
+        }
+        const data = await resp.json();
+        this.showToast(`Campaign started! ${data.target_count} users queued.`);
+
+        // Switch to logs to watch sending
+        this.activeTab = "logs";
+        this.campaign.templateId = "";
+
+        // Reload data shortly to show logs
+        setTimeout(() => this.loadData(), 2000);
+      } catch (err) {
+        this.showToast(err.message, "error");
+      } finally {
+        this.sending = false;
+      }
+    },
+
+    showToast(message, type = "success") {
+      this.toast.message = message;
+      this.toast.type = type;
+      this.toast.show = true;
+      setTimeout(() => {
+        this.toast.show = false;
+      }, 3000);
+    },
+  }));
+});

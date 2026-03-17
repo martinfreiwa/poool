@@ -1,0 +1,16 @@
+[book]
+authors = ["Antigravity AI", "Martin"]
+language = "en"
+src = "src"
+title = "POOOL Platform - Technical Documentation"
+
+[output.html]
+git-repository-url = "https://github.com/martin/poool"
+edit-url-template = "https://github.com/martin/poool/edit/main/docs/book/{path}"
+preferred-dark-theme = "navy"
+print.enable = true
+additional-css = ["custom.css"]
+
+[output.html.playground]
+editable = false
+copyable = true

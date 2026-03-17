@@ -1,0 +1,688 @@
+/* ================================
+   POOOL - Unified Dropdown Component
+   Matches the POOOL website design language
+   ================================ */
+
+:root {
+  /* Design Tokens */
+  --pd-primary: var(--primary-color);
+  --pd-accent: #62f7a4;
+  --pd-text-main: #181d27;
+  --pd-text-medium: #414651;
+  --pd-text-light: #717680;
+  --pd-text-muted: #a4a7ae;
+  --pd-border: #d5d7da;
+  --pd-border-light: #e9eaeb;
+  --pd-bg: #ffffff;
+  --pd-bg-hover: #f5f5ff;
+  --pd-bg-subtle: #f9fafb;
+  --pd-shadow:
+    0px 4px 6px -2px rgba(16, 24, 40, 0.03),
+    0px 12px 16px -4px rgba(16, 24, 40, 0.08);
+}
+
+/* Admin Theme Overrides (Respects admin.css variables) */
+.admin-body,
+.admin-dark,
+[class*="admin-"] {
+  --pd-primary: var(--admin-accent, var(--primary-color));
+  --pd-text-main: var(--admin-text-primary, #111827);
+  --pd-text-medium: var(--admin-text-secondary, #4b5563);
+  --pd-text-light: var(--admin-text-muted, #9ca3af);
+  --pd-text-muted: var(--admin-text-muted, #9ca3af);
+  --pd-border: var(--admin-border, #e5e7eb);
+  --pd-border-light: var(--admin-border, #e5e7eb);
+  --pd-bg: var(--admin-bg-card, #ffffff);
+  --pd-bg-hover: var(--admin-hover-overlay, rgba(0, 0, 0, 0.03));
+  --pd-bg-subtle: var(--admin-bg, #f7f8fa);
+}
+
+/* ─── Container ─── */
+.poool-dropdown {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  font-family: 'TT Norms Pro', sans-serif;
+  transition: z-index 0.3s ease;
+}
+
+/* Ensure open dropdown is above EVERYTHING */
+.poool-dropdown--open {
+  z-index: 9999999 !important;
+  overflow: visible !important;
+}
+
+/* ─── Label ─── */
+.poool-dropdown__label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--pd-text-medium);
+  user-select: none;
+}
+
+.poool-dropdown__label--required::after {
+  content: " *";
+  color: #ef4444;
+}
+
+.poool-dropdown__label-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  cursor: help;
+  color: var(--pd-text-muted);
+}
+
+/* ─── Trigger (the clickable dropdown button) ─── */
+.poool-dropdown__trigger {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  background: var(--pd-bg);
+  border: 1px solid var(--pd-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  position: relative;
+  font-family: inherit;
+}
+
+.poool-dropdown__trigger:hover {
+  border-color: var(--pd-text-muted);
+}
+
+.poool-dropdown__trigger:focus,
+.poool-dropdown__trigger--active {
+  border-color: var(--pd-primary);
+  box-shadow: 0 0 0 3px rgba(46, 46, 249, 0.08);
+}
+
+.poool-dropdown__trigger--error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08);
+}
+
+.poool-dropdown__trigger--disabled {
+  background: var(--pd-bg-subtle);
+  border-color: var(--pd-border-light);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ─── Icon (left side, optional) ─── */
+.poool-dropdown__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--pd-text-light);
+  pointer-events: none;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.poool-dropdown__icon img,
+.poool-dropdown__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ─── Selected Value Text ─── */
+.poool-dropdown__value {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 24px;
+  color: var(--pd-text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.poool-dropdown__value--placeholder {
+  color: var(--pd-text-light);
+}
+
+.poool-dropdown__value--selected {
+  font-weight: 500;
+  color: var(--pd-text-main);
+}
+
+/* ─── Chevron (right side) ─── */
+.poool-dropdown__chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--pd-text-light);
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.poool-dropdown__trigger--active .poool-dropdown__chevron {
+  transform: rotate(180deg);
+}
+
+/* ─── Options Panel (dropdown menu) ─── */
+.poool-dropdown__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 9999999;
+  background: var(--pd-bg);
+  border: 1px solid var(--pd-border-light);
+  border-radius: 8px;
+  box-shadow: var(--pd-shadow);
+  padding: 4px 0;
+  max-height: 280px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 0.15s ease;
+  -webkit-overflow-scrolling: touch;
+}
+
+.poool-dropdown__panel--open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Panel opening upward */
+.poool-dropdown__panel--up {
+  top: auto;
+  bottom: calc(100% + 4px);
+  transform: translateY(4px);
+}
+
+.poool-dropdown__panel--up.poool-dropdown__panel--open {
+  transform: translateY(0);
+}
+
+/* ─── Scrollbar Styling ─── */
+.poool-dropdown__panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.poool-dropdown__panel::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.poool-dropdown__panel::-webkit-scrollbar-thumb {
+  background: var(--pd-border);
+  border-radius: 3px;
+}
+
+.poool-dropdown__panel::-webkit-scrollbar-thumb:hover {
+  background: var(--pd-text-muted);
+}
+
+/* ─── Search within dropdown ─── */
+.poool-dropdown__search {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--pd-border-light);
+  position: sticky;
+  top: 0;
+  background: var(--pd-bg);
+  z-index: 1;
+}
+
+.poool-dropdown__search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--pd-border-light);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: 'TT Norms Pro', sans-serif;
+  color: var(--pd-text-main);
+  background: var(--pd-bg);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.poool-dropdown__search-input:focus {
+  border-color: var(--pd-primary);
+}
+
+.poool-dropdown__search-input::placeholder {
+  color: var(--pd-text-muted);
+}
+
+.poool-dropdown__search-icon {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--pd-text-muted);
+  pointer-events: none;
+}
+
+/* ─── Option Group Label ─── */
+.poool-dropdown__group-label {
+  padding: 8px 14px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--pd-text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Option Item ─── */
+.poool-dropdown__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  min-height: 36px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--pd-text-main);
+  user-select: none;
+}
+
+.poool-dropdown__option:hover {
+  background: var(--pd-bg-hover);
+}
+
+.poool-dropdown__option--focused {
+  background: var(--pd-bg-hover);
+}
+
+.poool-dropdown__option--selected {
+  background: var(--pd-bg-hover);
+  font-weight: 500;
+  color: var(--pd-primary);
+}
+
+.poool-dropdown__option--selected:hover {
+  background: var(--pd-bg-hover);
+}
+
+.poool-dropdown__option--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ─── Option Icon / Emoji ─── */
+.poool-dropdown__option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.poool-dropdown__option-icon img,
+.poool-dropdown__option-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ─── Option Text ─── */
+.poool-dropdown__option-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Option Description (secondary text) ─── */
+.poool-dropdown__option-desc {
+  font-size: 12px;
+  color: var(--pd-text-light);
+  margin-top: 2px;
+}
+
+/* ─── Checkmark (for selected option) ─── */
+.poool-dropdown__check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--pd-primary);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.poool-dropdown__option--selected .poool-dropdown__check {
+  opacity: 1;
+}
+
+/* ─── Divider ─── */
+.poool-dropdown__divider {
+  height: 1px;
+  background: var(--pd-border-light);
+  margin: 4px 0;
+}
+
+/* ─── No Results ─── */
+.poool-dropdown__empty {
+  padding: 16px 14px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--pd-text-light);
+}
+
+/* ─── Helper / Error Text ─── */
+.poool-dropdown__helper {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--pd-text-light);
+  margin-top: 2px;
+}
+
+.poool-dropdown__error {
+  font-size: 13px;
+  line-height: 18px;
+  color: #ef4444;
+  margin-top: 2px;
+}
+
+/* =============================
+   SIZE VARIANTS
+   ============================= */
+
+/* Small */
+.poool-dropdown--sm .poool-dropdown__trigger {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 6px;
+}
+
+.poool-dropdown--sm .poool-dropdown__value {
+  font-size: 13px;
+}
+
+.poool-dropdown--sm .poool-dropdown__option {
+  padding: 6px 10px;
+  min-height: 32px;
+  font-size: 13px;
+}
+
+.poool-dropdown--sm .poool-dropdown__panel {
+  border-radius: 6px;
+}
+
+/* Large */
+.poool-dropdown--lg .poool-dropdown__trigger {
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 10px;
+}
+
+.poool-dropdown--lg .poool-dropdown__value {
+  font-size: 16px;
+}
+
+.poool-dropdown--lg .poool-dropdown__option {
+  padding: 10px 16px;
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.poool-dropdown--lg .poool-dropdown__panel {
+  border-radius: 10px;
+}
+
+/* =============================
+   STYLE VARIANTS
+   ============================= */
+
+/* Ghost (no border) */
+.poool-dropdown--ghost .poool-dropdown__trigger {
+  border-color: transparent;
+  background: transparent;
+}
+
+.poool-dropdown--ghost .poool-dropdown__trigger:hover {
+  background: var(--pd-bg-hover);
+  border-color: transparent;
+}
+
+.poool-dropdown--ghost .poool-dropdown__trigger:focus,
+.poool-dropdown--ghost .poool-dropdown__trigger--active {
+  background: var(--pd-bg-hover);
+  border-color: var(--pd-primary);
+}
+
+/* Filled */
+.poool-dropdown--filled .poool-dropdown__trigger {
+  background: var(--pd-bg-subtle);
+  border-color: var(--pd-border-light);
+}
+
+.poool-dropdown--filled .poool-dropdown__trigger:hover {
+  background: var(--pd-bg-hover);
+}
+
+.poool-dropdown--filled .poool-dropdown__trigger:focus,
+.poool-dropdown--filled .poool-dropdown__trigger--active {
+  background: var(--pd-bg);
+  border-color: var(--pd-primary);
+}
+
+/* =============================
+   FULL WIDTH (for form layouts)
+   ============================= */
+.poool-dropdown--full {
+  width: 100%;
+}
+
+/* =============================
+   INLINE DROPDOWN (compact)
+   ============================= */
+.poool-dropdown--inline {
+  display: inline-flex;
+  width: auto;
+}
+
+.poool-dropdown--inline .poool-dropdown__trigger {
+  width: auto;
+  min-width: 120px;
+}
+
+.poool-dropdown--inline .poool-dropdown__panel {
+  min-width: 180px;
+}
+
+/* =============================
+   MULTI-SELECT TAGS
+   ============================= */
+.poool-dropdown__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+  overflow: hidden;
+  align-items: center;
+}
+
+.poool-dropdown__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--pd-bg-hover);
+  border: 1px solid var(--pd-primary);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pd-primary);
+  line-height: 20px;
+}
+
+.poool-dropdown__tag-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  color: var(--primary-color);
+  transition: all 0.12s ease;
+}
+
+.poool-dropdown__tag-remove:hover {
+  background: var(--primary-color);
+  color: #ffffff;
+}
+
+/* =============================
+   ANIMATIONS
+   ============================= */
+@keyframes pooolDropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pooolDropdownFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* =============================
+   MOBILE RESPONSIVE
+   ============================= */
+@media (max-width: 768px) {
+  .poool-dropdown__trigger {
+    height: 48px;
+    padding: 0 12px;
+  }
+
+  .poool-dropdown__option {
+    padding: 10px 12px;
+    min-height: 40px;
+  }
+
+  .poool-dropdown__panel {
+    max-height: 240px;
+  }
+
+  .poool-dropdown__value {
+    font-size: 16px;
+    /* Prevent iOS zoom */
+  }
+}
+
+/* =============================
+   LEGACY OVERRIDES
+   Auto-hides old absolute icons and chevrons
+   ONLY inside already-converted poool-dropdown wrappers.
+   We must NOT destroy the marketplace filter bar layout.
+   ============================= */
+
+/* Hide old icons/chevrons only when a poool-dropdown has replaced the select */
+.poool-dropdown .dropdown-chevron,
+.poool-dropdown .select-chevron,
+.poool-dropdown .dropdown-icon,
+.poool-dropdown .settings-select-wrapper__icon-left,
+.poool-dropdown .settings-select-wrapper__icon-right {
+  display: none !important;
+}
+
+/* Reset parent wrappers ONLY in settings / non-filter contexts */
+.settings-select-wrapper {
+  border: none !important;
+  background: transparent !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+  height: auto !important;
+}
+
+/* When a dropdown-wrapper contains a converted poool-dropdown, strip its old shell */
+.dropdown-wrapper:has(.poool-dropdown) {
+  border: none !important;
+  background: transparent !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+  height: auto !important;
+  padding: 0 !important;
+}
+
+/* Fallback for browsers without :has() — the :has() rules above cover modern browsers */
+
+/* Ensure filter-dropdown containers keep their structure but allow poool-dropdown to size naturally */
+.filter-dropdown:has(.poool-dropdown) {
+  height: auto !important;
+  min-height: 70px;
+}
+
+/* Keep filter labels visible above the dropdown — prevent clipping */
+.filter-label {
+  overflow: visible;
+  position: relative;
+  z-index: 10;
+}
+
+/* ──────────────────────────────────────────────────────────
+   PREVENT PARENT CLIPPING (The "Hidden Dropdown" Fix)
+   ────────────────────────────────────────────────────────── */
+
+/* If any of these containers have an open dropdown, they MUST be overflow: visible */
+.admin-card:has(.poool-dropdown--open),
+.admin-card-body:has(.poool-dropdown--open),
+.dropdown-wrapper:has(.poool-dropdown--open),
+.settings-form-row__content:has(.poool-dropdown--open),
+.filter-dropdown:has(.poool-dropdown--open),
+.settings-select-wrapper:has(.poool-dropdown--open) {
+  overflow: visible !important;
+  z-index: 1000000 !important;
+}
+
+/* Ensure the open dropdown is above EVERY other UI element */
+.poool-dropdown--open {
+  z-index: 2147483647 !important;
+}
+
+.poool-dropdown--open .poool-dropdown__panel {
+  z-index: 2147483647 !important;
+}

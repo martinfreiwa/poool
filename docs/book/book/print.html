@@ -1,0 +1,1594 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>POOOL Platform - Technical Documentation</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-2459343d.css">
+        <link rel="stylesheet" href="css/chrome-ae938929.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="custom-8fcae763.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-0cb0e1db.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-840e169f.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">POOOL Platform - Technical Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/martin/poool" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="poool-platform-"><a class="header" href="#poool-platform-">POOOL Platform 🏦</a></h1>
+<p>Welcome to the <strong>POOOL Platform</strong> – an institutional-grade platform democratizing access to Fractional Real Word Assets (RWA) via tokenization.</p>
+<p>This repository operates as a <strong>Monorepo</strong>, housing the entire application stack engineered for high-security environments, specifically FinTech. It includes an Angular/Tailwind marketing frontend, an ultra-fast HTMX/Alpine.js developer dashboard, and a memory-safe Rust/Axum backend.</p>
+<hr>
+<h2 id="-repository-architecture"><a class="header" href="#-repository-architecture">🏗 Repository Architecture</a></h2>
+<p>The project is structured logically separating domains:</p>
+<pre><code class="language-text">poool/
+├── backend/          # Core API &amp; Business Logic (Rust, Axum, SQLx, PostgreSQL)
+├── frontend/
+│   ├── platform/     # Investor/Admin Dashboard (HTMX, Server-Side Rendered)
+│   └── www/          # Marketing Website (Angular + Tailwind CSS, High SEO Focus)
+├── database/         # PostgreSQL Schema and Migrations
+├── docs/             # Technical Specifications (Masterplan, DB Schema, Knowledge)
+└── scripts/          # Python/NodeJS Utility &amp; Setup Scripts
+</code></pre>
+<hr>
+<h2 id="-quick-start-local-development"><a class="header" href="#-quick-start-local-development">🚀 Quick Start (Local Development)</a></h2>
+<p>To spin up the entire application stack seamlessly on your local machine:</p>
+<p><strong>1. Prerequisites:</strong>
+Ensure you have the following installed:</p>
+<ul>
+<li><a href="https://rustup.rs/">Rust &amp; Cargo</a></li>
+<li><a href="https://postgresql.org/">PostgreSQL</a> (Version 16 or newer)</li>
+</ul>
+<p><strong>2. Database Initialization:</strong>
+Start your local PostgreSQL instance and import the secure database schema:</p>
+<pre><code class="language-bash">createdb poool
+psql -d poool -f database/001_initial_schema.sql
+</code></pre>
+<p><strong>3. Environment Configuration:</strong>
+Configure backend environment secrets by copying the template file:</p>
+<pre><code class="language-bash">cd backend
+cp .env.example .env
+</code></pre>
+<p><em>(Optionally modify the <code>DATABASE_URL</code> inside <code>.env</code> to match your local setup).</em></p>
+<p><strong>4. Start the Application Server:</strong>
+Launch the Axum backend which serves both the API and the full Frontend stack:</p>
+<pre><code class="language-bash">cargo run
+</code></pre>
+<p>✅ The platform will be live at: <strong><a href="http://localhost:8888">http://localhost:8888</a></strong></p>
+<hr>
+<h2 id="-security--performance-guidelines"><a class="header" href="#-security--performance-guidelines">🔒 Security &amp; Performance Guidelines</a></h2>
+<p>Since POOOL executes financial transactions, this repo strictly enforces:</p>
+<ul>
+<li><strong>Zero Client-Side Business Logic:</strong> All critical routing and verification happen in the Rust backend via SSR (Server-Side Rendering).</li>
+<li><strong>Strong Crypto:</strong> Passwords use <code>Argon2id</code> hashing, and sessions mandate strict HTTP-only cookies.</li>
+<li><strong>ACID Transactions:</strong> Every financial event is wrapped in a PostgreSQL transaction; no floats are allowed for monetary values (strictly integers).</li>
+</ul>
+<h2 id="-extended-documentation"><a class="header" href="#-extended-documentation">📖 Extended Documentation</a></h2>
+<p>For deep technical integrations, consult our documentation hub:</p>
+<ul>
+<li><a href="docs/MASTERPLAN.html"><code>docs/MASTERPLAN.md</code></a> — The global architecture vision &amp; workflows.</li>
+<li><a href="docs/DATABASE_SCHEMA.html"><code>docs/DATABASE_SCHEMA.md</code></a> — The exact definitions of the relational models.</li>
+<li><a href="docs/KNOWLEDGE_HANDOFF.html"><code>docs/KNOWLEDGE_HANDOFF.md</code></a> — Historical context and architectural decisions.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="architecture-decision-records-adr"><a class="header" href="#architecture-decision-records-adr">Architecture Decision Records (ADR)</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="adr-001-core-technology-stack---rust-axum-htmx-and-sqlx"><a class="header" href="#adr-001-core-technology-stack---rust-axum-htmx-and-sqlx">ADR 001: Core Technology Stack - Rust, Axum, HTMX, and SQLx</a></h1>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Date:</strong> 2026-03-08</li>
+<li><strong>Deciders:</strong> Antigravity (AI Architect), Martin (User)</li>
+</ul>
+<h2 id="context-and-problem-statement"><a class="header" href="#context-and-problem-statement">Context and Problem Statement</a></h2>
+<p>The POOOL platform is a financial/RWA tokenization engine requiring high security, institutional-grade reliability, and a responsive but simple-to-maintain frontend. The previous agency provided a compiled frontend and lacked a robust backend implementation. We need a stack that ensures type safety, memory safety, and high performance while allowing for rapid iteration on the dashboard features.</p>
+<h2 id="decision-drivers"><a class="header" href="#decision-drivers">Decision Drivers</a></h2>
+<ul>
+<li><strong>Security (FinTech):</strong> Memory safety and strong typing are non-negotiable for handling financial transactions.</li>
+<li><strong>Maintainability:</strong> The frontend needs to be highly interactive without the complexity of a heavy SPA framework (like React/Angular) which can lead to state synchronization issues.</li>
+<li><strong>Performance:</strong> Low latency for market data and asset processing.</li>
+<li><strong>Developer Experience:</strong> Efficient development workflow with strong compiler-level guarantees.</li>
+</ul>
+<h2 id="considered-options"><a class="header" href="#considered-options">Considered Options</a></h2>
+<ol>
+<li><strong>Node.js/TypeScript + React</strong>: Industry standard for web, but lacks the memory safety guarantees of Rust and introduces high JS-bundle complexity.</li>
+<li><strong>Go + Hugo/Template</strong>: Excellent performance, but less expressive type system compared to Rust.</li>
+<li><strong>Rust (Axum) + HTMX + Alpine.js</strong>: Leveraging Rust for the heavy lifting and HTMX for “Hypermedia as the Engine of Application State” (HATEOAS).</li>
+</ol>
+<h2 id="decision-outcome"><a class="header" href="#decision-outcome">Decision Outcome</a></h2>
+<p>Chosen option: <strong>Option 3 (Rust + Axum + HTMX + SQLx)</strong>.</p>
+<h3 id="consequences"><a class="header" href="#consequences">Consequences</a></h3>
+<ul>
+<li><strong>Good:</strong>
+<ul>
+<li><strong>Memory Safety:</strong> Rust prevents entire classes of bugs (null pointers, data races) common in financial software.</li>
+<li><strong>SSR Simplicity:</strong> HTMX allows us to keep business logic in the backend while providing a dynamic, SPA-like user experience.</li>
+<li><strong>SQL Safety:</strong> SQLx provides compile-time verification of SQL queries against the actual database schema.</li>
+<li><strong>Institutional Trust:</strong> Using a systems language like Rust signals a high standard of engineering to potential partners/investors.</li>
+</ul>
+</li>
+<li><strong>Bad:</strong>
+<ul>
+<li><strong>Learning Curve:</strong> Rust has a steeper learning curve than Python or Node.js.</li>
+<li><strong>Compile Times:</strong> Rust compilation is slower than Go or Node.js.</li>
+</ul>
+</li>
+</ul>
+<h2 id="pros-and-cons-of-the-chosen-option"><a class="header" href="#pros-and-cons-of-the-chosen-option">Pros and Cons of the Chosen Option</a></h2>
+<h3 id="pros"><a class="header" href="#pros">Pros</a></h3>
+<ul>
+<li><strong>Zero-cost abstractions.</strong></li>
+<li><strong>Seamless HTMX Integration:</strong> Small HTML fragments are returned via Axum handlers, making the UI extremely fast as only changed parts of the DOM are updated.</li>
+<li><strong>PostgreSQL Native:</strong> SQLx is built specifically for async PostgreSQL performance.</li>
+</ul>
+<h3 id="cons"><a class="header" href="#cons">Cons</a></h3>
+<ul>
+<li>Requires disciplined documentation (which we are currently addressing via this workflow).</li>
+<li>Complexity in managing large HTMX partials if not modularized correctly.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="foundations"><a class="header" href="#foundations">Foundations</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="-poool-plattform--1010-experten-masterplan-architektur--implementierung"><a class="header" href="#-poool-plattform--1010-experten-masterplan-architektur--implementierung">🏛 POOOL Plattform – 10/10 Experten-Masterplan (Architektur &amp; Implementierung)</a></h1>
+<p>Dieses Dokument dient als das zentrale “Single Source of Truth” (SSOT) für die Entwicklung, Skalierung und den Betrieb der POOOL-Plattform. Es definiert die gesamte technische und konzeptionelle Architektur für eine hochsichere, regulierte Finanzplattform (Fractional Investment in Real World Assets - RWA).</p>
+<hr>
+<h2 id="1-executive-summary--produktvision"><a class="header" href="#1-executive-summary--produktvision">1. Executive Summary &amp; Produktvision</a></h2>
+<p>POOOL demokratisiert den Zugang zu illiquiden Vermögenswerten (Immobilien, Edelmetalle, Kunst) durch Tokenisierung. Nutzer können kleine Anteile (Fractions) erwerben, halten und handeln.
+Da POOOL im stark regulierten Finanzsektor (FinTech) agiert, haben <strong>Sicherheit (Security), Compliance (Regulatorik) und Transaktionsintegrität (ACID)</strong> die absolut höchste Priorität. Ein einziger Fehler bei Transaktionen ist inakzeptabel.</p>
+<hr>
+<h2 id="2-systemarchitektur--tech-stack"><a class="header" href="#2-systemarchitektur--tech-stack">2. Systemarchitektur &amp; Tech-Stack</a></h2>
+<p>Um maximale Performance, Sicherheit und Wartbarkeit zu garantieren, setzen wir auf modernste Technologien.</p>
+<h3 id="21-frontend-user-facing"><a class="header" href="#21-frontend-user-facing">2.1 Frontend (User Facing)</a></h3>
+<ul>
+<li><strong>Marketing-Webseite (<code>/frontend/www/</code>):</strong> Angular + Tailwind CSS. Auf blitzschnelles Laden und SEO optimiert.</li>
+<li><strong>Investor &amp; Admin Dashboard (<code>/frontend/platform/</code>):</strong>
+<ul>
+<li><strong>Paradigma:</strong> Server-Side Rendering (SSR) kombiniert mit <strong>HTMX</strong> und <strong>Alpine.js</strong>.</li>
+<li><strong>Vorteil:</strong> Keine komplexe Single-Page-Application-Logik, extreme Geschwindigkeit, maximale Sicherheit (keine sensible Business-Logik und keine empfindlichen API-Schlüssel im Client).</li>
+</ul>
+</li>
+</ul>
+<h3 id="22-backend-core-api--business-logic"><a class="header" href="#22-backend-core-api--business-logic">2.2 Backend (Core API &amp; Business Logic)</a></h3>
+<ul>
+<li><strong>Sprache &amp; Framework:</strong> <strong>Rust</strong> mit <strong>Axum</strong>.</li>
+<li><strong>Vorteile:</strong> Rust bietet Memory-Safety (Vermeidung von Speicherlecks und Buffer Overflows zur Compile-Zeit) – essenziell für Finanzanwendungen. Axum garantiert asynchrone Hochleistung.</li>
+<li><strong>Templating:</strong> <strong>MiniJinja</strong> (für das Rendern der sicheren HTML/HTMX-Views im Backend).</li>
+</ul>
+<h3 id="23-datenhaltung--infrastruktur"><a class="header" href="#23-datenhaltung--infrastruktur">2.3 Datenhaltung &amp; Infrastruktur</a></h3>
+<ul>
+<li><strong>Relationale Datenbank:</strong> <strong>PostgreSQL 16+</strong>. Primäre Quelle für alle Daten. Beherrschung komplexer Finanztransaktionen durch ACID-Garantie.</li>
+<li><strong>In-Memory Cache:</strong> <strong>Redis</strong> (für Session-Speicherung, OTP-Codes, Rate-Limiting).</li>
+<li><strong>Deployment:</strong> Containerisiert (Docker), gehostet in einer sicheren Cloud-Umgebung (z.B. AWS ECS, Google Cloud Run) mit strengen Virtual Private Cloud (VPC)-Regeln (Datenbank ist nie von außen erreichbar).</li>
+</ul>
+<hr>
+<h2 id="3-kern-module--user-journeys"><a class="header" href="#3-kern-module--user-journeys">3. Kern-Module &amp; User Journeys</a></h2>
+<h3 id="31-registrierung-auth--kyc-know-your-customer"><a class="header" href="#31-registrierung-auth--kyc-know-your-customer">3.1 Registrierung, Auth &amp; KYC (Know Your Customer)</a></h3>
+<p><em>Ein Nutzer darf erst investieren, wenn er vom System und regulatorisch geprüft wurde.</em></p>
+<ol>
+<li><strong>Sign-up:</strong> Email + starkes Passwort + Double Opt-In.</li>
+<li><strong>Sicherheit:</strong> Erzwingung von <strong>2FA</strong> (Authenticator App / TOTP) für Anmeldungen und kritische Aktionen (z. B. Geld abheben).</li>
+<li><strong>KYC-Prozess:</strong> Tiefe API-Integration eines Tier-1 Anbieters (z. B. <em>SumSub</em>).
+<ul>
+<li>Liveness Check, Ausweisscan, Adressnachweis.</li>
+<li>Automatisches Screening auf PEP- (Politically Exposed Persons) und Sanktionslisten.</li>
+</ul>
+</li>
+</ol>
+<h3 id="32-ein--und-auszahlungen-fiat--krypto"><a class="header" href="#32-ein--und-auszahlungen-fiat--krypto">3.2 Ein- und Auszahlungen (Fiat &amp; Krypto)</a></h3>
+<p><em>Geldströme müssen strikt getrennt und rechtssicher (BaFin-konform) gemanagt werden.</em></p>
+<ul>
+<li><strong>Wallet-System:</strong> Jeder Nutzer (und jedes Asset) erhält ein virtuelles Ledger-Konto.</li>
+<li><strong>Zahlungsanbieter (PSP):</strong> Integration eines lizenzierten Payment-Service-Providers (z. B. <em>Mangopay</em> oder <em>Stripe Connect</em>), der E-Geld-Lizenzen und Escrow-Wallets (Treuhand) anbietet. POOOL darf Kundengelder rein rechtlich nicht direkt auf einem Firmenkonto halten.</li>
+</ul>
+<h3 id="33-asset-marktplatz--investment-engine"><a class="header" href="#33-asset-marktplatz--investment-engine">3.3 Asset Marktplatz &amp; Investment Engine</a></h3>
+<ul>
+<li><strong>Asset Creation (Admin):</strong> Anlage einer Immobilie mit zugehöriger SPV-Struktur (z.B. GmbH/UG), Gutachten, Finanzkennzahlen und Token-Metadaten (z. B. 10.000 Tokens à 100€).</li>
+<li><strong>Investment-Logik:</strong> Nutzer klickt auf “Investieren”. In einer <em>einzigen, atomaren Datenbanktransaktion</em> wird das Fiat-Wallet des Nutzers belastet und ihm der Ownership-Anteil (Tokens/Fractions) zugeschrieben. Schlägt ein Schritt fehl, wird alles zurückgerollt (Rollback).</li>
+<li><strong>Sekundärmarkt (Später):</strong> Nutzer können untereinander Anteile handeln. Hierfür wird eine Matching-Engine benötigt.</li>
+</ul>
+<hr>
+<h2 id="4-unabdingbare-sicherheits--und-compliance-maßnahmen"><a class="header" href="#4-unabdingbare-sicherheits--und-compliance-maßnahmen">4. Unabdingbare Sicherheits- und Compliance-Maßnahmen</a></h2>
+<p>Als FinTech-Plattform müssen wir uns so absichern, als ob wir morgen von Banken-Prüfern auditiert werden.</p>
+<h3 id="41-it-security"><a class="header" href="#41-it-security">4.1 IT-Security</a></h3>
+<ul>
+<li><strong>Authentifizierung:</strong> Session-Handling via <code>HttpOnly</code>, <code>Secure</code>, <code>SameSite=Strict</code> Cookies. Wir speichern <strong>niemals</strong> JWTs oder sensible Tokens im unsicheren <code>localStorage</code> des Browsers.</li>
+<li><strong>Kryptographie:</strong> Passwörter zwingend mit <code>Argon2id</code> hashen (Brute-Force sicher).</li>
+<li><strong>WAF &amp; DDoS:</strong> Einsatz einer Web Application Firewall (z.B. Cloudflare) zum Filtern von bösartigem Traffic, SQL-Injection, Cross-Site Scripting (XSS) und Bot-Angriffen.</li>
+<li><strong>Verschlüsselung:</strong> “Encryption at Rest” (Festplatten-Verschlüsselung der Datenbank) und TLS 1.3 für alle Netzwerkverbindungen.</li>
+</ul>
+<h3 id="42-compliance--revisionssicherheit"><a class="header" href="#42-compliance--revisionssicherheit">4.2 Compliance &amp; Revisionssicherheit</a></h3>
+<ul>
+<li><strong>Immutable Audit-Log:</strong> <em>Jede</em> signifikante Veränderung an Daten (Kontostand, Berechtigungen, KYC-Status) wird irreversibel in einer Audit-Tabelle protokolliert (Wer, Wann, Was, Alte Daten, Neue Daten, IP-Adresse).</li>
+<li><strong>DSGVO / GDPR:</strong> Architektur unterstützt das “Recht auf Löschen”, verwendet aber bei Finanztransaktionen “Soft-Deletes” kombiniert mit Pseudonymisierung, um der 10-jährigen gesetzlichen Aufbewahrungspflicht für Finanzdaten nachzukommen.</li>
+</ul>
+<hr>
+<h2 id="5-externe-integrationen--apis"><a class="header" href="#5-externe-integrationen--apis">5. Externe Integrationen &amp; APIs</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Kategorie</th><th style="text-align: left">Best-in-Class Empfehlung</th><th style="text-align: left">Zweck</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><strong>KYC / AML</strong></td><td style="text-align: left"><strong>SumSub</strong> oder IDnow</td><td style="text-align: left">Echtzeit Identitätsprüfung &amp; Sanktionslisten-Checks</td></tr>
+<tr><td style="text-align: left"><strong>Payment (Fiat)</strong></td><td style="text-align: left"><strong>Mangopay</strong></td><td style="text-align: left">E-Geld Lizenzen, IBANs für Nutzer, Treuhand (Escrow)</td></tr>
+<tr><td style="text-align: left"><strong>E-Mail &amp; SMS</strong></td><td style="text-align: left"><strong>Postmark</strong> &amp; Twilio</td><td style="text-align: left">Verlässliche Zustellung von OTP-Codes und Bestätigungen</td></tr>
+<tr><td style="text-align: left"><strong>Monitoring</strong></td><td style="text-align: left"><strong>Sentry</strong></td><td style="text-align: left">Echtzeit-Erfassung von Backend-Abstürzen / Bugs</td></tr>
+<tr><td style="text-align: left"><strong>Vertrags-Sig.</strong></td><td style="text-align: left"><strong>DocuSign</strong> API</td><td style="text-align: left">Rechtsgültige digitale Signatur für Investment-Verträge</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="6-datenbank-design-das-relationale-fundament"><a class="header" href="#6-datenbank-design-das-relationale-fundament">6. Datenbank-Design (Das relationale Fundament)</a></h2>
+<p>Die Datenbankstruktur muss fehlerfrei sein. Hier ein extrem durchdachter Grobentwurf der Tabellenstruktur auf Enterprise-Level:</p>
+<ol>
+<li><code>users</code> (id, email, password_hash, role [INVESTOR, DEVELOPER, ADMIN], 2fa_secret, status) -&gt; <em>Unterstützung spezifischer Rollen.</em></li>
+<li><code>user_profiles</code> (user_id, first_name, last_name, date_of_birth, address_line, tax_id)</li>
+<li><code>kyc_records</code> (id, user_id, provider, status, provider_reference, verified_at)</li>
+<li><code>wallets</code> (id, user_id, currency [EUR/USD], balance_cents) -&gt; <em>Warum Cents? Weil Float-Zahlen in Finanzsystemen streng verboten sind.</em></li>
+<li><code>assets</code> (id, title, description, asset_type, total_value_cents, tokens_total, tokens_available, token_price_cents, funding_status)</li>
+<li><code>asset_documents</code> (id, asset_id, document_type [expose, legal, financial], file_url)</li>
+<li><code>investments</code> (id, user_id, asset_id, tokens_owned, average_buy_price_cents)</li>
+<li><code>transactions</code> (id, wallet_id, type [DEPOSIT, WITHDRAWAL, BUY, SELL, DIVIDEND], amount_cents, status [PENDING, COMPLETED, FAILED], external_reference_id)</li>
+<li><code>audit_logs</code> (id, actor_user_id, action, table_name, record_id, previous_state, new_state, ip_address, created_at)</li>
+<li><code>idempotency_keys</code> (id, idempotency_key, user_id, request_path, response_status, response_body, created_at) -&gt; <em>Verhindert doppelte Ausführungen (z.B. bei Zahlungen) durch Verbindungsabbrüche.</em></li>
+<li><code>background_jobs</code> (id, queue_name, payload_json, status [PENDING, PROCESSING, COMPLETED, FAILED], attempts, run_at, created_at) -&gt; <em>Für asynchrone Aufgaben (E-Mails, Vertrags-Generierung).</em></li>
+</ol>
+<hr>
+<h2 id="7-der-umsetzungs-fahrplan-roadmap--next-steps"><a class="header" href="#7-der-umsetzungs-fahrplan-roadmap--next-steps">7. Der Umsetzungs-Fahrplan (Roadmap / Next Steps)</a></h2>
+<p>Um dieses riesige Projekt erfolgreich zu stemmen, wird es agil in extrem fokussierten Phasen entwickelt:</p>
+<h3 id="phase-1-die-festung-fundament--auth"><a class="header" href="#phase-1-die-festung-fundament--auth">Phase 1: Die Festung (Fundament &amp; Auth)</a></h3>
+<ul>
+<li>Aufsetzen der Rust/Axum-Struktur inkl. Konfigurations-Management.</li>
+<li>Implementierung der PostgreSQL-Datenbank mit initialen Migrationen (Users, Wallets, Audit-Logs).</li>
+<li>Sicheres Login/Registrierung, E-Mail-Verifikation und Session-Management via HTMX.</li>
+</ul>
+<h3 id="phase-2-identität--nutzer-kyc--profile"><a class="header" href="#phase-2-identität--nutzer-kyc--profile">Phase 2: Identität &amp; Nutzer (KYC &amp; Profile)</a></h3>
+<ul>
+<li>Evaluierung und Anbindung der REST-API von SumSub oder Mangopay für KYC.</li>
+<li>Ausarbeitung des User-Dashboards im Frontend (<code>/frontend/platform/profile</code>).</li>
+</ul>
+<h3 id="phase-3-der-tresor-asset-verwaltung--zahlungsverkehr"><a class="header" href="#phase-3-der-tresor-asset-verwaltung--zahlungsverkehr">Phase 3: Der Tresor (Asset-Verwaltung &amp; Zahlungsverkehr)</a></h3>
+<ul>
+<li>Anlage von Assets im System.</li>
+<li>Anzeige der Assets im Marktplatz für die Nutzer.</li>
+<li>Integration des Payment-Providers (Einzahlungen per Banküberweisung anzeigen und Buchen).</li>
+</ul>
+<h3 id="phase-4-die-maschine-investment-engine"><a class="header" href="#phase-4-die-maschine-investment-engine">Phase 4: Die Maschine (Investment Engine)</a></h3>
+<ul>
+<li>Die Kernlogik: Nutzer kaufen Anteile an freigegebenen Assets.</li>
+<li>Transaktionsbuchungen, Generierung von Kaufverträgen.</li>
+</ul>
+<h3 id="phase-5-go-live--audit"><a class="header" href="#phase-5-go-live--audit">Phase 5: Go-Live &amp; Audit</a></h3>
+<ul>
+<li>Admin-Dashboard zur Kontrolle und Freigabe.</li>
+<li>Penetration Testing, Source Code Audit.</li>
+<li>Live-Deployment auf skalierbare Cloud-Server.</li>
+</ul>
+<hr>
+<p><em>Ende des Dokuments.</em></p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="poool-projekt---knowledge--context-handoff"><a class="header" href="#poool-projekt---knowledge--context-handoff">POOOL Projekt - Knowledge &amp; Context Handoff</a></h1>
+<p>Dieses Dokument fasst den gesamten bisherigen Fortschritt und alle Architekturentscheidungen für das Antigravity / KI-Gedächtnis zusammen, um nahtlos im neuen Workspace am Projekt weiterzuarbeiten.</p>
+<h2 id="1-ausgangssituation--kontext"><a class="header" href="#1-ausgangssituation--kontext">1. Ausgangssituation &amp; Kontext</a></h2>
+<ul>
+<li>Das Projekt ist die “POOOL Plattform” (Finanz-/Tokenisierungs-Plattform für Immobilien/Rohstoffe: Fractional investment in RWA).</li>
+<li>Die alte Agentur kann nicht liefern; der Bruder des Nutzers benötigt nun Hilfe, die begonnene Plattform komplett funktionsfähig zu Ende zu bauen.</li>
+<li>Das Frontend lag ausschließlich in kompilierter Form vor.</li>
+<li><strong>Erfolg:</strong> Wir haben alle Frontend-Assets (HTML, CSS, JS, Bilder) von der Live-Seite erfolgreich heruntergeladen, offline lauffähig gemacht und bereinigt (inklusive Developer Dashboard und Investor Marketplace).</li>
+</ul>
+<h2 id="2-projektstruktur"><a class="header" href="#2-projektstruktur">2. Projektstruktur</a></h2>
+<p>Das Projekt wurde sauber aus dem “Downloads”-Ordner entfernt und strukturiert nach:
+<code>/Users/martin/Projects/poool/</code></p>
+<ul>
+<li><code>/frontend/platform/</code>: Das eigentliche Dashboard (HTMX, Custom CSS BEM, Alpine.js). Kein Framework wie React/Angular. Alles 100% Custom-Designed.</li>
+<li><code>/frontend/www/</code>: Die statische (Angular/Tailwind) Marketing-Landingpage.</li>
+<li><code>/backend/</code>: Unser neu initialisierter Rust Webserver (Axum).</li>
+<li><code>/database/</code>: Zukünftige Schema-Dateien.</li>
+<li><code>/docs/</code>: Dokumentationen und Entwicklungspläne.</li>
+<li><code>/scripts/</code>: Python/Node/Shell Downloader- und Korrektur-Scripts aus der ersten Phase.</li>
+</ul>
+<h2 id="3-technologie-entscheidungen-backend"><a class="header" href="#3-technologie-entscheidungen-backend">3. Technologie-Entscheidungen (Backend)</a></h2>
+<ul>
+<li><strong>Programmiersprache:</strong> Rust (Wunsch der originalen Entwickler und des Nutzers).</li>
+<li><strong>Web-Framework:</strong> Axum.</li>
+<li><strong>Datenbank:</strong> PostgreSQL (Wegen Finanzdaten-ACID-Konformität).</li>
+<li><strong>DB-Treiber:</strong> SQLx.</li>
+<li><strong>Template Engine:</strong> MiniJinja (um die statischen HTML-HTMX-Dateien aus <code>/frontend/platform/</code> mit Backend-Variablen anzureichern).</li>
+<li><strong>Architektur:</strong> HTMX steuert das Frontend. Wir bauen Serverseitiges Rendering (SSR), das kleine HTML-Fragmente über Axum via HTTP an HTMX zurückliefert. Kein dicke JSON-API nötig.</li>
+</ul>
+<h2 id="4-wie-geht-es-jetzt-weiter-aktueller-stand"><a class="header" href="#4-wie-geht-es-jetzt-weiter-aktueller-stand">4. Wie geht es jetzt weiter? (Aktueller Stand)</a></h2>
+<p><strong>Phase 1: Fundament &amp; Datenbankaufbau</strong> ist ✅ <strong>abgeschlossen</strong>.</p>
+<ul>
+<li>Das PostgreSQL Datenbankschema (<code>001_initial_schema.sql</code>) ist komplett entworfen, angelegt und einsatzbereit.</li>
+<li>Rust Backend (Axum) steht mit SQLx-Anbindung.</li>
+<li><strong>Sicheres Login, Registrierung &amp; Session-Management</strong> (inklusive HTMX Redirects und Argon2id-Password-Hashing) sind lauffähig.</li>
+<li>Dynamische Nutzerdaten werden bereits über <code>/api/me</code> bereitgestellt.</li>
+</ul>
+<p>Wir befinden uns nun in <strong>Phase 2 &amp; 3: Assets, Identität &amp; Kern-Funktionen</strong>.</p>
+<ul>
+<li>Weitere Features wie KYC-Integration, Transaktions- und Investment-Logic sowie die vollständige Dynamisierung des Marktplatzes und Entwickler-Dashboards können nahtlos angeschlossen werden.</li>
+<li>Der Masterplan (in <code>/docs/MASTERPLAN.md</code>) dient als Referenz für die weitere Umsetzung.</li>
+</ul>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>KI-Regel für den Start im Workspace: Lies dieses Dokument kurz ein, greife nicht mehr auf <code>/Downloads</code> zu, sondern nutze ausschließlich <code>/Users/martin/Projects/poool/</code> als Basis. Schlage dem Nutzer als nächstes die Bearbeitung des nächsten Schritts aus der Roadmap vor (z. B. Dashboard-Komponenten anbinden oder Assets im Marktplatz laden).</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="security--compliance-model-institutional-standard"><a class="header" href="#security--compliance-model-institutional-standard">Security &amp; Compliance Model (Institutional Standard)</a></h1>
+<p>This document details the security layers, data sensitivity, and access controls of the POOOL Platform.</p>
+<h2 id="1-role-based-access-control-rbac-matrix"><a class="header" href="#1-role-based-access-control-rbac-matrix">1. Role-Based Access Control (RBAC) Matrix</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Feature</th><th style="text-align: left">Endpoint</th><th style="text-align: center">super_admin</th><th style="text-align: center">admin</th><th style="text-align: center">finance</th><th style="text-align: center">compliance</th><th style="text-align: center">support</th><th style="text-align: center">developer</th><th style="text-align: center">investor</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><strong>All System Access</strong></td><td style="text-align: left"><code>*</code></td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td></tr>
+<tr><td style="text-align: left"><strong>User/KYC Review</strong></td><td style="text-align: left"><code>/api/admin/kyc</code></td><td style="text-align: center">🟢</td><td style="text-align: center">🟢</td><td style="text-align: center">❌</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td></tr>
+<tr><td style="text-align: left"><strong>Wallet/Deposits</strong></td><td style="text-align: left"><code>/api/admin/deposits</code></td><td style="text-align: center">🔵</td><td style="text-align: center">🔵</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td></tr>
+<tr><td style="text-align: left"><strong>Support Management</strong></td><td style="text-align: left"><code>/api/admin/tickets</code></td><td style="text-align: center">🟠</td><td style="text-align: center">🟠</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td></tr>
+<tr><td style="text-align: left"><strong>Asset Listing</strong></td><td style="text-align: left"><code>/api/assets</code></td><td style="text-align: center">🟡</td><td style="text-align: center">🟡</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td></tr>
+<tr><td style="text-align: left"><strong>Buying/Investing</strong></td><td style="text-align: left"><code>/api/checkout</code></td><td style="text-align: center">🟣</td><td style="text-align: center">🟣</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: center">✅</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Symbols: ✅=Full Access, ❌=No Access, 🟢=Limited Oversight.</p>
+</blockquote>
+<h2 id="2-pii-personally-identifiable-information-sensitivity-map"><a class="header" href="#2-pii-personally-identifiable-information-sensitivity-map">2. PII (Personally Identifiable Information) Sensitivity Map</a></h2>
+<p>POOOL handles high-stakes financial data. Data classification is as follows:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Data Type</th><th style="text-align: left">Field(s)</th><th style="text-align: left">Storage</th><th style="text-align: left">Encryption</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><strong>Credentials</strong></td><td style="text-align: left"><code>password_hash</code></td><td style="text-align: left"><code>users</code></td><td style="text-align: left"><strong>Argon2id</strong> (m=19456, t=2, p=1)</td></tr>
+<tr><td style="text-align: left"><strong>Documents</strong></td><td style="text-align: left"><code>passport.pdf</code>, <code>id.jpg</code></td><td style="text-align: left"><strong>GCS</strong></td><td style="text-align: left">AES-256 (at rest) + Signed URLs</td></tr>
+<tr><td style="text-align: left"><strong>Tax ID</strong></td><td style="text-align: left"><code>tax_id</code></td><td style="text-align: left"><code>user_profiles</code></td><td style="text-align: left">AES-256 (at rest)</td></tr>
+<tr><td style="text-align: left"><strong>Investment Ledger</strong></td><td style="text-align: left"><code>balance_cents</code></td><td style="text-align: left"><code>wallets</code>, <code>wallet_transactions</code></td><td style="text-align: left">Immutable Rows (Logged in Audit)</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="3-compliance-enforcement-kycaml"><a class="header" href="#3-compliance-enforcement-kycaml">3. Compliance Enforcement (KYC/AML)</a></h2>
+<ul>
+<li><strong>Status Gating</strong>: The <code>/api/checkout</code> and <code>/api/wallets/withdraw</code> handlers MUST check <code>kyc_records.status = 'approved'</code> before execution.</li>
+<li><strong>Audit Logging</strong>: Every action in the Admin Dashboard is captured in <code>audit_logs</code> including:
+<ul>
+<li>Timestamp</li>
+<li>Actor ID</li>
+<li>Client IP</li>
+<li>Previous vs New State (JSON)</li>
+</ul>
+</li>
+</ul>
+<h2 id="4-api-security-checklist"><a class="header" href="#4-api-security-checklist">4. API Security Checklist</a></h2>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>CSRF Protection</strong>: All POST/PUT/DELETE requests via HTMX carry custom HX-headers managed by Axum cookie middleware.</li>
+<li><input disabled="" type="checkbox"> <strong>XSS Prevention</strong>: Rust <code>askama</code> or manual template escaping is used for all SSR content.</li>
+<li><input disabled="" type="checkbox"> <strong>Rate Limiting</strong>: Applied to <code>/auth/login</code> and <code>/api/deposits</code> to prevent brute force and DDoS.</li>
+<li><input disabled="" type="checkbox"> <strong>Session Security</strong>: Cookies are <code>HttpOnly</code>, <code>Secure</code>, and <code>SameSite=Lax</code>.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="contributing-to-poool"><a class="header" href="#contributing-to-poool">Contributing to POOOL</a></h1>
+<p>First off, thank you for contributing to POOOL! It is our goal to build the most secure and transparent RWA platform in the world.</p>
+<h2 id="engineering-standards"><a class="header" href="#engineering-standards">Engineering Standards</a></h2>
+<h3 id="1-rust-best-practices"><a class="header" href="#1-rust-best-practices">1. Rust Best Practices</a></h3>
+<ul>
+<li><strong>Format first</strong>: Run <code>cargo fmt</code> before every commit.</li>
+<li><strong>Linting</strong>: No warnings allowed. Run <code>cargo clippy</code> and address all suggestions.</li>
+<li><strong>Documentation</strong>: All public functions and structs must have a <code>///</code> doc-string.</li>
+<li><strong>Error Handling</strong>: Use the <code>anyhow</code> or <code>thiserror</code> crates; never use <code>unwrap()</code> in production code.</li>
+</ul>
+<h3 id="2-commit-message-convention"><a class="header" href="#2-commit-message-convention">2. Commit Message Convention</a></h3>
+<p>We follow <strong>Conventional Commits</strong>:</p>
+<ul>
+<li><code>feat: ...</code> for new features.</li>
+<li><code>fix: ...</code> for bug fixes.</li>
+<li><code>docs: ...</code> for documentation changes.</li>
+<li><code>refactor: ...</code> for code changes that neither fix a bug nor add a feature.</li>
+</ul>
+<p>Example: <code>feat(api): add withdrawal verification endpoint</code></p>
+<h3 id="3-branching-strategy"><a class="header" href="#3-branching-strategy">3. Branching Strategy</a></h3>
+<ul>
+<li><code>main</code>: The stable production-ready branch.</li>
+<li><code>feat/feature-name</code>: For new features.</li>
+<li><code>fix/issue-description</code>: For bug fixes.</li>
+</ul>
+<h2 id="pull-request-process"><a class="header" href="#pull-request-process">Pull Request Process</a></h2>
+<ol>
+<li>Create a branch from <code>main</code>.</li>
+<li>Ensure all tests pass: <code>cargo test</code> and <code>python3 -m pytest tests/</code>.</li>
+<li>Update relevant documentation (ADRs, <code>docs/</code>, or doc-strings).</li>
+<li>Tag a maintainer for review.</li>
+</ol>
+<h2 id="architecture"><a class="header" href="#architecture">Architecture</a></h2>
+<p>Before proposing a major architectural change, please open a discussion or draft a new <strong>ADR</strong> (Architecture Decision Record) in <code>/docs/adr/</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="system-flows"><a class="header" href="#system-flows">System Flows</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="authentication--session-flow"><a class="header" href="#authentication--session-flow">Authentication &amp; Session Flow</a></h1>
+<p>This document details the secure authentication mechanism used by the POOOL platform.</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant U as User (Browser)
+    participant F as Frontend (HTMX/Alpine)
+    participant B as Rust Backend (Axum)
+    participant D as PostgreSQL
+    
+    Note over U,D: Login Process
+    U-&gt;&gt;F: Enter Credentials
+    F-&gt;&gt;B: POST /auth/login (email, password)
+    B-&gt;&gt;D: SELECT user_data WHERE email = ?
+    D--&gt;&gt;B: User Record (incl. Argon2id Hash)
+    
+    Note right of B: Verify Password (Argon2id)
+    
+    alt Success
+        B-&gt;&gt;D: INSERT INTO user_sessions (user_id, token, expires_at)
+        D--&gt;&gt;B: Success
+        B--&gt;&gt;U: Set-Cookie: session_id=... (HTTPOnly, Secure, SameSite=Lax)
+        B--&gt;&gt;F: HTTP 303 Redirect /marketplace
+    else Failure
+        B--&gt;&gt;F: HTTP 401 Unauthorized
+        F--&gt;&gt;U: Show Error (Alpine.js Toast)
+    end
+
+    Note over U,D: Protected Request (HTMX)
+    U-&gt;&gt;F: Click "Portfolio"
+    F-&gt;&gt;B: GET /portfolio (Browser attaches Cookie)
+    B-&gt;&gt;D: SELECT user FROM sessions WHERE token = ? AND expires &gt; NOW()
+    D--&gt;&gt;B: User Profile
+    B--&gt;&gt;F: Return HTML Partial (HTMX Fragment)
+    F--&gt;&gt;U: Swap Partial into DOM
+</code></pre>
+<h2 id="security-features"><a class="header" href="#security-features">Security Features</a></h2>
+<ol>
+<li><strong>Password Hashing</strong>: Argon2id is used for all password storage, providing resistance against GPU/ASIC cracking.</li>
+<li><strong>Session Security</strong>:
+<ul>
+<li><code>HttpOnly</code>: Prevents Cross-Site Scripting (XSS) from stealing session tokens.</li>
+<li><code>Secure</code>: Ensures cookies are only sent over HTTPS.</li>
+<li><code>SameSite=Lax</code>: Protects against Cross-Site Request Forgery (CSRF).</li>
+</ul>
+</li>
+<li><strong>Session Revocation</strong>: Admins can immediately invalidate all active sessions for a specific user ID.</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="financial-transaction-flow-deposits"><a class="header" href="#financial-transaction-flow-deposits">Financial Transaction Flow (Deposits)</a></h1>
+<p>This document maps the state transitions for financial deposits via the Admin Dashboard.</p>
+<pre><code class="language-mermaid">stateDiagram-v2
+    [*] --&gt; Requested: User submits Deposit Request
+    Requested --&gt; Pending: External payment proof provided
+    
+    state Admin_Dashboard {
+        Pending --&gt; Verified: Admin clicks "Confirm"
+        Pending --&gt; Rejected: Admin clicks "Cancel"
+    }
+    
+    Verified --&gt; Wallet_Updated: Atomic Transaction
+    Wallet_Updated --&gt; Audit_Logged: Immutable Ledger Record
+    Audit_Logged --&gt; [*]
+    
+    Rejected --&gt; Audit_Logged
+</code></pre>
+<h2 id="detailed-atomic-steps-verified-state"><a class="header" href="#detailed-atomic-steps-verified-state">Detailed Atomic Steps (Verified State)</a></h2>
+<p>When an administrator confirms a deposit, the backend executes a <strong>PostgreSQL Transaction</strong> (ACID compliant) ensuring all or nothing:</p>
+<ol>
+<li><strong>Wallet Fetch</strong>: Obtain the user’s <code>cash</code> wallet ID.</li>
+<li><strong>Ledger Entry</strong>: Insert a row into <code>wallet_transactions</code> with <code>type='deposit'</code> and <code>status='completed'</code>.</li>
+<li><strong>Balance Update</strong>: Increment the <code>balance_cents</code> in the <code>wallets</code> table.</li>
+<li><strong>Audit Log</strong>: Record the action in <code>audit_logs</code> including the actor (Admin ID) and the change vector.</li>
+</ol>
+<h2 id="integrity-guarantees"><a class="header" href="#integrity-guarantees">Integrity Guarantees</a></h2>
+<ul>
+<li><strong>Integer Arithmetic</strong>: All currency is stored as <code>bigint</code> (cents) to avoid floating-point errors.</li>
+<li><strong>Transactional Consistency</strong>: If the Audit Log fails to write, the Balance Update is rolled back automatically.</li>
+<li><strong>Reference Integrity</strong>: All transactions are linked to an <code>external_ref_id</code> (e.g., Bank Transfer ID) for reconciliation.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="frontend-component-explorer-htmx--alpinejs"><a class="header" href="#frontend-component-explorer-htmx--alpinejs">Frontend Component Explorer (HTMX &amp; Alpine.js)</a></h1>
+<p>This document serves as the technical catalog for the POOOL platform’s hybrid frontend architecture. We combine <strong>Server-Side Rendering (Axum/Askama)</strong> for speed, <strong>HTMX</strong> for dynamic partial updates, and <strong>Alpine.js</strong> for client-side state management.</p>
+<h2 id="1-architectural-strategy-the-hybrid-power-trio"><a class="header" href="#1-architectural-strategy-the-hybrid-power-trio">1. Architectural Strategy: The “Hybrid Power” Trio</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Technology</th><th style="text-align: left">Role</th><th style="text-align: left">Usage Example</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><strong>Rust Admin/SSR</strong></td><td style="text-align: left">Navigation &amp; Page Shell</td><td style="text-align: left">Sidebar, Header, Initial Page Load</td></tr>
+<tr><td style="text-align: left"><strong>HTMX</strong></td><td style="text-align: left">Atomic Content Swaps</td><td style="text-align: left">Form submissions, Wallet filtering, Live Search</td></tr>
+<tr><td style="text-align: left"><strong>Alpine.js</strong></td><td style="text-align: left">Micro-State &amp; UI Logic</td><td style="text-align: left">Modals, Dropdowns, Tab switching, Expandable Cards</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="2-alpinejs-component-catalog"><a class="header" href="#2-alpinejs-component-catalog">2. Alpine.js Component Catalog</a></h2>
+<p>These components manage complex client-side interactions without high-overhead frameworks.</p>
+<h3 id="tierdata-rewards-tier-page"><a class="header" href="#tierdata-rewards-tier-page"><code>tierData()</code> (Rewards Tier Page)</a></h3>
+<p><strong>File</strong>: <code>static/js/tier-page.js</code>
+<strong>Scope</strong>: Manages the multi-step “Stepper” and the dynamic progress card on the /tier page.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Property</th><th style="text-align: left">Type</th><th style="text-align: left">Description</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><code>data.tier_name</code></td><td style="text-align: left"><code>string</code></td><td style="text-align: left">Current user tier (Intro, Plus, Pro, Elite, Premium).</td></tr>
+<tr><td style="text-align: left"><code>data.invested_12m</code></td><td style="text-align: left"><code>number</code></td><td style="text-align: left">Total investment value (cents) in the rolling window.</td></tr>
+<tr><td style="text-align: left"><code>data.progress_pct</code></td><td style="text-align: left"><code>number</code></td><td style="text-align: left">Calculated percentage (0-100) toward the next tier.</td></tr>
+<tr><td style="text-align: left"><code>data.tier_target</code></td><td style="text-align: left"><code>string</code></td><td style="text-align: left">Name of the next tier to unlock.</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Key Methods</strong>:</p>
+<ul>
+<li><code>initTier()</code>: Fetches <code>/api/rewards</code> and <code>/api/rewards/tiers</code>.</li>
+<li><code>getStepperState(stepName)</code>: Returns <code>active</code>, <code>past</code>, or <code>inactive</code> for visual stepper logic.</li>
+</ul>
+<h3 id="portfoliodata-portfolio-overview"><a class="header" href="#portfoliodata-portfolio-overview"><code>portfolioData</code> (Portfolio Overview)</a></h3>
+<p><strong>File</strong>: Embedded in <code>portfolio.html</code>
+<strong>Scope</strong>: Manages chart visibility and time-period tab switching.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">State</th><th style="text-align: left">Description</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><code>expanded</code></td><td style="text-align: left">Global boolean for “Show more” chart section.</td></tr>
+<tr><td style="text-align: left"><code>activeTab</code></td><td style="text-align: left">Tracks current chart view (<code>twelveMonths</code>, <code>thirtyDays</code>, etc.).</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="3-htmx-fragment-catalog-server-returned-ui"><a class="header" href="#3-htmx-fragment-catalog-server-returned-ui">3. HTMX Fragment Catalog (Server-Returned UI)</a></h2>
+<p>HTMX interactions expect specific HTML fragments from the Rust backend.</p>
+<h3 id="user-deposit-feedback"><a class="header" href="#user-deposit-feedback">User Deposit Feedback</a></h3>
+<p><strong>Endpoint</strong>: <code>POST /api/payments/deposit</code>
+<strong>Target</strong>: <code>#deposit-feedback-container</code>
+<strong>Response</strong>:</p>
+<pre><code class="language-html">&lt;div class="deposit-success"&gt;
+    &lt;!-- Instructions, Reference ID, and status message --&gt;
+&lt;/div&gt;
+</code></pre>
+<h3 id="wallet-filtering"><a class="header" href="#wallet-filtering">Wallet Filtering</a></h3>
+<p><strong>Endpoint</strong>: <code>GET /api/wallets/transactions?type={type}</code>
+<strong>Target</strong>: <code>#transactions-tbody</code>
+<strong>Response</strong>: A list of <code>&lt;tr&gt;</code> elements representing filtered wallet actions.</p>
+<h3 id="admin-notifications"><a class="header" href="#admin-notifications">Admin Notifications</a></h3>
+<p><strong>Endpoint</strong>: <code>GET /api/admin/notifications</code>
+<strong>Target</strong>: <code>#notification-list</code>
+<strong>Response</strong>: A vertical list of individual notification cards.</p>
+<hr>
+<h2 id="4-ui-primitives--design-system"><a class="header" href="#4-ui-primitives--design-system">4. UI Primitives &amp; Design System</a></h2>
+<p>POOOL uses a premium “FinTech Modern” design system.</p>
+<h3 id="color-tokens-css-variables"><a class="header" href="#color-tokens-css-variables">Color Tokens (CSS Variables)</a></h3>
+<ul>
+<li><code>--brand-primary</code>: <code>#0000FF</code> (Deep Blue)</li>
+<li><code>--success-500</code>: <code>#17B26A</code> (Emerald Green)</li>
+<li><code>--warning-500</code>: <code>#F79009</code> (Amber)</li>
+<li><code>--error-500</code>: <code>#F04438</code> (Sunset Red)</li>
+<li><code>--gray-900</code>: <code>#101828</code> (Crow Black)</li>
+</ul>
+<h3 id="standard-interactions-animations"><a class="header" href="#standard-interactions-animations">Standard Interactions (Animations)</a></h3>
+<ul>
+<li><strong>Modals</strong>: Fade-in with a subtle <code>translate-y-4</code> to <code>translate-y-0</code> slide.</li>
+<li><strong>Buttons</strong>: Scale <code>0.98</code> on active click; elevation shift on hover.</li>
+<li><strong>HTMX Swaps</strong>: Use <code>hx-swap="innerHTML transition:true"</code> for smooth opacity cross-fades.</li>
+</ul>
+<hr>
+<h2 id="5-development-guidelines"><a class="header" href="#5-development-guidelines">5. Development Guidelines</a></h2>
+<ol>
+<li><strong>Never use placeholders</strong>: Every component must have a fallback or a skeleton loader.</li>
+<li><strong>Alpine for State, HTMX for Data</strong>: If the data needs to touch the database, use HTMX. If the UI just needs to toggle, use Alpine.</li>
+<li><strong>Prefix IDs</strong>: Use page prefixes for IDs (e.g., <code>portfolio-chart-container</code>) to avoid collisions in the global DOM.</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="operations"><a class="header" href="#operations">Operations</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="operational-resilience--disaster-recovery"><a class="header" href="#operational-resilience--disaster-recovery">Operational Resilience &amp; Disaster Recovery</a></h1>
+<p>This document outlines the infrastructure dependencies and recovery protocols for the POOOL Platform.</p>
+<h2 id="1-service-map--dependencies"><a class="header" href="#1-service-map--dependencies">1. Service Map &amp; Dependencies</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Service</th><th style="text-align: left">Role</th><th style="text-align: left">Provider</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><strong>PostgreSQL 15</strong></td><td style="text-align: left">Primary Data Store (RWA, Users, Ledger)</td><td style="text-align: left">Google Cloud SQL</td></tr>
+<tr><td style="text-align: left"><strong>Rust Backend</strong></td><td style="text-align: left">Core API &amp; Business Logic</td><td style="text-align: left">Cloud Run</td></tr>
+<tr><td style="text-align: left"><strong>Frontend Assets</strong></td><td style="text-align: left">Static UI (HTML/CSS/JS)</td><td style="text-align: left">Cloud Run (Served via Axum)</td></tr>
+<tr><td style="text-align: left"><strong>Resend</strong></td><td style="text-align: left">Transactional &amp; Status Emails</td><td style="text-align: left">Third-Party API</td></tr>
+<tr><td style="text-align: left"><strong>Cloud Storage</strong></td><td style="text-align: left">KYC Documents &amp; Asset Images</td><td style="text-align: left">Google Cloud Storage</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="2-disaster-recovery-dr-plan"><a class="header" href="#2-disaster-recovery-dr-plan">2. Disaster Recovery (DR) Plan</a></h2>
+<h3 id="database-recovery"><a class="header" href="#database-recovery">Database Recovery</a></h3>
+<ul>
+<li><strong>Snapshot Frequency</strong>: Automated daily backups (30-day retention).</li>
+<li><strong>Point-in-Time Recovery (PITR)</strong>: Supported up to 7 days via Write-Ahead Logs (WAL).</li>
+<li><strong>Restoration Steps</strong>:
+<ol>
+<li>Login to GCloud Console -&gt; SQL Instances.</li>
+<li>Select <code>poool-db</code> -&gt; Backups.</li>
+<li>Select latest healthy snapshot -&gt; “Restore to new instance”.</li>
+<li>Update <code>DATABASE_URL</code> in backend environment secrets.</li>
+<li><strong>RTO (Recovery Time Objective)</strong>: &lt; 15 minutes.</li>
+</ol>
+</li>
+</ul>
+<h3 id="service-failover"><a class="header" href="#service-failover">Service Failover</a></h3>
+<ul>
+<li><strong>Cloud Run</strong>: Regionally redundant by default. In case of region failure, redeploy to <code>europe-west3</code> (Frankfurt) using CI/CD pipeline.</li>
+</ul>
+<h2 id="3-observability--alerting"><a class="header" href="#3-observability--alerting">3. Observability &amp; Alerting</a></h2>
+<p>Critical thresholds that trigger immediate on-call notification:</p>
+<ul>
+<li><strong>API Error Rate</strong>: &gt; 1% (5xx responses) over a 5-minute window.</li>
+<li><strong>Latency</strong>: P95 &gt; 800ms for <code>/api/admin</code> or <code>/api/payments</code>.</li>
+<li><strong>Database CPU</strong>: &gt; 80% sustained for 15 minutes.</li>
+</ul>
+<h2 id="4-security-incident-response"><a class="header" href="#4-security-incident-response">4. Security Incident Response</a></h2>
+<ol>
+<li><strong>Compromised Admin Account</strong>:
+<ul>
+<li>Immediate action: Run <code>UPDATE users SET status = 'suspended' WHERE id = 'compromised_id'</code>.</li>
+<li>Run <code>DELETE FROM user_sessions WHERE user_id = 'compromised_id'</code>.</li>
+</ul>
+</li>
+<li><strong>Data Leak</strong>: Activate internal protocol; inform legal; rotate database credentials immediately.</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="third-party-dependency--compliance-audit"><a class="header" href="#third-party-dependency--compliance-audit">Third-Party Dependency &amp; Compliance Audit</a></h1>
+<p>This document outlines the software dependencies used by the POOOL platform and their respective licenses, ensuring legal compliance and transparency.</p>
+<h2 id="1-compliance-executive-summary"><a class="header" href="#1-compliance-executive-summary">1. Compliance Executive Summary</a></h2>
+<ul>
+<li><strong>Primary Licenses</strong>: MIT / Apache 2.0 (Industry standard for Rust ecosystems)</li>
+<li><strong>Copyleft Risks</strong>: None identified. No GPL/AGPL dependencies in the runtime binary.</li>
+<li><strong>Security Scanning</strong>: Automated audits via <code>cargo-audit</code> are recommended for the CI/CD pipeline.</li>
+</ul>
+<hr>
+<h2 id="2-core-dependencies--licenses"><a class="header" href="#2-core-dependencies--licenses">2. Core Dependencies &amp; Licenses</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Dependency</th><th style="text-align: left">Version</th><th style="text-align: left">Purpose</th><th style="text-align: left">License (Typical)</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><code>axum</code></td><td style="text-align: left">0.7.x</td><td style="text-align: left">Web Framework</td><td style="text-align: left">MIT</td></tr>
+<tr><td style="text-align: left"><code>tokio</code></td><td style="text-align: left">1.x</td><td style="text-align: left">Async Runtime</td><td style="text-align: left">MIT</td></tr>
+<tr><td style="text-align: left"><code>sqlx</code></td><td style="text-align: left">0.8.x</td><td style="text-align: left">SQL Toolkit (PostgreSQL)</td><td style="text-align: left">MIT / Apache 2.0</td></tr>
+<tr><td style="text-align: left"><code>serde</code></td><td style="text-align: left">1.x</td><td style="text-align: left">Serialization</td><td style="text-align: left">MIT / Apache 2.0</td></tr>
+<tr><td style="text-align: left"><code>chrono</code></td><td style="text-align: left">0.4.x</td><td style="text-align: left">Date &amp; Time</td><td style="text-align: left">MIT / Apache 2.0</td></tr>
+<tr><td style="text-align: left"><code>uuid</code></td><td style="text-align: left">1.x</td><td style="text-align: left">Unique Identifiers</td><td style="text-align: left">MIT / Apache 2.0</td></tr>
+<tr><td style="text-align: left"><code>argon2</code></td><td style="text-align: left">0.5.x</td><td style="text-align: left">Password Hashing</td><td style="text-align: left">MIT / Apache 2.0</td></tr>
+<tr><td style="text-align: left"><code>rust_decimal</code></td><td style="text-align: left">1.x</td><td style="text-align: left">Financial Arithmetic</td><td style="text-align: left">MIT</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="3-dependency-inventory-full-list"><a class="header" href="#3-dependency-inventory-full-list">3. Dependency Inventory (Full List)</a></h2>
+<p>The following packages are included in the build graph (partial list):</p>
+<ul>
+<li><code>allocator-api2 v0.2.21</code></li>
+<li><code>async-trait v0.1.89</code></li>
+<li><code>axum-core v0.4.5</code></li>
+<li><code>axum-extra v0.9.6</code></li>
+<li><code>base64 v0.22.1</code></li>
+<li><code>bitflags v2.11.0</code></li>
+<li><code>bytes v1.11.1</code></li>
+<li><code>futures-util v0.3.32</code></li>
+<li><code>hyper v1.8.1</code></li>
+<li><code>ring v0.17.14</code></li>
+<li><code>tracing v0.1.44</code></li>
+<li><em>(Total: 310 sub-dependencies)</em></li>
+</ul>
+<hr>
+<h2 id="4-security-recommendations"><a class="header" href="#4-security-recommendations">4. Security Recommendations</a></h2>
+<blockquote class="blockquote-tag blockquote-tag-important">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p>
+<p><strong>Vulnerability Management</strong>
+It is mandated that <code>cargo audit</code> is run before every production deployment to catch known security advisories (RSEC) in open-source crates.</p>
+</blockquote>
+<blockquote class="blockquote-tag blockquote-tag-tip">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>Tip</p>
+<p><strong>License Enforcement</strong>
+Use <code>cargo-license</code> in build pipelines to enforce a “Permissive-only” policy, automatically blocking any accidental introduction of restrictive licenses (e.g., GPL-3.0) that could affect the platform’s proprietary status.</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="contributing-to-poool-platform"><a class="header" href="#contributing-to-poool-platform">Contributing to POOOL Platform</a></h1>
+<p>Welcome! This document outlines the standards and workflows required to maintain the high engineering quality of the POOOL platform.</p>
+<hr>
+<h2 id="1-engineering-philosophy"><a class="header" href="#1-engineering-philosophy">1. Engineering Philosophy</a></h2>
+<ul>
+<li><strong>Safety First</strong>: Financial ledger mutations must be ACID-compliant. Always use PostgreSQL transactions for movement of funds.</li>
+<li><strong>Aesthetic Excellence</strong>: Frontend interactions should be premium and fluid. Use micro-animations and smooth transitions (Alpine.js + CSS).</li>
+<li><strong>Self-Documenting Code</strong>: Doc-comments (<code>///</code>) are mandatory for public modules, routes, and services.</li>
+</ul>
+<hr>
+<h2 id="2-development-workflow"><a class="header" href="#2-development-workflow">2. Development Workflow</a></h2>
+<h3 id="coding-standards-backend"><a class="header" href="#coding-standards-backend">Coding Standards (Backend)</a></h3>
+<ol>
+<li><strong>Type Safety</strong>: Use explicit types (e.g., <code>i64</code> for cents) and avoid <code>f64</code> for financial values.</li>
+<li><strong>Result Pattern</strong>: Prefer <code>Result&lt;T, E&gt;</code> for error handling over <code>panic!</code>.</li>
+<li><strong>Auditability</strong>: Significant mutations should be logged to the <code>audit_logs</code> table.</li>
+</ol>
+<h3 id="coding-standards-frontend"><a class="header" href="#coding-standards-frontend">Coding Standards (Frontend)</a></h3>
+<ol>
+<li><strong>Separation of Concerns</strong>:
+<ul>
+<li><strong>Alpine.js</strong>: Business logic &amp; UI state.</li>
+<li><strong>Vanilla CSS</strong>: Premium styling and layout.</li>
+<li><strong>HTMX</strong>: Persistent data fetching and partial swaps.</li>
+</ul>
+</li>
+<li><strong>Accessibility</strong>: Use semantic HTML5 elements (<code>&lt;main&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;section&gt;</code>).</li>
+</ol>
+<hr>
+<h2 id="3-pull-request-pr-checklist"><a class="header" href="#3-pull-request-pr-checklist">3. Pull Request (PR) Checklist</a></h2>
+<p>Before submitting a PR, ensure:</p>
+<ul>
+<li><input disabled="" type="checkbox"> <code>cargo check</code> and <code>cargo fmt</code> pass without errors.</li>
+<li><input disabled="" type="checkbox"> New components follow the <strong>Hybrid Power</strong> strategy (HTMX + Alpine).</li>
+<li><input disabled="" type="checkbox"> Code is documented with RustDoc comments.</li>
+<li><input disabled="" type="checkbox"> Any database schema changes include a SQL migration file in <code>/database</code>.</li>
+<li><input disabled="" type="checkbox"> PR description includes business context and screenshots/videos for UI changes.</li>
+</ul>
+<hr>
+<h2 id="4-documentation-strategy"><a class="header" href="#4-documentation-strategy">4. Documentation Strategy</a></h2>
+<p>We maintain a “Documentation-as-Code” culture:</p>
+<ul>
+<li><strong>ADRs</strong>: Architectural Decision Records for major system changes.</li>
+<li><strong>mdBook</strong>: All Markdown files in <code>/docs</code> are synchronized to the <a href="file:///Users/martin/Projects/poool/docs/book/book/index.html">Internal Wiki</a>.</li>
+</ul>
+<hr>
+<h2 id="5-branching--deployment"><a class="header" href="#5-branching--deployment">5. Branching &amp; Deployment</a></h2>
+<ul>
+<li><code>main</code>: Production-ready code.</li>
+<li><code>staging</code>: Integration testing for the next release.</li>
+<li><code>feat/*</code> or <code>fix/*</code>: Individual development branches.</li>
+</ul>
+<blockquote class="blockquote-tag blockquote-tag-tip">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>Tip</p>
+<p><strong>Commit Messages</strong>
+Follow conventional commits: <code>feat: add deposit success UI</code>, <code>fix: handle edge-case null reference in wallet</code>.</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="-poool--vollständiges-datenbank-design-postgresql"><a class="header" href="#-poool--vollständiges-datenbank-design-postgresql">🗄️ POOOL – Vollständiges Datenbank-Design (PostgreSQL)</a></h1>
+<p>Dieses Dokument ist die “Single Source of Truth” für das gesamte relationale Datenbankschema der POOOL-Plattform.
+Jede Tabelle, jede Spalte und jede Beziehung wurde direkt aus der Analyse der bestehenden Frontend-Seiten abgeleitet.</p>
+<blockquote>
+<p><strong>WICHTIG:</strong> Alle Geldbeträge werden in <strong>Cents (INTEGER)</strong> gespeichert (z. B. $2,732 = 273200). Floating-Point-Zahlen (FLOAT/DOUBLE) sind in Finanzsystemen <strong>streng verboten</strong>, da sie zu Rundungsfehlern führen.</p>
+</blockquote>
+<hr>
+<h2 id="übersicht-der-tabellen"><a class="header" href="#übersicht-der-tabellen">Übersicht der Tabellen</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Nr</th><th>Tabelle</th><th>Zweck</th><th>Abgeleitet von (Frontend-Seite)</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td><code>users</code></td><td>Haupttabelle aller Benutzer</td><td>signup, login, profile-dropdown</td></tr>
+<tr><td>2</td><td><code>user_profiles</code></td><td>Persönliche Daten (KYC-relevant)</td><td>KYC-Seite, Settings</td></tr>
+<tr><td>3</td><td><code>user_sessions</code></td><td>Login-Sessions (HttpOnly Cookies)</td><td>Login, “Remember me”</td></tr>
+<tr><td>4</td><td><code>oauth_accounts</code></td><td>Social Login (Google, Facebook, Apple)</td><td>signup.html, login.html</td></tr>
+<tr><td>5</td><td><code>kyc_records</code></td><td>Identitätsprüfung (SumSub o.ä.)</td><td>KYC-Banner auf jeder Seite</td></tr>
+<tr><td>6</td><td><code>wallets</code></td><td>Fiat-Guthaben (Cash + Rewards)</td><td>wallet.html</td></tr>
+<tr><td>7</td><td><code>wallet_transactions</code></td><td>Transaktionshistorie des Wallets</td><td>wallet.html (Transactions-Tabelle)</td></tr>
+<tr><td>8</td><td><code>assets</code></td><td>Immobilien &amp; Rohstoffe</td><td>marketplace.html, commodities-marketplace.html</td></tr>
+<tr><td>9</td><td><code>asset_images</code></td><td>Bilder pro Asset (Gallery)</td><td>Marketplace-Cards</td></tr>
+<tr><td>10</td><td><code>asset_milestones</code></td><td>Timeline und Checkpoints pro Asset</td><td>Funding Timeline / Roadmap</td></tr>
+<tr><td>11</td><td><code>asset_documents</code></td><td>Rechtliche Dokumente (Exposé etc.)</td><td>Asset-Detailseite</td></tr>
+<tr><td>12</td><td><code>asset_financials</code></td><td>Finanzkennzahlen pro Asset</td><td>Portfolio “Key financials”</td></tr>
+<tr><td>13</td><td><code>investments</code></td><td>Gehaltene Anteile pro User/Asset</td><td>portfolio.html “My Assets”-Tabelle</td></tr>
+<tr><td>14</td><td><code>cart_items</code></td><td>Warenkorb</td><td>cart.html</td></tr>
+<tr><td>15</td><td><code>orders</code></td><td>Abgeschlossene Kaufvorgänge</td><td>Cart → Checkout</td></tr>
+<tr><td>16</td><td><code>order_items</code></td><td>Einzelpositionen einer Bestellung</td><td>Cart-Items → Order-Items</td></tr>
+<tr><td>17</td><td><code>dividend_payouts</code></td><td>Mieteinnahmen-Ausschüttungen</td><td>Portfolio “Payout expected” Status</td></tr>
+<tr><td>18</td><td><code>notifications</code></td><td>Benachrichtigungen</td><td>Notification-Badge im Header</td></tr>
+<tr><td>19</td><td><code>support_tickets</code></td><td>Support-Anfragen</td><td>support.html, Chat-Karte</td></tr>
+<tr><td>20</td><td><code>user_settings</code></td><td>Nutzer-Einstellungen &amp; 2FA</td><td>settings.html</td></tr>
+<tr><td>21</td><td><code>roles</code></td><td>Rollen (investor, developer, admin)</td><td>Profile-Switcher</td></tr>
+<tr><td>22</td><td><code>user_roles</code></td><td>Zuordnung User ↔ Rolle</td><td>“Switch account” Dropdown</td></tr>
+<tr><td>23</td><td><code>developer_projects</code></td><td>Developer-Projekte/Assets</td><td>developer/dashboard.html</td></tr>
+<tr><td>24</td><td><code>audit_logs</code></td><td>Unveränderliches Audit-Protokoll</td><td>Compliance-Pflicht</td></tr>
+<tr><td>25</td><td><code>password_reset_tokens</code></td><td>Passwort-Zurücksetzen</td><td>forgot-password.html</td></tr>
+<tr><td>26</td><td><code>investment_limits</code></td><td>Jährliches Investmentlimit</td><td>Portfolio “Annual investment limit”</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="1-users"><a class="header" href="#1-users">1. <code>users</code></a></h2>
+<p><em>Abgeleitet von: signup.html (Email-Feld), login.html (Email + Password), Profile-Dropdown (Name, Avatar)</em></p>
+<pre><code class="language-sql">CREATE TABLE users (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email           VARCHAR(255) NOT NULL UNIQUE,
+    password_hash   VARCHAR(255),              -- NULL wenn nur OAuth
+    email_verified  BOOLEAN NOT NULL DEFAULT FALSE,
+    avatar_url      VARCHAR(512),              -- "/images/Image.png" aus Frontend
+    status          VARCHAR(20) NOT NULL DEFAULT 'active'
+                    CHECK (status IN ('active', 'suspended', 'deleted')),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_users_email ON users(email);
+</code></pre>
+<h2 id="2-user_profiles"><a class="header" href="#2-user_profiles">2. <code>user_profiles</code></a></h2>
+<p><em>Abgeleitet von: KYC-Seite (kyc.html), Profil-Dropdown (“Olivia Rhye”), Settings-Seite</em></p>
+<pre><code class="language-sql">CREATE TABLE user_profiles (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    first_name      VARCHAR(100),             -- "Olivia"
+    last_name       VARCHAR(100),             -- "Rhye"
+    display_name    VARCHAR(200),             -- Angezeigt in Sidebar/Header
+    date_of_birth   DATE,
+    nationality     VARCHAR(3),               -- ISO 3166-1 alpha-3
+    address_line_1  VARCHAR(255),
+    address_line_2  VARCHAR(255),
+    city            VARCHAR(100),
+    state_province  VARCHAR(100),
+    postal_code     VARCHAR(20),
+    country         VARCHAR(3),               -- ISO 3166-1 alpha-3
+    phone_number    VARCHAR(30),
+    tax_id          VARCHAR(50),              -- Steuer-ID (verschlüsselt)
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+</code></pre>
+<h2 id="3-user_sessions"><a class="header" href="#3-user_sessions">3. <code>user_sessions</code></a></h2>
+<p><em>Abgeleitet von: login.html (“Remember me” Checkbox), Session-basiertes Auth</em></p>
+<pre><code class="language-sql">CREATE TABLE user_sessions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    session_token   VARCHAR(255) NOT NULL UNIQUE,
+    ip_address      INET,
+    user_agent      TEXT,
+    remember_me     BOOLEAN NOT NULL DEFAULT FALSE,
+    expires_at      TIMESTAMPTZ NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_sessions_token ON user_sessions(session_token);
+CREATE INDEX idx_sessions_user ON user_sessions(user_id);
+</code></pre>
+<h2 id="4-oauth_accounts"><a class="header" href="#4-oauth_accounts">4. <code>oauth_accounts</code></a></h2>
+<p><em>Abgeleitet von: signup.html &amp; login.html (Google, Facebook, Apple Buttons)</em></p>
+<pre><code class="language-sql">CREATE TABLE oauth_accounts (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider        VARCHAR(20) NOT NULL       -- 'google', 'facebook', 'apple'
+                    CHECK (provider IN ('google', 'facebook', 'apple')),
+    provider_id     VARCHAR(255) NOT NULL,     -- ID beim Provider
+    provider_email  VARCHAR(255),
+    access_token    TEXT,                      -- verschlüsselt
+    refresh_token   TEXT,                      -- verschlüsselt
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (provider, provider_id)
+);
+CREATE INDEX idx_oauth_user ON oauth_accounts(user_id);
+</code></pre>
+<h2 id="5-kyc_records"><a class="header" href="#5-kyc_records">5. <code>kyc_records</code></a></h2>
+<p><em>Abgeleitet von: KYC-Banner (“Complete identity verification (KYC) to buy…”), KYC-Seite</em></p>
+<pre><code class="language-sql">CREATE TABLE kyc_records (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider            VARCHAR(50) NOT NULL DEFAULT 'sumsub',
+    provider_ref_id     VARCHAR(255),          -- Referenz beim KYC-Provider
+    status              VARCHAR(20) NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'in_review', 'approved', 'rejected', 'expired')),
+    rejection_reason    TEXT,
+    document_type       VARCHAR(50),           -- 'passport','id_card','drivers_license'
+    pep_check_passed    BOOLEAN,               -- Politically Exposed Person
+    sanctions_check     BOOLEAN,               -- Sanktionslisten
+    verified_at         TIMESTAMPTZ,
+    expires_at          TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_kyc_user ON kyc_records(user_id);
+CREATE INDEX idx_kyc_status ON kyc_records(status);
+</code></pre>
+<h2 id="6-wallets"><a class="header" href="#6-wallets">6. <code>wallets</code></a></h2>
+<p><em>Abgeleitet von: wallet.html (“Cash balance: USD 2,732” + “Rewards balance: USD 1,700”)</em></p>
+<pre><code class="language-sql">CREATE TABLE wallets (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    wallet_type     VARCHAR(20) NOT NULL       -- 'cash', 'rewards'
+                    CHECK (wallet_type IN ('cash', 'rewards')),
+    balance_cents   BIGINT NOT NULL DEFAULT 0  -- $2,732 = 273200 (immer USD)
+                    CHECK (balance_cents &gt;= 0),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, wallet_type)
+);
+CREATE INDEX idx_wallets_user ON wallets(user_id);
+</code></pre>
+<h2 id="7-wallet_transactions"><a class="header" href="#7-wallet_transactions">7. <code>wallet_transactions</code></a></h2>
+<p><em>Abgeleitet von: wallet.html Transactions-Tabelle (Spalten: Type, Status, Date, Wallet, Amount, Actions)</em></p>
+<pre><code class="language-sql">CREATE TABLE wallet_transactions (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    wallet_id           UUID NOT NULL REFERENCES wallets(id),
+    type                VARCHAR(30) NOT NULL
+                        CHECK (type IN (
+                            'deposit', 'withdrawal', 'purchase',
+                            'sale', 'dividend', 'reward', 'refund', 'fee'
+                        )),
+    status              VARCHAR(20) NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
+    amount_cents        BIGINT NOT NULL,        -- positiv = Eingang, negativ = Ausgang (immer USD)
+    description         TEXT,
+    external_ref_id     VARCHAR(255),           -- Referenz zum PSP (Mangopay etc.)
+    related_order_id    UUID,                   -- FK zu orders (optional)
+    metadata            JSONB,                  -- Flexible Zusatzdaten
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at        TIMESTAMPTZ
+);
+CREATE INDEX idx_wtx_wallet ON wallet_transactions(wallet_id);
+CREATE INDEX idx_wtx_type ON wallet_transactions(type);
+CREATE INDEX idx_wtx_status ON wallet_transactions(status);
+CREATE INDEX idx_wtx_created ON wallet_transactions(created_at DESC);
+</code></pre>
+<h2 id="8-assets"><a class="header" href="#8-assets">8. <code>assets</code></a></h2>
+<p><em>Abgeleitet von: marketplace.html (Property-Cards), commodities-marketplace.html, developer/assets.html</em></p>
+<pre><code class="language-sql">CREATE TABLE assets (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    developer_user_id   UUID REFERENCES users(id), -- wer hat es eingestellt
+    title               VARCHAR(255) NOT NULL,     -- Asset Title / Property Name
+    slug                VARCHAR(255) NOT NULL UNIQUE,
+    short_description   VARCHAR(500),              -- Aus property-content (Kurzbeschreibung)
+    description         TEXT,                      -- Full Description
+    asset_type          VARCHAR(30) NOT NULL       -- Aus developer/add-asset.html Step 1
+                        CHECK (asset_type IN (
+                            'real_estate', 'commercial_property', 'commodity',
+                            'business', 'startup', 'land_plot'
+                        )),
+    
+    -- Spezifische Property-Details (Aus application-form Step 2 &amp; 4)
+    property_type       VARCHAR(50),               -- 'villa', 'house', 'apartment', 'commercial'
+    area                VARCHAR(100),              -- z.B. 'canggu', 'uluwatu'
+    lease_type          VARCHAR(30)                -- 'leasehold', 'freehold'
+                        CHECK (lease_type IN ('leasehold', 'freehold', NULL)),
+    lease_term_years    INTEGER,                   -- verbleibende Jahre
+    land_size_sqm       DECIMAL(10, 2),            -- Grundstücksgröße
+    building_size_sqm   DECIMAL(10, 2),            -- Gebäudegröße
+    bedrooms            INTEGER,
+    bathrooms           INTEGER,
+    construction_status VARCHAR(50)                -- Status Quo
+                        CHECK (construction_status IN ('ready', 'construction', 'renovation', NULL)),
+    year_built          INTEGER,                   -- Baujahr oder Jahr der Renovierung
+
+    -- Location &amp; Media
+    location_city       VARCHAR(100),              
+    location_country    VARCHAR(3),                
+    location_address    VARCHAR(255),              -- Genauer Address-String
+    location_lat        DECIMAL(10, 7),
+    location_lng        DECIMAL(10, 7),
+    location_description TEXT,                     -- Beschreibung der Nachbarschaft
+    google_maps_url     VARCHAR(512),
+    video_url           VARCHAR(512),              -- YouTube/Video Tour
+
+    -- Finanzdaten (Aus application-form Step 2 &amp; 4)
+    total_value_cents   BIGINT NOT NULL,           -- Purchase price
+    token_price_cents   BIGINT NOT NULL,           -- Minimum Share Price
+    tokens_total        INTEGER NOT NULL,          
+    tokens_available    INTEGER NOT NULL,          
+    
+    -- Rendite (Properties)
+    annual_yield_bps    INTEGER,                    -- Expected Rental Yield (750 = 7.50%)
+    capital_appreciation_bps INTEGER,               -- Expected Capital Appreciation (350 = 3.50%)
+    occupancy_rate_bps  INTEGER,                    -- Belegungsrate
+
+    -- Commodity spezifische Details (Aus commodity.html)
+    operator_name       VARCHAR(255),              -- "PT. NEO AGRO SOLUTIONS"
+    term_months         INTEGER,                   -- "12 months"
+    fixed_roi_bps       INTEGER,                   -- "35%" (3500)
+    revenue_min_cents   BIGINT,                    -- "$5.4M"
+    revenue_max_cents   BIGINT,                    -- "$9M"
+    expenses_cents      BIGINT,                    -- "$450K"
+    net_profit_min_cents BIGINT,
+    net_profit_max_cents BIGINT,
+    investor_payout_cents BIGINT,
+    operator_split_pct  INTEGER,                   -- "55"
+    poool_split_pct     INTEGER,                   -- "45"
+    
+    -- Status
+    funding_status      VARCHAR(30) NOT NULL DEFAULT 'upcoming'
+                        CHECK (funding_status IN (
+                            'upcoming', 'funding_open', 'funding_in_progress',
+                            'funded', 'rented', 'payout_pending', 'exited'
+                        )),
+    featured            BOOLEAN NOT NULL DEFAULT FALSE,
+    published           BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Timestamps
+    funding_start_at    TIMESTAMPTZ,
+    funding_end_at      TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_assets_type ON assets(asset_type);
+CREATE INDEX idx_assets_status ON assets(funding_status);
+CREATE INDEX idx_assets_developer ON assets(developer_user_id);
+CREATE INDEX idx_assets_slug ON assets(slug);
+</code></pre>
+<h2 id="9-asset_images"><a class="header" href="#9-asset_images">9. <code>asset_images</code></a></h2>
+<p><em>Abgeleitet von: Marketplace-Cards (villa1.jpg, villa2_1.jpg etc.), Bildergalerie</em></p>
+<pre><code class="language-sql">CREATE TABLE asset_images (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id        UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+    image_url       VARCHAR(512) NOT NULL,
+    alt_text        VARCHAR(255),
+    sort_order      INTEGER NOT NULL DEFAULT 0,
+    is_cover        BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_asset_images_asset ON asset_images(asset_id);
+</code></pre>
+<h2 id="10-asset_milestones"><a class="header" href="#10-asset_milestones">10. <code>asset_milestones</code></a></h2>
+<p><em>Abgeleitet von: Funding Timeline (property.html) und Roadmap (commodity.html)</em></p>
+<pre><code class="language-sql">CREATE TABLE asset_milestones (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id        UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+    title           VARCHAR(255) NOT NULL,     -- "Property funded" / "Month 1 - Land prep &amp; planting"
+    description     TEXT,                      -- "Harvesting, processing (pasta/dried), first sales"
+    milestone_date  TIMESTAMPTZ,               -- Konkretes Datum (falls bekannt, z.B. bei Property Funding)
+    month_index     INTEGER,                   -- Oder generischer Monat (1, 3, 6, 12 für Commodities)
+    is_completed    BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_asset_milestones_asset ON asset_milestones(asset_id);
+</code></pre>
+<h2 id="11-asset_documents"><a class="header" href="#11-asset_documents">11. <code>asset_documents</code></a></h2>
+<p><em>Abgeleitet von: Asset-Detailseite (Exposé, Gutachten, Kaufvertrag)</em></p>
+<pre><code class="language-sql">CREATE TABLE asset_documents (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id        UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+    document_type   VARCHAR(50) NOT NULL
+                    CHECK (document_type IN (
+                        'proof_of_title', 'legal_basis', 'building_permit',
+                        'site_plan', 'tax_npwp', 'tax_pbb', 'tax_bphtb',
+                        'license_nib', 'id_card', 'owner_npwp',
+                        'expose', 'appraisal', 'financial', 'floor_plan', 'other'
+                    )),
+    title           VARCHAR(255) NOT NULL,
+    file_url        VARCHAR(512) NOT NULL,
+    file_size_bytes BIGINT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_asset_docs_asset ON asset_documents(asset_id);
+</code></pre>
+<h2 id="12-asset_financials"><a class="header" href="#12-asset_financials">12. <code>asset_financials</code></a></h2>
+<p><em>Abgeleitet von: Portfolio “Key financials” (Monthly income, Total rental income, Total appreciation)</em></p>
+<pre><code class="language-sql">CREATE TABLE asset_financials (
+    id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id                    UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+    period_month                INTEGER NOT NULL,      -- 1-12
+    period_year                 INTEGER NOT NULL,      -- 2026
+    rental_income_cents         BIGINT DEFAULT 0,      -- Mieteinnahmen im Monat
+    appreciation_cents          BIGINT DEFAULT 0,      -- Wertsteigerung
+    occupancy_rate_bps          INTEGER,               -- 8000 = 80%
+    expenses_cents              BIGINT DEFAULT 0,      -- Betriebskosten
+    net_income_cents            BIGINT DEFAULT 0,      -- Netto = rental - expenses
+    created_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (asset_id, period_month, period_year)
+);
+CREATE INDEX idx_asset_fin_asset ON asset_financials(asset_id);
+</code></pre>
+<h2 id="13-investments"><a class="header" href="#13-investments">13. <code>investments</code></a></h2>
+<p><em>Abgeleitet von: portfolio.html “My Assets” Tabelle (Property, Investment value, Total rental income, Status)</em></p>
+<pre><code class="language-sql">CREATE TABLE investments (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id                 UUID NOT NULL REFERENCES users(id),
+    asset_id                UUID NOT NULL REFERENCES assets(id),
+    tokens_owned            INTEGER NOT NULL DEFAULT 0
+                            CHECK (tokens_owned &gt; 0),
+    purchase_value_cents    BIGINT NOT NULL,        -- Gesamtkaufwert
+    current_value_cents     BIGINT NOT NULL,        -- aktuell berechneter Wert
+    total_rental_cents      BIGINT NOT NULL DEFAULT 0, -- kumulierte Mieteinnahmen
+    appreciation_pct_bps    INTEGER DEFAULT 0,       -- "+3.5%" = 350
+    status                  VARCHAR(30) NOT NULL DEFAULT 'active'
+                            CHECK (status IN (
+                                'active', 'funded', 'rented', 'payout_pending',
+                                'in_process', 'funding_in_progress', 'exited'
+                            )),
+    payout_expected_at      TIMESTAMPTZ,            -- "Payout expected: Sept"
+    purchased_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, asset_id)
+);
+CREATE INDEX idx_investments_user ON investments(user_id);
+CREATE INDEX idx_investments_asset ON investments(asset_id);
+</code></pre>
+<h2 id="14-cart_items"><a class="header" href="#14-cart_items">14. <code>cart_items</code></a></h2>
+<p><em>Abgeleitet von: cart.html (Warenkorb mit Properties, Token-Menge, Preis)</em></p>
+<pre><code class="language-sql">CREATE TABLE cart_items (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    asset_id        UUID NOT NULL REFERENCES assets(id),
+    tokens_quantity INTEGER NOT NULL DEFAULT 1
+                    CHECK (tokens_quantity &gt; 0),
+    token_price_cents BIGINT NOT NULL,          -- Preis zum Zeitpunkt des Hinzufügens
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, asset_id)
+);
+CREATE INDEX idx_cart_user ON cart_items(user_id);
+</code></pre>
+<h2 id="15-orders"><a class="header" href="#15-orders">15. <code>orders</code></a></h2>
+<p><em>Abgeleitet von: Cart → Checkout Ablauf</em></p>
+<pre><code class="language-sql">CREATE TABLE orders (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID NOT NULL REFERENCES users(id),
+    order_number        VARCHAR(30) NOT NULL UNIQUE,
+    total_cents         BIGINT NOT NULL,        -- immer USD
+    status              VARCHAR(20) NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled', 'refunded')),
+    payment_method      VARCHAR(30),            -- 'wallet', 'bank_transfer', 'card'
+    payment_ref_id      VARCHAR(255),           -- PSP Referenz
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at        TIMESTAMPTZ
+);
+CREATE INDEX idx_orders_user ON orders(user_id);
+CREATE INDEX idx_orders_status ON orders(status);
+</code></pre>
+<h2 id="16-order_items"><a class="header" href="#16-order_items">16. <code>order_items</code></a></h2>
+<pre><code class="language-sql">CREATE TABLE order_items (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id            UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    asset_id            UUID NOT NULL REFERENCES assets(id),
+    tokens_quantity     INTEGER NOT NULL,
+    token_price_cents   BIGINT NOT NULL,
+    subtotal_cents      BIGINT NOT NULL
+);
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+</code></pre>
+<h2 id="17-dividend_payouts"><a class="header" href="#17-dividend_payouts">17. <code>dividend_payouts</code></a></h2>
+<p><em>Abgeleitet von: Portfolio Status “Payout expected: Sept/Oct”</em></p>
+<pre><code class="language-sql">CREATE TABLE dividend_payouts (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    investment_id       UUID NOT NULL REFERENCES investments(id),
+    user_id             UUID NOT NULL REFERENCES users(id),
+    asset_id            UUID NOT NULL REFERENCES assets(id),
+    amount_cents        BIGINT NOT NULL,
+    payout_type         VARCHAR(20) NOT NULL     -- 'rental', 'exit', 'bonus'
+                        CHECK (payout_type IN ('rental', 'exit', 'bonus')),
+    status              VARCHAR(20) NOT NULL DEFAULT 'scheduled'
+                        CHECK (status IN ('scheduled', 'processing', 'paid', 'failed')),
+    scheduled_at        TIMESTAMPTZ,
+    paid_at             TIMESTAMPTZ,
+    wallet_tx_id        UUID REFERENCES wallet_transactions(id),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_dividends_user ON dividend_payouts(user_id);
+CREATE INDEX idx_dividends_investment ON dividend_payouts(investment_id);
+</code></pre>
+<h2 id="18-notifications"><a class="header" href="#18-notifications">18. <code>notifications</code></a></h2>
+<p><em>Abgeleitet von: Notification-Bell im Header (Badge “3”)</em></p>
+<pre><code class="language-sql">CREATE TABLE notifications (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title           VARCHAR(255) NOT NULL,
+    message         TEXT,
+    type            VARCHAR(30) NOT NULL        -- 'kyc', 'investment', 'payout', 'system', 'promo'
+                    CHECK (type IN ('kyc', 'investment', 'payout', 'system', 'promo')),
+    is_read         BOOLEAN NOT NULL DEFAULT FALSE,
+    action_url      VARCHAR(512),              -- Deep-Link
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_notifications_user ON notifications(user_id);
+CREATE INDEX idx_notifications_unread ON notifications(user_id, is_read) WHERE is_read = FALSE;
+</code></pre>
+<h2 id="19-support_tickets"><a class="header" href="#19-support_tickets">19. <code>support_tickets</code></a></h2>
+<p><em>Abgeleitet von: support.html, Mobile “Chat to support” Karte</em></p>
+<pre><code class="language-sql">CREATE TABLE support_tickets (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id),
+    subject         VARCHAR(255) NOT NULL,
+    message         TEXT NOT NULL,
+    status          VARCHAR(20) NOT NULL DEFAULT 'open'
+                    CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
+    priority        VARCHAR(10) DEFAULT 'normal'
+                    CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    assigned_to     UUID REFERENCES users(id),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_support_user ON support_tickets(user_id);
+CREATE INDEX idx_support_status ON support_tickets(status);
+</code></pre>
+<h2 id="20-user_settings"><a class="header" href="#20-user_settings">20. <code>user_settings</code></a></h2>
+<p><em>Abgeleitet von: settings.html, 2FA-Anforderung</em></p>
+<pre><code class="language-sql">CREATE TABLE user_settings (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    totp_secret     VARCHAR(255),              -- 2FA Secret (verschlüsselt)
+    totp_enabled    BOOLEAN NOT NULL DEFAULT FALSE,
+    language        VARCHAR(5) DEFAULT 'en',
+    email_notifications   BOOLEAN DEFAULT TRUE,
+    push_notifications    BOOLEAN DEFAULT TRUE,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+</code></pre>
+<h2 id="21-roles"><a class="header" href="#21-roles">21. <code>roles</code></a></h2>
+<p><em>Abgeleitet von: Profile-Switcher (“Investor Profile” / “Developer profile”)</em></p>
+<pre><code class="language-sql">CREATE TABLE roles (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name            VARCHAR(30) NOT NULL UNIQUE, -- 'investor', 'developer', 'admin'
+    description     VARCHAR(255)
+);
+INSERT INTO roles (name, description) VALUES
+    ('investor', 'Standard-Investor mit Zugang zum Marketplace und Portfolio'),
+    ('developer', 'Immobilien-Entwickler, der Assets einstellen kann'),
+    ('admin', 'Plattform-Administrator');
+</code></pre>
+<h2 id="22-user_roles"><a class="header" href="#22-user_roles">22. <code>user_roles</code></a></h2>
+<p><em>Abgeleitet von: “Switch account” Dropdown – ein User kann Investor UND Developer sein</em></p>
+<pre><code class="language-sql">CREATE TABLE user_roles (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id         UUID NOT NULL REFERENCES roles(id),
+    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+    granted_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, role_id)
+);
+CREATE INDEX idx_user_roles_user ON user_roles(user_id);
+</code></pre>
+<h2 id="23-developer_projects"><a class="header" href="#23-developer_projects">23. <code>developer_projects</code></a></h2>
+<p><em>Abgeleitet von: developer/dashboard.html, developer/assets.html, developer/add-asset.html</em></p>
+<pre><code class="language-sql">CREATE TABLE developer_projects (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    developer_id    UUID NOT NULL REFERENCES users(id),
+    asset_id        UUID REFERENCES assets(id),  -- verknüpftes Asset
+    project_name    VARCHAR(255) NOT NULL,
+    status          VARCHAR(20) NOT NULL DEFAULT 'draft'
+                    CHECK (status IN ('draft', 'submitted', 'in_review', 'approved', 'rejected', 'live')),
+    -- Statistiken für das Developer Dashboard
+    total_raised_cents      BIGINT DEFAULT 0,
+    investors_count         INTEGER DEFAULT 0,
+    funding_progress_bps    INTEGER DEFAULT 0,   -- 5000 = 50%
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_dev_projects_developer ON developer_projects(developer_id);
+</code></pre>
+<h2 id="24-audit_logs-immutable--niemals-update-oder-delete"><a class="header" href="#24-audit_logs-immutable--niemals-update-oder-delete">24. <code>audit_logs</code> (IMMUTABLE – niemals UPDATE oder DELETE!)</a></h2>
+<p><em>Regulatorische Pflicht: Jede kritische Aktion wird lückenlos protokolliert</em></p>
+<pre><code class="language-sql">CREATE TABLE audit_logs (
+    id              BIGSERIAL PRIMARY KEY,      -- Auto-increment, niemals UUID
+    actor_user_id   UUID REFERENCES users(id),
+    action          VARCHAR(100) NOT NULL,       -- 'user.created', 'investment.purchased', 'kyc.approved'
+    entity_type     VARCHAR(50) NOT NULL,        -- 'user', 'investment', 'wallet_transaction'
+    entity_id       UUID,                        -- ID des betroffenen Datensatzes
+    previous_state  JSONB,                       -- Zustand VOR der Änderung
+    new_state       JSONB,                       -- Zustand NACH der Änderung
+    ip_address      INET,
+    user_agent      TEXT,
+    metadata        JSONB,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- KEIN UPDATE/DELETE erlaubt!
+CREATE INDEX idx_audit_user ON audit_logs(actor_user_id);
+CREATE INDEX idx_audit_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX idx_audit_action ON audit_logs(action);
+CREATE INDEX idx_audit_created ON audit_logs(created_at DESC);
+</code></pre>
+<h2 id="25-password_reset_tokens"><a class="header" href="#25-password_reset_tokens">25. <code>password_reset_tokens</code></a></h2>
+<p><em>Abgeleitet von: forgot-password.html</em></p>
+<pre><code class="language-sql">CREATE TABLE password_reset_tokens (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash      VARCHAR(255) NOT NULL UNIQUE,   -- gehashter Token
+    expires_at      TIMESTAMPTZ NOT NULL,
+    used_at         TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_prt_token ON password_reset_tokens(token_hash);
+</code></pre>
+<h2 id="26-investment_limits"><a class="header" href="#26-investment_limits">26. <code>investment_limits</code></a></h2>
+<p><em>Abgeleitet von: Portfolio “Annual investment limit” Sektion (USD 250,000 limit, 35% used)</em></p>
+<pre><code class="language-sql">CREATE TABLE investment_limits (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id                 UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    annual_limit_cents      BIGINT NOT NULL DEFAULT 25000000,  -- USD 250,000
+    invested_12m_cents      BIGINT NOT NULL DEFAULT 0,         -- USD 83,000
+    available_cents         BIGINT GENERATED ALWAYS AS (annual_limit_cents - invested_12m_cents) STORED,
+    limit_year              INTEGER NOT NULL,                  -- z.B. 2026
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, limit_year)
+);
+CREATE INDEX idx_inv_limits_user ON investment_limits(user_id);
+</code></pre>
+<hr>
+<h2 id="entity-relationship-diagram-vereinfacht"><a class="header" href="#entity-relationship-diagram-vereinfacht">Entity-Relationship Diagram (Vereinfacht)</a></h2>
+<pre><code>users ─────┬── user_profiles
+            ├── user_sessions
+            ├── oauth_accounts
+            ├── kyc_records
+            ├── wallets ──── wallet_transactions
+            ├── user_roles ── roles
+            ├── user_settings
+            ├── cart_items ─────┐
+            ├── orders ─────────┤── assets ──┬── asset_images
+            │   └── order_items ┘            ├── asset_documents
+            ├── investments ─────────────────┤── asset_milestones
+            │   └── dividend_payouts         ├── asset_financials
+            ├── developer_projects ──────────┘
+            ├── notifications
+            ├── support_tickets
+            ├── investment_limits
+            ├── password_reset_tokens
+            └── audit_logs
+</code></pre>
+<hr>
+<h2 id="hinweise"><a class="header" href="#hinweise">Hinweise</a></h2>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Dieses Schema bildet exakt die <strong>bestehenden</strong> Frontend-Seiten ab. Folgende Features existieren aktuell nur als Platzhalter im Frontend und haben bewusst <strong>keine</strong> Datenbank-Tabellen:</p>
+<ul>
+<li><strong>Rewards</strong> – in der Sidebar als “Soon” markiert</li>
+<li><strong>Leaderboard</strong> – in der Sidebar als “Soon” markiert</li>
+<li><strong>Community</strong> – keine bestehende Seite</li>
+<li><strong>Sekundärmarkt / Trading</strong> – noch nicht geplant</li>
+<li><strong>Multi-Währung</strong> – aktuell nur USD</li>
+</ul>
+<p>Diese werden erst hinzugefügt, wenn die entsprechenden Frontend-Seiten gebaut werden.</p>
+</blockquote>
+<hr>
+<p><em>Ende des Datenbankschema-Dokuments.</em></p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="database-schema-intelligence--migrations"><a class="header" href="#database-schema-intelligence--migrations">Database Schema Intelligence &amp; Migrations</a></h1>
+<p>This document provides a guided overview of the database migrations and the evolving schema.</p>
+<h2 id="migration-history--business-context"><a class="header" href="#migration-history--business-context">Migration History &amp; Business Context</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Migration</th><th style="text-align: left">Title</th><th style="text-align: left">Key Impact</th><th style="text-align: left">Business Logic</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><code>001</code></td><td style="text-align: left">Initial Schema</td><td style="text-align: left">Users, Profiles, Assets, Wallets</td><td style="text-align: left">Core platform foundation based on original designs.</td></tr>
+<tr><td style="text-align: left"><code>002</code></td><td style="text-align: left">Seed Data</td><td style="text-align: left">Mock data portal</td><td style="text-align: left">Baseline state for testing and development.</td></tr>
+<tr><td style="text-align: left"><code>004</code></td><td style="text-align: left">Rewards Schema</td><td style="text-align: left">Tiers, Referrals, Cashback</td><td style="text-align: left">Implements Tiered Rewards (Intro to Premium) and 30 USD referral bonus.</td></tr>
+<tr><td style="text-align: left"><code>005</code></td><td style="text-align: left">Payments &amp; Checkout</td><td style="text-align: left">Multi-currency, Invoices</td><td style="text-align: left">Introduces IDR/USD fiat support and atomic invoice generation.</td></tr>
+<tr><td style="text-align: left"><code>006</code></td><td style="text-align: left">Admin Settings</td><td style="text-align: left">RBAC, Platform Config</td><td style="text-align: left">Fine-grained permissions (Compliance, Finance, Support) and global toggles.</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="core-entities--relationships"><a class="header" href="#core-entities--relationships">Core Entities &amp; Relationships</a></h2>
+<pre><code class="language-mermaid">erDiagram
+    USERS ||--|| USER_PROFILES : "has"
+    USERS ||--o{ WALLETS : "owns"
+    WALLETS ||--o{ WALLET_TRANSACTIONS : "records"
+    USERS ||--o{ INVESTMENTS : "holds"
+    ASSETS ||--o{ INVESTMENTS : "targeted_by"
+    ASSETS ||--o{ ASSET_IMAGES : "gallery"
+    USERS ||--o{ ORDERS : "places"
+    ORDERS ||--o{ ORDER_ITEMS : "contains"
+    ORDERS ||--|| INVOICES : "generates"
+    USERS ||--o{ DEPOSIT_REQUESTS : "initiates"
+    USERS ||--o{ REWARDS_BALANCES : "accrues"
+    USERS ||--o{ REFERRAL_CODES : "shares"
+</code></pre>
+<h2 id="schema-guardrails"><a class="header" href="#schema-guardrails">Schema Guardrails</a></h2>
+<ul>
+<li><strong>Currency Integrity</strong>: All financial values are stored as <code>BIGINT</code> (cents). No floating point numbers allowed in <code>_cents</code> columns.</li>
+<li><strong>Audit Requirement</strong>: Critical changes (User status, Financial adjustments) are logged in <code>audit_logs</code>.</li>
+<li><strong>Atomic Operations</strong>: Invoicing and Order completion MUST occur within a single database transaction.</li>
+</ul>
+<h2 id="operational-commands"><a class="header" href="#operational-commands">Operational Commands</a></h2>
+<p>To update the schema documentation or check for drift:</p>
+<pre><code class="language-bash"># Update SQLx offline data (used for documentation &amp; CI)
+cd backend &amp;&amp; cargo sqlx prepare
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-c2a407aa.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>

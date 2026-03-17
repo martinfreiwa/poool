@@ -1,0 +1,622 @@
+/* Mobile Commodity Detail Styles */
+
+/* ========================================
+   0. Mobile Commodity Description
+   ======================================== */
+
+#mobile-commodity-description {
+  margin: 16px 16px 0 16px;
+}
+
+.mobile-commodity-description-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  margin: 0px 0 16px 0;
+}
+
+.mobile-commodity-description-text .poool-highlight {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+/* ========================================
+   1. Mobile Commodity Info Section (6-card grid)
+   ======================================== */
+
+#mobile-commodity-info-section {
+  padding: 24px 16px;
+  background: transparent;
+}
+
+.mobile-commodity-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.mobile-commodity-info-card {
+  box-sizing: border-box;
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  min-height: 72px;
+}
+
+.mobile-commodity-info-card .card-blur-vector-1 {
+  position: absolute;
+  width: 486.81px;
+  height: 446.39px;
+  left: 31px;
+  top: -31px;
+  background: rgba(0, 29, 202, 0.05);
+  filter: blur(100px);
+  transform: rotate(54.66deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.mobile-commodity-info-card .card-blur-vector-2 {
+  position: absolute;
+  width: 418.52px;
+  height: 383.77px;
+  left: 294px;
+  top: 65px;
+  background: rgba(152, 251, 150, 0.15);
+  filter: blur(100px);
+  transform: rotate(-2.73deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.mobile-commodity-info-label {
+  position: relative;
+  z-index: 1;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 16px;
+  color: #414651;
+}
+
+.mobile-commodity-info-value {
+  position: relative;
+  z-index: 1;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  color: #000000;
+}
+
+/* ========================================
+   2. Mobile Financials & Distribution Section
+   ======================================== */
+
+#mobile-financials-distribution-section {
+  padding: 24px 16px;
+  background: transparent;
+}
+
+.mobile-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-left: 0;
+}
+
+.mobile-section-header img {
+  flex-shrink: 0;
+}
+
+.mobile-section-header h2 {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 28px;
+  color: #000000;
+  margin: 0;
+}
+
+.mobile-financials-content-card {
+  position: relative;
+  background: #fcfcfd;
+  border-radius: 16px;
+  padding: 20px 16px;
+  overflow: hidden;
+}
+
+/* Background blur vectors */
+.mobile-financials-content-card .financials-blur-vector-1 {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  left: -150px;
+  top: -150px;
+  background: rgba(0, 29, 202, 0.06);
+  filter: blur(100px);
+  transform: rotate(54.66deg);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mobile-financials-content-card .financials-blur-vector-2 {
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  right: -150px;
+  top: -100px;
+  background: rgba(152, 251, 150, 0.12);
+  filter: blur(100px);
+  transform: rotate(-2.73deg);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mobile-financials-content-card .financials-blur-vector-3 {
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  left: -100px;
+  bottom: -100px;
+  background: rgba(152, 251, 150, 0.12);
+  filter: blur(100px);
+  transform: rotate(-2.73deg);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mobile-financials-content-card .financials-blur-vector-4 {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  right: -120px;
+  bottom: -80px;
+  background: rgba(0, 29, 202, 0.06);
+  filter: blur(100px);
+  transform: rotate(54.66deg);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Background pattern grid */
+.mobile-financials-content-card::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.3) 0px,
+      rgba(255, 255, 255, 0.3) 1px,
+      transparent 1px,
+      transparent 40px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.3) 0px,
+      rgba(255, 255, 255, 0.3) 1px,
+      transparent 1px,
+      transparent 40px
+    );
+}
+
+.mobile-financials-cards-grid {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mobile-financials-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  min-height: 72px;
+}
+
+.mobile-financials-card .card-blur-vector-1 {
+  position: absolute;
+  width: 486.81px;
+  height: 446.39px;
+  left: 31px;
+  top: -31px;
+  background: rgba(0, 29, 202, 0.06);
+  filter: blur(100px);
+  transform: rotate(54.66deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.mobile-financials-card .card-blur-vector-2 {
+  position: absolute;
+  width: 418.52px;
+  height: 383.77px;
+  left: 294px;
+  top: 65px;
+  background: rgba(152, 251, 150, 0.15);
+  filter: blur(100px);
+  transform: rotate(-2.73deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.mobile-financials-card-label {
+  position: relative;
+  z-index: 1;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 16px;
+  color: #414651;
+}
+
+.mobile-financials-card-value {
+  position: relative;
+  z-index: 1;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  color: #000000;
+}
+
+.mobile-financials-legend-card {
+  position: relative;
+  z-index: 10;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.mobile-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-legend-series {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mobile-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.mobile-color-dot.neo-agro {
+  background: var(--accent-color);
+}
+
+.mobile-color-dot.poool-agro {
+  background: var(--primary-color);
+}
+
+.mobile-legend-label {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: #414651;
+}
+
+.mobile-legend-percentage {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #000000;
+}
+
+.mobile-legend-divider {
+  width: 1px;
+  height: 24px;
+  background: #e9eaeb;
+}
+
+.mobile-financials-pie-chart-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.mobile-financials-pie-chart {
+  width: 200px;
+  height: 200px;
+}
+
+/* Dynamic pie chart styles for mobile */
+.mobile-financials-pie-chart svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ========================================
+   3. Mobile Security & Compliance Section
+   ======================================== */
+
+#mobile-security-compliance-section {
+  padding: 24px 16px;
+  background: transparent;
+}
+
+.mobile-security-compliance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.mobile-security-compliance-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+  min-height: 100px;
+}
+
+.mobile-security-compliance-card .card-blur-vector-1 {
+  position: absolute;
+  width: 486.81px;
+  height: 446.39px;
+  left: 60px;
+  top: -13px;
+  background: rgba(0, 29, 202, 0.06);
+  filter: blur(100px);
+  transform: rotate(54.66deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.mobile-security-compliance-card .card-blur-vector-2 {
+  position: absolute;
+  width: 418.52px;
+  height: 383.77px;
+  left: 294px;
+  top: 65px;
+  background: rgba(152, 251, 150, 0.07);
+  filter: blur(100px);
+  transform: rotate(-2.73deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.mobile-security-compliance-card-icon {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  background: rgba(152, 251, 150, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-security-compliance-label {
+  position: relative;
+  z-index: 1;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 16px;
+  color: #414651;
+}
+
+.mobile-security-compliance-value {
+  position: relative;
+  z-index: 1;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  color: #000000;
+}
+
+/* ========================================
+   4. Mobile Operator Section - Match Desktop
+   ======================================== */
+
+/* Mobile operator section wrapper */
+#mobile-operator-section {
+  padding: 24px 16px;
+  background: transparent;
+}
+
+/* Mobile operator card wrapper */
+.mobile-operator-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 16px;
+  padding: 16px;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Background blur vectors for operator section */
+.mobile-operator-card::before {
+  content: "";
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  left: -180px;
+  top: -140px;
+  background: rgba(0, 29, 202, 0.06);
+  filter: blur(100px);
+  transform: rotate(54.66deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.mobile-operator-card::after {
+  content: "";
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  right: -180px;
+  bottom: -100px;
+  background: rgba(152, 251, 150, 0.07);
+  filter: blur(100px);
+  transform: rotate(-2.73deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Company description */
+.mobile-operator-company-desc {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.mobile-operator-company-desc p {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--brand-dark-blue);
+  margin: 0;
+}
+
+/* Operator profile - no card wrapper */
+.mobile-operator-profile {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.mobile-operator-profile:last-of-type {
+  margin-bottom: 0;
+}
+
+.mobile-operator-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mobile-operator-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.mobile-operator-icon.blue-icon path {
+  stroke: var(--primary-color);
+}
+
+.mobile-operator-icon.green-icon path {
+  stroke: var(--accent-color);
+}
+
+.mobile-operator-name {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--brand-dark-blue);
+  margin: 0;
+}
+
+.mobile-operator-details {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mobile-operator-details li {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--brand-dark-blue);
+  margin-bottom: 4px;
+}
+
+.mobile-operator-details li:last-child {
+  margin-bottom: 0;
+}
+
+/* Operator divider - Green accent */
+.mobile-operator-divider {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 1px;
+  background: var(--accent-color);
+  margin: 24px 0;
+}
+
+/* ========================================
+   5. Hide desktop commodity sections on mobile
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* Hide desktop commodity description on mobile */
+  #commodity-description {
+    display: none !important;
+  }
+
+  /* Hide desktop commodity info section on mobile */
+  #commodity-info-section {
+    display: none !important;
+  }
+
+  /* Hide desktop sections that have mobile equivalents */
+  #investment-type-section,
+  #financials-distribution-section,
+  #security-compliance-section,
+  #funding-section,
+  #operator-section,
+  #leasing-strategy-section,
+  .financial-section,
+  .location-section,
+  #developer-section {
+    display: none !important;
+  }
+}

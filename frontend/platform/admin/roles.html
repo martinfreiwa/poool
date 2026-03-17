@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roles & Permissions | Admin | POOOL</title>
+  <meta name="description"
+    content="POOOL Admin — RBAC matrix and granular permission management for Zero Trust Architecture." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <style>
+    .perm-matrix-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md);
+    }
+
+    .perm-matrix {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .perm-matrix th {
+      padding: 12px 16px;
+      background: var(--admin-bg);
+      border-bottom: 2px solid var(--admin-border);
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--admin-text-secondary);
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .perm-matrix th:first-child {
+      text-align: left;
+      width: 260px;
+      min-width: 260px;
+    }
+
+    .perm-matrix td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--admin-border);
+      text-align: center;
+    }
+
+    .perm-matrix td:first-child {
+      text-align: left;
+      font-weight: 500;
+      color: var(--admin-text-secondary);
+    }
+
+    .perm-matrix tbody tr:hover td {
+      background: var(--admin-hover-overlay);
+    }
+
+    .perm-matrix-cat {
+      background: var(--admin-bg) !important;
+      font-weight: 700 !important;
+      font-size: 12px !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
+      color: var(--admin-text-primary) !important;
+      border-top: 2px solid var(--admin-border) !important;
+    }
+
+    .perm-matrix-cat td {
+      padding: 10px 16px !important;
+    }
+
+    .perm-check {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--admin-accent);
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .perm-check:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .sod-warn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: var(--admin-radius-sm);
+      background: var(--admin-warning-bg);
+      border: 1px solid rgba(217, 119, 6, 0.2);
+      color: var(--admin-warning);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .role-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .role-card {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md);
+      padding: 16px 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .role-card:hover {
+      border-color: var(--admin-border-hover);
+      box-shadow: var(--admin-shadow-sm);
+    }
+
+    .role-card-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--admin-text-primary);
+      margin-bottom: 4px;
+    }
+
+    .role-card-desc {
+      font-size: 12px;
+      color: var(--admin-text-muted);
+    }
+
+    .role-card-perms {
+      font-size: 11px;
+      color: var(--admin-text-muted);
+      margin-top: 8px;
+    }
+
+    .perm-desc {
+      font-size: 11px;
+      color: var(--admin-text-muted);
+      font-weight: 400;
+    }
+
+    .perm-matrix th:first-child,
+    .perm-matrix td:first-child {
+      position: sticky;
+      left: 0;
+      background: var(--admin-bg-card);
+      z-index: 1;
+    }
+
+    .perm-matrix th:first-child {
+      background: var(--admin-bg);
+      z-index: 2;
+    }
+
+    .perm-matrix-cat td:first-child {
+      background: var(--admin-bg) !important;
+    }
+
+    .admin-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .admin-modal {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-xl);
+      max-width: 520px;
+      width: 95%;
+      box-shadow: var(--admin-shadow-md);
+    }
+
+    .admin-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--admin-border);
+    }
+
+    .admin-modal-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .admin-modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: var(--admin-text-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .admin-modal-body {
+      padding: 24px;
+    }
+
+    .admin-modal-footer {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      padding: 16px 24px;
+      border-top: 1px solid var(--admin-border);
+    }
+  </style>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper" x-data="rbacMatrix">
+    <!-- SIDEBAR -->
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- MAIN -->
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">&#8250;</span>
+            <a href="/admin/admins.html">Security</a>
+            <span class="separator">&#8250;</span>
+            <span class="current">Roles &amp; Permissions</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Roles &amp; RBAC Matrix</h1>
+          <p class="admin-page-subtitle">
+            Define granular permissions and map them to admin roles.
+            Segregation of Duties (SoD) conflicts are automatically detected.
+          </p>
+        </div>
+
+        <!-- Toast -->
+        <div x-show="toast.show" x-transition style="
+              position: fixed;
+              bottom: 24px;
+              right: 24px;
+              z-index: 9999;
+              padding: 12px 20px;
+              border-radius: 8px;
+              font-size: 13px;
+              font-weight: 600;
+              box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            "
+          :style="toast.type==='success' ? 'background:var(--admin-success);color:#fff;' : 'background:var(--admin-danger);color:#fff;'"
+          x-text="toast.message"></div>
+
+        <!-- Role Summary Cards -->
+        <div class="role-cards">
+          <template x-for="role in roles" :key="role.id">
+            <div class="role-card">
+              <div class="role-card-name" x-text="role.name"></div>
+              <div class="role-card-desc" x-text="role.description || 'No description'"></div>
+              <div class="role-card-perms" x-text="(role.permissions || []).length + ' permissions'"></div>
+            </div>
+          </template>
+          <div class="role-card" @click="showCreateRoleModal = true" style="
+                border-style: dashed;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 90px;
+              ">
+            <div style="text-align: center; color: var(--admin-text-muted)">
+              <div style="font-size: 20px; margin-bottom: 4px">+</div>
+              <div style="font-size: 12px; font-weight: 600">Create Role</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SoD Warnings -->
+        <template x-for="conflict in sodConflicts" :key="conflict.role + conflict.message">
+          <div class="sod-warn">
+            <strong x-text="conflict.role"></strong>:
+            <span x-text="conflict.message"></span>
+          </div>
+        </template>
+
+        <!-- Permission Matrix -->
+        <div class="admin-card" style="padding: 0; overflow: hidden">
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 16px 20px;
+                border-bottom: 1px solid var(--admin-border);
+              ">
+            <h3 style="font-size: 14px; font-weight: 700; margin: 0">
+              Permission Matrix
+            </h3>
+            <div style="display: flex; gap: 10px">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="resetMatrix()">
+                Reset
+              </button>
+              <button class="admin-btn admin-btn--primary admin-btn--sm" @click="saveMatrix()" :disabled="saving"
+                x-text="saving ? 'Saving...' : 'Save Permissions'"></button>
+            </div>
+          </div>
+          <div class="perm-matrix-wrap" style="max-height: 600px; overflow: auto">
+            <table class="perm-matrix">
+              <thead>
+                <tr>
+                  <th>Permission</th>
+                  <template x-for="role in roles" :key="role.id">
+                    <th x-text="role.name" style="font-size: 11px"></th>
+                  </template>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="category in permissionCategories" :key="category.name">
+                  <template x-fragment>
+                    <tr class="perm-matrix-cat">
+                      <td :colspan="roles.length + 1" x-text="category.icon + ' ' + category.name"></td>
+                    </tr>
+                    <template x-for="perm in category.permissions" :key="perm.key">
+                      <tr>
+                        <td>
+                          <code style="
+                                font-size: 12px;
+                                padding: 2px 6px;
+                                background: var(--admin-code-bg);
+                                border-radius: 3px;
+                              " x-text="perm.key"></code>
+                          <div class="perm-desc" x-text="perm.description"></div>
+                        </td>
+                        <template x-for="role in roles" :key="role.id">
+                          <td>
+                            <input type="checkbox" class="perm-check" :checked="hasPermission(role, perm.key)"
+                              @change="togglePermission(role.id, perm.key)" :disabled="role.name === 'super_admin'" />
+                          </td>
+                        </template>
+                      </tr>
+                    </template>
+                  </template>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREATE ROLE MODAL -->
+      <div class="admin-modal-overlay" x-show="showCreateRoleModal" x-cloak x-transition.opacity>
+        <div class="admin-modal" @click.away="showCreateRoleModal = false">
+          <div class="admin-modal-header">
+            <h3>Create New Role</h3>
+            <button class="admin-modal-close" @click="showCreateRoleModal = false">
+              &times;
+            </button>
+          </div>
+          <div class="admin-modal-body">
+            <div class="admin-form-group">
+              <label class="admin-form-label">Role Name</label>
+              <input type="text" class="admin-input" x-model="newRoleForm.name" placeholder="e.g. regional_manager" />
+              <p style="
+                    font-size: 11px;
+                    color: var(--admin-text-muted);
+                    margin-top: 4px;
+                  ">
+                Use snake_case. Must be unique.
+              </p>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Description</label>
+              <input type="text" class="admin-input" x-model="newRoleForm.description"
+                placeholder="e.g. Manages regional operations" />
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Clone Permissions From (optional)</label>
+              <select class="admin-select" x-model="newRoleForm.cloneFrom" style="width: 100%">
+                <option value="">Start with no permissions</option>
+                <template x-for="role in roles" :key="role.id">
+                  <option :value="role.id" x-text="role.name"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button class="admin-btn admin-btn--secondary" @click="showCreateRoleModal = false">
+              Cancel
+            </button>
+            <button class="admin-btn admin-btn--primary" @click="createRole()" :disabled="!newRoleForm.name">
+              Create Role
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/static/js/admin-rbac.js"></script>
+</body>
+
+</html>

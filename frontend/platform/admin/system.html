@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System Health & Operations | Admin | POOOL</title>
+  <meta name="description"
+    content="POOOL Admin — System health, background jobs, webhook logs, active sessions, and infrastructure monitoring." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <style>
+    .sys-tabs {
+      border-bottom: 1px solid var(--admin-border);
+      margin-bottom: 24px;
+      display: flex;
+      gap: 0;
+    }
+
+    .sys-tab {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--admin-text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: "TT Norms Pro", sans-serif;
+      position: relative;
+      white-space: nowrap;
+      transition: color 0.2s;
+    }
+
+    .sys-tab:hover {
+      color: var(--admin-text-primary);
+    }
+
+    .sys-tab.active {
+      color: var(--admin-accent);
+    }
+
+    .sys-tab.active::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--admin-accent);
+      border-radius: 1px 1px 0 0;
+    }
+
+    .sys-tab .tab-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 6px;
+      background: var(--admin-neutral-bg);
+      color: var(--admin-text-muted);
+    }
+
+    .health-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-radius: var(--admin-radius-md);
+      margin-bottom: 24px;
+    }
+
+    .health-banner--up {
+      background: var(--admin-success-bg);
+      border: 1px solid rgba(5, 150, 105, 0.15);
+    }
+
+    .health-banner--down {
+      background: var(--admin-danger-bg);
+      border: 1px solid rgba(220, 38, 38, 0.15);
+    }
+
+    .health-banner--degraded {
+      background: var(--admin-warning-bg);
+      border: 1px solid rgba(217, 119, 6, 0.15);
+    }
+
+    .health-banner--checking {
+      background: var(--admin-neutral-bg);
+      border: 1px solid rgba(107, 114, 128, 0.15);
+    }
+
+    .health-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+    }
+
+    .health-dot--up {
+      background: var(--admin-success);
+    }
+
+    .health-dot--down {
+      background: var(--admin-danger);
+    }
+
+    .health-dot--degraded {
+      background: var(--admin-warning);
+    }
+
+    .health-dot--checking {
+      background: var(--admin-neutral);
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    .db-bar-track {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--admin-border);
+      flex: 1;
+      margin: 0 12px;
+    }
+
+    .db-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--admin-accent);
+      transition: width 0.4s ease;
+    }
+
+    .db-stat-row {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--admin-border);
+    }
+
+    .db-stat-row:last-child {
+      border-bottom: none;
+    }
+
+    .db-stat-name {
+      font-size: 13px;
+      font-weight: 500;
+      width: 200px;
+      color: var(--admin-text-primary);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .db-stat-count {
+      font-size: 12px;
+      font-weight: 600;
+      width: 70px;
+      text-align: right;
+      color: var(--admin-text-muted);
+    }
+
+    .log-box {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      padding: 16px;
+      border-radius: var(--admin-radius-md);
+      max-height: 300px;
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .log-time {
+      color: #64748b;
+      margin-right: 8px;
+    }
+
+    .log-info {
+      color: #34d399;
+      font-weight: bold;
+    }
+
+    .log-error {
+      color: #f87171;
+      font-weight: bold;
+    }
+
+    .log-warn {
+      color: #fbbf24;
+      font-weight: bold;
+    }
+
+    .maint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .maint-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--admin-bg);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: "TT Norms Pro", sans-serif;
+    }
+
+    .maint-btn:hover {
+      border-color: var(--admin-accent);
+    }
+
+    .maint-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .payload-preview {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      padding: 4px 8px;
+      background: var(--admin-code-bg);
+      border-radius: 4px;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--admin-text-muted);
+    }
+
+    .session-ua {
+      font-size: 11px;
+      color: var(--admin-text-muted);
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .abuse-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--admin-danger-bg);
+      color: var(--admin-danger);
+    }
+  </style>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper" x-data="systemOps">
+    <!-- SIDEBAR -->
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- MAIN -->
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">&#8250;</span>
+            <span class="current">System Health &amp; Operations</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <button class="admin-btn admin-btn--secondary" @click="loadOverview()">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M1 1v5h5" />
+              <path d="M1 6a7 7 0 0113.2-3.2M15 15v-5h-5" />
+              <path d="M15 10A7 7 0 011.8 13.2" />
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">System Health &amp; Operations</h1>
+          <p class="admin-page-subtitle">
+            Infrastructure monitoring, background jobs, webhook logs, active
+            sessions, and security posture.
+          </p>
+        </div>
+
+        <!-- Toast -->
+        <div x-show="toast.show" x-transition style="
+              position: fixed;
+              bottom: 24px;
+              right: 24px;
+              z-index: 9999;
+              padding: 12px 20px;
+              border-radius: 8px;
+              font-size: 13px;
+              font-weight: 600;
+              box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            "
+          :style="toast.type==='success'?'background:var(--admin-success);color:#fff;':'background:var(--admin-danger);color:#fff;'"
+          x-text="toast.message"></div>
+
+        <!-- Status Banner -->
+        <div class="health-banner" :class="'health-banner--' + overallStatus">
+          <div style="display: flex; align-items: center; gap: 14px">
+            <div class="health-dot" :class="'health-dot--' + overallStatus"></div>
+            <div>
+              <div style="
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: var(--admin-text-primary);
+                  "
+                x-text="overallStatus === 'up' ? 'All Systems Operational' : overallStatus === 'down' ? 'System Unreachable' : overallStatus === 'degraded' ? 'Degraded Performance' : 'Checking...'">
+              </div>
+              <div style="font-size: 12px; color: var(--admin-text-muted)"
+                x-text="apiLatency ? 'API latency: ' + apiLatency + 'ms' : 'Checking...'"></div>
+            </div>
+          </div>
+          <span class="admin-badge"
+            :class="overallStatus==='up'?'admin-badge--success':overallStatus==='down'?'admin-badge--danger':'admin-badge--warning'"
+            x-text="overallStatus.toUpperCase()"></span>
+        </div>
+
+        <!-- Tabs -->
+        <div class="sys-tabs">
+          <button class="sys-tab" :class="activeTab==='overview'&&'active'" @click="switchTab('overview')">
+            Overview
+          </button>
+          <button class="sys-tab" :class="activeTab==='jobs'&&'active'" @click="switchTab('jobs')">
+            Background Jobs
+            <span class="tab-count" x-text="jobs.length || '—'"></span>
+          </button>
+          <button class="sys-tab" :class="activeTab==='webhooks'&&'active'" @click="switchTab('webhooks')">
+            Webhook Logs
+            <span class="tab-count" x-text="webhooks.length || '—'"></span>
+          </button>
+          <button class="sys-tab" :class="activeTab==='sessions'&&'active'" @click="switchTab('sessions')">
+            Active Sessions
+            <span class="tab-count" x-text="sessions.length || '—'"></span>
+          </button>
+          <button class="sys-tab" :class="activeTab==='resets'&&'active'" @click="switchTab('resets')">
+            Password Resets
+          </button>
+        </div>
+
+        <!-- ═══ TAB: OVERVIEW ═══ -->
+        <div x-show="activeTab==='overview'">
+          <!-- KPIs -->
+          <div class="admin-kpi-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 24px">
+            <div class="admin-kpi-card" style="padding: 16px">
+              <div class="admin-kpi-header">
+                <span class="admin-kpi-label">Database Size</span>
+              </div>
+              <div class="admin-kpi-value" style="font-size: 24px" x-text="dbSize">
+                —
+              </div>
+              <span class="admin-kpi-subtext">PostgreSQL</span>
+            </div>
+            <div class="admin-kpi-card" style="padding: 16px">
+              <div class="admin-kpi-header">
+                <span class="admin-kpi-label">Total Records</span>
+              </div>
+              <div class="admin-kpi-value" style="font-size: 24px" x-text="totalRecords">
+                —
+              </div>
+              <span class="admin-kpi-subtext">Across all tables</span>
+            </div>
+            <div class="admin-kpi-card" style="padding: 16px">
+              <div class="admin-kpi-header">
+                <span class="admin-kpi-label">Tables</span>
+              </div>
+              <div class="admin-kpi-value" style="font-size: 24px" x-text="tableCount">
+                —
+              </div>
+              <span class="admin-kpi-subtext">Active tables</span>
+            </div>
+            <div class="admin-kpi-card" style="padding: 16px">
+              <div class="admin-kpi-header">
+                <span class="admin-kpi-label">API Latency</span>
+              </div>
+              <div class="admin-kpi-value" style="font-size: 24px" x-text="apiLatency ? apiLatency + 'ms' : '—'">
+                —
+              </div>
+              <span class="admin-kpi-subtext"
+                :style="apiLatency < 500 ? 'color:var(--admin-success);' : 'color:var(--admin-warning);'"
+                x-text="apiLatency < 200 ? 'Excellent' : apiLatency < 500 ? 'Good' : 'Slow'"></span>
+            </div>
+            <div class="admin-kpi-card" style="padding: 16px; position: relative;">
+              <div class="admin-kpi-header" style="justify-content: space-between;">
+                <span class="admin-kpi-label">Monthly Cost</span>
+                <span class="admin-badge admin-badge--warning" style="font-size: 10px; padding: 2px 6px;">Simulated</span>
+              </div>
+              <div class="admin-kpi-value" style="font-size: 24px"
+                x-text="'$' + (serverCosts.total_monthly_usd || 0).toFixed(2)">
+                —
+              </div>
+              <span class="admin-kpi-subtext">Estimated USD (Heuristics)</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+            <!-- DB Table Stats -->
+            <div class="admin-card" style="padding: 20px">
+              <h3 style="font-size: 14px; font-weight: 700; margin: 0 0 16px">
+                Database Table Statistics
+              </h3>
+              <div style="max-height: 350px; overflow-y: auto">
+                <template x-for="table in tables" :key="table.name">
+                  <div class="db-stat-row">
+                    <span class="db-stat-name" x-text="table.name"></span>
+                    <div class="db-bar-track">
+                      <div class="db-bar-fill" :style="'width:' + Math.max((table.row_count / maxRows) * 100, 2) + '%'">
+                      </div>
+                    </div>
+                    <span class="db-stat-count" x-text="(table.row_count || 0).toLocaleString()"></span>
+                  </div>
+                </template>
+                <template x-if="tables.length === 0">
+                  <div style="
+                        text-align: center;
+                        padding: 20px;
+                        color: var(--admin-text-muted);
+                        font-size: 13px;
+                      ">
+                    Loading table stats...
+                  </div>
+                </template>
+              </div>
+            </div>
+            <!-- Environment & Maintenance -->
+            <div>
+              <div class="admin-card" style="padding: 20px; margin-bottom: 16px">
+                <h3 style="font-size: 14px; font-weight: 700; margin: 0 0 16px">
+                  Environment
+                </h3>
+                <template x-for="(val, key) in envVars" :key="key">
+                  <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 6px 0;
+                        border-bottom: 1px solid var(--admin-border);
+                        font-size: 13px;
+                      ">
+                    <span style="color: var(--admin-text-muted)" x-text="key"></span>
+                    <span style="
+                          font-weight: 500;
+                          font-family: monospace;
+                          color: var(--admin-text-primary);
+                        " x-text="val"></span>
+                  </div>
+                </template>
+              </div>
+
+              <div class="admin-card" style="padding: 20px; margin-bottom: 16px">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <h3 style="font-size: 14px; font-weight: 700; margin: 0">
+                    Server Cost Breakdown
+                  </h3>
+                  <span class="admin-badge admin-badge--warning" style="font-size: 10px; padding: 2px 6px;">Simulated</span>
+                </div>
+                <p style="font-size: 12px; color: var(--admin-text-muted); margin: 0 0 16px;">
+                  Costs are estimated using heuristic multipliers based on database size and uploaded files, not a live Cloud Billing API.
+                </p>
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--admin-border); font-size: 13px;">
+                  <span style="color: var(--admin-text-muted)">Cloud Storage (GCS)</span>
+                  <span style="font-weight: 600; color: var(--admin-text-primary);" x-text="'$' + (serverCosts.storage_monthly_usd || 0).toFixed(2)"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--admin-border); font-size: 13px;">
+                  <span style="color: var(--admin-text-muted)">Database (Cloud SQL)</span>
+                  <span style="font-weight: 600; color: var(--admin-text-primary);" x-text="'$' + (serverCosts.database_monthly_usd || 0).toFixed(2)"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--admin-border); font-size: 13px;">
+                  <span style="color: var(--admin-text-muted)">Compute (Cloud Run)</span>
+                  <span style="font-weight: 600; color: var(--admin-text-primary);" x-text="'$' + (serverCosts.compute_monthly_usd || 0).toFixed(2)"></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 10px 0 0; font-size: 14px; font-weight: 700;">
+                  <span style="color: var(--admin-text-primary)">Total Estimated Monthly</span>
+                  <span style="color: var(--admin-accent);" x-text="'$' + (serverCosts.total_monthly_usd || 0).toFixed(2)"></span>
+                </div>
+              </div>
+              <h3 style="font-size: 14px; font-weight: 700; margin: 0 0 12px">
+                Maintenance
+              </h3>
+              <div class="maint-grid">
+                <button class="maint-btn" @click="clearCache()">
+                  <div class="maint-icon" style="
+                        background: var(--admin-accent-bg);
+                        color: var(--admin-accent);
+                      ">
+                    &#x21bb;
+                  </div>
+                  <div style="text-align: left">
+                    <div style="font-size: 13px; font-weight: 600">
+                      Clear Cache
+                    </div>
+                    <div style="font-size: 11px; color: var(--admin-text-muted)">
+                      Purge all caches
+                    </div>
+                  </div>
+                </button>
+                <button class="maint-btn" @click="rotateLogs()">
+                  <div class="maint-icon" style="
+                        background: var(--admin-warning-bg);
+                        color: var(--admin-warning);
+                      ">
+                    &#x1f4c4;
+                  </div>
+                  <div style="text-align: left">
+                    <div style="font-size: 13px; font-weight: 600">
+                      Rotate Logs
+                    </div>
+                    <div style="font-size: 11px; color: var(--admin-text-muted)">
+                      Archive logs
+                    </div>
+                  </div>
+                </button>
+                <button class="maint-btn" @click="toggleMaintenance()">
+                  <div class="maint-icon" style="
+                        background: var(--admin-danger-bg);
+                        color: var(--admin-danger);
+                      ">
+                    &#x26a0;
+                  </div>
+                  <div style="text-align: left">
+                    <div style="font-size: 13px; font-weight: 600">
+                      Maintenance Mode
+                    </div>
+                    <div style="font-size: 11px; color: var(--admin-text-muted)">
+                      Enable/disable
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- System Logs -->
+          <div style="margin-top: 24px">
+            <h3 style="font-size: 14px; font-weight: 700; margin: 0 0 12px">
+              Recent System Logs
+            </h3>
+            <div class="log-box">
+              <template x-for="err in recentErrors" :key="err.timestamp || Math.random()">
+                <div style="margin-bottom: 2px">
+                  <span class="log-time" x-text="formatDate(err.timestamp)"></span>
+                  <span :class="err.level === 'error' ? 'log-error' : err.level === 'warn' ? 'log-warn' : 'log-info'"
+                    x-text="'[' + (err.level || 'INFO').toUpperCase() + ']'"></span>
+                  <span x-text="err.message || err"></span>
+                </div>
+              </template>
+              <template x-if="recentErrors.length === 0">
+                <div style="color: #64748b; text-align: center; padding: 20px">
+                  No recent log entries.
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ TAB: BACKGROUND JOBS ═══ -->
+        <div x-show="activeTab==='jobs'">
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+              ">
+            <div style="display: flex; gap: 12px; align-items: center">
+              <div class="admin-search" style="width: 250px">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input type="text" placeholder="Search jobs..." x-model="jobFilter" />
+              </div>
+              <select class="admin-select" x-model="jobStatusFilter">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+            <span style="font-size: 12px; color: var(--admin-text-muted)" x-text="filteredJobs.length + ' jobs'"></span>
+          </div>
+          <div class="admin-card" style="padding: 0; overflow: hidden">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Job Name</th>
+                  <th>Status</th>
+                  <th>Attempts</th>
+                  <th>Payload</th>
+                  <th>Scheduled</th>
+                  <th>Created</th>
+                  <th style="text-align: right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="job in filteredJobs" :key="job.id">
+                  <tr>
+                    <td style="
+                          font-family: monospace;
+                          font-size: 13px;
+                          font-weight: 600;
+                        " x-text="job.name"></td>
+                    <td>
+                      <span class="admin-badge" :class="getJobStatusClass(job.status)"><span
+                          class="admin-badge-dot"></span><span x-text="job.status"></span></span>
+                    </td>
+                    <td style="font-size: 13px; text-align: center" x-text="job.attempts"></td>
+                    <td>
+                      <div class="payload-preview" x-text="truncate(job.payload, 50)"></div>
+                    </td>
+                    <td style="font-size: 12px; color: var(--admin-text-muted)" x-text="formatDate(job.run_at)"></td>
+                    <td style="font-size: 12px; color: var(--admin-text-muted)" x-text="formatDate(job.created_at)">
+                    </td>
+                    <td style="text-align: right">
+                      <div style="
+                            display: flex;
+                            gap: 6px;
+                            justify-content: flex-end;
+                          ">
+                        <button x-show="job.status === 'failed'" class="admin-btn admin-btn--secondary admin-btn--sm"
+                          @click="retryJob(job.id)" style="color: var(--admin-accent)">
+                          Retry
+                        </button>
+                        <button x-show="job.status === 'pending' || job.status === 'processing'"
+                          class="admin-btn admin-btn--secondary admin-btn--sm" @click="cancelJob(job.id)"
+                          style="color: var(--admin-danger)">
+                          Cancel
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="filteredJobs.length === 0">
+                  <tr>
+                    <td colspan="7" style="
+                          text-align: center;
+                          padding: 40px;
+                          color: var(--admin-text-muted);
+                        ">
+                      No jobs found.
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ TAB: WEBHOOK LOGS ═══ -->
+        <div x-show="activeTab==='webhooks'">
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+              ">
+            <div class="admin-search" style="width: 300px">
+              <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="6" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input type="text" placeholder="Search by provider, endpoint, status..." x-model="webhookFilter" />
+            </div>
+            <span style="font-size: 12px; color: var(--admin-text-muted)"
+              x-text="filteredWebhooks.length + ' webhook events'"></span>
+          </div>
+          <div class="admin-card" style="padding: 0; overflow: hidden">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Endpoint</th>
+                  <th>HTTP Status</th>
+                  <th>Payload Preview</th>
+                  <th>Processed</th>
+                  <th>Timestamp</th>
+                  <th style="text-align: right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="wh in filteredWebhooks" :key="wh.id">
+                  <tr>
+                    <td>
+                      <span class="admin-badge admin-badge--neutral" x-text="wh.provider"></span>
+                    </td>
+                    <td style="font-family: monospace; font-size: 12px" x-text="wh.endpoint"></td>
+                    <td>
+                      <span class="admin-badge"
+                        :class="wh.http_status >= 200 && wh.http_status < 300 ? 'admin-badge--success' : 'admin-badge--danger'"
+                        x-text="wh.http_status"></span>
+                    </td>
+                    <td>
+                      <div class="payload-preview" x-text="truncate(wh.payload, 50)"></div>
+                    </td>
+                    <td>
+                      <span
+                        :style="wh.processed ? 'color:var(--admin-success);' : 'color:var(--admin-danger);font-weight:600;'"
+                        x-text="wh.processed ? 'Yes' : 'No'"></span>
+                    </td>
+                    <td style="font-size: 12px; color: var(--admin-text-muted)" x-text="formatDate(wh.created_at)"></td>
+                    <td style="text-align: right">
+                      <button x-show="!wh.processed" class="admin-btn admin-btn--secondary admin-btn--sm"
+                        @click="replayWebhook(wh.id)" style="color: var(--admin-accent)">
+                        Replay
+                      </button>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="filteredWebhooks.length === 0">
+                  <tr>
+                    <td colspan="7" style="
+                          text-align: center;
+                          padding: 40px;
+                          color: var(--admin-text-muted);
+                        ">
+                      No webhook events.
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ TAB: ACTIVE SESSIONS ═══ -->
+        <div x-show="activeTab==='sessions'">
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+              ">
+            <div class="admin-search" style="width: 300px">
+              <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="6" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input type="text" placeholder="Search by email, IP, user agent..." x-model="sessionSearch" />
+            </div>
+            <span style="font-size: 12px; color: var(--admin-text-muted)"
+              x-text="filteredSessions.length + ' active sessions'"></span>
+          </div>
+          <div class="admin-card" style="padding: 0; overflow: hidden">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>IP Address</th>
+                  <th>User Agent</th>
+                  <th>Remember</th>
+                  <th>Expires</th>
+                  <th>Created</th>
+                  <th style="text-align: right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="sess in filteredSessions" :key="sess.id">
+                  <tr>
+                    <td>
+                      <a :href="'/admin/user-details.html?id=' + sess.user_id" style="
+                            color: var(--admin-accent);
+                            font-weight: 500;
+                            text-decoration: none;
+                          " x-text="sess.user_email || sess.user_id"></a>
+                    </td>
+                    <td style="font-family: monospace; font-size: 12px" x-text="sess.ip_address"></td>
+                    <td>
+                      <div class="session-ua" x-text="sess.user_agent" :title="sess.user_agent"></div>
+                    </td>
+                    <td>
+                      <span :style="sess.remember_me ? 'color:var(--admin-warning);' : 'color:var(--admin-text-muted);'"
+                        x-text="sess.remember_me ? 'Yes' : 'No'"></span>
+                    </td>
+                    <td style="font-size: 12px; color: var(--admin-text-muted)" x-text="formatDate(sess.expires_at)">
+                    </td>
+                    <td style="font-size: 12px; color: var(--admin-text-muted)" x-text="formatDate(sess.created_at)">
+                    </td>
+                    <td style="text-align: right">
+                      <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="revokeSession(sess.id)"
+                        style="color: var(--admin-danger)">
+                        Revoke
+                      </button>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="filteredSessions.length === 0">
+                  <tr>
+                    <td colspan="7" style="
+                          text-align: center;
+                          padding: 40px;
+                          color: var(--admin-text-muted);
+                        ">
+                      No active sessions.
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ TAB: PASSWORD RESETS ═══ -->
+        <div x-show="activeTab==='resets'">
+          <div class="admin-card" style="padding: 0; overflow: hidden">
+            <div style="
+                  padding: 16px 20px;
+                  border-bottom: 1px solid var(--admin-border);
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                ">
+              <h3 style="font-size: 14px; font-weight: 700; margin: 0">
+                Password Reset Tokens
+              </h3>
+              <span style="font-size: 12px; color: var(--admin-text-muted)"
+                x-text="resetTokens.length + ' tokens'"></span>
+            </div>
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User Email</th>
+                  <th>IP Address</th>
+                  <th>Used</th>
+                  <th>Expires</th>
+                  <th>Created</th>
+                  <th>Abuse Detection</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="rt in resetTokens" :key="rt.id">
+                  <tr>
+                    <td style="font-weight: 500" x-text="rt.user_email"></td>
+                    <td style="font-family: monospace; font-size: 12px" x-text="rt.ip_address"></td>
+                    <td>
+                      <span :style="rt.used ? 'color:var(--admin-success);' : 'color:var(--admin-text-muted);'"
+                        x-text="rt.used ? 'Used' : 'Pending'"></span>
+                    </td>
+                    <td style="font-size: 12px; color: var(--admin-text-muted)" x-text="formatDate(rt.expires_at)"></td>
+                    <td style="font-size: 12px; color: var(--admin-text-muted)" x-text="formatDate(rt.created_at)"></td>
+                    <td>
+                      <template x-if="resetTokens.filter(t => t.user_email === rt.user_email).length > 1">
+                        <span class="abuse-flag">&#x26a0; Multiple resets</span>
+                      </template>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="resetTokens.length === 0">
+                  <tr>
+                    <td colspan="6" style="
+                          text-align: center;
+                          padding: 40px;
+                          color: var(--admin-text-muted);
+                        ">
+                      No password reset tokens.
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/static/js/admin-system.js?v=1.0.3"></script>
+</body>
+
+</html>

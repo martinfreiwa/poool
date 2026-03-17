@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deposit Requests | Admin | POOOL</title>
+  <meta name="description"
+    content="POOOL Admin — Manage deposit requests, manual confirmations, and multi-currency bank deposits." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <span class="current">Deposit Requests</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-search">
+            <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="6" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" placeholder="Search users, assets, orders…" id="admin-global-search"
+              aria-label="Global admin search" />
+          </div>
+          <button class="admin-notification-btn" title="Notifications" aria-label="View notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9z" fill="currentColor" fill-opacity="0.1" />
+              <path d="M13.73 21a2 2 0 01-3.46 0" />
+            </svg>
+            <span class="admin-notification-badge" style="display:none"></span>
+          </button>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header" style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            ">
+          <div>
+            <h1 class="admin-page-title">Deposit Requests</h1>
+            <p class="admin-page-subtitle">
+              Review, confirm, and manage multi-currency deposit requests
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px">
+            <button class="admin-btn admin-btn--secondary" id="btn-refresh" title="Refresh data">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 1v5h5" />
+                <path d="M1 6a7 7 0 0113.2-3.2M15 15v-5h-5" />
+                <path d="M15 10A7 7 0 011.8 13.2" />
+              </svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="admin-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px">
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-header" style="margin-bottom: 8px">
+              <span class="admin-kpi-label">Pending</span>
+              <div class="admin-kpi-icon" style="width: 28px; height: 28px; font-size: 14px">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 7v5l3 3" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px" id="stat-pending">
+              —
+            </div>
+            <span class="admin-kpi-subtext" id="stat-pending-value">Awaiting confirmation</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-header" style="margin-bottom: 8px">
+              <span class="admin-kpi-label">Confirmed (24h)</span>
+              <div class="admin-kpi-icon" style="width: 28px; height: 28px; font-size: 14px">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+                  <path d="M8 12.5l3 3 5-6" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px" id="stat-confirmed">
+              —
+            </div>
+            <span class="admin-kpi-subtext" id="stat-confirmed-value">$0.00 total</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-header" style="margin-bottom: 8px">
+              <span class="admin-kpi-label">Expired</span>
+              <div class="admin-kpi-icon" style="width: 28px; height: 28px; font-size: 14px">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="4" />
+                  <path d="M9 9l6 6M15 9l-6 6" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px" id="stat-expired">
+              —
+            </div>
+            <span class="admin-kpi-subtext">Past expiry date</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-header" style="margin-bottom: 8px">
+              <span class="admin-kpi-label">Total Volume (30d)</span>
+              <div class="admin-kpi-icon" style="width: 28px; height: 28px; font-size: 14px">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M8 12h8" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px" id="stat-volume">
+              —
+            </div>
+            <span class="admin-kpi-subtext" id="stat-volume-count">0 deposits</span>
+          </div>
+        </div>
+
+        <!-- Tabs: Requests / Disputes -->
+        <div class="admin-tabs" style="margin-bottom: 20px">
+          <button class="admin-tab active" data-tab="requests">
+            Deposit Requests
+          </button>
+          <button class="admin-tab" data-tab="disputes">
+            Risk &amp; Disputes
+          </button>
+        </div>
+
+        <div class="admin-tab-panel active" id="tab-requests">
+          <!-- Filters -->
+          <div class="admin-card" style="margin-bottom: 16px">
+            <div style="
+                  padding: 14px 20px;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  flex-wrap: wrap;
+                ">
+              <div class="admin-search" style="width: 220px">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input type="text" placeholder="Search by user, reference…" id="deposit-search"
+                  aria-label="Search deposits" />
+              </div>
+              <select id="filter-status" class="admin-select" aria-label="Filter by status">
+                <option value="">All Status</option>
+                <option value="pending" selected>Pending</option>
+                <option value="paid">Confirmed</option>
+                <option value="expired">Expired</option>
+                <option value="failed">Failed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <select id="filter-currency" class="admin-select" aria-label="Filter by currency">
+                <option value="">All Currencies</option>
+                <option value="USD">USD</option>
+                <option value="IDR">IDR</option>
+              </select>
+              <select id="filter-provider" class="admin-select" aria-label="Filter by provider">
+                <option value="">All Providers</option>
+                <option value="stripe">Stripe</option>
+                <option value="xendit">Xendit</option>
+                <option value="manual">Manual / Wire</option>
+              </select>
+              <span style="
+                    margin-left: auto;
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                  " id="deposit-count-label">Showing 0 deposits</span>
+            </div>
+          </div>
+
+          <!-- Deposits Table -->
+          <div class="admin-card">
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table" id="deposits-table">
+                <thead>
+                  <tr>
+                    <th data-sort="user_name">User</th>
+                    <th data-sort="amount_cents">Amount</th>
+                    <th data-sort="currency">Currency</th>
+                    <th data-sort="payment_provider">Provider</th>
+                    <th data-sort="reference">Reference</th>
+                    <th data-sort="status">Status</th>
+                    <th>Plaid Match</th>
+                    <th data-sort="expires_at">Expires</th>
+                    <th data-sort="created_at">Created</th>
+                    <th style="width: 140px">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="deposits-table-body">
+                  <tr>
+                    <td colspan="10" style="
+                          text-align: center;
+                          padding: 40px;
+                          color: var(--admin-text-muted);
+                        ">
+                      <div style="
+                            margin: 0 auto 12px;
+                            width: 24px;
+                            height: 24px;
+                            border: 2px solid var(--admin-border);
+                            border-top-color: var(--admin-accent);
+                            border-radius: 50%;
+                            animation: spin 0.8s linear infinite;
+                          "></div>
+                      Loading deposit requests…
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-tab-panel" id="tab-disputes" style="display: none">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Payment Disputes & Chargebacks</h3>
+              <span class="admin-badge admin-badge--danger" id="dispute-count">0 active</span>
+            </div>
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Provider</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Detected</th>
+                    <th>Evidence</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="disputes-table-body">
+                  <tr>
+                    <td colspan="7" style="
+                          text-align: center;
+                          padding: 40px;
+                          color: var(--admin-text-muted);
+                        ">
+                      No active disputes found.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-top: 16px;
+            ">
+          <span style="font-size: 13px; color: var(--admin-text-muted)" id="pagination-info">Page 1 of 1</span>
+          <div style="display: flex; gap: 6px">
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="prev-page" disabled>
+              ← Previous
+            </button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="next-page">
+              Next →
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div id="confirm-modal" style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+      ">
+    <div style="
+          background: var(--admin-bg-card);
+          border: 1px solid var(--admin-border);
+          border-radius: var(--admin-radius-xl);
+          padding: 28px;
+          max-width: 420px;
+          width: 90%;
+          animation: admin-fadeIn 0.2s ease-out;
+        ">
+      <h3 style="
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--admin-text-primary);
+            margin: 0 0 8px;
+          ">
+        Confirm Deposit
+      </h3>
+      <p style="
+            font-size: 13px;
+            color: var(--admin-text-secondary);
+            margin: 0 0 20px;
+          " id="confirm-modal-text">
+        Are you sure you want to confirm this deposit?
+      </p>
+      <div class="admin-form-group">
+        <label class="admin-form-label" for="confirm-notes">Notes (optional)</label>
+        <textarea class="admin-textarea" id="confirm-notes" placeholder="TT Norms Pronal notes about this confirmation…"
+          rows="2"></textarea>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end">
+        <button class="admin-btn admin-btn--secondary" id="confirm-cancel">
+          Cancel
+        </button>
+        <button class="admin-btn admin-btn--primary" id="confirm-submit">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <path d="M3 8l3.5 3.5L13 4" />
+          </svg>
+          Confirm Deposit
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/admin-deposits.js"></script>
+</body>
+
+</html>

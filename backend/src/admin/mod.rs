@@ -1,0 +1,381 @@
+use crate::auth::routes::AppState;
+
+/// RBAC and invitation management for admin users.
+pub mod access;
+pub mod extractors;
+
+/// Module
+pub mod approvals;
+/// Module
+pub mod assets;
+/// Module
+pub mod audit;
+/// Compose all admin-domain routes into a single mountable [`Router`].
+///
+/// Covers:
+/// - HTML pages under `/admin/*`
+/// - All JSON API endpoints under `/api/admin/*`
+/// Module
+pub mod dashboard;
+/// Module
+pub mod deposits;
+/// Module
+pub mod developer_projects;
+/// Module
+pub mod emails;
+/// Module
+pub mod kyc;
+/// Module
+pub mod legal;
+/// Module
+pub mod notifications;
+/// Module
+pub mod orders;
+/// Module
+pub mod pages;
+/// Module
+pub mod reports;
+/// Module
+pub mod rewards;
+/// Module
+pub mod settings;
+/// Module
+pub mod storage;
+/// Module
+pub mod submissions;
+/// Module
+pub mod support;
+/// Module
+pub mod system;
+/// Module
+pub mod treasury;
+/// Module
+pub mod users;
+/// Module
+pub mod withdrawals;
+
+pub use approvals::*;
+pub use assets::*;
+pub use audit::*;
+pub use dashboard::*;
+pub use deposits::*;
+pub use developer_projects::*;
+pub use emails::*;
+pub use kyc::*;
+pub use legal::*;
+pub use notifications::*;
+pub use orders::*;
+pub use pages::*;
+pub use reports::*;
+pub use rewards::*;
+pub use settings::*;
+pub use storage::*;
+pub use submissions::*;
+pub use support::*;
+pub use system::*;
+pub use treasury::*;
+pub use users::*;
+pub use withdrawals::*;
+
+/// Router function for admin API endpoints.
+pub fn router() -> axum::Router<AppState> {
+    use axum::routing::{delete, get, patch, post, put};
+    axum::Router::new()
+        // ── HTML Pages ──────────────────────────────────────────
+        .route("/admin/", get(page_admin_dashboard))
+        .route("/admin/index.html", get(page_admin_dashboard))
+        .route("/admin/users.html", get(page_admin_generic))
+        .route("/admin/user-details.html", get(page_admin_generic))
+        .route("/admin/user-details", get(page_admin_generic))
+        .route("/admin/kyc.html", get(page_admin_generic))
+        .route("/admin/kyc", get(page_admin_generic))
+        .route("/admin/support.html", get(page_admin_generic))
+        .route("/admin/support", get(page_admin_generic))
+        .route("/admin/developer-submissions.html", get(page_admin_generic))
+        .route("/admin/developer-submissions", get(page_admin_generic))
+        .route("/admin/assets.html", get(page_admin_generic))
+        .route("/admin/assets", get(page_admin_generic))
+        .route("/admin/orders.html", get(page_admin_generic))
+        .route("/admin/orders", get(page_admin_generic))
+        .route("/admin/deposits.html", get(page_admin_generic))
+        .route("/admin/deposits", get(page_admin_generic))
+        .route("/admin/treasury.html", get(page_admin_generic))
+        .route("/admin/treasury", get(page_admin_generic))
+        .route("/admin/rewards.html", get(page_admin_generic))
+        .route("/admin/rewards", get(page_admin_generic))
+        .route("/admin/audit-logs.html", get(page_admin_generic))
+        .route("/admin/audit-logs", get(page_admin_generic))
+        .route("/admin/reports.html", get(page_admin_generic))
+        .route("/admin/reports", get(page_admin_generic))
+        .route("/admin/notifications.html", get(page_admin_generic))
+        .route("/admin/notifications", get(page_admin_generic))
+        .route("/admin/settings.html", get(page_admin_generic))
+        .route("/admin/settings", get(page_admin_generic))
+        .route("/admin/system.html", get(page_admin_generic))
+        .route("/admin/system", get(page_admin_generic))
+        .route(
+            "/admin/developer-submission-review.html",
+            get(page_admin_generic),
+        )
+        .route(
+            "/admin/developer-submission-review",
+            get(page_admin_generic),
+        )
+        .route("/admin/asset-details.html", get(page_admin_generic))
+        .route("/admin/asset-details", get(page_admin_generic))
+        .route("/admin/dividends.html", get(page_admin_generic))
+        .route("/admin/dividends", get(page_admin_generic))
+        .route("/admin/admins.html", get(page_admin_generic))
+        .route("/admin/admins", get(page_admin_generic))
+        .route("/admin/email-marketing.html", get(page_admin_generic))
+        .route("/admin/email-marketing", get(page_admin_generic))
+        .route("/admin/roles.html", get(page_admin_generic))
+        .route("/admin/roles", get(page_admin_generic))
+        .route("/admin/support-ticket.html", get(page_admin_generic))
+        .route("/admin/support-ticket", get(page_admin_generic))
+        .route("/admin/approvals.html", get(page_admin_generic))
+        .route("/admin/approvals", get(page_admin_generic))
+        // ── JSON API ─────────────────────────────────────────────
+        .route("/api/admin/stats/overview", get(api_admin_stats_overview))
+        // Access / RBAC
+        .route("/api/admin/admins", get(access::api_admin_list))
+        .route(
+            "/api/admin/roles",
+            get(access::api_roles_list).post(access::api_roles_create),
+        )
+        .route(
+            "/api/admin/roles/permissions",
+            post(access::api_roles_update_permissions),
+        )
+        .route("/api/admin/permissions", get(access::api_permissions_list))
+        .route("/api/admin/admins/invite", post(access::api_admin_invite))
+        .route(
+            "/api/admin/admins/invitations",
+            get(access::api_admin_invitations_list),
+        )
+        .route(
+            "/api/admin/admins/invitations/:id",
+            delete(access::api_admin_invitation_revoke),
+        )
+        .route(
+            "/api/admin/admins/invitations/:id/resend",
+            post(access::api_admin_invitation_resend),
+        )
+        // Users
+        .route("/api/admin/users", get(api_admin_users))
+        .route("/api/admin/users/:user_id", get(api_admin_user_detail))
+        .route(
+            "/api/admin/users/:user_id/profile",
+            post(api_admin_user_update_profile),
+        )
+        .route(
+            "/api/admin/users/:user_id/balance",
+            post(api_admin_user_update_balance),
+        )
+        .route(
+            "/api/admin/users/:user_id/status",
+            post(api_admin_user_update_status),
+        )
+        .route(
+            "/api/admin/users/:user_id/sessions",
+            delete(api_admin_user_revoke_sessions),
+        )
+        .route(
+            "/api/admin/users/:user_id/force-password-reset",
+            post(api_admin_user_force_password_reset),
+        )
+        .route(
+            "/api/admin/users/:user_id/roles",
+            post(api_admin_user_update_roles),
+        )
+        // Deposits
+        .route("/api/admin/deposits", get(api_admin_deposits))
+        .route(
+            "/api/admin/deposits/:tx_id/confirm",
+            post(api_admin_deposit_confirm),
+        )
+        .route(
+            "/api/admin/deposits/:tx_id/cancel",
+            post(api_admin_deposit_cancel),
+        )
+        .route(
+            "/api/admin/deposits/:tx_id/extend",
+            post(api_admin_deposit_extend_expiry),
+        )
+        // Withdrawals
+        .route("/api/admin/withdrawals", get(api_admin_withdrawals))
+        .route(
+            "/api/admin/withdrawals/:req_id/approve",
+            post(api_admin_withdrawal_approve),
+        )
+        .route(
+            "/api/admin/withdrawals/:req_id/reject",
+            post(api_admin_withdrawal_reject),
+        )
+        // KYC
+        .route("/api/admin/kyc", get(api_admin_kyc_records))
+        .route(
+            "/api/admin/kyc/:kyc_id/documents",
+            get(api_admin_kyc_documents),
+        )
+        .route(
+            "/api/admin/kyc/:kyc_id/approve",
+            post(api_admin_kyc_approve),
+        )
+        .route("/api/admin/kyc/:kyc_id/reject", post(api_admin_kyc_reject))
+        // Submissions
+        .route("/api/admin/submissions", get(api_admin_submissions))
+        .route(
+            "/api/admin/submissions/:asset_id/approve",
+            post(api_admin_submission_approve),
+        )
+        .route(
+            "/api/admin/submissions/:asset_id/reject",
+            post(api_admin_submission_reject),
+        )
+        .route(
+            "/api/admin/submissions/:asset_id/detail",
+            get(api_admin_submission_detail),
+        )
+        // Developer projects
+        .route(
+            "/api/admin/developer-projects",
+            get(api_admin_developer_projects),
+        )
+        .route(
+            "/api/admin/developer-projects/:id",
+            get(api_admin_developer_project_detail),
+        )
+        .route(
+            "/api/admin/developer-projects/:id/review",
+            post(api_admin_developer_project_review),
+        )
+        // Orders (read only; approve/reject are in payments::router())
+        .route("/api/admin/orders", get(api_admin_orders))
+        // Investments
+        .route("/api/admin/investments", get(api_admin_investments))
+        // Assets
+        .route("/api/admin/assets", get(api_admin_assets))
+        .route(
+            "/api/admin/assets/:asset_id/toggle-featured",
+            post(api_admin_toggle_featured),
+        )
+        .route(
+            "/api/admin/assets/:asset_id/detail",
+            get(api_admin_asset_detail),
+        )
+        // Treasury & Rewards
+        .route("/api/admin/treasury", get(api_admin_treasury))
+        .route("/api/admin/rewards", get(api_admin_rewards))
+        .route(
+            "/api/admin/rewards/balances/:user_id/adjust",
+            post(api_admin_rewards_balance_adjust),
+        )
+        .route("/api/admin/rewards/tiers", post(api_admin_tier_create))
+        .route(
+            "/api/admin/rewards/tiers/:tier_name",
+            patch(api_admin_tier_update),
+        )
+        .route(
+            "/api/admin/rewards/referrals/:ref_id",
+            patch(api_admin_referral_update),
+        )
+        // Support
+        .route("/api/admin/support", get(api_admin_support_tickets))
+        .route("/api/admin/support/bulk", patch(api_admin_support_bulk))
+        .route(
+            "/api/admin/support/:ticket_id",
+            get(api_admin_support_ticket_detail).patch(api_admin_support_update),
+        )
+        .route(
+            "/api/admin/support/:ticket_id/messages",
+            post(api_admin_support_ticket_reply),
+        )
+        // Audit & Notifications
+        .route("/api/admin/audit-logs", get(api_admin_audit_logs))
+        .route("/api/admin/notifications", get(api_admin_notifications))
+        .route(
+            "/api/admin/notifications/broadcast",
+            post(api_admin_notification_broadcast),
+        )
+        // System
+        .route("/api/admin/system", get(api_admin_system))
+        // Dividends
+        .route(
+            "/api/admin/dividends/calculate",
+            post(api_admin_dividends_calculate),
+        )
+        .route(
+            "/api/admin/dividends/process",
+            post(api_admin_dividends_process),
+        )
+        // Emails
+        .route("/api/admin/emails", get(api_admin_emails))
+        .route("/api/admin/emails/templates", post(api_admin_emails_create))
+        .route(
+            "/api/admin/emails/templates/:id",
+            put(api_admin_emails_update),
+        )
+        .route(
+            "/api/admin/emails/campaigns",
+            post(api_admin_emails_campaign),
+        )
+        // Settings
+        .route(
+            "/api/admin/settings",
+            get(api_admin_get_settings).post(api_admin_update_settings),
+        )
+        .route("/api/admin/settings/admins", post(api_admin_add_admin))
+        .route(
+            "/api/admin/settings/admins/:user_id",
+            delete(api_admin_remove_admin).patch(api_admin_update_admin_role),
+        )
+        .route("/api/admin/settings/roles", get(api_admin_list_roles))
+        .route(
+            "/api/admin/settings/maintenance",
+            post(api_admin_toggle_maintenance),
+        )
+        // Maintenance
+        .route(
+            "/api/admin/maintenance/clear-cache",
+            post(api_admin_clear_cache),
+        )
+        .route(
+            "/api/admin/maintenance/rotate-logs",
+            post(api_admin_rotate_logs),
+        )
+        // Debug & Reports
+        .route("/api/admin/debug/seed", post(api_admin_debug_seed))
+        // Tax & Fiscal
+        .route("/api/admin/tax-reports", get(api_admin_tax_reports))
+        .route(
+            "/api/admin/tax-reports/generate",
+            post(api_admin_tax_reports_generate),
+        )
+        // Disputes
+        .route("/api/admin/disputes", get(api_admin_disputes))
+        .route(
+            "/api/admin/disputes/:id/status",
+            put(api_admin_disputes_status_update),
+        )
+        // Approvals
+        .route(
+            "/api/admin/approvals",
+            get(api_admin_approvals_list).post(api_admin_approvals_create),
+        )
+        .route(
+            "/api/admin/approvals/:id/approve",
+            post(api_admin_approvals_approve),
+        )
+        .route(
+            "/api/admin/approvals/:id/reject",
+            post(api_admin_approvals_reject),
+        )
+        // Legal
+        .route(
+            "/api/admin/legal/version",
+            get(api_admin_legal_get_version_handler).post(api_admin_legal_update_version_handler),
+        )
+        // Storage Analytics
+        .route("/api/admin/storage", get(api_admin_storage))
+}

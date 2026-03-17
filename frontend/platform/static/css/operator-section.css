@@ -1,0 +1,146 @@
+/* About the Operator Section */
+#operator-section {
+  box-sizing: border-box;
+  position: relative;
+  width: 616px;
+  min-height: 509px;
+  left: 24px;
+  margin-top: -3px;
+
+  /* Base/White */
+  background: #ffffff;
+  /* Gray/200 */
+  border: 1px solid #e9eaeb;
+  border-radius: 16px;
+  padding: 16px;
+
+  overflow: hidden;
+}
+
+/* Background blur vectors */
+#operator-section::before {
+  content: "";
+  position: absolute;
+  width: 676px;
+  height: 620px;
+  left: -330px;
+  top: -249px;
+  background: rgba(0, 29, 202, 0.06);
+  filter: blur(100px);
+  transform: rotate(54.66deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+#operator-section::after {
+  content: "";
+  position: absolute;
+  width: 605px;
+  height: 555px;
+  right: -305px;
+  top: 65px;
+  background: rgba(152, 251, 150, 0.07);
+  filter: blur(100px);
+  transform: rotate(-2.73deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Company Description */
+.operator-company-desc {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+
+  /* Text xs/Regular */
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+
+  /* Test Dark Blue */
+  color: var(--brand-dark-blue);
+  margin: 0 0 24px 0;
+}
+
+/* Operator Profile */
+.operator-profile {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+/* Operator Profile Header */
+.operator-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* Operator Icon */
+.operator-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.operator-icon.blue-icon path {
+  stroke: var(--primary-color);
+}
+
+.operator-icon.green-icon path {
+  stroke: var(--accent-color);
+}
+
+/* Operator Name */
+.operator-name {
+  /* Text sm / Bold */
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+
+  /* Test Dark Blue */
+  color: var(--brand-dark-blue);
+  margin: 0;
+}
+
+/* Operator Details List */
+.operator-details {
+  width: 100%;
+  margin: 0;
+  padding-left: 0;
+  list-style-type: none;
+}
+
+.operator-details li {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+
+  /* Test Dark Blue */
+  color: var(--brand-dark-blue);
+  margin-bottom: 4px;
+}
+
+.operator-details li:last-child {
+  margin-bottom: 0;
+}
+
+/* Operator Divider */
+.operator-divider {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 1px;
+
+  /* Brand Green Accent/500 */
+  background: var(--accent-color);
+  margin: 24px 0;
+}

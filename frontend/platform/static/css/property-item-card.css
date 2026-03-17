@@ -1,0 +1,440 @@
+/* Unified Property Item Card Styles */
+/* Used across Cart, Checkout, and other pages */
+
+.property-item-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  gap: 20px;
+  width: 669px;
+  height: 174px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border-color, #e9eaeb);
+  border-radius: var(--card-border-radius, 12px);
+}
+
+.property-item-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 41px;
+  width: 637px;
+  height: 92px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.property-item-image-info {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 16px;
+  width: 361px;
+  height: 92px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.property-item-image {
+  width: 128px;
+  height: 91px;
+  border-radius: 12px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  overflow: hidden;
+}
+
+.property-item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.property-item-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  width: 217px;
+  height: 92px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.property-item-title {
+  width: 217px;
+  height: 40px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181d27;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  margin: 0;
+}
+
+.property-item-metrics {
+  width: 200px;
+  height: 40px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  position: relative;
+}
+
+/* Two column metrics layout */
+.property-item-metric:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 4px;
+  position: absolute;
+  width: 88px;
+  height: 40px;
+  left: 0px;
+  top: 0px;
+}
+
+.property-item-metric:last-child:not(.single-metric) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 4px;
+  position: absolute;
+  width: 88px;
+  height: 40px;
+  left: 120px;
+  top: 0px;
+}
+
+/* Single metric layout */
+.property-item-metric.single-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 4px;
+  position: absolute;
+  width: 154px;
+  height: 40px;
+  left: 0px;
+  top: 0px;
+}
+
+.metric-label-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  height: 18px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.metric-label {
+  height: 18px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: #414651;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.property-item-metric.single-metric .metric-label {
+  width: 138px;
+  white-space: nowrap;
+}
+
+.property-item-metric:not(.single-metric) .metric-label {
+  width: 72px;
+}
+
+.help-icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.metric-value {
+  height: 18px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 18px;
+  color: #000000;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Pricing section */
+.property-item-pricing {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0px;
+  margin: 0 auto;
+  width: 235px;
+  height: 92px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.property-item-price-section {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 8px;
+  margin: 0 auto;
+  width: 235px;
+  height: 36px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Quantity controls */
+.quantity-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 38px;
+  height: 36px;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  flex: none;
+  flex-grow: 0;
+  transition: all 0.2s ease;
+}
+
+.quantity-btn:hover {
+  background: #f5f5f6;
+  border-color: var(--primary-color);
+}
+
+.quantity-btn:active {
+  transform: scale(0.95);
+}
+
+.quantity-btn.minus {
+  padding: 18px 12px;
+  gap: 10px;
+  order: 0;
+}
+
+.quantity-btn.minus .icon-line {
+  width: 14px;
+  height: 0px;
+  border: 2px solid var(--primary-color);
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.quantity-btn.plus {
+  padding: 11px 12px;
+  gap: 10px;
+  order: 2;
+}
+
+.quantity-display {
+  font-size: 16px;
+  font-weight: 600;
+  color: #181d27;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Price box */
+.property-item-price-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 20px;
+  gap: 10px;
+  min-width: 143px;
+  width: auto;
+  height: 36px;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  background: white;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  box-sizing: border-box;
+}
+
+.property-item-price-box.standalone {
+  margin: 0 auto;
+}
+
+.property-item-price {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 0px;
+  gap: 4px;
+  width: 100%;
+  min-width: 79px;
+  height: 28px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 28px;
+  text-align: center;
+  color: #181d27;
+  white-space: nowrap;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Progress bar */
+.property-item-progress {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 12px;
+  margin: 0 auto;
+  width: 225px;
+  height: 18px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.progress-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 1px;
+  gap: 10px;
+  width: 144px;
+  height: 8px;
+  background: #d5d7da;
+  border-radius: 30px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.progress-bar-fill {
+  height: 8px;
+  background: var(--accent-color);
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.funded-text {
+  width: 69px;
+  height: 18px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: right;
+  color: #535862;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  white-space: nowrap;
+}
+
+/* Footer */
+.property-item-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 10px;
+  width: 637px;
+  height: 30px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  border: none;
+}
+
+.property-item-remove-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 4px;
+  width: 89px;
+  height: 30px;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  background: white;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  cursor: pointer;
+}
+
+.property-item-remove-btn .remove-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.property-item-remove-btn .remove-text {
+  width: 47px;
+  height: 18px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  color: #a4a7ae;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Checkout and cart specifics will go here when implemented */

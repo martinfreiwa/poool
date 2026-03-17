@@ -1,0 +1,13 @@
+target/
+.git/
+.gitignore
+*.md
+.env
+.env.*
+__pycache__/
+*.pyc
+*.py
+.DS_Store
+docs/
+.agent/
+.agents/

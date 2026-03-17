@@ -109,66 +109,7 @@
                   </div>
                 </div>
 
-                <!-- BLOCKCHAIN: Security Token Info Box -->
-                <div id="blockchain-info-section" style="
-                  margin-top: 24px;
-                  padding: 20px 24px;
-                  background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(16, 185, 129, 0.04));
-                  border: 1px solid rgba(99, 102, 241, 0.15);
-                  border-radius: 16px;
-                  display: flex;
-                  gap: 16px;
-                  align-items: flex-start;
-                ">
-                  <div style="
-                    width: 44px;
-                    height: 44px;
-                    border-radius: 12px;
-                    background: rgba(99, 102, 241, 0.1);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                  ">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                      <path d="M2 17l10 5 10-5" />
-                      <path d="M2 12l10 5 10-5" />
-                    </svg>
-                  </div>
-                  <div style="flex: 1; min-width: 0;">
-                    <h4 style="font-size: 14px; font-weight: 700; color: #181D27; margin: 0 0 6px;">
-                      🔒 Blockchain-Secured Asset
-                    </h4>
-                    <p style="font-size: 13px; color: #535862; margin: 0 0 12px; line-height: 1.5;">
-                      This property is tokenized as a Security Token (ERC-3643) on the Base blockchain.
-                      Your ownership is cryptographically secured and independently verifiable.
-                    </p>
-                    <div style="display: flex; gap: 20px; flex-wrap: wrap; font-size: 12px;">
-                      <div>
-                        <span style="color: #717680;">Contract:</span>
-                        <a href="https://basescan.org/address/0xABC123456789abcdef0123456789ABCDEF012345" target="_blank"
-                          style="font-family: 'SF Mono', monospace; color: #6366f1; text-decoration: none;">
-                          0xABC1...2345 ↗
-                        </a>
-                      </div>
-                      <div>
-                        <span style="color: #717680;">Network:</span>
-                        <span style="font-weight: 600; color: #181D27;">Base (Ethereum L2)</span>
-                      </div>
-                    </div>
-                    <!-- Token Supply Bar -->
-                    <div style="margin-top: 12px;">
-                      <div style="display: flex; justify-content: space-between; font-size: 11px; color: #717680; margin-bottom: 4px;">
-                        <span>2,950 of 3,000 tokens available</span>
-                        <span style="font-weight: 600; color: #6366f1;">1.7% sold</span>
-                      </div>
-                      <div style="height: 6px; border-radius: 3px; background: #E9EAEB; overflow: hidden;">
-                        <div style="width: 1.7%; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #6366f1, #10b981);"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+
 
                 <!-- 4. How it Works -->
                 {% include 'components/property/how-it-works.html' %}
@@ -280,7 +221,7 @@
                         </span>
                         <span class="calc-slider-value" id="calc-slider-value-2">10%</span>
                       </div>
-                      <input type="range" class="calc-slider" id="calc-slider-2" min="1" max="20" value="10" />
+                      <input type="range" class="calc-slider" id="calc-slider-2" min="1" max="20" value="10" step="0.5" />
                       <div class="calc-slider-limits"><span>1%</span><span>20%</span></div>
                     </div>
                     <div class="calc-slider-section slider-3">
@@ -297,7 +238,7 @@
                         </span>
                         <span class="calc-slider-value" id="calc-slider-value-3">12%</span>
                       </div>
-                      <input type="range" class="calc-slider" id="calc-slider-3" min="1" max="20" value="12" step="0.01" />
+                      <input type="range" class="calc-slider" id="calc-slider-3" min="1" max="20" value="12" step="0.5" />
                       <div class="calc-slider-limits"><span>1%</span><span>20%</span></div>
                     </div>
                     <!-- Disclaimer -->
@@ -542,17 +483,68 @@
               </div>
 
               <!-- Similar Properties -->
+              {% if similar_assets and similar_assets | length > 0 %}
               <div class="similar-properties-wrapper">
                 <h3 class="similar-heading">Similar Properties</h3>
                 <div class="section-divider"></div>
                 <div class="similar-properties-section">
                   <div id="property-grid-container" class="property-grid-container">
                     <div id="property-grid-content" class="property-grid-content">
-                      <!-- Similar properties will be loaded dynamically -->
+                      {% for sp in similar_assets %}
+                      <div class="property-card" onclick="window.location.href='/property/{{ sp.slug }}'">
+                        <div class="property-gallery">
+                          <div class="property-image-container">
+                            <div class="property-image active" style="background-image: url('{{ sp.cover_image_url | default('/images/villa1.webp') }}'); background-size: cover; background-position: center;"></div>
+                          </div>
+                        </div>
+                        <div class="property-content">
+                          <div class="card-meta-row">
+                            {% if sp.bedrooms %}
+                            <div class="card-meta-item">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#535862" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
+                              <span>{{ sp.bedrooms }}</span>
+                            </div>
+                            <div class="card-meta-divider"></div>
+                            {% endif %}
+                            <div class="card-meta-item">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                              <span>Available</span>
+                            </div>
+                            <div class="card-meta-divider"></div>
+                            <div class="card-meta-item">
+                              <span>{{ sp.location_city | default('Bali') }}, {{ sp.location_country | default('ID') }}</span>
+                            </div>
+                          </div>
+                          <div class="property-heading">
+                            <h3 class="property-title">{{ sp.title }}</h3>
+                          </div>
+                          <div class="property-pricing">
+                            <div class="price-wrapper">
+                              <span class="property-price">USD {{ sp.total_value_usd }}</span>
+                              <span class="funded-percentage">{{ sp.funded_percentage_display }}% funded</span>
+                            </div>
+                            <div class="property-progress">
+                              <div class="progress-bar" style="width: {{ sp.funded_percentage_display }}%;"></div>
+                            </div>
+                          </div>
+                          <div class="investment-details">
+                            <div class="investment-row">
+                              <span class="investment-label">Projected return</span>
+                              <span class="investment-value">{{ sp.projected_return_percent }}%</span>
+                            </div>
+                            <div class="investment-row">
+                              <span class="investment-label">Annual net return</span>
+                              <span class="investment-value">{{ sp.annualised_net_return_percent }}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {% endfor %}
                     </div>
                   </div>
                 </div>
               </div>
+              {% endif %}
             </div>
           </div>
         </div>

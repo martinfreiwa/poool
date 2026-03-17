@@ -1,0 +1,57 @@
+/* Mobile Similar Properties Section */
+.mobile-similar-properties {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 16px;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 32px;
+}
+
+/* Heading */
+.mobile-similar-heading {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 30px;
+  color: #181d27;
+  margin: 0;
+}
+
+/* Grid Container */
+.mobile-similar-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Override marketplace property grid styles for mobile similar properties */
+.mobile-similar-grid .property-grid-container {
+  width: 100%;
+  position: relative;
+  padding: 0;
+}
+
+.mobile-similar-grid .property-grid-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.mobile-similar-grid .property-grid-item {
+  width: 100%;
+  height: auto;
+}
+
+.mobile-similar-grid .property-card {
+  width: 100% !important;
+  height: auto !important;
+  position: relative !important;
+}

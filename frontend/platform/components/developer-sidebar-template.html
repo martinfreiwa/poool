@@ -1,0 +1,342 @@
+      </template><!-- Template for developer sidebar (hidden, for cloning) --><template id="developer-sidebar-template">
+        <aside id="sidebar-navigation" class="sidebar">
+          <div id="sidebar-content" class="sidebar__content">
+            <!-- Navigation Section -->
+            <div id="sidebar-navigation-section" class="sidebar__nav-section">
+              <!-- Header Section -->
+              <div id="sidebar-header" class="sidebar__header">
+                <!-- Logo --><a id="sidebar-logo" href="/" class="sidebar__logo"><img src="/images/Logo Pool.svg"
+                    alt="POOOL" width="139" height="37" /></a><!-- Search Input -->
+                <div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
+                  <div id="sidebar-search" class="sidebar__search">
+                    <div id="sidebar-search-content" class="sidebar__search-content">
+                      <svg id="sidebar-search-icon" class="sidebar__search-icon" width="20" height="20"
+                        viewBox="0 0 20 20" fill="none">
+                        <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.66667"></circle>
+                        <path d="M13 13L17 17" stroke="#717680" stroke-width="1.66667" stroke-linecap="round"></path>
+                      </svg>
+                      <input id="sidebar-search-input" type="search" placeholder="Search projects, assets..."
+                        class="sidebar__search-input" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Navigation Menu -->
+              <nav id="sidebar-nav" class="sidebar__nav">
+                <!-- Dashboard -->
+                <div id="nav-item-dashboard" class="sidebar__nav-item">
+                  <a id="nav-item-dashboard-content" href="/developer/dashboard" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-dashboard" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-dashboard" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Dashboard.svg" alt="Dashboard"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-dashboard" class="sidebar__nav-text">Dashboard</span>
+                    </div>
+                  </a>
+                </div>
+                <!-- Assets -->
+                <div id="nav-item-assets" class="sidebar__nav-item sidebar__nav-item--active">
+                  <a id="nav-item-assets-content" href="/developer/assets" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-assets" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-assets" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Assets.svg" alt="Assets" class="nav-icon"
+                          width="20" height="20" />
+                      </div>
+                      <span id="nav-text-assets" class="sidebar__nav-text">Assets</span>
+                    </div>
+                  </a>
+                </div>
+                <!-- Notifications -->
+                <div id="nav-item-notifications" class="sidebar__nav-item">
+                  <div id="nav-item-notifications-content"
+                    class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+                    <div id="nav-text-icon-notifications" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-notifications" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Notifications.svg" alt="Notifications"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-notifications" class="sidebar__nav-text">Notifications</span>
+                    </div>
+                    <span id="nav-badge-notifications" class="nav-badge notifications-badge">10</span>
+                  </div>
+                </div>
+                <!-- Ranking (formerly Reports) -->
+                <div id="nav-item-ranking" class="sidebar__nav-item">
+                  <div id="nav-item-ranking-content"
+                    class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+                    <div id="nav-text-icon-ranking" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-ranking" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Ranking.svg" alt="Ranking"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-ranking" class="sidebar__nav-text">Ranking</span>
+                    </div>
+                    <!-- Soon Badge -->
+                    <div class="soon-badge"><span>Soon</span></div>
+                  </div>
+                </div>
+                <!-- Settings -->
+                <div id="nav-item-settings" class="sidebar__nav-item">
+                  <a id="nav-item-settings-content" href="/developer/settings" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Settings.svg" alt="Settings"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-settings" class="sidebar__nav-text">Settings</span>
+                    </div>
+                  </a>
+                </div>
+
+                <!-- Support -->
+                <div id="nav-item-support" class="sidebar__nav-item">
+                  <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Support.svg" alt="Support"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-support" class="sidebar__nav-text">Support</span>
+                    </div>
+                    <div id="support-badge" class="support-badge">
+                      <div id="support-status-dot" class="support-status-dot"></div>
+                      <span id="support-badge-text" class="support-badge-text">Online</span>
+                    </div>
+                  </a>
+                </div>
+                <!-- Add Asset Button -->
+                <div id="add-asset-section" class="add-asset-section">
+                  <button id="add-asset-btn" class="add-asset-btn" type="button"
+                    onclick="window.location.href = '/developer/add-asset'">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M10 4.16667V15.8333M4.16667 10H15.8333" stroke="#98FB96" stroke-width="1.66667"
+                        stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span class="add-asset-text">Add Asset</span>
+                  </button>
+                </div>
+              </nav>
+            </div>
+            <!-- Footer Section -->
+            <div id="sidebar-footer" class="sidebar__footer">
+              <!-- Support Chat Card -->
+              <div id="nav-featured-card" class="sidebar__featured-card sidebar__featured-card--support">
+                <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close"
+                  aria-label="Close">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M14 14L6 6M6 14L14 6" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round">
+                    </path>
+                  </svg></button><!-- Badge and text -->
+                <div class="sidebar__featured-content">
+                  <div class="sidebar__featured-badge sidebar__featured-badge--online">
+                    <div class="support-status-dot"></div>
+                    <span class="support-badge-text">Online</span>
+                  </div>
+                  <div class="sidebar__featured-text">
+                    <h4 class="sidebar__featured-title">Have questions?</h4>
+                    <p class="sidebar__featured-description">
+                      Our support team is here to help.
+                    </p>
+                  </div>
+                  <button class="sidebar__featured-button sidebar__featured-button--chat">
+                    <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support" width="20"
+                      height="20" />
+                    <span>Chat to support</span>
+                  </button>
+                </div>
+              </div>
+              <!-- Account Card - Now fully clickable -->
+              <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
+                style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
+                <!-- Avatar Group -->
+                <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
+                  <div id="account-avatar" class="sidebar__account-avatar">
+                    <img loading="lazy" src="/images/Image.webp" alt="" />
+                    <div id="account-online-indicator" class="sidebar__account-online"></div>
+                  </div>
+                  <div id="account-text-wrapper" class="sidebar__account-text">
+                    <span id="account-name" class="sidebar__account-name"></span>
+                    <span id="account-email" class="sidebar__account-email">Developer profile</span>
+                  </div>
+                </div>
+                <!-- Menu Button Icon (no longer a button) -->
+                <div id="account-menu-button" class="sidebar__account-menu" style="pointer-events: none">
+                  <div id="account-menu-button-inner" class="sidebar__account-menu-button" aria-hidden="true">
+                    <svg class="account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                      <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                    </svg>
+                  </div>
+                </div>
+                <!-- Profile Dropdown Menu -->
+                <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
+                  <!-- Menu items wrapper -->
+                  <div id="profile-menu-wrapper" class="profile-menu-wrapper">
+                    <!-- Top menu items -->
+                    <div id="profile-menu-items-top" class="profile-menu-items">
+                      <!-- Documentation -->
+                      <div id="menu-item-documentation" class="profile-menu-item">
+                        <div class="profile-menu-content">
+                          <div class="profile-icon-text">
+                            <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                              <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                              <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
+                              </path>
+                            </svg>
+                            <span class="profile-menu-text">Documentation</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Switch account section -->
+                    <div id="profile-switch-section" class="profile-switch-section">
+                      <div class="profile-switch-header">
+                        <span class="profile-switch-title">Switch account</span>
+                      </div>
+                      <!-- Current account (selected) -->
+                      <div id="menu-item-current-account" class="profile-menu-item account-item selected">
+                        <div class="profile-account-content">
+                          <div class="profile-avatar-group">
+                            <div class="profile-avatar">
+                              <img loading="lazy" src="/images/Image.webp" alt="" />
+                              <div class="profile-avatar-border"></div>
+                              <div class="profile-online-indicator"></div>
+                            </div>
+                            <div class="profile-text-wrapper">
+                              <span class="profile-account-name"></span>
+                              <span class="profile-account-type">Investor Profile</span>
+                            </div>
+                          </div>
+                          <div class="profile-checkbox selected">
+                            <div class="profile-checkbox-check"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Other accounts -->
+                      <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
+                        <div class="profile-account-content">
+                          <div class="profile-avatar-group">
+                            <div class="profile-avatar">
+                              <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                              <div class="profile-avatar-border"></div>
+                              <div class="profile-online-indicator"></div>
+                            </div>
+                            <div class="profile-text-wrapper">
+                              <span class="profile-account-name"></span>
+                              <span class="profile-account-type">Developer profile</span>
+                            </div>
+                          </div>
+                          <div class="profile-checkbox">
+                            <div class="profile-checkbox-check"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Footer items -->
+                  <div id="profile-footer-items" class="profile-footer-items">
+                    <!-- Sign out -->
+                    <div id="menu-item-sign-out" class="profile-menu-item">
+                      <div class="profile-menu-content">
+                        <div class="profile-icon-text">
+                          <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                              stroke-linejoin="round"></path>
+                            <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7"
+                              stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                          </svg>
+                          <span class="profile-menu-text">Sign out</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Profile Dropdown JavaScript -->
+          <script>
+            // Profile Dropdown Functions - Global scope
+            window.toggleProfileDropdown = function () {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const button = document.getElementById(
+                "account-menu-button-inner",
+              );
+
+              if (!dropdown) {
+                return;
+              }
+
+              // SAFARI FIX: Move to body and restore proper styling
+
+              // Move to body to escape stacking context
+              if (dropdown.parentNode !== document.body) {
+                document.body.appendChild(dropdown);
+              }
+
+              // Apply proper dropdown styles (restore original design)
+              dropdown.style.display = "flex";
+              dropdown.style.position = "fixed";
+              dropdown.style.left = "248px"; // Original position
+              dropdown.style.bottom = "20px"; // Original position
+              dropdown.style.width = "264px"; // Original width
+              dropdown.style.height = "auto"; // Original height
+              dropdown.style.background = ""; // Clear test background
+              dropdown.style.border = ""; // Clear test border
+              dropdown.style.zIndex = "99999"; // High z-index for Safari
+
+              // Restore original CSS classes
+              dropdown.className = "profile-dropdown-menu";
+
+              if (button) button.classList.add("active");
+
+              // Add click outside listener
+              setTimeout(() => {
+                document.addEventListener(
+                  "click",
+                  window.closeDropdownOnClickOutside,
+                );
+              }, 100);
+            };
+
+            window.closeProfileDropdown = function () {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const button = document.getElementById(
+                "account-menu-button-inner",
+              );
+
+              if (dropdown) dropdown.style.display = "none";
+              if (button) button.classList.remove("active");
+
+              // Remove click outside listener
+              document.removeEventListener(
+                "click",
+                window.closeDropdownOnClickOutside,
+              );
+            };
+
+            window.closeDropdownOnClickOutside = function (event) {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const accountCard = document.getElementById("nav-account-card");
+
+              if (
+                accountCard &&
+                !accountCard.contains(event.target) &&
+                dropdown &&
+                !dropdown.contains(event.target)
+              ) {
+                window.closeProfileDropdown();
+              }
+            };
+          </script>
+        </aside>
+      </template><!-- Profile Dropdown Functions - Global scope for all sidebars -->

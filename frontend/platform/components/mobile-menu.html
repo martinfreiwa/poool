@@ -1,0 +1,1144 @@
+<!-- Mobile Header -->
+<header id="mobile-header" class="mobile-header">
+  <!-- Logo --><a href="/marketplace" class="mobile-header__logo"><img src="/images/Logo Pool.svg"
+      alt="POOOL" /></a><!-- Icons Container -->
+  <div class="mobile-header__icons">
+    <!-- Notification Button --><button id="mobile-notification-btn"
+      class="mobile-header__icon-btn mobile-header__icon-btn--notification" aria-label="Notifications">
+      <svg class="mobile-header__icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
+          stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path
+          d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21"
+          stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg><!-- Badge if there are notifications --><span id="mobile-nav-badge-notifications"
+        class="mobile-header__badge" style="display: none;"></span></button><!-- Cart Button --><button
+      id="mobile-cart-btn" class="mobile-header__icon-btn mobile-header__icon-btn--cart"
+      onclick="window.location.href = '/cart'" aria-label="Shopping Cart">
+      <svg class="mobile-header__icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M9 22C9.55228 22 10 21.5523 10 21C10 20.4477 9.55228 20 9 20C8.44772 20 8 20.4477 8 21C8 21.5523 8.44772 22 9 22Z"
+          stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path
+          d="M20 22C20.5523 22 21 21.5523 21 21C21 20.4477 20.5523 20 20 20C19.4477 20 19 20.4477 19 21C19 21.5523 19.4477 22 20 22Z"
+          stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path
+          d="M1 1H5L7.68 14.39C7.77144 14.8504 8.02191 15.264 8.38755 15.5583C8.75318 15.8526 9.2107 16.009 9.68 16H19.4C19.8693 16.009 20.3268 15.8526 20.6925 15.5583C21.0581 15.264 21.3086 14.8504 21.4 14.39L23 6H6"
+          stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg><!-- Cart Badge --><span class="mobile-header__badge"
+        style="display: none">2</span></button><!-- Burger Menu Button --><button id="mobile-burger-btn"
+      class="mobile-header__icon-btn mobile-header__icon-btn--burger" onclick="toggleMobileMenu()" aria-label="Menu">
+      <div class="mobile-header__burger-icon">
+        <span class="mobile-header__burger-line"></span>
+        <span class="mobile-header__burger-line"></span>
+        <span class="mobile-header__burger-line"></span>
+      </div>
+    </button>
+  </div>
+</header>
+<!-- Mobile Menu Overlay -->
+<div id="mobile-menu-overlay" class="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+<!-- Dynamic Mobile Burger Menu - switches based on profile -->
+<div id="mobile-burger-menu-container">
+  <!-- Initial menu will be replaced by JavaScript based on profile --><!-- Mobile Burger Menu -->
+  <nav id="mobile-burger-menu" class="mobile-burger-menu">
+    <!-- Header -->
+    <div class="mobile-burger-menu__header">
+      <div class="mobile-burger-menu__header-container">
+        <!-- Logo -->
+        <div class="mobile-burger-menu__logo">
+          <img src="/images/Logo premium.svg" alt="POOOL" />
+        </div>
+        <!-- Close Button --><button class="mobile-burger-menu__close" onclick="closeMobileMenu()"
+          aria-label="Close menu">
+          <span class="mobile-burger-menu__close-icon"></span>
+        </button>
+      </div>
+    </div>
+    <!-- Navigation -->
+    <div class="mobile-burger-menu__nav">
+      <!-- Dynamic Navigation Items - Check if Developer Profile --><!-- INVESTOR NAVIGATION (Original) -->
+      <!-- Marketplace Dropdown (Parent Item) -->
+      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--parent" data-item-id="marketplace"
+        onclick="toggleMobileMarketplaceDropdown(event)">
+        <div class="mobile-burger-menu__nav-text-wrapper">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/home-05.svg" alt="Marketplace" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Marketplace</span>
+        </div>
+        <svg class="mobile-burger-menu__nav-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          </path>
+        </svg>
+      </div>
+      <!-- Marketplace Children -->
+      <div id="mobile-nav-children-marketplace"
+        class="mobile-burger-menu__nav-children mobile-burger-menu__nav-children--collapsed">
+        <a href="/marketplace" class="mobile-burger-menu__nav-child"><span
+            class="mobile-burger-menu__nav-child-text">Properties</span></a>
+        <a href="/commodities-marketplace" class="mobile-burger-menu__nav-child"><span
+            class="mobile-burger-menu__nav-child-text">Commodities</span></a>
+      </div>
+      <!-- Wallet -->
+      <a href="/wallet" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/wallet-02.svg" alt="Wallet" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Wallet</span>
+      </a><!-- Portfolio -->
+      <a href="/portfolio" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/line-chart-up-02.svg" alt="Portfolio" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Portfolio</span>
+      </a><!-- Rewards -->
+      <a href="/rewards" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/star-01.svg" alt="Rewards" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Rewards</span>
+      </a><!-- Cart -->
+      <a href="/cart" class="mobile-burger-menu__nav-item active">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/shopping-cart-01.svg" alt="Cart" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Cart</span>
+      </a><!-- Leaderboard -->
+      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/award-05.svg" alt="Leaderboard" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Leaderboard</span>
+        <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
+      </div>
+      <!-- Settings -->
+      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/settings-01.svg" alt="Settings" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Settings</span>
+      </div>
+      <!-- Support -->
+      <a href="/support" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support"
+            class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Support</span>
+        <div class="mobile-burger-menu__support-badge">
+          <span class="mobile-burger-menu__support-dot"></span>
+          <span class="mobile-burger-menu__support-text">Online</span>
+        </div>
+      </a>
+    </div>
+    <!-- Footer -->
+    <div class="mobile-burger-menu__footer">
+      <!-- Featured Card - Only show for investor profile -->
+      <div class="mobile-burger-menu__featured-card">
+        <button class="mobile-burger-menu__featured-close" aria-label="Close">
+          <span class="mobile-burger-menu__featured-close-icon"></span>
+        </button>
+        <div class="mobile-burger-menu__featured-text">
+          <h4 class="mobile-burger-menu__featured-title">Community soon</h4>
+          <p class="mobile-burger-menu__featured-description">
+            Check out the new community feature. Connect with other
+            investors soon.
+          </p>
+        </div>
+        <div class="mobile-burger-menu__featured-actions">
+          <button class="mobile-burger-menu__featured-button mobile-burger-menu__featured-button--dismiss">
+            Dismiss
+          </button>
+          <button class="mobile-burger-menu__featured-button mobile-burger-menu__featured-button--action">
+            What&#39;s new?
+          </button>
+        </div>
+      </div>
+      <!-- Support Chat Card - Only show for developer profile --><!-- Account Card -->
+      <div id="mobile-account-card" class="mobile-burger-menu__account-card"
+        onclick="toggleMobileProfileDropdown(event)" style="cursor: pointer" role="button" aria-label="Account menu"
+        tabindex="0">
+        <div class="mobile-burger-menu__avatar-group">
+          <div class="mobile-burger-menu__avatar">
+            <img loading="lazy" src="/images/Image.webp" alt="" />
+            <div class="mobile-burger-menu__avatar-online"></div>
+          </div>
+          <div class="mobile-burger-menu__account-text">
+            <span class="mobile-burger-menu__account-name"></span>
+            <span class="mobile-burger-menu__account-email"></span>
+          </div>
+        </div>
+        <div id="mobile-account-menu-button" class="mobile-burger-menu__account-menu" style="pointer-events: none">
+          <div id="mobile-account-menu-button-inner" class="mobile-burger-menu__account-menu-button">
+            <svg class="mobile-burger-menu__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                stroke-linejoin="round"></path>
+              <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile Profile Dropdown -->
+      <div id="mobile-profile-dropdown-menu" class="mobile-profile-dropdown-menu">
+        <!-- Menu items wrapper -->
+        <div id="mobile-profile-menu-wrapper" class="mobile-profile-menu-wrapper">
+          <!-- Top menu items -->
+          <div id="mobile-profile-menu-items-top" class="mobile-profile-menu-items">
+            <!-- Documentation -->
+            <div id="mobile-menu-item-documentation" class="mobile-profile-menu-item">
+              <div class="mobile-profile-menu-content">
+                <div class="mobile-profile-icon-text">
+                  <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                    <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                  </svg>
+                  <span class="mobile-profile-menu-text">Documentation</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Switch account section -->
+          <div id="mobile-profile-switch-section" class="mobile-profile-switch-section">
+            <div class="mobile-profile-switch-header">
+              <span class="mobile-profile-switch-title">Switch account</span>
+            </div>
+            <!-- Current account (selected) -->
+            <div id="mobile-menu-item-current-account"
+              class="mobile-profile-menu-item account-item selected mobile-profile-switcher"
+              data-profile-id="olivia-investor" data-account-type="Investor Profile" style="cursor: pointer">
+              <div class="mobile-profile-account-content">
+                <div class="mobile-profile-avatar-group">
+                  <div class="mobile-profile-avatar">
+                    <img loading="lazy" src="/images/Image.webp" alt="" />
+                    <div class="mobile-profile-avatar-border"></div>
+                    <div class="mobile-profile-online-indicator"></div>
+                  </div>
+                  <div class="mobile-profile-text-wrapper">
+                    <span class="mobile-profile-account-name"></span>
+                    <span class="mobile-profile-account-type">Investor Profile</span>
+                  </div>
+                </div>
+                <div class="mobile-profile-checkbox selected">
+                  <div class="mobile-profile-checkbox-check"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Other accounts -->
+            <div id="mobile-menu-item-account-olivia-developer"
+              class="mobile-profile-menu-item account-item mobile-profile-switcher" data-profile-id="olivia-developer"
+              data-account-type="Developer profile" style="cursor: pointer">
+              <div class="mobile-profile-account-content">
+                <div class="mobile-profile-avatar-group">
+                  <div class="mobile-profile-avatar">
+                    <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                    <div class="mobile-profile-avatar-border"></div>
+                    <div class="mobile-profile-online-indicator"></div>
+                  </div>
+                  <div class="mobile-profile-text-wrapper">
+                    <span class="mobile-profile-account-name"></span>
+                    <span class="mobile-profile-account-type">Developer profile</span>
+                  </div>
+                </div>
+                <div class="mobile-profile-checkbox">
+                  <div class="mobile-profile-checkbox-check"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Footer items -->
+        <div id="mobile-profile-footer-items" class="mobile-profile-footer-items">
+          <!-- Sign out -->
+          <div id="mobile-menu-item-sign-out" class="mobile-profile-menu-item">
+            <div class="mobile-profile-menu-content">
+              <div class="mobile-profile-icon-text">
+                <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                    stroke-linejoin="round"></path>
+                  <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
+                    stroke-width="1.67" stroke-linecap="round"></path>
+                </svg>
+                <span class="mobile-profile-menu-text">Sign out</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile Profile Switching JavaScript -->
+      <script>
+        // Profile switching functionality - consistent with desktop
+        window.switchToProfile = function (profileId, accountType) {
+          // Close the mobile dropdown first
+          if (window.closeMobileProfileDropdown) {
+            window.closeMobileProfileDropdown();
+          }
+
+          // Close the burger menu
+          if (window.closeMobileMenu) {
+            window.closeMobileMenu();
+          }
+
+          // Determine profile type and save to localStorage (consistent with desktop)
+          let profileType = "investor"; // default
+          if (accountType === "Developer profile") {
+            profileType = "developer";
+          } else if (accountType === "Admin Dashboard" || accountType === "Admin Profile") {
+            profileType = "admin";
+          } else if (accountType === "Investor Profile") {
+            profileType = "investor";
+          }
+
+          localStorage.setItem("selectedProfile", profileType);
+          localStorage.setItem("selectedAccountId", profileId);
+
+          // Switch to appropriate dashboard
+          if (profileType === "admin") {
+            window.location.href = "/admin/";
+          } else if (profileType === "developer") {
+            window.location.href = "/developer/dashboard";
+          } else {
+            window.location.href = "/marketplace";
+          }
+        };
+
+        // Load saved profile from localStorage - mirrors desktop behavior
+        window.loadSavedMobileProfile = function () {
+          const savedProfile = localStorage.getItem("selectedProfile");
+          const savedAccountId = localStorage.getItem("selectedAccountId");
+
+          if (savedProfile && savedAccountId) {
+            // Update dropdown selection state
+            const allAccountItems = document.querySelectorAll(
+              ".mobile-profile-menu-item.account-item",
+            );
+            allAccountItems.forEach(function (item) {
+              const checkbox = item.querySelector(
+                ".mobile-profile-checkbox",
+              );
+              if (
+                item.id.includes(savedAccountId) ||
+                (savedAccountId === "olivia-investor" &&
+                  item.id === "mobile-menu-item-current-account")
+              ) {
+                // This is the selected account
+                item.classList.add("selected");
+                if (checkbox) checkbox.classList.add("selected");
+              } else {
+                // This is not the selected account
+                item.classList.remove("selected");
+                if (checkbox) checkbox.classList.remove("selected");
+              }
+            });
+
+            // Update mobile burger menu account display based on saved selection
+            const selectedItem = document.querySelector(
+              savedAccountId === "olivia-investor"
+                ? "#mobile-menu-item-current-account"
+                : "#mobile-menu-item-account-" + savedAccountId,
+            );
+
+            if (selectedItem) {
+              const avatar = selectedItem.querySelector(
+                ".mobile-profile-avatar img",
+              );
+              const name = selectedItem.querySelector(
+                ".mobile-profile-account-name",
+              );
+              const type = selectedItem.querySelector(
+                ".mobile-profile-account-type",
+              );
+
+              const mobileAvatar = document.querySelector(
+                ".mobile-burger-menu__avatar img",
+              );
+              const mobileName = document.querySelector(
+                ".mobile-burger-menu__account-name",
+              );
+              const mobileEmail = document.querySelector(
+                ".mobile-burger-menu__account-email",
+              );
+
+              if (avatar && mobileAvatar) {
+                mobileAvatar.src = avatar.src;
+                mobileAvatar.alt = avatar.alt;
+              }
+
+              if (name && mobileName) {
+                mobileName.textContent = name.textContent;
+              }
+
+              if (type && mobileEmail) {
+                mobileEmail.textContent = type.textContent;
+              }
+            }
+          }
+        };
+
+        // Initialize profile switchers - bypasses global event capture
+        window.initializeProfileSwitchers = function () {
+          const profileSwitchers = document.querySelectorAll(
+            ".mobile-profile-switcher",
+          );
+
+          profileSwitchers.forEach(function (switcher, index) {
+            const profileId = switcher.getAttribute("data-profile-id");
+            const accountType = switcher.getAttribute("data-account-type");
+
+            // Remove any existing listeners
+            switcher.removeEventListener(
+              "click",
+              switcher._profileSwitchHandler,
+            );
+
+            // Create and store the handler
+            switcher._profileSwitchHandler = function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              window.switchToProfile(profileId, accountType);
+            };
+
+            // Add the event listener
+            switcher.addEventListener(
+              "click",
+              switcher._profileSwitchHandler,
+              true,
+            );
+          });
+        };
+
+        // Initialize when DOM is ready and also when mobile menu is opened
+        function initializeAll() {
+          window.loadSavedMobileProfile();
+          window.initializeProfileSwitchers();
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initializeAll);
+        } else {
+          initializeAll();
+        }
+
+        // Mobile profile dropdown toggle functionality
+        window.toggleMobileProfileDropdown = function (event) {
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }
+
+          const dropdown = document.getElementById(
+            "mobile-profile-dropdown-menu",
+          );
+          const button = document.getElementById(
+            "mobile-account-menu-button-inner",
+          );
+
+          if (!dropdown) {
+            // Try to find it with different selectors
+            const allDropdowns = document.querySelectorAll(
+              '[id*="profile-dropdown"], [class*="profile-dropdown"]',
+            );
+            allDropdowns.forEach((el, i) =>
+              console.log(`  ${i}:`, el.id, el.className),
+            );
+            return;
+          }
+
+          // Toggle dropdown visibility using active class
+          const isCurrentlyActive = dropdown.classList.contains("active");
+
+          if (!isCurrentlyActive) {
+            dropdown.classList.add("active");
+            if (button) button.classList.add("active");
+
+            // Re-initialize profile switchers for the newly visible dropdown
+            setTimeout(() => {
+              window.initializeProfileSwitchers();
+            }, 50);
+
+            // Add click outside listener
+            setTimeout(() => {
+              document.addEventListener(
+                "click",
+                window.closeMobileDropdownOnClickOutside,
+              );
+            }, 100);
+          } else {
+            dropdown.classList.remove("active");
+            if (button) button.classList.remove("active");
+
+            // Remove click outside listener
+            document.removeEventListener(
+              "click",
+              window.closeMobileDropdownOnClickOutside,
+            );
+          }
+        };
+
+        window.closeMobileProfileDropdown = function () {
+          const dropdown = document.getElementById(
+            "mobile-profile-dropdown-menu",
+          );
+          const button = document.getElementById(
+            "mobile-account-menu-button-inner",
+          );
+
+          if (dropdown) dropdown.classList.remove("active");
+          if (button) button.classList.remove("active");
+
+          // Remove click outside listener
+          document.removeEventListener(
+            "click",
+            window.closeMobileDropdownOnClickOutside,
+          );
+        };
+
+        window.closeMobileDropdownOnClickOutside = function (event) {
+          const dropdown = document.getElementById(
+            "mobile-profile-dropdown-menu",
+          );
+          const accountCard = document.getElementById(
+            "mobile-account-card",
+          );
+
+          if (
+            accountCard &&
+            !accountCard.contains(event.target) &&
+            dropdown &&
+            !dropdown.contains(event.target)
+          ) {
+            window.closeMobileProfileDropdown();
+          }
+        };
+
+        // Mobile Marketplace Dropdown Toggle
+        window.toggleMobileMarketplaceDropdown = function (event) {
+          // Prevent default behavior and event propagation
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }
+
+          const chevron = document.querySelector(
+            ".mobile-burger-menu__nav-chevron",
+          );
+          const childrenContainer = document.getElementById(
+            "mobile-nav-children-marketplace",
+          );
+
+          if (!chevron || !childrenContainer) {
+            return;
+          }
+
+          // Toggle expanded state
+          const isExpanded = chevron.classList.contains(
+            "mobile-burger-menu__nav-chevron--expanded",
+          );
+
+          if (isExpanded) {
+            // Collapse
+            chevron.classList.remove(
+              "mobile-burger-menu__nav-chevron--expanded",
+            );
+            childrenContainer.classList.add(
+              "mobile-burger-menu__nav-children--collapsed",
+            );
+          } else {
+            // Expand
+            chevron.classList.add(
+              "mobile-burger-menu__nav-chevron--expanded",
+            );
+            childrenContainer.classList.remove(
+              "mobile-burger-menu__nav-children--collapsed",
+            );
+          }
+        };
+      </script>
+    </div>
+  </nav>
+</div>
+<!-- Hidden template for investor burger menu --><template
+  id="investor-mobile-menu-template"><!-- Mobile Burger Menu -->
+  <nav id="mobile-burger-menu" class="mobile-burger-menu">
+    <!-- Header -->
+    <div class="mobile-burger-menu__header">
+      <div class="mobile-burger-menu__header-container">
+        <!-- Logo -->
+        <div class="mobile-burger-menu__logo">
+          <img src="/images/Logo premium.svg" alt="POOOL" />
+        </div>
+        <!-- Close Button --><button class="mobile-burger-menu__close" onclick="closeMobileMenu()"
+          aria-label="Close menu">
+          <span class="mobile-burger-menu__close-icon"></span>
+        </button>
+      </div>
+    </div>
+    <!-- Navigation -->
+    <div class="mobile-burger-menu__nav">
+      <!-- Dynamic Navigation Items - Check if Developer Profile --><!-- INVESTOR NAVIGATION (Original) -->
+      <!-- Marketplace Dropdown (Parent Item) -->
+      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--parent" data-item-id="marketplace"
+        onclick="toggleMobileMarketplaceDropdown(event)">
+        <div class="mobile-burger-menu__nav-text-wrapper">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/home-05.svg" alt="Marketplace" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Marketplace</span>
+        </div>
+        <svg class="mobile-burger-menu__nav-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          </path>
+        </svg>
+      </div>
+      <!-- Marketplace Children -->
+      <div id="mobile-nav-children-marketplace"
+        class="mobile-burger-menu__nav-children mobile-burger-menu__nav-children--collapsed">
+        <a href="/marketplace" class="mobile-burger-menu__nav-child"><span
+            class="mobile-burger-menu__nav-child-text">Properties</span></a>
+        <a href="/commodities-marketplace" class="mobile-burger-menu__nav-child"><span
+            class="mobile-burger-menu__nav-child-text">Commodities</span></a>
+      </div>
+      <!-- Wallet -->
+      <a href="/wallet" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/wallet-02.svg" alt="Wallet" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Wallet</span>
+      </a><!-- Portfolio -->
+      <a href="/portfolio" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/line-chart-up-02.svg" alt="Portfolio" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Portfolio</span>
+      </a><!-- Rewards -->
+      <a href="/rewards" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/star-01.svg" alt="Rewards" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Rewards</span>
+      </a><!-- Cart -->
+      <a href="/cart" class="mobile-burger-menu__nav-item active">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/shopping-cart-01.svg" alt="Cart" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Cart</span>
+      </a><!-- Leaderboard -->
+      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/award-05.svg" alt="Leaderboard" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Leaderboard</span>
+        <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
+      </div>
+      <!-- Settings -->
+      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/images/settings-01.svg" alt="Settings" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Settings</span>
+      </div>
+      <!-- Support -->
+      <a href="/support" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support"
+            class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Support</span>
+        <div class="mobile-burger-menu__support-badge">
+          <span class="mobile-burger-menu__support-dot"></span>
+          <span class="mobile-burger-menu__support-text">Online</span>
+        </div>
+      </a>
+    </div>
+    <!-- Footer -->
+    <div class="mobile-burger-menu__footer">
+      <!-- Featured Card - Only show for investor profile -->
+      <div class="mobile-burger-menu__featured-card">
+        <button class="mobile-burger-menu__featured-close" aria-label="Close">
+          <span class="mobile-burger-menu__featured-close-icon"></span>
+        </button>
+        <div class="mobile-burger-menu__featured-text">
+          <h4 class="mobile-burger-menu__featured-title">Community soon</h4>
+          <p class="mobile-burger-menu__featured-description">
+            Check out the new community feature. Connect with other
+            investors soon.
+          </p>
+        </div>
+        <div class="mobile-burger-menu__featured-actions">
+          <button class="mobile-burger-menu__featured-button mobile-burger-menu__featured-button--dismiss">
+            Dismiss
+          </button>
+          <button class="mobile-burger-menu__featured-button mobile-burger-menu__featured-button--action">
+            What&#39;s new?
+          </button>
+        </div>
+      </div>
+      <!-- Support Chat Card - Only show for developer profile --><!-- Account Card -->
+      <div id="mobile-account-card" class="mobile-burger-menu__account-card"
+        onclick="toggleMobileProfileDropdown(event)" style="cursor: pointer" role="button" aria-label="Account menu"
+        tabindex="0">
+        <div class="mobile-burger-menu__avatar-group">
+          <div class="mobile-burger-menu__avatar">
+            <img loading="lazy" src="/images/Image.webp" alt="" />
+            <div class="mobile-burger-menu__avatar-online"></div>
+          </div>
+          <div class="mobile-burger-menu__account-text">
+            <span class="mobile-burger-menu__account-name"></span>
+            <span class="mobile-burger-menu__account-email"></span>
+          </div>
+        </div>
+        <div id="mobile-account-menu-button" class="mobile-burger-menu__account-menu" style="pointer-events: none">
+          <div id="mobile-account-menu-button-inner" class="mobile-burger-menu__account-menu-button">
+            <svg class="mobile-burger-menu__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                stroke-linejoin="round"></path>
+              <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile Profile Dropdown -->
+      <div id="mobile-profile-dropdown-menu" class="mobile-profile-dropdown-menu">
+        <!-- Menu items wrapper -->
+        <div id="mobile-profile-menu-wrapper" class="mobile-profile-menu-wrapper">
+          <!-- Top menu items -->
+          <div id="mobile-profile-menu-items-top" class="mobile-profile-menu-items">
+            <!-- Documentation -->
+            <div id="mobile-menu-item-documentation" class="mobile-profile-menu-item">
+              <div class="mobile-profile-menu-content">
+                <div class="mobile-profile-icon-text">
+                  <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                    <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                  </svg>
+                  <span class="mobile-profile-menu-text">Documentation</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Switch account section -->
+          <div id="mobile-profile-switch-section" class="mobile-profile-switch-section">
+            <div class="mobile-profile-switch-header">
+              <span class="mobile-profile-switch-title">Switch account</span>
+            </div>
+            <!-- Current account (selected) -->
+            <div id="mobile-menu-item-current-account"
+              class="mobile-profile-menu-item account-item selected mobile-profile-switcher"
+              data-profile-id="olivia-investor" data-account-type="Investor Profile" style="cursor: pointer">
+              <div class="mobile-profile-account-content">
+                <div class="mobile-profile-avatar-group">
+                  <div class="mobile-profile-avatar">
+                    <img loading="lazy" src="/images/Image.webp" alt="" />
+                    <div class="mobile-profile-avatar-border"></div>
+                    <div class="mobile-profile-online-indicator"></div>
+                  </div>
+                  <div class="mobile-profile-text-wrapper">
+                    <span class="mobile-profile-account-name"></span>
+                    <span class="mobile-profile-account-type">Investor Profile</span>
+                  </div>
+                </div>
+                <div class="mobile-profile-checkbox selected">
+                  <div class="mobile-profile-checkbox-check"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Other accounts -->
+            <div id="mobile-menu-item-account-olivia-developer"
+              class="mobile-profile-menu-item account-item mobile-profile-switcher" data-profile-id="olivia-developer"
+              data-account-type="Developer profile" style="cursor: pointer">
+              <div class="mobile-profile-account-content">
+                <div class="mobile-profile-avatar-group">
+                  <div class="mobile-profile-avatar">
+                    <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                    <div class="mobile-profile-avatar-border"></div>
+                    <div class="mobile-profile-online-indicator"></div>
+                  </div>
+                  <div class="mobile-profile-text-wrapper">
+                    <span class="mobile-profile-account-name"></span>
+                    <span class="mobile-profile-account-type">Developer profile</span>
+                  </div>
+                </div>
+                <div class="mobile-profile-checkbox">
+                  <div class="mobile-profile-checkbox-check"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Footer items -->
+        <div id="mobile-profile-footer-items" class="mobile-profile-footer-items">
+          <!-- Sign out -->
+          <div id="mobile-menu-item-sign-out" class="mobile-profile-menu-item">
+            <div class="mobile-profile-menu-content">
+              <div class="mobile-profile-icon-text">
+                <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                    stroke-linejoin="round"></path>
+                  <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
+                    stroke-width="1.67" stroke-linecap="round"></path>
+                </svg>
+                <span class="mobile-profile-menu-text">Sign out</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile Profile Switching JavaScript -->
+      <script>
+        // Profile switching functionality - consistent with desktop
+        window.switchToProfile = function (profileId, accountType) {
+          // Close the mobile dropdown first
+          if (window.closeMobileProfileDropdown) {
+            window.closeMobileProfileDropdown();
+          }
+
+          // Close the burger menu
+          if (window.closeMobileMenu) {
+            window.closeMobileMenu();
+          }
+
+          // Determine profile type and save to localStorage (consistent with desktop)
+          let profileType = "investor"; // default
+          if (accountType === "Developer profile") {
+            profileType = "developer";
+          } else if (accountType === "Admin Dashboard" || accountType === "Admin Profile") {
+            profileType = "admin";
+          } else if (accountType === "Investor Profile") {
+            profileType = "investor";
+          }
+
+          localStorage.setItem("selectedProfile", profileType);
+          localStorage.setItem("selectedAccountId", profileId);
+
+          // Switch to appropriate dashboard
+          if (profileType === "admin") {
+            window.location.href = "/admin/";
+          } else if (profileType === "developer") {
+            window.location.href = "/developer/dashboard";
+          } else {
+            window.location.href = "/marketplace";
+          }
+        };
+
+        // Load saved profile from localStorage - mirrors desktop behavior
+        window.loadSavedMobileProfile = function () {
+          const savedProfile = localStorage.getItem("selectedProfile");
+          const savedAccountId = localStorage.getItem("selectedAccountId");
+
+          if (savedProfile && savedAccountId) {
+            // Update dropdown selection state
+            const allAccountItems = document.querySelectorAll(
+              ".mobile-profile-menu-item.account-item",
+            );
+            allAccountItems.forEach(function (item) {
+              const checkbox = item.querySelector(
+                ".mobile-profile-checkbox",
+              );
+              if (
+                item.id.includes(savedAccountId) ||
+                (savedAccountId === "olivia-investor" &&
+                  item.id === "mobile-menu-item-current-account")
+              ) {
+                // This is the selected account
+                item.classList.add("selected");
+                if (checkbox) checkbox.classList.add("selected");
+              } else {
+                // This is not the selected account
+                item.classList.remove("selected");
+                if (checkbox) checkbox.classList.remove("selected");
+              }
+            });
+
+            // Update mobile burger menu account display based on saved selection
+            const selectedItem = document.querySelector(
+              savedAccountId === "olivia-investor"
+                ? "#mobile-menu-item-current-account"
+                : "#mobile-menu-item-account-" + savedAccountId,
+            );
+
+            if (selectedItem) {
+              const avatar = selectedItem.querySelector(
+                ".mobile-profile-avatar img",
+              );
+              const name = selectedItem.querySelector(
+                ".mobile-profile-account-name",
+              );
+              const type = selectedItem.querySelector(
+                ".mobile-profile-account-type",
+              );
+
+              const mobileAvatar = document.querySelector(
+                ".mobile-burger-menu__avatar img",
+              );
+              const mobileName = document.querySelector(
+                ".mobile-burger-menu__account-name",
+              );
+              const mobileEmail = document.querySelector(
+                ".mobile-burger-menu__account-email",
+              );
+
+              if (avatar && mobileAvatar) {
+                mobileAvatar.src = avatar.src;
+                mobileAvatar.alt = avatar.alt;
+              }
+
+              if (name && mobileName) {
+                mobileName.textContent = name.textContent;
+              }
+
+              if (type && mobileEmail) {
+                mobileEmail.textContent = type.textContent;
+              }
+            }
+          }
+        };
+
+        // Initialize profile switchers - bypasses global event capture
+        window.initializeProfileSwitchers = function () {
+          const profileSwitchers = document.querySelectorAll(
+            ".mobile-profile-switcher",
+          );
+
+          profileSwitchers.forEach(function (switcher, index) {
+            const profileId = switcher.getAttribute("data-profile-id");
+            const accountType = switcher.getAttribute("data-account-type");
+
+            // Remove any existing listeners
+            switcher.removeEventListener(
+              "click",
+              switcher._profileSwitchHandler,
+            );
+
+            // Create and store the handler
+            switcher._profileSwitchHandler = function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              window.switchToProfile(profileId, accountType);
+            };
+
+            // Add the event listener
+            switcher.addEventListener(
+              "click",
+              switcher._profileSwitchHandler,
+              true,
+            );
+          });
+        };
+
+        // Initialize when DOM is ready and also when mobile menu is opened
+        function initializeAll() {
+          window.loadSavedMobileProfile();
+          window.initializeProfileSwitchers();
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initializeAll);
+        } else {
+          initializeAll();
+        }
+
+        // Mobile profile dropdown toggle functionality
+        window.toggleMobileProfileDropdown = function (event) {
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }
+
+          const dropdown = document.getElementById(
+            "mobile-profile-dropdown-menu",
+          );
+          const button = document.getElementById(
+            "mobile-account-menu-button-inner",
+          );
+
+          if (!dropdown) {
+            // Try to find it with different selectors
+            const allDropdowns = document.querySelectorAll(
+              '[id*="profile-dropdown"], [class*="profile-dropdown"]',
+            );
+            allDropdowns.forEach((el, i) =>
+              console.log(`  ${i}:`, el.id, el.className),
+            );
+            return;
+          }
+
+          // Toggle dropdown visibility using active class
+          const isCurrentlyActive = dropdown.classList.contains("active");
+
+          if (!isCurrentlyActive) {
+            dropdown.classList.add("active");
+            if (button) button.classList.add("active");
+
+            // Re-initialize profile switchers for the newly visible dropdown
+            setTimeout(() => {
+              window.initializeProfileSwitchers();
+            }, 50);
+
+            // Add click outside listener
+            setTimeout(() => {
+              document.addEventListener(
+                "click",
+                window.closeMobileDropdownOnClickOutside,
+              );
+            }, 100);
+          } else {
+            dropdown.classList.remove("active");
+            if (button) button.classList.remove("active");
+
+            // Remove click outside listener
+            document.removeEventListener(
+              "click",
+              window.closeMobileDropdownOnClickOutside,
+            );
+          }
+        };
+
+        window.closeMobileProfileDropdown = function () {
+          const dropdown = document.getElementById(
+            "mobile-profile-dropdown-menu",
+          );
+          const button = document.getElementById(
+            "mobile-account-menu-button-inner",
+          );
+
+          if (dropdown) dropdown.classList.remove("active");
+          if (button) button.classList.remove("active");
+
+          // Remove click outside listener
+          document.removeEventListener(
+            "click",
+            window.closeMobileDropdownOnClickOutside,
+          );
+        };
+
+        window.closeMobileDropdownOnClickOutside = function (event) {
+          const dropdown = document.getElementById(
+            "mobile-profile-dropdown-menu",
+          );
+          const accountCard = document.getElementById(
+            "mobile-account-card",
+          );
+
+          if (
+            accountCard &&
+            !accountCard.contains(event.target) &&
+            dropdown &&
+            !dropdown.contains(event.target)
+          ) {
+            window.closeMobileProfileDropdown();
+          }
+        };
+
+        // Mobile Marketplace Dropdown Toggle
+        window.toggleMobileMarketplaceDropdown = function (event) {
+          // Prevent default behavior and event propagation
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }
+
+          const chevron = document.querySelector(
+            ".mobile-burger-menu__nav-chevron",
+          );
+          const childrenContainer = document.getElementById(
+            "mobile-nav-children-marketplace",
+          );
+
+          if (!chevron || !childrenContainer) {
+            return;
+          }
+
+          // Toggle expanded state
+          const isExpanded = chevron.classList.contains(
+            "mobile-burger-menu__nav-chevron--expanded",
+          );
+
+          if (isExpanded) {
+            // Collapse
+            chevron.classList.remove(
+              "mobile-burger-menu__nav-chevron--expanded",
+            );
+            childrenContainer.classList.add(
+              "mobile-burger-menu__nav-children--collapsed",
+            );
+          } else {
+            // Expand
+            chevron.classList.add(
+              "mobile-burger-menu__nav-chevron--expanded",
+            );
+            childrenContainer.classList.remove(
+              "mobile-burger-menu__nav-children--collapsed",
+            );
+          }
+        };
+      </script>
+    </div>
+  </nav>
+</template>
+
+<!-- Script to switch mobile burger menu based on saved profile -->
+<script>
+  (function () {
+    // Function to replace mobile burger menu content
+    function replaceMobileBurgerMenu(profileType) {
+      const container = document.getElementById(
+        "mobile-burger-menu-container",
+      );
+      const templateId =
+        profileType === "developer"
+          ? "developer-mobile-menu-template"
+          : "investor-mobile-menu-template";
+      const template = document.getElementById(templateId);
+
+      if (container && template) {
+        // Clear current content
+        container.innerHTML = "";
+        // Clone and append new content
+        const newContent = template.content.cloneNode(true);
+        container.appendChild(newContent);
+
+        // Re-initialize mobile profile display after replacement
+        // Use setTimeout to ensure appended scripts have executed
+        setTimeout(function () {
+          if (typeof window.loadSavedMobileProfile === "function") {
+            window.loadSavedMobileProfile();
+          } else {
+          }
+        }, 0);
+
+        // Re-initialize mobile navigation functionality if needed
+      }
+    }
+
+    // Check current page to determine profile
+    const currentPath = window.location.pathname;
+
+    // If we're on a developer page, show developer menu
+    if (currentPath.startsWith("/developer/")) {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () {
+          replaceMobileBurgerMenu("developer");
+        });
+      } else {
+        replaceMobileBurgerMenu("developer");
+      }
+    }
+    // Otherwise use investor menu (default)
+
+    // Listen for profile changes
+    window.addEventListener("storage", function (e) {
+      if (e.key === "selectedProfile") {
+        replaceMobileBurgerMenu(e.newValue || "investor");
+      }
+    });
+  })();
+</script>

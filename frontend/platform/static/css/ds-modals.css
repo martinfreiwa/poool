@@ -1,0 +1,191 @@
+/* =========================================================================
+ * DESIGN SYSTEM — MODALS (.ds-modal)
+ * =========================================================================
+ * Standardised modal/dialog component.
+ * Can be applied alongside existing per-page modal classes.
+ *
+ * Usage (HTML):
+ *   <div class="ds-modal-overlay" id="my-modal">
+ *     <div class="ds-modal">
+ *       <div class="ds-modal__header">
+ *         <h3 class="ds-modal__title">Title</h3>
+ *         <button class="ds-modal__close">×</button>
+ *       </div>
+ *       <div class="ds-modal__body">…</div>
+ *       <div class="ds-modal__footer">…</div>
+ *     </div>
+ *   </div>
+ *
+ * Toggle: add/remove .active class on .ds-modal-overlay
+ * ========================================================================= */
+
+/* ── Overlay ────────────────────────────────────────────────────── */
+.ds-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(52, 64, 84, 0.6);
+  backdrop-filter: blur(6px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 24px;
+  animation: ds-modal-overlay-in 0.2s ease-out;
+}
+
+.ds-modal-overlay.active {
+  display: flex;
+}
+
+@keyframes ds-modal-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal Container ────────────────────────────────────────────── */
+.ds-modal {
+  background: #FFFFFF;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0px 8px 8px -4px rgba(16, 24, 40, 0.03),
+    0px 20px 24px -4px rgba(16, 24, 40, 0.08);
+  animation: ds-modal-slide-in 0.25s ease-out;
+  overflow: hidden;
+}
+
+.ds-modal--sm { max-width: 360px; }
+.ds-modal--lg { max-width: 640px; }
+.ds-modal--xl { max-width: 800px; }
+
+@keyframes ds-modal-slide-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.ds-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 24px 0;
+  gap: 16px;
+}
+
+.ds-modal__header--bordered {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+}
+
+.ds-modal__title {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
+  color: #101828;
+  margin: 0;
+}
+
+.ds-modal__subtitle {
+  font-size: 14px;
+  color: #667085;
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+
+/* ── Close Button ───────────────────────────────────────────────── */
+.ds-modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #98A2B3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+}
+
+.ds-modal__close:hover {
+  color: #344054;
+  background: #F2F4F7;
+}
+
+.ds-modal__close svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Body ───────────────────────────────────────────────────────── */
+.ds-modal__body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ds-modal__body--flush {
+  padding: 0;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────── */
+.ds-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 24px;
+}
+
+.ds-modal__footer--bordered {
+  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  padding-top: 20px;
+}
+
+.ds-modal__footer--spread {
+  justify-content: space-between;
+}
+
+/* ── Error Alert inside Modal ───────────────────────────────────── */
+.ds-modal__error {
+  color: #D92D20;
+  background: #FEF3F2;
+  border: 1px solid #FEE4E2;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: none;
+  line-height: 1.4;
+}
+
+.ds-modal__error:not(:empty) {
+  display: block;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .ds-modal-overlay {
+    padding: 16px;
+    align-items: flex-end;
+  }
+
+  .ds-modal {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 85vh;
+  }
+
+  .ds-modal--sm,
+  .ds-modal--lg,
+  .ds-modal--xl {
+    max-width: 100%;
+  }
+}

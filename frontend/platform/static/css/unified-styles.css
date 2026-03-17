@@ -1,0 +1,85 @@
+/* Standard Unified Component Styles for POOOL */
+
+:root {
+    /* Brand Colors */
+    --brand-deep-blue: #0000FF;
+    --brand-soft-blue: #FFFFFF;
+    --brand-bright-lime: #DBE2E9;
+    /* Light blue-gray from user specs */
+    --brand-greeny-green: #03FF88;
+    /* Brand Lime */
+    --brand-dark-blue: #08232F;
+    --primary-color: #0000FF;
+    --accent-color: #D4FFE9;
+    --bg-secondary: #FAFAFA;
+    --border-color: #E9EAEB;
+    --text-primary: #181D27;
+    --text-secondary: #535862;
+    --text-tertiary: #717680;
+}
+
+/* Glassmorphism Icon Style - standardized */
+.glass-icon-container {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.glass-icon-bg {
+    position: absolute;
+    width: 46px;
+    height: 46px;
+    left: 2px;
+    top: -2px;
+    border-radius: 12px;
+    transform: rotate(15deg);
+    opacity: 0.35;
+}
+
+.glass-icon-front {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.glass-icon-front img,
+.glass-icon-front svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Color variants for the rotated background */
+.glass-purple-bg {
+    background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+}
+
+.glass-green-bg {
+    background: linear-gradient(135deg, #059669 0%, #34D399 100%);
+}
+
+.glass-blue-bg {
+    background: linear-gradient(135deg, #0000FF 0%, #60A5FA 100%);
+}
+
+/* Section title shared style */
+.section-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 32px;
+    color: #181d27;
+    margin: 0 0 16px;
+}

@@ -1,0 +1,87 @@
+{% with title="Setup Two-Factor Authentication | POOOL", extra_css=['login'] %}{% include "components/head.html" %}{%
+endwith %}
+
+<body>
+    <div id="login-container">
+        <section id="left-section">
+            <div id="container" style="max-width: 480px;">
+                <div id="content">
+                    <div id="header">
+                        <div id="logo-pool">
+                            <img src="/static/images/logo-pool.svg" alt="Pool Logo" width="184" height="48" />
+                        </div>
+                        <div id="text-and-supporting-text">
+                            <h1 id="text">Secure your account</h1>
+                            <p id="supporting-text">Two-factor authentication is required for administrative accounts.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="content-inner">
+                        <div class="setup-step">
+                            <p style="font-size: 14px; color: #344054; font-weight: 500;">
+                                <span class="step-number">1</span> Scan this QR code
+                            </p>
+                            <p style="font-size: 14px; color: #475467; margin-top: 4px;">
+                                Open your authenticator app (like Google Authenticator or Authy) and scan the code
+                                below.
+                            </p>
+                            <div class="qr-container">
+                                <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="qr-code" />
+                            </div>
+                        </div>
+
+                        <div class="setup-step">
+                            <p style="font-size: 14px; color: #344054; font-weight: 500;">
+                                <span class="step-number">2</span> Or enter the secret manually
+                            </p>
+                            <div class="secret-box">
+                                {{ secret }}
+                            </div>
+                        </div>
+
+                        <div class="setup-step" style="border-top: 1px solid #EAECF0; padding-top: 24px;">
+                            <p style="font-size: 14px; color: #344054; font-weight: 500;">
+                                <span class="step-number">3</span> Verify setup
+                            </p>
+                            <p style="font-size: 14px; color: #475467; margin-top: 4px;">
+                                Enter the 6-digit code from your app to confirm.
+                            </p>
+
+                            <div id="auth-error" style="margin-top: 16px;"></div>
+                            <form hx-post="/auth/2fa/setup" hx-target="#auth-error" hx-swap="innerHTML"
+                                hx-ext="response-targets" hx-target-400="#auth-error" hx-indicator="#loading-indicator"
+                                style="margin-top: 16px;">
+                                <input type="hidden" name="secret" value="{{ secret }}" />
+                                <div id="input-field">
+                                    <div id="input-with-label">
+                                        <div id="email-input-wrapper">
+                                            <input type="text" id="email-input" name="code" placeholder="000000"
+                                                inputmode="numeric" pattern="[0-9]{6}" required />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" id="login-button" style="margin-top: 16px;">
+                                    <div id="button-text-padding">
+                                        <span id="button-text">Enable 2FA</span>
+                                    </div>
+                                </button>
+                            </form>
+                        </div>
+
+                        <div id="signup-row">
+                            <span id="signup-text">Changed your mind?</span>
+                            <a href="/logout" id="signup-link"><span id="signup-link-text">Log out</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="right-section">
+            <div id="testimonial-image"></div>
+        </section>
+    </div>
+</body>
+
+</html>

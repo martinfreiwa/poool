@@ -1,0 +1,137 @@
+{% with title="Currency Policy | POOOL", meta_description="POOOL's currency policy, explaining how multi-currency
+transactions and conversions work on the platform.", extra_css=['marketplace', 'wallet', 'portfolio', 'cart',
+'portfolio-assets-table', 'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards'], extra_js=['htmx-init',
+'profile-dropdown'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="rewards-body">
+  {% include 'components/mobile-menu.html' %}
+  <div id="portfolio-page" class="portfolio-page">
+    <!-- Sidebar Navigation -->
+    <div id="portfolio-sidebar" class="portfolio-sidebar">
+      <!-- Container that will show only one sidebar at a time -->
+      {% include 'components/sidebar.html' %}
+    </div>
+    <!-- Main Content Area -->
+    <main id="legal-main" class="ds-main marketplace-main" style="background: #f9fafb">
+      <div style="max-width: 800px; margin: 0 auto; padding: 40px 24px 80px 24px">
+        <div style="margin-bottom: 32px">
+          <a href="/settings" style="
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                color: #717680;
+                text-decoration: none;
+                font-size: 14px;
+                margin-bottom: 16px;
+              ">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 12L6 8L10 4" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            Back to Settings
+          </a>
+          <h1 style="
+                font-size: 28px;
+                font-weight: 700;
+                color: #181d27;
+                margin: 16px 0 8px 0;
+              ">
+            Currency Policy
+          </h1>
+          <p style="color: #717680; font-size: 14px">
+            (for international investors)
+          </p>
+        </div>
+
+        <div style="
+              background: #fff;
+              border: 1px solid #e9eaeb;
+              border-radius: 12px;
+              padding: 32px;
+              line-height: 1.7;
+              color: #414651;
+              font-size: 15px;
+            ">
+          <h2 style="
+                font-size: 17px;
+                font-weight: 600;
+                color: #181d27;
+                margin: 0 0 12px 0;
+              ">
+            Currency Usage Disclosure
+          </h2>
+          <p style="margin-bottom: 20px">
+            All prices displayed in USD on this website are for international
+            reference only. As required by Indonesian Law (PBI 17/3/PBI/2015
+            and Currency Law UU No. 7/2011), all transactions conducted in the
+            territory of the Republic of Indonesia must be settled in
+            Indonesian Rupiah (IDR).
+          </p>
+
+          <h2 style="
+                font-size: 17px;
+                font-weight: 600;
+                color: #181d27;
+                margin: 28px 0 12px 0;
+                padding-top: 20px;
+                border-top: 1px solid #f2f4f7;
+              ">
+            Key Terms
+          </h2>
+          <ul style="padding-left: 20px; margin-bottom: 16px">
+            <li style="margin-bottom: 8px">
+              <strong>USD prices</strong> are provided for user convenience
+              and do not represent the final transaction currency.
+            </li>
+            <li style="margin-bottom: 8px">
+              <strong>All payments, legal agreements, invoices, and
+                settlements</strong>
+              are issued in Rupiah (IDR).
+            </li>
+            <li style="margin-bottom: 8px">
+              <strong>Currency conversions</strong> may apply depending on
+              your payment method or gateway.
+            </li>
+            <li style="margin-bottom: 8px">
+              <strong>For transactions classified as international trade</strong>
+              (cross-border services), payments in foreign currencies may be
+              accepted within the scope of applicable laws.
+            </li>
+          </ul>
+          <p style="margin-bottom: 16px; font-style: italic; color: #535862">
+            By using this platform, you acknowledge and agree to the currency
+            regulations of Indonesia.
+          </p>
+        </div>
+
+        <div style="
+              background: #fff;
+              border: 1px solid #e9eaeb;
+              border-radius: 12px;
+              padding: 24px 32px;
+              margin-top: 24px;
+              color: #535862;
+              font-size: 13px;
+              line-height: 1.6;
+            ">
+          <p style="margin-bottom: 12px">
+            <strong style="color: #181d27">A Word of Caution:</strong> POOOL
+            does not offer financial, legal, tax, or investment advice. The
+            information provided on this platform is for general informational
+            purposes only.
+          </p>
+          <p>
+            <strong>Info, Documents and Support:</strong> For official
+            documents, investment policies, and support, please refer to our
+            Legal Center. Directorate General of Consumer Protection and
+            Orderly Commerce Ministry of Trade of the Republic of Indonesia.
+          </p>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/static/js/legal-enhancements.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
+</body>
+
+</html>

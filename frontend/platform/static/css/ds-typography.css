@@ -1,0 +1,152 @@
+/* =========================================================================
+ * DESIGN SYSTEM — TYPOGRAPHY (.ds-text-*)
+ * =========================================================================
+ * Standardised text styles driven by dashboard-tokens.css.
+ * Provides a consistent type scale across all pages.
+ *
+ * Dependencies: dashboard-tokens.css (sections 3, 4)
+ * ========================================================================= */
+
+/* ── Display (hero numbers, big values) ─────────────────────────── */
+.ds-text-display {
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--page-title-color, #181D27);
+  letter-spacing: -0.02em;
+}
+
+/* ── Heading XL (page titles — 36px) ────────────────────────────── */
+.ds-text-xl {
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: var(--page-title-font-size, 36px);
+  font-weight: var(--page-title-font-weight, 700);
+  line-height: var(--page-title-line-height, 1.2);
+  color: var(--page-title-color, #181D27);
+  letter-spacing: -0.02em;
+}
+
+/* ── Heading LG (section titles — 24px) ─────────────────────────── */
+.ds-text-lg {
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  color: var(--page-title-color, #181D27);
+}
+
+/* ── Heading MD (card titles — 18px) ────────────────────────────── */
+.ds-text-md {
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 28px;
+  color: var(--page-title-color, #181D27);
+}
+
+/* ── Heading SM (sub-sections — 16px semibold) ──────────────────── */
+.ds-text-sm-heading {
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--page-title-color, #181D27);
+}
+
+/* ── Body (default text — 14px) ─────────────────────────────────── */
+.ds-text-body {
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: #344054;
+}
+
+.ds-text-body--medium {
+  font-weight: 500;
+}
+
+.ds-text-body--semibold {
+  font-weight: 600;
+}
+
+/* ── Body Large (prominent text — 16px) ─────────────────────────── */
+.ds-text-body-lg {
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #344054;
+}
+
+/* ── Caption / Small (labels, hints — 12/13px) ──────────────────── */
+.ds-text-caption {
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
+  color: #667085;
+}
+
+.ds-text-xs {
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  color: #667085;
+}
+
+/* ── Subtitle/Description ───────────────────────────────────────── */
+.ds-text-subtitle {
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: var(--page-subtitle-font-size, 15px);
+  font-weight: var(--page-subtitle-font-weight, 400);
+  line-height: 22px;
+  color: var(--page-subtitle-color, #475467);
+}
+
+/* ── Color Modifiers ────────────────────────────────────────────── */
+.ds-text--primary   { color: var(--page-title-color, #181D27); }
+.ds-text--secondary { color: #535862; }
+.ds-text--muted     { color: #667085; }
+.ds-text--accent    { color: var(--primary-color, #0000FF); }
+.ds-text--success   { color: #027A48; }
+.ds-text--warning   { color: #B54708; }
+.ds-text--danger    { color: #D92D20; }
+.ds-text--white     { color: #FFFFFF; }
+
+/* ── Alignment Modifiers ────────────────────────────────────────── */
+.ds-text--center { text-align: center; }
+.ds-text--right  { text-align: right; }
+
+/* ── Financial Numbers (tabular, monospace-ish) ─────────────────── */
+.ds-text-money {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+}
+
+/* ── Truncation ─────────────────────────────────────────────────── */
+.ds-text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Line Clamp (multi-line truncation) ─────────────────────────── */
+.ds-text-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ds-text-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

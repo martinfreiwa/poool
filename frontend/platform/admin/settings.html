@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Platform settings and role-based access control." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- SIDEBAR -->
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <span class="current">Settings</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-search">
+            <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="6" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" placeholder="Search users, assets, orders…" id="admin-global-search"
+              aria-label="Global admin search" />
+          </div>
+          <button class="admin-notification-btn" title="Notifications" aria-label="View notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9z" fill="currentColor" fill-opacity="0.1" />
+              <path d="M13.73 21a2 2 0 01-3.46 0" />
+            </svg>
+            <span class="admin-notification-badge" style="display:none"></span>
+          </button>
+        </div>
+      </header>
+
+      <div class="admin-content" x-data="adminSettings">
+        <!-- Page Header -->
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Platform Settings</h1>
+          <p class="admin-page-subtitle">
+            Configure global platform parameters, manage admin roles, and
+            maintain system configuration
+          </p>
+        </div>
+
+        <!-- Toast -->
+        <div x-show="toast.show" x-transition style="
+              position: fixed;
+              bottom: 24px;
+              right: 24px;
+              z-index: 9999;
+              padding: 12px 20px;
+              border-radius: 8px;
+              font-size: 13px;
+              font-weight: 600;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            "
+          :style="toast.type === 'success' ? 'background:var(--admin-success);color:#fff;' : 'background:var(--admin-danger);color:#fff;'"
+          x-text="toast.message"></div>
+
+        <!-- HORIZONTAL TABS (uses existing admin-tabs + admin-tab CSS) -->
+        <div class="admin-tabs" style="margin-bottom: 20px">
+          <button @click="activeTab = 'general'" class="admin-tab" :class="activeTab === 'general' ? 'active' : ''">
+            General
+          </button>
+          <button @click="activeTab = 'finance'" class="admin-tab" :class="activeTab === 'finance' ? 'active' : ''">
+            Finance &amp; Fees
+          </button>
+          <button @click="activeTab = 'notifications'" class="admin-tab"
+            :class="activeTab === 'notifications' ? 'active' : ''">
+            Notifications
+          </button>
+          <button @click="activeTab = 'maintenance'" class="admin-tab"
+            :class="activeTab === 'maintenance' ? 'active' : ''">
+            Maintenance
+          </button>
+          <button @click="activeTab = 'integrations'" class="admin-tab"
+            :class="activeTab === 'integrations' ? 'active' : ''">
+            Integrations
+          </button>
+          <button @click="activeTab = 'legal'; loadLegalStatus()" class="admin-tab"
+            :class="activeTab === 'legal' ? 'active' : ''">
+            Legal &amp; Compliance
+          </button>
+        </div>
+
+        <!-- ═══ GENERAL ═══ -->
+        <div x-show="activeTab === 'general'">
+          <div class="admin-card" style="padding: 28px">
+            <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">
+              General Platform Settings
+            </h3>
+            <p style="
+                  font-size: 13px;
+                  color: var(--admin-text-muted);
+                  margin: 0 0 24px;
+                ">
+              Core platform configuration visible across the application
+            </p>
+            <div style="
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 20px;
+                  max-width: 700px;
+                ">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Platform Name</label>
+                <input type="text" x-model="settings.platform_name" class="admin-input" />
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Support Email</label>
+                <input type="email" x-model="settings.support_email" class="admin-input" />
+              </div>
+            </div>
+            <div style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 14px;
+                  margin-top: 8px;
+                ">
+              <label style="
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-size: 13px;
+                    color: var(--admin-text-secondary);
+                    cursor: pointer;
+                  ">
+                <input type="checkbox" x-model="settings.enable_registrations" style="
+                      width: 16px;
+                      height: 16px;
+                      accent-color: var(--admin-accent);
+                    " />
+                Enable new user registrations
+              </label>
+              <label style="
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-size: 13px;
+                    color: var(--admin-text-secondary);
+                    cursor: pointer;
+                  ">
+                <input type="checkbox" x-model="settings.require_kyc" style="
+                      width: 16px;
+                      height: 16px;
+                      accent-color: var(--admin-accent);
+                    " />
+                Require KYC for all investments
+              </label>
+            </div>
+            <div style="
+                  margin-top: 28px;
+                  padding-top: 20px;
+                  border-top: 1px solid var(--admin-border);
+                ">
+              <button @click="saveSettings()" class="admin-btn admin-btn--primary" :disabled="saving"
+                x-text="saving ? 'Saving…' : 'Save General Settings'"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ FINANCE ═══ -->
+        <div x-show="activeTab === 'finance'">
+          <div class="admin-card" style="padding: 28px">
+            <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">
+              Financial Configuration
+            </h3>
+            <p style="
+                  font-size: 13px;
+                  color: var(--admin-text-muted);
+                  margin: 0 0 24px;
+                ">
+              Fee schedules, withdrawal limits, and commission structures
+            </p>
+            <div style="
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 20px;
+                  max-width: 700px;
+                ">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Platform Fee (%)</label>
+                <input type="number" step="0.01" x-model="settings.platform_fee_percent" class="admin-input" />
+                <p style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin-top: 4px;
+                    ">
+                  Applies to all token purchases
+                </p>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Withdrawal Fee (USD)</label>
+                <input type="number" step="0.01" x-model="settings.withdrawal_fee_cents" class="admin-input" />
+                <p style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin-top: 4px;
+                    ">
+                  Flat fee per withdrawal
+                </p>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Referral Commission (%)</label>
+                <input type="number" step="0.01" x-model="settings.referral_commission_percent" class="admin-input" />
+                <p style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin-top: 4px;
+                    ">
+                  Paid to referrer on first investment
+                </p>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Min. Withdrawal (cents)</label>
+                <input type="number" step="1" x-model="settings.min_withdrawal_cents" class="admin-input" />
+                <p style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin-top: 4px;
+                    ">
+                  Minimum amount in cents
+                </p>
+              </div>
+            </div>
+            <div style="
+                  margin-top: 28px;
+                  padding-top: 20px;
+                  border-top: 1px solid var(--admin-border);
+                ">
+              <button @click="saveSettings()" class="admin-btn admin-btn--primary" :disabled="saving"
+                x-text="saving ? 'Saving…' : 'Save Financial Settings'"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ NOTIFICATIONS ═══ -->
+        <div x-show="activeTab === 'notifications'">
+          <div class="admin-card" style="padding: 28px">
+            <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">
+              Broadcast Notification
+            </h3>
+            <p style="
+                  font-size: 13px;
+                  color: var(--admin-text-muted);
+                  margin: 0 0 24px;
+                ">
+              Send a system notification to all platform users at once
+            </p>
+            <div style="max-width: 560px">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Title</label>
+                <input type="text" x-model="broadcast.title" class="admin-input"
+                  placeholder="e.g. Scheduled Maintenance Tonight" />
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Message</label>
+                <textarea x-model="broadcast.message" class="admin-textarea" placeholder="Detailed message…"
+                  rows="4"></textarea>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Type</label>
+                <select x-model="broadcast.type" class="admin-select" style="width: 200px">
+                  <option value="system">System</option>
+                  <option value="info">Info</option>
+                  <option value="promotion">Promotion</option>
+                  <option value="warning">Warning</option>
+                </select>
+              </div>
+            </div>
+            <div style="
+                  margin-top: 28px;
+                  padding-top: 20px;
+                  border-top: 1px solid var(--admin-border);
+                ">
+              <button @click="sendBroadcast()" class="admin-btn admin-btn--primary" :disabled="broadcasting"
+                x-text="broadcasting ? 'Sending…' : 'Send to All Users'"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ MAINTENANCE ═══ -->
+        <div x-show="activeTab === 'maintenance'">
+          <div class="admin-card" style="padding: 28px">
+            <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">
+              System Maintenance
+            </h3>
+            <p style="
+                  font-size: 13px;
+                  color: var(--admin-text-muted);
+                  margin: 0 0 24px;
+                ">
+              Activate maintenance mode and perform system operations
+            </p>
+            <div style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  padding: 20px;
+                  background: var(--admin-bg);
+                  border: 1px solid var(--admin-border);
+                  border-radius: var(--admin-radius-md);
+                ">
+              <div>
+                <div style="
+                      font-size: 14px;
+                      font-weight: 700;
+                      color: var(--admin-text-primary);
+                      margin-bottom: 4px;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    ">
+                  Maintenance Mode
+                  <span x-show="settings.maintenance_mode" class="admin-badge admin-badge--danger">ACTIVE</span>
+                </div>
+                <div style="font-size: 12px; color: var(--admin-text-muted)">
+                  Redirect all visitors to a maintenance page except admins
+                </div>
+              </div>
+              <button @click="toggleMaintenance()"
+                :class="settings.maintenance_mode ? 'admin-btn--danger' : 'admin-btn--secondary'" class="admin-btn"
+                x-text="settings.maintenance_mode ? 'Disable Maintenance' : 'Enable Maintenance'"></button>
+            </div>
+            <div style="
+                  margin-top: 24px;
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 16px;
+                ">
+              <div class="admin-card" style="padding: 20px; border-style: dashed">
+                <h4 style="font-size: 13px; margin: 0 0 8px; font-weight: 700">
+                  Clear Cache
+                </h4>
+                <p style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin: 0 0 16px;
+                    ">
+                  Invalidate all Redis cache entries for assets and portfolios
+                </p>
+                <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="clearCache()">
+                  Clear All Cache
+                </button>
+              </div>
+              <div class="admin-card" style="padding: 20px; border-style: dashed">
+                <h4 style="font-size: 13px; margin: 0 0 8px; font-weight: 700">
+                  Log Rotation
+                </h4>
+                <p style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin: 0 0 16px;
+                    ">
+                  Force log rotation and upload existing logs to cloud storage
+                </p>
+                <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="runLogRotation()">
+                  Run Log Rotation
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ INTEGRATIONS ═══ -->
+        <div x-show="activeTab === 'integrations'">
+          <div class="admin-card" style="padding: 28px">
+            <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">
+              Third-Party Integrations
+            </h3>
+            <p style="
+                  font-size: 13px;
+                  color: var(--admin-text-muted);
+                  margin: 0 0 24px;
+                ">
+              Manage API keys and connections to external services
+            </p>
+
+            <h4 style="
+                  font-size: 14px;
+                  font-weight: 600;
+                  margin: 0 0 12px;
+                  border-bottom: 1px solid var(--admin-border);
+                  padding-bottom: 8px;
+                ">
+              Email Marketing & Deliverability
+            </h4>
+            <div style="
+                  display: grid;
+                  grid-template-columns: 1fr;
+                  gap: 20px;
+                  max-width: 560px;
+                ">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Resend API Key</label>
+                <input type="password" x-model="settings.resend_api_key" class="admin-input" placeholder="re_..." />
+                <p style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin-top: 4px;
+                    ">
+                  Used for all transactional and marketing emails via Resend.
+                  Keep this secret.
+                </p>
+              </div>
+            </div>
+
+            <div style="
+                  margin-top: 28px;
+                  padding-top: 20px;
+                  border-top: 1px solid var(--admin-border);
+                ">
+              <button @click="saveSettings()" class="admin-btn admin-btn--primary" :disabled="saving"
+                x-text="saving ? 'Saving…' : 'Save Integrations'"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ LEGAL & COMPLIANCE ═══ -->
+        <div x-show="activeTab === 'legal'" x-cloak>
+          <!-- Consent Stats -->
+          <div class="admin-card" style="padding: 24px 28px; margin-bottom: 16px" x-show="legalStats">
+            <h4 style="
+                  margin: 0 0 16px;
+                  font-size: 14px;
+                  font-weight: 700;
+                  color: var(--admin-text-primary);
+                ">
+              Consent Overview
+            </h4>
+            <div style="
+                  display: grid;
+                  grid-template-columns: repeat(3, 1fr);
+                  gap: 16px;
+                  max-width: 640px;
+                ">
+              <div style="
+                    text-align: center;
+                    padding: 16px;
+                    background: var(--admin-bg);
+                    border-radius: 8px;
+                    border: 1px solid var(--admin-border);
+                  ">
+                <div style="
+                      font-size: 24px;
+                      font-weight: 700;
+                      color: var(--admin-accent);
+                    " x-text="legalStats?.stats?.total_consents ?? '–'"></div>
+                <div style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin-top: 4px;
+                    ">
+                  Total Consent Records
+                </div>
+              </div>
+              <div style="
+                    text-align: center;
+                    padding: 16px;
+                    background: var(--admin-bg);
+                    border-radius: 8px;
+                    border: 1px solid var(--admin-border);
+                  ">
+                <div style="
+                      font-size: 24px;
+                      font-weight: 700;
+                      color: var(--admin-success);
+                    " x-text="legalStats?.stats?.accepted_current_version ?? '–'"></div>
+                <div style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin-top: 4px;
+                    ">
+                  Accepted Current Version
+                </div>
+              </div>
+              <div style="
+                    text-align: center;
+                    padding: 16px;
+                    background: var(--admin-bg);
+                    border-radius: 8px;
+                    border: 1px solid var(--admin-border);
+                  "
+                :style="(legalStats?.stats?.pending_reacceptance ?? 0) > 0 ? 'border-color:var(--admin-warning)' : ''">
+                <div style="font-size: 24px; font-weight: 700"
+                  :style="(legalStats?.stats?.pending_reacceptance ?? 0) > 0 ? 'color:var(--admin-warning)' : 'color:var(--admin-text-muted)'"
+                  x-text="legalStats?.stats?.pending_reacceptance ?? '–'"></div>
+                <div style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin-top: 4px;
+                    ">
+                  Pending Re-Acceptance
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Version Management -->
+          <div class="admin-card" style="padding: 28px">
+            <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 700">
+              Legal Document Versioning
+            </h3>
+            <p style="
+                  font-size: 13px;
+                  color: var(--admin-text-muted);
+                  margin: 0 0 24px;
+                ">
+              Increment the version number when documents are updated. All
+              users who haven't accepted the new version will see a
+              re-acceptance prompt on their next page load.
+            </p>
+
+            <div style="
+                  display: grid;
+                  grid-template-columns: 1fr 1fr 1fr;
+                  gap: 20px;
+                  max-width: 700px;
+                ">
+              <div class="admin-form-group">
+                <label class="admin-form-label">Terms &amp; Conditions Version</label>
+                <input type="text" x-model="legalForm.legal_terms_version" class="admin-input"
+                  placeholder="e.g. 1.0, 2.0, 1.1" />
+                <p style="
+                      font-size: 11px;
+                      color: var(--admin-text-muted);
+                      margin-top: 4px;
+                    ">
+                  Changing this triggers re-acceptance from all users
+                </p>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Privacy Policy Version</label>
+                <input type="text" x-model="legalForm.legal_privacy_version" class="admin-input"
+                  placeholder="e.g. 1.0" />
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label">Last Updated Date</label>
+                <input type="date" x-model="legalForm.legal_last_updated" class="admin-input" />
+              </div>
+            </div>
+
+            <div style="
+                  margin-top: 20px;
+                  padding: 16px;
+                  background: #fff8e7;
+                  border: 1px solid #f6c94e;
+                  border-radius: 8px;
+                  font-size: 13px;
+                  color: #92610a;
+                  display: flex;
+                  gap: 10px;
+                  align-items: flex-start;
+                ">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"
+                style="flex-shrink: 0; margin-top: 1px">
+                <path d="M10 2a8 8 0 100 16A8 8 0 0010 2z" />
+                <path d="M10 8v4M10 14h.01" />
+              </svg>
+              <span><strong>Impact:</strong> Bumping the Terms version will
+                display a "Terms Updated" banner to all users who have not yet
+                accepted the new version. They can continue using the platform
+                but will be reminded to accept on each page load.</span>
+            </div>
+
+            <div style="
+                  margin-top: 28px;
+                  padding-top: 20px;
+                  border-top: 1px solid var(--admin-border);
+                  display: flex;
+                  gap: 12px;
+                  align-items: center;
+                ">
+              <button @click="saveLegalVersion()" class="admin-btn admin-btn--primary" :disabled="savingLegal"
+                x-text="savingLegal ? 'Saving…' : 'Save Legal Versions'"></button>
+              <a href="/terms" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">View Terms ↗</a>
+              <a href="/privacy-policy" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">View
+                Privacy ↗</a>
+            </div>
+          </div>
+
+          <!-- Audit History -->
+          <div class="admin-card" style="padding: 24px 28px; margin-top: 16px">
+            <h4 style="margin: 0 0 16px; font-size: 14px; font-weight: 700">
+              Legal Document Change History
+            </h4>
+            <p style="
+                  font-size: 13px;
+                  color: var(--admin-text-muted);
+                  margin-bottom: 16px;
+                ">
+              All version changes are recorded in the audit log. View the full
+              history in
+              <a href="/admin/audit-logs" style="color: var(--admin-accent)">Audit Logs</a>
+              filtered by action
+              <code style="
+                    font-size: 11px;
+                    background: var(--admin-bg);
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                  ">legal_document.updated</code>.
+            </p>
+            <div style="display: flex; gap: 12px">
+              <a href="/admin/audit-logs?action=legal_document.updated"
+                class="admin-btn admin-btn--secondary admin-btn--sm">View Audit Log</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/static/js/admin-settings.js"></script>
+</body>
+
+</html>

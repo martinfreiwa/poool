@@ -1,0 +1,21 @@
+/* Custom Styling for POOOL Documentation */
+
+:root {
+    --links: #2b6cb0;
+}
+
+.book .page-wrapper .page {
+    max-width: 900px;
+}
+
+h1 {
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.content main blockquote {
+    background: #f7fafc;
+    border-left: 5px solid #2b6cb0;
+    padding: 15px;
+    margin: 20px 0;
+}

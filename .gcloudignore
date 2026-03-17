@@ -1,0 +1,22 @@
+# gcloudignore for POOOL root
+backend/target/
+frontend/node_modules/
+.git/
+.env
+.DS_Store
+*.swp
+*.log
+*.pdf
+TT Norms® Pro/
+01_POOOL brand book (2).pdf
+*.tar.gz
+*.sql
+.sentryclirc
+__pycache__/
+*.pyc
+.agent/
+scripts/
+tests/
+frontend/platform/static/css/bundle.css
+*.db
+*.sqlite

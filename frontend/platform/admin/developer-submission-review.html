@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">Review Submission | Admin | POOOL</title>
+  <meta name="description"
+    content="Admin review of developer project submission with document data room, compliance checklist, and approval workflow." />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <style>
+    /* ── Missing vars (not in admin.css) ────────────────────── */
+    :root {
+      --admin-bg-secondary: var(--admin-bg-card-hover, #f3f4f6);
+    }
+    .admin-dark {
+      --admin-bg-secondary: var(--admin-bg-card-hover, #1a1f2e);
+    }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .review-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* min-width: 0 prevents grid children from overflowing their column */
+    .review-layout > * {
+      min-width: 0;
+    }
+
+    @media (max-width: 1100px) {
+      .review-layout {
+        grid-template-columns: 1fr;
+      }
+      .review-sidebar {
+        position: static;
+      }
+    }
+
+    /* ── Cards ──────────────────────────────────────────────── */
+    .review-card {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-lg);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .review-card-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--admin-border);
+      background: var(--admin-bg);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .review-card-header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0;
+      flex: 1;
+    }
+
+    .review-card-body {
+      padding: 28px;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────── */
+    .review-sidebar {
+      position: sticky;
+      top: 24px;
+    }
+
+    .decision-card {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-lg);
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    /* ── Developer Profile Card ──────────────────────────────── */
+    .dev-profile-card {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      border-left: 4px solid var(--admin-primary);
+    }
+
+    /* ── Attribute Rows ─────────────────────────────────────── */
+    .attribute-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--admin-border);
+      gap: 12px;
+    }
+
+    .attribute-row:last-child {
+      border-bottom: none;
+    }
+
+    .attribute-label {
+      font-size: 12px;
+      color: var(--admin-text-muted);
+      flex-shrink: 0;
+    }
+
+    .attribute-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--admin-text-primary);
+      text-align: right;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* ── Checklist ──────────────────────────────────────────── */
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .checklist-item input[type="checkbox"] {
+      margin-top: 3px;
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+      accent-color: var(--admin-success);
+    }
+
+    .checklist-item label {
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--admin-text-primary);
+      cursor: pointer;
+    }
+
+    /* ── Document Data Room ─────────────────────────────────── */
+    .document-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .document-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md);
+      background: var(--admin-bg);
+      gap: 12px;
+    }
+
+    .document-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .document-type {
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .document-meta {
+      font-size: 11px;
+      color: var(--admin-text-muted);
+    }
+
+    /* ── Image Gallery ──────────────────────────────────────── */
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .image-item {
+      aspect-ratio: 1;
+      min-height: 140px;
+      border-radius: var(--admin-radius-md);
+      background: var(--admin-border);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .image-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .cover-badge {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: var(--admin-primary);
+      color: white;
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      z-index: 2;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    .image-item.dragging {
+      opacity: 0.4;
+      border: 2px solid var(--admin-primary);
+    }
+
+    .image-item.drag-over {
+      border: 2px dashed var(--admin-primary);
+      transform: scale(0.98);
+      transition: all 0.2s ease;
+    }
+
+    /* ── Math result inline ──────────────────────────────────── */
+    #chk-math-result {
+      margin-left: 25px;
+    }
+
+    /* ── Section divider ─────────────────────────────────────── */
+    .section-tag {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--admin-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      margin: 20px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-tag::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--admin-border);
+    }
+
+    @keyframes admin-fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/developer-submissions">Submissions</a>
+            <span class="separator">›</span>
+            <span class="current" id="sub-title">Loading…</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <span id="sub-status-badge"></span>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <!-- Loading overlay -->
+        <div id="loading-overlay" style="
+              padding: 60px;
+              text-align: center;
+              color: var(--admin-text-muted);
+            ">
+          <div style="
+                margin: 0 auto 12px;
+                width: 28px;
+                height: 28px;
+                border: 3px solid var(--admin-border);
+                border-top-color: var(--admin-primary);
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+              "></div>
+          Loading submission details…
+        </div>
+
+        <!-- Main two-column layout -->
+        <div class="review-layout" id="review-content" style="display: none">
+          <!-- ═══ LEFT COLUMN ═══════════════════════════════════ -->
+          <div>
+            <!-- Developer Profile Card -->
+            <div class="dev-profile-card" id="dev-profile-card">
+              <!-- Rendered by JS -->
+            </div>
+
+            <!-- Asset Overview -->
+            <div class="review-card">
+              <div class="review-card-header">
+                <h2>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-right: 8px; vertical-align: text-bottom">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+                    <path d="M14 3v5h5" />
+                    <path d="M16 13H8" />
+                    <path d="M16 17H8" />
+                    <path d="M10 9H8" />
+                  </svg>Submitted Asset Details
+                </h2>
+              </div>
+              <div class="review-card-body">
+                <!-- Description -->
+                <div style="margin-bottom: 24px">
+                  <div class="section-tag">Description</div>
+                  <p id="sub-description" style="
+                        font-size: 14px;
+                        line-height: 1.7;
+                        color: var(--admin-text-primary);
+                        margin: 0;
+                        word-break: break-word;
+                        overflow-wrap: break-word;
+                        white-space: pre-wrap;
+                      "></p>
+                </div>
+
+                <!-- Two-column grid: Financial + Property -->
+                <div style="
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 32px;
+                    ">
+                  <!-- Financial Parameters -->
+                  <div>
+                    <div class="section-tag">Financial</div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Total Valuation</span>
+                      <span class="attribute-value" id="sub-valuation">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Token Price</span>
+                      <span class="attribute-value" id="sub-token-price">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Total Tokens</span>
+                      <span class="attribute-value" id="sub-tokens-total">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Expected Yield</span>
+                      <span class="attribute-value" id="sub-yield">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Capital Appreciation</span>
+                      <span class="attribute-value" id="sub-cap-app">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Occupancy Rate</span>
+                      <span class="attribute-value" id="sub-occupancy">—</span>
+                    </div>
+                  </div>
+
+                  <!-- Property Details -->
+                  <div>
+                    <div class="section-tag">Property</div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Asset Type</span>
+                      <span class="attribute-value" id="sub-type">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Property Type</span>
+                      <span class="attribute-value" id="sub-prop-type">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Area</span>
+                      <span class="attribute-value" id="sub-area">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Lease</span>
+                      <span class="attribute-value" id="sub-lease">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Land Size</span>
+                      <span class="attribute-value" id="sub-land-size">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Building Size</span>
+                      <span class="attribute-value" id="sub-bldg-size">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Bed / Bath</span>
+                      <span class="attribute-value" id="sub-rooms">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Year Built</span>
+                      <span class="attribute-value" id="sub-year-built">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Construction Status</span>
+                      <span class="attribute-value" id="sub-construction">—</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Location -->
+                <div style="margin-top: 24px">
+                  <div class="section-tag">Location</div>
+                  <div class="attribute-row">
+                    <span class="attribute-label">City / Country</span>
+                    <span class="attribute-value" id="sub-location">—</span>
+                  </div>
+                  <div class="attribute-row">
+                    <span class="attribute-label">Address</span>
+                    <span class="attribute-value" id="sub-address">—</span>
+                  </div>
+                  <div class="attribute-row" id="gmap-row">
+                    <span class="attribute-label">Google Maps</span>
+                    <span class="attribute-value">
+                      <a href="#" target="_blank" rel="noopener" id="sub-gmap" style="color: var(--admin-primary)">View
+                        Map ↗</a>
+                    </span>
+                  </div>
+                  <div class="attribute-row" id="video-row">
+                    <span class="attribute-label">Video Tour</span>
+                    <span class="attribute-value">
+                      <a href="#" target="_blank" rel="noopener" id="sub-video"
+                        style="color: var(--admin-primary)">Watch Video ↗</a>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Commodity-Specific Fields (hidden for non-commodity assets) -->
+            <div class="review-card" id="commodity-section" style="display: none">
+              <div class="review-card-header">
+                <h2>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-right: 8px; vertical-align: text-bottom">
+                    <path d="M2 20h20" />
+                    <path d="M10 16v-4a2 2 0 0 1 2-2h8v10" />
+                    <path d="M14 16v-4" />
+                    <path d="M18 16v-4" />
+                    <path d="M2 10l4-4 4 4v10H2V10z" />
+                  </svg>Commodity / Business Details
+                </h2>
+              </div>
+              <div class="review-card-body">
+                <div style="
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 32px;
+                    ">
+                  <div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Operator Name</span>
+                      <span class="attribute-value" id="sub-operator">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Term</span>
+                      <span class="attribute-value" id="sub-term">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Fixed ROI</span>
+                      <span class="attribute-value" id="sub-fixed-roi">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Revenue (Min)</span>
+                      <span class="attribute-value" id="sub-rev-min">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Revenue (Max)</span>
+                      <span class="attribute-value" id="sub-rev-max">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Expenses</span>
+                      <span class="attribute-value" id="sub-expenses">—</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Net Profit (Min)</span>
+                      <span class="attribute-value" id="sub-profit-min">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Net Profit (Max)</span>
+                      <span class="attribute-value" id="sub-profit-max">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Investor Payout</span>
+                      <span class="attribute-value" id="sub-inv-payout">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">Operator Split</span>
+                      <span class="attribute-value" id="sub-op-split">—</span>
+                    </div>
+                    <div class="attribute-row">
+                      <span class="attribute-label">POOOL Split</span>
+                      <span class="attribute-value" id="sub-poool-split">—</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Document Data Room -->
+            <div class="review-card">
+              <div class="review-card-header">
+                <h2>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-right: 8px; vertical-align: text-bottom">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  </svg>Document Data Room
+                </h2>
+                <span style="font-size: 12px; color: var(--admin-text-muted)">
+                  Review all submitted documents. Missing docs may require
+                  revision.
+                </span>
+              </div>
+              <div class="review-card-body">
+                <div id="documents-container">
+                  <div style="color: var(--admin-text-muted); font-size: 13px">
+                    Loading documents…
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Image Gallery -->
+            <div class="review-card">
+              <div class="review-card-header" style="display:flex;align-items:center;justify-content:space-between;">
+                <h2>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-right: 8px; vertical-align: text-bottom">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>Image Gallery
+                </h2>
+                <button id="toggle-image-edit-btn" onclick="toggleImageEdit()" style="
+                  display:inline-flex;align-items:center;gap:6px;
+                  padding:6px 14px;border-radius:8px;border:1px solid var(--admin-border);
+                  background:var(--admin-bg-secondary);color:var(--admin-text-primary);
+                  font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Edit Images
+                </button>
+              </div>
+              <div class="review-card-body">
+                <!-- Upload zone (hidden by default, shown in edit mode) -->
+                <div id="admin-image-upload-zone" style="display:none;margin-bottom:16px;">
+                  <div id="admin-image-drop-area" style="
+                    border: 2px dashed var(--admin-border);
+                    border-radius: 12px;
+                    padding: 28px;
+                    text-align: center;
+                    cursor: pointer;
+                    background: var(--admin-bg-secondary);
+                    transition: border-color .2s, background .2s;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--admin-text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 8px;display:block"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <p style="margin:0 0 4px;font-size:14px;font-weight:500;color:var(--admin-text-primary);">Drag &amp; drop images here or <span style="color:var(--admin-accent);cursor:pointer;" onclick="document.getElementById('admin-image-file-input').click()">browse</span></p>
+                    <p style="margin:0;font-size:12px;color:var(--admin-text-muted);">JPEG, PNG, WebP — max 20 MB each</p>
+                    <input type="file" id="admin-image-file-input" accept="image/jpeg,image/png,image/webp" multiple style="display:none;" />
+                  </div>
+                  <div id="admin-image-upload-progress" style="margin-top:10px;"></div>
+                </div>
+
+                <div class="image-grid" id="images-container">
+                  <!-- Populated via JS -->
+                </div>
+                <p id="images-count-hint" style="margin:10px 0 0;font-size:12px;color:var(--admin-text-muted);"></p>
+              </div>
+            </div>
+
+            <!-- Milestones -->
+            <div class="review-card">
+              <div class="review-card-header">
+                <h2>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-right: 8px; vertical-align: text-bottom">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>Project Milestones / Roadmap
+                </h2>
+              </div>
+              <div class="review-card-body" style="padding: 0">
+                <table class="admin-table" style="width: 100%">
+                  <thead>
+                    <tr>
+                      <th style="width: 60px">Month</th>
+                      <th>Milestone</th>
+                      <th style="width: 110px">Date</th>
+                      <th style="width: 100px">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="milestones-container">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          <!-- ═══ Admin Notes History ═══════════════════════════════ -->
+          <div class="review-card" style="margin-top:0;">
+            <div class="review-card-header">
+              <h2>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;vertical-align:text-bottom">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>Admin Notes
+              </h2>
+            </div>
+            <div class="review-card-body">
+              <!-- Add note form -->
+              <div style="margin-bottom:20px;">
+                <textarea id="new-admin-note" class="admin-input" rows="3"
+                  style="width:100%;font-size:13px;resize:vertical;margin-bottom:10px;"
+                  placeholder="Add an internal note about this submission…"></textarea>
+                <button id="btn-add-note" class="admin-btn admin-btn--secondary"
+                  style="display:inline-flex;align-items:center;gap:6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  Add Note
+                </button>
+              </div>
+              <!-- Notes history -->
+              <div id="notes-history" style="display:flex;flex-direction:column;gap:12px;">
+                <div style="color:var(--admin-text-muted);font-size:13px;">Loading notes…</div>
+              </div>
+            </div>
+          </div>
+          </div>
+          <!-- END Left Column -->
+
+
+
+          <!-- ═══ RIGHT COLUMN (Sidebar) ════════════════════════ -->
+          <div class="review-sidebar">
+            <div class="decision-card">
+              <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 16px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: text-bottom">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  <path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z" />
+                  <path d="M9 14l2 2 4-4" />
+                </svg>Compliance Checklist
+              </h3>
+              <p style="
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                    margin: 0 0 16px;
+                  ">
+                All boxes must be checked before the Approve button becomes
+                active.
+              </p>
+
+              <div style="
+                    margin-bottom: 20px;
+                    border-bottom: 1px solid var(--admin-border);
+                    padding-bottom: 16px;
+                  ">
+                <div class="checklist-item">
+                  <input type="checkbox" id="chk-kyc" class="validation-chk" />
+                  <label for="chk-kyc">Developer KYC is Approved
+                    <span style="
+                          font-size: 10px;
+                          display: block;
+                          color: var(--admin-text-muted);
+                        ">Auto-checked if KYC status = approved</span>
+                  </label>
+                </div>
+
+                <div class="checklist-item">
+                  <input type="checkbox" id="chk-legal" class="validation-chk" />
+                  <label for="chk-legal">All required legal docs uploaded
+                    <span style="
+                          font-size: 10px;
+                          display: block;
+                          color: var(--admin-text-muted);
+                        ">Title, Permit, NIB, Legal Basis, ID Card</span>
+                  </label>
+                </div>
+
+                <div class="checklist-item">
+                  <input type="checkbox" id="chk-tax" class="validation-chk" />
+                  <label for="chk-tax">All required tax docs uploaded
+                    <span style="
+                          font-size: 10px;
+                          display: block;
+                          color: var(--admin-text-muted);
+                        ">NPWP, PBB, BPHTB</span>
+                  </label>
+                </div>
+
+                <div class="checklist-item">
+                  <input type="checkbox" id="chk-fin" class="validation-chk" />
+                  <label for="chk-fin">Financial projections &amp; Appraisal reviewed and
+                    reasonable</label>
+                </div>
+
+                <div class="checklist-item">
+                  <input type="checkbox" id="chk-spv" class="validation-chk" />
+                  <label for="chk-spv">SPV / Legal entity ownership confirmed</label>
+                </div>
+
+                <div class="checklist-item">
+                  <input type="checkbox" id="chk-math" class="validation-chk" />
+                  <label for="chk-math">Token math verified
+                    <span style="
+                          font-size: 10px;
+                          display: block;
+                          color: var(--admin-text-muted);
+                        ">Token Price × Total Tokens = Total Value</span>
+                  </label>
+                  <div id="chk-math-result"></div>
+                </div>
+
+                <div class="checklist-item">
+                  <input type="checkbox" id="chk-loc" class="validation-chk" />
+                  <label for="chk-loc">Location details and address verified</label>
+                </div>
+
+                <!-- Conditional: only shown if video_url exists -->
+                <div class="checklist-item" id="chk-video-row">
+                  <input type="checkbox" id="chk-video" class="validation-chk" />
+                  <label for="chk-video">Video tour reviewed</label>
+                </div>
+
+                <!-- Conditional: only shown if google_maps_url exists -->
+                <div class="checklist-item" id="chk-gmap-row">
+                  <input type="checkbox" id="chk-gmap-chk" class="validation-chk" />
+                  <label for="chk-gmap-chk">Google Maps URL confirmed</label>
+                </div>
+
+                <div class="checklist-item">
+                  <input type="checkbox" id="chk-fields" class="validation-chk" />
+                  <label for="chk-fields">All type-specific fields complete
+                    <span style="
+                          font-size: 10px;
+                          display: block;
+                          color: var(--admin-text-muted);
+                        ">Area, sizes, lease details / operator fields</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Action buttons -->
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <button class="admin-btn admin-btn--primary" id="btn-approve" style="width: 100%; height: 44px"
+                  disabled>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-right: 6px; vertical-align: text-bottom">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  APPROVE &amp; PUBLISH
+                </button>
+                <button class="admin-btn admin-btn--secondary" id="btn-revise" style="width: 100%; height: 44px">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-right: 6px; vertical-align: text-bottom">
+                    <polyline points="9 14 4 9 9 4" />
+                    <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                  </svg>
+                  REQUEST REVISION
+                </button>
+                <button class="admin-btn admin-btn--secondary" id="btn-in-review" style="width: 100%; height: 44px">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-right: 6px; vertical-align: text-bottom">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  MARK IN REVIEW
+                </button>
+                <button class="admin-btn admin-btn--secondary" id="btn-reject" style="
+                      width: 100%;
+                      height: 44px;
+                      color: var(--admin-danger);
+                      border-color: var(--admin-danger);
+                    ">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="margin-right: 6px; vertical-align: text-bottom">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                  REJECT SUBMISSION
+                </button>
+              </div>
+
+              <p style="
+                    font-size: 11px;
+                    color: var(--admin-text-muted);
+                    margin-top: 14px;
+                    text-align: center;
+                    line-height: 1.5;
+                  ">
+                All actions immediately notify the developer and are logged in
+                the audit trail.
+              </p>
+            </div>
+          </div>
+          <!-- ═══ END RIGHT COLUMN ══════════════════════════════ -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+
+  <!-- Reason Modal (for reject / request revision) -->
+  <div id="reason-modal" style="display:none;position:fixed;inset:0;z-index:2000;
+       background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+       align-items:center;justify-content:center;">
+    <div style="background:var(--admin-bg-card);border:1px solid var(--admin-border);
+         border-radius:var(--admin-radius-xl);padding:28px;max-width:480px;width:92%;
+         animation:admin-fadeIn .2s ease-out;">
+      <h3 id="reason-modal-title" style="font-size:16px;font-weight:700;margin:0 0 4px;"></h3>
+      <p id="reason-modal-subtitle" style="font-size:13px;color:var(--admin-text-muted);margin:0 0 16px;"></p>
+      <textarea id="reason-modal-text" class="admin-input" rows="4"
+        style="width:100%;font-size:13px;resize:vertical;margin-bottom:16px;"
+        placeholder="Enter reason…"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button id="reason-modal-cancel" class="admin-btn admin-btn--secondary">Cancel</button>
+        <button id="reason-modal-confirm" class="admin-btn admin-btn--primary">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/admin-submission-review.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Storage Analytics | Admin | POOOL</title>
+    <meta name="description"
+        content="POOOL Admin — Google Cloud Storage analytics: usage, cost estimates, document breakdown, and activity timeline." />
+    <!-- Scripts -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+    <script src="/static/js/user-data.js"></script>
+    <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+    <script src="/static/js/poool-dropdown.js"></script>
+    <script src="/static/js/poool-dropdown-init.js"></script>
+    <script src="/static/js/admin-theme.js"></script>
+    <script src="/static/js/admin-permission-guard.js"></script>
+    <script src="/static/js/admin-global-search.js"></script>
+
+    <style>
+        /* Essential structure for custom charts and bars */
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            height: 160px;
+            padding: 0 4px;
+        }
+
+        .bar-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
+            height: 100%;
+            justify-content: flex-end;
+        }
+
+        .bar-fill {
+            width: 100%;
+            border-radius: 4px 4px 0 0;
+            background: linear-gradient(180deg, var(--admin-accent) 0%, var(--admin-info) 100%);
+            transition: height 0.6s cubic-bezier(.22, 1, .36, 1);
+            position: relative;
+            min-height: 2px;
+        }
+
+        .bar-fill:hover {
+            opacity: 0.85;
+        }
+
+        .bar-label-top {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--admin-text-primary);
+            margin-bottom: 4px;
+            white-space: nowrap;
+        }
+
+        .bar-label-bottom {
+            font-size: 10px;
+            color: var(--admin-text-muted);
+            margin-top: 6px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            max-width: 100%;
+            text-align: center;
+        }
+
+        .type-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--admin-border);
+        }
+
+        .type-bar-row:last-child {
+            border-bottom: none;
+        }
+
+        .type-bar-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--admin-text-primary);
+            width: 120px;
+            flex-shrink: 0;
+        }
+
+        .type-bar-track {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--admin-border);
+        }
+
+        .type-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .type-bar-count {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--admin-text-muted);
+            width: 40px;
+            text-align: right;
+        }
+
+        .type-bar-mb {
+            font-size: 11px;
+            color: var(--admin-text-muted);
+            width: 60px;
+            text-align: right;
+        }
+
+        .status-overview {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .note-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 16px;
+            background: var(--admin-warning-bg);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: var(--admin-radius-md);
+            font-size: 12px;
+            color: var(--admin-warning);
+            margin-top: 16px;
+        }
+
+        @keyframes storage-fade-up {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-up {
+            animation: storage-fade-up 0.4s ease-out both;
+        }
+
+        .delay-1 {
+            animation-delay: 0.05s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.10s;
+        }
+
+        .delay-3 {
+            animation-delay: 0.15s;
+        }
+    </style>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+    <div class="admin-wrapper" x-data="storageAnalytics">
+        <!-- Sidebar Placeholder -->
+        <div id="admin-sidebar-placeholder"></div>
+        <script src="/static/js/admin-sidebar-loader.js"></script>
+
+        <!-- MAIN CONTENT -->
+        <main class="admin-main">
+            <!-- Top Bar -->
+            <header class="admin-topbar">
+                <div class="admin-topbar-left">
+                    <nav class="admin-breadcrumbs">
+                        <a href="/admin/">Admin</a>
+                        <span class="separator">›</span>
+                        <span class="current">Storage Analytics</span>
+                    </nav>
+                </div>
+                <div class="admin-topbar-right">
+                    <div class="admin-search">
+                        <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="6" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                        <input type="text" placeholder="Search users, assets, orders…" id="admin-global-search"
+                            aria-label="Global admin search" />
+                    </div>
+                    <button class="admin-notification-btn" title="Notifications" aria-label="View notifications">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9z" fill="currentColor" fill-opacity="0.1" />
+                            <path d="M13.73 21a2 2 0 01-3.46 0" />
+                        </svg>
+                        <span class="admin-notification-badge">3</span>
+                    </button>
+                    <!-- Refresh Button -->
+                    <button class="admin-btn admin-btn--secondary" @click="reload()" title="Refresh data">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                            stroke-width="1.7">
+                            <path d="M1 1v5h5" />
+                            <path d="M1 6a7 7 0 0113.2-3.2M15 15v-5h-5" />
+                            <path d="M15 10A7 7 0 011.8 13.2" />
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </header>
+
+            <div class="admin-content">
+                <!-- Page header -->
+                <div class="admin-page-header animate-up">
+                    <h1 class="admin-page-title">Storage Analytics</h1>
+                    <p class="admin-page-subtitle">
+                        Google Cloud Storage usage, cost projections, and document activity for the
+                        <code
+                            style="font-size:12px;background:var(--admin-code-bg);padding:2px 6px;border-radius:4px;"
+                            x-text="bucket">—</code> bucket
+                    </p>
+                </div>
+
+                <!-- Loading skeleton -->
+                <template x-if="loading">
+                    <div style="display:flex;flex-direction:column;gap:16px;">
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+                            <div style="height:120px;border-radius:var(--admin-radius-lg);background:var(--admin-bg-card);border:1px solid var(--admin-border);animation:pulse 1.5s infinite;"></div>
+                            <div style="height:120px;border-radius:var(--admin-radius-lg);background:var(--admin-bg-card);border:1px solid var(--admin-border);animation:pulse 1.5s infinite;"></div>
+                            <div style="height:120px;border-radius:var(--admin-radius-lg);background:var(--admin-bg-card);border:1px solid var(--admin-border);animation:pulse 1.5s infinite;"></div>
+                            <div style="height:120px;border-radius:var(--admin-radius-lg);background:var(--admin-bg-card);border:1px solid var(--admin-border);animation:pulse 1.5s infinite;"></div>
+                        </div>
+                        <div class="admin-section-grid">
+                            <div style="height:300px;border-radius:var(--admin-radius-lg);background:var(--admin-bg-card);border:1px solid var(--admin-border);animation:pulse 1.5s infinite;"></div>
+                            <div style="height:300px;border-radius:var(--admin-radius-lg);background:var(--admin-bg-card);border:1px solid var(--admin-border);animation:pulse 1.5s infinite;"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Data view -->
+                <template x-if="!loading && data">
+                    <div>
+                        <!-- Status Overviews -->
+                        <div class="status-overview animate-up delay-1">
+                            <span class="admin-badge admin-badge--success">
+                                <span class="admin-badge-dot"></span>
+                                <span x-text="(getStatus('approved') || 0) + ' Approved documents'"></span>
+                            </span>
+                            <span class="admin-badge admin-badge--warning">
+                                <span class="admin-badge-dot"></span>
+                                <span x-text="(getStatus('pending') || 0) + ' Pending approval'"></span>
+                            </span>
+                            <span class="admin-badge admin-badge--danger">
+                                <span class="admin-badge-dot"></span>
+                                <span x-text="(getStatus('rejected') || 0) + ' Rejected'"></span>
+                            </span>
+                            <span class="admin-badge admin-badge--neutral" style="margin-left: auto;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <path d="M20 14.66V20a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h5.34" />
+                                    <path d="M18 2l4 4-10 10H8v-4z" />
+                                </svg>
+                                <span x-text="(data.summary.avatars || 0) + ' User Avatars'"></span>
+                            </span>
+                            <span class="admin-badge admin-badge--neutral">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                    <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                                <span x-text="(data.summary.asset_images || 0) + ' Asset Images'"></span>
+                            </span>
+                            <span class="admin-badge admin-badge--neutral">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                                    <path d="M14 2v6h6" />
+                                </svg>
+                                <span x-text="((data.summary.kyc_documents || 0) + (data.summary.asset_documents || 0)) + ' Real Documents'"></span>
+                            </span>
+                        </div>
+
+                        <!-- KPI Grid (Matches standard admin-kpi-grid format) -->
+                        <div class="admin-kpi-grid animate-up delay-1">
+                            <div class="admin-kpi-card">
+                                <div class="admin-kpi-header">
+                                    <h3 class="admin-kpi-label">Total GCS Files</h3>
+                                    <div class="admin-kpi-icon admin-kpi-icon--neutral">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <path d="M14 2v6h6" />
+                                            <line x1="16" y1="13" x2="8" y2="13" />
+                                            <line x1="16" y1="17" x2="8" y2="17" />
+                                            <line x1="10" y1="9" x2="8" y2="9" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="admin-kpi-value" x-text="data.summary.total_files.toLocaleString()">—</div>
+                                <div class="admin-kpi-subtext">Images &amp; documents</div>
+                            </div>
+                            
+                            <div class="admin-kpi-card">
+                                <div class="admin-kpi-header">
+                                    <h3 class="admin-kpi-label">Estimated Storage</h3>
+                                    <div class="admin-kpi-icon admin-kpi-icon--blue">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--admin-info)" stroke-width="2" stroke-linecap="round">
+                                            <ellipse cx="12" cy="5" rx="9" ry="3" />
+                                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="admin-kpi-value" x-text="formatGB(data.summary.estimated_storage_bytes)">—</div>
+                                <div class="admin-kpi-subtext" x-text="data.summary.estimated_storage_gb.toFixed(3) + ' GB projected'"></div>
+                            </div>
+
+                            <div class="admin-kpi-card">
+                                <div class="admin-kpi-header">
+                                    <h3 class="admin-kpi-label">Storage Cost / Month</h3>
+                                    <div class="admin-kpi-icon admin-kpi-icon--green">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--admin-success)" stroke-width="2" stroke-linecap="round">
+                                            <line x1="12" y1="1" x2="12" y2="23" />
+                                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="admin-kpi-value">
+                                    $<span x-text="data.cost_estimate.storage_per_month_usd.toFixed(4)">—</span>
+                                </div>
+                                <div class="admin-kpi-subtext">Standard • $0.020/GB limit</div>
+                            </div>
+
+                            <div class="admin-kpi-card">
+                                <div class="admin-kpi-header">
+                                    <h3 class="admin-kpi-label">Operations Cost / Month</h3>
+                                    <div class="admin-kpi-icon admin-kpi-icon--warning">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--admin-warning)" stroke-width="2" stroke-linecap="round">
+                                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                                            <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="admin-kpi-value">
+                                    $<span x-text="data.cost_estimate.operations_per_month_usd.toFixed(4)">—</span>
+                                </div>
+                                <div class="admin-kpi-subtext">Class A/B reads &amp; writes</div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Section -->
+                        <div class="admin-section-grid animate-up delay-2">
+                            <!-- Monthly Trend -->
+                            <div class="admin-card">
+                                <div class="admin-card-header">
+                                    <h3 class="admin-card-title">Upload Trend (6 Months)</h3>
+                                </div>
+                                <div class="admin-card-body">
+                                    <template x-if="data.monthly_trend && data.monthly_trend.length > 0">
+                                        <div class="bar-chart">
+                                            <template x-for="(bar, i) in data.monthly_trend" :key="i">
+                                                <div class="bar-col">
+                                                    <div class="bar-label-top" x-text="bar.uploads"></div>
+                                                    <div class="bar-fill" :style="'height:' + barHeight(bar.uploads) + '%'"></div>
+                                                    <div class="bar-label-bottom" x-text="bar.month"></div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <template x-if="!data.monthly_trend || data.monthly_trend.length === 0">
+                                        <div style="text-align:center;padding:40px;color:var(--admin-text-muted);font-size:13px;">
+                                            No activity in the last 6 months.
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Document Breakdown -->
+                            <div class="admin-card">
+                                <div class="admin-card-header">
+                                    <h3 class="admin-card-title">Storage by Type</h3>
+                                </div>
+                                <div class="admin-card-body">
+                                    <template x-if="data.breakdown_by_type && data.breakdown_by_type.length > 0">
+                                        <div>
+                                            <template x-for="(type, i) in data.breakdown_by_type" :key="i">
+                                                <div class="type-bar-row">
+                                                    <div class="admin-kpi-icon admin-kpi-icon--neutral" style="width:24px;height:24px;font-size:14px;" x-text="typeEmoji(type.type)"></div>
+                                                    <div class="type-bar-name" x-text="typeName(type.type)"></div>
+                                                    <div class="type-bar-track">
+                                                        <div class="type-bar-fill" :style="'width:' + typeWidth(type.count) + '%;background:' + typeColor(i)">
+                                                        </div>
+                                                    </div>
+                                                    <div class="type-bar-count" x-text="type.count"></div>
+                                                    <div class="type-bar-mb" x-text="type.estimated_mb + ' MB'"></div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <template x-if="!data.breakdown_by_type || data.breakdown_by_type.length === 0">
+                                        <div style="text-align:center;padding:40px;color:var(--admin-text-muted);font-size:13px;">
+                                            No documents stored yet.
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Uploads Table -->
+                        <div class="admin-card animate-up delay-3">
+                            <div class="admin-card-header">
+                                <h3 class="admin-card-title">Recent Document Uploads</h3>
+                                <div class="admin-card-actions">
+                                    <a href="/admin/kyc.html" class="admin-btn admin-btn--secondary admin-btn--sm">View KYC Queue →</a>
+                                </div>
+                            </div>
+                            <div class="admin-card-body admin-card-body--flush">
+                                <template x-if="data.recent_uploads && data.recent_uploads.length > 0">
+                                    <div style="overflow-x: auto;">
+                                        <table class="admin-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Type</th>
+                                                    <th>Document ID</th>
+                                                    <th>User Account</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template x-for="upload in data.recent_uploads" :key="upload.id">
+                                                    <tr>
+                                                        <td>
+                                                            <div style="display:flex;align-items:center;gap:8px;font-weight:500;">
+                                                                <span x-text="typeEmoji(upload.document_type)"></span>
+                                                                <span x-text="typeName(upload.document_type)"></span>
+                                                            </div>
+                                                        </td>
+                                                        <td style="font-family:monospace;color:var(--admin-text-secondary);" x-text="upload.id"></td>
+                                                        <td x-text="upload.user_email"></td>
+                                                        <td>
+                                                            <span class="admin-badge" :class="upload.status === 'approved' ? 'admin-badge--success' : upload.status === 'rejected' ? 'admin-badge--danger' : 'admin-badge--warning'">
+                                                                <span class="admin-badge-dot"></span>
+                                                                <span x-text="upload.status" style="text-transform: capitalize;"></span>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <template x-if="upload.document_type.startsWith('asset_')">
+                                                                <span style="color:var(--admin-text-muted);font-size:12px;">Auto-approved</span>
+                                                            </template>
+                                                            <template x-if="!upload.document_type.startsWith('asset_')">
+                                                                <a :href="'/admin/kyc.html'" class="admin-btn admin-btn--secondary admin-btn--sm" style="padding:4px 8px;font-size:12px;">Review</a>
+                                                            </template>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </template>
+                                <template x-if="!data.recent_uploads || data.recent_uploads.length === 0">
+                                    <div style="text-align:center;padding:40px;color:var(--admin-text-muted);">
+                                        No recent uploads found.
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Disclaimer -->
+                        <div class="note-banner animate-up delay-3">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;margin-top:1px;">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 8v4m0 4v.01" />
+                            </svg>
+                            <span x-text="data.cost_estimate.pricing_note"></span>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Error state -->
+                <template x-if="error">
+                    <div style="text-align:center;padding:60px;color:var(--admin-text-muted);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" style="margin:0 auto 16px;display:block;opacity:0.4;">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v4m0 4v.01" />
+                        </svg>
+                        <p style="font-size:14px;color:var(--admin-danger);" x-text="error"></p>
+                        <button class="admin-btn admin-btn--primary" style="margin-top:16px;" @click="reload()">Try again</button>
+                    </div>
+                </template>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/admin-storage.js"></script>
+</body>
+</html>

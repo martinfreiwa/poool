@@ -1,0 +1,1364 @@
+/* Cart Page Styles */
+
+/* Main Cart Page Layout */
+.cart-page {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: #f5f5f5;
+  /* Consistent background color */
+}
+
+.cart-page-sidebar {
+  /* Sidebar is fixed positioned, no need for space here */
+  flex-shrink: 0;
+}
+
+.cart-page-main {
+  width: calc(100% - 256px);
+  min-height: 100vh;
+  margin-left: 256px;
+  padding: 48px 24px 64px 24px;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+  order: 1;
+  z-index: 0;
+  box-sizing: border-box;
+  align-items: flex-start !important;
+}
+
+/* Cart Header */
+.cart-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1096px;
+  margin-left: 0;
+  margin-right: 0;
+  height: auto;
+  z-index: 1;
+}
+
+.cart-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cart-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.cart-page-title {
+  font-family: var(--font-family, "TT Norms Pro", -apple-system, BlinkMacSystemFont, sans-serif);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 44px;
+  letter-spacing: -0.02em;
+  color: #181d27;
+  margin: 0;
+}
+
+.cart-page-title .item-count {
+  color: #717680;
+  font-size: 28px;
+}
+
+.add-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  height: 36px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 22px;
+  color: #181d27;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-more-btn:hover {
+  background: #f8f9fc;
+}
+
+/* Cart Content */
+.cart-page-content {
+  display: grid;
+  grid-template-columns: 1fr 407px;
+  gap: 24px;
+  width: 100%;
+  max-width: 1096px;
+  margin: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Override grid layout for empty cart */
+.cart-page-main.cart-empty-state .cart-page-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  flex: 1;
+}
+
+.cart-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+/* "Add another property" ghost/skeleton CTA card */
+.cart-add-more-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  padding: 16px;
+  background: #fafafa;
+  border: 2px dashed #d5d7da;
+  border-radius: 12px;
+  width: 100%;
+  text-decoration: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.cart-add-more-card:hover {
+  border-color: var(--primary-color, #0000FF);
+  background: #f8f9ff;
+  box-shadow: 0 0 0 3px rgba(46, 46, 249, 0.08);
+}
+
+/* Dashed image placeholder — mirrors .cart-item-card__image-wrapper */
+.cart-add-more-card__image-placeholder {
+  width: 160px;
+  height: 140px;
+  border-radius: 10px;
+  border: 2px dashed #e0e2e6;
+  background: #f2f4f7;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c0c5cc;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.cart-add-more-card:hover .cart-add-more-card__image-placeholder {
+  border-color: rgba(0, 0, 255, 0.25);
+  color: #98a2b3;
+}
+
+/* Body — mirrors .cart-item-card__body */
+.cart-add-more-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  justify-content: space-between;
+}
+
+/* Header row — title + plus icon */
+.cart-add-more-card__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cart-add-more-card__title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-add-more-card__title {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 22px;
+  color: #535862;
+  transition: color 0.2s;
+}
+
+.cart-add-more-card:hover .cart-add-more-card__title {
+  color: var(--primary-color, #0000FF);
+}
+
+.cart-add-more-card__badge-placeholder {
+  display: inline-block;
+  width: 72px;
+  height: 18px;
+  background: #eaecf0;
+  border-radius: 16px;
+}
+
+.cart-add-more-card__plus-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #eaecf0;
+  color: #98a2b3;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+
+.cart-add-more-card:hover .cart-add-more-card__plus-icon {
+  background: var(--primary-color, #0000FF);
+  color: #ffffff;
+}
+
+/* Meta row — placeholder chips */
+.cart-add-more-card__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Grey skeleton line blocks */
+.cart-add-more-card__line-placeholder {
+  display: inline-block;
+  height: 10px;
+  background: #eaecf0;
+  border-radius: 4px;
+}
+
+/* Bottom row — placeholder stats + subtitle */
+.cart-add-more-card__bottom-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cart-add-more-card__stats-placeholder {
+  display: flex;
+  gap: 20px;
+}
+
+.cart-add-more-card__stat-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cart-add-more-card__subtitle {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 13px;
+  color: #98a2b3;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Progress placeholder */
+.cart-add-more-card__progress-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Mobile: stack vertically */
+@media (max-width: 768px) {
+  .cart-add-more-card {
+    flex-direction: column;
+  }
+
+  .cart-add-more-card__image-placeholder {
+    width: 100%;
+    height: 120px;
+  }
+
+  .cart-add-more-card__bottom-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
+/* Hide the header "Add More" button — it's now inline below items */
+.cart-page-header .add-more-btn {
+  display: none;
+}
+
+.cart-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+/* Cart items now use the unified property-item-card component */
+/* See property-item-card.css for item styling */
+
+/* Override styles for cart-specific behavior */
+/* Override styles for cart-specific behavior */
+.property-item-card.cart-style {
+  /* Cart-specific overrides if needed */
+  display: flex;
+}
+
+/* Cart Divider */
+.cart-divider {
+  width: 669px;
+  height: 1px;
+  background: #d5d7da;
+  margin-top: 32px;
+  margin-bottom: 24px;
+}
+
+/* Cart Total */
+.cart-total-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px;
+  gap: 20px;
+  width: 669px;
+  height: 30px;
+  margin-bottom: 24px;
+}
+
+.cart-total-row .total-label {
+  width: auto;
+  height: 30px;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 30px;
+  display: flex;
+  align-items: center;
+  color: #949494;
+  flex: 0 0 auto;
+  order: 0;
+}
+
+.cart-total-row .total-amount-wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  width: auto;
+  min-width: 123px;
+  height: 30px;
+  flex: 0 0 auto;
+  order: 1;
+}
+
+.cart-total-row .total-amount {
+  min-width: 103px;
+  width: auto;
+  height: 30px;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 30px;
+  text-align: right;
+  color: #141417;
+  white-space: nowrap;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.help-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Cart Summary */
+.cart-page-summary {
+  position: sticky;
+  top: 100px;
+  align-self: flex-start;
+  height: fit-content;
+}
+
+.cart-summary-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px;
+  gap: 20px;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #f2f4f7;
+  box-shadow: 0px 4px 12px rgba(16, 24, 40, 0.05);
+  border-radius: 16px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  box-sizing: border-box;
+}
+
+.cart-summary-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0px;
+  width: 100%;
+  padding-top: 12px;
+}
+
+.cart-summary-title {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 500;
+  font-size: 18px;
+  color: #101828;
+}
+
+.cart-summary-amount {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 700;
+  font-size: 24px;
+  color: #101828;
+  white-space: nowrap;
+}
+
+/* Cart Actions */
+.cart-summary-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* Terms checkbox row on cart page */
+.cart-terms {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: 13px;
+  color: #475467;
+  line-height: 1.5;
+  width: 100%;
+}
+
+.cart-terms input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--primary-color);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.cart-terms label {
+  cursor: pointer;
+}
+
+.cart-terms a {
+  color: var(--primary-color, #0000FF);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.cart-terms a:hover {
+  text-decoration: underline;
+}
+
+.proceed-payment-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 8px;
+  width: 100%;
+  height: 48px;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.proceed-payment-btn:hover {
+  background: #0000dd;
+  box-shadow: 0px 4px 6px rgba(0, 0, 255, 0.2);
+}
+
+.proceed-payment-btn--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.proceed-payment-btn .button-text {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 600;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.proceed-payment-btn .btn-arrow {
+  width: 20px;
+  height: 20px;
+}
+
+/* Cart Summary Additions */
+.cart-summary-heading {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 28px;
+  color: #101828;
+  margin: 0;
+  width: 100%;
+}
+
+.cart-summary-line-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.summary-line-label {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 14px;
+  color: #475467;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.summary-line-value {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 500;
+  font-size: 14px;
+  color: #101828;
+}
+
+.help-icon-small {
+  width: 14px;
+  height: 14px;
+  cursor: help;
+  opacity: 0.7;
+}
+
+.promo-code-container {
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: -4px;
+}
+
+.promo-input-group {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.promo-input {
+  flex: 1;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: 14px;
+  color: #101828;
+  outline: none;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.promo-input::placeholder {
+  color: #98a2b3;
+}
+
+.promo-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(0, 0, 255, 0.1);
+}
+
+.promo-apply-btn {
+  height: 44px;
+  padding: 0 16px;
+  background: var(--primary-color, #0000FF);
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 600;
+  font-size: 14px;
+  color: #62F7A4;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.promo-apply-btn:hover {
+  background: #0000dd;
+  box-shadow: 0px 4px 6px rgba(0, 0, 255, 0.2);
+}
+
+.cart-summary-divider {
+  width: 100%;
+  height: 1px;
+  background: #eaecf0;
+  margin: 2px 0;
+}
+
+/* ─── Checkout Summary: Header Row ─── */
+.cart-summary-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #EAECF0;
+}
+
+/* ─── Checkout Summary: Per-item breakdown ─── */
+.cart-summary-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: calc(100% + 48px);
+  margin-left: -24px;
+  border-bottom: 1px solid #EAECF0;
+  margin-bottom: 2px;
+  box-sizing: border-box;
+}
+
+.cart-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  padding: 10px 24px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #F2F4F7;
+}
+
+.cart-summary-item:last-child {
+  border-bottom: none;
+}
+
+.cart-summary-item__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: 100%;
+  gap: 12px;
+}
+
+.cart-summary-item__row--sub {
+  margin-top: 1px;
+}
+
+.cart-summary-item__name {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 600;
+  font-size: 13px;
+  color: #181D27;
+  line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.cart-summary-item__qty {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 11px;
+  color: #717680;
+}
+
+.cart-summary-item__usd {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 500;
+  font-size: 13px;
+  color: #181D27;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cart-summary-item__idr {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 11px;
+  color: #98A2B3;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ─── Summary line IDR sub-values ─── */
+.summary-line-values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.summary-line-idr {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 11px;
+  color: #98A2B3;
+}
+
+/* ─── Payment Method Icons ─── */
+.cart-payment-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #EAECF0;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.cart-payment-label {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 500;
+  font-size: 10px;
+  color: #98A2B3;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.cart-payment-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Trust Badges ─── */
+.cart-trust-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 8px;
+  width: 100%;
+}
+
+.cart-trust-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cart-trust-badge span {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 11px;
+  color: #98A2B3;
+}
+
+/* ─── Support Card ─── */
+.cart-support-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: #F9FAFB;
+  border: 1px solid #EAECF0;
+  border-radius: 12px;
+  margin-top: 12px;
+}
+
+.cart-support-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-color, #0000FF);
+  color: #62F7A4;
+  flex-shrink: 0;
+}
+
+.cart-support-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cart-support-card__title {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 600;
+  font-size: 14px;
+  color: #181D27;
+}
+
+.cart-support-card__desc {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 13px;
+  color: #717680;
+  line-height: 18px;
+}
+
+.cart-support-card__link {
+  color: var(--primary-color, #0000FF);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.cart-support-card__link:hover {
+  text-decoration: underline;
+}
+
+/* Cart Empty State */
+/* When cart is empty, main should be full width and center content */
+.cart-page.cart-empty .cart-page-main,
+.cart-page-main.cart-empty-state {
+  width: calc(100% - 256px) !important;
+  background: #fafafa;
+  align-items: center !important;
+}
+
+.cart-page-main.cart-empty-state .cart-page-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: none;
+  flex: 1;
+}
+
+.cart-empty-wrapper {
+  width: 100%;
+  max-width: 1096px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 280px);
+}
+
+.cart-empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 48px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04);
+  width: 100%;
+  max-width: 520px;
+}
+
+/* Cart Icon Wrapper */
+.cart-empty-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f0f1ff 0%, #e4e6ff 100%);
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+
+/* Heading */
+.cart-empty-heading {
+  font-family: var(--font-family, "TT Norms Pro", -apple-system, BlinkMacSystemFont, sans-serif);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  text-align: center;
+  letter-spacing: -0.02em;
+  color: #181d27;
+  margin: 0 0 12px 0;
+}
+
+/* Description */
+.cart-empty-description {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 24px;
+  color: #717680;
+  margin: 0 0 28px 0;
+  max-width: 360px;
+}
+
+/* Secondary link */
+.cart-empty-secondary-link {
+  margin-top: 16px;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  color: #717680;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.cart-empty-secondary-link:hover {
+  color: var(--primary-color, #0000FF);
+}
+
+/* Responsive Design - Only apply below design width */
+@media (max-width: 1400px) {
+  .cart-page-main {
+    width: calc(100% - 256px);
+  }
+
+  .cart-page-header,
+  .cart-page-content {
+    width: calc(100% - 48px);
+  }
+
+  .cart-page-content {
+    display: flex;
+    gap: 20px;
+  }
+
+  .cart-items-list {
+    flex: 1;
+  }
+
+  .cart-page-summary {
+    width: 407px;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .cart-page-content {
+    flex-direction: column;
+  }
+
+  .cart-page-summary {
+    width: 100%;
+  }
+
+  .cart-summary-container {
+    width: 100%;
+  }
+}
+
+/* ── Dynamic (server-rendered) Cart Item Cards ──────────────────── */
+/* These classes are injected by the Rust backend page_cart handler  */
+
+.cart-item-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  width: 100%;
+  min-width: 0;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.cart-item-card:hover {
+  border-color: #d0d5dd;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06);
+}
+
+/* ── Image ── */
+.cart-item-card__image-wrapper {
+  width: 160px;
+  height: 140px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.cart-item-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.cart-item-card:hover .cart-item-card__image {
+  transform: scale(1.03);
+}
+
+/* ── Body (right of image) ── */
+.cart-item-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  justify-content: space-between;
+}
+
+/* ── Row 1: Title + Badge + Delete ── */
+.cart-item-card__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cart-item-card__title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.cart-item-card__title {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 22px;
+  color: #181d27;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cart-item-card__title:hover {
+  color: var(--primary-color);
+}
+
+.cart-item-card__remove-form {
+  flex-shrink: 0;
+}
+
+.cart-item-card__remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #98a2b3;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.cart-item-card__remove-btn:hover {
+  color: #f04438;
+  background: #fef3f2;
+}
+
+/* ── Row 2: Location + Property details (chips) ── */
+.cart-item-card__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cart-item-card__location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: 12px;
+  color: #717680;
+  white-space: nowrap;
+}
+
+.cart-item-card__property-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Status badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--badge-padding, 2px 8px);
+  border-radius: var(--badge-border-radius, 16px);
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: var(--badge-font-size, 12px);
+  font-weight: var(--badge-font-weight, 500);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-badge--funding-open {
+  background: var(--badge-success-bg, #ECFDF3);
+  color: var(--badge-success-color, #027A48);
+}
+
+.status-badge--funding-in-progress {
+  background: var(--badge-info-bg, #EFF8FF);
+  color: var(--badge-info-color, #175CD3);
+}
+
+.status-badge--funded {
+  background: var(--badge-success-bg, #ECFDF3);
+  color: var(--badge-success-color, #027A48);
+}
+
+.status-badge--closed {
+  background: var(--badge-neutral-bg, #F2F4F7);
+  color: var(--badge-neutral-color, #344054);
+}
+
+/* ── Row 3: Stats left + Price/Qty right ── */
+.cart-item-card__bottom-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cart-item-card__stats {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.cart-item-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cart-item-card .stat-label {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: 11px;
+  font-weight: 400;
+  color: #717680;
+  white-space: nowrap;
+}
+
+.cart-item-card .stat-value {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: #181d27;
+}
+
+.cart-item-card .stat-value--yield {
+  color: #039855;
+}
+
+/* Price + Quantity controls group */
+.cart-item-card__price-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.cart-item-card__price {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: #181d27;
+  white-space: nowrap;
+}
+
+.cart-item-card__quantity {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.quantity-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e9eaeb;
+  background: #ffffff;
+  cursor: pointer;
+  color: #717680;
+  transition: all 0.15s;
+  padding: 0;
+}
+
+.quantity-btn--minus {
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+.quantity-btn--plus {
+  border-radius: 0 8px 8px 0;
+  border-left: none;
+}
+
+.quantity-btn:hover {
+  background: #f9fafb;
+  color: #344054;
+}
+
+.quantity-input {
+  width: 48px;
+  height: 32px;
+  text-align: center;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 600;
+  font-size: 13px;
+  color: #181d27;
+  border: 1px solid #e9eaeb;
+  border-radius: 0;
+  background: #ffffff;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  transition: all 0.2s;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.quantity-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
+  z-index: 1;
+  position: relative;
+}
+
+/* ── Progress bar (slim inline) ── */
+.cart-item-card__progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cart-item-card__progress-track {
+  flex: 1;
+  height: 6px;
+  background: #eaecf0;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.cart-item-card__progress-fill {
+  height: 100%;
+  background: var(--primary-color, #0000FF);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.cart-item-card__progress-label {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  color: #717680;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Property Detail Chips */
+.cart-item-card__detail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #f2f4f7;
+  border-radius: 6px;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: 11px;
+  font-weight: 500;
+  color: #475467;
+  white-space: nowrap;
+}
+
+.cart-item-card__detail-chip svg {
+  flex-shrink: 0;
+}
+
+/* ── Mobile: stack vertically ── */
+@media (max-width: 768px) {
+  .cart-item-card {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cart-item-card__image-wrapper {
+    width: 100%;
+    height: 180px;
+  }
+
+  .cart-item-card__bottom-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .cart-item-card__price-controls {
+    justify-content: space-between;
+  }
+}
+
+/* Cart remove / action button legacy support */
+.item-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.item-action-btn--remove {
+  border-color: #fee4e2;
+  background: #fff;
+}
+
+.item-action-btn--remove:hover {
+  background: #fef3f2;
+  border-color: #f04438;
+}

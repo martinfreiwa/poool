@@ -1,0 +1,30 @@
+/* ===========================
+   POOOL Icon Custom Styles (shared)
+   Used by page headers across developer pages
+   =========================== */
+.poool-icon-custom {
+  background-color: var(--btn-primary-bg, #0000FF) !important;
+  stroke: #03FF88 !important;
+  border-radius: 8px !important;
+  padding: 6px !important;
+  flex-shrink: 0;
+  width: 28px !important;
+  height: 28px !important;
+  box-sizing: border-box !important;
+}
+
+.poool-icon-custom path,
+.poool-icon-custom circle,
+.poool-icon-custom rect,
+.poool-icon-custom polyline,
+.poool-icon-custom line,
+.poool-icon-custom polygon {
+  stroke: #03FF88 !important;
+}
+
+.ds-page-header__icon.poool-icon-custom {
+  width: 44px !important;
+  height: 44px !important;
+  padding: 9px !important;
+  border-radius: 10px !important;
+}

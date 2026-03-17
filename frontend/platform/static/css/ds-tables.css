@@ -1,0 +1,239 @@
+/* =========================================================================
+ * DESIGN SYSTEM — TABLES (.ds-table)
+ * =========================================================================
+ * Standardised data table component driven by dashboard-tokens.css.
+ * Works with both native <table> elements and flex-based row layouts.
+ *
+ * Dependencies: dashboard-tokens.css (section 15 — Table tokens)
+ * ========================================================================= */
+
+/* ── Container ──────────────────────────────────────────────────────── */
+.ds-table-container {
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--table-border-color, #E9EAEB);
+  border-radius: var(--card-border-radius, 12px);
+  overflow: hidden;
+  box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
+}
+
+.ds-table-container__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+}
+
+.ds-table-container__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #101828;
+  margin: 0;
+}
+
+.ds-table-container__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Base Table ─────────────────────────────────────────────────────── */
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* ── Table Head ─────────────────────────────────────────────────────── */
+.ds-table thead th,
+.ds-table-th {
+  padding: var(--table-header-padding, 12px 24px);
+  text-align: left;
+  font-size: var(--table-header-font-size, 12px);
+  font-weight: var(--table-header-font-weight, 600);
+  color: var(--table-header-color, #717680);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--table-header-bg, #FAFAFA);
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  white-space: nowrap;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  line-height: 18px;
+}
+
+/* ── Table Body ─────────────────────────────────────────────────────── */
+.ds-table tbody td,
+.ds-table-td {
+  padding: var(--table-cell-padding, 16px 24px);
+  font-size: var(--table-cell-font-size, 14px);
+  color: var(--table-cell-color, #535862);
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  line-height: 20px;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+}
+
+.ds-table tbody tr,
+.ds-table-row {
+  transition: background-color 0.15s ease;
+}
+
+.ds-table tbody tr:hover,
+.ds-table-row:hover {
+  background-color: var(--table-row-hover-bg, #F8F9FC);
+}
+
+.ds-table tbody tr:last-child td,
+.ds-table-row:last-child .ds-table-td {
+  border-bottom: none;
+}
+
+/* ── Sortable Headers ───────────────────────────────────────────────── */
+.ds-table-th--sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.ds-table-th--sortable:hover {
+  color: #344054;
+}
+
+.ds-table-sort-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.ds-table-th--sortable:hover .ds-table-sort-icon {
+  opacity: 1;
+}
+
+/* ── Cell Alignment Modifiers ───────────────────────────────────────── */
+.ds-table-th--right,
+.ds-table-td--right {
+  text-align: right;
+}
+
+.ds-table-th--center,
+.ds-table-td--center {
+  text-align: center;
+}
+
+/* ── Cell Value Styling ─────────────────────────────────────────────── */
+.ds-table-td--bold {
+  font-weight: 600;
+  color: #101828;
+}
+
+.ds-table-td--mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-table-td--muted {
+  color: var(--table-header-color, #717680);
+  font-size: 13px;
+}
+
+/* ── Flex-Based Table (for wallet/portfolio custom layouts) ──────── */
+.ds-table-flex {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.ds-table-flex__head {
+  display: flex;
+  background: var(--table-header-bg, #FAFAFA);
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+}
+
+.ds-table-flex__head .ds-table-th {
+  display: flex;
+  align-items: center;
+  height: var(--table-header-height, 44px);
+}
+
+.ds-table-flex__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.ds-table-flex__row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  transition: background-color 0.15s ease;
+}
+
+.ds-table-flex__row:hover {
+  background-color: var(--table-row-hover-bg, #F8F9FC);
+}
+
+.ds-table-flex__row:last-child {
+  border-bottom: none;
+}
+
+/* ── Empty State ────────────────────────────────────────────────────── */
+.ds-table-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.ds-table-empty__icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #F9FAFB;
+  border: 1px solid var(--table-border-color, #E9EAEB);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  font-size: 28px;
+}
+
+.ds-table-empty__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #101828;
+  margin: 0 0 4px;
+}
+
+.ds-table-empty__description {
+  font-size: 14px;
+  color: #667085;
+  margin: 0;
+  max-width: 300px;
+}
+
+/* ── Table Footer (pagination, show-all) ────────────────────────────── */
+.ds-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-top: 1px solid var(--table-border-color, #E9EAEB);
+}
+
+.ds-table-footer__link {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0000FF;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.ds-table-footer__link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* ── Responsive: horizontal scroll ──────────────────────────────────── */
+.ds-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

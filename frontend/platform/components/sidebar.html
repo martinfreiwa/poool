@@ -1,0 +1,1562 @@
+<div id="dynamic-sidebar-container">
+  <!-- Inline script to prevent flicker and set initial active state synchronously -->
+  <script>
+    (function () {
+      var profile = localStorage.getItem("selectedProfile");
+      var path = window.location.pathname;
+      var isDeveloperPage = path.indexOf("/developer/") === 0 || path === "/developer";
+      var styles = "";
+
+      // Hide investor sidebar immediately if developer profile or on a developer page
+      if (profile === "developer" || isDeveloperPage) {
+        styles += '#sidebar-navigation[data-profile="investor"] { display: none !important; }\n';
+      }
+
+      // Prevent active tab flicker by explicitly styling the active tab before DOM paint
+      var activePage = "";
+      if (path === "/" || path.includes("/marketplace")) activePage = "marketplace-parent";
+      else if (path.includes("/wallet") || path.includes("/transactions")) activePage = "wallet";
+      else if (path.includes("/portfolio")) activePage = "portfolio";
+      else if (path.includes("/cart") || path.includes("/checkout")) activePage = "cart";
+      else if (path.includes("/rewards")) activePage = "rewards";
+      else if (path.includes("/community")) activePage = "community";
+      else if (path.includes("/leaderboard")) activePage = "leaderboard";
+      else if (path.includes("/developer/dashboard")) activePage = "dashboard";
+      else if (path.includes("/developer/submissions")) activePage = "submissions";
+      else if (path.includes("/developer/assets")) activePage = "assets";
+      else if (path.includes("/settings")) activePage = "settings";
+      else if (path.includes("/support")) activePage = "support";
+
+      if (activePage) {
+        styles += '#nav-item-' + activePage + ' .sidebar__nav-item-content { background: rgba(3, 255, 136, 0.15) !important; border-radius: 6px; }\n';
+        styles += '#nav-item-' + activePage + ' .sidebar__nav-text { color: var(--brand-dark-blue) !important; }\n';
+        styles += '#nav-item-' + activePage + ' .nav-icon { filter: brightness(0) saturate(100%) invert(11%) sepia(97%) saturate(7484%) hue-rotate(247deg) brightness(94%) contrast(148%) !important; }\n';
+      }
+
+      if (styles) {
+        document.write('<style id="dynamic-sidebar-style">' + styles + '</style>');
+      }
+    })();
+  </script>
+
+<style>
+  .sidebar__add-asset-btn, 
+  #sidebar-add-asset-btn,
+  .sidebar [href*="add-asset"],
+  .sidebar .btn-primary {
+    background-color: #0000FF !important;
+    color: #98FB96 !important;
+  }
+  .sidebar [href*="add-asset"] svg,
+  .sidebar .btn-primary svg {
+    stroke: #98FB96 !important;
+  }
+</style>
+
+  <!-- Initial sidebar will be replaced by JavaScript -->
+  <aside id="sidebar-navigation" class="sidebar" data-profile="investor">
+    <div id="sidebar-content" class="sidebar__content">
+      <!-- Navigation Section -->
+      <div id="sidebar-navigation-section" class="sidebar__nav-section">
+        <!-- Header Section -->
+        <div id="sidebar-header" class="sidebar__header">
+          <!-- Logo --><a id="sidebar-logo" href="/" class="sidebar__logo"><img src="/images/Logo Pool.svg" alt="POOOL"
+              width="139" height="37" /></a><!-- Search Input -->
+          <div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
+            <div id="sidebar-search" class="sidebar__search">
+              <div id="sidebar-search-content" class="sidebar__search-content">
+                <svg id="sidebar-search-icon" class="sidebar__search-icon" width="20" height="20" viewBox="0 0 20 20"
+                  fill="none">
+                  <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.66667"></circle>
+                  <path d="M13 13L17 17" stroke="#717680" stroke-width="1.66667" stroke-linecap="round"></path>
+                </svg>
+                <input id="sidebar-search-input" type="search" placeholder="Search" class="sidebar__search-input"
+                  autocomplete="off" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Navigation Menu -->
+        <nav id="sidebar-nav" class="sidebar__nav">
+          <div id="nav-item-marketplace-parent" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Parent Item (expandable) -->
+            <div id="nav-item-marketplace-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
+              data-item-id="marketplace-parent" style="cursor: pointer">
+              <div id="nav-text-icon-marketplace-parent" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-marketplace-parent" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/home-05.svg" alt="Marketplace" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-marketplace-parent" class="sidebar__nav-text">Marketplace</span>
+              </div>
+              <!-- Chevron Icon --><svg id="nav-chevron-marketplace-parent" class="sidebar__nav-chevron" width="16"
+                height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <!-- Children Container -->
+            <div id="nav-children-marketplace-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
+              <a id="nav-child-marketplace" href="/marketplace" class="sidebar__nav-child"><span
+                  class="sidebar__nav-child-text">Properties</span></a><a id="nav-child-commodities-marketplace"
+                href="/commodities-marketplace" class="sidebar__nav-child"><span
+                  class="sidebar__nav-child-text">Commodities</span></a>
+            </div>
+          </div>
+          <div id="nav-item-wallet" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-wallet-content" href="/wallet" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-wallet" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-wallet" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/wallet-02.svg" alt="Wallet" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-wallet" class="sidebar__nav-text">Wallet</span>
+              </div>
+              <!-- Soon Badge for Rewards and Leaderboard tabs -->
+            </a>
+          </div>
+          <div id="nav-item-portfolio" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-portfolio-content" href="/portfolio" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-portfolio" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-portfolio" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/line-chart-up-02.svg" alt="Portfolio" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-portfolio" class="sidebar__nav-text">Portfolio</span>
+              </div>
+              <!-- Soon Badge for Rewards and Leaderboard tabs -->
+            </a>
+          </div>
+          <div id="nav-item-rewards" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Disabled Item -->
+            <a id="nav-item-rewards-content" href="/rewards" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-rewards" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-rewards" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/star-01.svg" alt="Rewards" class="nav-icon" width="20" height="20" />
+                </div>
+                <span id="nav-text-rewards" class="sidebar__nav-text">Rewards</span>
+              </div>
+            </a>
+          </div>
+          <div id="nav-item-cart" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-cart-content" href="/cart" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-cart" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-cart" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/shopping-cart-01.svg" alt="Cart" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-cart" class="sidebar__nav-text">Cart</span>
+              </div>
+              <!-- Soon Badge for Rewards and Leaderboard tabs -->
+            </a>
+          </div>
+          <div id="nav-item-leaderboard" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-leaderboard-content" href="/leaderboard" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-leaderboard" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-leaderboard" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/award-05.svg" alt="Leaderboard" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-leaderboard" class="sidebar__nav-text">Leaderboard</span>
+              </div>
+            </a>
+          </div>
+          <div id="nav-item-community" class="sidebar__nav-item">
+            <a id="nav-item-community-content" href="/community" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-community" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-community" class="sidebar__nav-icon-wrapper">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+                <span id="nav-text-community" class="sidebar__nav-text">Community</span>
+              </div>
+              <span class="sidebar__nav-badge" style="background:rgba(3,255,136,0.15);color:#027A48;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;">New</span>
+            </a>
+          </div>
+        </nav>
+      </div>
+      <!-- Footer Section -->
+      <div id="sidebar-footer" class="sidebar__footer">
+        <!-- Footer Navigation -->
+        <nav id="footer-nav" class="sidebar__footer-nav">
+          <div id="nav-item-settings" class="sidebar__nav-item">
+            <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/settings-01.svg" alt="Settings" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-settings" class="sidebar__nav-text">Settings</span>
+              </div>
+            </a>
+          </div>
+          <div id="nav-item-support" class="sidebar__nav-item">
+            <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support" class="nav-icon"
+                    width="20" height="20" />
+                </div>
+                <span id="nav-text-support" class="sidebar__nav-text">Support</span>
+              </div>
+              <div id="support-badge" class="support-badge">
+                <div id="support-status-dot" class="support-status-dot"></div>
+                <span id="support-badge-text" class="support-badge-text">Online</span>
+              </div>
+            </a>
+          </div>
+        </nav>
+        <!-- Community Card -->
+        <div id="nav-featured-card" class="nav-featured-card sidebar__featured-card">
+          <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M14 14L6 6M6 14L14 6" stroke="#2E2EF9" stroke-width="1.66667" stroke-linecap="round">
+              </path>
+            </svg></button><!-- Text and supporting text -->
+          <div id="featured-card-text" class="sidebar__featured-text">
+            <div class="featured-card-title-wrap">
+              <h4 id="featured-card-title" class="sidebar__featured-title">
+                Community soon
+              </h4>
+            </div>
+            <p id="featured-card-description" class="sidebar__featured-description">
+              Check out the new community feature. Connect with other
+              investors soon.
+            </p>
+          </div>
+          <!-- Image wrap -->
+          <div class="sidebar__featured-image">
+            <img src="/static/images/community-illustration.png" alt="Community illustration" loading="lazy" />
+          </div>
+          <!-- Actions -->
+          <div id="featured-card-actions" class="sidebar__featured-actions">
+            <button id="featured-card-dismiss" class="sidebar__featured-button sidebar__featured-button--dismiss">
+              Dismiss
+            </button>
+            <button id="featured-card-action" class="sidebar__featured-button sidebar__featured-button--action">
+              What&#39;s new?
+            </button>
+          </div>
+        </div>
+        <!-- Account Card - Now fully clickable -->
+        <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
+          style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
+          <!-- Avatar Group -->
+          <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
+            <div id="account-avatar" class="sidebar__account-avatar">
+              <img loading="lazy" src="/images/Image.webp" alt="" />
+              <div id="account-online-indicator" class="sidebar__account-online"></div>
+            </div>
+            <div id="account-text-wrapper" class="sidebar__account-text">
+              <span id="account-name" class="sidebar__account-name"></span>
+              <span id="account-email" class="sidebar__account-email"></span>
+            </div>
+          </div>
+          <!-- Menu Button Icon (no longer a button) -->
+          <div id="account-menu-button" class="sidebar__account-menu" style="pointer-events: none">
+            <div id="account-menu-button-inner" class="sidebar__account-menu-button" aria-hidden="true">
+              <svg class="sidebar__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+                <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+          <!-- Profile Dropdown Menu -->
+          <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
+            <!-- Menu items wrapper -->
+            <div id="profile-menu-wrapper" class="profile-menu-wrapper">
+              <!-- Top menu items -->
+              <div id="profile-menu-items-top" class="profile-menu-items">
+                <!-- Documentation -->
+                <div id="menu-item-documentation" class="profile-menu-item">
+                  <div class="profile-menu-content">
+                    <div class="profile-icon-text">
+                      <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                        <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
+                        </path>
+                      </svg>
+                      <span class="profile-menu-text">Documentation</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Switch account section -->
+              <div id="profile-switch-section" class="profile-switch-section">
+                <div class="profile-switch-header">
+                  <span class="profile-switch-title">Switch account</span>
+                </div>
+                <!-- Current account (selected) -->
+                <div id="menu-item-current-account" class="profile-menu-item account-item selected">
+                  <div class="profile-account-content">
+                    <div class="profile-avatar-group">
+                      <div class="profile-avatar">
+                        <img loading="lazy" src="/images/Image.webp" alt="" />
+                        <div class="profile-avatar-border"></div>
+                        <div class="profile-online-indicator"></div>
+                      </div>
+                      <div class="profile-text-wrapper">
+                        <span class="profile-account-name"></span>
+                        <span class="profile-account-type">Investor Profile</span>
+                      </div>
+                    </div>
+                    <div class="profile-checkbox selected">
+                      <div class="profile-checkbox-check"></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Other accounts -->
+                <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
+                  <div class="profile-account-content">
+                    <div class="profile-avatar-group">
+                      <div class="profile-avatar">
+                        <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                        <div class="profile-avatar-border"></div>
+                        <div class="profile-online-indicator"></div>
+                      </div>
+                      <div class="profile-text-wrapper">
+                        <span class="profile-account-name"></span>
+                        <span class="profile-account-type">Developer profile</span>
+                      </div>
+                    </div>
+                    <div class="profile-checkbox">
+                      <div class="profile-checkbox-check"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Footer items -->
+            <div id="profile-footer-items" class="profile-footer-items">
+              <!-- Sign out -->
+              <div id="menu-item-sign-out" class="profile-menu-item">
+                <div class="profile-menu-content">
+                  <div class="profile-icon-text">
+                    <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                      <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
+                        stroke-width="1.67" stroke-linecap="round"></path>
+                    </svg>
+                    <span class="profile-menu-text">Sign out</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Profile Dropdown JavaScript -->
+    <script>
+      // Profile Dropdown Functions - Global scope
+      window.toggleProfileDropdown = function () {
+        const dropdown = document.getElementById(
+          "profile-dropdown-menu",
+        );
+        const button = document.getElementById(
+          "account-menu-button-inner",
+        );
+
+        if (!dropdown) {
+          return;
+        }
+
+        // SAFARI FIX: Move to body and restore proper styling
+
+        // Move to body to escape stacking context
+        if (dropdown.parentNode !== document.body) {
+          document.body.appendChild(dropdown);
+        }
+
+        // Apply proper dropdown styles (restore original design)
+        dropdown.style.display = "flex";
+        dropdown.style.position = "fixed";
+        dropdown.style.left = "248px"; // Original position
+        dropdown.style.bottom = "20px"; // Original position
+        dropdown.style.width = "264px"; // Original width
+        dropdown.style.height = "auto"; // Original height
+        dropdown.style.background = ""; // Clear test background
+        dropdown.style.border = ""; // Clear test border
+        dropdown.style.zIndex = "99999"; // High z-index for Safari
+
+        // Restore original CSS classes
+        dropdown.className = "profile-dropdown-menu";
+
+        if (button) button.classList.add("active");
+
+        // Add click outside listener
+        setTimeout(() => {
+          document.addEventListener(
+            "click",
+            window.closeDropdownOnClickOutside,
+          );
+        }, 100);
+      };
+
+      window.closeProfileDropdown = function () {
+        const dropdown = document.getElementById(
+          "profile-dropdown-menu",
+        );
+        const button = document.getElementById(
+          "account-menu-button-inner",
+        );
+
+        if (dropdown) dropdown.style.display = "none";
+        if (button) button.classList.remove("active");
+
+        // Remove click outside listener
+        document.removeEventListener(
+          "click",
+          window.closeDropdownOnClickOutside,
+        );
+      };
+
+      window.closeDropdownOnClickOutside = function (event) {
+        const dropdown = document.getElementById(
+          "profile-dropdown-menu",
+        );
+        const accountCard =
+          document.getElementById("nav-account-card");
+
+        if (
+          accountCard &&
+          !accountCard.contains(event.target) &&
+          dropdown &&
+          !dropdown.contains(event.target)
+        ) {
+          window.closeProfileDropdown();
+        }
+      };
+
+      // Profile dropdown functionality is handled by profile-dropdown.js
+    </script>
+  </aside>
+</div>
+<!-- Template for investor sidebar (hidden, for cloning) --><template id="investor-sidebar-template">
+  <aside id="sidebar-navigation" class="sidebar" data-profile="investor">
+    <div id="sidebar-content" class="sidebar__content">
+      <!-- Navigation Section -->
+      <div id="sidebar-navigation-section" class="sidebar__nav-section">
+        <!-- Header Section -->
+        <div id="sidebar-header" class="sidebar__header">
+          <!-- Logo --><a id="sidebar-logo" href="/" class="sidebar__logo"><img src="/images/Logo Pool.svg" alt="POOOL"
+              width="139" height="37" /></a><!-- Search Input -->
+          <div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
+            <div id="sidebar-search" class="sidebar__search">
+              <div id="sidebar-search-content" class="sidebar__search-content">
+                <svg id="sidebar-search-icon" class="sidebar__search-icon" width="20" height="20" viewBox="0 0 20 20"
+                  fill="none">
+                  <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.66667"></circle>
+                  <path d="M13 13L17 17" stroke="#717680" stroke-width="1.66667" stroke-linecap="round"></path>
+                </svg>
+                <input id="sidebar-search-input" type="search" placeholder="Search" class="sidebar__search-input"
+                  autocomplete="off" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Navigation Menu -->
+        <nav id="sidebar-nav" class="sidebar__nav">
+          <div id="nav-item-marketplace-parent" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Parent Item (expandable) -->
+            <div id="nav-item-marketplace-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
+              data-item-id="marketplace-parent" style="cursor: pointer">
+              <div id="nav-text-icon-marketplace-parent" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-marketplace-parent" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/home-05.svg" alt="Marketplace" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-marketplace-parent" class="sidebar__nav-text">Marketplace</span>
+              </div>
+              <!-- Chevron Icon --><svg id="nav-chevron-marketplace-parent" class="sidebar__nav-chevron" width="16"
+                height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <!-- Children Container -->
+            <div id="nav-children-marketplace-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
+              <a id="nav-child-marketplace" href="/marketplace" class="sidebar__nav-child"><span
+                  class="sidebar__nav-child-text">Properties</span></a><a id="nav-child-commodities-marketplace"
+                href="/commodities-marketplace" class="sidebar__nav-child"><span
+                  class="sidebar__nav-child-text">Commodities</span></a>
+            </div>
+          </div>
+          <div id="nav-item-wallet" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-wallet-content" href="/wallet" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-wallet" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-wallet" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/wallet-02.svg" alt="Wallet" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-wallet" class="sidebar__nav-text">Wallet</span>
+              </div>
+              <!-- Soon Badge for Rewards and Leaderboard tabs -->
+            </a>
+          </div>
+          <div id="nav-item-portfolio" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-portfolio-content" href="/portfolio" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-portfolio" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-portfolio" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/line-chart-up-02.svg" alt="Portfolio" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-portfolio" class="sidebar__nav-text">Portfolio</span>
+              </div>
+              <!-- Soon Badge for Rewards and Leaderboard tabs -->
+            </a>
+          </div>
+          <div id="nav-item-rewards" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Disabled Item -->
+            <a id="nav-item-rewards-content" href="/rewards" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-rewards" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-rewards" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/star-01.svg" alt="Rewards" class="nav-icon" width="20" height="20" />
+                </div>
+                <span id="nav-text-rewards" class="sidebar__nav-text">Rewards</span>
+              </div>
+            </a>
+          </div>
+          <div id="nav-item-cart" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-cart-content" href="/cart" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-cart" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-cart" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/shopping-cart-01.svg" alt="Cart" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-cart" class="sidebar__nav-text">Cart</span>
+              </div>
+              <!-- Soon Badge for Rewards and Leaderboard tabs -->
+            </a>
+          </div>
+          <div id="nav-item-leaderboard" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-leaderboard-content" href="/leaderboard" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-leaderboard" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-leaderboard" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/award-05.svg" alt="Leaderboard" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-leaderboard" class="sidebar__nav-text">Leaderboard</span>
+              </div>
+            </a>
+          </div>
+          <div id="nav-item-community" class="sidebar__nav-item">
+            <a id="nav-item-community-content" href="/community" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-community" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-community" class="sidebar__nav-icon-wrapper">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+                <span id="nav-text-community" class="sidebar__nav-text">Community</span>
+              </div>
+              <span class="sidebar__nav-badge" style="background:rgba(3,255,136,0.15);color:#027A48;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;">New</span>
+            </a>
+          </div>
+        </nav>
+      </div>
+      <!-- Footer Section -->
+      <div id="sidebar-footer" class="sidebar__footer">
+        <!-- Footer Navigation -->
+        <nav id="footer-nav" class="sidebar__footer-nav">
+          <div id="nav-item-settings" class="sidebar__nav-item">
+            <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/images/settings-01.svg" alt="Settings" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-settings" class="sidebar__nav-text">Settings</span>
+              </div>
+            </a>
+          </div>
+          <div id="nav-item-support" class="sidebar__nav-item">
+            <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support" class="nav-icon"
+                    width="20" height="20" />
+                </div>
+                <span id="nav-text-support" class="sidebar__nav-text">Support</span>
+              </div>
+              <div id="support-badge" class="support-badge">
+                <div id="support-status-dot" class="support-status-dot"></div>
+                <span id="support-badge-text" class="support-badge-text">Online</span>
+              </div>
+            </a>
+          </div>
+        </nav>
+        <!-- Community Card -->
+        <div id="nav-featured-card" class="nav-featured-card sidebar__featured-card">
+          <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M14 14L6 6M6 14L14 6" stroke="#2E2EF9" stroke-width="1.66667" stroke-linecap="round">
+              </path>
+            </svg></button><!-- Text and supporting text -->
+          <div id="featured-card-text" class="sidebar__featured-text">
+            <div class="featured-card-title-wrap">
+              <h4 id="featured-card-title" class="sidebar__featured-title">
+                Community soon
+              </h4>
+            </div>
+            <p id="featured-card-description" class="sidebar__featured-description">
+              Check out the new community feature. Connect with other
+              investors soon.
+            </p>
+          </div>
+          <!-- Image wrap -->
+          <div class="sidebar__featured-image">
+            <img src="/static/images/community-illustration.png" alt="Community illustration" loading="lazy" />
+          </div>
+          <!-- Actions -->
+          <div id="featured-card-actions" class="sidebar__featured-actions">
+            <button id="featured-card-dismiss" class="sidebar__featured-button sidebar__featured-button--dismiss">
+              Dismiss
+            </button>
+            <button id="featured-card-action" class="sidebar__featured-button sidebar__featured-button--action">
+              What&#39;s new?
+            </button>
+          </div>
+        </div>
+        <!-- Account Card - Now fully clickable -->
+        <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
+          style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
+          <!-- Avatar Group -->
+          <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
+            <div id="account-avatar" class="sidebar__account-avatar">
+              <img loading="lazy" src="/images/Image.webp" alt="" />
+              <div id="account-online-indicator" class="sidebar__account-online"></div>
+            </div>
+            <div id="account-text-wrapper" class="sidebar__account-text">
+              <span id="account-name" class="sidebar__account-name"></span>
+              <span id="account-email" class="sidebar__account-email"></span>
+            </div>
+          </div>
+          <!-- Menu Button Icon (no longer a button) -->
+          <div id="account-menu-button" class="sidebar__account-menu" style="pointer-events: none">
+            <div id="account-menu-button-inner" class="sidebar__account-menu-button" aria-hidden="true">
+              <svg class="sidebar__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+                <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+          <!-- Profile Dropdown Menu -->
+          <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
+            <!-- Menu items wrapper -->
+            <div id="profile-menu-wrapper" class="profile-menu-wrapper">
+              <!-- Top menu items -->
+              <div id="profile-menu-items-top" class="profile-menu-items">
+                <!-- Documentation -->
+                <div id="menu-item-documentation" class="profile-menu-item">
+                  <div class="profile-menu-content">
+                    <div class="profile-icon-text">
+                      <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                        <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
+                        </path>
+                      </svg>
+                      <span class="profile-menu-text">Documentation</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Switch account section -->
+              <div id="profile-switch-section" class="profile-switch-section">
+                <div class="profile-switch-header">
+                  <span class="profile-switch-title">Switch account</span>
+                </div>
+                <!-- Current account (selected) -->
+                <div id="menu-item-current-account" class="profile-menu-item account-item selected">
+                  <div class="profile-account-content">
+                    <div class="profile-avatar-group">
+                      <div class="profile-avatar">
+                        <img loading="lazy" src="/images/Image.webp" alt="" />
+                        <div class="profile-avatar-border"></div>
+                        <div class="profile-online-indicator"></div>
+                      </div>
+                      <div class="profile-text-wrapper">
+                        <span class="profile-account-name"></span>
+                        <span class="profile-account-type">Investor Profile</span>
+                      </div>
+                    </div>
+                    <div class="profile-checkbox selected">
+                      <div class="profile-checkbox-check"></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Other accounts -->
+                <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
+                  <div class="profile-account-content">
+                    <div class="profile-avatar-group">
+                      <div class="profile-avatar">
+                        <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                        <div class="profile-avatar-border"></div>
+                        <div class="profile-online-indicator"></div>
+                      </div>
+                      <div class="profile-text-wrapper">
+                        <span class="profile-account-name"></span>
+                        <span class="profile-account-type">Developer profile</span>
+                      </div>
+                    </div>
+                    <div class="profile-checkbox">
+                      <div class="profile-checkbox-check"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Footer items -->
+            <div id="profile-footer-items" class="profile-footer-items">
+              <!-- Sign out -->
+              <div id="menu-item-sign-out" class="profile-menu-item">
+                <div class="profile-menu-content">
+                  <div class="profile-icon-text">
+                    <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                      <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
+                        stroke-width="1.67" stroke-linecap="round"></path>
+                    </svg>
+                    <span class="profile-menu-text">Sign out</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Profile Dropdown JavaScript -->
+    <script>
+      // Profile Dropdown Functions - Global scope
+      window.toggleProfileDropdown = function () {
+        const dropdown = document.getElementById(
+          "profile-dropdown-menu",
+        );
+        const button = document.getElementById(
+          "account-menu-button-inner",
+        );
+
+        if (!dropdown) {
+          return;
+        }
+
+        // SAFARI FIX: Move to body and restore proper styling
+
+        // Move to body to escape stacking context
+        if (dropdown.parentNode !== document.body) {
+          document.body.appendChild(dropdown);
+        }
+
+        // Apply proper dropdown styles (restore original design)
+        dropdown.style.display = "flex";
+        dropdown.style.position = "fixed";
+        dropdown.style.left = "248px"; // Original position
+        dropdown.style.bottom = "20px"; // Original position
+        dropdown.style.width = "264px"; // Original width
+        dropdown.style.height = "auto"; // Original height
+        dropdown.style.background = ""; // Clear test background
+        dropdown.style.border = ""; // Clear test border
+        dropdown.style.zIndex = "99999"; // High z-index for Safari
+
+        // Restore original CSS classes
+        dropdown.className = "profile-dropdown-menu";
+
+        if (button) button.classList.add("active");
+
+        // Add click outside listener
+        setTimeout(() => {
+          document.addEventListener(
+            "click",
+            window.closeDropdownOnClickOutside,
+          );
+        }, 100);
+      };
+
+      window.closeProfileDropdown = function () {
+        const dropdown = document.getElementById(
+          "profile-dropdown-menu",
+        );
+        const button = document.getElementById(
+          "account-menu-button-inner",
+        );
+
+        if (dropdown) dropdown.style.display = "none";
+        if (button) button.classList.remove("active");
+
+        // Remove click outside listener
+        document.removeEventListener(
+          "click",
+          window.closeDropdownOnClickOutside,
+        );
+      };
+
+      window.closeDropdownOnClickOutside = function (event) {
+        const dropdown = document.getElementById(
+          "profile-dropdown-menu",
+        );
+        const accountCard =
+          document.getElementById("nav-account-card");
+
+        if (
+          accountCard &&
+          !accountCard.contains(event.target) &&
+          dropdown &&
+          !dropdown.contains(event.target)
+        ) {
+          window.closeProfileDropdown();
+        }
+      };
+
+      // Profile dropdown functionality is handled by profile-dropdown.js
+    </script>
+  </aside>
+</template><!-- Template for developer sidebar (hidden, for cloning) --><template id="developer-sidebar-template">
+  <aside id="sidebar-navigation" class="sidebar">
+    <div id="sidebar-content" class="sidebar__content">
+      <!-- Navigation Section -->
+      <div id="sidebar-navigation-section" class="sidebar__nav-section">
+        <!-- Header Section -->
+        <div id="sidebar-header" class="sidebar__header">
+          <!-- Logo --><a id="sidebar-logo" href="/" class="sidebar__logo"><img src="/images/Logo Pool.svg" alt="POOOL"
+              width="139" height="37" /></a><!-- Search Input -->
+          <div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
+            <div id="sidebar-search" class="sidebar__search">
+              <div id="sidebar-search-content" class="sidebar__search-content">
+                <svg id="sidebar-search-icon" class="sidebar__search-icon" width="20" height="20" viewBox="0 0 20 20"
+                  fill="none">
+                  <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.66667"></circle>
+                  <path d="M13 13L17 17" stroke="#717680" stroke-width="1.66667" stroke-linecap="round"></path>
+                </svg>
+                <input id="sidebar-search-input" type="search" placeholder="Search projects, assets..."
+                  class="sidebar__search-input" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Navigation Menu -->
+        <nav id="sidebar-nav" class="sidebar__nav">
+          <!-- Dashboard -->
+          <div id="nav-item-dashboard" class="sidebar__nav-item">
+            <a id="nav-item-dashboard-content" href="/developer/dashboard" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-dashboard" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-dashboard" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/static/images/Menu developer/Dashboard.svg" alt="Dashboard" class="nav-icon"
+                    width="20" height="20" />
+                </div>
+                <span id="nav-text-dashboard" class="sidebar__nav-text">Dashboard</span>
+              </div>
+            </a>
+          </div>
+          <!-- Assets -->
+          <div id="nav-item-assets" class="sidebar__nav-item">
+            <a id="nav-item-assets-content" href="/developer/assets" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-assets" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-assets" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/static/images/Menu developer/Assets.svg" alt="Assets" class="nav-icon"
+                    width="20" height="20" />
+                </div>
+                <span id="nav-text-assets" class="sidebar__nav-text">Assets</span>
+              </div>
+            </a>
+          </div>
+          <!-- My Submissions -->
+          <div id="nav-item-submissions" class="sidebar__nav-item">
+            <a id="nav-item-submissions-content" href="/developer/submissions" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-submissions" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-submissions" class="sidebar__nav-icon-wrapper">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                </div>
+                <span id="nav-text-submissions" class="sidebar__nav-text">My Submissions</span>
+              </div>
+            </a>
+          </div>
+          <!-- Notifications -->
+          <div id="nav-item-notifications" class="sidebar__nav-item">
+            <div id="nav-item-notifications-content"
+              class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+              <div id="nav-text-icon-notifications" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-notifications" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/static/images/Menu developer/Notifications.svg" alt="Notifications"
+                    class="nav-icon" width="20" height="20" />
+                </div>
+                <span id="nav-text-notifications" class="sidebar__nav-text">Notifications</span>
+              </div>
+              <span id="nav-badge-notifications" class="nav-badge notifications-badge" style="display: none;"></span>
+            </div>
+          </div>
+          <!-- Ranking (formerly Reports) -->
+          <div id="nav-item-ranking" class="sidebar__nav-item">
+            <div id="nav-item-ranking-content" class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+              <div id="nav-text-icon-ranking" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-ranking" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/static/images/Menu developer/Ranking.svg" alt="Ranking" class="nav-icon"
+                    width="20" height="20" />
+                </div>
+                <span id="nav-text-ranking" class="sidebar__nav-text">Ranking</span>
+              </div>
+              <!-- Soon Badge -->
+              <div class="soon-badge"><span>Soon</span></div>
+            </div>
+          </div>
+          <!-- Settings -->
+          <div id="nav-item-settings" class="sidebar__nav-item">
+            <div id="nav-item-settings-content" class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+              <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/static/images/Menu developer/Settings.svg" alt="Settings" class="nav-icon"
+                    width="20" height="20" />
+                </div>
+                <span id="nav-text-settings" class="sidebar__nav-text">Settings</span>
+              </div>
+            </div>
+          </div>
+          <!-- Support -->
+          <div id="nav-item-support" class="sidebar__nav-item">
+            <div id="nav-item-support-content" class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+              <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
+                  <img loading="lazy" src="/static/images/Menu developer/Support.svg" alt="Support" class="nav-icon"
+                    width="20" height="20" />
+                </div>
+                <span id="nav-text-support" class="sidebar__nav-text">Support</span>
+              </div>
+              <div id="support-badge" class="support-badge">
+                <div id="support-status-dot" class="support-status-dot"></div>
+                <span id="support-badge-text" class="support-badge-text">Online</span>
+              </div>
+            </div>
+          </div>
+          <!-- Add Asset Button -->
+          <div id="add-asset-section" class="add-asset-section">
+            <button id="add-asset-btn" class="add-asset-btn" type="button"
+              onclick="window.location.href = '/developer/add-asset'">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 4.16667V15.8333M4.16667 10H15.8333" stroke="#FFFFFF" stroke-width="1.66667"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span class="add-asset-text">Add Asset</span>
+            </button>
+          </div>
+        </nav>
+      </div>
+      <!-- Footer Section -->
+      <div id="sidebar-footer" class="sidebar__footer">
+        <!-- Support Chat Card -->
+        <div id="nav-featured-card" class="sidebar__featured-card sidebar__featured-card--support">
+          <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M14 14L6 6M6 14L14 6" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round">
+              </path>
+            </svg></button><!-- Badge and text -->
+          <div class="sidebar__featured-content">
+            <div class="sidebar__featured-badge sidebar__featured-badge--online">
+              <div class="support-status-dot"></div>
+              <span class="support-badge-text">Online</span>
+            </div>
+            <div class="sidebar__featured-text">
+              <h4 class="sidebar__featured-title">Have questions?</h4>
+              <p class="sidebar__featured-description">
+                Our support team is here to help.
+              </p>
+            </div>
+            <button class="sidebar__featured-button sidebar__featured-button--chat">
+              <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support" width="20"
+                height="20" />
+              <span>Chat to support</span>
+            </button>
+          </div>
+        </div>
+        <!-- Account Card - Now fully clickable -->
+        <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
+          style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
+          <!-- Avatar Group -->
+          <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
+            <div id="account-avatar" class="sidebar__account-avatar">
+              <img loading="lazy" src="/images/Image.webp" alt="" />
+              <div id="account-online-indicator" class="sidebar__account-online"></div>
+            </div>
+            <div id="account-text-wrapper" class="sidebar__account-text">
+              <span id="account-name" class="sidebar__account-name"></span>
+              <span id="account-email" class="sidebar__account-email">Developer profile</span>
+            </div>
+          </div>
+          <!-- Menu Button Icon (no longer a button) -->
+          <div id="account-menu-button" class="sidebar__account-menu" style="pointer-events: none">
+            <div id="account-menu-button-inner" class="sidebar__account-menu-button" aria-hidden="true">
+              <svg class="account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+                <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+          <!-- Profile Dropdown Menu -->
+          <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
+            <!-- Menu items wrapper -->
+            <div id="profile-menu-wrapper" class="profile-menu-wrapper">
+              <!-- Top menu items -->
+              <div id="profile-menu-items-top" class="profile-menu-items">
+                <!-- Documentation -->
+                <div id="menu-item-documentation" class="profile-menu-item">
+                  <div class="profile-menu-content">
+                    <div class="profile-icon-text">
+                      <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                        <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
+                        </path>
+                      </svg>
+                      <span class="profile-menu-text">Documentation</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Switch account section -->
+              <div id="profile-switch-section" class="profile-switch-section">
+                <div class="profile-switch-header">
+                  <span class="profile-switch-title">Switch account</span>
+                </div>
+                <!-- Current account (selected) -->
+                <div id="menu-item-current-account" class="profile-menu-item account-item selected">
+                  <div class="profile-account-content">
+                    <div class="profile-avatar-group">
+                      <div class="profile-avatar">
+                        <img loading="lazy" src="/images/Image.webp" alt="" />
+                        <div class="profile-avatar-border"></div>
+                        <div class="profile-online-indicator"></div>
+                      </div>
+                      <div class="profile-text-wrapper">
+                        <span class="profile-account-name"></span>
+                        <span class="profile-account-type">Investor Profile</span>
+                      </div>
+                    </div>
+                    <div class="profile-checkbox selected">
+                      <div class="profile-checkbox-check"></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Other accounts -->
+                <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
+                  <div class="profile-account-content">
+                    <div class="profile-avatar-group">
+                      <div class="profile-avatar">
+                        <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                        <div class="profile-avatar-border"></div>
+                        <div class="profile-online-indicator"></div>
+                      </div>
+                      <div class="profile-text-wrapper">
+                        <span class="profile-account-name"></span>
+                        <span class="profile-account-type">Developer profile</span>
+                      </div>
+                    </div>
+                    <div class="profile-checkbox">
+                      <div class="profile-checkbox-check"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Footer items -->
+            <div id="profile-footer-items" class="profile-footer-items">
+              <!-- Sign out -->
+              <div id="menu-item-sign-out" class="profile-menu-item">
+                <div class="profile-menu-content">
+                  <div class="profile-icon-text">
+                    <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                      <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
+                        stroke-width="1.67" stroke-linecap="round"></path>
+                    </svg>
+                    <span class="profile-menu-text">Sign out</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Profile Dropdown JavaScript -->
+    <script>
+      // Profile Dropdown Functions - Global scope
+      window.toggleProfileDropdown = function () {
+        const dropdown = document.getElementById(
+          "profile-dropdown-menu",
+        );
+        const button = document.getElementById(
+          "account-menu-button-inner",
+        );
+
+        if (!dropdown) {
+          return;
+        }
+
+        // SAFARI FIX: Move to body and restore proper styling
+
+        // Move to body to escape stacking context
+        if (dropdown.parentNode !== document.body) {
+          document.body.appendChild(dropdown);
+        }
+
+        // Apply proper dropdown styles (restore original design)
+        dropdown.style.display = "flex";
+        dropdown.style.position = "fixed";
+        dropdown.style.left = "248px"; // Original position
+        dropdown.style.bottom = "20px"; // Original position
+        dropdown.style.width = "264px"; // Original width
+        dropdown.style.height = "auto"; // Original height
+        dropdown.style.background = ""; // Clear test background
+        dropdown.style.border = ""; // Clear test border
+        dropdown.style.zIndex = "99999"; // High z-index for Safari
+
+        // Restore original CSS classes
+        dropdown.className = "profile-dropdown-menu";
+
+        if (button) button.classList.add("active");
+
+        // Add click outside listener
+        setTimeout(() => {
+          document.addEventListener(
+            "click",
+            window.closeDropdownOnClickOutside,
+          );
+        }, 100);
+      };
+
+      window.closeProfileDropdown = function () {
+        const dropdown = document.getElementById(
+          "profile-dropdown-menu",
+        );
+        const button = document.getElementById(
+          "account-menu-button-inner",
+        );
+
+        if (dropdown) dropdown.style.display = "none";
+        if (button) button.classList.remove("active");
+
+        // Remove click outside listener
+        document.removeEventListener(
+          "click",
+          window.closeDropdownOnClickOutside,
+        );
+      };
+
+      window.closeDropdownOnClickOutside = function (event) {
+        const dropdown = document.getElementById(
+          "profile-dropdown-menu",
+        );
+        const accountCard =
+          document.getElementById("nav-account-card");
+
+        if (
+          accountCard &&
+          !accountCard.contains(event.target) &&
+          dropdown &&
+          !dropdown.contains(event.target)
+        ) {
+          window.closeProfileDropdown();
+        }
+      };
+    </script>
+  </aside>
+</template><!-- Profile Dropdown Functions - Global scope for all sidebars -->
+<script>
+  // GLOBAL Profile Dropdown Functions (persistent across sidebar changes)
+  window.toggleProfileDropdown = function () {
+    const dropdown = document.getElementById("profile-dropdown-menu");
+    const button = document.getElementById(
+      "account-menu-button-inner",
+    );
+
+    if (!dropdown) {
+      return;
+    }
+
+    if (
+      dropdown.style.display === "none" ||
+      dropdown.style.display === ""
+    ) {
+      // SAFARI FIX: Move to body and restore proper styling
+
+      // Move to body to escape stacking context
+      if (dropdown.parentNode !== document.body) {
+        document.body.appendChild(dropdown);
+      }
+
+      // Apply proper dropdown styles (restore original design)
+      dropdown.style.display = "flex";
+      dropdown.style.position = "fixed";
+      dropdown.style.left = "248px"; // Original position
+      dropdown.style.bottom = "20px"; // Original position
+      dropdown.style.width = "264px"; // Original width
+      dropdown.style.height = "auto"; // Original height
+      dropdown.style.background = ""; // Clear test background
+      dropdown.style.border = ""; // Clear test border
+      dropdown.style.zIndex = "99999"; // High z-index for Safari
+
+      // Restore original CSS classes
+      dropdown.className = "profile-dropdown-menu";
+
+      if (button) button.classList.add("active");
+
+      // Add click outside listener
+      setTimeout(() => {
+        document.addEventListener(
+          "click",
+          window.closeDropdownOnClickOutside,
+        );
+      }, 100);
+    } else {
+      window.closeProfileDropdown();
+    }
+  };
+
+  window.closeProfileDropdown = function () {
+    const dropdown = document.getElementById("profile-dropdown-menu");
+    const button = document.getElementById(
+      "account-menu-button-inner",
+    );
+
+    if (dropdown) dropdown.style.display = "none";
+    if (button) button.classList.remove("active");
+
+    // Remove click outside listener
+    document.removeEventListener(
+      "click",
+      window.closeDropdownOnClickOutside,
+    );
+  };
+
+  window.closeDropdownOnClickOutside = function (event) {
+    const dropdown = document.getElementById("profile-dropdown-menu");
+    const accountCard = document.getElementById("nav-account-card");
+
+    if (
+      accountCard &&
+      !accountCard.contains(event.target) &&
+      dropdown &&
+      !dropdown.contains(event.target)
+    ) {
+      window.closeProfileDropdown();
+    }
+  };
+
+  // Profile switching functionality for wrapper - matches other layouts
+  window.switchProfile = function (profileType) {
+    localStorage.setItem("selectedProfile", profileType);
+
+    // Close dropdown first
+    window.closeProfileDropdown();
+
+    // Redirect to the appropriate dashboard
+    if (profileType === "admin") {
+      window.location.href = "/admin/";
+    } else if (profileType === "developer") {
+      window.location.href = "/developer/dashboard";
+    } else {
+      // Investor
+      window.location.href = "/marketplace";
+    }
+  };
+
+  // Add click handlers for account switching (only if profile-dropdown.js hasn't already)
+  document.addEventListener("DOMContentLoaded", function () {
+    if (window.__SIDEBAR_ACCOUNT_HANDLER_REGISTERED) return;
+    window.__SIDEBAR_ACCOUNT_HANDLER_REGISTERED = true;
+
+    document.body.addEventListener("click", function (e) {
+      const accountItem = e.target.closest(
+        ".profile-menu-item.account-item",
+      );
+
+      if (accountItem) {
+        e.stopPropagation();
+
+        const accountId = accountItem.id;
+        let profileType = "investor";
+        if (accountId.includes("admin")) {
+          profileType = "admin";
+        } else if (accountId.includes("developer")) {
+          profileType = "developer";
+        }
+
+        const isSelected = accountItem.classList.contains("selected");
+
+        // Check if we need to redirect even if already selected
+        // (e.g. on investor page but admin profile is selected)
+        const currentPath = window.location.pathname;
+        const needsRedirect =
+          (profileType === "admin" && !currentPath.startsWith("/admin/")) ||
+          (profileType === "developer" && !currentPath.startsWith("/developer/")) ||
+          (profileType === "investor" && (currentPath.startsWith("/admin/") || currentPath.startsWith("/developer/")));
+
+        if (!isSelected || needsRedirect) {
+          // Remove selected from all items
+          document
+            .querySelectorAll(".profile-menu-item.account-item")
+            .forEach((item) => {
+              item.classList.remove("selected");
+              const checkbox =
+                item.querySelector(".profile-checkbox");
+              if (checkbox) checkbox.classList.remove("selected");
+            });
+
+          // Add selected to clicked item
+          accountItem.classList.add("selected");
+          const checkbox =
+            accountItem.querySelector(".profile-checkbox");
+          if (checkbox) checkbox.classList.add("selected");
+
+          // Switch profile
+          window.switchProfile(profileType);
+        } else {
+          // Already selected and on the correct page, just close dropdown
+          window.closeProfileDropdown();
+        }
+      }
+    });
+  });
+
+  // GLOBAL Navigation Expand/Collapse Functions
+  window.toggleNavExpand = function (itemId) {
+    const childrenContainer = document.getElementById(
+      "nav-children-" + itemId,
+    );
+    const chevronIcon = document.getElementById(
+      "nav-chevron-" + itemId,
+    );
+
+    if (!childrenContainer || !chevronIcon) return;
+
+    // Check if currently collapsed
+    const isCollapsed = childrenContainer.classList.contains(
+      "sidebar__nav-children--collapsed",
+    );
+
+    // Toggle based on current state
+    if (isCollapsed) {
+      // Save current transition style
+      const originalTransition = childrenContainer.style.transition;
+
+      // Temporarily disable transitions for accurate measurement
+      // This prevents padding transition from affecting scrollHeight calculation
+      childrenContainer.style.transition = "none";
+
+      // Remove collapsed class (padding immediately becomes 4px instead of transitioning)
+      childrenContainer.classList.remove(
+        "sidebar__nav-children--collapsed",
+      );
+
+      // Force reflow to apply the padding change immediately
+      childrenContainer.offsetHeight;
+
+      // Measure scrollHeight (now includes full padding, not mid-transition)
+      const height = childrenContainer.scrollHeight;
+
+      // Set height to 0 as starting point for animation
+      childrenContainer.style.height = "0px";
+
+      // Force another reflow
+      childrenContainer.offsetHeight;
+
+      // Restore transitions
+      childrenContainer.style.transition = originalTransition || "";
+
+      // In next frame, set height to target (will animate smoothly from 0 to full height)
+      requestAnimationFrame(function () {
+        childrenContainer.style.height = height + "px";
+      });
+
+      chevronIcon.classList.add("sidebar__nav-chevron--expanded");
+      localStorage.setItem("nav-expanded-" + itemId, "true");
+    } else {
+      // Collapsing: set height to 0, then add collapsed class
+      childrenContainer.style.height = "0px";
+      childrenContainer.classList.add(
+        "sidebar__nav-children--collapsed",
+      );
+      chevronIcon.classList.remove("sidebar__nav-chevron--expanded");
+      localStorage.setItem("nav-expanded-" + itemId, "false");
+    }
+  };
+
+  // Event delegation for parent nav items
+  document.addEventListener("DOMContentLoaded", function () {
+    // Get sidebar element to add no-transition class
+    const sidebar = document.getElementById("sidebar-navigation");
+
+    // Add no-transition class to prevent animation flash during setup
+    if (sidebar) {
+      sidebar.classList.add("sidebar--no-transition");
+    }
+
+    // Use double requestAnimationFrame to ensure DOM is fully rendered
+    // before calculating heights (fixes clipping issue)
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        // Restore expanded state from localStorage first
+        const parentItems = document.querySelectorAll(
+          ".sidebar__nav-item--parent",
+        );
+        parentItems.forEach(function (parentItem) {
+          const itemId = parentItem.getAttribute("data-item-id");
+          if (itemId) {
+            const savedState = localStorage.getItem(
+              "nav-expanded-" + itemId,
+            );
+            const childrenContainer = document.getElementById(
+              "nav-children-" + itemId,
+            );
+            const chevronIcon = document.getElementById(
+              "nav-chevron-" + itemId,
+            );
+
+            if (childrenContainer && chevronIcon) {
+              const isCurrentlyCollapsed =
+                childrenContainer.classList.contains(
+                  "sidebar__nav-children--collapsed",
+                );
+              const shouldBeExpanded = savedState === "true";
+
+              if (shouldBeExpanded && isCurrentlyCollapsed) {
+                childrenContainer.classList.remove(
+                  "sidebar__nav-children--collapsed",
+                );
+                chevronIcon.classList.add(
+                  "sidebar__nav-chevron--expanded",
+                );
+              } else if (!shouldBeExpanded && !isCurrentlyCollapsed) {
+                childrenContainer.classList.add(
+                  "sidebar__nav-children--collapsed",
+                );
+                chevronIcon.classList.remove(
+                  "sidebar__nav-chevron--expanded",
+                );
+              }
+            }
+          }
+        });
+
+        // Set initial heights for all nav children after state is restored
+        document
+          .querySelectorAll(".sidebar__nav-children")
+          .forEach(function (container) {
+            if (
+              !container.classList.contains(
+                "sidebar__nav-children--collapsed",
+              )
+            ) {
+              const height = container.scrollHeight;
+              container.style.height = height + "px";
+            }
+          });
+
+        // Remove no-transition class to enable smooth animations from now on
+        if (sidebar) {
+          sidebar.classList.remove("sidebar--no-transition");
+        }
+      });
+    });
+
+    // Handle clicks on parent nav items
+    document.addEventListener("click", function (e) {
+      const parentItem = e.target.closest(
+        ".sidebar__nav-item--parent",
+      );
+      if (parentItem) {
+        const itemId = parentItem.getAttribute("data-item-id");
+        if (itemId) {
+          e.preventDefault();
+          window.toggleNavExpand(itemId);
+        }
+      }
+    });
+  });
+</script>
+<!-- Script to switch sidebars based on saved profile -->
+<script>
+  (function () {
+    // Function to replace sidebar content
+    function replaceSidebar(profileType) {
+      const container = document.getElementById(
+        "dynamic-sidebar-container",
+      );
+      const templateId =
+        profileType === "developer"
+          ? "developer-sidebar-template"
+          : "investor-sidebar-template";
+      const template = document.getElementById(templateId);
+
+      if (container && template) {
+        // Clear current content
+        container.innerHTML = "";
+        // Clone and append new content
+        const newContent = template.content.cloneNode(true);
+        container.appendChild(newContent);
+
+        // Re-initialize profile dropdown functionality
+        if (typeof window.toggleProfileDropdown === "function") {
+          // The dropdown script should already be loaded
+        }
+      }
+    }
+
+    // Check saved profile on page load
+    const savedProfile = localStorage.getItem("selectedProfile");
+
+    // Set default profile if not set
+    if (!savedProfile) {
+      localStorage.setItem("selectedProfile", "investor");
+    }
+
+    // Determine the correct sidebar: developer pages always get developer sidebar
+    const currentPath = window.location.pathname;
+    const isDeveloperPage = currentPath.startsWith("/developer/") || currentPath === "/developer";
+
+    if (isDeveloperPage) {
+      // Developer pages always show developer sidebar
+      replaceSidebar("developer");
+      localStorage.setItem("selectedProfile", "developer");
+    } else if (savedProfile === "developer") {
+      replaceSidebar("developer");
+    }
+    // Investor is already loaded by default
+
+    // Listen for profile changes
+    window.addEventListener("storage", function (e) {
+      if (e.key === "selectedProfile") {
+        // Reload page when profile changes
+        window.location.reload();
+      }
+    });
+  })();
+</script>

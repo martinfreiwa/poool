@@ -1,0 +1,520 @@
+/* Mobile Developer Add Asset Page - Step 1: Choose Asset Type */
+
+@media (max-width: 768px) {
+  /* Hide cart icon on all developer pages */
+  body[id*="developer"] .mobile-header__icons,
+  #developer-add-asset-body .mobile-header__icons {
+    justify-content: flex-end !important;
+  }
+
+  /* Hide cart button on developer pages */
+  body[id*="developer"] .mobile-header__icon-btn--cart,
+  #developer-add-asset-body .mobile-header__icon-btn--cart {
+    display: none !important;
+  }
+
+  /* ============================================
+     CRITICAL: Neutralize Desktop Absolute Positioning on Page Elements
+     (Card internal elements handled separately below)
+     ============================================ */
+  .add-asset-main,
+  .breadcrumbs,
+  #add-asset-breadcrumbs,
+  .form-step-indicator,
+  .add-asset-title,
+  #add-asset-title,
+  .add-asset-subtitle,
+  #add-asset-subtitle,
+  .asset-type-grid,
+  #asset-type-grid,
+  .add-asset-next-btn,
+  #add-asset-next-btn {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+  }
+
+  /* Force 100% width on main container */
+  .add-asset-main,
+  #developer-add-asset-main {
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: auto !important;
+  }
+
+  /* Force proper grid width */
+  .asset-type-grid,
+  #asset-type-grid {
+    width: 100% !important;
+    max-width: 343px !important;
+    height: auto !important;
+  }
+
+  /* Page Container */
+  .add-asset-page {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    background: #fafafa !important;
+  }
+
+  /* Hide sidebar on mobile */
+  .add-asset-sidebar,
+  #developer-add-asset-sidebar {
+    display: none !important;
+  }
+
+  /* Main Content Area */
+  .add-asset-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: calc(100vh - 64px);
+    padding: 0 16px !important;
+    position: relative !important;
+    padding-top: 32px !important;
+  }
+
+  #developer-add-asset-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 16px !important;
+  }
+
+  /* Breadcrumbs - Mobile Positioning */
+  .breadcrumbs {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 0px !important;
+    gap: 8px !important;
+    position: static !important;
+    width: auto !important;
+    max-width: 100% !important;
+    height: 20px !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 0 32px 0 !important;
+  }
+
+  #add-asset-breadcrumbs {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    margin-top: 96px !important;
+  }
+
+  .breadcrumb-link {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    color: #535862 !important;
+  }
+
+  .breadcrumb-current {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    color: var(--primary-color) !important;
+  }
+
+  /* Step Indicator - Hidden on mobile */
+  .form-step-indicator {
+    display: none !important;
+  }
+
+  /* Page Title - Centered */
+  .add-asset-title {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    left: auto !important;
+    top: auto !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    line-height: 32px !important;
+    text-align: center !important;
+    color: #181d27 !important;
+    margin: 0 0 8px 0 !important;
+  }
+
+  #add-asset-title {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+  }
+
+  /* Subtitle - Centered */
+  .add-asset-subtitle {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    left: auto !important;
+    top: auto !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    text-align: center !important;
+    color: #535862 !important;
+    margin: 0 0 24px 0 !important;
+    padding: 0 30px !important;
+  }
+
+  #add-asset-subtitle {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+  }
+
+  /* Asset Type Grid - CSS Grid Layout */
+  .asset-type-grid {
+    position: static !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-rows: repeat(4, auto) !important;
+    gap: 8px !important;
+    padding: 0px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto 20px !important;
+  }
+
+  #asset-type-grid {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-rows: repeat(4, auto) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 auto 20px !important;
+  }
+
+  /* Explicit Grid Positioning */
+  /* nth-child(1) = Real Estate - Row 1, Column 1 */
+  .asset-type-grid > :nth-child(1),
+  #asset-type-grid > :nth-child(1) {
+    grid-row: 1 !important;
+    grid-column: 1 !important;
+    width: 100% !important;
+    height: 162px !important;
+  }
+
+  /* nth-child(2) = Commercial Property - Row 2, Span 2 columns (FULL WIDTH) */
+  .asset-type-grid > :nth-child(2),
+  #asset-type-grid > :nth-child(2) {
+    grid-row: 2 !important;
+    grid-column: 1 / 3 !important;
+    width: 100% !important;
+    height: 164px !important;
+  }
+
+  /* nth-child(3) = Commodities - Row 4, Span 2 columns (FULL WIDTH, LAST) */
+  .asset-type-grid > :nth-child(3),
+  #asset-type-grid > :nth-child(3) {
+    grid-row: 4 !important;
+    grid-column: 1 / 3 !important;
+    width: 100% !important;
+    height: 164px !important;
+  }
+
+  /* nth-child(4) = Business - Row 1, Column 2 */
+  .asset-type-grid > :nth-child(4),
+  #asset-type-grid > :nth-child(4) {
+    grid-row: 1 !important;
+    grid-column: 2 !important;
+    width: 100% !important;
+    height: 162px !important;
+  }
+
+  /* nth-child(5) = Startups - Row 3, Column 1 */
+  .asset-type-grid > :nth-child(5),
+  #asset-type-grid > :nth-child(5) {
+    grid-row: 3 !important;
+    grid-column: 1 !important;
+    width: 100% !important;
+    height: 162px !important;
+  }
+
+  /* nth-child(6) = Land/Plots - Row 3, Column 2 */
+  .asset-type-grid > :nth-child(6),
+  #asset-type-grid > :nth-child(6) {
+    grid-row: 3 !important;
+    grid-column: 2 !important;
+    width: 100% !important;
+    height: 162px !important;
+  }
+
+  /* Asset Type Card - Mobile Responsive */
+  .asset-type-card {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+    border: 1px solid #e9eaeb !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 12px !important;
+    cursor: pointer !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  /* Selected State */
+  .asset-type-card.selected,
+  .asset-type-card.js-selected {
+    border: 1px solid var(--primary-color) !important;
+    box-shadow:
+      0px 4px 6px -1px rgba(10, 13, 18, 0.1),
+      0px 2px 4px -2px rgba(10, 13, 18, 0.06) !important;
+  }
+
+  /* Override desktop default image/glass heights */
+  .asset-type-image {
+    width: 100% !important;
+    height: 80px !important;
+  }
+
+  .asset-type-glass {
+    width: 100% !important;
+    height: 80px !important;
+  }
+
+  /* Card Image Background - Small Cards */
+  .asset-type-grid > :nth-child(1) .asset-type-image,
+  .asset-type-grid > :nth-child(4) .asset-type-image,
+  .asset-type-grid > :nth-child(5) .asset-type-image,
+  .asset-type-grid > :nth-child(6) .asset-type-image {
+    position: absolute !important;
+    width: 100% !important;
+    height: 80px !important;
+    left: 0px !important;
+    top: 0px !important;
+    background-size: cover !important;
+    background-position: center !important;
+  }
+
+  /* Card Image Background - Large Cards */
+  .asset-type-grid > :nth-child(2) .asset-type-image,
+  .asset-type-grid > :nth-child(3) .asset-type-image {
+    position: absolute !important;
+    width: 100% !important;
+    height: 100px !important;
+    left: 0px !important;
+    top: 0px !important;
+    background-size: cover !important;
+    background-position: center !important;
+  }
+
+  /* Glass Overlay - Small Cards (80px) */
+  .asset-type-grid > :nth-child(1) .asset-type-glass,
+  .asset-type-grid > :nth-child(4) .asset-type-glass,
+  .asset-type-grid > :nth-child(5) .asset-type-glass,
+  .asset-type-grid > :nth-child(6) .asset-type-glass,
+  #asset-type-grid > :nth-child(1) .asset-type-glass,
+  #asset-type-grid > :nth-child(4) .asset-type-glass,
+  #asset-type-grid > :nth-child(5) .asset-type-glass,
+  #asset-type-grid > :nth-child(6) .asset-type-glass {
+    position: absolute !important;
+    width: 100% !important;
+    height: 80px !important;
+    left: 0px !important;
+    top: 0px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Glass Overlay - Large Cards (100px) */
+  .asset-type-grid > :nth-child(2) .asset-type-glass,
+  .asset-type-grid > :nth-child(3) .asset-type-glass,
+  #asset-type-grid > :nth-child(2) .asset-type-glass,
+  #asset-type-grid > :nth-child(3) .asset-type-glass {
+    position: absolute !important;
+    width: 100% !important;
+    height: 100px !important;
+    left: 0px !important;
+    top: 0px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* ULTRA-SPECIFIC FIX: First card (real-estate) - Force correct dimensions */
+  #asset-type-card-real-estate {
+    height: 162px !important;
+  }
+
+  #asset-type-card-real-estate .asset-type-image {
+    height: 80px !important;
+  }
+
+  #asset-type-card-real-estate .asset-type-glass {
+    height: 80px !important;
+  }
+
+  /* Icon Wrapper */
+  .asset-type-icon-wrapper {
+    position: absolute !important;
+    width: 32px !important;
+    height: 32px !important;
+    left: calc(50% - 16px) !important;
+    top: calc(50% - 16px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .asset-type-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* Card Content - Small Cards */
+  .asset-type-grid > :nth-child(1) .asset-type-content,
+  .asset-type-grid > :nth-child(4) .asset-type-content,
+  .asset-type-grid > :nth-child(5) .asset-type-content,
+  .asset-type-grid > :nth-child(6) .asset-type-content {
+    position: absolute !important;
+    width: 100% !important;
+    top: 89px !important;
+    left: 0 !important;
+    padding: 0 8px !important;
+    text-align: center !important;
+  }
+
+  /* Card Content - Large Cards */
+  .asset-type-grid > :nth-child(2) .asset-type-content,
+  .asset-type-grid > :nth-child(3) .asset-type-content {
+    position: absolute !important;
+    width: 100% !important;
+    top: 109px !important;
+    left: 0 !important;
+    padding: 0 8px !important;
+    text-align: center !important;
+  }
+
+  /* Card Title */
+  .asset-type-title {
+    width: 100% !important;
+    height: 24px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+    text-align: center !important;
+    color: var(--primary-color) !important;
+    margin: 0 0 4px 0 !important;
+  }
+
+  /* Card Description - Small Cards */
+  .asset-type-grid > :nth-child(1) .asset-type-description,
+  .asset-type-grid > :nth-child(4) .asset-type-description,
+  .asset-type-grid > :nth-child(5) .asset-type-description,
+  .asset-type-grid > :nth-child(6) .asset-type-description {
+    width: 100% !important;
+    height: 36px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 12px !important;
+    line-height: 18px !important;
+    text-align: center !important;
+    color: #000000 !important;
+    margin: 0 !important;
+  }
+
+  /* Card Description - Large Cards */
+  .asset-type-grid > :nth-child(2) .asset-type-description,
+  .asset-type-grid > :nth-child(3) .asset-type-description {
+    width: 100% !important;
+    height: 18px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 12px !important;
+    line-height: 18px !important;
+    text-align: center !important;
+    color: #000000 !important;
+    margin: 0 !important;
+  }
+
+  /* Next Step Button */
+  .add-asset-next-btn {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 10px 16px !important;
+    gap: 6px !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 343px !important;
+    height: 44px !important;
+    left: auto !important;
+    top: auto !important;
+    background: var(--primary-color) !important;
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 8px !important;
+    border: none !important;
+    margin: 20px auto 40px !important;
+    cursor: pointer !important;
+  }
+
+  #add-asset-next-btn {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+  }
+
+  .next-btn-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+    color: #ffffff !important;
+  }
+
+  .next-btn-arrow {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Hover Effects */
+  .add-asset-next-btn:hover {
+    background: var(--primary-color) !important;
+  }
+
+  .asset-type-card:hover {
+    box-shadow:
+      0px 4px 6px -1px rgba(10, 13, 18, 0.1),
+      0px 2px 4px -2px rgba(10, 13, 18, 0.06) !important;
+    transform: translateY(-1px) !important;
+  }
+}
+
+/* Desktop - Hide mobile-specific adjustments */
+@media (min-width: 769px) {
+  /* Desktop styles remain unchanged */
+}

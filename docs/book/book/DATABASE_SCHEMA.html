@@ -1,0 +1,820 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Database Schema - POOOL Platform - Technical Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-2459343d.css">
+        <link rel="stylesheet" href="css/chrome-ae938929.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="custom-8fcae763.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-0cb0e1db.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-840e169f.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">POOOL Platform - Technical Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/martin/poool" title="Git repository" aria-label="Git repository">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
+                        </a>
+                        <a href="https://github.com/martin/poool/edit/main/docs/book/src/DATABASE_SCHEMA.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <span class=fa-svg id="git-edit-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M421.7 220.3l-11.3 11.3-22.6 22.6-205 205c-6.6 6.6-14.8 11.5-23.8 14.1L30.8 511c-8.4 2.5-17.5 .2-23.7-6.1S-1.5 489.7 1 481.2L38.7 353.1c2.6-9 7.5-17.2 14.1-23.8l205-205 22.6-22.6 11.3-11.3 33.9 33.9 62.1 62.1 33.9 33.9zM96 353.9l-9.3 9.3c-.9 .9-1.6 2.1-2 3.4l-25.3 86 86-25.3c1.3-.4 2.5-1.1 3.4-2l9.3-9.3H112c-8.8 0-16-7.2-16-16V353.9zM453.3 19.3l39.4 39.4c25 25 25 65.5 0 90.5l-14.5 14.5-22.6 22.6-11.3 11.3-33.9-33.9-62.1-62.1L314.3 67.7l11.3-11.3 22.6-22.6 14.5-14.5c25-25 65.5-25 90.5 0z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="-poool--vollständiges-datenbank-design-postgresql"><a class="header" href="#-poool--vollständiges-datenbank-design-postgresql">🗄️ POOOL – Vollständiges Datenbank-Design (PostgreSQL)</a></h1>
+<p>Dieses Dokument ist die “Single Source of Truth” für das gesamte relationale Datenbankschema der POOOL-Plattform.
+Jede Tabelle, jede Spalte und jede Beziehung wurde direkt aus der Analyse der bestehenden Frontend-Seiten abgeleitet.</p>
+<blockquote>
+<p><strong>WICHTIG:</strong> Alle Geldbeträge werden in <strong>Cents (INTEGER)</strong> gespeichert (z. B. $2,732 = 273200). Floating-Point-Zahlen (FLOAT/DOUBLE) sind in Finanzsystemen <strong>streng verboten</strong>, da sie zu Rundungsfehlern führen.</p>
+</blockquote>
+<hr>
+<h2 id="übersicht-der-tabellen"><a class="header" href="#übersicht-der-tabellen">Übersicht der Tabellen</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Nr</th><th>Tabelle</th><th>Zweck</th><th>Abgeleitet von (Frontend-Seite)</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td><code>users</code></td><td>Haupttabelle aller Benutzer</td><td>signup, login, profile-dropdown</td></tr>
+<tr><td>2</td><td><code>user_profiles</code></td><td>Persönliche Daten (KYC-relevant)</td><td>KYC-Seite, Settings</td></tr>
+<tr><td>3</td><td><code>user_sessions</code></td><td>Login-Sessions (HttpOnly Cookies)</td><td>Login, “Remember me”</td></tr>
+<tr><td>4</td><td><code>oauth_accounts</code></td><td>Social Login (Google, Facebook, Apple)</td><td>signup.html, login.html</td></tr>
+<tr><td>5</td><td><code>kyc_records</code></td><td>Identitätsprüfung (SumSub o.ä.)</td><td>KYC-Banner auf jeder Seite</td></tr>
+<tr><td>6</td><td><code>wallets</code></td><td>Fiat-Guthaben (Cash + Rewards)</td><td>wallet.html</td></tr>
+<tr><td>7</td><td><code>wallet_transactions</code></td><td>Transaktionshistorie des Wallets</td><td>wallet.html (Transactions-Tabelle)</td></tr>
+<tr><td>8</td><td><code>assets</code></td><td>Immobilien &amp; Rohstoffe</td><td>marketplace.html, commodities-marketplace.html</td></tr>
+<tr><td>9</td><td><code>asset_images</code></td><td>Bilder pro Asset (Gallery)</td><td>Marketplace-Cards</td></tr>
+<tr><td>10</td><td><code>asset_milestones</code></td><td>Timeline und Checkpoints pro Asset</td><td>Funding Timeline / Roadmap</td></tr>
+<tr><td>11</td><td><code>asset_documents</code></td><td>Rechtliche Dokumente (Exposé etc.)</td><td>Asset-Detailseite</td></tr>
+<tr><td>12</td><td><code>asset_financials</code></td><td>Finanzkennzahlen pro Asset</td><td>Portfolio “Key financials”</td></tr>
+<tr><td>13</td><td><code>investments</code></td><td>Gehaltene Anteile pro User/Asset</td><td>portfolio.html “My Assets”-Tabelle</td></tr>
+<tr><td>14</td><td><code>cart_items</code></td><td>Warenkorb</td><td>cart.html</td></tr>
+<tr><td>15</td><td><code>orders</code></td><td>Abgeschlossene Kaufvorgänge</td><td>Cart → Checkout</td></tr>
+<tr><td>16</td><td><code>order_items</code></td><td>Einzelpositionen einer Bestellung</td><td>Cart-Items → Order-Items</td></tr>
+<tr><td>17</td><td><code>dividend_payouts</code></td><td>Mieteinnahmen-Ausschüttungen</td><td>Portfolio “Payout expected” Status</td></tr>
+<tr><td>18</td><td><code>notifications</code></td><td>Benachrichtigungen</td><td>Notification-Badge im Header</td></tr>
+<tr><td>19</td><td><code>support_tickets</code></td><td>Support-Anfragen</td><td>support.html, Chat-Karte</td></tr>
+<tr><td>20</td><td><code>user_settings</code></td><td>Nutzer-Einstellungen &amp; 2FA</td><td>settings.html</td></tr>
+<tr><td>21</td><td><code>roles</code></td><td>Rollen (investor, developer, admin)</td><td>Profile-Switcher</td></tr>
+<tr><td>22</td><td><code>user_roles</code></td><td>Zuordnung User ↔ Rolle</td><td>“Switch account” Dropdown</td></tr>
+<tr><td>23</td><td><code>developer_projects</code></td><td>Developer-Projekte/Assets</td><td>developer/dashboard.html</td></tr>
+<tr><td>24</td><td><code>audit_logs</code></td><td>Unveränderliches Audit-Protokoll</td><td>Compliance-Pflicht</td></tr>
+<tr><td>25</td><td><code>password_reset_tokens</code></td><td>Passwort-Zurücksetzen</td><td>forgot-password.html</td></tr>
+<tr><td>26</td><td><code>investment_limits</code></td><td>Jährliches Investmentlimit</td><td>Portfolio “Annual investment limit”</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="1-users"><a class="header" href="#1-users">1. <code>users</code></a></h2>
+<p><em>Abgeleitet von: signup.html (Email-Feld), login.html (Email + Password), Profile-Dropdown (Name, Avatar)</em></p>
+<pre><code class="language-sql">CREATE TABLE users (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email           VARCHAR(255) NOT NULL UNIQUE,
+    password_hash   VARCHAR(255),              -- NULL wenn nur OAuth
+    email_verified  BOOLEAN NOT NULL DEFAULT FALSE,
+    avatar_url      VARCHAR(512),              -- "/images/Image.png" aus Frontend
+    status          VARCHAR(20) NOT NULL DEFAULT 'active'
+                    CHECK (status IN ('active', 'suspended', 'deleted')),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_users_email ON users(email);
+</code></pre>
+<h2 id="2-user_profiles"><a class="header" href="#2-user_profiles">2. <code>user_profiles</code></a></h2>
+<p><em>Abgeleitet von: KYC-Seite (kyc.html), Profil-Dropdown (“Olivia Rhye”), Settings-Seite</em></p>
+<pre><code class="language-sql">CREATE TABLE user_profiles (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    first_name      VARCHAR(100),             -- "Olivia"
+    last_name       VARCHAR(100),             -- "Rhye"
+    display_name    VARCHAR(200),             -- Angezeigt in Sidebar/Header
+    date_of_birth   DATE,
+    nationality     VARCHAR(3),               -- ISO 3166-1 alpha-3
+    address_line_1  VARCHAR(255),
+    address_line_2  VARCHAR(255),
+    city            VARCHAR(100),
+    state_province  VARCHAR(100),
+    postal_code     VARCHAR(20),
+    country         VARCHAR(3),               -- ISO 3166-1 alpha-3
+    phone_number    VARCHAR(30),
+    tax_id          VARCHAR(50),              -- Steuer-ID (verschlüsselt)
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+</code></pre>
+<h2 id="3-user_sessions"><a class="header" href="#3-user_sessions">3. <code>user_sessions</code></a></h2>
+<p><em>Abgeleitet von: login.html (“Remember me” Checkbox), Session-basiertes Auth</em></p>
+<pre><code class="language-sql">CREATE TABLE user_sessions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    session_token   VARCHAR(255) NOT NULL UNIQUE,
+    ip_address      INET,
+    user_agent      TEXT,
+    remember_me     BOOLEAN NOT NULL DEFAULT FALSE,
+    expires_at      TIMESTAMPTZ NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_sessions_token ON user_sessions(session_token);
+CREATE INDEX idx_sessions_user ON user_sessions(user_id);
+</code></pre>
+<h2 id="4-oauth_accounts"><a class="header" href="#4-oauth_accounts">4. <code>oauth_accounts</code></a></h2>
+<p><em>Abgeleitet von: signup.html &amp; login.html (Google, Facebook, Apple Buttons)</em></p>
+<pre><code class="language-sql">CREATE TABLE oauth_accounts (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider        VARCHAR(20) NOT NULL       -- 'google', 'facebook', 'apple'
+                    CHECK (provider IN ('google', 'facebook', 'apple')),
+    provider_id     VARCHAR(255) NOT NULL,     -- ID beim Provider
+    provider_email  VARCHAR(255),
+    access_token    TEXT,                      -- verschlüsselt
+    refresh_token   TEXT,                      -- verschlüsselt
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (provider, provider_id)
+);
+CREATE INDEX idx_oauth_user ON oauth_accounts(user_id);
+</code></pre>
+<h2 id="5-kyc_records"><a class="header" href="#5-kyc_records">5. <code>kyc_records</code></a></h2>
+<p><em>Abgeleitet von: KYC-Banner (“Complete identity verification (KYC) to buy…”), KYC-Seite</em></p>
+<pre><code class="language-sql">CREATE TABLE kyc_records (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider            VARCHAR(50) NOT NULL DEFAULT 'sumsub',
+    provider_ref_id     VARCHAR(255),          -- Referenz beim KYC-Provider
+    status              VARCHAR(20) NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'in_review', 'approved', 'rejected', 'expired')),
+    rejection_reason    TEXT,
+    document_type       VARCHAR(50),           -- 'passport','id_card','drivers_license'
+    pep_check_passed    BOOLEAN,               -- Politically Exposed Person
+    sanctions_check     BOOLEAN,               -- Sanktionslisten
+    verified_at         TIMESTAMPTZ,
+    expires_at          TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_kyc_user ON kyc_records(user_id);
+CREATE INDEX idx_kyc_status ON kyc_records(status);
+</code></pre>
+<h2 id="6-wallets"><a class="header" href="#6-wallets">6. <code>wallets</code></a></h2>
+<p><em>Abgeleitet von: wallet.html (“Cash balance: USD 2,732” + “Rewards balance: USD 1,700”)</em></p>
+<pre><code class="language-sql">CREATE TABLE wallets (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    wallet_type     VARCHAR(20) NOT NULL       -- 'cash', 'rewards'
+                    CHECK (wallet_type IN ('cash', 'rewards')),
+    balance_cents   BIGINT NOT NULL DEFAULT 0  -- $2,732 = 273200 (immer USD)
+                    CHECK (balance_cents &gt;= 0),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, wallet_type)
+);
+CREATE INDEX idx_wallets_user ON wallets(user_id);
+</code></pre>
+<h2 id="7-wallet_transactions"><a class="header" href="#7-wallet_transactions">7. <code>wallet_transactions</code></a></h2>
+<p><em>Abgeleitet von: wallet.html Transactions-Tabelle (Spalten: Type, Status, Date, Wallet, Amount, Actions)</em></p>
+<pre><code class="language-sql">CREATE TABLE wallet_transactions (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    wallet_id           UUID NOT NULL REFERENCES wallets(id),
+    type                VARCHAR(30) NOT NULL
+                        CHECK (type IN (
+                            'deposit', 'withdrawal', 'purchase',
+                            'sale', 'dividend', 'reward', 'refund', 'fee'
+                        )),
+    status              VARCHAR(20) NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
+    amount_cents        BIGINT NOT NULL,        -- positiv = Eingang, negativ = Ausgang (immer USD)
+    description         TEXT,
+    external_ref_id     VARCHAR(255),           -- Referenz zum PSP (Mangopay etc.)
+    related_order_id    UUID,                   -- FK zu orders (optional)
+    metadata            JSONB,                  -- Flexible Zusatzdaten
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at        TIMESTAMPTZ
+);
+CREATE INDEX idx_wtx_wallet ON wallet_transactions(wallet_id);
+CREATE INDEX idx_wtx_type ON wallet_transactions(type);
+CREATE INDEX idx_wtx_status ON wallet_transactions(status);
+CREATE INDEX idx_wtx_created ON wallet_transactions(created_at DESC);
+</code></pre>
+<h2 id="8-assets"><a class="header" href="#8-assets">8. <code>assets</code></a></h2>
+<p><em>Abgeleitet von: marketplace.html (Property-Cards), commodities-marketplace.html, developer/assets.html</em></p>
+<pre><code class="language-sql">CREATE TABLE assets (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    developer_user_id   UUID REFERENCES users(id), -- wer hat es eingestellt
+    title               VARCHAR(255) NOT NULL,     -- Asset Title / Property Name
+    slug                VARCHAR(255) NOT NULL UNIQUE,
+    short_description   VARCHAR(500),              -- Aus property-content (Kurzbeschreibung)
+    description         TEXT,                      -- Full Description
+    asset_type          VARCHAR(30) NOT NULL       -- Aus developer/add-asset.html Step 1
+                        CHECK (asset_type IN (
+                            'real_estate', 'commercial_property', 'commodity',
+                            'business', 'startup', 'land_plot'
+                        )),
+    
+    -- Spezifische Property-Details (Aus application-form Step 2 &amp; 4)
+    property_type       VARCHAR(50),               -- 'villa', 'house', 'apartment', 'commercial'
+    area                VARCHAR(100),              -- z.B. 'canggu', 'uluwatu'
+    lease_type          VARCHAR(30)                -- 'leasehold', 'freehold'
+                        CHECK (lease_type IN ('leasehold', 'freehold', NULL)),
+    lease_term_years    INTEGER,                   -- verbleibende Jahre
+    land_size_sqm       DECIMAL(10, 2),            -- Grundstücksgröße
+    building_size_sqm   DECIMAL(10, 2),            -- Gebäudegröße
+    bedrooms            INTEGER,
+    bathrooms           INTEGER,
+    construction_status VARCHAR(50)                -- Status Quo
+                        CHECK (construction_status IN ('ready', 'construction', 'renovation', NULL)),
+    year_built          INTEGER,                   -- Baujahr oder Jahr der Renovierung
+
+    -- Location &amp; Media
+    location_city       VARCHAR(100),              
+    location_country    VARCHAR(3),                
+    location_address    VARCHAR(255),              -- Genauer Address-String
+    location_lat        DECIMAL(10, 7),
+    location_lng        DECIMAL(10, 7),
+    location_description TEXT,                     -- Beschreibung der Nachbarschaft
+    google_maps_url     VARCHAR(512),
+    video_url           VARCHAR(512),              -- YouTube/Video Tour
+
+    -- Finanzdaten (Aus application-form Step 2 &amp; 4)
+    total_value_cents   BIGINT NOT NULL,           -- Purchase price
+    token_price_cents   BIGINT NOT NULL,           -- Minimum Share Price
+    tokens_total        INTEGER NOT NULL,          
+    tokens_available    INTEGER NOT NULL,          
+    
+    -- Rendite (Properties)
+    annual_yield_bps    INTEGER,                    -- Expected Rental Yield (750 = 7.50%)
+    capital_appreciation_bps INTEGER,               -- Expected Capital Appreciation (350 = 3.50%)
+    occupancy_rate_bps  INTEGER,                    -- Belegungsrate
+
+    -- Commodity spezifische Details (Aus commodity.html)
+    operator_name       VARCHAR(255),              -- "PT. NEO AGRO SOLUTIONS"
+    term_months         INTEGER,                   -- "12 months"
+    fixed_roi_bps       INTEGER,                   -- "35%" (3500)
+    revenue_min_cents   BIGINT,                    -- "$5.4M"
+    revenue_max_cents   BIGINT,                    -- "$9M"
+    expenses_cents      BIGINT,                    -- "$450K"
+    net_profit_min_cents BIGINT,
+    net_profit_max_cents BIGINT,
+    investor_payout_cents BIGINT,
+    operator_split_pct  INTEGER,                   -- "55"
+    poool_split_pct     INTEGER,                   -- "45"
+    
+    -- Status
+    funding_status      VARCHAR(30) NOT NULL DEFAULT 'upcoming'
+                        CHECK (funding_status IN (
+                            'upcoming', 'funding_open', 'funding_in_progress',
+                            'funded', 'rented', 'payout_pending', 'exited'
+                        )),
+    featured            BOOLEAN NOT NULL DEFAULT FALSE,
+    published           BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Timestamps
+    funding_start_at    TIMESTAMPTZ,
+    funding_end_at      TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_assets_type ON assets(asset_type);
+CREATE INDEX idx_assets_status ON assets(funding_status);
+CREATE INDEX idx_assets_developer ON assets(developer_user_id);
+CREATE INDEX idx_assets_slug ON assets(slug);
+</code></pre>
+<h2 id="9-asset_images"><a class="header" href="#9-asset_images">9. <code>asset_images</code></a></h2>
+<p><em>Abgeleitet von: Marketplace-Cards (villa1.jpg, villa2_1.jpg etc.), Bildergalerie</em></p>
+<pre><code class="language-sql">CREATE TABLE asset_images (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id        UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+    image_url       VARCHAR(512) NOT NULL,
+    alt_text        VARCHAR(255),
+    sort_order      INTEGER NOT NULL DEFAULT 0,
+    is_cover        BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_asset_images_asset ON asset_images(asset_id);
+</code></pre>
+<h2 id="10-asset_milestones"><a class="header" href="#10-asset_milestones">10. <code>asset_milestones</code></a></h2>
+<p><em>Abgeleitet von: Funding Timeline (property.html) und Roadmap (commodity.html)</em></p>
+<pre><code class="language-sql">CREATE TABLE asset_milestones (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id        UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+    title           VARCHAR(255) NOT NULL,     -- "Property funded" / "Month 1 - Land prep &amp; planting"
+    description     TEXT,                      -- "Harvesting, processing (pasta/dried), first sales"
+    milestone_date  TIMESTAMPTZ,               -- Konkretes Datum (falls bekannt, z.B. bei Property Funding)
+    month_index     INTEGER,                   -- Oder generischer Monat (1, 3, 6, 12 für Commodities)
+    is_completed    BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_asset_milestones_asset ON asset_milestones(asset_id);
+</code></pre>
+<h2 id="11-asset_documents"><a class="header" href="#11-asset_documents">11. <code>asset_documents</code></a></h2>
+<p><em>Abgeleitet von: Asset-Detailseite (Exposé, Gutachten, Kaufvertrag)</em></p>
+<pre><code class="language-sql">CREATE TABLE asset_documents (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id        UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+    document_type   VARCHAR(50) NOT NULL
+                    CHECK (document_type IN (
+                        'proof_of_title', 'legal_basis', 'building_permit',
+                        'site_plan', 'tax_npwp', 'tax_pbb', 'tax_bphtb',
+                        'license_nib', 'id_card', 'owner_npwp',
+                        'expose', 'appraisal', 'financial', 'floor_plan', 'other'
+                    )),
+    title           VARCHAR(255) NOT NULL,
+    file_url        VARCHAR(512) NOT NULL,
+    file_size_bytes BIGINT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_asset_docs_asset ON asset_documents(asset_id);
+</code></pre>
+<h2 id="12-asset_financials"><a class="header" href="#12-asset_financials">12. <code>asset_financials</code></a></h2>
+<p><em>Abgeleitet von: Portfolio “Key financials” (Monthly income, Total rental income, Total appreciation)</em></p>
+<pre><code class="language-sql">CREATE TABLE asset_financials (
+    id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id                    UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+    period_month                INTEGER NOT NULL,      -- 1-12
+    period_year                 INTEGER NOT NULL,      -- 2026
+    rental_income_cents         BIGINT DEFAULT 0,      -- Mieteinnahmen im Monat
+    appreciation_cents          BIGINT DEFAULT 0,      -- Wertsteigerung
+    occupancy_rate_bps          INTEGER,               -- 8000 = 80%
+    expenses_cents              BIGINT DEFAULT 0,      -- Betriebskosten
+    net_income_cents            BIGINT DEFAULT 0,      -- Netto = rental - expenses
+    created_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (asset_id, period_month, period_year)
+);
+CREATE INDEX idx_asset_fin_asset ON asset_financials(asset_id);
+</code></pre>
+<h2 id="13-investments"><a class="header" href="#13-investments">13. <code>investments</code></a></h2>
+<p><em>Abgeleitet von: portfolio.html “My Assets” Tabelle (Property, Investment value, Total rental income, Status)</em></p>
+<pre><code class="language-sql">CREATE TABLE investments (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id                 UUID NOT NULL REFERENCES users(id),
+    asset_id                UUID NOT NULL REFERENCES assets(id),
+    tokens_owned            INTEGER NOT NULL DEFAULT 0
+                            CHECK (tokens_owned &gt; 0),
+    purchase_value_cents    BIGINT NOT NULL,        -- Gesamtkaufwert
+    current_value_cents     BIGINT NOT NULL,        -- aktuell berechneter Wert
+    total_rental_cents      BIGINT NOT NULL DEFAULT 0, -- kumulierte Mieteinnahmen
+    appreciation_pct_bps    INTEGER DEFAULT 0,       -- "+3.5%" = 350
+    status                  VARCHAR(30) NOT NULL DEFAULT 'active'
+                            CHECK (status IN (
+                                'active', 'funded', 'rented', 'payout_pending',
+                                'in_process', 'funding_in_progress', 'exited'
+                            )),
+    payout_expected_at      TIMESTAMPTZ,            -- "Payout expected: Sept"
+    purchased_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, asset_id)
+);
+CREATE INDEX idx_investments_user ON investments(user_id);
+CREATE INDEX idx_investments_asset ON investments(asset_id);
+</code></pre>
+<h2 id="14-cart_items"><a class="header" href="#14-cart_items">14. <code>cart_items</code></a></h2>
+<p><em>Abgeleitet von: cart.html (Warenkorb mit Properties, Token-Menge, Preis)</em></p>
+<pre><code class="language-sql">CREATE TABLE cart_items (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    asset_id        UUID NOT NULL REFERENCES assets(id),
+    tokens_quantity INTEGER NOT NULL DEFAULT 1
+                    CHECK (tokens_quantity &gt; 0),
+    token_price_cents BIGINT NOT NULL,          -- Preis zum Zeitpunkt des Hinzufügens
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, asset_id)
+);
+CREATE INDEX idx_cart_user ON cart_items(user_id);
+</code></pre>
+<h2 id="15-orders"><a class="header" href="#15-orders">15. <code>orders</code></a></h2>
+<p><em>Abgeleitet von: Cart → Checkout Ablauf</em></p>
+<pre><code class="language-sql">CREATE TABLE orders (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID NOT NULL REFERENCES users(id),
+    order_number        VARCHAR(30) NOT NULL UNIQUE,
+    total_cents         BIGINT NOT NULL,        -- immer USD
+    status              VARCHAR(20) NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled', 'refunded')),
+    payment_method      VARCHAR(30),            -- 'wallet', 'bank_transfer', 'card'
+    payment_ref_id      VARCHAR(255),           -- PSP Referenz
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at        TIMESTAMPTZ
+);
+CREATE INDEX idx_orders_user ON orders(user_id);
+CREATE INDEX idx_orders_status ON orders(status);
+</code></pre>
+<h2 id="16-order_items"><a class="header" href="#16-order_items">16. <code>order_items</code></a></h2>
+<pre><code class="language-sql">CREATE TABLE order_items (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id            UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    asset_id            UUID NOT NULL REFERENCES assets(id),
+    tokens_quantity     INTEGER NOT NULL,
+    token_price_cents   BIGINT NOT NULL,
+    subtotal_cents      BIGINT NOT NULL
+);
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+</code></pre>
+<h2 id="17-dividend_payouts"><a class="header" href="#17-dividend_payouts">17. <code>dividend_payouts</code></a></h2>
+<p><em>Abgeleitet von: Portfolio Status “Payout expected: Sept/Oct”</em></p>
+<pre><code class="language-sql">CREATE TABLE dividend_payouts (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    investment_id       UUID NOT NULL REFERENCES investments(id),
+    user_id             UUID NOT NULL REFERENCES users(id),
+    asset_id            UUID NOT NULL REFERENCES assets(id),
+    amount_cents        BIGINT NOT NULL,
+    payout_type         VARCHAR(20) NOT NULL     -- 'rental', 'exit', 'bonus'
+                        CHECK (payout_type IN ('rental', 'exit', 'bonus')),
+    status              VARCHAR(20) NOT NULL DEFAULT 'scheduled'
+                        CHECK (status IN ('scheduled', 'processing', 'paid', 'failed')),
+    scheduled_at        TIMESTAMPTZ,
+    paid_at             TIMESTAMPTZ,
+    wallet_tx_id        UUID REFERENCES wallet_transactions(id),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_dividends_user ON dividend_payouts(user_id);
+CREATE INDEX idx_dividends_investment ON dividend_payouts(investment_id);
+</code></pre>
+<h2 id="18-notifications"><a class="header" href="#18-notifications">18. <code>notifications</code></a></h2>
+<p><em>Abgeleitet von: Notification-Bell im Header (Badge “3”)</em></p>
+<pre><code class="language-sql">CREATE TABLE notifications (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title           VARCHAR(255) NOT NULL,
+    message         TEXT,
+    type            VARCHAR(30) NOT NULL        -- 'kyc', 'investment', 'payout', 'system', 'promo'
+                    CHECK (type IN ('kyc', 'investment', 'payout', 'system', 'promo')),
+    is_read         BOOLEAN NOT NULL DEFAULT FALSE,
+    action_url      VARCHAR(512),              -- Deep-Link
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_notifications_user ON notifications(user_id);
+CREATE INDEX idx_notifications_unread ON notifications(user_id, is_read) WHERE is_read = FALSE;
+</code></pre>
+<h2 id="19-support_tickets"><a class="header" href="#19-support_tickets">19. <code>support_tickets</code></a></h2>
+<p><em>Abgeleitet von: support.html, Mobile “Chat to support” Karte</em></p>
+<pre><code class="language-sql">CREATE TABLE support_tickets (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id),
+    subject         VARCHAR(255) NOT NULL,
+    message         TEXT NOT NULL,
+    status          VARCHAR(20) NOT NULL DEFAULT 'open'
+                    CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
+    priority        VARCHAR(10) DEFAULT 'normal'
+                    CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    assigned_to     UUID REFERENCES users(id),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_support_user ON support_tickets(user_id);
+CREATE INDEX idx_support_status ON support_tickets(status);
+</code></pre>
+<h2 id="20-user_settings"><a class="header" href="#20-user_settings">20. <code>user_settings</code></a></h2>
+<p><em>Abgeleitet von: settings.html, 2FA-Anforderung</em></p>
+<pre><code class="language-sql">CREATE TABLE user_settings (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    totp_secret     VARCHAR(255),              -- 2FA Secret (verschlüsselt)
+    totp_enabled    BOOLEAN NOT NULL DEFAULT FALSE,
+    language        VARCHAR(5) DEFAULT 'en',
+    email_notifications   BOOLEAN DEFAULT TRUE,
+    push_notifications    BOOLEAN DEFAULT TRUE,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+</code></pre>
+<h2 id="21-roles"><a class="header" href="#21-roles">21. <code>roles</code></a></h2>
+<p><em>Abgeleitet von: Profile-Switcher (“Investor Profile” / “Developer profile”)</em></p>
+<pre><code class="language-sql">CREATE TABLE roles (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name            VARCHAR(30) NOT NULL UNIQUE, -- 'investor', 'developer', 'admin'
+    description     VARCHAR(255)
+);
+INSERT INTO roles (name, description) VALUES
+    ('investor', 'Standard-Investor mit Zugang zum Marketplace und Portfolio'),
+    ('developer', 'Immobilien-Entwickler, der Assets einstellen kann'),
+    ('admin', 'Plattform-Administrator');
+</code></pre>
+<h2 id="22-user_roles"><a class="header" href="#22-user_roles">22. <code>user_roles</code></a></h2>
+<p><em>Abgeleitet von: “Switch account” Dropdown – ein User kann Investor UND Developer sein</em></p>
+<pre><code class="language-sql">CREATE TABLE user_roles (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id         UUID NOT NULL REFERENCES roles(id),
+    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+    granted_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, role_id)
+);
+CREATE INDEX idx_user_roles_user ON user_roles(user_id);
+</code></pre>
+<h2 id="23-developer_projects"><a class="header" href="#23-developer_projects">23. <code>developer_projects</code></a></h2>
+<p><em>Abgeleitet von: developer/dashboard.html, developer/assets.html, developer/add-asset.html</em></p>
+<pre><code class="language-sql">CREATE TABLE developer_projects (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    developer_id    UUID NOT NULL REFERENCES users(id),
+    asset_id        UUID REFERENCES assets(id),  -- verknüpftes Asset
+    project_name    VARCHAR(255) NOT NULL,
+    status          VARCHAR(20) NOT NULL DEFAULT 'draft'
+                    CHECK (status IN ('draft', 'submitted', 'in_review', 'approved', 'rejected', 'live')),
+    -- Statistiken für das Developer Dashboard
+    total_raised_cents      BIGINT DEFAULT 0,
+    investors_count         INTEGER DEFAULT 0,
+    funding_progress_bps    INTEGER DEFAULT 0,   -- 5000 = 50%
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_dev_projects_developer ON developer_projects(developer_id);
+</code></pre>
+<h2 id="24-audit_logs-immutable--niemals-update-oder-delete"><a class="header" href="#24-audit_logs-immutable--niemals-update-oder-delete">24. <code>audit_logs</code> (IMMUTABLE – niemals UPDATE oder DELETE!)</a></h2>
+<p><em>Regulatorische Pflicht: Jede kritische Aktion wird lückenlos protokolliert</em></p>
+<pre><code class="language-sql">CREATE TABLE audit_logs (
+    id              BIGSERIAL PRIMARY KEY,      -- Auto-increment, niemals UUID
+    actor_user_id   UUID REFERENCES users(id),
+    action          VARCHAR(100) NOT NULL,       -- 'user.created', 'investment.purchased', 'kyc.approved'
+    entity_type     VARCHAR(50) NOT NULL,        -- 'user', 'investment', 'wallet_transaction'
+    entity_id       UUID,                        -- ID des betroffenen Datensatzes
+    previous_state  JSONB,                       -- Zustand VOR der Änderung
+    new_state       JSONB,                       -- Zustand NACH der Änderung
+    ip_address      INET,
+    user_agent      TEXT,
+    metadata        JSONB,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- KEIN UPDATE/DELETE erlaubt!
+CREATE INDEX idx_audit_user ON audit_logs(actor_user_id);
+CREATE INDEX idx_audit_entity ON audit_logs(entity_type, entity_id);
+CREATE INDEX idx_audit_action ON audit_logs(action);
+CREATE INDEX idx_audit_created ON audit_logs(created_at DESC);
+</code></pre>
+<h2 id="25-password_reset_tokens"><a class="header" href="#25-password_reset_tokens">25. <code>password_reset_tokens</code></a></h2>
+<p><em>Abgeleitet von: forgot-password.html</em></p>
+<pre><code class="language-sql">CREATE TABLE password_reset_tokens (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash      VARCHAR(255) NOT NULL UNIQUE,   -- gehashter Token
+    expires_at      TIMESTAMPTZ NOT NULL,
+    used_at         TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_prt_token ON password_reset_tokens(token_hash);
+</code></pre>
+<h2 id="26-investment_limits"><a class="header" href="#26-investment_limits">26. <code>investment_limits</code></a></h2>
+<p><em>Abgeleitet von: Portfolio “Annual investment limit” Sektion (USD 250,000 limit, 35% used)</em></p>
+<pre><code class="language-sql">CREATE TABLE investment_limits (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id                 UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    annual_limit_cents      BIGINT NOT NULL DEFAULT 25000000,  -- USD 250,000
+    invested_12m_cents      BIGINT NOT NULL DEFAULT 0,         -- USD 83,000
+    available_cents         BIGINT GENERATED ALWAYS AS (annual_limit_cents - invested_12m_cents) STORED,
+    limit_year              INTEGER NOT NULL,                  -- z.B. 2026
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, limit_year)
+);
+CREATE INDEX idx_inv_limits_user ON investment_limits(user_id);
+</code></pre>
+<hr>
+<h2 id="entity-relationship-diagram-vereinfacht"><a class="header" href="#entity-relationship-diagram-vereinfacht">Entity-Relationship Diagram (Vereinfacht)</a></h2>
+<pre><code>users ─────┬── user_profiles
+            ├── user_sessions
+            ├── oauth_accounts
+            ├── kyc_records
+            ├── wallets ──── wallet_transactions
+            ├── user_roles ── roles
+            ├── user_settings
+            ├── cart_items ─────┐
+            ├── orders ─────────┤── assets ──┬── asset_images
+            │   └── order_items ┘            ├── asset_documents
+            ├── investments ─────────────────┤── asset_milestones
+            │   └── dividend_payouts         ├── asset_financials
+            ├── developer_projects ──────────┘
+            ├── notifications
+            ├── support_tickets
+            ├── investment_limits
+            ├── password_reset_tokens
+            └── audit_logs
+</code></pre>
+<hr>
+<h2 id="hinweise"><a class="header" href="#hinweise">Hinweise</a></h2>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Dieses Schema bildet exakt die <strong>bestehenden</strong> Frontend-Seiten ab. Folgende Features existieren aktuell nur als Platzhalter im Frontend und haben bewusst <strong>keine</strong> Datenbank-Tabellen:</p>
+<ul>
+<li><strong>Rewards</strong> – in der Sidebar als “Soon” markiert</li>
+<li><strong>Leaderboard</strong> – in der Sidebar als “Soon” markiert</li>
+<li><strong>Community</strong> – keine bestehende Seite</li>
+<li><strong>Sekundärmarkt / Trading</strong> – noch nicht geplant</li>
+<li><strong>Multi-Währung</strong> – aktuell nur USD</li>
+</ul>
+<p>Diese werden erst hinzugefügt, wenn die entsprechenden Frontend-Seiten gebaut werden.</p>
+</blockquote>
+<hr>
+<p><em>Ende des Datenbankschema-Dokuments.</em></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="CONTRIBUTING.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="MIGRATION_GUIDE.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="CONTRIBUTING.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="MIGRATION_GUIDE.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-c2a407aa.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-a0b12cfe.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

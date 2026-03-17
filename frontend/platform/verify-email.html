@@ -1,0 +1,60 @@
+{% with title="Verify Email | POOOL", extra_css=['login'] %}{% include "components/head.html" %}{% endwith %}
+
+<body>
+  <div id="login-container">
+    <section id="left-section">
+      <div id="container">
+        <div id="content">
+          <!-- Header -->
+          <div id="header" style="margin-bottom: 32px">
+            <div id="logo-pool" style="margin-bottom: 24px">
+              <img src="/static/images/logo-pool.svg" alt="Pool Logo" width="184" height="48" />
+            </div>
+            <div class="mail-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6M22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6M22 6L12 13L2 6"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
+            <div id="text-and-supporting-text">
+              <h1 id="text">Check your email</h1>
+              <p id="supporting-text">
+                We sent a verification link to your email address. Please
+                click the link to verify your account.
+              </p>
+            </div>
+          </div>
+
+          <div id="content-inner">
+            <div id="auth-error"></div>
+
+            <!-- Verify email resend form -->
+            <form id="verify-email-form" hx-post="/auth/resend-verification" hx-target="#auth-error"
+              hx-swap="innerHTML">
+              <button type="submit" id="get-started-button">
+                <div id="button-text-padding">
+                  <span id="button-text">Resend verification email</span>
+                </div>
+              </button>
+            </form>
+
+            <a href="/auth/login" id="back-to-login">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15.8332 10.0001H4.1665M4.1665 10.0001L9.99984 15.8334M4.1665 10.0001L9.99984 4.16675"
+                  stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              Back to log in
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="right-section">
+      <div id="testimonial-image"></div>
+    </section>
+  </div>
+</body>
+
+</html>

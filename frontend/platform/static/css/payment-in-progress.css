@@ -1,0 +1,683 @@
+/* ═══════════════════════════════════════════════════════════════
+   Payment In Progress Page
+   Matches cart page design system — blue/green brand palette
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Page Layout ─────────────────────────────────────────────── */
+.pip-page {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+    background: #f5f5f5;
+    font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+}
+
+.pip-main {
+    flex: 1;
+    width: calc(100% - 256px);
+    margin-left: 256px;
+    max-width: calc(100% - 256px);
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    background: #fafafa;
+    padding: 48px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ── Logo ────────────────────────────────────────────────────── */
+.pip-logo {
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pip-logo img {
+    height: 44px;
+    width: auto;
+}
+
+/* ── Status Header ───────────────────────────────────────────── */
+.pip-status-header {
+    text-align: center;
+    margin-bottom: 32px;
+    max-width: 520px;
+}
+
+.pip-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 18px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: 0.3px;
+}
+
+.pip-status-badge--pending {
+    background: rgba(0, 0, 255, 0.06);
+    color: var(--primary-color, #0000FF);
+    border: 1px solid rgba(0, 0, 255, 0.12);
+}
+
+.pip-status-badge--processing {
+    background: rgba(0, 0, 255, 0.06);
+    color: var(--primary-color, #0000FF);
+    border: 1px solid rgba(0, 0, 255, 0.12);
+}
+
+.pip-status-badge--paid {
+    background: rgba(3, 255, 136, 0.10);
+    color: #027A48;
+    border: 1px solid rgba(3, 255, 136, 0.25);
+}
+
+.pip-status-badge--failed {
+    background: #FEF3F2;
+    color: #B42318;
+    border: 1px solid #FEE4E2;
+}
+
+.pip-status-badge__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: pip-pulse 2s ease-in-out infinite;
+}
+
+.pip-status-badge--pending .pip-status-badge__dot,
+.pip-status-badge--processing .pip-status-badge__dot {
+    background: var(--primary-color, #0000FF);
+}
+
+.pip-status-badge--paid .pip-status-badge__dot {
+    background: #03FF88;
+    animation: none;
+}
+
+.pip-status-badge--failed .pip-status-badge__dot {
+    background: #B42318;
+    animation: none;
+}
+
+@keyframes pip-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.pip-title {
+    font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
+    font-size: 28px;
+    font-weight: 700;
+    color: #181D27;
+    margin: 0 0 10px;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.pip-subtitle {
+    font-size: 15px;
+    color: #717680;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* ── Cards Container ─────────────────────────────────────────── */
+.pip-cards {
+    width: 100%;
+    max-width: 580px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ── Base Card ───────────────────────────────────────────────── */
+.pip-card {
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06),
+        0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.pip-card__title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #717680;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 0 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pip-card__title-icon {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color, #0000FF);
+}
+
+/* ── Amount Display ──────────────────────────────────────────── */
+.pip-amount-display {
+    text-align: center;
+    padding: 24px 0;
+    border-bottom: 1px solid #eaecf0;
+    margin-bottom: 20px;
+}
+
+.pip-amount-display__value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #181D27;
+    margin: 0 0 6px;
+    letter-spacing: -0.02em;
+}
+
+.pip-amount-display__label {
+    font-size: 13px;
+    color: #717680;
+    font-weight: 500;
+}
+
+/* ── Detail Rows ─────────────────────────────────────────────── */
+.pip-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #f2f4f7;
+}
+
+.pip-detail-row:last-child {
+    border-bottom: none;
+}
+
+.pip-detail-row__label {
+    font-size: 13px;
+    color: #717680;
+    font-weight: 500;
+}
+
+.pip-detail-row__value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #181D27;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pip-detail-row__value code {
+    background: rgba(0, 0, 255, 0.06);
+    color: var(--primary-color, #0000FF);
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    letter-spacing: 0.5px;
+}
+
+/* ── Bank Transfer Info Card ─────────────────────────────────── */
+.pip-bank-card {
+    border: 1px solid rgba(0, 0, 255, 0.12);
+    background: linear-gradient(135deg, #fafaff 0%, #f0f1ff 100%);
+}
+
+.pip-bank-card .pip-card__title {
+    color: var(--primary-color, #0000FF);
+}
+
+.pip-bank-ref-row {
+    background: var(--primary-color, #0000FF);
+    margin: 16px -24px -24px;
+    padding: 16px 24px;
+    border-radius: 0 0 20px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pip-bank-ref-row__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.pip-bank-ref-row__value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #62F7A4;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.pip-bank-ref-row__copy {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: #62F7A4;
+}
+
+.pip-bank-ref-row__copy:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.pip-bank-ref-row__copy.copied {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #62F7A4;
+}
+
+.pip-bank-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #FFFAEB;
+    border: 1px solid #FEDF89;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #B54708;
+    line-height: 1.5;
+    margin-top: 0;
+}
+
+.pip-bank-warning svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ── Progress Info Card ──────────────────────────────────────── */
+.pip-progress-card {
+    border-left: 4px solid var(--primary-color, #0000FF);
+}
+
+.pip-progress-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.pip-progress-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+    position: relative;
+}
+
+.pip-progress-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 38px;
+    bottom: 0;
+    width: 2px;
+    background: #e9eaeb;
+}
+
+.pip-progress-step--active:not(:last-child)::before {
+    background: rgba(0, 0, 255, 0.15);
+}
+
+.pip-progress-step__icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 12px;
+}
+
+.pip-progress-step--done .pip-progress-step__icon {
+    background: rgba(3, 255, 136, 0.15);
+    color: #027A48;
+}
+
+.pip-progress-step--active .pip-progress-step__icon {
+    background: rgba(0, 0, 255, 0.08);
+    color: var(--primary-color, #0000FF);
+    box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.06);
+}
+
+.pip-progress-step--upcoming .pip-progress-step__icon {
+    background: #f2f4f7;
+    color: #a0a4ab;
+}
+
+.pip-progress-step__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.pip-progress-step__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #181D27;
+    margin: 0 0 2px;
+}
+
+.pip-progress-step--upcoming .pip-progress-step__title {
+    color: #a0a4ab;
+}
+
+.pip-progress-step__desc {
+    font-size: 12px;
+    color: #717680;
+    margin: 0;
+}
+
+/* ── Success State ───────────────────────────────────────────── */
+.pip-success-card {
+    border: 1px solid rgba(3, 255, 136, 0.25);
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf3 100%);
+    text-align: center;
+}
+
+.pip-success-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(3, 255, 136, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    box-shadow: 0 0 0 8px rgba(2, 122, 72, 0.06);
+}
+
+.pip-success-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #027A48;
+    margin: 0 0 6px;
+}
+
+.pip-success-desc {
+    font-size: 13px;
+    color: #537453;
+    margin: 0;
+}
+
+/* ── Failed State ────────────────────────────────────────────── */
+.pip-failed-card {
+    border: 1px solid #FEE4E2;
+    background: linear-gradient(135deg, #FEF3F2 0%, #fff 100%);
+    text-align: center;
+}
+
+.pip-failed-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #B42318;
+    margin: 0 0 6px;
+}
+
+.pip-failed-desc {
+    font-size: 13px;
+    color: #7A271A;
+    margin: 0;
+}
+
+/* ── Support Card (matches cart-support-card) ────────────────── */
+.pip-support-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #F9FAFB;
+    border: 1px solid #EAECF0;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.pip-support-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary-color, #0000FF);
+    color: #62F7A4;
+    flex-shrink: 0;
+}
+
+.pip-support-card__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.pip-support-card__title {
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: 14px;
+    font-weight: 600;
+    color: #181D27;
+    margin: 0 0 2px;
+}
+
+.pip-support-card__desc {
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: 13px;
+    font-weight: 400;
+    color: #717680;
+    margin: 0;
+    line-height: 18px;
+}
+
+.pip-support-card__desc a {
+    color: var(--primary-color, #0000FF);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.pip-support-card__desc a:hover {
+    text-decoration: underline;
+}
+
+/* ── Action Buttons (matches cart page pattern) ──────────────── */
+.pip-actions {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 580px;
+    margin-top: 8px;
+}
+
+.pip-btn {
+    flex: 1;
+    height: 48px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+}
+
+.pip-btn--primary {
+    background: var(--primary-color, #0000FF);
+    color: #62F7A4;
+}
+
+.pip-btn--primary:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+}
+
+.pip-btn--primary .btn-arrow {
+    transition: transform 0.2s;
+}
+
+.pip-btn--primary:hover .btn-arrow {
+    transform: translateX(3px);
+}
+
+.pip-btn--secondary {
+    background: #ffffff;
+    color: #181D27;
+    border: 1px solid #e9eaeb;
+    border-radius: 12px;
+}
+
+.pip-btn--secondary:hover {
+    background: #f8f9fc;
+}
+
+/* ── Polling Status ──────────────────────────────────────────── */
+.pip-poll-status {
+    text-align: center;
+    font-size: 12px;
+    color: #a0a4ab;
+    margin-top: 4px;
+    width: 100%;
+    max-width: 580px;
+}
+
+/* ── Loading State ───────────────────────────────────────────── */
+.pip-loading {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.pip-loading__spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e7eb;
+    border-top-color: var(--primary-color, #0000FF);
+    border-radius: 50%;
+    animation: pip-spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+.pip-loading__text {
+    font-size: 14px;
+    color: #717680;
+    margin: 0;
+}
+
+@keyframes pip-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── No Deposit Found ────────────────────────────────────────── */
+.pip-empty {
+    text-align: center;
+    padding: 60px 20px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.pip-empty__icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #f2f4f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 28px;
+}
+
+.pip-empty__title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #181D27;
+    margin: 0 0 8px;
+}
+
+.pip-empty__desc {
+    font-size: 14px;
+    color: #717680;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.pip-empty__desc a {
+    color: var(--primary-color, #0000FF);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.pip-empty__desc a:hover {
+    text-decoration: underline;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .pip-main {
+        margin-left: 0;
+        width: 100%;
+        max-width: 100%;
+        padding: 24px 20px 80px;
+    }
+}
+
+@media (max-width: 640px) {
+    .pip-main {
+        padding: 16px 16px 80px;
+    }
+
+    .pip-card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .pip-title {
+        font-size: 22px;
+    }
+
+    .pip-amount-display__value {
+        font-size: 28px;
+    }
+
+    .pip-actions {
+        flex-direction: column;
+    }
+
+    .pip-bank-ref-row {
+        margin: 16px -16px -16px;
+        padding: 14px 16px;
+        border-radius: 0 0 12px 12px;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .pip-support-card {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

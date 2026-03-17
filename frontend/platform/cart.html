@@ -1,5 +1,5 @@
 {% with title="Cart", meta_description="Review your selected investments and proceed to secure checkout on POOOL.",
-extra_css=['cart', 'mobile-cart', 'checkout'] %}{% include "components/head.html" %}{% endwith %}
+extra_css=['cart', 'mobile-cart', 'checkout', 'kyc-banner'] %}{% include "components/head.html" %}{% endwith %}
 
   <!-- Custom POOOL Icon Styles -->
   <style>
@@ -33,6 +33,7 @@ extra_css=['cart', 'mobile-cart', 'checkout'] %}{% include "components/head.html
       </div>
       <!-- Main Content -->
       <main id="cart-main" class="ds-main cart-page-main">
+        {% include 'components/kyc-banner.html' %}
         <!-- Cart Content Wrapper for HTMX Updates -->
         <div id="cart-content-wrapper">
           <!-- Cart Header -->
@@ -130,6 +131,8 @@ extra_css=['cart', 'mobile-cart', 'checkout'] %}{% include "components/head.html
   </div>
   <!-- Cart JavaScript -->
   <script src="/static/js/cart.js"></script>
+  <!-- KYC Banner -->
+  <script src="/static/js/kyc-banner.js"></script>
   <!-- Mobile Navigation JavaScript -->
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>

@@ -1,0 +1,333 @@
+/* ===========================
+   Developer Assets Page
+   Card grid layout matching production
+   =========================== */
+
+/* ===========================
+   1. Status Tabs (Available / Funded)
+   Override marketplace absolute positioning
+   =========================== */
+#developer-assets-main .status-tabs,
+.cart-page-main .status-tabs {
+  position: static !important;
+  display: flex !important;
+  gap: 4px !important;
+  margin-bottom: 24px !important;
+  border-radius: 30px !important;
+  overflow: hidden !important;
+  border: 1px solid #e9eaeb !important;
+  width: 100% !important;
+  max-width: 1200px;
+  height: 56px !important;
+  padding: 6px !important;
+  top: auto !important;
+  left: auto !important;
+  background: white !important;
+  box-sizing: border-box !important;
+}
+
+#developer-assets-main .status-tab,
+.cart-page-main .status-tab {
+  padding: 8px 12px !important;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif) !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #181d27 !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex: 1 !important;
+  height: 44px !important;
+  border-radius: 30px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+#developer-assets-main .status-tab:hover:not(.active),
+.cart-page-main .status-tab:hover:not(.active) {
+  background: #f8f9fc !important;
+}
+
+#developer-assets-main .status-tab.active,
+.cart-page-main .status-tab.active {
+  background: #98FB96 !important;
+  color: #0000FF !important;
+  font-weight: 700 !important;
+}
+
+/* ===========================
+   2. Property Grid — override marketplace absolute positioning
+   =========================== */
+#developer-assets-main .property-grid,
+.cart-page-main .property-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 24px !important;
+  width: 100% !important;
+  max-width: 1200px;
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+#developer-assets-main .property-card,
+.cart-page-main .property-card {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* ===========================
+   3. Add Asset Button
+   =========================== */
+.add-asset-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 6px;
+  height: 44px;
+  background: var(--primary-color, #0000FF);
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.add-asset-btn:hover {
+  background: #0000CC;
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.add-asset-text {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #62F7A4;
+}
+
+/* ===========================
+   4. Card Animation
+   =========================== */
+.dev-asset-card {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out forwards;
+  animation-fill-mode: forwards;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dev-asset-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0px 4px 8px rgba(10, 13, 18, 0.1);
+}
+
+/* Stagger animation for cards */
+.dev-asset-card:nth-child(1) { animation-delay: 0.05s; }
+.dev-asset-card:nth-child(2) { animation-delay: 0.1s; }
+.dev-asset-card:nth-child(3) { animation-delay: 0.15s; }
+.dev-asset-card:nth-child(4) { animation-delay: 0.2s; }
+.dev-asset-card:nth-child(5) { animation-delay: 0.25s; }
+.dev-asset-card:nth-child(6) { animation-delay: 0.3s; }
+.dev-asset-card:nth-child(n + 7) { animation-delay: 0.35s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===========================
+   5. Badge Variants
+   =========================== */
+.badge-orange {
+  background: rgba(251, 191, 36, 0.15) !important;
+  border: none !important;
+}
+
+.badge-orange .badge-text {
+  color: #B54708;
+}
+
+.badge-green {
+  background: rgba(3, 255, 136, 0.15) !important;
+  border: none !important;
+}
+
+.badge-green .badge-text {
+  color: #027A48;
+}
+
+.badge-red {
+  background: rgba(240, 68, 56, 0.15) !important;
+  border: none !important;
+}
+
+.badge-red .badge-text {
+  color: #B42318;
+}
+
+/* ===========================
+   6. Empty State — Full page centered
+   =========================== */
+.dev-empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 80px 40px;
+  max-width: 520px;
+  margin: 40px auto 0;
+}
+
+.dev-empty-state__icon {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 24px;
+}
+
+.dev-empty-state__icon-bg {
+  position: absolute;
+  width: 76px;
+  height: 76px;
+  left: 4px;
+  top: -3px;
+  border-radius: 20px;
+  transform: rotate(15deg);
+  opacity: 0.3;
+  background: linear-gradient(135deg, #0000FF 0%, #60A5FA 100%);
+}
+
+.dev-empty-state__icon-front {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  background: rgba(0, 0, 255, 0.08);
+  border: 1px solid rgba(0, 0, 255, 0.12);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.dev-empty-state__title {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 24px;
+  font-weight: 700;
+  color: #181d27;
+  margin: 0 0 12px;
+  line-height: 1.3;
+}
+
+.dev-empty-state__description {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 15px;
+  font-weight: 400;
+  color: #535862;
+  line-height: 1.6;
+  margin: 0 0 32px;
+  max-width: 420px;
+}
+
+.dev-empty-state__features {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.dev-empty-state__feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  color: #414651;
+  background: #f8f9fc;
+  padding: 8px 16px;
+  border-radius: 100px;
+  border: 1px solid #e9eaeb;
+}
+
+.dev-empty-state__feature svg {
+  flex-shrink: 0;
+}
+
+.dev-empty-state__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: var(--primary-color, #0000FF);
+  color: #62F7A4;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+}
+
+.dev-empty-state__cta:hover {
+  background: #0000CC;
+  transform: translateY(-1px);
+  box-shadow:
+    0px 4px 12px rgba(0, 0, 255, 0.25),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+}
+
+.dev-empty-state__cta span {
+  color: #62F7A4;
+}
+
+/* ===========================
+   8. Responsive
+   =========================== */
+@media (max-width: 1024px) {
+  .cart-page-main .property-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .cart-page-main .property-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cart-page-main .status-tabs {
+    width: 100%;
+  }
+
+  .cart-page-main .status-tab {
+    flex: 1;
+    text-align: center;
+  }
+}

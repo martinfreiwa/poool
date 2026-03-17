@@ -1,0 +1,945 @@
+/* ===========================
+   Mobile Burger Menu (Slide-out Navigation)
+   Based on reference specifications
+   Reusing desktop sidebar components with mobile dimensions
+   =========================== */
+
+/* Burger Menu Overlay */
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+  /* Above header (1000) */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
+}
+
+.mobile-menu-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Burger Menu Container */
+.mobile-burger-menu {
+  box-sizing: border-box;
+  position: fixed;
+  width: 282px;
+  right: -282px;
+  /* Hidden off-screen initially */
+  top: 0;
+  bottom: 0;
+  background: #ffffff;
+  border-left: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  z-index: 1002;
+  /* Above overlay (1001) */
+  transition: right 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-burger-menu.active {
+  right: 0;
+  /* Slide in from right */
+}
+
+/* Burger Menu Header */
+.mobile-burger-menu__header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0px 0px;
+  width: 282px;
+  height: 56px;
+  flex: 0 0 auto;
+  /* Header should not grow or shrink */
+}
+
+.mobile-burger-menu__header-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 24px 0px 32px;
+  width: 282px;
+  height: 40px;
+}
+
+/* Logo in Burger Menu */
+.mobile-burger-menu__logo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  margin: 0 auto;
+  width: 155px;
+  height: 28px;
+  order: 0;
+  flex-grow: 0;
+}
+
+.mobile-burger-menu__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ===========================
+   Developer-Specific Mobile Menu Styles
+   =========================== */
+
+/* Add Asset Button - Developer Special Feature */
+.mobile-burger-menu__add-asset-item {
+  background: var(--primary-color) !important;
+  border-radius: 6px;
+  color: #ffffff !important;
+  margin: 8px 12px !important;
+  padding: 0px 24px !important;
+  justify-content: center !important;
+  width: calc(100% - 24px) !important;
+}
+
+.mobile-burger-menu__add-asset-item:hover {
+  background: #0000cc !important;
+}
+
+.mobile-burger-menu__add-asset-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.mobile-burger-menu__add-asset-text {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* Disabled Navigation Items */
+.mobile-burger-menu__nav-item--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.mobile-burger-menu__nav-item--disabled .mobile-burger-menu__nav-text {
+  color: #717680;
+}
+
+/* Developer Navigation Badges */
+.mobile-burger-menu__nav-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 16px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Notifications Badge - Green */
+.notifications-badge {
+  background: #fafafa;
+  border: 1px solid #e9eaeb;
+  color: #17b26a;
+  min-width: 28px;
+  height: 20px;
+}
+
+/* Soon Badge - Blue */
+.soon-badge {
+  background: #eff4ff;
+  border: 1px solid #b2ddff;
+  color: var(--primary-color);
+  min-width: 40px;
+  height: 20px;
+}
+
+/* Support Badge Adjustments for Developer */
+.mobile-burger-menu__support-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.mobile-burger-menu__support-dot {
+  width: 8px;
+  height: 8px;
+  background: #17b26a;
+  border-radius: 50%;
+}
+
+.mobile-burger-menu__support-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 16px;
+  color: #17b26a;
+}
+
+/* Close Button */
+.mobile-burger-menu__close {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  gap: 8px;
+  margin: 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  order: 1;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.mobile-burger-menu__close:hover {
+  background: #f5f5f5;
+}
+
+.mobile-burger-menu__close-icon {
+  width: 24px;
+  height: 24px;
+  position: relative;
+}
+
+.mobile-burger-menu__close-icon::before,
+.mobile-burger-menu__close-icon::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 2px;
+  background: var(--primary-color);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.mobile-burger-menu__close-icon::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.mobile-burger-menu__close-icon::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* Navigation Menu - Reusing desktop nav items with mobile styles */
+.mobile-burger-menu__nav {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0px 0px 20px 0px;
+  gap: 4px;
+  width: 282px;
+  flex: 1 1 auto;
+  /* Navigation should take remaining space and scroll */
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  margin-top: 24px;
+}
+
+/* Nav Item Button - Reusing desktop nav structure */
+.mobile-burger-menu__nav-item {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 0px 0px 24px;
+  gap: 8px;
+  width: 100%;
+  /* Ensure nav items don't have weird margins */
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s ease;
+  position: relative;
+  margin: 0;
+  /* Ensure nav items don't have weird margins */
+}
+
+.mobile-burger-menu__nav-item:hover {
+  background: #f5f5f5;
+}
+
+.mobile-burger-menu__nav-item.active {
+  background: #f0f0ff;
+}
+
+/* Icon Wrapper */
+.mobile-burger-menu__nav-icon-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 2px 0px 0px;
+  width: 22px;
+  height: 20px;
+  order: 0;
+  flex-grow: 0;
+}
+
+.mobile-burger-menu__nav-icon {
+  width: 20px;
+  height: 20px;
+  order: 0;
+  flex-grow: 0;
+  /* Default grey filter for non-active icons */
+  filter: brightness(0) saturate(100%) invert(50%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(100%);
+}
+
+/* Active state icon color */
+.mobile-burger-menu__nav-item.active .mobile-burger-menu__nav-icon {
+  filter: brightness(0) saturate(100%) invert(13%) sepia(94%) saturate(7466%) hue-rotate(247deg) brightness(94%) contrast(143%);
+}
+
+/* Nav Text */
+.mobile-burger-menu__nav-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  text-transform: uppercase;
+  color: #000000;
+  order: 1;
+  flex-grow: 0;
+}
+
+.mobile-burger-menu__nav-item.active .mobile-burger-menu__nav-text {
+  color: var(--primary-color);
+}
+
+/* Badge for nav items */
+.mobile-burger-menu__nav-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 8px;
+  position: absolute;
+  right: 24px;
+  height: 22px;
+  background: #fafafa;
+  border: 1px solid #e9eaeb;
+  border-radius: 16px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #414651;
+}
+
+/* Support Badge with Online Status */
+.mobile-burger-menu__support-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 6px;
+  gap: 4px;
+  position: absolute;
+  right: 24px;
+  height: 22px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+}
+
+.mobile-burger-menu__support-dot {
+  width: 6px;
+  height: 6px;
+  background: #17b26a;
+  border-radius: 3px;
+  order: 0;
+}
+
+.mobile-burger-menu__support-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #414651;
+  order: 1;
+}
+
+/* Footer Section */
+.mobile-burger-menu__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 0px 20px;
+  gap: 16px;
+  width: 282px;
+  flex: 0 0 auto;
+  /* Footer should stick to bottom */
+  border-top: 1px solid #e9eaeb;
+  background: #ffffff;
+  margin-top: auto;
+  position: relative;
+  bottom: auto;
+}
+
+/* Featured Card - Reusing desktop community card */
+.mobile-burger-menu__featured-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px;
+  gap: 16px;
+  isolation: isolate;
+  width: calc(100% - 28px);
+  /* Ensure footer content is properly sized */
+  background: rgba(3, 255, 136, 0.1);
+  border-radius: 12px;
+  position: relative;
+  margin: 0 auto;
+}
+
+/* Support Chat Card - Developer specific */
+.mobile-burger-menu__featured-card--support {
+  box-sizing: border-box;
+  width: calc(100% - 28px);
+  height: 160px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+}
+
+/* Support Card Content Container */
+.mobile-burger-menu__featured-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  width: 100%;
+  height: auto;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  z-index: 1;
+}
+
+/* Support Card Badge (Online status) */
+.mobile-burger-menu__featured-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 6px;
+  gap: 4px;
+  width: 61px;
+  height: 22px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.mobile-burger-menu__featured-badge--online .mobile-burger-menu__support-dot {
+  width: 8px;
+  height: 8px;
+  background: #17b26a;
+  border-radius: 50%;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.mobile-burger-menu__featured-badge--online .mobile-burger-menu__support-text {
+  width: 37px;
+  height: 18px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Support Card Title and Description */
+.mobile-burger-menu__featured-card--support .mobile-burger-menu__featured-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 4px;
+  width: 100%;
+  height: auto;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.mobile-burger-menu__featured-card--support .mobile-burger-menu__featured-title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  margin: 0;
+}
+
+.mobile-burger-menu__featured-card--support .mobile-burger-menu__featured-description {
+  width: 100%;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: #535862;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  margin: 0;
+}
+
+/* Support Card Button */
+.mobile-burger-menu__featured-button--chat {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 4px;
+  width: 100%;
+  height: 35px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  flex: none;
+  order: 2;
+  align-self: stretch;
+  flex-grow: 0;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.mobile-burger-menu__featured-button--chat img {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.mobile-burger-menu__featured-button--chat span {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  text-align: center;
+}
+
+/* Featured Card Close Button */
+.mobile-burger-menu__featured-close {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  right: 8px;
+  top: 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  z-index: 0;
+}
+
+.mobile-burger-menu__featured-close-icon {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.mobile-burger-menu__featured-close-icon::before,
+.mobile-burger-menu__featured-close-icon::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 1.67px;
+  background: var(--primary-color);
+  top: 9px;
+  left: 5px;
+}
+
+/* Support card close button - gray color */
+.mobile-burger-menu__featured-card--support .mobile-burger-menu__featured-close-icon::before,
+.mobile-burger-menu__featured-card--support .mobile-burger-menu__featured-close-icon::after {
+  background: #a4a7ae;
+}
+
+.mobile-burger-menu__featured-close-icon::before {
+  transform: rotate(45deg);
+}
+
+.mobile-burger-menu__featured-close-icon::after {
+  transform: rotate(-45deg);
+}
+
+/* Featured Card Content */
+.mobile-burger-menu__featured-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 4px;
+  width: 202px;
+  z-index: 1;
+}
+
+.mobile-burger-menu__featured-title {
+  width: 178px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+.mobile-burger-menu__featured-description {
+  width: 202px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: #000000;
+  margin: 0;
+}
+
+/* Featured Card Image */
+.mobile-burger-menu__featured-image {
+  width: 202px;
+  height: 94px;
+  background: #e9eaeb;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-burger-menu__featured-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/* Featured Card Actions */
+.mobile-burger-menu__featured-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  height: 20px;
+}
+
+.mobile-burger-menu__featured-button {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  height: 38px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.mobile-burger-menu__featured-button--dismiss {
+  color: #535862;
+}
+
+.mobile-burger-menu__featured-button--action {
+  color: var(--primary-color);
+}
+
+/* Account Card - Reusing desktop account card */
+.mobile-burger-menu__account-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 12px;
+  gap: 16px;
+  isolation: isolate;
+  width: calc(100% - 28px);
+  /* Ensure footer content is properly sized */
+  height: 64px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  margin: 0 auto;
+}
+
+/* Avatar Group */
+.mobile-burger-menu__avatar-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  flex: 1;
+  z-index: 0;
+}
+
+.mobile-burger-menu__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 200px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-burger-menu__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobile-burger-menu__avatar-online {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  right: -2px;
+  bottom: -2px;
+  background: #17b26a;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+/* Account Text */
+.mobile-burger-menu__account-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+}
+
+.mobile-burger-menu__account-name {
+  display: block;
+  min-height: 20px;
+  min-width: 120px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181d27;
+}
+
+.mobile-burger-menu__account-email {
+  display: block;
+  min-height: 20px;
+  min-width: 120px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+}
+
+/* Account Menu Button */
+.mobile-burger-menu__account-menu {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  right: 6px;
+  top: 6px;
+}
+
+.mobile-burger-menu__account-menu-button {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+.mobile-burger-menu__account-menu-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* ===========================
+   Mobile Dropdown Navigation (Marketplace)
+   =========================== */
+
+/* Parent Item with Chevron */
+.mobile-burger-menu__nav-item--parent {
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 0px 0px 24px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mobile-burger-menu__nav-item--parent .mobile-burger-menu__nav-text-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+/* Chevron Icon */
+.mobile-burger-menu__nav-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-right: 24px;
+  transition: transform 0.2s ease;
+}
+
+.mobile-burger-menu__nav-chevron--expanded {
+  transform: rotate(180deg);
+}
+
+/* Children Container */
+.mobile-burger-menu__nav-children {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0px 4px 48px;
+  gap: 2px;
+  width: 100%;
+  overflow: hidden;
+  transition:
+    height 0.3s ease,
+    padding 0.3s ease;
+}
+
+.mobile-burger-menu__nav-children--collapsed {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Child Item Link */
+.mobile-burger-menu__nav-child {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 16px;
+  height: 40px;
+  background: transparent;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.mobile-burger-menu__nav-child:hover {
+  background: #f5f5f5;
+}
+
+.mobile-burger-menu__nav-child--active {
+  background: #f0f0ff;
+}
+
+.mobile-burger-menu__nav-child-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+.mobile-burger-menu__nav-child--active .mobile-burger-menu__nav-child-text {
+  color: var(--primary-color);
+}
+
+/* Show burger menu elements only on mobile */
+@media (max-width: 768px) {
+  /* Overlay should only show when active, not by default! */
+  /* .mobile-menu-overlay - removed display: block - it should only show when active */
+  /* mobile-burger-menu already has display: flex from main styles */
+}

@@ -1,0 +1,175 @@
+/* Mobile Investment Type Section */
+@media (max-width: 768px) {
+  .mobile-investment-type {
+    width: 100%;
+    margin-bottom: 24px;
+    padding: 0 16px; /* Add horizontal padding to center the content */
+    box-sizing: border-box;
+  }
+
+  /* Header with icon */
+  .mobile-investment-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    margin-top: 75px;
+  }
+
+  .mobile-investment-header img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-investment-header h2 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  /* Strategy Card Container */
+  .mobile-strategy-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 20px;
+    width: 100%;
+    background: rgba(3, 255, 136, 0.1); /* Brand Green Accent/25 */
+    border-radius: 16px;
+  }
+
+  /* Top Section with text and icon */
+  .mobile-strategy-top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .mobile-strategy-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .mobile-strategy-text h3 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  .mobile-strategy-text p {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    margin: 0;
+  }
+
+  /* Icon container */
+  .mobile-strategy-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .mobile-icon-background {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: #fafafa;
+    border: 1px solid #e9eaeb;
+    border-radius: 24px;
+  }
+
+  .mobile-icon-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    left: 8px;
+    top: 8px;
+    background: #535862;
+    border-radius: 99px;
+  }
+
+  .mobile-icon-wrapper img {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) saturate(100%) invert(93%) sepia(58%) saturate(514%)
+      hue-rotate(66deg) brightness(101%) contrast(97%); /* Makes icon green */
+  }
+
+  /* Content Box */
+  .mobile-strategy-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 20px;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 12px;
+  }
+
+  .mobile-strategy-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .mobile-strategy-item h4 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  .mobile-strategy-item p {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: #535862;
+    margin: 0;
+  }
+
+  /* Divider */
+  .mobile-strategy-divider {
+    width: 100%;
+    height: 1px;
+    background: #e9eaeb;
+  }
+}

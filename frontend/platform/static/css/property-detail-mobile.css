@@ -1,0 +1,1689 @@
+/* Property Detail Page - Mobile Styles */
+
+/* Hide desktop elements on mobile */
+/* Mobile Image Gallery */
+.mobile-image-gallery {
+  display: none;
+}
+
+/* Hide mobile-only content on desktop (shown via media query on mobile) */
+.mobile-property-content {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .mobile-image-gallery {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-image-gallery {
+    display: block;
+    width: 100vw;
+    height: 283px;
+    position: relative;
+    margin-left: 0;
+    margin-top: 48px;
+    background: #000;
+    overflow: hidden;
+  }
+
+  .mobile-gallery-container {
+    position: relative;
+    width: 100vw;
+    height: 283px;
+    overflow: hidden;
+  }
+
+  .mobile-gallery-scroll {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-snap-stop: always;
+    scroll-behavior: smooth;
+    height: 100%;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-scroll-snap-stop: always;
+  }
+
+  .mobile-gallery-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-gallery-slide {
+    flex: 0 0 100%;
+    width: 100vw;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    position: relative;
+    height: 100%;
+    min-width: 100vw;
+  }
+
+  .mobile-gallery-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: auto;
+  }
+
+  /* Navigation buttons - using desktop lightbox styles */
+  .mobile-gallery-prev,
+  .mobile-gallery-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    color: white;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+  }
+
+  .mobile-gallery-prev:hover,
+  .mobile-gallery-next:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-50%) scale(1.05);
+  }
+
+  .mobile-gallery-prev {
+    left: 12px;
+  }
+
+  .mobile-gallery-next {
+    right: 12px;
+  }
+
+  .mobile-gallery-prev svg,
+  .mobile-gallery-next svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Gallery indicators - professional carousel style */
+  .mobile-gallery-indicators {
+    position: absolute;
+    bottom: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 10;
+  }
+
+  .mobile-gallery-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .mobile-gallery-dot.active {
+    width: 10px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .mobile-gallery-dot:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.6);
+  }
+}
+
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll on mobile */
+  html,
+  body {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: relative !important;
+    height: auto !important;
+  }
+  /* Hide ALL desktop content completely */
+  #app-sidebar,
+  .app-sidebar,
+  #app-wrapper,
+  .app-wrapper,
+  #app-content,
+  .app-content,
+  .property-detail-wrapper,
+  .property-detail-container,
+  .property-detail-content,
+  #property-main-card,
+  #property-price-card,
+  .similar-properties-wrapper,
+  #documents-modal-overlay {
+    display: none !important;
+  }
+
+  /* Mobile Fullscreen Lightbox */
+  #lightbox-modal {
+    display: none;
+    position: fixed;
+    z-index: 2147483647;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* When lightbox is visible (not in display:none state) */
+  #lightbox-modal[style*="display: flex"],
+  #lightbox-modal[style*="display:flex"] {
+    opacity: 1 !important;
+  }
+
+  #lightbox-modal.lightbox-opening {
+    display: flex !important;
+    animation: mobileLightboxFadeIn 0.3s ease forwards;
+  }
+
+  #lightbox-modal.lightbox-closing {
+    animation: mobileLightboxFadeOut 0.3s ease forwards;
+  }
+
+  @keyframes mobileLightboxFadeIn {
+    from {
+      opacity: 0;
+      backdrop-filter: blur(0px);
+    }
+    to {
+      opacity: 1;
+      backdrop-filter: blur(20px);
+    }
+  }
+
+  @keyframes mobileLightboxFadeOut {
+    from {
+      opacity: 1;
+      backdrop-filter: blur(20px);
+    }
+    to {
+      opacity: 0;
+      backdrop-filter: blur(0px);
+    }
+  }
+
+  /* Mobile lightbox content - fullscreen image */
+  #lightbox-modal .lightbox-content {
+    max-width: 100vw;
+    max-height: 100vh;
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.3s ease;
+  }
+
+  /* Image animation when opening */
+  #lightbox-modal.lightbox-opening .lightbox-content {
+    opacity: 0;
+    transform: scale(0.95);
+    animation: mobileLightboxImageIn 0.3s ease forwards;
+  }
+
+  /* Image is visible when lightbox is open and not closing */
+  #lightbox-modal[style*="display: flex"] .lightbox-content,
+  #lightbox-modal[style*="display:flex"] .lightbox-content {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* Swipe transitions for image navigation */
+  /* Exit animations */
+  #lightbox-modal .lightbox-content.exit-left {
+    transform: translateX(-100vw);
+    opacity: 0;
+  }
+
+  #lightbox-modal .lightbox-content.exit-right {
+    transform: translateX(100vw);
+    opacity: 0;
+  }
+
+  /* Enter animations - from right */
+  #lightbox-modal .lightbox-content.enter-from-right {
+    transform: translateX(100vw);
+    opacity: 0;
+  }
+
+  /* Enter animations - from left */
+  #lightbox-modal .lightbox-content.enter-from-left {
+    transform: translateX(-100vw);
+    opacity: 0;
+  }
+
+  @keyframes mobileLightboxImageIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Close button - mobile optimized */
+  #lightbox-modal .lightbox-close {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2147483648;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  #lightbox-modal .lightbox-close:active {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(0.95);
+  }
+
+  /* Navigation buttons - mobile optimized */
+  #lightbox-modal .lightbox-prev,
+  #lightbox-modal .lightbox-next {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2147483648;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  #lightbox-modal .lightbox-prev {
+    left: 16px;
+  }
+
+  #lightbox-modal .lightbox-next {
+    right: 16px;
+  }
+
+  #lightbox-modal .lightbox-prev:active,
+  #lightbox-modal .lightbox-next:active {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-50%) scale(0.95);
+  }
+
+  /* Caption - mobile optimized */
+  #lightbox-modal .lightbox-caption {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px 16px;
+    border-radius: 8px;
+    z-index: 2147483648;
+    backdrop-filter: blur(10px);
+    font-size: 14px;
+    line-height: 20px;
+    max-width: calc(100vw - 32px);
+    text-align: center;
+  }
+
+  /* Prevent body scroll when lightbox is open */
+  body.lightbox-open {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100vh !important;
+  }
+
+  /* Show only mobile content */
+  .mobile-property-content {
+    display: block !important;
+    padding: 0px 0 20px;
+    background: #f5f5f5;
+    min-height: 100vh;
+  }
+
+  /* Mobile Price Card - matching desktop design */
+  #mobile-property-price-card,
+  .mobile-price-card {
+    box-sizing: border-box;
+    width: calc(100vw - 32px);
+    height: auto;
+    min-height: 500px;
+    margin: -28px 16px 67px 16px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 16px;
+    padding: 16px;
+    position: relative;
+    z-index: 5;
+  }
+
+  /* Top Buttons Section */
+  .mobile-card-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 33px;
+    height: 40px;
+    margin-bottom: 32px;
+  }
+
+  .mobile-gallery-btn {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    filter: none;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .mobile-gallery-btn img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-gallery-btn span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 18px;
+    color: #000000;
+  }
+
+  .mobile-btn-divider {
+    width: 1px;
+    height: 21px;
+    background: #a4a7ae;
+  }
+
+  /* Card Content */
+  .mobile-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Heading Section */
+  .mobile-card-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .mobile-main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+  }
+
+  .mobile-text-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Icon styling - Featured icon */
+  .mobile-card-icon {
+    width: 40px;
+    height: 40px;
+    position: relative;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-card-icon .icon-background {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    left: 1.51px;
+    top: -10.5px;
+    background: var(--primary-color);
+    border-radius: 8px;
+    transform: rotate(15deg);
+  }
+
+  .mobile-card-icon .icon-glass {
+    box-sizing: border-box;
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    left: 0px;
+    top: 0px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid var(--accent-color);
+    backdrop-filter: blur(8px);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-supporting-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    color: #535862;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-price-text {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 4px;
+    order: 2;
+  }
+
+  .mobile-price-text .price-currency {
+    width: 34px;
+    height: 24px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--primary-color);
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-price-text .price-amount {
+    width: 102px;
+    height: 30px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: var(--primary-color);
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  /* Loading Bar */
+  .mobile-loading-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .mobile-loading-bar .loading-container {
+    width: 100%;
+    height: 8px;
+    background: #d5d7da;
+    border-radius: 30px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mobile-loading-bar .loading-fill {
+    width: 78%;
+    height: 8px;
+    background: #03FF88;
+    border-radius: 30px;
+  }
+
+  .mobile-loading-bar .loading-text {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .mobile-loading-bar .funded-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+  }
+
+  .mobile-loading-bar .available-text-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mobile-loading-bar .available-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+  }
+
+  .mobile-loading-bar .help-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Investors Section */
+  .mobile-investors {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mobile-investors .investors-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mobile-investors .users-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-investors .investors-number {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--primary-color);
+  }
+
+  .mobile-investors .investors-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+  }
+
+  .mobile-investors .price-per-sqft-badge {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 2px 10px 2px 8px;
+    gap: 4px;
+    background: #03FF88;
+    border: 1px solid #03FF88;
+    border-radius: 16px;
+  }
+
+  .mobile-investors .dollar-icon {
+    width: 12px;
+    height: 12px;
+    filter: invert(13%) sepia(97%) saturate(6321%) hue-rotate(241deg) brightness(98%) contrast(106%);
+  }
+
+  .mobile-investors .badge-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 18px;
+    color: #0000FF !important;
+  }
+
+  .mobile-investors .badge-suffix {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: #0000FF !important;
+  }
+
+  /* Returns Section */
+  .mobile-returns {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 16px;
+    background: #f8f9fc;
+    border-radius: 8px;
+    width: 100%;
+  }
+
+  .mobile-returns .returns-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .mobile-returns .returns-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #414651;
+  }
+
+  .mobile-returns .returns-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: right;
+    color: var(--brand-dark-blue);
+    margin-left: auto;
+  }
+
+  /* Investment Section */
+  .mobile-investment {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mobile-investment .investment-input {
+    box-sizing: border-box;
+    display: flex;
+    flex: 1;
+    background: #ffffff;
+    border: 1px solid #d5d7da;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .mobile-investment .input-dropdown {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 4px;
+    background: #fafafa;
+    border-right: 1px solid #e5e7eb;
+  }
+
+  .mobile-investment .currency-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    color: #181d27;
+  }
+
+  .mobile-investment .input-field {
+    flex: 1;
+    padding: 8px 12px;
+  }
+
+  .mobile-investment .amount-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 28px;
+    color: #181d27;
+  }
+
+  .mobile-investment .add-to-cart-btn {
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 4px;
+    background: var(--primary-color);
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .mobile-investment .btn-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #ffffff;
+  }
+
+  /* Quick Buttons Section */
+  .mobile-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .mobile-buttons .amount-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .mobile-buttons .amount-badge {
+    box-sizing: border-box;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 12px;
+    background: rgba(3, 255, 136, 0.15);
+    border: 1px solid #6ef96c;
+    border-radius: 16px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    color: var(--brand-dark-blue);
+    cursor: pointer;
+    border: none;
+  }
+
+  .mobile-buttons .disclaimer-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    color: #414651;
+  }
+
+  /* Mobile Property Details Section */
+  .mobile-property-details {
+    width: calc(100vw - 32px);
+    margin: 24px 16px 0 16px;
+    background: #ffffff;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  /* Header section */
+  .mobile-details-header {
+    padding: 24px 24px 0px 16px;
+  }
+
+  .mobile-property-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 32px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  /* Categories section */
+  .mobile-categories {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .mobile-category-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0;
+  }
+
+  .mobile-category-badge img {
+    width: auto;
+    height: auto;
+    filter: brightness(0) !important;
+  }
+
+  .mobile-category-badge span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #000000 !important;
+  }
+
+  .mobile-category-divider {
+    width: 2px;
+    height: 20px;
+    background: #d9d9d9;
+  }
+
+  /* Info section - matching design specs */
+  .mobile-info-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px 16px;
+    gap: 24px;
+    background: #f8f9fc;
+    border-radius: 16px;
+    flex: none;
+    order: 2;
+    align-self: stretch;
+    flex-grow: 0;
+  }
+
+  /* Badge - info card */
+  .mobile-info-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 12px;
+    width: 100%;
+    border-radius: 16px;
+    flex: none;
+    align-self: stretch;
+    flex-grow: 0;
+  }
+
+  .mobile-info-icon {
+    width: 36px;
+    height: 36px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-info-icon svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Text container */
+  .mobile-info-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 2px;
+    flex: 1;
+    order: 1;
+    min-width: 0;
+  }
+
+  .mobile-info-text h3 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    color: #181d27;
+    margin: 0;
+    width: 100%;
+    word-wrap: break-word;
+  }
+
+  .mobile-info-text p {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    margin: 0;
+    width: 100%;
+    word-wrap: break-word;
+  }
+
+  /* Mobile How It Works Section */
+  .mobile-how-it-works {
+    width: 100%;
+    margin: 24px 0;
+    padding: 0 16px;
+  }
+
+  .mobile-hiw-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 12px;
+    margin-top: 75px;
+  }
+
+  .hiw-help-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .mobile-hiw-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  /* Scrollable cards wrapper */
+  .mobile-hiw-cards-wrapper {
+    width: 100vw;
+    max-width: 100%;
+    margin-left: -16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-hiw-cards-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-hiw-cards {
+    display: inline-flex;
+    gap: 8px;
+    padding: 0 16px;
+  }
+
+  /* Individual card */
+  .mobile-hiw-card {
+    box-sizing: border-box;
+    width: 226px;
+    flex-shrink: 0;
+    height: 122px;
+    border: 1px solid #e9eaeb;
+    border-radius: 12px;
+    position: relative;
+    background: white;
+    overflow: hidden;
+  }
+
+  .mobile-hiw-card:first-child {
+    width: 226px;
+  }
+
+  .mobile-hiw-card:nth-child(2) {
+    width: 242px;
+  }
+
+  .mobile-hiw-card:nth-child(3) {
+    width: 231px;
+  }
+
+  .hiw-card-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hiw-step-number {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--primary-color);
+  }
+
+  .hiw-card-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 18px;
+    color: #0a0d12;
+    margin: 0;
+    max-width: 124px;
+  }
+
+  .hiw-card-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    margin-top: auto;
+  }
+
+  .hiw-card-link img {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .hiw-card-link span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--primary-color);
+  }
+
+  .hiw-card-link svg {
+    width: 6px;
+    height: 12px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  /* Non-link text for cards 2 and 3 */
+  .hiw-card-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: auto;
+  }
+
+  .hiw-card-text img {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .hiw-card-text span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--primary-color);
+  }
+
+  .hiw-card-icon {
+    position: absolute;
+    width: 40px;
+    height: 44px;
+    right: 16px;
+    top: 26px;
+    object-fit: contain;
+  }
+
+  /* Mobile About Section */
+  .mobile-about-section {
+    width: calc(100vw - 32px);
+    margin: 24px 16px;
+    padding: 0;
+  }
+
+  .mobile-about-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 75px 0 12px 0;
+  }
+
+  /* Video container */
+  .mobile-video-container {
+    position: relative;
+    width: 100%;
+    height: 183px;
+    border-radius: 13px;
+    overflow: hidden;
+    cursor: pointer;
+    margin-bottom: 12px;
+  }
+
+  .video-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .play-button {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(43, 50, 249, 0.3);
+    backdrop-filter: blur(13px);
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .play-button svg {
+    width: 18px;
+    height: 18px;
+    margin-left: 2px;
+  }
+
+  .play-button path {
+    fill: #2b32f9;
+  }
+
+  /* Description text */
+  .mobile-about-description {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .mobile-about-description p {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    margin: 0;
+  }
+
+  /* Mobile Investment Type Section */
+  .mobile-investment-type {
+    width: calc(100vw - 32px);
+    max-width: 100%;
+    margin: 24px 0px;
+    padding: 0 16px;
+  }
+
+  .mobile-investment-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .mobile-investment-header svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-investment-header h2 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  /* Strategy Card */
+  .mobile-strategy-card {
+    width: 311px;
+    background: rgba(3, 255, 136, 0.1);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .strategy-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .strategy-text {
+    flex: 1;
+    max-width: 231px;
+  }
+
+  .strategy-text h3 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0 0 8px 0;
+  }
+
+  .strategy-text p {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    margin: 0;
+  }
+
+  .strategy-icon {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+
+  .icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background: #fafafa;
+    border: 1px solid #e9eaeb;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon-wrapper svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Strategy Details */
+  .strategy-details {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .detail-section h4 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    color: #181d27;
+    margin: 0 0 8px 0;
+  }
+
+  .detail-section p {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: #535862;
+    margin: 0;
+  }
+
+  .section-divider {
+    width: 100%;
+    height: 1px;
+    background: #e9eaeb;
+  }
+
+  /* Mobile Funding Timeline Section */
+  .mobile-funding-timeline {
+    width: 343px;
+    max-width: 100%;
+    margin: 75px auto;
+    padding: 0 16px;
+    position: relative;
+  }
+
+  .mobile-funding-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+
+  .mobile-funding-header svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-funding-header h2 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  .timeline-divider {
+    width: 311px;
+    height: 1px;
+    background: #e9eaeb;
+    margin-bottom: 20px;
+  }
+
+  /* Timeline Steps */
+  .timeline-steps {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .timeline-step {
+    display: flex;
+    gap: 12px;
+    position: relative;
+  }
+
+  .step-connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 24px;
+    position: relative;
+  }
+
+  .step-icon {
+    width: 24px;
+    height: 24px;
+    background: #ffffff;
+    border: 1.5px solid #e9eaeb;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .timeline-step.active .step-icon,
+  .step-icon.active {
+    background: var(--primary-color) !important;
+    border: none !important;
+    box-shadow:
+      0px 0px 0px 2px #ffffff,
+      0px 0px 0px 4px #03FF88 !important;
+  }
+
+  .step-dot {
+    width: 8px;
+    height: 8px;
+    background: #d5d7da;
+    border-radius: 50%;
+  }
+
+  .timeline-step.active .step-dot,
+  .step-icon.active .step-dot {
+    background: #ffffff !important;
+  }
+
+  .connector-line {
+    width: 2px;
+    height: 84px;
+    background: #e9eaeb;
+    border-radius: 2px;
+    margin-top: 4px;
+    position: relative;
+  }
+
+  .timeline-step.active .connector-line,
+  .connector-line.active {
+    background: var(--primary-color) !important;
+  }
+
+  .timeline-step:last-child .connector-line {
+    display: none;
+  }
+
+  /* Step Content */
+  .step-content {
+    flex: 1;
+    padding-bottom: 26px;
+  }
+
+  .step-content h4 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 20px;
+    color: #181d27;
+    margin: 0 0 8px 0;
+  }
+
+  .step-date {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: #535862;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .step-content p {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: #535862;
+    margin: 0;
+  }
+
+  /* Income Badge */
+  .income-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px 2px 8px;
+    background: #03FF88;
+    border: 1px solid #03FF88;
+    border-radius: 16px;
+    margin: 8px 0;
+  }
+
+  .income-badge svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .income-badge span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: #ffffff;
+  }
+
+  /* Mobile Tooltip Styles - Financial Section */
+  .mobile-tooltip-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-help-icon,
+  .mobile-info-bar-icon {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-help-icon:hover,
+  .mobile-info-bar-icon:hover {
+    transform: scale(1.1);
+  }
+
+  /* Mobile Tooltip - proper width to avoid narrow tall text */
+  .mobile-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: #181d27;
+    color: #ffffff;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    width: max-content;
+    min-width: 200px;
+    max-width: calc(100vw - 48px);
+    z-index: 1000;
+    white-space: normal;
+    word-wrap: break-word;
+
+    /* Initially hidden */
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    /* Smooth animation */
+    transition:
+      opacity 0.3s ease,
+      visibility 0.3s ease,
+      transform 0.3s ease;
+  }
+
+  /* Management fees tooltip - needs wider space */
+  .mobile-management-fees-tooltip {
+    width: max-content;
+    min-width: 280px;
+    max-width: calc(100vw - 32px);
+  }
+
+  /* Mobile Tooltip arrow */
+  .mobile-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #181d27;
+  }
+
+  /* Show tooltip on click for mobile */
+  .mobile-tooltip-container.active .mobile-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-4px);
+  }
+
+  /* Tooltip positioning adjustments for right-side icons */
+  .mobile-financial-value-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mobile-financial-label-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Ensure tooltips don't overflow off-screen on the right */
+  .mobile-financial-value-group
+    .mobile-tooltip-container:last-child
+    .mobile-tooltip {
+    left: auto;
+    right: 0;
+    transform: translateX(0) translateY(-8px);
+  }
+
+  .mobile-financial-value-group
+    .mobile-tooltip-container:last-child
+    .mobile-tooltip.active,
+  .mobile-tooltip-container.active
+    .mobile-financial-value-group:last-child
+    .mobile-tooltip {
+    transform: translateX(0) translateY(-4px);
+  }
+
+  /* Tooltip arrow adjustment for right-aligned tooltips */
+  .mobile-financial-value-group
+    .mobile-tooltip-container:last-child
+    .mobile-tooltip::after {
+    left: auto;
+    right: 8px;
+    transform: translateX(0);
+  }
+}
+
+/* Ensure desktop styles only apply on larger screens */
+@media (min-width: 769px) {
+  .mobile-property-content {
+    display: none !important;
+  }
+}

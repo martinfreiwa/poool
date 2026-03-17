@@ -1,0 +1,503 @@
+/* ============================================================
+   KYC / Identity Verification – Page Styles
+   Mirrors the wallet/rewards page layout pattern exactly
+   Brand colors: Blue #0000FF | Accent #03FF88 | Dark #08232F
+   ============================================================ */
+
+/* ── Page Layout ── */
+.kyc-page {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.kyc-sidebar {
+  width: 256px;
+  flex-shrink: 0;
+}
+
+.kyc-main {
+  width: calc(100% - 256px);
+  min-height: 100vh;
+  margin-left: 256px;
+  padding: 40px 32px 64px 32px;
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 0;
+}
+
+.kyc-container {
+  width: 100%;
+  max-width: 780px;
+}
+
+/* ── Page Header ── */
+.kyc-page-header {
+  margin-bottom: 28px;
+}
+
+.kyc-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.kyc-page-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #0000FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.kyc-title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 38px;
+  letter-spacing: -0.02em;
+  color: #181d27;
+  margin: 0;
+}
+
+.kyc-subtitle {
+  font-size: 16px;
+  color: #535862;
+  margin: 0;
+  padding-left: 52px;
+}
+
+/* ── Content Wrapper ── */
+.kyc-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Step Progress Bar ── */
+.kyc-stepper-bar {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+}
+
+.kyc-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.kyc-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #d0d5dd;
+  background: #ffffff;
+  color: #717680;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.kyc-step.active .kyc-step-circle {
+  background: #0000FF;
+  border-color: #0000FF;
+  color: #ffffff;
+}
+
+.kyc-step-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #717680;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.kyc-step.active .kyc-step-label {
+  color: #181d27;
+  font-weight: 600;
+}
+
+.kyc-step-connector {
+  flex: 1;
+  height: 2px;
+  background: #e9eaeb;
+  margin-bottom: 20px;
+  min-width: 24px;
+  transition: background 0.2s ease;
+}
+
+.kyc-step-connector.active {
+  background: #0000FF;
+}
+
+/* ── Main KYC Card ── */
+.kyc-card {
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Status / Center States ── */
+.kyc-center-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 0;
+  gap: 0;
+}
+
+.kyc-status-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  flex-shrink: 0;
+}
+
+.kyc-status-icon--start {
+  background: rgba(0, 0, 255, 0.08);
+  border: 1px solid rgba(0, 0, 255, 0.2);
+}
+
+.kyc-status-icon--success {
+  background: rgba(3, 255, 136, 0.1);
+  border: 1px solid rgba(3, 255, 136, 0.3);
+}
+
+.kyc-status-icon--pending {
+  background: #fffaeb;
+  border: 1px solid #fec84b;
+}
+
+.kyc-status-icon--rejected {
+  background: #fff1f0;
+  border: 1px solid #fca5a5;
+}
+
+.kyc-state-title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  color: #181d27;
+  margin: 0 0 12px;
+}
+
+.kyc-state-desc {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #535862;
+  margin: 0 0 28px;
+}
+
+/* ── Checklist (start state) ── */
+.kyc-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  background: #f9fafb;
+  border: 1px solid #e9eaeb;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 28px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.kyc-check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #344054;
+}
+
+/* ── Success Highlights (approved state) ── */
+.kyc-success-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  background: rgba(3, 255, 136, 0.05);
+  border: 1px solid rgba(3, 255, 136, 0.2);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 28px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.kyc-highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #344054;
+}
+
+/* ── Info Banner (pending state) ── */
+.kyc-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0f4f8;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #344054;
+  font-weight: 500;
+  margin-bottom: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+/* ── Form Elements ── */
+.kyc-step-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #181d27;
+  margin: 0 0 8px;
+}
+
+.kyc-step-desc {
+  font-size: 14px;
+  color: #535862;
+  margin: 0 0 24px;
+  line-height: 1.55;
+}
+
+.kyc-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.kyc-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.kyc-form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #344054;
+}
+
+.kyc-input,
+.kyc-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: 'TT Norms Pro', sans-serif;
+  color: #101828;
+  background: #ffffff;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+}
+
+.kyc-input::placeholder {
+  color: #9BABB8;
+}
+
+.kyc-input:focus,
+.kyc-select:focus {
+  outline: none;
+  border-color: #0000FF;
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
+}
+
+/* ── Review Box ── */
+.kyc-review-box {
+  background: #f9fafb;
+  border: 1px solid #e9eaeb;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.kyc-review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #e9eaeb;
+}
+
+.kyc-review-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.kyc-review-row:first-child {
+  padding-top: 0;
+}
+
+.kyc-review-label {
+  font-size: 14px;
+  color: #535862;
+  font-weight: 500;
+}
+
+.kyc-review-value {
+  font-size: 14px;
+  color: #181d27;
+  font-weight: 600;
+}
+
+/* ── Action Buttons ── */
+.kyc-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #e9eaeb;
+}
+
+.kyc-form-actions.space-between {
+  justify-content: space-between;
+}
+
+.kyc-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #0000FF;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+  white-space: nowrap;
+}
+
+.kyc-btn-primary:hover:not(:disabled) {
+  filter: brightness(0.88);
+}
+
+.kyc-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.kyc-btn-primary.full-width-btn {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 16px;
+}
+
+.kyc-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #ffffff;
+  color: #344054;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+  white-space: nowrap;
+}
+
+.kyc-btn-secondary:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #b0b7c3;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .kyc-sidebar {
+    display: none;
+  }
+
+  .kyc-main {
+    width: 100%;
+    margin-left: 0;
+    padding: 80px 16px 64px;
+  }
+
+  .kyc-container {
+    max-width: 100%;
+  }
+
+  .kyc-card {
+    padding: 24px;
+  }
+
+  .kyc-form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .kyc-stepper-bar {
+    padding: 14px 10px;
+    overflow-x: auto;
+  }
+
+  .kyc-step-label {
+    font-size: 10px;
+  }
+
+  .kyc-subtitle {
+    padding-left: 0;
+  }
+
+  .kyc-title {
+    font-size: 22px;
+  }
+}

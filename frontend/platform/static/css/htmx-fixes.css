@@ -1,0 +1,83 @@
+/* HTMX-specific CSS fixes */
+
+/* Ensure CSS is applied to dynamically loaded content */
+main.css-loaded table,
+main table.css-loaded {
+  /* Force recalculation */
+  transform: translateZ(0);
+}
+
+/* Portfolio table specific fixes for HTMX loads */
+.portfolio-main .assets-table-clean {
+  /* Force table layout recalculation */
+  table-layout: auto;
+  width: 100%;
+}
+
+.portfolio-main .assets-table-clean th,
+.portfolio-main .assets-table-clean td {
+  /* Ensure padding is applied */
+  padding: 12px !important;
+}
+
+/* Wallet table specific fixes */
+.wallet-main .transaction-table {
+  table-layout: auto;
+  width: 100%;
+}
+
+/* Force CSS to apply after HTMX swaps */
+main[data-htmx-swapped="true"] * {
+  /* Trigger reflow */
+  animation: htmxReflow 0.01s;
+}
+
+@keyframes htmxReflow {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Ensure navbar states work correctly */
+.nav-item.active {
+  background-color: #f5f6fa !important;
+}
+
+.nav-item.active .nav-text {
+  color: #000000 !important;
+  font-weight: 600 !important;
+}
+
+/* Prevent layout shift during HTMX navigation */
+.marketplace-page,
+.wallet-page,
+.portfolio-page {
+  min-height: 100vh;
+}
+
+/* Ensure main content area maintains proper spacing */
+main {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Fix for nested page structures */
+main main {
+  /* If we accidentally nest main elements, flatten the structure */
+  position: static !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Prevent duplicate wrappers */
+.marketplace-page .marketplace-page,
+.wallet-page .wallet-page,
+.portfolio-page .portfolio-page {
+  /* Remove duplicate wrapper styles */
+  all: unset;
+  display: contents;
+}

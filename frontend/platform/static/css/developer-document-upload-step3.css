@@ -1,0 +1,347 @@
+/* ===========================
+   Developer Document Upload Step 3 Page Styles
+   Updated to use cart/checkout layout system
+   =========================== */
+
+/* ===========================
+   1. Document Sections — left-aligned like cart
+   =========================== */
+.document-section {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 32px;
+  gap: 16px;
+  width: 100%;
+  max-width: 1096px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+/* Document Section Titles */
+.document-section-title {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 24px;
+  color: #181d27;
+  margin: 0;
+}
+
+/* Document Section Content */
+.document-section-content {
+  width: 100%;
+}
+
+.document-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.document-list li {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+  margin: 0 0 4px 0;
+  padding-left: 0;
+}
+
+/* ===========================
+   2. File Upload Area
+   =========================== */
+.document-section .file-upload-area {
+  width: 100%;
+  min-height: 120px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 24px;
+  gap: 4px;
+  background: #ffffff;
+  border: 2px solid var(--primary-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.document-section .file-upload-area:hover {
+  background: #f8f9fc;
+}
+
+/* Upload Content */
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 0;
+}
+
+.upload-icon-wrapper {
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.upload-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+  margin: 0;
+}
+
+.upload-link {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.upload-link:hover {
+  text-decoration: underline;
+}
+
+.upload-info {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #535862;
+  margin: 0;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+/* ===========================
+   3. Uploaded Files List
+   =========================== */
+.document-section .uploaded-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.document-section .file-upload-item {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 16px;
+  gap: 4px;
+  width: 100%;
+  min-height: 72px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  position: relative;
+}
+
+.file-content {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  z-index: 0;
+}
+
+.file-type-icon {
+  width: 40px;
+  height: 40px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.file-name {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+.file-size {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+/* Progress Bar */
+.file-progress {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #e9eaeb;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill {
+  position: absolute;
+  height: 100%;
+  left: 0;
+  top: 0;
+  background: var(--primary-color);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-percentage {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  min-width: 37px;
+}
+
+/* Delete Button */
+.file-delete-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px;
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  right: 8px;
+  top: 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 1;
+  transition: background 0.2s ease;
+}
+
+.file-delete-btn:hover {
+  background: #f8f9fc;
+}
+
+/* ===========================
+   4. Important Note Section
+   =========================== */
+.documents-note-section {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  gap: 16px;
+  width: 100%;
+  max-width: 1096px;
+  background: var(--accent-color);
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.documents-note-text {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  text-align: left;
+  margin: 0;
+}
+
+/* ===========================
+   5. Drag Overlay
+   =========================== */
+.drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 255, 0.05);
+  border: 2px dashed var(--primary-color);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.drag-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.drag-text {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--primary-color);
+}

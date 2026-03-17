@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Directory | Admin | POOOL</title>
+  <meta name="description"
+    content="POOOL Admin — Enterprise access management, admin lifecycle, and security posture." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <style>
+    .security-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .security-kpi {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .security-kpi-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--admin-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 18px;
+    }
+
+    .security-kpi-icon--ok {
+      background: var(--admin-success-bg);
+      color: var(--admin-success);
+    }
+
+    .security-kpi-icon--warn {
+      background: var(--admin-warning-bg);
+      color: var(--admin-warning);
+    }
+
+    .security-kpi-icon--danger {
+      background: var(--admin-danger-bg);
+      color: var(--admin-danger);
+    }
+
+    .security-kpi-icon--neutral {
+      background: var(--admin-neutral-bg);
+      color: var(--admin-neutral);
+    }
+
+    .security-kpi-label {
+      font-size: 12px;
+      color: var(--admin-text-muted);
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .security-kpi-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--admin-text-primary);
+      line-height: 1.1;
+    }
+
+    .security-kpi-sub {
+      font-size: 11px;
+      color: var(--admin-text-muted);
+      margin-top: 2px;
+    }
+
+    .admin-avatar-sm {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .admin-2fa-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .admin-2fa-badge--on {
+      background: var(--admin-success-bg);
+      color: var(--admin-success);
+    }
+
+    .admin-2fa-badge--off {
+      background: var(--admin-danger-bg);
+      color: var(--admin-danger);
+    }
+
+    .admin-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .admin-modal {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-xl);
+      max-width: 520px;
+      width: 95%;
+      box-shadow: var(--admin-shadow-md);
+      animation: admin-fadeIn 0.2s ease-out;
+    }
+
+    .admin-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--admin-border);
+    }
+
+    .admin-modal-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--admin-text-primary);
+    }
+
+    .admin-modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: var(--admin-text-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: var(--admin-radius-sm);
+    }
+
+    .admin-modal-close:hover {
+      background: var(--admin-hover-overlay);
+      color: var(--admin-text-primary);
+    }
+
+    .admin-modal-body {
+      padding: 24px;
+    }
+
+    .admin-modal-footer {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      padding: 16px 24px;
+      border-top: 1px solid var(--admin-border);
+    }
+
+    .admin-alert {
+      padding: 12px 16px;
+      border-radius: var(--admin-radius-sm);
+      font-size: 13px;
+    }
+
+    .admin-alert--info {
+      background: var(--admin-info-bg);
+      color: var(--admin-info);
+      border: 1px solid rgba(0, 29, 202, 0.12);
+    }
+
+    .admin-alert--info p {
+      margin: 0;
+    }
+
+    .admin-tabs--line {
+      border-bottom: 1px solid var(--admin-border);
+      margin-bottom: 20px;
+      display: flex;
+      gap: 0;
+    }
+
+    .admin-tab--line {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--admin-text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: "TT Norms Pro", sans-serif;
+      position: relative;
+      white-space: nowrap;
+      transition: color 0.2s;
+    }
+
+    .admin-tab--line:hover {
+      color: var(--admin-text-primary);
+    }
+
+    .admin-tab--line.active {
+      color: var(--admin-accent);
+    }
+
+    .admin-tab--line.active::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--admin-accent);
+      border-radius: 1px 1px 0 0;
+    }
+
+    .invite-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--admin-border);
+    }
+
+    .invite-row:last-child {
+      border-bottom: none;
+    }
+
+    @media (max-width: 1200px) {
+      .security-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .security-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper" x-data="adminDirectory">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN ===== -->
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">&#8250;</span>
+            <span class="current">Admin Directory</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Admin Directory</h1>
+          <p class="admin-page-subtitle">
+            Manage administrative staff, security posture, and session
+            lifecycle &mdash; Zero Trust Architecture.
+          </p>
+        </div>
+
+        <!-- Toast -->
+        <div x-show="toast.show" x-transition style="
+              position: fixed;
+              bottom: 24px;
+              right: 24px;
+              z-index: 9999;
+              padding: 12px 20px;
+              border-radius: 8px;
+              font-size: 13px;
+              font-weight: 600;
+              box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            "
+          :style="toast.type==='success' ? 'background:var(--admin-success);color:#fff;' : 'background:var(--admin-danger);color:#fff;'"
+          x-text="toast.message"></div>
+
+        <!-- Security Health KPIs -->
+        <div class="security-kpi-grid">
+          <div class="security-kpi">
+            <div class="security-kpi-icon security-kpi-icon--neutral">
+              <svg viewBox="0 0 20 20" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M16 17v-1.5a3.5 3.5 0 00-3.5-3.5h-5A3.5 3.5 0 004 15.5V17" />
+                <circle cx="10" cy="7" r="4" />
+              </svg>
+            </div>
+            <div>
+              <div class="security-kpi-label">Total Admins</div>
+              <div class="security-kpi-value" x-text="stats.total">0</div>
+              <div class="security-kpi-sub">
+                <span x-text="stats.active">0</span> active,
+                <span x-text="stats.suspended">0</span> suspended
+              </div>
+            </div>
+          </div>
+          <div class="security-kpi">
+            <div class="security-kpi-icon"
+              :class="stats.noMfa > 0 ? 'security-kpi-icon--danger' : 'security-kpi-icon--ok'">
+              <svg viewBox="0 0 20 20" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M10 1L2 5v4.5c0 5 3.5 9 8 10.5 4.5-1.5 8-5.5 8-10.5V5L10 1z" />
+              </svg>
+            </div>
+            <div>
+              <div class="security-kpi-label">2FA Coverage</div>
+              <div class="security-kpi-value"
+                x-text="stats.total > 0 ? Math.round(((stats.total - stats.noMfa) / stats.total) * 100) + '%' : '---'">
+                ---
+              </div>
+              <div class="security-kpi-sub" x-show="stats.noMfa > 0"
+                style="color: var(--admin-danger); font-weight: 600">
+                <span x-text="stats.noMfa">0</span> without 2FA
+              </div>
+              <div class="security-kpi-sub" x-show="stats.noMfa === 0" style="color: var(--admin-success)">
+                All secured
+              </div>
+            </div>
+          </div>
+          <div class="security-kpi">
+            <div class="security-kpi-icon security-kpi-icon--neutral">
+              <svg viewBox="0 0 20 20" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7">
+                <circle cx="10" cy="10" r="8" />
+                <path d="M10 6v4l3 3" />
+              </svg>
+            </div>
+            <div>
+              <div class="security-kpi-label">Active Sessions</div>
+              <div class="security-kpi-value" x-text="stats.activeSessions">
+                0
+              </div>
+              <div class="security-kpi-sub">across all admin accounts</div>
+            </div>
+          </div>
+          <div class="security-kpi">
+            <div class="security-kpi-icon"
+              :class="stats.pendingInvites > 0 ? 'security-kpi-icon--warn' : 'security-kpi-icon--neutral'">
+              <svg viewBox="0 0 20 20" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M4 4h12c.6 0 1 .4 1 1v10c0 .6-.4 1-1 1H4c-.6 0-1-.4-1-1V5c0-.6.4-1 1-1z" />
+                <polyline points="17,5 10,11 3,5" />
+              </svg>
+            </div>
+            <div>
+              <div class="security-kpi-label">Pending Invites</div>
+              <div class="security-kpi-value" x-text="stats.pendingInvites">
+                0
+              </div>
+              <div class="security-kpi-sub">awaiting acceptance</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="admin-tabs--line">
+          <button class="admin-tab--line" :class="activeTab === 'admins' && 'active'" @click="activeTab = 'admins'">
+            Active Admins
+            <span class="admin-badge admin-badge--neutral" style="margin-left: 8px"
+              x-text="filteredAdmins.length"></span>
+          </button>
+          <button class="admin-tab--line" :class="activeTab === 'invites' && 'active'" @click="activeTab = 'invites'">
+            Pending Invitations
+            <span x-show="pendingInvites.length > 0" class="admin-badge admin-badge--warning" style="margin-left: 8px"
+              x-text="pendingInvites.length"></span>
+          </button>
+        </div>
+
+        <!-- TAB: ACTIVE ADMINS -->
+        <div x-show="activeTab === 'admins'">
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                flex-wrap: wrap;
+                margin-bottom: 16px;
+              ">
+            <div style="display: flex; align-items: center; gap: 12px">
+              <div class="admin-search" style="width: 280px">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input type="text" placeholder="Search by email or role..." x-model="searchQuery"
+                  @input="applyFilters()" />
+              </div>
+              <select class="admin-select" x-model="filterRole" @change="applyFilters()">
+                <option value="">All Roles</option>
+                <template x-for="role in roles" :key="role.name">
+                  <option :value="role.name" x-text="role.name"></option>
+                </template>
+              </select>
+              <select class="admin-select" x-model="filterStatus" @change="applyFilters()">
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+            <button class="admin-btn admin-btn--primary" @click="showInviteModal = true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M8 2v12M2 8h12" />
+              </svg>
+              Invite Admin
+            </button>
+          </div>
+
+          <div class="admin-card" style="padding: 0; overflow: hidden">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Admin</th>
+                  <th>Roles</th>
+                  <th>2FA</th>
+                  <th>Status</th>
+                  <th>Last Active</th>
+                  <th>Last IP</th>
+                  <th>Created</th>
+                  <th style="text-align: right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="admin in filteredAdmins" :key="admin.id">
+                  <tr>
+                    <td>
+                      <div class="admin-user-inline">
+                        <div class="admin-avatar-sm" :style="'background:' + getAvatarColor(admin.email)"
+                          x-text="getInitials(admin.email)"></div>
+                        <div>
+                          <div class="admin-user-inline-name"
+                            x-text="admin.first_name ? (admin.first_name + ' ' + (admin.last_name || '')) : admin.email">
+                          </div>
+                          <div class="admin-user-inline-email" x-text="admin.email"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 4px; flex-wrap: wrap">
+                        <template x-for="role in admin.roles" :key="role"><span class="admin-badge"
+                            :class="getRoleBadgeClass(role)" x-text="role"></span></template>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="admin-2fa-badge"
+                        :class="admin.totp_enabled ? 'admin-2fa-badge--on' : 'admin-2fa-badge--off'"
+                        x-text="admin.totp_enabled ? '🔒 On' : '⚠️ Off'"></span>
+                    </td>
+                    <td>
+                      <span class="admin-badge"
+                        :class="admin.status === 'active' ? 'admin-badge--success' : 'admin-badge--danger'"><span
+                          class="admin-badge-dot"></span><span x-text="admin.status"></span></span>
+                    </td>
+                    <td style="font-size: 12px; color: var(--admin-text-muted)" x-text="formatDate(admin.last_active)">
+                    </td>
+                    <td style="
+                          font-size: 12px;
+                          color: var(--admin-text-muted);
+                          font-family: monospace;
+                        " x-text="admin.last_ip || '---'"></td>
+                    <td style="font-size: 12px; color: var(--admin-text-muted)" x-text="formatDate(admin.created_at)">
+                    </td>
+                    <td style="text-align: right">
+                      <div style="
+                            display: flex;
+                            gap: 6px;
+                            justify-content: flex-end;
+                          ">
+                        <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="editAdmin(admin)"
+                          title="Edit roles">
+                          Edit
+                        </button>
+                        <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="toggleStatus(admin)"
+                          :title="admin.status === 'active' ? 'Suspend' : 'Activate'"
+                          x-text="admin.status === 'active' ? 'Suspend' : 'Activate'"
+                          :style="admin.status === 'active' ? 'color:var(--admin-warning);' : 'color:var(--admin-success);'"></button>
+                        <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="killSessions(admin.id)"
+                          title="Kill Sessions" style="color: var(--admin-danger)">
+                          Kill
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="filteredAdmins.length === 0">
+                  <tr>
+                    <td colspan="8" style="
+                          text-align: center;
+                          padding: 48px;
+                          color: var(--admin-text-muted);
+                          font-size: 13px;
+                        ">
+                      No admins match your search criteria.
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB: PENDING INVITATIONS -->
+        <div x-show="activeTab === 'invites'">
+          <div class="admin-card" style="overflow: hidden">
+            <div style="
+                  padding: 16px 20px;
+                  border-bottom: 1px solid var(--admin-border);
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                ">
+              <h3 style="font-size: 14px; font-weight: 600; margin: 0">
+                Pending Admin Invitations
+              </h3>
+              <button class="admin-btn admin-btn--primary admin-btn--sm" @click="showInviteModal = true">
+                New Invite
+              </button>
+            </div>
+            <template x-if="pendingInvites.length === 0">
+              <div style="
+                    text-align: center;
+                    padding: 48px;
+                    color: var(--admin-text-muted);
+                    font-size: 13px;
+                  ">
+                No pending invitations.
+              </div>
+            </template>
+            <template x-for="invite in pendingInvites" :key="invite.id">
+              <div class="invite-row">
+                <div>
+                  <div style="
+                        font-size: 13px;
+                        font-weight: 500;
+                        color: var(--admin-text-primary);
+                      " x-text="invite.email"></div>
+                  <div style="font-size: 11px; color: var(--admin-text-muted)">
+                    Role: <strong x-text="invite.role"></strong> &middot; Sent
+                    <span x-text="formatDate(invite.created_at)"></span>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="resendInvite(invite.id)">
+                    Resend
+                  </button>
+                  <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="revokeInvite(invite.id)"
+                    style="color: var(--admin-danger)">
+                    Revoke
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- INVITE MODAL -->
+      <div class="admin-modal-overlay" x-show="showInviteModal" x-cloak x-transition.opacity>
+        <div class="admin-modal" @click.away="showInviteModal = false">
+          <div class="admin-modal-header">
+            <h3>Invite New Admin</h3>
+            <button class="admin-modal-close" @click="showInviteModal = false">
+              &times;
+            </button>
+          </div>
+          <div class="admin-modal-body">
+            <div class="admin-form-group">
+              <label class="admin-form-label">Email Address</label>
+              <input type="email" class="admin-input" placeholder="e.g. recruit@poool.finance"
+                x-model="inviteForm.email" />
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Initial Role</label>
+              <select class="admin-select" x-model="inviteForm.role" style="width: 100%">
+                <template x-for="role in roles" :key="role.name">
+                  <option :value="role.name" x-text="role.name"></option>
+                </template>
+              </select>
+            </div>
+            <div class="admin-alert admin-alert--info" style="margin-top: 12px">
+              <p>
+                Invitations expire in 24 hours. The invitee must set up 2FA
+                within 48h of first login.
+              </p>
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button class="admin-btn admin-btn--secondary" @click="showInviteModal = false">
+              Cancel
+            </button>
+            <button class="admin-btn admin-btn--primary" @click="sendInvite()" :disabled="!inviteForm.email">
+              Send Invitation
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDIT ADMIN MODAL -->
+      <div class="admin-modal-overlay" x-show="showEditModal" x-cloak x-transition.opacity>
+        <div class="admin-modal" @click.away="showEditModal = false">
+          <div class="admin-modal-header">
+            <h3>Edit Admin</h3>
+            <button class="admin-modal-close" @click="showEditModal = false">
+              &times;
+            </button>
+          </div>
+          <div class="admin-modal-body" x-show="editTarget">
+            <div style="
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  padding: 12px 16px;
+                  background: var(--admin-bg);
+                  border-radius: var(--admin-radius-sm);
+                  margin-bottom: 20px;
+                ">
+              <div class="admin-avatar-sm" :style="'background:' + getAvatarColor(editTarget?.email || '')"
+                x-text="getInitials(editTarget?.email || '')"></div>
+              <div>
+                <div style="font-size: 14px; font-weight: 600" x-text="editTarget?.email"></div>
+                <div style="font-size: 12px; color: var(--admin-text-muted)"
+                  x-text="'ID: ' + (editTarget?.id || '').substring(0,8) + '...'"></div>
+              </div>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Assigned Roles</label>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                <template x-for="role in roles" :key="role.name">
+                  <label style="
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 6px 12px;
+                        border: 1px solid var(--admin-border);
+                        border-radius: var(--admin-radius-sm);
+                        cursor: pointer;
+                        font-size: 13px;
+                        transition: all 0.15s;
+                      "
+                    :style="editForm.roles.includes(role.name) ? 'background:var(--admin-accent-bg);border-color:var(--admin-accent);color:var(--admin-accent);font-weight:600;' : 'color:var(--admin-text-secondary);'">
+                    <input type="checkbox" :value="role.name" :checked="editForm.roles.includes(role.name)"
+                      @change="toggleEditRole(role.name)" style="display: none" />
+                    <span x-text="role.name"></span>
+                  </label>
+                </template>
+              </div>
+            </div>
+            <div style="
+                  margin-top: 20px;
+                  padding-top: 16px;
+                  border-top: 1px solid var(--admin-border);
+                ">
+              <h4 style="font-size: 13px; font-weight: 700; margin: 0 0 12px">
+                Security Actions
+              </h4>
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <button class="admin-btn admin-btn--secondary" @click="forcePasswordReset(editTarget.id)"
+                  style="justify-content: flex-start; width: 100%">
+                  Force Password Reset on Next Login
+                </button>
+                <button class="admin-btn admin-btn--secondary" @click="killSessions(editTarget.id)" style="
+                      justify-content: flex-start;
+                      width: 100%;
+                      color: var(--admin-warning);
+                    ">
+                  Revoke All Active Sessions
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button class="admin-btn admin-btn--secondary" @click="showEditModal = false">
+              Cancel
+            </button>
+            <button class="admin-btn admin-btn--primary" @click="saveAdminEdit()">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/static/js/admin-directory.js"></script>
+</body>
+
+</html>

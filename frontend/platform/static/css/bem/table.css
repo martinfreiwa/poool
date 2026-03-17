@@ -1,0 +1,1079 @@
+/* ===========================
+   Generic Table Component - BEM CSS
+   Based on Developer Dashboard Table Styles
+   =========================== */
+
+/* Table Wrapper */
+.table__wrapper {
+  width: 100%;
+  max-width: 1096px;
+  /* Maximum width from design reference */
+  overflow-x: auto;
+}
+
+/* Header with Time Filters (outside card) */
+.table__header {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 0 16px 0;
+  width: 100%;
+  border-bottom: none !important;
+  position: relative;
+  z-index: 10;
+}
+
+/* Time Filter Tabs */
+.table__time-tabs {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 2px;
+  height: 36px;
+  background: #fafafa;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+}
+
+.table__tab {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  height: 36px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #717680;
+}
+
+.table__tab--active {
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  color: #414651;
+}
+
+/* Search Wrapper */
+.table__search-wrapper {
+  padding: 0 0 16px 0;
+  width: 100%;
+}
+
+.table__search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d5d7da;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.table__search-input:focus {
+  border-color: var(--primary-color);
+}
+
+/* Table Container (Card) */
+.table__container {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  isolation: isolate;
+  width: 100%;
+  height: auto;
+  min-height: 476px;
+  /* Minimum height for empty state */
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  /* Fix border radius clipping */
+}
+
+/* Table Header */
+.table__header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  width: 100%;
+  background: #fafafa;
+  border-bottom: 1px solid #e9eaeb;
+  height: 44px;
+}
+
+.table__header-cell {
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  text-align: left;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  color: #717680;
+  background: #fafafa;
+  box-sizing: border-box;
+  height: 44px;
+}
+
+/* First and last header cells get rounded corners */
+.table__header-cell:first-child {
+  border-radius: 12px 0 0 0;
+}
+
+.table__header-cell:last-child {
+  border-radius: 0 12px 0 0;
+}
+
+.table__header-cell--checkbox {
+  width: 40px;
+  padding: 12px;
+}
+
+.table__header-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  /* Updated to match design specification */
+  padding: 0px;
+}
+
+.table__header-content svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.table__header-content span,
+.table__header-text {
+  white-space: nowrap;
+}
+
+.table__header-label {
+  white-space: nowrap;
+}
+
+.table__sort-icon {
+  margin-left: 4px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.table__header:hover .table__sort-icon {
+  opacity: 1;
+}
+
+/* Table Body */
+.table__body {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.table__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-bottom: 1px solid #e9eaeb;
+  height: 72px;
+  /* Exact height from design reference */
+}
+
+.table__row:hover {
+  background: #f9fafb;
+}
+
+.table__row:last-child {
+  border-bottom: none;
+}
+
+/* Table Cells */
+.table__cell {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  box-sizing: border-box;
+  /* Remove default flex: 1, let column-specific classes control this */
+}
+
+.table__cell--checkbox {
+  width: 40px;
+  padding: 12px;
+}
+
+.table__checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Cell Types */
+
+/* Image/Asset Cell */
+.table__cell-image-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+}
+
+.table__cell-image {
+  width: 52px;
+  height: 52px;
+  border-radius: 52px;
+  object-fit: cover;
+}
+
+.table__cell-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.table__cell-primary {
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  color: #181d27;
+  max-width: 143px;
+}
+
+.table__cell-secondary {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: #717680;
+}
+
+/* Text Cell */
+.table__cell-text-value {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+/* Cell with Change Indicator */
+.table__cell-with-change {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  vertical-align: middle;
+}
+
+.table__cell-value {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #000000;
+}
+
+.table__change {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 8px 2px 6px;
+  gap: 4px;
+  height: 24px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+}
+
+.table__change span {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+.table__change svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.table__change--up svg path {
+  stroke: #17b26a;
+}
+
+.table__change--down svg path {
+  stroke: #f04438;
+}
+
+/* Progress Cell */
+.table__progress-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 8px;
+  width: 159px;
+}
+
+.table__progress-text {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: right;
+  color: #535862;
+}
+
+.table__progress-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 1px;
+  gap: 10px;
+  width: 159px;
+  height: 8px;
+  background: #d5d7da;
+  border-radius: 30px;
+}
+
+.table__progress-fill {
+  height: 8px;
+  background: var(--accent-color);
+  border-radius: 30px;
+}
+
+/* Badge Cell */
+.table__badge {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 8px 2px 6px;
+  gap: 4px;
+  height: 22px;
+  border-radius: 16px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.table__badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+.table__badge--success {
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+  color: #067647;
+}
+
+.table__badge--warning {
+  background: #fef0c7;
+  border: 1px solid #fec84b;
+  color: #000000;
+}
+
+.table__badge--error {
+  background: #fee4e2;
+  border: 1px solid #fca5a5;
+  color: #d92d20;
+}
+
+.table__badge--info {
+  background: #e5e5ff;
+  border: 1px solid #a7a7ff;
+  color: var(--primary-color);
+}
+
+/* Action Cell */
+.table__action-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #000000;
+}
+
+.table__action-btn:hover {
+  color: var(--primary-color);
+}
+
+.table__action-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Show All Button */
+.table__show-all {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+  width: 100%;
+}
+
+.table__show-all-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+}
+
+.table__show-all-btn:hover {
+  opacity: 0.8;
+}
+
+.table__show-all-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Pagination */
+.table__pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-top: 1px solid #e9eaeb;
+}
+
+.table__pagination-btn {
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  border-radius: 8px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.table__pagination-btn:hover {
+  background: #f5f5f6;
+  border-color: #a4a7ae;
+}
+
+.table__pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table__pagination-info {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: #717680;
+}
+
+/* Specific column widths - Applied to both header and body cells for perfect alignment */
+/* Based on design reference: Total width 1096px */
+.table__header-cell--asset,
+.table__cell--asset {
+  width: 262px;
+  flex: none;
+  /* Fixed width, no flex growth */
+}
+
+.table__header-cell--sales,
+.table__cell--sales {
+  width: 181px;
+  flex: none;
+}
+
+.table__header-cell--views,
+.table__cell--views {
+  width: 121px;
+  flex: none;
+}
+
+.table__header-cell--conversion,
+.table__cell--conversion {
+  width: 156px;
+  flex: none;
+}
+
+.table__header-cell--funding,
+.table__cell--funding {
+  width: 216px;
+  flex: none;
+}
+
+.table__header-cell--actions,
+.table__cell--actions {
+  width: 160px;
+  flex: none;
+  justify-content: flex-start;
+  /* Align content to left */
+}
+
+/* Prevent text wrapping in Actions column */
+.table__cell--actions .table__action-btn,
+.table__cell--actions button,
+.table__cell--actions span {
+  white-space: nowrap;
+}
+
+/* Portfolio-specific styles for custom status badges */
+.table__cell--status .portfolio-assets-status {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 8px 2px 6px;
+  gap: 4px;
+  height: 22px;
+  border-radius: 16px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.table__cell--status .status-funded {
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+  color: #067647;
+}
+
+.table__cell--status .status-rented {
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+  color: #067647;
+}
+
+.table__cell--status .status-process {
+  background: #fef0c7;
+  border: 1px solid #fec84b;
+  color: #000000;
+}
+
+.table__cell--status .status-payout {
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  color: #000000;
+}
+
+.table__cell--status .status-pending {
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  color: #000000;
+}
+
+.table__cell--status .status-default {
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  color: #000000;
+}
+
+/* Portfolio action button styles */
+.table__cell--actions .portfolio-assets-action-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.table__cell--actions .portfolio-assets-action-btn:hover {
+  background: #f3f4f6;
+}
+
+/* Portfolio investment change indicator styles */
+.table__cell--investment .portfolio-assets-change {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 8px 2px 6px;
+  gap: 4px;
+  width: fit-content;
+  min-width: 63px;
+  height: 24px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.table__cell--investment .portfolio-assets-change-icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  display: inline-block;
+  background: url("/static/images/arrow-up-right.svg") no-repeat center;
+  background-size: 12px 12px;
+}
+
+.table__cell--investment
+  .portfolio-assets-change.positive
+  .portfolio-assets-change-icon {
+  /* Arrow points up-right for positive */
+}
+
+.table__cell--investment
+  .portfolio-assets-change.negative
+  .portfolio-assets-change-icon {
+  transform: rotate(180deg);
+}
+
+/* Portfolio property info styles */
+.table__cell--property .portfolio-assets-property {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 224px;
+}
+
+.table__cell--property .portfolio-assets-property-image {
+  width: 73px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.table__cell--property .portfolio-assets-property-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.table__cell--property .portfolio-assets-property-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 143px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.table__cell--property .portfolio-assets-property-name {
+  color: #181d27;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.table__cell--property .portfolio-assets-property-location {
+  color: #717680;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Wallet transaction specific styles */
+.table__cell--type .wallet-transaction-type-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.table__cell--type .featured-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table__cell--type .featured-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.table__cell--type .wallet-transaction-type-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181d27;
+}
+
+.table__cell--status .wallet-transaction-status-badge {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 6px;
+  gap: 4px;
+  height: 22px;
+  border-radius: 16px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.table__cell--status .wallet-transaction-status-dot {
+  width: 8px;
+  height: 8px;
+  position: relative;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table__cell--status .wallet-transaction-status-dot::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.table__cell--status .wallet-transaction-status-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  color: #181d27;
+}
+
+/* Completed Status */
+.table__cell--status .status-completed {
+  width: 88px;
+}
+
+.table__cell--status .status-completed .wallet-transaction-status-dot::after {
+  background: #17b26a;
+}
+
+.table__cell--status .status-completed .wallet-transaction-status-text {
+  width: 64px;
+}
+
+/* In Process Status */
+.table__cell--status .status-in-process {
+  width: 84px;
+}
+
+.table__cell--status .status-in-process .wallet-transaction-status-dot::after {
+  background: #f79009;
+}
+
+.table__cell--status .status-in-process .wallet-transaction-status-text {
+  width: 60px;
+}
+
+/* Declined Status */
+.table__cell--status .status-declined {
+  width: 82px;
+}
+
+.table__cell--status .status-declined .wallet-transaction-status-dot::after {
+  background: #f04438;
+}
+
+.table__cell--status .status-declined .wallet-transaction-status-text {
+  width: 58px;
+}
+
+.table__cell--date,
+.table__cell--wallet {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+.table__cell--amount {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.table__cell--amount .amount-positive {
+  color: #065f46;
+}
+
+.table__cell--amount .amount-negative {
+  color: #181d27;
+}
+
+.table__cell--actions .wallet-transaction-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #717680;
+  cursor: pointer;
+}
+
+/* Wallet empty state styles */
+.wallet-transactions-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0px;
+  gap: 24px;
+  position: absolute;
+  width: 297px;
+  height: 206px;
+  left: 385px;
+  top: 64px;
+  z-index: 3;
+}
+
+.wallet-transactions-empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0px;
+  gap: 16px;
+  width: 297px;
+  height: 182px;
+}
+
+.wallet-transactions-empty-illustration {
+  width: 152px;
+  height: 118px;
+  position: relative;
+}
+
+.wallet-transactions-empty-circle {
+  position: absolute;
+  width: 104px;
+  height: 104px;
+  left: 24px;
+  top: 0px;
+  background: #e9eaeb;
+  border-radius: 50%;
+}
+
+.wallet-transactions-empty-cloud {
+  position: absolute;
+  left: 13.16%;
+  right: 13.16%;
+  top: 13.56%;
+  bottom: 32.2%;
+}
+
+.cloud-circle {
+  position: absolute;
+  background: #f5f5f6;
+  border-radius: 50%;
+}
+
+.cloud-dot {
+  position: absolute;
+  background: #f5f5f6;
+  border-radius: 50%;
+}
+
+.cloud-circle-1 {
+  width: 40px;
+  height: 40px;
+  left: 0px;
+  top: 24px;
+}
+
+.cloud-circle-2 {
+  width: 24px;
+  height: 24px;
+  left: 88px;
+  top: 40px;
+}
+
+.cloud-circle-3 {
+  width: 32px;
+  height: 32px;
+  left: 80px;
+  top: 0px;
+}
+
+.cloud-dot-1 {
+  width: 10px;
+  height: 10px;
+  left: 16px;
+  top: 14px;
+}
+
+.cloud-dot-2 {
+  width: 14px;
+  height: 14px;
+  left: 11px;
+  top: 102px;
+}
+
+.cloud-dot-3 {
+  width: 14px;
+  height: 14px;
+  left: 138px;
+  top: 28px;
+}
+
+.cloud-dot-4 {
+  width: 8px;
+  height: 8px;
+  left: 130px;
+  top: 4px;
+}
+
+.wallet-transactions-empty-icon-wrapper {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  left: 52px;
+  top: 62px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wallet-transactions-empty-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  width: 297px;
+  max-width: 352px;
+  height: 48px;
+}
+
+.wallet-transactions-empty-title {
+  width: 297px;
+  height: 24px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #181d27;
+}
+
+.wallet-transactions-empty-message {
+  width: 320px;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #535862;
+}
+
+/* Wallet footer styles */
+.wallet-transactions-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  position: absolute;
+  width: 176px;
+  height: 20px;
+  margin-top: 32px;
+  width: 100%;
+  height: 20px;
+}
+
+.wallet-transactions-see-all {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  background: none;
+  border: none;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  cursor: pointer;
+}

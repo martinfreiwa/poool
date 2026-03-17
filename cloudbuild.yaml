@@ -1,0 +1,26 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool-backend:latest'
+      - '--cache-from=europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool-backend:latest'
+      - '-f'
+      - 'Dockerfile'
+      - '.'
+    timeout: '1200s'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool-backend:latest'
+
+images:
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool-backend:latest'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: 50
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1800s'

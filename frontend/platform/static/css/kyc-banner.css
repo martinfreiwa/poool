@@ -1,0 +1,324 @@
+/* KYC Banner Component Styles - Based on Figma Reference */
+
+/* Main Banner Container */
+.kyc-banner {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 12px;
+  position: fixed;
+  width: calc(100% - 256px);
+  height: 72px;
+  left: 256px;
+  top: 0px;
+  background: #fffaeb;
+  border-bottom: 1px solid #fec84b;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  z-index: 1000;
+}
+
+/* Removed ::after pseudo-element since banner is now fixed full-width */
+
+/* Color Schemes */
+.kyc-banner-warning {
+  background: #fffaeb;
+  border-bottom: 1px solid #fec84b;
+}
+
+.kyc-banner-info {
+  background: #eff8ff;
+  border-bottom: 1px solid #84caff;
+}
+
+.kyc-banner-success {
+  background: #ecfdf3;
+  border-bottom: 1px solid #6ce9a6;
+}
+
+/* Content */
+.kyc-banner-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 12px;
+  width: 1120px;
+  height: 48px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Content inner wrapper */
+.kyc-content-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 16px;
+  width: 823px;
+  height: 48px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+}
+
+/* Icon Container */
+.kyc-banner-icon {
+  width: 48px;
+  height: 48px;
+  background: #fef0c7;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.kyc-banner-warning .kyc-banner-icon {
+  background: #fef0c7;
+}
+
+.kyc-banner-info .kyc-banner-icon {
+  background: #d1e9ff;
+}
+
+.kyc-banner-success .kyc-banner-icon {
+  background: #d1fadf;
+}
+
+.kyc-banner-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Text and supporting text */
+.kyc-banner-text-content {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  padding: 0px;
+  gap: 2px 6px;
+  width: 759px;
+  height: 24px;
+  flex: none;
+  order: 1;
+  flex-grow: 1;
+}
+
+/* Text */
+.kyc-banner-message {
+  width: 720px;
+  height: 24px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #414651;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Link within message */
+.kyc-banner-link {
+  color: var(--primary-color);
+  text-decoration: underline;
+  font-weight: 400;
+  cursor: pointer;
+  display: inline;
+}
+
+.kyc-banner-link:hover {
+  opacity: 0.8;
+}
+
+/* Actions */
+.kyc-banner-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  width: 285px;
+  height: 44px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Buttons wrapper */
+.kyc-banner-buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  width: 285px;
+  height: 44px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Button Styles */
+.kyc-banner-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 6px;
+  height: 44px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+/* Complete KYC Button */
+.kyc-banner-btn-primary {
+  width: 149px;
+  height: 44px;
+  background: var(--primary-color);
+  border-radius: 8px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  border: none;
+}
+
+.kyc-banner-btn-primary:hover {
+  opacity: 0.9;
+}
+
+.kyc-banner-btn-primary .kyc-banner-btn-text {
+  width: 113px;
+  height: 24px;
+  color: #ffffff;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+body[id^="developer-"] .kyc-banner-btn-primary, 
+body[data-profile="developer"] .kyc-banner-btn-primary {
+  background: #0000FF;
+}
+
+body[id^="developer-"] .kyc-banner-btn-primary .kyc-banner-btn-text, 
+body[data-profile="developer"] .kyc-banner-btn-primary .kyc-banner-btn-text {
+  color: #98FB96;
+}
+
+/* Learn More Button */
+.kyc-banner-btn-secondary {
+  width: 124px;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.kyc-banner-btn-secondary:hover {
+  background: #f8f9fc;
+}
+
+.kyc-banner-btn-secondary .kyc-banner-btn-text {
+  width: 88px;
+  height: 24px;
+  color: #414651;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Button Text */
+.kyc-banner-btn-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+/* Responsive Design */
+@media (max-width: 1440px) {
+  .kyc-banner {
+    width: calc(100% - 256px);
+  }
+}
+
+@media (max-width: 768px) {
+
+  /* Hide KYC banner completely on mobile */
+  .kyc-banner {
+    display: none !important;
+  }
+}
+
+/* --- Keep consistent spacing when KYC banner is absent --- */
+/* The KYC banner is position:fixed so it doesn't push content down.
+   Pages already have 96px padding-top to clear the banner.
+   When the banner is hidden, keep the same 96px for consistent layout. */
+body.kyc-hidden .rewards-main,
+body.kyc-hidden .tier-main,
+body.kyc-hidden .wallet-main,
+body.kyc-hidden .portfolio-main,
+body.kyc-hidden .cart-page-main,
+body.kyc-hidden #settings-main,
+body.kyc-hidden .dashboard-main,
+body.kyc-hidden .dashboard-main-content {
+  padding-top: 48px !important;
+}
+
+body.kyc-hidden .page-header {
+  top: 48px !important;
+}
+
+body.kyc-hidden .status-tabs,
+body.kyc-hidden .cart-content {
+  top: 116px !important;
+}
+
+body.kyc-hidden .filter-bar-container {
+  top: 196px !important;
+}
+
+body.kyc-hidden .properties-section {
+  top: 352px !important;
+}
+
+@media (max-width: 768px) {
+
+  body.kyc-hidden .rewards-main,
+  body.kyc-hidden .tier-main,
+  body.kyc-hidden .wallet-main,
+  body.kyc-hidden .portfolio-main {
+    padding-top: 16px !important;
+  }
+}
+/* Developer Specific KYC Styling Force */
+.kyc-banner-btn-primary {
+    background-color: #0000FF !important;
+    color: #98FB96 !important;
+    border: none !important;
+}
+.kyc-banner-btn-primary .kyc-banner-btn-text {
+    color: #98FB96 !important;
+}

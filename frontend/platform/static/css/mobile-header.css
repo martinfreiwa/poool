@@ -1,0 +1,235 @@
+/* ===========================
+   Mobile Header Component
+   Based on reference specifications
+   =========================== */
+
+/* Remove tap highlight and text selection */
+* {
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Mobile Header Container */
+.mobile-header {
+  box-sizing: border-box;
+  display: none;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 7px 12px 16px;
+  gap: 119px;
+  position: fixed;
+  width: 100%;
+  max-width: 375px;
+  height: 64px;
+  left: 0;
+  right: 0;
+  top: 0;
+  margin: 0 auto;
+  background: #ffffff;
+  border-bottom: 1px solid #e9eaeb;
+  z-index: 1000;
+}
+
+/* Logo - Reusing desktop logo but scaled for mobile */
+.mobile-header__logo {
+  width: 94px;
+  height: 24px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  display: flex;
+  align-items: center;
+}
+
+.mobile-header__logo img {
+  width: 94px;
+  height: 24px;
+  object-fit: contain;
+}
+
+/* Icons Container */
+.mobile-header__icons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  width: 136px;
+  height: 40px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Icon Buttons - Reusing existing icon styles */
+.mobile-header__icon-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  gap: 8px;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  flex: none;
+  flex-grow: 0;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.mobile-header__icon-btn:hover {
+  background: #f5f5f5;
+}
+
+.mobile-header__icon-btn:active {
+  background: #e9eaeb;
+}
+
+/* Icon Styling */
+.mobile-header__icon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Notification Button */
+.mobile-header__icon-btn--notification {
+  order: 0;
+}
+
+/* Cart Button */
+.mobile-header__icon-btn--cart {
+  order: 1;
+}
+
+/* Burger Menu Button */
+.mobile-header__icon-btn--burger {
+  order: 2;
+}
+
+/* Notification Badge - Reusing existing badge styles */
+.mobile-header__badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ff0000;
+  color: #ffffff;
+  border-radius: 8px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Burger Menu Icon Lines */
+.mobile-header__burger-line {
+  width: 18px;
+  height: 2px;
+  background: #000000;
+  border-radius: 1px;
+  transition: all 0.3s ease;
+}
+
+.mobile-header__burger-icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 24px;
+  height: 24px;
+  position: relative;
+}
+
+.mobile-header__burger-icon .mobile-header__burger-line:nth-child(1) {
+  position: absolute;
+  top: 5px;
+}
+
+.mobile-header__burger-icon .mobile-header__burger-line:nth-child(2) {
+  position: absolute;
+  top: 11px;
+}
+
+.mobile-header__burger-icon .mobile-header__burger-line:nth-child(3) {
+  position: absolute;
+  top: 17px;
+}
+
+/* Burger Active State (X) */
+.mobile-header__icon-btn--burger.active
+  .mobile-header__burger-line:nth-child(1) {
+  transform: rotate(45deg);
+  top: 11px;
+}
+
+.mobile-header__icon-btn--burger.active
+  .mobile-header__burger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-header__icon-btn--burger.active
+  .mobile-header__burger-line:nth-child(3) {
+  transform: rotate(-45deg);
+  top: 11px;
+}
+
+/* Media Query - Show mobile header only on mobile devices */
+@media (max-width: 768px) {
+  .mobile-header {
+    display: flex;
+  }
+
+  /* Adjust body padding to account for fixed header */
+  body {
+    padding-top: 0px;
+  }
+
+  /* Hide desktop sidebar on mobile */
+  .sidebar,
+  .app-sidebar,
+  #sidebar-navigation,
+  .wallet-sidebar,
+  .marketplace-sidebar,
+  .developer-dashboard-sidebar,
+  #developer-dashboard-sidebar {
+    display: none !important;
+  }
+
+  /* Adjust main content */
+  .marketplace-main,
+  .wallet-main,
+  .app-content,
+  .developer-dashboard-main,
+  #developer-dashboard-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-top: 29px !important; /* Account for fixed mobile header */
+  }
+}
+
+/* Tablet specific adjustments */
+@media (min-width: 376px) and (max-width: 768px) {
+  .mobile-header {
+    max-width: 100%;
+  }
+}

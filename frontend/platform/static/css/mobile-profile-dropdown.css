@@ -1,0 +1,323 @@
+/* Mobile Profile Dropdown Menu */
+
+/* Menu container */
+.mobile-profile-dropdown-menu {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  position: fixed !important;
+  width: calc(100% - 32px);
+  max-width: 320px;
+  height: auto;
+  max-height: 60vh;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(20px);
+  bottom: 20px !important;
+  background: #fafafa;
+  border: 1px solid #e9eaeb;
+  box-shadow:
+    0px 12px 16px -4px rgba(10, 13, 18, 0.08),
+    0px 4px 6px -2px rgba(10, 13, 18, 0.03),
+    0px 2px 2px -1px rgba(10, 13, 18, 0.04);
+  border-radius: 12px;
+  z-index: 100000;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    visibility 0.3s;
+}
+
+.mobile-profile-dropdown-menu.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Menu items wrapper */
+.mobile-profile-menu-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: 100%;
+  height: auto;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px 12px 16px 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Menu items sections */
+.mobile-profile-menu-items {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 6px 0px;
+  gap: 2px;
+  width: 100%;
+  min-height: 0;
+}
+
+/* Individual menu item */
+.mobile-profile-menu-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 6px;
+  width: 100%;
+  min-height: 36px;
+}
+
+/* Menu item content */
+.mobile-profile-menu-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px;
+  gap: 12px;
+  width: 100%;
+  min-height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mobile-profile-menu-content:active {
+  background: #f5f5f5;
+  transform: scale(0.98);
+}
+
+/* Icon and text group */
+.mobile-profile-icon-text {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  flex: 1;
+}
+
+/* Menu icon */
+.mobile-profile-menu-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Menu text */
+.mobile-profile-menu-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  flex: 1;
+}
+
+/* Switch account section */
+.mobile-profile-switch-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 0px 6px;
+  gap: 0px;
+  width: 100%;
+}
+
+/* Switch header */
+.mobile-profile-switch-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 14px 4px;
+  width: 100%;
+  height: 28px;
+}
+
+.mobile-profile-switch-title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 20px;
+  color: #717680;
+}
+
+/* Account item specific styling */
+.mobile-profile-menu-item.account-item {
+  min-height: 56px;
+}
+
+/* Account content */
+.mobile-profile-account-content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mobile-profile-account-content:active {
+  background: #f5f5f5;
+  transform: scale(0.98);
+}
+
+/* Avatar group */
+.mobile-profile-avatar-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 12px;
+  flex: 1;
+}
+
+/* Avatar container */
+.mobile-profile-avatar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.mobile-profile-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Avatar border */
+.mobile-profile-avatar-border {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Online indicator */
+.mobile-profile-online-indicator {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  right: -2px;
+  bottom: -2px;
+  background: #17b26a;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+}
+
+/* Text wrapper */
+.mobile-profile-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 0px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-profile-account-name {
+  display: block;
+  min-height: 20px;
+  min-width: 120px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181d27;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.mobile-profile-account-type {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #717680;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+/* Checkbox */
+.mobile-profile-checkbox {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  background: #ffffff;
+  border: 1.5px solid #d5d7da;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.mobile-profile-checkbox.selected {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.mobile-profile-checkbox-check {
+  width: 0;
+  height: 0;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.mobile-profile-checkbox.selected .mobile-profile-checkbox-check {
+  width: 8px;
+  height: 6px;
+  opacity: 1;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: rotate(-45deg) translateY(-1px);
+}
+
+/* Selected state for account item */
+.mobile-profile-menu-item.account-item.selected {
+  background: transparent;
+}
+
+/* Footer items */
+.mobile-profile-footer-items {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 6px 0px;
+  gap: 2px;
+  width: 100%;
+  border-top: 1px solid #e9eaeb;
+}
+
+/* Ensure dropdown works only on mobile */
+@media (max-width: 768px) {
+  .mobile-profile-dropdown-menu {
+    /* Let opacity and visibility handle the show/hide */
+  }
+}

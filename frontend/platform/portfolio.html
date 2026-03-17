@@ -1,7 +1,7 @@
 {% with title="Portfolio", meta_description="View your comprehensive POOOL investment portfolio, tracking asset
 performance, total value, and returns over time.", extra_css=['marketplace', 'wallet', 'portfolio', 'cart',
 'portfolio-assets-table',
-'portfolio-value-card', 'portfolio-chart', 'htmx-fixes', 'mobile-portfolio', 'portfolio-enhancements', 'unified-styles'],
+'portfolio-value-card', 'portfolio-chart', 'htmx-fixes', 'mobile-portfolio', 'portfolio-enhancements', 'unified-styles', 'kyc-banner'],
 extra_js=['htmx-init',
 'profile-dropdown', 'marketplace-search'] %}{% include
 "components/head.html" %}{% endwith %}
@@ -15,6 +15,8 @@ extra_js=['htmx-init',
     </div>
 
     <main id="portfolio-main" class="ds-main portfolio-main">
+
+      {% include 'components/kyc-banner.html' %}
 
       <div class="portfolio-container">
         <!-- Phase 4: State Layers -->
@@ -621,16 +623,7 @@ extra_js=['htmx-init',
                   <span class="portfolio-assets-header-text">Status</span>
                 </div>
               </div>
-              <div class="portfolio-assets-header-cell blockchain-col" style="min-width: 140px;">
-                <div class="portfolio-assets-header-content">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                    <path d="M2 17l10 5 10-5" />
-                    <path d="M2 12l10 5 10-5" />
-                  </svg>
-                  <span class="portfolio-assets-header-text" style="color: #6366f1;">Blockchain Proof</span>
-                </div>
-              </div>
+
               <div class="portfolio-assets-header-cell actions-col">
                 <div class="portfolio-assets-header-content">
                   <span class="portfolio-assets-header-text">Actions</span>
@@ -1074,6 +1067,7 @@ extra_js=['htmx-init',
   <script type="application/json" id="server-portfolio-json">{{ portfolio_json | safe }}</script>
 
   <!-- Mobile Navigation JavaScript -->
+  <script src="/static/js/kyc-banner.js"></script>
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>
   <script src="/static/js/pie-chart.js"></script>

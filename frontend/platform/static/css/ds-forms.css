@@ -1,0 +1,197 @@
+/* =========================================================================
+ * DESIGN SYSTEM — FORM CONTROLS (.ds-input, .ds-select, .ds-textarea)
+ * =========================================================================
+ * Standardised form field components driven by dashboard-tokens.css.
+ * Provides consistent height, padding, border, radius, and focus state
+ * across all pages (settings, checkout, support, admin).
+ *
+ * Dependencies: dashboard-tokens.css (section 14 — Form Input tokens)
+ * ========================================================================= */
+
+/* ── Base Input ─────────────────────────────────────────────────────── */
+.ds-input {
+  width: 100%;
+  height: var(--input-height, 44px);
+  padding: var(--input-padding, 10px 14px);
+  font-size: var(--input-font-size, 14px);
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  color: var(--input-text-color, #101828);
+  background-color: var(--input-bg, #FFFFFF);
+  border: 1px solid var(--input-border-color, #D0D5DD);
+  border-radius: var(--input-border-radius, 8px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.ds-input::placeholder {
+  color: var(--input-placeholder-color, #667085);
+}
+
+.ds-input:focus {
+  border-color: var(--input-border-focus, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
+}
+
+.ds-input:disabled,
+.ds-input[readonly] {
+  background-color: #F9FAFB;
+  color: #667085;
+  cursor: not-allowed;
+}
+
+/* ── Select ─────────────────────────────────────────────────────────── */
+.ds-select {
+  width: 100%;
+  height: var(--input-height, 44px);
+  padding: var(--input-padding, 10px 14px);
+  padding-right: 36px; /* room for dropdown arrow */
+  font-size: var(--input-font-size, 14px);
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  color: var(--input-text-color, #101828);
+  background-color: var(--input-bg, #FFFFFF);
+  border: 1px solid var(--input-border-color, #D0D5DD);
+  border-radius: var(--input-border-radius, 8px);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23667085' stroke-width='1.67' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.ds-select:focus {
+  border-color: var(--input-border-focus, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
+}
+
+.ds-select:disabled {
+  background-color: #F9FAFB;
+  color: #667085;
+  cursor: not-allowed;
+}
+
+/* ── Textarea ───────────────────────────────────────────────────────── */
+.ds-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: var(--input-padding, 10px 14px);
+  font-size: var(--input-font-size, 14px);
+  font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+  color: var(--input-text-color, #101828);
+  background-color: var(--input-bg, #FFFFFF);
+  border: 1px solid var(--input-border-color, #D0D5DD);
+  border-radius: var(--input-border-radius, 8px);
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  outline: none;
+  line-height: 1.5;
+}
+
+.ds-textarea::placeholder {
+  color: var(--input-placeholder-color, #667085);
+}
+
+.ds-textarea:focus {
+  border-color: var(--input-border-focus, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
+}
+
+.ds-textarea:disabled {
+  background-color: #F9FAFB;
+  color: #667085;
+  cursor: not-allowed;
+}
+
+/* ── Form Group (label + input wrapper) ─────────────────────────────── */
+.ds-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ds-form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #344054;
+  line-height: 20px;
+}
+
+.ds-form-label--required::after {
+  content: ' *';
+  color: #D92D20;
+}
+
+.ds-form-hint {
+  font-size: 13px;
+  color: #667085;
+  margin-top: 2px;
+}
+
+/* ── Error State ────────────────────────────────────────────────────── */
+.ds-input--error,
+.ds-select--error,
+.ds-textarea--error {
+  border-color: #FDA29B;
+}
+
+.ds-input--error:focus,
+.ds-select--error:focus,
+.ds-textarea--error:focus {
+  border-color: #F04438;
+  box-shadow: 0 0 0 3px rgba(240, 68, 56, 0.1);
+}
+
+.ds-form-error {
+  font-size: 13px;
+  color: #D92D20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* ── Input with Icon ────────────────────────────────────────────────── */
+.ds-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ds-input-wrapper .ds-input {
+  padding-left: 40px;
+}
+
+.ds-input-wrapper__icon {
+  position: absolute;
+  left: 12px;
+  color: #667085;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Checkbox / Toggle (small helper) ───────────────────────────────── */
+.ds-checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.ds-checkbox-group input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--input-border-focus, #0000FF);
+  cursor: pointer;
+}
+
+.ds-checkbox-label {
+  font-size: 14px;
+  color: #344054;
+  user-select: none;
+}

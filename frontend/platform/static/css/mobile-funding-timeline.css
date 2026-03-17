@@ -1,0 +1,220 @@
+/* Mobile Funding Timeline Section */
+@media (max-width: 768px) {
+  .mobile-funding-timeline {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px 16px;
+    gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 32px;
+  }
+
+  /* Header with icon */
+  .mobile-funding-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+  }
+
+  .mobile-funding-header img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-funding-header h2 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  /* Divider */
+  .mobile-timeline-divider {
+    width: 100%;
+    height: 1px;
+    background: #e9eaeb;
+  }
+
+  /* Timeline Steps Container */
+  .mobile-timeline-steps {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    width: 100%;
+  }
+
+  /* Individual Step */
+  .mobile-timeline-step {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 12px;
+    width: 100%;
+  }
+
+  /* Connector Wrapper (icon + line) */
+  .mobile-step-connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0px 0px 4px;
+    gap: 4px;
+    width: 24px;
+    align-self: stretch;
+  }
+
+  /* Step Icon Base */
+  .mobile-step-icon-base {
+    width: 24px;
+    height: 24px;
+    background: #ffffff;
+    border: 1.5px solid #e9eaeb;
+    border-radius: 12px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  /* Active/Completed Step Icon */
+  .mobile-step-icon-base.active {
+    background: #e5e5ff; /* Brand/50 */
+    box-shadow:
+      0px 0px 0px 2px #ffffff,
+      0px 0px 0px 4px #03FF88;
+    border: none;
+  }
+
+  .mobile-step-icon-base.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: var(--primary-color); /* Brand/600 */
+    border-radius: 12px;
+  }
+
+  /* Step Dot */
+  .mobile-step-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    left: calc(50% - 4px);
+    top: calc(50% - 4px);
+    background: #d5d7da; /* Gray/300 */
+    border-radius: 50%;
+    z-index: 1;
+  }
+
+  .mobile-step-icon-base.active .mobile-step-dot {
+    background: #ffffff;
+  }
+
+  /* Connector Line */
+  .mobile-connector-line {
+    width: 2px;
+    flex-grow: 1;
+    min-height: 83px;
+    background: #e9eaeb; /* Gray/200 */
+    border-radius: 2px;
+  }
+
+  .mobile-connector-line.active {
+    background: var(--primary-color); /* Brand/600 */
+  }
+
+  /* Hide connector for last step */
+  .mobile-timeline-step.last .mobile-connector-line {
+    display: none;
+  }
+
+  /* Step Content */
+  .mobile-step-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .mobile-step-content h4 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 20px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  .mobile-step-date {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    color: #535862;
+  }
+
+  .mobile-step-content p {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: #535862;
+    margin: 0;
+  }
+
+  /* Income Badge */
+  .mobile-income-badge {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 2px 10px 2px 8px;
+    gap: 4px;
+    background: #03FF88; /* Solid green */
+    border: 1px solid #03FF88;
+    border-radius: 16px;
+  }
+
+  .mobile-income-badge svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  .mobile-income-badge span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    color: #ffffff; /* White text */
+  }
+
+  /* Adjust heights for each step */
+  .mobile-timeline-step:nth-child(1) {
+    min-height: 116px;
+  }
+
+  .mobile-timeline-step:nth-child(2) {
+    min-height: 115px;
+  }
+
+  .mobile-timeline-step:nth-child(3) {
+    min-height: 138px;
+  }
+}

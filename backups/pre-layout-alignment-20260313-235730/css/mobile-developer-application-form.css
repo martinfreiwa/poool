@@ -1,0 +1,674 @@
+/* ===========================
+   Mobile Developer Application Form - Step 2
+   Property Information & Financials
+   Based on source-design/mobile/step2.css
+   =========================== */
+
+@media (max-width: 768px) {
+  /* Hide cart icon on all developer pages */
+  body[id*="developer"] .mobile-header__icons,
+  #developer-application-form-body .mobile-header__icons {
+    justify-content: flex-end !important;
+  }
+
+  /* Hide cart button on developer pages */
+  body[id*="developer"] .mobile-header__icon-btn--cart,
+  #developer-application-form-body .mobile-header__icon-btn--cart {
+    display: none !important;
+  }
+
+  /* ============================================
+     CRITICAL: Kill ALL desktop absolute positioning
+     ============================================ */
+  #property-details-section *,
+  #financials-section *,
+  .application-form-main *,
+  .form-step-indicator,
+  .application-form-title,
+  .form-actions,
+  #form-actions {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+  }
+
+  /* ============================================
+     Page Structure
+     ============================================ */
+  #developer-application-form-body {
+    min-height: 100vh !important;
+    background: #fafafa !important;
+  }
+
+  .application-form-page {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    background: #fafafa !important;
+  }
+
+  /* Hide sidebar on mobile */
+  .application-form-sidebar,
+  #developer-application-form-sidebar {
+    display: none !important;
+  }
+
+  /* Main Content Area */
+  .application-form-main,
+  #developer-application-form-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: calc(100vh - 64px) !important;
+    padding: 96px 16px 40px 16px !important;
+    margin: 0 !important;
+    background: #fafafa !important;
+  }
+
+  /* ============================================
+     Breadcrumbs - Show Last 2 Items (... > Add Asset > Property information)
+     ============================================ */
+  .application-form-breadcrumbs,
+  #application-form-breadcrumbs {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 0px !important;
+    gap: 8px !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 0 16px 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap !important;
+  }
+
+  /* Hide first item (Assets) and its chevron */
+  .application-form-breadcrumbs > .breadcrumb-link:nth-child(1),
+  .application-form-breadcrumbs > .breadcrumb-chevron:nth-child(2) {
+    display: none !important;
+  }
+
+  /* Add "..." before the second breadcrumb item (Add Asset) */
+  .application-form-breadcrumbs > .breadcrumb-link:nth-child(3)::before {
+    content: "..." !important;
+    margin-right: 8px !important;
+    color: #535862 !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+  }
+
+  .application-form-breadcrumbs .breadcrumb-link,
+  .application-form-breadcrumbs .breadcrumb-current {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .application-form-breadcrumbs .breadcrumb-link {
+    color: #535862 !important;
+    text-decoration: none !important;
+  }
+
+  .application-form-breadcrumbs .breadcrumb-current {
+    color: var(--primary-color) !important;
+  }
+
+  .application-form-breadcrumbs .breadcrumb-chevron {
+    flex-shrink: 0 !important;
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* ============================================
+     Step Indicator - Hidden on Mobile
+     ============================================ */
+  .form-step-indicator {
+    display: none !important;
+  }
+
+  /* ============================================
+     Page Title - Centered
+     ============================================ */
+  .application-form-title {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    line-height: 32px !important;
+    text-align: center !important;
+    color: #181d27 !important;
+    margin: 0 0 24px 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ============================================
+     Form Sections
+     ============================================ */
+  .form-section {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 0 16px 0 !important;
+    padding: 24px 16px !important;
+    background: #ffffff !important;
+    border: 1px solid #e9eaeb !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 12px !important;
+  }
+
+  #property-details-section {
+    margin-bottom: 16px !important;
+  }
+
+  #financials-section {
+    margin-bottom: 24px !important;
+  }
+
+  /* Section Title */
+  .form-section-title {
+    width: 100% !important;
+    height: auto !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 20px !important;
+    line-height: 28px !important;
+    color: #181d27 !important;
+    margin: 0 0 20px 0 !important;
+    text-align: left !important;
+  }
+
+  /* ============================================
+     Form Grid - Flexbox with wrapping
+     ============================================ */
+  .form-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 16px !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  /* ============================================
+     Form Input Wrapper - CRITICAL FIX
+     ============================================ */
+  .form-input-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    width: 100% !important; /* Force full width for nested wrappers */
+    height: auto !important;
+  }
+
+  /* ============================================
+     Standard Full-Width Fields
+     ============================================ */
+  #property-name-wrapper,
+  #property-type-wrapper,
+  #area-wrapper,
+  #address-wrapper,
+  #lease-type-wrapper,
+  #status-wrapper,
+  #year-built-wrapper {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* ============================================
+     Form Inputs - Full Width - OVERRIDE DESKTOP SPECIFICITY
+     ============================================ */
+  .form-input,
+  .form-select,
+  #property-details-section .form-input,
+  #property-details-section .form-select,
+  #property-details-section #property-name-wrapper .form-input,
+  #property-details-section #property-type-wrapper .form-select,
+  #property-details-section #area-wrapper .form-select,
+  #property-details-section #address-wrapper .form-input,
+  #property-details-section #lease-type-wrapper .form-select,
+  #property-details-section #lease-term-wrapper .form-input,
+  #property-details-section #land-size-wrapper .form-input,
+  #property-details-section #building-size-wrapper .form-input,
+  #property-details-section #bedrooms-wrapper .form-input,
+  #property-details-section #bathrooms-wrapper .form-input,
+  #property-details-section #status-wrapper .form-select,
+  #property-details-section #year-built-wrapper .form-input,
+  #financials-section .form-input,
+  #financials-section .form-field .form-input,
+  #financials-section .form-field:first-child .form-input,
+  #financials-section .form-field:last-child .form-input {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 44px !important;
+    padding: 10px 14px !important;
+    background: #ffffff !important;
+    border: 1px solid #d5d7da !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 8px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+    color: #181d27 !important;
+    display: block !important;
+  }
+
+  .form-input::placeholder {
+    color: #717680 !important;
+  }
+
+  .form-input:read-only {
+    background: #f8f9fc !important;
+    color: #717680 !important;
+  }
+
+  .form-input:focus,
+  .form-select:focus {
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+    box-shadow:
+      0px 1px 2px rgba(10, 13, 18, 0.05),
+      0px 0px 0px 4px rgba(0, 0, 255, 0.1) !important;
+  }
+
+  /* Form Input Labels */
+  .form-input-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    color: #414651 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    height: 20px !important;
+  }
+
+  .required-asterisk {
+    color: #f04438 !important;
+    font-weight: 500 !important;
+  }
+
+  /* ============================================
+     Select Dropdown - FIX CHEVRON POSITIONING
+     ============================================ */
+  .form-select-wrapper,
+  #property-details-section .form-select-wrapper {
+    position: relative !important; /* MUST be relative for chevron positioning */
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .form-select {
+    display: block !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    padding: 10px 40px 10px 14px !important;
+    cursor: pointer !important;
+    background-image: none !important;
+  }
+
+  .select-chevron,
+  #property-details-section .select-chevron {
+    position: absolute !important; /* MUST be absolute to position inside wrapper */
+    right: 14px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 16px !important;
+    height: 16px !important;
+    pointer-events: none !important;
+  }
+
+  /* ============================================
+     LEASE TERM ROW: Input + "years" Badge
+     FIXED CALCULATION: 100% - 52px badge - 16px gap = 100% - 68px
+     ============================================ */
+  #lease-term-wrapper {
+    flex: 1 1 calc(100% - 68px) !important;
+    max-width: calc(100% - 68px) !important;
+  }
+
+  #lease-term-unit-label {
+    flex: 0 0 52px !important;
+    width: 52px !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    align-self: flex-end !important; /* Align badge to bottom of flex row */
+    margin-bottom: 0 !important;
+  }
+
+  #lease-term-unit-label .unit-input {
+    box-sizing: border-box !important;
+    width: 58px !important;
+    height: 44px !important;
+    background: #f8f9fc !important;
+    border: 1px solid #d5d7da !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 8px !important;
+    padding: 10px 8px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 14px !important;
+    line-height: 24px !important;
+    color: #717680 !important;
+    text-align: center !important;
+    cursor: default !important;
+  }
+
+  /* ============================================
+     VISUAL REORDERING using flexbox order property
+     DOM order: Land, Land-badge, Building, Building-badge, Bedrooms, Bathrooms
+     Display order: Bedrooms, Bathrooms, Land, Land-badge, Building, Building-badge
+     ============================================ */
+  #land-size-wrapper {
+    order: 3 !important;
+  }
+
+  #land-size-unit-label {
+    order: 4 !important;
+  }
+
+  #building-size-wrapper {
+    order: 5 !important;
+  }
+
+  #building-size-unit-label {
+    order: 6 !important;
+  }
+
+  #bedrooms-wrapper {
+    order: 1 !important;
+  }
+
+  #bathrooms-wrapper {
+    order: 2 !important;
+  }
+
+  /* ============================================
+     BEDROOMS + BATHROOMS ROW (2 columns, no badges)
+     ============================================ */
+  #bedrooms-wrapper {
+    flex: 0 0 calc(50% - 8px) !important;
+    max-width: calc(50% - 8px) !important;
+  }
+
+  #bathrooms-wrapper {
+    flex: 0 0 calc(50% - 8px) !important;
+    max-width: calc(50% - 8px) !important;
+  }
+
+  /* ============================================
+     LAND SIZE ROW: Full width + sq.m badge
+     FIXED CALCULATION: 100% - 52px badge - 16px gap = 100% - 68px
+     ============================================ */
+  #land-size-wrapper {
+    flex: 1 1 calc(100% - 68px) !important;
+    max-width: calc(100% - 68px) !important;
+  }
+
+  #land-size-unit-label {
+    flex: 0 0 52px !important;
+    width: 52px !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    align-self: flex-end !important; /* Align badge to bottom of flex row */
+    margin-bottom: 0 !important;
+  }
+
+  #land-size-unit-label .unit-input {
+    box-sizing: border-box !important;
+    width: 52px !important;
+    height: 44px !important;
+    background: #f8f9fc !important;
+    border: 1px solid #d5d7da !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 8px !important;
+    padding: 10px 8px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 14px !important;
+    line-height: 24px !important;
+    color: #717680 !important;
+    text-align: center !important;
+    cursor: default !important;
+  }
+
+  /* ============================================
+     BUILDING SIZE ROW: Full width + sq.m badge
+     FIXED CALCULATION: 100% - 52px badge - 16px gap = 100% - 68px
+     ============================================ */
+  #building-size-wrapper {
+    flex: 1 1 calc(100% - 68px) !important;
+    max-width: calc(100% - 68px) !important;
+  }
+
+  #building-size-unit-label {
+    flex: 0 0 52px !important;
+    width: 52px !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    align-self: flex-end !important; /* Align badge to bottom of flex row */
+    margin-bottom: 0 !important;
+  }
+
+  #building-size-unit-label .unit-input {
+    box-sizing: border-box !important;
+    width: 52px !important;
+    height: 44px !important;
+    background: #f8f9fc !important;
+    border: 1px solid #d5d7da !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 8px !important;
+    padding: 10px 8px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 14px !important;
+    line-height: 24px !important;
+    color: #717680 !important;
+    text-align: center !important;
+    cursor: default !important;
+  }
+
+  /* ============================================
+     Financials Section
+     ============================================ */
+  #financials-section .form-field,
+  #financials-section .form-field:first-child,
+  #financials-section .form-field:last-child {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #financials-section .form-input-wrapper,
+  #financials-section .form-field .form-input-wrapper,
+  #financials-section .form-field:first-child .form-input-wrapper,
+  #financials-section .form-field:last-child .form-input-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* ============================================
+     Form Actions - Stacked Buttons
+     ============================================ */
+  .form-actions,
+  #form-actions {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 24px 0 0 0 !important;
+    padding: 0 !important;
+  }
+
+  .form-back-btn,
+  .form-next-btn,
+  #form-back-btn,
+  #form-next-btn {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 12px 16px !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 44px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+  }
+
+  .form-next-btn,
+  #form-next-btn {
+    background: var(--primary-color) !important;
+    border: none !important;
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05) !important;
+    color: #ffffff !important;
+  }
+
+  .form-next-btn:hover,
+  #form-next-btn:hover {
+    background: var(--primary-color) !important;
+  }
+
+  .form-back-btn,
+  #form-back-btn {
+    background: #ffffff !important;
+    border: 2px solid #e9eaeb !important;
+    color: var(--brand-dark-blue) !important;
+  }
+
+  .form-back-btn:hover,
+  #form-back-btn:hover {
+    background: #f8f9fc !important;
+  }
+
+  .back-arrow,
+  .next-arrow {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* ============================================
+     Currency Input Wrapper - FIX ICON POSITIONING
+     ============================================ */
+  .form-input-with-icon,
+  #financials-section .form-input-with-icon {
+    position: relative !important; /* MUST be relative for icon positioning */
+    width: 100% !important;
+  }
+
+  .form-input-with-icon .form-input {
+    padding-right: 40px !important;
+  }
+
+  .input-icon,
+  #financials-section .input-icon {
+    position: absolute !important; /* MUST be absolute to position inside wrapper */
+    right: 14px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    pointer-events: none !important;
+  }
+
+  /* ============================================
+     Textarea
+     ============================================ */
+  textarea.form-input {
+    min-height: 88px !important;
+    height: auto !important;
+    resize: vertical !important;
+    padding: 10px 14px !important;
+  }
+
+  /* ============================================
+     Mobile-Specific Improvements
+     ============================================ */
+
+  /* Better touch targets */
+  .form-input,
+  .form-select,
+  .form-back-btn,
+  .form-next-btn {
+    min-height: 44px !important;
+  }
+
+  /* Focus states for better mobile UX */
+  .form-input:focus,
+  .form-select:focus {
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+  }
+
+  /* Prevent zoom on input focus (iOS) */
+  .form-input,
+  .form-select {
+    font-size: 16px !important;
+  }
+}
+
+/* ============================================
+   Extra Small Devices (< 375px)
+   ============================================ */
+@media (max-width: 374px) {
+  .application-form-main,
+  #developer-application-form-main {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .form-section {
+    padding: 20px 12px !important;
+  }
+
+  .application-form-title {
+    font-size: 20px !important;
+    line-height: 28px !important;
+  }
+}

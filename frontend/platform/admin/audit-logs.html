@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audit Logs | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Immutable audit trail of all platform operations." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- SIDEBAR -->
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a><span class="separator">›</span><span class="current">Audit Logs</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-search">
+            <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="6" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" placeholder="Search logs…" id="admin-global-search" aria-label="Search" />
+          </div>
+        </div>
+      </header>
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Audit Logs</h1>
+          <p class="admin-page-subtitle">
+            Immutable chronological record of every critical platform action
+          </p>
+        </div>
+
+        <!-- Filters -->
+        <div class="admin-card" style="margin-bottom: 16px">
+          <div style="
+                padding: 14px 20px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+              ">
+            <div class="admin-search" style="width: 200px">
+              <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="6" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg><input type="text" placeholder="Search actions…" id="audit-search" />
+            </div>
+            <select id="filter-entity" class="admin-select">
+              <option value="">All Entities</option>
+              <option value="user">User</option>
+              <option value="investment">Investment</option>
+              <option value="wallet_transaction">Transaction</option>
+              <option value="order">Order</option>
+              <option value="asset">Asset</option>
+              <option value="kyc_record">KYC</option>
+              <option value="support_ticket">Support</option>
+            </select>
+            <select id="filter-action" class="admin-select">
+              <option value="">All Actions</option>
+              <option value="created">Created</option>
+              <option value="updated">Updated</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="deleted">Deleted</option>
+              <option value="login">Login</option>
+            </select>
+            <span style="
+                  margin-left: auto;
+                  font-size: 12px;
+                  color: var(--admin-text-muted);
+                " id="audit-count-label">0 entries</span>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="audit-export-csv"
+              title="Export filtered logs to CSV">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M8 2v9M4 8l4 4 4-4" />
+                <path d="M2 14h12" />
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th data-sort="id" style="width: 50px">ID</th>
+                  <th data-sort="action">Action</th>
+                  <th data-sort="entity_type">Entity</th>
+                  <th data-sort="user_name">Actor</th>
+                  <th data-sort="ip_address">IP Address</th>
+                  <th data-sort="created_at">Timestamp</th>
+                  <th style="width: 60px">Detail</th>
+                </tr>
+              </thead>
+              <tbody id="audit-table-body">
+                <tr>
+                  <td colspan="7" style="
+                        text-align: center;
+                        padding: 40px;
+                        color: var(--admin-text-muted);
+                      ">
+                    Loading…
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-top: 16px;
+            ">
+          <span style="font-size: 13px; color: var(--admin-text-muted)" id="audit-page-info">Page 1</span>
+          <div style="display: flex; gap: 6px">
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="audit-prev" disabled>
+              ← Previous
+            </button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="audit-next">
+              Next →
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- State Diff Modal -->
+  <div id="diff-modal" style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+      ">
+    <div style="
+          background: var(--admin-bg-card);
+          border: 1px solid var(--admin-border);
+          border-radius: var(--admin-radius-xl);
+          padding: 28px;
+          max-width: 640px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          animation: admin-fadeIn 0.2s ease-out;
+        ">
+      <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+          ">
+        <h3 style="
+              font-size: 16px;
+              font-weight: 700;
+              color: var(--admin-text-primary);
+              margin: 0;
+            " id="diff-modal-title">
+          Audit Detail
+        </h3>
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" id="diff-modal-close">
+          ✕
+        </button>
+      </div>
+      <div id="diff-modal-body"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/admin-audit.js"></script>
+</body>
+
+</html>

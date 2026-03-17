@@ -1,0 +1,455 @@
+/**
+ * POOOL – Dynamic User Data Injection
+ *
+ * Fetches the current user's profile from /api/me and replaces
+ * all hardcoded placeholder names ("Olivia Rhye") with real data.
+ *
+ * Loaded on every authenticated page via <script src="/static/js/user-data.js">
+ */
+(function () {
+  "use strict";
+
+  // Fetch current user profile from the backend
+  const savedProfile = localStorage.getItem("selectedProfile");
+
+  fetch("/api/me", { credentials: "same-origin" })
+    .then(function (res) {
+      if (!res.ok) {
+        // Not authenticated – redirect to login
+        if (res.status === 401) {
+          window.location.href = "/auth/login";
+        }
+        return null;
+      }
+      return res.json();
+    })
+    .then(function (user) {
+      if (!user) return;
+
+      // Store user data for other scripts that may need it
+      window.__POOOL_USER = user;
+
+      // ── Enrich Sentry with user context ────────────────────
+      if (typeof Sentry !== 'undefined' && Sentry.setUser) {
+        Sentry.setUser({
+          id: user.id,
+          email: user.email,
+          username: user.name,
+        });
+      }
+
+      // ── Replace all user name elements ──────────────────────
+      var nameSelectors = [
+        ".sidebar__account-name",
+        ".mobile-burger-menu__account-name",
+        ".profile-account-name",
+        ".mobile-profile-account-name",
+        ".admin-sidebar-user-name",
+      ];
+
+      nameSelectors.forEach(function (sel) {
+        document.querySelectorAll(sel).forEach(function (el) {
+          el.textContent = user.name;
+        });
+      });
+
+      // ── Replace all user email elements ─────────────────────
+      var emailSelectors = [
+        ".sidebar__account-email",
+        ".mobile-burger-menu__account-email",
+      ];
+
+      emailSelectors.forEach(function (sel) {
+        document.querySelectorAll(sel).forEach(function (el) {
+          el.textContent = user.email;
+        });
+      });
+
+      // ── Replace all user role elements (Admin) ──────────────
+      document
+        .querySelectorAll(".admin-sidebar-user-role")
+        .forEach(function (el) {
+          el.textContent = user.role
+            .replace("_", " ")
+            .replace(/\b\w/g, (l) => l.toUpperCase());
+        });
+
+      // ── Replace avatar alt text ─────────────────────────────
+      document
+        .querySelectorAll(
+          ".sidebar__account-avatar img, " +
+          ".mobile-burger-menu__avatar img, " +
+          ".profile-avatar img, " +
+          ".mobile-profile-avatar img, " +
+          ".admin-sidebar-avatar",
+        )
+        .forEach(function (img) {
+          img.alt = user.name;
+        });
+
+      // ── Generate initials avatar (replace placeholder image) ──
+      var initialsDataUrl = generateInitialsAvatar(user.initials);
+      document
+        .querySelectorAll(
+          ".sidebar__account-avatar img, " +
+          ".mobile-burger-menu__avatar img, " +
+          ".admin-sidebar-avatar",
+        )
+        .forEach(function (img) {
+          // Only replace if still using the default placeholder
+          if (
+            img.src.includes("Image.webp") ||
+            img.src.includes("Featured icon")
+          ) {
+            img.src = initialsDataUrl;
+          }
+        });
+
+      // Also update profile dropdown avatars for the current account
+      document
+        .querySelectorAll(
+          "#menu-item-current-account .profile-avatar img, " +
+          "#mobile-menu-item-current-account .mobile-profile-avatar img",
+        )
+        .forEach(function (img) {
+          if (img.src.includes("Image.webp")) {
+            img.src = initialsDataUrl;
+            img.alt = user.name;
+          }
+        });
+
+      // ── Update data attributes for profile switcher ─────────
+      document
+        .querySelectorAll('[data-profile-id="olivia-investor"]')
+        .forEach(function (el) {
+          el.setAttribute("data-profile-id", user.email + "-investor");
+        });
+      document
+        .querySelectorAll('[data-profile-id="olivia-developer"]')
+        .forEach(function (el) {
+          el.setAttribute("data-profile-id", user.email + "-developer");
+        });
+
+      // ── Update selected state in switcher ───────────────────
+      // (savedProfile is already initialized at the top of the IIFE)
+
+      // ── Admin Profile Injection ──────────────────────────────
+      if (user.role === "admin" || user.role === "super_admin") {
+        // 1. Desktop Injection
+        var desktopSwitchSection = document.getElementById(
+          "profile-switch-section",
+        );
+        if (
+          desktopSwitchSection &&
+          !document.getElementById("menu-item-account-admin")
+        ) {
+          var adminItem = document.createElement("div");
+          adminItem.id = "menu-item-account-admin";
+          adminItem.className = "profile-menu-item account-item";
+          adminItem.setAttribute("data-profile-id", user.email + "-admin");
+          adminItem.style.cursor = "pointer";
+
+          adminItem.innerHTML = `
+                        <div class="profile-account-content">
+                            <div class="profile-avatar-group">
+                                <div class="profile-avatar">
+                                    <div style="width: 32px; height: 32px; border-radius: 8px; background: #7F56D9; display: flex; align-items: center; justify-content: center;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="profile-avatar-border"></div>
+                                    <div class="profile-online-indicator"></div>
+                                </div>
+                                <div class="profile-text-wrapper">
+                                    <span class="profile-account-name">${user.name}</span>
+                                    <span class="profile-account-type">Admin Dashboard</span>
+                                </div>
+                            </div>
+                            <div class="profile-checkbox">
+                                <div class="profile-checkbox-check"></div>
+                            </div>
+                        </div>
+                    `;
+          desktopSwitchSection.appendChild(adminItem);
+        }
+
+        // 2. Mobile Injection
+        var mobileSwitchSection = document.getElementById(
+          "mobile-profile-switch-section",
+        );
+        if (
+          mobileSwitchSection &&
+          !document.getElementById("mobile-menu-item-account-admin")
+        ) {
+          var mobileAdminItem = document.createElement("div");
+          mobileAdminItem.id = "mobile-menu-item-account-admin";
+          mobileAdminItem.className =
+            "mobile-profile-menu-item account-item mobile-profile-switcher";
+          mobileAdminItem.setAttribute(
+            "data-profile-id",
+            user.email + "-admin",
+          );
+          mobileAdminItem.setAttribute("data-account-type", "Admin Profile");
+          mobileAdminItem.style.cursor = "pointer";
+
+          mobileAdminItem.innerHTML = `
+                        <div class="mobile-profile-account-content">
+                            <div class="mobile-profile-avatar-group">
+                                <div class="mobile-profile-avatar">
+                                    <div style="width: 32px; height: 32px; border-radius: 8px; background: #7F56D9; display: flex; align-items: center; justify-content: center;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="mobile-profile-avatar-border"></div>
+                                    <div class="mobile-profile-online-indicator"></div>
+                                </div>
+                                <div class="mobile-profile-text-wrapper">
+                                    <span class="mobile-profile-account-name">${user.name}</span>
+                                    <span class="mobile-profile-account-type">Admin Dashboard</span>
+                                </div>
+                            </div>
+                            <div class="mobile-profile-checkbox">
+                                <div class="mobile-profile-checkbox-check"></div>
+                            </div>
+                        </div>
+                    `;
+          mobileSwitchSection.appendChild(mobileAdminItem);
+
+          // Re-initialize mobile switchers if needed
+          if (typeof window.initializeProfileSwitchers === "function") {
+            window.initializeProfileSwitchers();
+          }
+        }
+        // 3. Admin Dashboard Injection (if we are in /admin/)
+        if (window.location.pathname.startsWith("/admin/")) {
+          setupAdminDashboardSwitcher(user);
+        }
+      }
+
+      if (savedProfile) {
+        const selector =
+          savedProfile === "admin"
+            ? '[id*="account-admin"]'
+            : savedProfile === "developer"
+              ? '[id*="developer"]'
+              : '[id*="current-account"]';
+
+        document.querySelectorAll(".account-item").forEach((item) => {
+          if (item.matches(selector)) {
+            item.classList.add("selected");
+            const checkbox = item.querySelector(
+              ".profile-checkbox, .mobile-profile-checkbox",
+            );
+            if (checkbox) checkbox.classList.add("selected");
+          } else {
+            item.classList.remove("selected");
+            const checkbox = item.querySelector(
+              ".profile-checkbox, .mobile-profile-checkbox",
+            );
+            if (checkbox) checkbox.classList.remove("selected");
+          }
+        });
+      }
+
+      // ── Fill Settings Form if present ─────────────────────────
+      if (window.location.pathname.includes("/settings")) {
+        const firstNameInput = document.getElementById("settings-first-name");
+        if (firstNameInput && user.first_name)
+          firstNameInput.value = user.first_name;
+
+        const lastNameInput = document.getElementById("settings-last-name");
+        if (lastNameInput && user.last_name)
+          lastNameInput.value = user.last_name;
+
+        const emailInput = document.getElementById("settings-email");
+        if (emailInput && user.email) emailInput.value = user.email;
+
+        const phoneInput = document.getElementById("settings-phone");
+        if (phoneInput && user.phone_number)
+          phoneInput.value = user.phone_number;
+
+        const countrySelect = document.getElementById("settings-country");
+        if (countrySelect && user.country) {
+          countrySelect.value = user.country.toUpperCase();
+          // trigger change to update flag
+          const event = new Event("change");
+          countrySelect.dispatchEvent(event);
+        }
+
+        const roleSelect = document.getElementById("settings-role");
+        if (roleSelect && user.role) roleSelect.value = user.role;
+      }
+    })
+    .catch(function (err) {
+      if (typeof Sentry !== 'undefined' && Sentry.captureException) {
+        Sentry.captureException(err);
+      }
+    });
+
+  /**
+   * Setup the profile switcher for the Admin Dashboard sidebar.
+   */
+  function setupAdminDashboardSwitcher(user) {
+    var sidebarFooter = document.querySelector(".admin-sidebar-footer");
+    var sidebarUser = document.querySelector(".admin-sidebar-user");
+
+    if (
+      sidebarFooter &&
+      sidebarUser &&
+      !document.getElementById("nav-account-card")
+    ) {
+      // 1. Make the user card clickable
+      sidebarUser.id = "nav-account-card";
+      sidebarUser.setAttribute(
+        "onclick",
+        'window.toggleProfileDropdown ? toggleProfileDropdown() : console.warn("toggleProfileDropdown not loaded")',
+      );
+      sidebarUser.style.position = "relative";
+
+      // 2. Ensure CSS is loaded
+      if (!document.querySelector('link[href*="profile-dropdown.css"]')) {
+        var link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = "/static/css/profile-dropdown.css";
+        document.head.appendChild(link);
+      }
+
+      // 3. Ensure JS is loaded
+      if (
+        typeof window.toggleProfileDropdown === "undefined" &&
+        !document.querySelector('script[src*="profile-dropdown.js"]')
+      ) {
+        var script = document.createElement("script");
+        script.src = "/static/js/profile-dropdown.js";
+        document.body.appendChild(script);
+      }
+
+      // 4. Inject the dropdown markup
+      if (!document.getElementById("profile-dropdown-menu")) {
+        var dropdown = document.createElement("div");
+        dropdown.id = "profile-dropdown-menu";
+        dropdown.className = "profile-dropdown-menu";
+        dropdown.style.display = "none";
+        dropdown.style.left = "260px"; // Admin sidebar width
+
+        dropdown.innerHTML = `
+                    <div id="profile-menu-wrapper" class="profile-menu-wrapper">
+                        <div id="profile-menu-items-top" class="profile-menu-items">
+                            <div id="menu-item-documentation" class="profile-menu-item">
+                                <div class="profile-menu-content">
+                                    <div class="profile-icon-text">
+                                        <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                            <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                                            <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                                        </svg> 
+                                        <span class="profile-menu-text">Documentation</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="profile-switch-section" class="profile-switch-section">
+                            <div class="profile-switch-header"><span class="profile-switch-title">Switch account</span></div>
+                            
+                            <div id="menu-item-current-account" class="profile-menu-item account-item ${!savedProfile || savedProfile === "investor" ? "selected" : ""}">
+                                <div class="profile-account-content">
+                                    <div class="profile-avatar-group">
+                                        <div class="profile-avatar"><img src="${generateInitialsAvatar(user.initials)}" alt="${user.name}">
+                                            <div class="profile-avatar-border"></div>
+                                            <div class="profile-online-indicator"></div>
+                                        </div>
+                                        <div class="profile-text-wrapper"><span class="profile-account-name">${user.name}</span> <span class="profile-account-type">Investor Profile</span></div>
+                                    </div>
+                                    <div class="profile-checkbox ${!savedProfile || savedProfile === "investor" ? "selected" : ""}">
+                                        <div class="profile-checkbox-check"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="menu-item-account-developer" class="profile-menu-item account-item ${savedProfile === "developer" ? "selected" : ""}" data-profile-id="${user.email}-developer">
+                                <div class="profile-account-content">
+                                    <div class="profile-avatar-group">
+                                        <div class="profile-avatar"><img src="/images/Featured icon.webp" alt="${user.name}">
+                                            <div class="profile-avatar-border"></div>
+                                            <div class="profile-online-indicator"></div>
+                                        </div>
+                                        <div class="profile-text-wrapper"><span class="profile-account-name">${user.name}</span> <span class="profile-account-type">Developer profile</span></div>
+                                    </div>
+                                    <div class="profile-checkbox ${savedProfile === "developer" ? "selected" : ""}">
+                                        <div class="profile-checkbox-check"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="menu-item-account-admin" class="profile-menu-item account-item ${savedProfile === "admin" ? "selected" : ""}" data-profile-id="${user.email}-admin">
+                                <div class="profile-account-content">
+                                    <div class="profile-avatar-group">
+                                        <div class="profile-avatar">
+                                            <div style="width: 32px; height: 32px; border-radius: 8px; background: #7F56D9; display: flex; align-items: center; justify-content: center;">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                                                </svg>
+                                            </div>
+                                            <div class="profile-avatar-border"></div>
+                                            <div class="profile-online-indicator"></div>
+                                        </div>
+                                        <div class="profile-text-wrapper"><span class="profile-account-name">${user.name}</span> <span class="profile-account-type">Admin Dashboard</span></div>
+                                    </div>
+                                    <div class="profile-checkbox ${savedProfile === "admin" ? "selected" : ""}">
+                                        <div class="profile-checkbox-check"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div id="profile-footer-items" class="profile-footer-items">
+                        <div id="menu-item-sign-out" class="profile-menu-item">
+                            <div class="profile-menu-content">
+                                <div class="profile-icon-text">
+                                    <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"></path>
+                                        <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                                    </svg> 
+                                    <span class="profile-menu-text">Sign out</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        document.body.appendChild(dropdown);
+      }
+    }
+  }
+
+  /**
+   * Generate a simple initials-based avatar as a data URL.
+   * Creates a colored circle with the user's initials.
+   */
+  function generateInitialsAvatar(initials) {
+    var canvas = document.createElement("canvas");
+    canvas.width = 80;
+    canvas.height = 80;
+    var ctx = canvas.getContext("2d");
+
+    // Background: POOOL brand blue
+    ctx.fillStyle = "#2E2EF9";
+    ctx.beginPath();
+    ctx.arc(40, 40, 40, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Text: white, centered
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font =
+      'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(initials || "?", 40, 42);
+
+    return canvas.toDataURL("image/webp");
+  }
+})();

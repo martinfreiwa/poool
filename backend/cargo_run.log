@@ -1,0 +1,22 @@
+warning: unused variable: `funding_status`
+   --> src/cart/routes.rs:494:13
+    |
+494 |         let funding_status: String = row.get("funding_status");
+    |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_funding_status`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `poool-backend` (bin "poool-backend") generated 1 warning (run `cargo fix --bin "poool-backend" -p poool-backend` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.16s
+warning: the following packages contain code that will be rejected by a future version of Rust: redis v0.24.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running `target/debug/poool-backend`
+[2m2026-03-13T16:32:49.543676Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Starting POOOL Backend...
+[2m2026-03-13T16:32:49.546277Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Connecting to database...
+[2m2026-03-13T16:32:49.626314Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Database connection established ✓
+[2m2026-03-13T16:32:49.632601Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_schema_migrations" already exists, skipping
+[2m2026-03-13T16:32:49.634045Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Database schema is up to date (32 migrations tracked)
+[2m2026-03-13T16:32:49.634267Z[0m [32m INFO[0m [2mpoool_backend::templates[0m[2m:[0m Template engine initialized (dev_mode=true, version=1773419569) ✓
+[2m2026-03-13T16:32:49.634308Z[0m [32m INFO[0m [2mpoool_backend::email[0m[2m:[0m Starting POOOL Email Drips Scheduler...
+[2m2026-03-13T16:32:49.638765Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Server listening on http://0.0.0.0:9000
+[2m2026-03-13T16:32:52.304715Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed

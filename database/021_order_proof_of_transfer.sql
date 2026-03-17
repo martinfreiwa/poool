@@ -1,0 +1,1 @@
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS proof_of_transfer_url VARCHAR(1024);

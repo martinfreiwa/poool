@@ -1,0 +1,43 @@
+{% with title="Imprint | POOOL", meta_description="Legal information and company details for POOOL, the fractional real
+world asset investment platform.", extra_css=['marketplace', 'wallet', 'portfolio', 'cart', 'portfolio-assets-table',
+'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards'], extra_js=['htmx-init', 'profile-dropdown'] %}{%
+include "components/head.html" %}{% endwith %}
+
+<body id="rewards-body">
+  {% include 'components/mobile-menu.html' %}
+  <div id="portfolio-page" class="portfolio-page">
+    <!-- Sidebar Navigation -->
+    <div id="portfolio-sidebar" class="portfolio-sidebar">
+      <!-- Container that will show only one sidebar at a time -->
+      {% include 'components/sidebar.html' %}
+    </div>
+    <!-- Main Content Area -->
+    <main id="legal-main" class="ds-main marketplace-main" style="background: #f9fafb">
+      <div style="
+            flex: 1;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 40px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          ">
+        <h1 style="
+              font-size: 24px;
+              font-weight: 600;
+              color: #101828;
+              margin-bottom: 16px;
+            ">
+          Imprint & Impressum
+        </h1>
+        <p style="font-size: 16px; color: #475467">
+          Legal details and business information.
+        </p>
+      </div>
+    </main>
+  </div>
+  <script src="/static/js/legal-enhancements.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
+</body>
+
+</html>

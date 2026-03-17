@@ -1,0 +1,251 @@
+{% with title="Developer Property Content", meta_description="Add property content and media for listing on POOOL.", extra_css=['property-content', 'developer-property-content', 'developer-document-upload-step3', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-property-content', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="property-content-body">
+  {% include 'components/mobile-menu.html' %}
+
+  <div id="property-content-page" class="cart-page">
+    <div id="property-content-sidebar" class="cart-page-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+    <!-- Main Content Area -->
+    <main id="property-content-main" class="ds-main cart-page-main">
+      <!-- Page Header -->
+      <div class="ds-page-header cart-page-header">
+        <div class="ds-page-header__title-row cart-title-wrapper">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" class="ds-page-header__icon poool-icon-custom">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <h1 class="ds-page-header__title cart-page-title">Property Content</h1>
+        </div>
+        <div class="checkout-steps">
+          <a href="/developer/add-asset" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Asset Type</a>
+          <span class="checkout-steps__divider">→</span>
+          <a href="/developer/application-form" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Property Info</a>
+          <span class="checkout-steps__divider">→</span>
+          <a href="/developer/document-upload-step3" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Documents</a>
+          <span class="checkout-steps__divider">→</span>
+          <span class="checkout-steps__step checkout-steps__step--active">Review</span>
+        </div>
+      </div>
+      <hr class="page-header-divider">
+      <!-- Form Container -->
+      <form id="property-content-form" class="property-content-form">
+        <div id="property-details-section" class="form-section property-details-section">
+          <h2 id="property-details-title" class="section-title">
+            1. Property details
+          </h2>
+          <div class="property-details-form">
+            <!-- Asset Title -->
+            <div id="asset-title-group" class="form-group">
+              <div class="form-label-wrapper">
+                <label for="asset-title" class="form-label">Asset Title</label>
+              </div>
+              <input type="text" id="asset-title" name="asset_title" class="form-input"
+                placeholder="4 Bed Villa in Umranli, Golf Estates Residence" value="" />
+            </div>
+            <!-- Short Description -->
+            <div id="short-description-group" class="form-group">
+              <div class="form-label-wrapper">
+                <label for="short-description" class="form-label">Short Description</label>
+              </div>
+              <input type="text" id="short-description" name="short_description" class="form-input"
+                placeholder="Luxury 4BR villa with private pool in Bali golf estate, great investment opportunity."
+                value="" />
+              <span class="form-hint"></span>
+            </div>
+            <!-- Full Description -->
+            <div id="full-description-group" class="form-group">
+              <div class="form-label-wrapper">
+                <label for="full-description" class="form-label">Full Description</label>
+              </div>
+              <textarea id="full-description" name="full_description" class="form-textarea"
+                placeholder="Check out Villa Janoor, a stylish 3-bedroom villa in the popular Batu Belig area. It&#39;s the perfect spot for a modern and luxurious getaway in one of Bali&#39;s liveliest neighborhoods. Just a short walk to Batu Belig Beach and a quick drive to the area&#39;s buzzing restaurants and nightlife, Villa Janoor offers the best of both worlds—convenience and peace.  This lovely villa sits on a 300-square-meter lot with 220 square meters of living space. It features three roomy bedrooms, three and a half bathrooms, a cozy lounge, and a private swimming pool. The open living area flows right into the dining space and fully equipped kitchen, making it a great place to chill or host friends."
+                rows="7"></textarea>
+              <span class="form-hint"></span>
+            </div>
+          </div>
+          <!-- Location Fields Row: Google Maps Link -->
+          <div id="address-maps-row" class="form-row location-row">
+            <!-- Google Maps Link -->
+            <div id="maps-link-group" class="form-group inline-group">
+              <label for="maps-link" class="form-label">Google Maps link</label>
+              <input type="url" id="maps-link" name="maps_link" class="form-input link-input" placeholder="https://maps.google.com/..." value="" />
+            </div>
+          </div>
+          <!-- Location Description -->
+          <div id="location-description-group" class="form-group">
+            <label for="location-description" class="form-label">Location Description</label>
+            <textarea id="location-description" name="location_description" class="form-textarea"
+              placeholder="Describe the location, nearby amenities, beaches, restaurants, and transport links."
+              rows="6"></textarea>
+          </div>
+        </div>
+        <!-- Media Content Section -->
+        <div id="media-content-section" class="form-section media-content-section">
+          <h2 id="media-content-title" class="section-title">
+            2. Media content
+          </h2>
+          <p id="media-subtitle" class="section-subtitle">
+            Please upload 8-16 photos
+          </p>
+          <!-- Image Gallery -->
+          <div id="image-gallery" class="image-gallery"></div>
+          <!-- Image Upload Area -->
+          <div id="file-upload-area-media" class="file-upload-area">
+            <div class="upload-content">
+              <div class="upload-icon-wrapper">
+                <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                    stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path
+                    d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                    stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </div>
+              <div class="upload-text">
+                <p class="upload-action">
+                  <script>
+                    function __templ_clickFileInputScript_3e80(sectionID) {
+                      document
+                        .getElementById("file-input-" + sectionID)
+                        .click();
+                    }
+                  </script>
+                  <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('media')">
+                    Click to upload
+                  </button>
+                  <span>or drag and drop</span>
+                </p>
+                <p class="upload-info">
+                  SVG, PNG, JPG or GIF (max. 800x400px)
+                </p>
+              </div>
+              <input type="file" id="file-input-media" class="hidden-file-input" multiple
+                accept=".jpg,.jpeg,.png,.webp,.gif" />
+            </div>
+            <!-- Drag indicator (shown when dragging) -->
+            <div class="drag-overlay" style="display: none">
+              <div class="drag-content">
+                <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <rect width="40" height="40" rx="8" fill="white"></rect>
+                  <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path
+                    d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                    stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <div class="drag-text">Drop files here</div>
+              </div>
+            </div>
+          </div>
+          <!-- YouTube Link -->
+          <div id="youtube-link-group" class="form-group">
+            <label for="youtube-link" class="form-label">Youtube link</label>
+            <input type="url" id="youtube-link" name="youtube_link" class="form-input link-input" placeholder="https://youtube.com/..." value="" />
+            <span class="form-hint">Insert a link to a video where you talk about this property</span>
+          </div>
+        </div>
+        <!-- Financials Section -->
+        <div id="financials-section" class="form-section financials-section">
+          <h2 id="financials-title" class="section-title">3. Financials</h2>
+          <!-- Row 1 -->
+          <div id="financials-row1" class="form-row financials-row">
+            <!-- Rental Yield -->
+            <div id="rental-yield-group" class="form-group inline-group">
+              <label for="rental-yield" class="form-label">Rental Yield</label>
+              <div class="input-wrapper percent-input">
+                <input type="text" id="rental-yield" name="rental_yield" class="form-input" placeholder="10"
+                  value="10" />
+                <span class="input-icon-right"><svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="5" cy="5" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
+                    <circle cx="11" cy="11" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
+                    <path d="M11 5L5 11" stroke="#717680" stroke-width="1.56" stroke-linecap="round"></path>
+                  </svg></span>
+              </div>
+            </div>
+            <!-- Capital Appreciation -->
+            <div id="capital-appreciation-group" class="form-group inline-group">
+              <label for="capital-appreciation" class="form-label">Capital Appreciation</label>
+              <div class="input-wrapper percent-input">
+                <input type="text" id="capital-appreciation" name="capital_appreciation" class="form-input"
+                  placeholder="10" value="10" />
+                <span class="input-icon-right"><svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="5" cy="5" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
+                    <circle cx="11" cy="11" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
+                    <path d="M11 5L5 11" stroke="#717680" stroke-width="1.56" stroke-linecap="round"></path>
+                  </svg></span>
+              </div>
+            </div>
+          </div>
+          <!-- Row 2 -->
+          <div id="financials-row2" class="form-row financials-row">
+            <!-- Investor Share of Profits -->
+            <div id="investor-share-group" class="form-group inline-group">
+              <label for="investor-share" class="form-label">Investor Share of Profits</label>
+              <div class="input-wrapper percent-input">
+                <input type="text" id="investor-share" name="investor_share" class="form-input" placeholder="10"
+                  value="10" />
+                <span class="input-icon-right"><svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="5" cy="5" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
+                    <circle cx="11" cy="11" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
+                    <path d="M11 5L5 11" stroke="#717680" stroke-width="1.56" stroke-linecap="round"></path>
+                  </svg></span>
+              </div>
+            </div>
+            <!-- Occupancy Rate -->
+            <div id="occupancy-rate-group" class="form-group inline-group">
+              <label for="occupancy-rate" class="form-label">Occupancy Rate</label>
+              <div class="input-wrapper percent-input">
+                <input type="text" id="occupancy-rate" name="occupancy_rate" class="form-input" placeholder="85"
+                  value="" />
+                <span class="input-icon-right"><svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="5" cy="5" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
+                    <circle cx="11" cy="11" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
+                    <path d="M11 5L5 11" stroke="#717680" stroke-width="1.56" stroke-linecap="round"></path>
+                  </svg></span>
+              </div>
+            </div>
+          </div>
+          <!-- Row 3 -->
+          <div id="financials-row3" class="form-row financials-row">
+            <!-- Total Expected Return -->
+            <div id="total-return-group" class="form-group">
+              <label for="total-return" class="form-label">Total Expected Return</label>
+              <div class="input-wrapper percent-input">
+                <input type="text" id="total-return" name="total_return" class="form-input" placeholder="10"
+                  value="10" />
+                <span class="input-icon-right"><svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="5" cy="5" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
+                    <circle cx="11" cy="11" r="2.5" stroke="#717680" stroke-width="1.56"></circle>
+                    <path d="M11 5L5 11" stroke="#717680" stroke-width="1.56" stroke-linecap="round"></path>
+                  </svg></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Navigation Buttons -->
+        <div class="form-actions">
+          <button type="button" id="form-back-btn" class="form-back-btn" onclick="var id = localStorage.getItem('draft_asset_id'); window.location.href = id ? '/developer/document-upload-step3?draft_id=' + id : '/developer/document-upload-step3'">
+            <svg class="back-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M12.5 5L7.5 10L12.5 15" stroke="#01011C" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Previous</span>
+          </button>
+          <button type="button" class="form-save-exit-btn" id="save-exit-btn" onclick="saveAndExitStep4(this)" style="padding:10px 20px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;cursor:pointer;font-weight:500;color:#414651;font-size:0.9rem;">
+            Save &amp; Exit
+          </button>
+          <button type="submit" id="form-next-btn" class="form-next-btn">
+            <span>Submit &amp; Tokenize</span>
+          </button>
+        </div>
+      </form>
+    </main>
+  </div>
+</body>
+
+</html>

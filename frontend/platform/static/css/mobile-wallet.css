@@ -1,0 +1,843 @@
+/* Hide mobile components on desktop */
+@media (min-width: 769px) {
+  .mobile-wallet-title,
+  .mobile-cash-balance-card,
+  .mobile-rewards-balance-card,
+  .mobile-transactions-section,
+  .mobile-cards-section,
+  .mobile-banks-section {
+    display: none !important;
+  }
+}
+
+/* Responsive Mobile Wallet Styles */
+/* Mobile viewport (up to 768px) */
+@media screen and (max-width: 768px) {
+  /* Body adjustments */
+  #wallet-body {
+    background: #fafafa;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Page container adjustments */
+  .wallet-page {
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
+    padding-left: 0 !important;
+    /* Remove sidebar padding */
+  }
+
+  /* Main content adjustments */
+  .wallet-main {
+    width: 100% !important;
+    padding-top: 0 !important;
+    /* Content starts right after KYC banner */
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    margin-left: 0 !important;
+    margin-top: 0px !important;
+    /* Space for mobile header (64px) + mobile KYC banner (128px) */
+    background: #fafafa;
+    min-height: calc(100vh - 192px);
+  }
+
+  /* HIDE DESKTOP WALLET CONTENT ON MOBILE */
+  .wallet-main .wallet-header,
+  .wallet-main .wallet-balances,
+  .wallet-main .wallet-transactions-full,
+  .wallet-main .wallet-payment-methods-row,
+  .wallet-main .kyc-banner {
+    display: none !important;
+  }
+
+  /* Mobile Wallet Title */
+  .mobile-wallet-title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+    position: relative;
+    width: 100%;
+    height: 32px;
+    left: 0;
+    margin-top: 50px;
+    margin-bottom: 16px;
+  }
+
+  .mobile-wallet-title__icon {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-wallet-title__text {
+    width: 75px;
+    height: 32px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 32px;
+    color: #181d27;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+    margin: 0;
+  }
+
+  /* Mobile Cash Balance Card */
+  .mobile-cash-balance-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 24px;
+    position: relative;
+    width: 100%;
+    height: 158px;
+    left: 0;
+    margin-bottom: 16px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    border-radius: 12px;
+  }
+
+  .mobile-cash-balance-card__text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    width: 154px;
+    height: 66px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-cash-balance-card__label {
+    width: 154px;
+    height: 20px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    flex: none;
+    order: 0;
+    align-self: stretch;
+    flex-grow: 0;
+    margin: 0;
+  }
+
+  .mobile-cash-balance-card__amount {
+    width: 154px;
+    height: 38px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 38px;
+    color: #181d27;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+    margin: 0;
+  }
+
+  .mobile-cash-balance-card__actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 8px;
+    width: 100%;
+    height: 36px;
+    flex: none;
+    order: 1;
+    align-self: stretch;
+    flex-grow: 0;
+  }
+
+  .mobile-cash-balance-card__button--primary {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 4px;
+    width: 50%;
+    height: 36px;
+    background: var(--primary-color);
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .mobile-cash-balance-card__button--secondary {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 4px;
+    width: 50%;
+    height: 36px;
+    background: transparent;
+    border: 1px solid #a4a7ae;
+    border-radius: 8px;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .mobile-cash-balance-card__button-text--primary {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #ffffff;
+  }
+
+  .mobile-cash-balance-card__button-text--secondary {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #a4a7ae;
+  }
+
+  /* Mobile Rewards Balance Card */
+  .mobile-rewards-balance-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    gap: 16px;
+    position: relative;
+    width: 100%;
+    height: 112px;
+    left: 0;
+    margin-bottom: 16px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    border-radius: 12px;
+  }
+
+  .mobile-rewards-balance-card__text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    width: 151px;
+    height: 66px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-rewards-balance-card__label-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+    width: 132px;
+    height: 20px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-rewards-balance-card__label {
+    width: 114px;
+    height: 20px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+    margin: 0;
+  }
+
+  .mobile-rewards-balance-card__help-icon {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+  }
+
+  .mobile-rewards-balance-card__amount {
+    width: 151px;
+    height: 38px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 38px;
+    color: #181d27;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+    margin: 0;
+  }
+
+  .mobile-rewards-balance-card__icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 28px;
+    flex: none;
+    order: 1;
+    flex-grow: 0;
+    position: relative;
+    left: -60px;
+  }
+
+  .mobile-rewards-balance-card__icon-bg {
+    position: absolute;
+    left: 0%;
+    right: 0%;
+    top: 0%;
+    bottom: 0%;
+    background: #e5e5ff;
+    border: 1px solid #a7a7ff;
+    border-radius: 24px;
+  }
+
+  .mobile-rewards-balance-card__icon-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0px;
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    left: calc(50% - 36px / 2);
+    top: calc(50% - 36px / 2);
+    background: var(--primary-color);
+    border-radius: 99px;
+  }
+
+  .mobile-rewards-balance-card__star-icon {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  /* Mobile Transactions Section */
+  .mobile-transactions-section {
+    position: relative;
+    width: 100%;
+    margin-top: 55px;
+    margin-bottom: 24px;
+  }
+
+  .mobile-transactions-title {
+    width: 100%;
+    height: 30px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0 0 12px 0;
+  }
+
+  .mobile-transactions-table-wrapper {
+    box-sizing: border-box;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+    border-radius: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-transactions-table-wrapper::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Override desktop table styles for mobile */
+  .mobile-transactions-table-wrapper .table__container {
+    min-width: 600px;
+    width: auto !important;
+  }
+
+  .mobile-transactions-table-wrapper .table__row {
+    height: 72px;
+  }
+
+  .mobile-transactions-table-wrapper .table__header {
+    height: 44px;
+    background: #fafafa;
+    font-size: 12px;
+    font-weight: 600;
+    color: #717680;
+  }
+
+  .mobile-transactions-table-wrapper .table__cell {
+    padding: 16px 24px;
+    font-size: 14px;
+  }
+
+  /* Mobile Cards Section */
+  .mobile-cards-section {
+    position: relative;
+    width: 100%;
+    margin-bottom: 24px;
+    margin-top: 85px;
+  }
+
+  .mobile-cards-title {
+    width: 100%;
+    height: 30px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0 0 12px 0;
+  }
+
+  .mobile-card-item {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 16px;
+    width: 100%;
+    height: 124px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    border-radius: 12px;
+  }
+
+  .mobile-card-content {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px;
+    gap: 12px;
+    width: 100%;
+    height: 40px;
+  }
+
+  .mobile-card-icon {
+    box-sizing: border-box;
+    width: 58px;
+    height: 40px;
+    background: #ffffff;
+    border: 1px solid #f5f5f5;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-card-details {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 0px;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .mobile-card-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+  }
+
+  .mobile-card-menu {
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .mobile-add-card-button {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 4px;
+    width: 100%;
+    height: 36px;
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    filter: drop-shadow(0px 1px 2px rgba(10, 13, 18, 0.05));
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .mobile-add-card-button span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--primary-color);
+  }
+
+  /* Mobile Banks Section */
+  .mobile-banks-section {
+    position: relative;
+    width: 100%;
+    margin-bottom: 24px;
+  }
+
+  .mobile-banks-title {
+    width: 100%;
+    height: 30px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0 0 12px 0;
+  }
+
+  .mobile-bank-item {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 16px;
+    width: 100%;
+    height: 124px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    border-radius: 12px;
+  }
+
+  .mobile-bank-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 8px;
+    width: 100%;
+    height: 40px;
+    flex: none;
+    order: 0;
+    align-self: stretch;
+    flex-grow: 0;
+  }
+
+  .mobile-bank-icon {
+    box-sizing: border-box;
+    width: 40px;
+    height: 40px;
+    background: #a4a7ae;
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    order: 0;
+    flex-grow: 0;
+  }
+
+  .mobile-bank-details {
+    width: 263px;
+    height: 40px;
+    flex: none;
+    order: 1;
+    flex-grow: 1;
+  }
+
+  .mobile-bank-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #181d27;
+  }
+
+  .mobile-add-bank-button {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 4px;
+    width: 100%;
+    height: 36px;
+    background: transparent;
+    border: 1px solid #000000;
+    filter: drop-shadow(0px 1px 2px rgba(10, 13, 18, 0.05));
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .mobile-add-bank-button span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #000000;
+  }
+
+  /* KYC Banner mobile styling */
+  .kyc-banner {
+    padding: 12px 16px !important;
+    position: static !important;
+    width: 100% !important;
+    left: auto !important;
+    top: auto !important;
+    margin-bottom: 12px;
+  }
+
+  /* Wallet Header mobile styling */
+  .wallet-header {
+    position: static !important;
+    width: 100% !important;
+    left: auto !important;
+    top: auto !important;
+    padding: 20px 16px !important;
+    background: white;
+    border-bottom: 1px solid #e9eaeb;
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .wallet-page-icon {
+    width: 24px !important;
+    height: 24px !important;
+    position: static !important;
+  }
+
+  .wallet-page-title {
+    font-size: 20px !important;
+    margin: 0 !important;
+    position: static !important;
+  }
+
+  /* Balance Cards mobile styling - stack vertically */
+  .wallet-balances {
+    position: static !important;
+    width: 100% !important;
+    left: auto !important;
+    top: auto !important;
+    padding: 0 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    margin-bottom: 16px;
+  }
+
+  .wallet-cash-balance,
+  .wallet-rewards-balance {
+    position: static !important;
+    width: 100% !important;
+    left: auto !important;
+    top: auto !important;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Transactions Section mobile styling */
+  .wallet-transactions-header {
+    position: static !important;
+    width: 100% !important;
+    left: auto !important;
+    top: auto !important;
+    padding: 20px 16px 0 16px !important;
+    background: white;
+    margin-bottom: 0;
+  }
+
+  .wallet-transactions-title {
+    font-size: 18px !important;
+    margin: 0 !important;
+  }
+
+  .wallet-transactions-section {
+    position: static !important;
+    width: 100% !important;
+    left: auto !important;
+    top: auto !important;
+    padding: 0 16px 20px 16px !important;
+    background: white;
+    margin-bottom: 16px;
+  }
+
+  /* Make transactions table horizontally scrollable */
+  .wallet-transactions-section .table {
+    width: 100%;
+    min-width: 320px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Payment Methods mobile styling - stack vertically */
+  .wallet-payment-methods {
+    position: static !important;
+    width: 100% !important;
+    left: auto !important;
+    top: auto !important;
+    padding: 0 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .wallet-cards-section,
+  .wallet-banks-section {
+    position: static !important;
+    width: 100% !important;
+    left: auto !important;
+    top: auto !important;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+  }
+
+  /* Adjust table for mobile viewing */
+  .table__header {
+    font-size: 12px !important;
+  }
+
+  .table__cell {
+    font-size: 14px !important;
+    padding: 8px 4px !important;
+  }
+
+  .table__row {
+    min-height: auto !important;
+  }
+
+  /* Balance card adjustments for mobile */
+  .balance-card__header {
+    font-size: 14px !important;
+  }
+
+  .balance-card__amount {
+    font-size: 24px !important;
+  }
+
+  .balance-card__actions {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-top: 12px !important;
+  }
+
+  .balance-card__button {
+    width: 100% !important;
+    padding: 10px !important;
+    font-size: 14px !important;
+  }
+
+  /* Payment method card adjustments */
+  .payment-method-card__title {
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .payment-method-card__add-button {
+    width: 100% !important;
+    padding: 10px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Smaller mobile devices (up to 375px) */
+@media screen and (max-width: 375px) {
+  .wallet-main {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .wallet-header {
+    padding: 16px 12px !important;
+  }
+
+  .wallet-balances,
+  .wallet-transactions-header,
+  .wallet-transactions-section,
+  .wallet-payment-methods {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+/* Horizontal scrolling styles for tables */
+@media screen and (max-width: 768px) {
+  .wallet-transactions-section {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wallet-transactions-section::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .wallet-transactions-section::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  .wallet-transactions-section::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 2px;
+  }
+}

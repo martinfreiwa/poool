@@ -1,0 +1,499 @@
+/* Mobile Investment Calculator Section */
+@media (max-width: 768px) {
+  .mobile-investment-calculator {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px 16px;
+    gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 32px;
+    margin-top: 75px;
+  }
+
+  /* Header with icon */
+  .mobile-calculator-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+    width: 238px;
+    height: 30px;
+  }
+
+  .mobile-calculator-header img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-calculator-header h2 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  /* Calculator Container */
+  .mobile-calculator-box {
+    box-sizing: border-box;
+    width: 100%;
+    height: 755px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Background Gradients */
+  .mobile-calculator-gradient-1 {
+    position: absolute;
+    width: 418.52px;
+    height: 383.77px;
+    left: 6px;
+    top: 382px;
+    background: rgba(152, 251, 150, 0.1);
+    filter: blur(100px);
+    transform: rotate(-2.73deg);
+    pointer-events: none;
+  }
+
+  .mobile-calculator-gradient-2 {
+    position: absolute;
+    width: 486.81px;
+    height: 446.39px;
+    left: -199px;
+    top: -150px;
+    background: rgba(0, 29, 202, 0.06);
+    filter: blur(100px);
+    transform: rotate(54.66deg);
+    pointer-events: none;
+  }
+
+  /* Top Text Section */
+  .mobile-calculator-top-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+    position: absolute;
+    width: calc(100% - 32px);
+    left: 16px;
+    top: 32px;
+    z-index: 10;
+  }
+
+  .mobile-calculator-top-text .subtitle {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    text-align: center;
+    color: #717680;
+    margin: 0;
+  }
+
+  .mobile-calculator-top-text .amount {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    text-align: center;
+    color: #181d27;
+    margin: 0;
+    width: 100%;
+  }
+
+  /* Legend Section - Fully responsive scaling */
+  .mobile-calculator-legend {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 12px;
+    position: absolute;
+    width: calc(100% - 32px);
+    height: 84px;
+    left: 16px;
+    right: 16px;
+    top: 150px;
+    z-index: 10;
+  }
+
+  .mobile-legend-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .mobile-legend-label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 8px;
+    margin: 0 auto 0 0;
+  }
+
+  .mobile-legend-color {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .mobile-legend-color.investment {
+    background: #6B7AFF;
+  }
+
+  .mobile-legend-color.rental {
+    background: #0000FF;
+  }
+
+  .mobile-legend-color.appreciation {
+    background: #FF9F43;
+  }
+
+  .mobile-legend-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #535862;
+    margin: 0;
+  }
+
+  .mobile-legend-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 20px;
+    color: #000000;
+    margin: 0 0 0 auto;
+  }
+
+  /* Chart Content Area */
+  .mobile-chart-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    position: absolute;
+    width: calc(100% - 32px);
+    height: 240px;
+    left: 16px;
+    right: 16px;
+    top: 243px;
+  }
+
+  /* Y-axis */
+  .mobile-chart-y-axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 12px;
+    width: 100%;
+    height: 214px;
+  }
+
+  .mobile-y-axis-line {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 8px;
+    width: 100%;
+    position: relative;
+  }
+
+  .mobile-y-axis-label {
+    width: 40px;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: right;
+    color: #535862;
+    flex-shrink: 0;
+  }
+
+  .mobile-y-axis-divider {
+    flex: 1;
+    height: 1px;
+    background: #f5f5f5;
+  }
+
+  /* X-axis */
+  .mobile-chart-x-axis {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 28px 0px 72px;
+    gap: 24px;
+    width: 100%;
+    height: 18px;
+    margin-top: 8px;
+  }
+
+  .mobile-chart-x-axis span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    color: #535862;
+    margin: 0 auto;
+  }
+
+  /* Chart Bars */
+  .mobile-chart-bars {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    padding: 0px 20px;
+    gap: 6px;
+    position: absolute;
+    left: 48px;
+    right: 0px;
+    top: 20px;
+    bottom: 52px;
+  }
+
+  .mobile-chart-bar {
+    flex: 1;
+    position: relative;
+    align-self: stretch;
+  }
+
+  .mobile-bar-stack {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .mobile-bar-segment {
+    position: absolute;
+    left: 0%;
+    right: 0%;
+  }
+
+  .mobile-bar-segment.investment {
+    background: #6B7AFF;
+    bottom: 0%;
+    height: 37.5%;
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mobile-bar-segment.rental {
+    background: #0000FF;
+    bottom: 37.5%;
+    height: 33.33%;
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mobile-bar-segment.appreciation {
+    background: #FF9F43;
+    bottom: 70.83%;
+    height: 29.17%;
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Slider Controls */
+  .mobile-slider-section {
+    position: absolute;
+    width: calc(100% - 32px);
+    height: 37px;
+    left: 16px;
+    right: 16px;
+  }
+
+  .mobile-slider-section.investment-amount {
+    top: 526px;
+  }
+
+  .mobile-slider-section.property-growth {
+    top: 606px;
+  }
+
+  .mobile-slider-section.rental-yield {
+    top: 686px;
+  }
+
+  .mobile-slider-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 110%;
+    letter-spacing: -0.04em;
+    color: #949494;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .mobile-slider-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 100%;
+    text-align: right;
+    letter-spacing: -0.04em;
+    color: #141417;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    min-width: 60px;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+
+  .mobile-slider-value:hover {
+    background: rgba(0, 0, 255, 0.05);
+  }
+
+  .mobile-slider-value:focus {
+    background: rgba(0, 0, 255, 0.1);
+    cursor: text;
+  }
+
+  .mobile-slider-track {
+    position: absolute;
+    width: 100%;
+    height: 16px;
+    left: 0;
+    top: 7px;
+  }
+
+  .mobile-slider-bg {
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    left: 0;
+    top: 7px;
+    background: #e2e2e2;
+    border-radius: 30px;
+  }
+
+  .mobile-slider-fill {
+    position: absolute;
+    height: 4px;
+    left: 0;
+    top: 6px;
+    background: #2b32f9;
+    border-radius: 30px;
+  }
+
+  .mobile-slider-thumb {
+    box-sizing: border-box;
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 0;
+    background: var(--accent-color);
+    border: 5px solid #2b32f9;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .mobile-slider-limits {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    height: 11px;
+    left: 0;
+    top: 25px;
+  }
+
+  .mobile-slider-min,
+  .mobile-slider-max {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 110%;
+    color: #949494;
+  }
+
+  /* Labels below sliders */
+  .mobile-slider-labels {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    width: calc(100% - 32px);
+  }
+
+  .mobile-slider-labels.investment {
+    top: 507px;
+  }
+
+  .mobile-slider-labels.growth {
+    top: 587px;
+  }
+
+  .mobile-slider-labels.yield {
+    top: 667px;
+  }
+
+  .mobile-slider-labels span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 110%;
+    letter-spacing: -0.04em;
+    color: #949494;
+  }
+
+  .mobile-slider-labels .value {
+    font-weight: 700;
+    color: #141417;
+    float: right;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    min-width: 60px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-align: right;
+  }
+
+  .mobile-slider-labels .value:hover {
+    background: rgba(0, 0, 255, 0.05);
+  }
+
+  .mobile-slider-labels .value:focus {
+    background: rgba(0, 0, 255, 0.1);
+    cursor: text;
+  }
+}

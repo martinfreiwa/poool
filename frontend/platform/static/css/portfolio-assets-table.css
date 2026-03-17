@@ -1,0 +1,369 @@
+/* Portfolio Assets Table - Clean Implementation */
+
+.portfolio-assets-table {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e9eaeb;
+  overflow: hidden;
+  margin-top: 24px;
+}
+
+/* Table Header */
+.portfolio-assets-header {
+  display: flex;
+  align-items: center;
+  background: #fafafa;
+  border-bottom: 1px solid #e9eaeb;
+  padding: 12px 24px;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.portfolio-assets-header-cell {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.portfolio-assets-header-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #717680;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.portfolio-assets-header-text {
+  color: #717680;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Table Body */
+.portfolio-assets-body {
+  width: 100%;
+}
+
+.portfolio-assets-row {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  height: 72px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e9eaeb;
+  transition: background-color 0.2s ease;
+}
+
+.portfolio-assets-row:hover {
+  background-color: #f9f9fa;
+}
+
+.portfolio-assets-row:last-child {
+  border-bottom: none;
+}
+
+.portfolio-assets-cell {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* Column Widths - Exact from design */
+.property-col {
+  width: 312px;
+  flex: none;
+}
+
+.investment-col {
+  width: 200px;
+  flex: none;
+}
+
+.rental-col {
+  width: 200px;
+  flex: none;
+}
+
+.status-col {
+  width: 223px;
+  flex: none;
+}
+
+.actions-col {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* Property Column Styles */
+.portfolio-assets-property {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 224px;
+}
+
+.portfolio-assets-property-image {
+  width: 73px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.portfolio-assets-property-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portfolio-assets-property-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 143px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.portfolio-assets-property-name {
+  color: #181d27;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.portfolio-assets-property-location {
+  color: #717680;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Investment & Rental Columns */
+.portfolio-assets-investment,
+.portfolio-assets-rental {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.portfolio-assets-value {
+  color: #000000;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.portfolio-assets-change {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 8px 2px 6px;
+  gap: 4px;
+  width: fit-content;
+  min-width: 63px;
+  height: 24px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.portfolio-assets-change-icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  display: inline-block;
+  background: url("/static/images/arrow-up-right.svg") no-repeat center;
+  background-size: 12px 12px;
+}
+
+.portfolio-assets-change.positive .portfolio-assets-change-icon {
+  /* Arrow points up-right for positive */
+}
+
+.portfolio-assets-change.negative .portfolio-assets-change-icon {
+  /* Arrow points down-left for negative */
+  transform: rotate(180deg);
+}
+
+.portfolio-assets-change.neutral .portfolio-assets-change-icon {
+  /* Arrow still visible for neutral */
+}
+
+.portfolio-assets-change.neutral {
+  color: #717680;
+  padding: 2px 8px;
+}
+
+.portfolio-assets-subtext {
+  color: #717680;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Status Column */
+.portfolio-assets-status {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 8px 2px 6px;
+  gap: 4px;
+  height: 22px;
+  border-radius: 16px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Status badge styles - matching exact screenshot */
+
+/* Property Funded - Green badge with stars icon */
+.status-funded {
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+  color: #067647;
+}
+
+.status-funded .portfolio-assets-status-icon {
+  background: url("/static/images/stars-02.svg") no-repeat center;
+  background-size: 12px 12px;
+}
+
+/* Rented - Green badge with check-circle icon */
+.status-rented {
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+  color: #067647;
+}
+
+.status-rented .portfolio-assets-status-icon {
+  background: url("/static/images/check-circle.svg") no-repeat center;
+  background-size: 12px 12px;
+}
+
+
+/* Active - Blue badge with check icon */
+.status-active {
+  background: rgba(0, 0, 255, 0.06);
+  border: 1px solid rgba(0, 0, 255, 0.18);
+  color: #0000CC;
+}
+
+.status-active .portfolio-assets-status-icon {
+  background: url("/static/images/check-circle.svg") no-repeat center;
+  background-size: 12px 12px;
+}
+
+/* In-Process - Yellow badge with clock icon */
+.status-process {
+  background: #fef0c7;
+  border: 1px solid #fec84b;
+  color: #000000;
+}
+
+.status-process .portfolio-assets-status-icon {
+  background: url("/static/images/clock-refresh.svg") no-repeat center;
+  background-size: 12px 12px;
+}
+
+/* Payout Expected - White badge with refresh icon */
+.status-payout {
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  color: #000000;
+}
+
+.status-payout .portfolio-assets-status-icon {
+  background: url("/static/images/coins-swap-02.svg") no-repeat center;
+  background-size: 12px 12px;
+}
+
+/* Funding in progress - White badge with check icon */
+.status-pending {
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  color: #000000;
+}
+
+.status-pending .portfolio-assets-status-icon {
+  background: url("/static/images/check-circle.svg") no-repeat center;
+  background-size: 12px 12px;
+}
+
+/* Default status */
+.status-default {
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  color: #000000;
+}
+
+.status-default .portfolio-assets-status-icon {
+  background: url("/static/images/check-circle.svg") no-repeat center;
+  background-size: 12px 12px;
+}
+
+/* Icon container */
+.portfolio-assets-status-icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Actions Column */
+.portfolio-assets-action-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.portfolio-assets-action-btn:hover {
+  background: #f3f4f6;
+}

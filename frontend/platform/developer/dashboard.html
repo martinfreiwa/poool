@@ -1,0 +1,137 @@
+{% with title="Developer Dashboard – POOOL", no_index=True, extra_css=['developer-dashboard',
+'mobile-developer-dashboard'],
+extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% include
+"components/head.html" %}{% endwith %}
+
+  <!-- Custom POOOL Icon Styles -->
+  <style>
+    .poool-icon-custom {
+      background-color: var(--btn-primary-bg, #0000FF) !important;
+      stroke: #03FF88 !important;
+      border-radius: 8px !important;
+      padding: 6px !important;
+      flex-shrink: 0;
+      width: 28px !important;
+      height: 28px !important;
+      box-sizing: border-box !important;
+    }
+    .poool-icon-custom path, .poool-icon-custom circle, .poool-icon-custom rect, .poool-icon-custom polyline, .poool-icon-custom line, .poool-icon-custom polygon {
+      stroke: #03FF88 !important;
+    }
+    .ds-page-header__icon.poool-icon-custom {
+      width: 44px !important;
+      height: 44px !important;
+      padding: 9px !important;
+      border-radius: 10px !important;
+    }
+  </style>
+
+<body id="developer-dashboard-body">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="developer-dashboard-page">
+    <div class="developer-dashboard-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+
+    <!-- Main Content Area -->
+    <main id="developer-dashboard-main" class="ds-main developer-dashboard-main">
+
+      <!-- Dashboard Content Wrapper -->
+      <div id="dashboard-content-wrapper">
+
+        <!-- Page Title -->
+        <div id="dashboard-header" class="ds-page-header dashboard-page-header">
+          <div class="ds-page-header__title-row dashboard-title-wrapper">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" class="ds-page-header__icon poool-icon-custom">
+              <rect x="3" y="3" width="7" height="7" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></rect>
+              <rect x="14" y="3" width="7" height="7" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></rect>
+              <rect x="14" y="14" width="7" height="7" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></rect>
+              <rect x="3" y="14" width="7" height="7" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></rect>
+            </svg>
+            <h1 id="dashboard-title" class="ds-page-header__title dashboard-page-title">Dashboard</h1>
+          </div>
+        </div>
+        <hr class="page-header-divider">
+
+        <!-- Developer Dashboard Content -->
+        <div id="dashboard-main-content" class="dashboard-main-content">
+          <!-- Metrics Section -->
+          <div id="metrics-section" class="metrics-section">
+          {% for chunk in stats.metrics | batch(4) %}
+          <div class="metrics-row">
+            {% for metric in chunk %}
+            <div id="metric-card-{{ metric.label }}" class="metric-card">
+              <div id="metric-heading-{{ metric.label }}" class="metric-heading">
+                {{ metric.label }}
+              </div>
+              <div id="metric-content-{{ metric.label }}" class="metric-content">
+                <div id="metric-number-badge-{{ metric.label }}" class="metric-number-badge">
+                  <div id="metric-number-{{ metric.label }}" class="metric-number"
+                    data-final-value="{{ metric.value }}">
+                    {% if metric.format_override %}{{ metric.value }}{% else %}{{ metric.value }}{% endif %}
+                  </div>
+                  <div id="metric-change-{{ metric.label }}" class="metric-change-wrapper">
+                    <div id="metric-change-badge-{{ metric.label }}" class="metric-change {{ metric.trend }}">
+                      {% if metric.trend == 'up' %}
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 12V4M8 4L4 8M8 4L12 8" stroke="#17B26A" stroke-width="2" stroke-linecap="round"
+                          stroke-linejoin="round"></path>
+                      </svg>
+                      {% elif metric.trend == 'down' %}
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 4V12M8 12L4 8M8 12L12 8" stroke="#F04438" stroke-width="2" stroke-linecap="round"
+                          stroke-linejoin="round"></path>
+                      </svg>
+                      {% else %}
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 8h8" stroke="#FDB022" stroke-width="2" stroke-linecap="round"
+                          stroke-linejoin="round">
+                        </path>
+                      </svg>
+                      {% endif %}
+                      <span>{{ metric.change_display }}</span>
+                    </div>
+                    <span id="metric-timeframe-{{ metric.label }}" class="metric-timeframe">{{ metric.timeframe
+                      }}</span>
+                  </div>
+                </div>
+                <!-- Mini chart placeholder -->
+                <div id="metric-chart-{{ metric.label }}" class="metric-chart-mini">
+                  <svg width="112" height="56" viewBox="0 0 115 58" fill="none">
+                    <defs>
+                      <linearGradient id="gradient-{{ loop.index }}" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"
+                          style="stop-color: {{ '#f04438' if metric.trend == 'down' else '#17b26a' }}; stop-opacity: 0.2">
+                        </stop>
+                        <stop offset="100%"
+                          style="stop-color: {{ '#f04438' if metric.trend == 'down' else '#17b26a' }}; stop-opacity: 0">
+                        </stop>
+                      </linearGradient>
+                    </defs>
+                    <!-- generic smooth path for placeholder -->
+                    <path d="M 1 57 C 20 40, 40 60, 60 40 C 80 20, 100 40, 114 10 L 114 57 Z"
+                      fill="url(#gradient-{{ loop.index }})"></path>
+                    <path d="M 1 57 C 20 40, 40 60, 60 40 C 80 20, 100 40, 114 10"
+                      stroke="{{ '#FCA5A5' if metric.trend == 'down' else '#98FB96' }}" stroke-width="2" fill="none"
+                      stroke-linecap="round" stroke-linejoin="round"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+        <!-- Sales Chart -->
+        <div id="sales-chart-section" class="sales-chart-section">
+          {% include 'components/developer-chart.html' %}
+        </div>
+      </div>
+
+      </div>
+    </main>
+  </div>
+</body>
+
+</html>

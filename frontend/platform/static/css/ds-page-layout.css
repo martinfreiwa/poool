@@ -1,0 +1,150 @@
+/* ================================================================
+   POOOL Design System — Page Layout
+   ================================================================
+   Shared layout classes for ALL dashboard pages.
+   
+   Usage:
+     <main class="ds-main">
+       {% include 'components/kyc-banner.html' %}
+       <div class="ds-page-header">
+         <div class="ds-page-header__title-row">
+           <svg class="ds-page-header__icon">...</svg>
+           <h1 class="ds-page-header__title">Page Title</h1>
+         </div>
+         <div class="ds-page-header__actions">
+           <button class="ds-btn ds-btn--primary">Action</button>
+         </div>
+       </div>
+       <!-- page content -->
+     </main>
+
+   RULES:
+   - No !important in this file (ever)
+   - All values use CSS custom properties
+   - This file is the SINGLE source of truth for page layout
+   ================================================================ */
+
+
+/* ── CSS Custom Properties ────────────────────────────────────── */
+:root {
+    /* Page layout */
+    --ds-sidebar-width: 256px;
+    --ds-page-bg: #FAFAFA;
+    --ds-page-pt: 48px;
+    --ds-page-pb: 64px;
+    --ds-page-px: 24px;
+    --ds-page-gap: 24px;
+
+    /* Page header */
+    --ds-header-icon-size: 28px;
+    --ds-header-icon-gap: 12px;
+    --ds-header-title-size: 36px;
+    --ds-header-title-weight: 700;
+    --ds-header-title-color: #181D27;
+    --ds-header-title-lh: 1.2;
+
+    /* Font stack */
+    --ds-font: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+
+/* ── Main Content Area ────────────────────────────────────────── */
+/* Every page's <main> should use this class.
+   Creates a flex column with consistent padding and gap. */
+
+.ds-main {
+    margin-left: var(--ds-sidebar-width);
+    width: calc(100% - var(--ds-sidebar-width));
+    min-height: 100vh;
+    padding: var(--ds-page-pt) var(--ds-page-px) var(--ds-page-pb);
+    background: var(--ds-page-bg);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-page-gap);
+}
+
+
+/* ── Page Header ──────────────────────────────────────────────── */
+/* Flex row: title-row on left, optional actions on right.
+   margin-bottom ensures consistent spacing to content regardless
+   of parent layout (works inside wrappers, flex containers, etc.) */
+
+.ds-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    margin: 0 0 var(--ds-page-gap) 0;
+}
+
+
+/* ── Title Row (icon + h1) ────────────────────────────────────── */
+
+.ds-page-header__title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-header-icon-gap);
+}
+
+
+/* ── Page Header Icon ─────────────────────────────────────────── */
+
+.ds-page-header__icon {
+    width: var(--ds-header-icon-size);
+    height: var(--ds-header-icon-size);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #535862;
+}
+
+.ds-page-header__icon svg,
+.ds-page-header__icon img {
+    width: 100%;
+    height: 100%;
+}
+
+
+/* ── Page Title (h1) ──────────────────────────────────────────── */
+
+.ds-page-header__title {
+    font-family: var(--ds-font);
+    font-size: var(--ds-header-title-size);
+    font-weight: var(--ds-header-title-weight);
+    color: var(--ds-header-title-color);
+    line-height: var(--ds-header-title-lh);
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+
+/* ── Header Actions (buttons on the right) ────────────────────── */
+
+.ds-page-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+
+/* ── Responsive ───────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .ds-main {
+        margin-left: 0;
+        width: 100%;
+        padding: 80px 16px 48px;
+    }
+
+    .ds-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .ds-page-header__title {
+        font-size: 28px;
+    }
+}

@@ -1,0 +1,274 @@
+/// Settings route handlers – thin HTTP layer that delegates to the service.
+///
+/// Each handler:
+/// 1. Extracts the authenticated user from session cookie
+/// 2. Extracts form/JSON data from the request body
+/// 3. Calls the appropriate service function
+/// 4. Returns a JSON response ({ success, message })
+///
+/// All endpoints require a valid session cookie (return 401 if missing/invalid).
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Json},
+};
+use axum_extra::extract::cookie::CookieJar;
+
+use super::models::{
+    ApiResponse, ChangeEmailForm, ChangePasswordForm, ChangePhoneForm, UpdateNotificationsForm,
+    UpdatePreferencesForm, UpdateProfileForm,
+};
+use super::service;
+use crate::auth::middleware;
+use crate::auth::routes::AppState;
+
+// ─── Helper ────────────────────────────────────────────────────
+
+/// Extract user ID from session cookie, or return 401.
+async fn require_user_id(
+    jar: &CookieJar,
+    state: &AppState,
+) -> Result<uuid::Uuid, axum::response::Response> {
+    match middleware::get_current_user(jar, &state.db).await {
+        Some(user) => Ok(user.id),
+        None => Err((
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({"error": "Not authenticated"})),
+        )
+            .into_response()),
+    }
+}
+
+// ─── GET /api/settings ─────────────────────────────────────────
+
+/// Return the full settings for the authenticated user.
+pub async fn get_settings_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    let session_token = jar
+        .get(crate::auth::middleware::SESSION_COOKIE)
+        .map(|c| c.value().to_string())
+        .unwrap_or_default();
+
+    match service::get_settings(&state.db, user_id, &session_token).await {
+        Ok(settings) => Json(settings).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to get settings for user {}: {}", user_id, e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Failed to load settings."})),
+            )
+                .into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/profile ────────────────────────────────
+
+/// Save "My Details" tab data.
+pub async fn update_profile_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<UpdateProfileForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::update_profile(&state.db, user_id, form).await {
+        Ok(()) => Json(ApiResponse::ok("Profile updated successfully.")).into_response(),
+        Err(e) => {
+            tracing::warn!("Profile update failed for user {}: {}", user_id, e);
+            let msg = match &e {
+                crate::error::AppError::BadRequest(m) => m.clone(),
+                _ => "Failed to update profile.".to_string(),
+            };
+            Json(ApiResponse::err(&msg)).into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/preferences ────────────────────────────
+
+/// Save "Preferences" tab data (language, currency).
+pub async fn update_preferences_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<UpdatePreferencesForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::update_preferences(&state.db, user_id, form).await {
+        Ok(()) => Json(ApiResponse::ok("Preferences updated successfully.")).into_response(),
+        Err(e) => {
+            tracing::warn!("Preferences update failed for user {}: {}", user_id, e);
+            let msg = match &e {
+                crate::error::AppError::BadRequest(m) => m.clone(),
+                _ => "Failed to update preferences.".to_string(),
+            };
+            Json(ApiResponse::err(&msg)).into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/notifications ──────────────────────────
+
+/// Save notification preference toggles.
+pub async fn update_notifications_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<UpdateNotificationsForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::update_notifications(&state.db, user_id, form).await {
+        Ok(()) => Json(ApiResponse::ok("Notification preferences saved.")).into_response(),
+        Err(e) => {
+            tracing::warn!("Notifications update failed for user {}: {}", user_id, e);
+            Json(ApiResponse::err(
+                "Failed to update notification preferences.",
+            ))
+            .into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/email ──────────────────────────────────
+
+/// Change the user's email (requires current password).
+pub async fn change_email_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<ChangeEmailForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::change_email(&state.db, user_id, &form.new_email, &form.current_password).await {
+        Ok(()) => Json(ApiResponse::ok("Email changed successfully.")).into_response(),
+        Err(e) => {
+            tracing::warn!("Email change failed for user {}: {}", user_id, e);
+            let msg = match &e {
+                crate::error::AppError::BadRequest(m) => m.clone(),
+                crate::error::AppError::Conflict(m) => m.clone(),
+                _ => "Failed to change email.".to_string(),
+            };
+            Json(ApiResponse::err(&msg)).into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/password ───────────────────────────────
+
+/// Change the user's password (requires current password).
+pub async fn change_password_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<ChangePasswordForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::change_password(
+        &state.db,
+        user_id,
+        &form.current_password,
+        &form.new_password,
+        &form.confirm_password,
+    )
+    .await
+    {
+        Ok(()) => Json(ApiResponse::ok("Password changed successfully.")).into_response(),
+        Err(e) => {
+            tracing::warn!("Password change failed for user {}: {}", user_id, e);
+            let msg = match &e {
+                crate::error::AppError::BadRequest(m) => m.clone(),
+                _ => "Failed to change password.".to_string(),
+            };
+            Json(ApiResponse::err(&msg)).into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/phone ──────────────────────────────────
+
+/// Change the user's phone number.
+pub async fn change_phone_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<ChangePhoneForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::change_phone(&state.db, user_id, &form.new_phone).await {
+        Ok(()) => Json(ApiResponse::ok("Phone number updated successfully.")).into_response(),
+        Err(e) => {
+            tracing::warn!("Phone change failed for user {}: {}", user_id, e);
+            let msg = match &e {
+                crate::error::AppError::BadRequest(m) => m.clone(),
+                _ => "Failed to update phone number.".to_string(),
+            };
+            Json(ApiResponse::err(&msg)).into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/2fa/disable ────────────────────────────
+
+/// Disable 2FA for the current user.
+pub async fn disable_totp_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::disable_totp(&state.db, user_id).await {
+        Ok(()) => Json(ApiResponse::ok("Two-factor authentication disabled.")).into_response(),
+        Err(e) => {
+            tracing::warn!("Failed to disable 2FA for user {}: {}", user_id, e);
+            Json(ApiResponse::err("Failed to disable 2FA.")).into_response()
+        }
+    }
+}
+
+/// GET /settings — Render the user settings page.
+#[allow(dead_code)]
+pub async fn page_settings(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    crate::common::routes_helper::serve_protected(jar, &state, "settings.html").await
+}
+
+/// GET /settings-2 — Render the alternative settings page design.
+pub async fn page_settings_2(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    crate::common::routes_helper::serve_protected(jar, &state, "settings-2.html").await
+}
+
+/// GET /account-deletion — Render the account deletion page.
+pub async fn page_account_deletion(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_protected(jar, &state, "account-deletion.html").await
+}

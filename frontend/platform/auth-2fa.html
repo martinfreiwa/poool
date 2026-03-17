@@ -1,0 +1,56 @@
+{% with title="Two-Factor Authentication | POOOL", extra_css=['login'] %}{% include "components/head.html" %}{% endwith
+%}
+
+<body>
+    <div id="login-container">
+        <section id="left-section">
+            <div id="container">
+                <div id="content">
+                    <div id="header">
+                        <div id="logo-pool">
+                            <img src="/static/images/logo-pool.svg" alt="Pool Logo" width="184" height="48" />
+                        </div>
+                        <div id="text-and-supporting-text">
+                            <h1 id="text">Two-factor authentication</h1>
+                            <p id="supporting-text">Enter the 6-digit code from your authenticator app.</p>
+                        </div>
+                    </div>
+                    <div id="content-inner">
+                        <div id="auth-error" style="margin-bottom: 16px;"></div>
+                        <form id="2fa-form" hx-post="/auth/2fa" hx-target="#auth-error" hx-swap="innerHTML"
+                            hx-ext="response-targets" hx-target-400="#auth-error" hx-indicator="#loading-indicator">
+                            <div id="input-field">
+                                <div id="input-with-label">
+                                    <div class="label-wrapper">
+                                        <label for="code-input" class="input-label">Verification Code</label>
+                                    </div>
+                                    <div id="email-input-wrapper">
+                                        <input type="text" id="email-input" name="code" placeholder="000000"
+                                            inputmode="numeric" pattern="[0-9]{6}" required autofocus />
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            <button type="submit" id="login-button" style="margin-top: 24px;">
+                                <div id="button-text-padding">
+                                    <span id="button-text">Verify</span>
+                                </div>
+                            </button>
+                        </form>
+                        <div id="signup-row">
+                            <span id="signup-text">Having trouble?</span>
+                            <a href="/logout" id="signup-link"><span id="signup-link-text">Log out</span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="right-section">
+            <div id="testimonial-image"></div>
+        </section>
+    </div>
+</body>
+
+</html>

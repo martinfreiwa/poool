@@ -1,0 +1,79 @@
+{% with title="Welcome - POOOL", no_index=True, extra_css=['login', 'welcome'] %}{% include "components/head.html" %}{%
+endwith %}
+
+<body>
+  <div id="login-container">
+    <section id="left-section">
+      <div id="container">
+        <div id="content">
+
+          <!-- Logo -->
+          <div id="logo-pool" style="margin-bottom: 24px; text-align: center">
+            <img src="/static/images/logo-pool.svg" alt="POOOL" width="148" height="40" />
+          </div>
+
+          <!-- Icon -->
+          <div class="welcome-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <path d="M23.333 7L10.5 19.833 4.667 14" stroke="#0000FF" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </div>
+
+          <!-- Heading -->
+          <div id="text-and-supporting-text" style="margin-bottom: 0">
+            <h1 id="text">You're all set!</h1>
+            <p id="supporting-text">
+              Your email is verified and your POOOL account is ready. Here's what to do next:
+            </p>
+          </div>
+
+          <!-- Next steps -->
+          <ol class="welcome-steps" aria-label="Getting started steps">
+            <li class="welcome-step">
+              <span class="welcome-step-num" aria-hidden="true">1</span>
+              <div class="welcome-step-label">
+                Complete your KYC verification
+                <span>Required to invest — takes about 3 minutes</span>
+              </div>
+            </li>
+            <li class="welcome-step">
+              <span class="welcome-step-num" aria-hidden="true">2</span>
+              <div class="welcome-step-label">
+                Fund your wallet
+                <span>Deposit via bank transfer or card</span>
+              </div>
+            </li>
+            <li class="welcome-step">
+              <span class="welcome-step-num" aria-hidden="true">3</span>
+              <div class="welcome-step-label">
+                Browse the marketplace
+                <span>Invest in tokenised real estate &amp; commodities</span>
+              </div>
+            </li>
+          </ol>
+
+          <!-- CTA -->
+          <a id="welcome-cta" href="/marketplace">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M2 6l6-4.667L14 6v7.333a.667.667 0 01-.667.667H10.5V10H5.5v4H2.667A.667.667 0 012 13.333V6z"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Go to Marketplace
+          </a>
+
+          <p id="welcome-secondary">
+            Need to verify first? <a href="/kyc">Complete KYC</a>
+          </p>
+
+        </div>
+      </div>
+    </section>
+
+    <section id="right-section">
+      <div id="testimonial-image"></div>
+    </section>
+  </div>
+</body>
+
+</html>

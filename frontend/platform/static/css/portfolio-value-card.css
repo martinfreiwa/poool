@@ -1,0 +1,679 @@
+/* Portfolio Value Card Styles */
+
+.portfolio-value-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 32px 24px;
+  gap: 24px;
+  width: 100%;
+  min-height: 132px;
+  /* Collapsed height */
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  margin-bottom: 24px;
+}
+
+/* Card Header */
+.portfolio-value-card-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0px;
+  width: 100%;
+  height: 68px;
+}
+
+/* Portfolio Value Info */
+.portfolio-value-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 10px;
+  width: 261px;
+  height: 68px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.portfolio-value-label-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  width: 114px;
+  height: 20px;
+}
+
+.portfolio-value-label {
+  width: 96px;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+.portfolio-value-help-icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.portfolio-value-amount-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 16px;
+  width: 261px;
+  height: 38px;
+}
+
+.portfolio-value-amount {
+  width: 129px;
+  height: 38px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 38px;
+  color: #181d27;
+}
+
+.portfolio-value-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 10px 2px 8px;
+  gap: 4px;
+  width: 72px;
+  height: 24px;
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+  border-radius: 16px;
+}
+
+.portfolio-value-badge span {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #067647;
+}
+
+/* Actions */
+.portfolio-value-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 12px;
+  width: 132px;
+  height: 40px;
+}
+
+.portfolio-show-more-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 4px;
+  width: 132px;
+  height: 40px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.portfolio-show-more-btn:hover {
+  background: #f8f9fc;
+}
+
+.portfolio-show-more-btn span {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+.portfolio-show-more-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.portfolio-show-more-btn svg.rotate-180 {
+  transform: rotate(180deg);
+}
+
+/* Chart Section (Expandable) */
+.portfolio-chart-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 20px;
+  width: 100%;
+  /* Fixed width to prevent overflow */
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for Alpine.js */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.ease-out {
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+.ease-in {
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+}
+
+.duration-500 {
+  transition-duration: 500ms;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+.max-h-0 {
+  max-height: 0;
+}
+
+.max-h-96 {
+  max-height: 24rem;
+  /* 384px */
+}
+
+.opacity-0 {
+  opacity: 0;
+}
+
+.opacity-100 {
+  opacity: 1;
+}
+
+.-translate-y-4 {
+  transform: translateY(-1rem);
+}
+
+.translate-y-0 {
+  transform: translateY(0);
+}
+
+/* Chart Header */
+.portfolio-chart-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 16px;
+  width: 100%;
+  min-height: 36px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.portfolio-chart-title {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  width: 591px;
+  height: 28px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+}
+
+.chart-title-text {
+  width: auto;
+  height: 28px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 28px;
+  color: #181d27;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  white-space: nowrap;
+}
+
+.chart-title-percentage {
+  width: auto;
+  height: 28px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 28px;
+  color: #079455;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  white-space: nowrap;
+}
+
+.chart-title-percentage.chart-title-negative {
+  color: #dc2626;
+}
+
+/* Chart Controls */
+.portfolio-chart-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 12px;
+  width: auto;
+  min-height: 36px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  position: relative;
+}
+
+.portfolio-chart-tabs {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 2px;
+  min-width: 334px;
+  width: auto;
+  /* Allow tabs to expand as needed */
+  height: 36px;
+  background: #fafafa;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.chart-tab {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  height: 36px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #717680;
+  transition: all 0.2s ease;
+  flex: none;
+  flex-grow: 0;
+  white-space: nowrap;
+  /* Prevent text wrapping */
+}
+
+.chart-tab:nth-child(1) {
+  min-width: 95px;
+  order: 0;
+}
+
+.chart-tab:nth-child(2) {
+  min-width: 79px;
+  order: 1;
+}
+
+.chart-tab:nth-child(3) {
+  min-width: 69px;
+  order: 2;
+}
+
+.chart-tab:nth-child(4) {
+  min-width: 85px;
+  order: 3;
+}
+
+.chart-tab.active {
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  color: #414651;
+}
+
+.portfolio-chart-filter {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 4px;
+  width: 95px;
+  height: 36px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.portfolio-chart-filter svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.portfolio-chart-filter span {
+  width: 43px;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Chart Container */
+.portfolio-chart-container {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  isolation: isolate;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 1;
+}
+
+/* Y-Axis Grid */
+.chart-grid {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  width: 100%;
+  height: 222px;
+  left: 0;
+  top: 0;
+  z-index: 0;
+}
+
+.grid-line {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  margin: 0 auto;
+  width: 100%;
+  height: 0px;
+  border-bottom: 1px solid #f5f5f5;
+  flex: none;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.grid-line:first-child {
+  height: 22px;
+  order: 0;
+}
+
+.grid-line:nth-child(2),
+.grid-line:nth-child(3),
+.grid-line:nth-child(4),
+.grid-line:nth-child(5) {
+  height: 17px;
+}
+
+.grid-line:nth-child(2) {
+  order: 1;
+}
+
+.grid-line:nth-child(3) {
+  order: 2;
+}
+
+.grid-line:nth-child(4) {
+  order: 3;
+}
+
+.grid-line:nth-child(5) {
+  order: 4;
+}
+
+.grid-line-base {
+  height: 17px;
+  border-bottom: 1px solid #e9eaeb;
+  order: 5;
+}
+
+/* Chart Bars - 52 weeks */
+.chart-bars {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0px 4px;
+  gap: 12px;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  bottom: 27px;
+  z-index: 2;
+}
+
+.chart-bar-week {
+  margin: 0 auto;
+  width: 8px;
+  max-width: 8px;
+  background: linear-gradient(180deg, #12B76A 0%, #079455 100%);
+  border-radius: 4px 4px 0px 0px;
+  flex: none;
+  flex-grow: 1;
+  animation: growBar 0.5s ease-out forwards;
+  opacity: 0;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: all 0.2s ease;
+}
+
+.chart-bar-week:hover {
+  filter: brightness(1.2);
+  cursor: pointer;
+}
+
+/* Animation for bars growing */
+@keyframes growBar {
+  0% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Stagger animation for visual effect */
+.chart-bars[x-show] .chart-bar-week {
+  animation-play-state: running;
+}
+
+/* Trend Line */
+.chart-trend-line {
+  position: absolute;
+  width: 100%;
+  height: 93.19px;
+  left: 0px;
+  top: calc(50% - 93.19px / 2 + 15.53px);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.chart-trend-line path {
+  stroke: #5555ff;
+  stroke-width: 2;
+  stroke-dasharray: 5, 5;
+  fill: none;
+}
+
+/* X-Axis Labels */
+.chart-x-axis {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 24px;
+  gap: 24px;
+  width: 100%;
+  height: 18px;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.chart-x-axis span {
+  margin: 0 auto;
+  height: 18px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #535862;
+  flex: none;
+  flex-grow: 0;
+}
+
+.chart-x-axis span:nth-child(1) {
+  width: 21px;
+  order: 0;
+}
+
+.chart-x-axis span:nth-child(2) {
+  width: 21px;
+  order: 1;
+}
+
+.chart-x-axis span:nth-child(3) {
+  width: 22px;
+  order: 2;
+}
+
+.chart-x-axis span:nth-child(4) {
+  width: 20px;
+  order: 3;
+}
+
+.chart-x-axis span:nth-child(5) {
+  width: 24px;
+  order: 4;
+}
+
+.chart-x-axis span:nth-child(6) {
+  width: 21px;
+  order: 5;
+}
+
+.chart-x-axis span:nth-child(7) {
+  width: 17px;
+  order: 6;
+}
+
+.chart-x-axis span:nth-child(8) {
+  width: 23px;
+  order: 7;
+}
+
+.chart-x-axis span:nth-child(9) {
+  width: 22px;
+  order: 8;
+}
+
+.chart-x-axis span:nth-child(10) {
+  width: 21px;
+  order: 9;
+}
+
+.chart-x-axis span:nth-child(11) {
+  width: 23px;
+  order: 10;
+}
+
+.chart-x-axis span:nth-child(12) {
+  width: 23px;
+  order: 11;
+}
+
+/* Alpine.js transitions */
+[x-cloak] {
+  display: none !important;
+}

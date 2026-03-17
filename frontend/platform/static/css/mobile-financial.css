@@ -1,0 +1,269 @@
+/* Mobile Financial Section */
+.mobile-financial {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 32px;
+  margin-top: 75px;
+}
+
+/* Header with icon */
+.mobile-financial-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 16px;
+  gap: 4px;
+  width: 100%;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+.mobile-financial-header img {
+  width: 20px;
+  height: 20px;
+}
+
+.mobile-financial-header h2 {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 30px;
+  color: #181d27;
+  margin: 0;
+}
+
+/* Financial content */
+.mobile-financial-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 16px;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Horizontal tabs */
+.mobile-financial-tabs {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 4px;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 30px;
+}
+
+.mobile-financial-tab {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  gap: 8px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 30px;
+  flex: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-financial-tab.active {
+  background: var(--accent-color);
+  box-shadow:
+    0px 1px 3px rgba(10, 13, 18, 0.1),
+    0px 1px 2px -1px rgba(10, 13, 18, 0.1);
+}
+
+.mobile-financial-tab .tab-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  color: #000000;
+  text-align: center;
+  margin: 0;
+}
+
+.mobile-financial-tab.active .tab-text {
+  color: var(--primary-color);
+}
+
+/* Financial Info Container */
+.mobile-financial-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Financial row */
+.mobile-financial-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px;
+  width: 100%;
+}
+
+.mobile-financial-label {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #949494;
+  margin: 0;
+}
+
+.mobile-financial-label-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-financial-value-group {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+}
+
+.mobile-financial-value {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: right;
+  color: #141417;
+  margin: 0;
+}
+
+.mobile-financial-value.total {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--primary-color);
+}
+
+.mobile-help-icon {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Financial divider */
+.mobile-financial-divider {
+  width: 100%;
+  height: 1px;
+  background: #e9eaeb;
+}
+
+/* Info bar */
+.mobile-financial-info-bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 4px;
+  width: 100%;
+  background: #f5f5f5;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.mobile-info-bar-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  color: #717680;
+  margin: 0;
+}
+
+.mobile-info-bar-icon {
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+}
+
+/* Tooltip styles */
+.mobile-tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.mobile-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+  pointer-events: none;
+  max-width: 280px;
+  white-space: normal;
+  text-align: center;
+}
+
+.mobile-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.mobile-tooltip-container:hover .mobile-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Management fees tooltip - larger container */
+.mobile-management-fees-tooltip {
+  max-width: 300px;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Hidden content for inactive tabs */
+.mobile-financial-info[style*="display: none"] {
+  display: none !important;
+}

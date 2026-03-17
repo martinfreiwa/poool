@@ -1,0 +1,186 @@
+/* ================================================================
+   POOOL Design System — Buttons
+   ================================================================
+   Standardised button classes for the entire dashboard.
+
+   Usage:
+     <button class="ds-btn ds-btn--primary">Deposit</button>
+     <button class="ds-btn ds-btn--secondary">Cancel</button>
+     <button class="ds-btn ds-btn--primary ds-btn--sm">Small</button>
+     <button class="ds-btn ds-btn--primary ds-btn--lg">Large</button>
+     <button class="ds-btn ds-btn--primary ds-btn--full">Full Width</button>
+     <button class="ds-btn ds-btn--danger">Delete</button>
+     <button class="ds-btn ds-btn--ghost">Cancel</button>
+     <button class="ds-btn ds-btn--icon ds-btn--secondary">
+       <svg>...</svg>
+     </button>
+
+   RULES:
+   - No !important in this file
+   - All values use CSS custom properties from dashboard-tokens.css
+   - Every button on the platform should use these classes
+   ================================================================ */
+
+
+/* ── Base Reset ──────────────────────────────────────────────── */
+
+.ds-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--btn-icon-gap);
+    height: var(--btn-md-height);
+    padding: var(--btn-md-padding);
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: var(--btn-md-font-size);
+    font-weight: var(--btn-font-weight);
+    line-height: 1;
+    border-radius: var(--btn-border-radius);
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: var(--btn-transition);
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+}
+
+.ds-btn:focus-visible {
+    outline: 2px solid var(--btn-primary-bg);
+    outline-offset: 2px;
+}
+
+.ds-btn:disabled,
+.ds-btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.ds-btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+
+/* ── Variants ────────────────────────────────────────────────── */
+
+/* Primary — solid blue */
+.ds-btn--primary {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-color);
+}
+
+.ds-btn--primary:hover {
+    background: var(--btn-primary-hover-bg);
+}
+
+.ds-btn--primary:active {
+    background: var(--btn-primary-active-bg);
+}
+
+
+/* Secondary — white with border */
+.ds-btn--secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-color);
+    border: 1px solid var(--btn-secondary-border);
+}
+
+.ds-btn--secondary:hover {
+    background: var(--btn-secondary-hover-bg);
+}
+
+.ds-btn--secondary:active {
+    background: var(--btn-secondary-active-bg);
+}
+
+
+/* Danger — solid red */
+.ds-btn--danger {
+    background: var(--btn-danger-bg);
+    color: var(--btn-danger-color);
+}
+
+.ds-btn--danger:hover {
+    background: var(--btn-danger-hover-bg);
+}
+
+.ds-btn--danger:active {
+    background: var(--btn-danger-active-bg);
+}
+
+
+/* Ghost — transparent, text-only */
+.ds-btn--ghost {
+    background: var(--btn-ghost-bg);
+    color: var(--btn-ghost-color);
+}
+
+.ds-btn--ghost:hover {
+    background: var(--btn-ghost-hover-bg);
+}
+
+.ds-btn--ghost:active {
+    background: var(--btn-ghost-active-bg);
+}
+
+
+/* ── Sizes ───────────────────────────────────────────────────── */
+
+.ds-btn--sm {
+    height: var(--btn-sm-height);
+    padding: var(--btn-sm-padding);
+    font-size: var(--btn-sm-font-size);
+}
+
+.ds-btn--sm svg {
+    width: 16px;
+    height: 16px;
+}
+
+.ds-btn--lg {
+    height: var(--btn-lg-height);
+    padding: var(--btn-lg-padding);
+    font-size: var(--btn-lg-font-size);
+}
+
+.ds-btn--lg svg {
+    width: 20px;
+    height: 20px;
+}
+
+
+/* ── Modifiers ───────────────────────────────────────────────── */
+
+/* Full-width */
+.ds-btn--full {
+    width: 100%;
+}
+
+/* Icon-only (square) */
+.ds-btn--icon {
+    padding: 0;
+    width: var(--btn-md-height);
+    gap: 0;
+}
+
+.ds-btn--icon.ds-btn--sm {
+    width: var(--btn-sm-height);
+}
+
+.ds-btn--icon.ds-btn--lg {
+    width: var(--btn-lg-height);
+}
+
+
+/* ── Responsive ──────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .ds-btn--lg {
+        height: var(--btn-md-height);
+        padding: var(--btn-md-padding);
+        font-size: var(--btn-md-font-size);
+    }
+}

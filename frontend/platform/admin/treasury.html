@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Treasury Overview | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Platform treasury, wallet aggregates, and financial overview." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a><span class="separator">›</span><span class="current">Treasury</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-search">
+            <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="6" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" placeholder="Global search (users, assets, orders)…" id="admin-global-search"
+              aria-label="Global Search" />
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header" style="
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              flex-wrap: wrap;
+              gap: 12px;
+            ">
+          <div>
+            <h1 class="admin-page-title">
+              Treasury &amp; Financial Overview
+            </h1>
+            <p class="admin-page-subtitle">
+              Platform-wide wallet balances, transaction volumes, and
+              financial health metrics
+            </p>
+          </div>
+          <div>
+            <button class="admin-btn admin-btn--secondary" onclick="exportTreasuryCSV()">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+                <path d="M8 2v9M4 8l4 4 4-4" />
+                <path d="M2 14h12" />
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Top-Level KPIs -->
+        <div class="admin-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px">
+          <div class="admin-kpi-card" style="padding: 18px">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label">Total Wallet Balances</span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M8 12h8" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-text-primary)"
+              id="stat-total-balance">
+              —
+            </div>
+            <span class="admin-kpi-subtext" id="stat-wallet-count">across 0 wallets</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 18px">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label">Total Deposits</span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M8 12h8" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px" id="stat-total-deposits">
+              —
+            </div>
+            <span class="admin-kpi-subtext" id="stat-deposit-count">0 transactions</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 18px">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label">Total Withdrawals</span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M8 12h8" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px" id="stat-total-withdrawals">
+              —
+            </div>
+            <span class="admin-kpi-subtext" id="stat-withdraw-count">0 transactions</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 18px">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label">Net Revenue</span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M8 12h8" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-text-primary)"
+              id="stat-net-revenue">
+              —
+            </div>
+            <span class="admin-kpi-subtext">fees only</span>
+          </div>
+        </div>
+
+        <!-- Transaction Type Breakdown -->
+        <div style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 16px;
+              margin-bottom: 20px;
+            ">
+          <div class="admin-card" style="padding: 20px">
+            <h3 style="
+                  font-size: 14px;
+                  font-weight: 600;
+                  color: var(--admin-text-primary);
+                  margin: 0 0 16px;
+                ">
+              Transaction Volume by Type
+            </h3>
+            <div id="tx-type-breakdown"></div>
+          </div>
+          <div class="admin-card" style="padding: 20px">
+            <h3 style="
+                  font-size: 14px;
+                  font-weight: 600;
+                  color: var(--admin-text-primary);
+                  margin: 0 0 16px;
+                ">
+              Dividend Payouts
+            </h3>
+            <div id="dividend-stats"></div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="admin-card">
+          <div style="
+                padding: 16px 20px;
+                border-bottom: 1px solid var(--admin-border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+              ">
+            <h3 style="
+                  font-size: 14px;
+                  font-weight: 600;
+                  color: var(--admin-text-primary);
+                  margin: 0;
+                ">
+              Recent Platform Transactions
+            </h3>
+            <div style="display: flex; gap: 8px">
+              <select id="tx-status-filter" class="admin-select" style="width: auto">
+                <option value="">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="failed">Failed</option>
+              </select>
+              <select id="tx-type-filter" class="admin-select" style="width: auto">
+                <option value="">All Types</option>
+                <option value="deposit">Deposits</option>
+                <option value="withdrawal">Withdrawals</option>
+                <option value="purchase">Purchases</option>
+                <option value="sale">Sales</option>
+                <option value="dividend">Dividends</option>
+                <option value="reward">Rewards</option>
+                <option value="refund">Refunds</option>
+                <option value="fee">Fees</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th data-sort="user_name">User</th>
+                  <th data-sort="type">Type</th>
+                  <th data-sort="amount_cents">Amount</th>
+                  <th data-sort="status">Status</th>
+                  <th>Description</th>
+                  <th data-sort="created_at">Date</th>
+                </tr>
+              </thead>
+              <tbody id="tx-table-body">
+                <tr>
+                  <td colspan="6" style="
+                        text-align: center;
+                        padding: 40px;
+                        color: var(--admin-text-muted);
+                      ">
+                    <div style="
+                          margin: 0 auto 12px;
+                          width: 24px;
+                          height: 24px;
+                          border: 2px solid var(--admin-border);
+                          border-top-color: var(--admin-accent);
+                          border-radius: 50%;
+                          animation: spin 0.8s linear infinite;
+                        "></div>
+                    Loading…
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination for Treasury Transactions -->
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 16px;
+                padding: 16px 20px;
+              ">
+            <span style="font-size: 13px; color: var(--admin-text-muted)" id="pagination-info">Page 1 of 1</span>
+            <div style="display: flex; gap: 6px">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="prev-page" disabled>
+                ← Previous
+              </button>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="next-page">
+                Next →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/admin-treasury.js"></script>
+</body>
+
+</html>

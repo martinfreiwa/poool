@@ -1,6 +1,6 @@
 {% with title="Rewards", meta_description="View your POOOL rewards tier, affiliate dashboard, and cashback earnings.",
 extra_css=['marketplace', 'wallet', 'portfolio', 'cart', 'portfolio-assets-table',
-'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards'], extra_js=['htmx-init', 'profile-dropdown',
+'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards', 'settings', 'poool-dropdown', 'kyc-banner'], extra_js=['htmx-init', 'profile-dropdown',
 'marketplace-search', 'tier-page'] %}{%
 include
 "components/head.html" %}{% endwith %}
@@ -14,6 +14,7 @@ include
     </div>
 
     <main class="ds-main rewards-main">
+      {% include 'components/kyc-banner.html' %}
       <div class="rewards-container">
         <div class="ds-page-header rewards-page-header">
           <div class="ds-page-header__title-row rewards-title-wrapper">
@@ -1000,33 +1001,38 @@ Best regards</div>
               <form id="payout-settings-form" class="commissions-form" onsubmit="savePayoutSettings(event)">
                 <div class="commissions-form-row">
                   <div class="commissions-form-field">
-                    <label for="payout-payment-method">Payment method</label>
-                    <select id="payout-payment-method" class="commissions-select">
-                      <option value="paypal">PayPal</option>
-                      <option value="bank_transfer">Bank Transfer</option>
-                    </select>
+                    <label for="payout-payment-method" class="settings-form-row__label" style="padding:0; margin-bottom: 2px;">Payment method</label>
+                    <div class="settings-select-wrapper" style="width: 100%;">
+                      <select id="payout-payment-method" class="settings-select">
+                        <option value="paypal">PayPal</option>
+                        <option value="bank_transfer" selected>Bank Transfer</option>
+                      </select>
+                      <svg class="settings-select-wrapper__icon-right" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
 
                 <div class="commissions-form-row commissions-form-row--2col">
                   <div class="commissions-form-field">
-                    <label for="payout-account-email">Account</label>
-                    <input type="text" id="payout-account-email" class="commissions-input" placeholder="e.g. your@email.com" />
+                    <label for="payout-account-email" class="settings-form-row__label" style="padding:0; margin-bottom: 2px;">Account</label>
+                    <input type="text" id="payout-account-email" class="settings-input" placeholder="e.g. your@email.com" />
                   </div>
                   <div class="commissions-form-field">
-                    <label for="payout-full-name">Full name / Company name</label>
-                    <input type="text" id="payout-full-name" class="commissions-input" placeholder="Full name" />
+                    <label for="payout-full-name" class="settings-form-row__label" style="padding:0; margin-bottom: 2px;">Full name / Company name</label>
+                    <input type="text" id="payout-full-name" class="settings-input" placeholder="Full name" />
                   </div>
                 </div>
 
                 <div class="commissions-form-row">
                   <div class="commissions-form-field">
-                    <label for="payout-vat">VAT No (optional)</label>
-                    <input type="text" id="payout-vat" class="commissions-input" placeholder="e.g. U12345678" />
+                    <label for="payout-vat" class="settings-form-row__label" style="padding:0; margin-bottom: 2px;">VAT No (optional)</label>
+                    <input type="text" id="payout-vat" class="settings-input" placeholder="e.g. U12345678" />
                   </div>
                 </div>
 
-                <button type="submit" class="commissions-save-btn" id="payout-save-btn">SAVE</button>
+                <button type="submit" class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="payout-save-btn" style="margin-top: 8px;">SAVE</button>
               </form>
             </div>
 
@@ -1096,6 +1102,7 @@ Best regards</div>
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <script src="/static/js/rewards-service.js"></script>
             <script src="/static/js/rewards.js"></script>
+  <script src="/static/js/kyc-banner.js"></script>
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>
   <script src="/static/js/tier-page.js"></script>

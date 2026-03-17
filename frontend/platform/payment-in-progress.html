@@ -1,0 +1,42 @@
+{% with title="Payment In Progress | POOOL", extra_css=['payment-in-progress'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobile-navigation'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="payment-in-progress-body">
+  {% include 'components/mobile-menu.html' %}
+  <div id="payment-in-progress-page" class="pip-page">
+    <!-- Sidebar Navigation -->
+    <div class="submission-success-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+    <!-- Main Content Area -->
+    <main id="payment-in-progress-main" class="ds-main pip-main">
+
+      <!-- Logo -->
+      <div class="pip-logo">
+        <img src="/static/images/logo-pool.svg" alt="POOOL Logo" />
+      </div>
+
+      <!-- Status Header (populated by JS) -->
+      <div id="pip-status-header" class="pip-status-header">
+        <!-- JS fills this -->
+      </div>
+
+      <!-- Dynamic Content Area -->
+      <div id="deposit-status-dynamic" class="pip-cards">
+        <div class="pip-loading">
+          <div class="pip-loading__spinner"></div>
+          <p class="pip-loading__text">Loading deposit details…</p>
+        </div>
+      </div>
+
+      <!-- Actions (populated by JS) -->
+      <div id="pip-actions" class="pip-actions" style="display:none;"></div>
+
+      <!-- Poll Status -->
+      <div id="poll-status" class="pip-poll-status"></div>
+
+    </main>
+  </div>
+  <script src="/static/js/payment-in-progress.js"></script>
+</body>
+
+</html>

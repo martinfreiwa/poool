@@ -1,0 +1,162 @@
+{% with title="My Submissions", meta_description="Manage your property submissions on POOOL.", extra_css=['developer-submissions', 'developer-assets', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-submissions'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="developer-submissions-body">
+  {% include 'components/mobile-menu.html' %}
+
+  <div id="developer-submissions-page" class="cart-page">
+    <div id="developer-submissions-sidebar" class="cart-page-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+    <!-- Main Content Area -->
+    <main id="developer-submissions-main" class="ds-main cart-page-main">
+      <!-- Page Header -->
+      <div class="ds-page-header cart-page-header">
+        <div class="ds-page-header__title-row cart-title-wrapper">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" class="ds-page-header__icon poool-icon-custom">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <h1 id="developer-submissions-page-title" class="ds-page-header__title cart-page-title">
+            My Submissions
+          </h1>
+        </div>
+        <div class="ds-page-header__actions">
+          <button class="add-asset-btn" onclick="window.location.href = '/developer/add-asset'">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#62F7A4" stroke-width="1.66667"
+              stroke-linecap="round">
+              <path d="M10 4v12M4 10h12" />
+            </svg>
+            <span class="add-asset-text">New Asset</span>
+          </button>
+        </div>
+      </div>
+
+
+      <!-- Summary Stat Cards -->
+      <div id="sub-stats-row" class="sub-stats">
+        <div class="sub-stat active" data-filter="all" onclick="filterByCard('all', this)">
+          <div class="sub-stat__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </div>
+          <div class="sub-stat__content">
+            <span class="sub-stat__count" id="stat-all">—</span>
+            <span class="sub-stat__label">All Submissions</span>
+          </div>
+        </div>
+        <div class="sub-stat" data-filter="draft" onclick="filterByCard('draft', this)">
+          <div class="sub-stat__icon sub-stat__icon--draft">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </div>
+          <div class="sub-stat__content">
+            <span class="sub-stat__count" id="stat-draft">—</span>
+            <span class="sub-stat__label">Drafts</span>
+          </div>
+        </div>
+        <div class="sub-stat" data-filter="submitted" onclick="filterByCard('submitted', this)">
+          <div class="sub-stat__icon sub-stat__icon--submitted">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </div>
+          <div class="sub-stat__content">
+            <span class="sub-stat__count" id="stat-submitted">—</span>
+            <span class="sub-stat__label">Submitted</span>
+          </div>
+        </div>
+        <div class="sub-stat" data-filter="in_review" onclick="filterByCard('in_review', this)">
+          <div class="sub-stat__icon sub-stat__icon--in_review">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="sub-stat__content">
+            <span class="sub-stat__count" id="stat-in_review">—</span>
+            <span class="sub-stat__label">In Review</span>
+          </div>
+        </div>
+        <div class="sub-stat" data-filter="approved" onclick="filterByCard('approved', this)">
+          <div class="sub-stat__icon sub-stat__icon--approved">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="sub-stat__content">
+            <span class="sub-stat__count" id="stat-approved">—</span>
+            <span class="sub-stat__label">Approved</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submissions Table -->
+      <div id="submissions-table-container" class="submissions-table-container">
+        <!-- Bulk Action Bar (overlays search row when rows selected) -->
+        <div id="sub-bulk-bar" class="sub-bulk-bar" style="display:none;">
+          <span id="sub-bulk-count" class="sub-bulk-count">0 selected</span>
+          <button class="sub-bulk-delete-btn" onclick="confirmBulkDelete()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            Delete Selected
+          </button>
+          <button class="sub-bulk-cancel-btn" onclick="clearSelection()">
+            Cancel
+          </button>
+        </div>
+        <!-- Search bar inside table container -->
+        <div id="sub-search-row" class="sub-table-search-row">
+          <div class="sub-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" id="sub-search-input" placeholder="Search submissions..." oninput="searchSubmissions(this.value)">
+          </div>
+        </div>
+        <table id="submissions-table" class="submissions-table">
+          <thead>
+            <tr>
+              <th class="col-checkbox">
+                <label class="sub-checkbox-label">
+                  <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)">
+                  <span class="sub-checkbox-custom"></span>
+                </label>
+              </th>
+              <th>Asset</th>
+              <th>Progress</th>
+              <th>Status</th>
+              <th class="col-updated">Updated</th>
+              <th class="col-actions" style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="submissions-tbody">
+            <!-- Rows populated by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div id="submissions-empty-state" class="dev-empty-state" style="display: none;">
+        <div class="dev-empty-state__icon">
+          <div class="dev-empty-state__icon-bg"></div>
+          <div class="dev-empty-state__icon-front">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+        </div>
+        <h2 class="dev-empty-state__title">No submissions yet</h2>
+        <p class="dev-empty-state__description">
+          Start by adding a new asset. You can save your progress at any time and come back to finish later.
+        </p>
+        <button class="dev-empty-state__cta" onclick="window.location.href = '/developer/add-asset'">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#62F7A4" stroke-width="2"
+            stroke-linecap="round">
+            <path d="M10 4v12M4 10h12" />
+          </svg>
+          <span>Add your first asset</span>
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div id="submissions-loading" class="submissions-loading">
+        <div class="loading-spinner"></div>
+        <span>Loading submissions...</span>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

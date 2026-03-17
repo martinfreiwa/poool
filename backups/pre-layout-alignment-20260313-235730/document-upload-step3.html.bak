@@ -1,0 +1,3670 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Developer Document Upload – POOOL</title>
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/dashboard-tokens.css" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <link rel="stylesheet" href="/static/css/developer-document-upload-step3.css" />
+  <link rel="stylesheet" href="/static/css/kyc-banner.css" />
+  <link rel="stylesheet" href="/static/css/sidebar-navigation.css" />
+  <link rel="stylesheet" href="/static/css/bem/sidebar.css" />
+  <link rel="stylesheet" href="/static/css/sidebar-developer.css" />
+  <link rel="stylesheet" href="/static/css/profile-dropdown.css" />
+  <!-- Mobile CSS -->
+  <link rel="stylesheet" href="/static/css/mobile-header.css" />
+  <link rel="stylesheet" href="/static/css/mobile-burger-menu.css" />
+  <link rel="stylesheet" href="/static/css/mobile-profile-dropdown.css" />
+  <link rel="stylesheet" href="/static/css/mobile-developer-document-upload-step3.css" />
+  <!-- Custom JavaScript -->
+  <script src="/static/js/profile-dropdown.js"></script>
+  <script src="/static/js/mobile-navigation.js"></script>
+  <script src="/static/js/developer-document-upload.js"></script>
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <!-- Anti-Flicker: reveal body once DOM + CSS are fully loaded -->
+  <script>
+    (function () {
+      if (document.readyState !== 'loading') {
+        document.body && document.body.classList.add('dom-ready');
+      }
+      document.addEventListener('DOMContentLoaded', function () {
+        document.body.classList.add('dom-ready');
+        document.body.classList.remove('loading');
+      });
+      setTimeout(function () {
+        document.body && document.body.classList.add('dom-ready');
+      }, 2000);
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body id="developer-document-upload-step3-body">
+  <!-- Mobile Header (hidden on desktop) --><!-- Mobile Header -->
+  <header id="mobile-header" class="mobile-header">
+    <!-- Logo --><a href="/marketplace" class="mobile-header__logo"><img src="/images/Logo Pool.svg"
+        alt="POOOL" /></a><!-- Icons Container -->
+    <div class="mobile-header__icons">
+      <!-- Notification Button --><button id="mobile-notification-btn"
+        class="mobile-header__icon-btn mobile-header__icon-btn--notification" aria-label="Notifications">
+        <svg class="mobile-header__icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
+            stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path
+            d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21"
+            stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg><!-- Badge if there are notifications --><span class="mobile-header__badge"
+          style="display: none">3</span></button><!-- Cart Button --><button id="mobile-cart-btn"
+        class="mobile-header__icon-btn mobile-header__icon-btn--cart" onclick="window.location.href = '/cart'"
+        aria-label="Shopping Cart">
+        <svg class="mobile-header__icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M9 22C9.55228 22 10 21.5523 10 21C10 20.4477 9.55228 20 9 20C8.44772 20 8 20.4477 8 21C8 21.5523 8.44772 22 9 22Z"
+            stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path
+            d="M20 22C20.5523 22 21 21.5523 21 21C21 20.4477 20.5523 20 20 20C19.4477 20 19 20.4477 19 21C19 21.5523 19.4477 22 20 22Z"
+            stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path
+            d="M1 1H5L7.68 14.39C7.77144 14.8504 8.02191 15.264 8.38755 15.5583C8.75318 15.8526 9.2107 16.009 9.68 16H19.4C19.8693 16.009 20.3268 15.8526 20.6925 15.5583C21.0581 15.264 21.3086 14.8504 21.4 14.39L23 6H6"
+            stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg><!-- Cart Badge --><span class="mobile-header__badge"
+          style="display: none">2</span></button><!-- Burger Menu Button --><button id="mobile-burger-btn"
+        class="mobile-header__icon-btn mobile-header__icon-btn--burger" onclick="toggleMobileMenu()" aria-label="Menu">
+        <div class="mobile-header__burger-icon">
+          <span class="mobile-header__burger-line"></span>
+          <span class="mobile-header__burger-line"></span>
+          <span class="mobile-header__burger-line"></span>
+        </div>
+      </button>
+    </div>
+  </header>
+  <!-- Mobile Menu Overlay -->
+  <div id="mobile-menu-overlay" class="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+  <!-- Dynamic Mobile Burger Menu - switches based on profile -->
+  <div id="mobile-burger-menu-container">
+    <!-- Initial menu will be replaced by JavaScript based on profile --><!-- Mobile Burger Menu -->
+    <nav id="mobile-burger-menu" class="mobile-burger-menu">
+      <!-- Header -->
+      <div class="mobile-burger-menu__header">
+        <div class="mobile-burger-menu__header-container">
+          <!-- Logo -->
+          <div class="mobile-burger-menu__logo">
+            <img src="/images/Logo premium.svg" alt="POOOL" />
+          </div>
+          <!-- Close Button --><button class="mobile-burger-menu__close" onclick="closeMobileMenu()"
+            aria-label="Close menu">
+            <span class="mobile-burger-menu__close-icon"></span>
+          </button>
+        </div>
+      </div>
+      <!-- Navigation -->
+      <div class="mobile-burger-menu__nav">
+        <!-- Dynamic Navigation Items - Check if Developer Profile --><!-- INVESTOR NAVIGATION (Original) -->
+        <!-- Marketplace Dropdown (Parent Item) -->
+        <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--parent" data-item-id="marketplace"
+          onclick="toggleMobileMarketplaceDropdown(event)">
+          <div class="mobile-burger-menu__nav-text-wrapper">
+            <div class="mobile-burger-menu__nav-icon-wrapper">
+              <img loading="lazy" src="/images/home-05.svg" alt="Marketplace" class="mobile-burger-menu__nav-icon" />
+            </div>
+            <span class="mobile-burger-menu__nav-text">Marketplace</span>
+          </div>
+          <svg class="mobile-burger-menu__nav-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            </path>
+          </svg>
+        </div>
+        <!-- Marketplace Children -->
+        <div id="mobile-nav-children-marketplace"
+          class="mobile-burger-menu__nav-children mobile-burger-menu__nav-children--collapsed">
+          <a href="/marketplace" class="mobile-burger-menu__nav-child"><span
+              class="mobile-burger-menu__nav-child-text">Properties</span></a>
+          <a href="/commodities-marketplace" class="mobile-burger-menu__nav-child"><span
+              class="mobile-burger-menu__nav-child-text">Commodities</span></a>
+        </div>
+        <!-- Wallet -->
+        <a href="/wallet" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/wallet-02.svg" alt="Wallet" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Wallet</span>
+        </a><!-- Portfolio -->
+        <a href="/portfolio" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/line-chart-up-02.svg" alt="Portfolio"
+              class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Portfolio</span>
+        </a><!-- Rewards -->
+        <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/star-01.svg" alt="Rewards" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Rewards</span>
+          <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
+        </div>
+        <!-- Cart -->
+        <a href="/cart" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/shopping-cart-01.svg" alt="Cart" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Cart</span>
+        </a><!-- Leaderboard -->
+        <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/award-05.svg" alt="Leaderboard" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Leaderboard</span>
+          <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
+        </div>
+        <!-- Settings -->
+        <a href="/settings" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/settings-01.svg" alt="Settings" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Settings</span>
+        </a><!-- Support -->
+        <a href="/support" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support"
+              class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Support</span>
+          <div class="mobile-burger-menu__support-badge">
+            <span class="mobile-burger-menu__support-dot"></span>
+            <span class="mobile-burger-menu__support-text">Online</span>
+          </div>
+        </a>
+      </div>
+      <!-- Footer -->
+      <div class="mobile-burger-menu__footer">
+        <!-- Featured Card - Only show for investor profile -->
+        <div class="mobile-burger-menu__featured-card">
+          <button class="mobile-burger-menu__featured-close" aria-label="Close">
+            <span class="mobile-burger-menu__featured-close-icon"></span>
+          </button>
+          <div class="mobile-burger-menu__featured-text">
+            <h4 class="mobile-burger-menu__featured-title">Community soon</h4>
+            <p class="mobile-burger-menu__featured-description">
+              Check out the new community feature. Connect with other
+              investors soon.
+            </p>
+          </div>
+          <div class="mobile-burger-menu__featured-actions">
+            <button class="mobile-burger-menu__featured-button mobile-burger-menu__featured-button--dismiss">
+              Dismiss
+            </button>
+            <button class="mobile-burger-menu__featured-button mobile-burger-menu__featured-button--action">
+              What&#39;s new?
+            </button>
+          </div>
+        </div>
+        <!-- Support Chat Card - Only show for developer profile --><!-- Account Card -->
+        <div id="mobile-account-card" class="mobile-burger-menu__account-card"
+          onclick="toggleMobileProfileDropdown(event)" style="cursor: pointer" role="button" aria-label="Account menu"
+          tabindex="0">
+          <div class="mobile-burger-menu__avatar-group">
+            <div class="mobile-burger-menu__avatar">
+              <img loading="lazy" src="/images/Image.webp" alt="" />
+              <div class="mobile-burger-menu__avatar-online"></div>
+            </div>
+            <div class="mobile-burger-menu__account-text">
+              <span class="mobile-burger-menu__account-name"></span>
+              <span class="mobile-burger-menu__account-email"></span>
+            </div>
+          </div>
+          <div id="mobile-account-menu-button" class="mobile-burger-menu__account-menu" style="pointer-events: none">
+            <div id="mobile-account-menu-button-inner" class="mobile-burger-menu__account-menu-button">
+              <svg class="mobile-burger-menu__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+                <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Mobile Profile Dropdown -->
+        <div id="mobile-profile-dropdown-menu" class="mobile-profile-dropdown-menu">
+          <!-- Menu items wrapper -->
+          <div id="mobile-profile-menu-wrapper" class="mobile-profile-menu-wrapper">
+            <!-- Top menu items -->
+            <div id="mobile-profile-menu-items-top" class="mobile-profile-menu-items">
+              <!-- Documentation -->
+              <div id="mobile-menu-item-documentation" class="mobile-profile-menu-item">
+                <div class="mobile-profile-menu-content">
+                  <div class="mobile-profile-icon-text">
+                    <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                      <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                    </svg>
+                    <span class="mobile-profile-menu-text">Documentation</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Switch account section -->
+            <div id="mobile-profile-switch-section" class="mobile-profile-switch-section">
+              <div class="mobile-profile-switch-header">
+                <span class="mobile-profile-switch-title">Switch account</span>
+              </div>
+              <!-- Current account (selected) -->
+              <div id="mobile-menu-item-current-account"
+                class="mobile-profile-menu-item account-item selected mobile-profile-switcher"
+                data-profile-id="olivia-investor" data-account-type="Investor Profile" style="cursor: pointer">
+                <div class="mobile-profile-account-content">
+                  <div class="mobile-profile-avatar-group">
+                    <div class="mobile-profile-avatar">
+                      <img loading="lazy" src="/images/Image.webp" alt="" />
+                      <div class="mobile-profile-avatar-border"></div>
+                      <div class="mobile-profile-online-indicator"></div>
+                    </div>
+                    <div class="mobile-profile-text-wrapper">
+                      <span class="mobile-profile-account-name"></span>
+                      <span class="mobile-profile-account-type">Investor Profile</span>
+                    </div>
+                  </div>
+                  <div class="mobile-profile-checkbox selected">
+                    <div class="mobile-profile-checkbox-check"></div>
+                  </div>
+                </div>
+              </div>
+              <!-- Other accounts -->
+              <div id="mobile-menu-item-account-olivia-developer"
+                class="mobile-profile-menu-item account-item mobile-profile-switcher" data-profile-id="olivia-developer"
+                data-account-type="Developer profile" style="cursor: pointer">
+                <div class="mobile-profile-account-content">
+                  <div class="mobile-profile-avatar-group">
+                    <div class="mobile-profile-avatar">
+                      <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                      <div class="mobile-profile-avatar-border"></div>
+                      <div class="mobile-profile-online-indicator"></div>
+                    </div>
+                    <div class="mobile-profile-text-wrapper">
+                      <span class="mobile-profile-account-name"></span>
+                      <span class="mobile-profile-account-type">Developer profile</span>
+                    </div>
+                  </div>
+                  <div class="mobile-profile-checkbox">
+                    <div class="mobile-profile-checkbox-check"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Footer items -->
+          <div id="mobile-profile-footer-items" class="mobile-profile-footer-items">
+            <!-- Sign out -->
+            <div id="mobile-menu-item-sign-out" class="mobile-profile-menu-item">
+              <div class="mobile-profile-menu-content">
+                <div class="mobile-profile-icon-text">
+                  <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                      stroke-linejoin="round"></path>
+                    <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
+                      stroke-width="1.67" stroke-linecap="round"></path>
+                  </svg>
+                  <span class="mobile-profile-menu-text">Sign out</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Mobile Profile Switching JavaScript -->
+        <script>
+          // Profile switching functionality - consistent with desktop
+          window.switchToProfile = function (profileId, accountType) {
+            // Close the mobile dropdown first
+            if (window.closeMobileProfileDropdown) {
+              window.closeMobileProfileDropdown();
+            }
+
+            // Close the burger menu
+            if (window.closeMobileMenu) {
+              window.closeMobileMenu();
+            }
+
+            // Determine profile type and save to localStorage (consistent with desktop)
+            let profileType = "investor"; // default
+            if (accountType === "Developer profile") {
+              profileType = "developer";
+            } else if (accountType === "Investor Profile") {
+              profileType = "investor";
+            }
+
+            localStorage.setItem("selectedProfile", profileType);
+            localStorage.setItem("selectedAccountId", profileId);
+
+            // Switch to appropriate dashboard
+            if (profileType === "developer") {
+              window.location.href = "/developer/dashboard";
+            } else {
+              window.location.href = "/marketplace";
+            }
+          };
+
+          // Load saved profile from localStorage - mirrors desktop behavior
+          window.loadSavedMobileProfile = function () {
+            const savedProfile = localStorage.getItem("selectedProfile");
+            const savedAccountId = localStorage.getItem("selectedAccountId");
+
+            if (savedProfile && savedAccountId) {
+              // Update dropdown selection state
+              const allAccountItems = document.querySelectorAll(
+                ".mobile-profile-menu-item.account-item",
+              );
+              allAccountItems.forEach(function (item) {
+                const checkbox = item.querySelector(
+                  ".mobile-profile-checkbox",
+                );
+                if (
+                  item.id.includes(savedAccountId) ||
+                  (savedAccountId === "olivia-investor" &&
+                    item.id === "mobile-menu-item-current-account")
+                ) {
+                  // This is the selected account
+                  item.classList.add("selected");
+                  if (checkbox) checkbox.classList.add("selected");
+                } else {
+                  // This is not the selected account
+                  item.classList.remove("selected");
+                  if (checkbox) checkbox.classList.remove("selected");
+                }
+              });
+
+              // Update mobile burger menu account display based on saved selection
+              const selectedItem = document.querySelector(
+                savedAccountId === "olivia-investor"
+                  ? "#mobile-menu-item-current-account"
+                  : "#mobile-menu-item-account-" + savedAccountId,
+              );
+
+              if (selectedItem) {
+                const avatar = selectedItem.querySelector(
+                  ".mobile-profile-avatar img",
+                );
+                const name = selectedItem.querySelector(
+                  ".mobile-profile-account-name",
+                );
+                const type = selectedItem.querySelector(
+                  ".mobile-profile-account-type",
+                );
+
+                const mobileAvatar = document.querySelector(
+                  ".mobile-burger-menu__avatar img",
+                );
+                const mobileName = document.querySelector(
+                  ".mobile-burger-menu__account-name",
+                );
+                const mobileEmail = document.querySelector(
+                  ".mobile-burger-menu__account-email",
+                );
+
+                if (avatar && mobileAvatar) {
+                  mobileAvatar.src = avatar.src;
+                  mobileAvatar.alt = avatar.alt;
+                }
+
+                if (name && mobileName) {
+                  mobileName.textContent = name.textContent;
+                }
+
+                if (type && mobileEmail) {
+                  mobileEmail.textContent = type.textContent;
+                }
+              }
+            }
+          };
+
+          // Initialize profile switchers - bypasses global event capture
+          window.initializeProfileSwitchers = function () {
+            const profileSwitchers = document.querySelectorAll(
+              ".mobile-profile-switcher",
+            );
+
+            profileSwitchers.forEach(function (switcher, index) {
+              const profileId = switcher.getAttribute("data-profile-id");
+              const accountType = switcher.getAttribute("data-account-type");
+
+              // Remove any existing listeners
+              switcher.removeEventListener(
+                "click",
+                switcher._profileSwitchHandler,
+              );
+
+              // Create and store the handler
+              switcher._profileSwitchHandler = function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                window.switchToProfile(profileId, accountType);
+              };
+
+              // Add the event listener
+              switcher.addEventListener(
+                "click",
+                switcher._profileSwitchHandler,
+                true,
+              );
+            });
+          };
+
+          // Initialize when DOM is ready and also when mobile menu is opened
+          function initializeAll() {
+            window.loadSavedMobileProfile();
+            window.initializeProfileSwitchers();
+          }
+
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initializeAll);
+          } else {
+            initializeAll();
+          }
+
+          // Mobile profile dropdown toggle functionality
+          window.toggleMobileProfileDropdown = function (event) {
+            if (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              event.stopImmediatePropagation();
+            }
+
+            const dropdown = document.getElementById(
+              "mobile-profile-dropdown-menu",
+            );
+            const button = document.getElementById(
+              "mobile-account-menu-button-inner",
+            );
+
+            if (!dropdown) {
+              // Try to find it with different selectors
+              const allDropdowns = document.querySelectorAll(
+                '[id*="profile-dropdown"], [class*="profile-dropdown"]',
+              );
+              allDropdowns.forEach((el, i) =>
+                console.log(`  ${i}:`, el.id, el.className),
+              );
+              return;
+            }
+
+            // Toggle dropdown visibility using active class
+            const isCurrentlyActive = dropdown.classList.contains("active");
+
+            if (!isCurrentlyActive) {
+              dropdown.classList.add("active");
+              if (button) button.classList.add("active");
+
+              // Re-initialize profile switchers for the newly visible dropdown
+              setTimeout(() => {
+                window.initializeProfileSwitchers();
+              }, 50);
+
+              // Add click outside listener
+              setTimeout(() => {
+                document.addEventListener(
+                  "click",
+                  window.closeMobileDropdownOnClickOutside,
+                );
+              }, 100);
+            } else {
+              dropdown.classList.remove("active");
+              if (button) button.classList.remove("active");
+
+              // Remove click outside listener
+              document.removeEventListener(
+                "click",
+                window.closeMobileDropdownOnClickOutside,
+              );
+            }
+          };
+
+          window.closeMobileProfileDropdown = function () {
+            const dropdown = document.getElementById(
+              "mobile-profile-dropdown-menu",
+            );
+            const button = document.getElementById(
+              "mobile-account-menu-button-inner",
+            );
+
+            if (dropdown) dropdown.classList.remove("active");
+            if (button) button.classList.remove("active");
+
+            // Remove click outside listener
+            document.removeEventListener(
+              "click",
+              window.closeMobileDropdownOnClickOutside,
+            );
+          };
+
+          window.closeMobileDropdownOnClickOutside = function (event) {
+            const dropdown = document.getElementById(
+              "mobile-profile-dropdown-menu",
+            );
+            const accountCard = document.getElementById(
+              "mobile-account-card",
+            );
+
+            if (
+              accountCard &&
+              !accountCard.contains(event.target) &&
+              dropdown &&
+              !dropdown.contains(event.target)
+            ) {
+              window.closeMobileProfileDropdown();
+            }
+          };
+
+          // Mobile Marketplace Dropdown Toggle
+          window.toggleMobileMarketplaceDropdown = function (event) {
+            // Prevent default behavior and event propagation
+            if (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              event.stopImmediatePropagation();
+            }
+
+            const chevron = document.querySelector(
+              ".mobile-burger-menu__nav-chevron",
+            );
+            const childrenContainer = document.getElementById(
+              "mobile-nav-children-marketplace",
+            );
+
+            if (!chevron || !childrenContainer) {
+              return;
+            }
+
+            // Toggle expanded state
+            const isExpanded = chevron.classList.contains(
+              "mobile-burger-menu__nav-chevron--expanded",
+            );
+
+            if (isExpanded) {
+              // Collapse
+              chevron.classList.remove(
+                "mobile-burger-menu__nav-chevron--expanded",
+              );
+              childrenContainer.classList.add(
+                "mobile-burger-menu__nav-children--collapsed",
+              );
+            } else {
+              // Expand
+              chevron.classList.add(
+                "mobile-burger-menu__nav-chevron--expanded",
+              );
+              childrenContainer.classList.remove(
+                "mobile-burger-menu__nav-children--collapsed",
+              );
+            }
+          };
+        </script>
+      </div>
+    </nav>
+  </div>
+  <!-- Hidden template for investor burger menu --><template
+    id="investor-mobile-menu-template"><!-- Mobile Burger Menu -->
+    <nav id="mobile-burger-menu" class="mobile-burger-menu">
+      <!-- Header -->
+      <div class="mobile-burger-menu__header">
+        <div class="mobile-burger-menu__header-container">
+          <!-- Logo -->
+          <div class="mobile-burger-menu__logo">
+            <img src="/images/Logo premium.svg" alt="POOOL" />
+          </div>
+          <!-- Close Button --><button class="mobile-burger-menu__close" onclick="closeMobileMenu()"
+            aria-label="Close menu">
+            <span class="mobile-burger-menu__close-icon"></span>
+          </button>
+        </div>
+      </div>
+      <!-- Navigation -->
+      <div class="mobile-burger-menu__nav">
+        <!-- Dynamic Navigation Items - Check if Developer Profile --><!-- INVESTOR NAVIGATION (Original) -->
+        <!-- Marketplace Dropdown (Parent Item) -->
+        <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--parent" data-item-id="marketplace"
+          onclick="toggleMobileMarketplaceDropdown(event)">
+          <div class="mobile-burger-menu__nav-text-wrapper">
+            <div class="mobile-burger-menu__nav-icon-wrapper">
+              <img loading="lazy" src="/images/home-05.svg" alt="Marketplace" class="mobile-burger-menu__nav-icon" />
+            </div>
+            <span class="mobile-burger-menu__nav-text">Marketplace</span>
+          </div>
+          <svg class="mobile-burger-menu__nav-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            </path>
+          </svg>
+        </div>
+        <!-- Marketplace Children -->
+        <div id="mobile-nav-children-marketplace"
+          class="mobile-burger-menu__nav-children mobile-burger-menu__nav-children--collapsed">
+          <a href="/marketplace" class="mobile-burger-menu__nav-child"><span
+              class="mobile-burger-menu__nav-child-text">Properties</span></a>
+          <a href="/commodities-marketplace" class="mobile-burger-menu__nav-child"><span
+              class="mobile-burger-menu__nav-child-text">Commodities</span></a>
+        </div>
+        <!-- Wallet -->
+        <a href="/wallet" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/wallet-02.svg" alt="Wallet" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Wallet</span>
+        </a><!-- Portfolio -->
+        <a href="/portfolio" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/line-chart-up-02.svg" alt="Portfolio"
+              class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Portfolio</span>
+        </a><!-- Rewards -->
+        <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/star-01.svg" alt="Rewards" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Rewards</span>
+          <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
+        </div>
+        <!-- Cart -->
+        <a href="/cart" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/shopping-cart-01.svg" alt="Cart" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Cart</span>
+        </a><!-- Leaderboard -->
+        <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/award-05.svg" alt="Leaderboard" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Leaderboard</span>
+          <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
+        </div>
+        <!-- Settings -->
+        <a href="/settings" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/images/settings-01.svg" alt="Settings" class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Settings</span>
+        </a><!-- Support -->
+        <a href="/support" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support"
+              class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Support</span>
+          <div class="mobile-burger-menu__support-badge">
+            <span class="mobile-burger-menu__support-dot"></span>
+            <span class="mobile-burger-menu__support-text">Online</span>
+          </div>
+        </a>
+      </div>
+      <!-- Footer -->
+      <div class="mobile-burger-menu__footer">
+        <!-- Featured Card - Only show for investor profile -->
+        <div class="mobile-burger-menu__featured-card">
+          <button class="mobile-burger-menu__featured-close" aria-label="Close">
+            <span class="mobile-burger-menu__featured-close-icon"></span>
+          </button>
+          <div class="mobile-burger-menu__featured-text">
+            <h4 class="mobile-burger-menu__featured-title">Community soon</h4>
+            <p class="mobile-burger-menu__featured-description">
+              Check out the new community feature. Connect with other
+              investors soon.
+            </p>
+          </div>
+          <div class="mobile-burger-menu__featured-actions">
+            <button class="mobile-burger-menu__featured-button mobile-burger-menu__featured-button--dismiss">
+              Dismiss
+            </button>
+            <button class="mobile-burger-menu__featured-button mobile-burger-menu__featured-button--action">
+              What&#39;s new?
+            </button>
+          </div>
+        </div>
+        <!-- Support Chat Card - Only show for developer profile --><!-- Account Card -->
+        <div id="mobile-account-card" class="mobile-burger-menu__account-card"
+          onclick="toggleMobileProfileDropdown(event)" style="cursor: pointer" role="button" aria-label="Account menu"
+          tabindex="0">
+          <div class="mobile-burger-menu__avatar-group">
+            <div class="mobile-burger-menu__avatar">
+              <img loading="lazy" src="/images/Image.webp" alt="" />
+              <div class="mobile-burger-menu__avatar-online"></div>
+            </div>
+            <div class="mobile-burger-menu__account-text">
+              <span class="mobile-burger-menu__account-name"></span>
+              <span class="mobile-burger-menu__account-email"></span>
+            </div>
+          </div>
+          <div id="mobile-account-menu-button" class="mobile-burger-menu__account-menu" style="pointer-events: none">
+            <div id="mobile-account-menu-button-inner" class="mobile-burger-menu__account-menu-button">
+              <svg class="mobile-burger-menu__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+                <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Mobile Profile Dropdown -->
+        <div id="mobile-profile-dropdown-menu" class="mobile-profile-dropdown-menu">
+          <!-- Menu items wrapper -->
+          <div id="mobile-profile-menu-wrapper" class="mobile-profile-menu-wrapper">
+            <!-- Top menu items -->
+            <div id="mobile-profile-menu-items-top" class="mobile-profile-menu-items">
+              <!-- Documentation -->
+              <div id="mobile-menu-item-documentation" class="mobile-profile-menu-item">
+                <div class="mobile-profile-menu-content">
+                  <div class="mobile-profile-icon-text">
+                    <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                      <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                    </svg>
+                    <span class="mobile-profile-menu-text">Documentation</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Switch account section -->
+            <div id="mobile-profile-switch-section" class="mobile-profile-switch-section">
+              <div class="mobile-profile-switch-header">
+                <span class="mobile-profile-switch-title">Switch account</span>
+              </div>
+              <!-- Current account (selected) -->
+              <div id="mobile-menu-item-current-account"
+                class="mobile-profile-menu-item account-item selected mobile-profile-switcher"
+                data-profile-id="olivia-investor" data-account-type="Investor Profile" style="cursor: pointer">
+                <div class="mobile-profile-account-content">
+                  <div class="mobile-profile-avatar-group">
+                    <div class="mobile-profile-avatar">
+                      <img loading="lazy" src="/images/Image.webp" alt="" />
+                      <div class="mobile-profile-avatar-border"></div>
+                      <div class="mobile-profile-online-indicator"></div>
+                    </div>
+                    <div class="mobile-profile-text-wrapper">
+                      <span class="mobile-profile-account-name"></span>
+                      <span class="mobile-profile-account-type">Investor Profile</span>
+                    </div>
+                  </div>
+                  <div class="mobile-profile-checkbox selected">
+                    <div class="mobile-profile-checkbox-check"></div>
+                  </div>
+                </div>
+              </div>
+              <!-- Other accounts -->
+              <div id="mobile-menu-item-account-olivia-developer"
+                class="mobile-profile-menu-item account-item mobile-profile-switcher" data-profile-id="olivia-developer"
+                data-account-type="Developer profile" style="cursor: pointer">
+                <div class="mobile-profile-account-content">
+                  <div class="mobile-profile-avatar-group">
+                    <div class="mobile-profile-avatar">
+                      <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                      <div class="mobile-profile-avatar-border"></div>
+                      <div class="mobile-profile-online-indicator"></div>
+                    </div>
+                    <div class="mobile-profile-text-wrapper">
+                      <span class="mobile-profile-account-name"></span>
+                      <span class="mobile-profile-account-type">Developer profile</span>
+                    </div>
+                  </div>
+                  <div class="mobile-profile-checkbox">
+                    <div class="mobile-profile-checkbox-check"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Footer items -->
+          <div id="mobile-profile-footer-items" class="mobile-profile-footer-items">
+            <!-- Sign out -->
+            <div id="mobile-menu-item-sign-out" class="mobile-profile-menu-item">
+              <div class="mobile-profile-menu-content">
+                <div class="mobile-profile-icon-text">
+                  <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                      stroke-linejoin="round"></path>
+                    <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
+                      stroke-width="1.67" stroke-linecap="round"></path>
+                  </svg>
+                  <span class="mobile-profile-menu-text">Sign out</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Mobile Profile Switching JavaScript -->
+        <script>
+          // Profile switching functionality - consistent with desktop
+          window.switchToProfile = function (profileId, accountType) {
+            // Close the mobile dropdown first
+            if (window.closeMobileProfileDropdown) {
+              window.closeMobileProfileDropdown();
+            }
+
+            // Close the burger menu
+            if (window.closeMobileMenu) {
+              window.closeMobileMenu();
+            }
+
+            // Determine profile type and save to localStorage (consistent with desktop)
+            let profileType = "investor"; // default
+            if (accountType === "Developer profile") {
+              profileType = "developer";
+            } else if (accountType === "Investor Profile") {
+              profileType = "investor";
+            }
+
+            localStorage.setItem("selectedProfile", profileType);
+            localStorage.setItem("selectedAccountId", profileId);
+
+            // Switch to appropriate dashboard
+            if (profileType === "developer") {
+              window.location.href = "/developer/dashboard";
+            } else {
+              window.location.href = "/marketplace";
+            }
+          };
+
+          // Load saved profile from localStorage - mirrors desktop behavior
+          window.loadSavedMobileProfile = function () {
+            const savedProfile = localStorage.getItem("selectedProfile");
+            const savedAccountId = localStorage.getItem("selectedAccountId");
+
+            if (savedProfile && savedAccountId) {
+              // Update dropdown selection state
+              const allAccountItems = document.querySelectorAll(
+                ".mobile-profile-menu-item.account-item",
+              );
+              allAccountItems.forEach(function (item) {
+                const checkbox = item.querySelector(
+                  ".mobile-profile-checkbox",
+                );
+                if (
+                  item.id.includes(savedAccountId) ||
+                  (savedAccountId === "olivia-investor" &&
+                    item.id === "mobile-menu-item-current-account")
+                ) {
+                  // This is the selected account
+                  item.classList.add("selected");
+                  if (checkbox) checkbox.classList.add("selected");
+                } else {
+                  // This is not the selected account
+                  item.classList.remove("selected");
+                  if (checkbox) checkbox.classList.remove("selected");
+                }
+              });
+
+              // Update mobile burger menu account display based on saved selection
+              const selectedItem = document.querySelector(
+                savedAccountId === "olivia-investor"
+                  ? "#mobile-menu-item-current-account"
+                  : "#mobile-menu-item-account-" + savedAccountId,
+              );
+
+              if (selectedItem) {
+                const avatar = selectedItem.querySelector(
+                  ".mobile-profile-avatar img",
+                );
+                const name = selectedItem.querySelector(
+                  ".mobile-profile-account-name",
+                );
+                const type = selectedItem.querySelector(
+                  ".mobile-profile-account-type",
+                );
+
+                const mobileAvatar = document.querySelector(
+                  ".mobile-burger-menu__avatar img",
+                );
+                const mobileName = document.querySelector(
+                  ".mobile-burger-menu__account-name",
+                );
+                const mobileEmail = document.querySelector(
+                  ".mobile-burger-menu__account-email",
+                );
+
+                if (avatar && mobileAvatar) {
+                  mobileAvatar.src = avatar.src;
+                  mobileAvatar.alt = avatar.alt;
+                }
+
+                if (name && mobileName) {
+                  mobileName.textContent = name.textContent;
+                }
+
+                if (type && mobileEmail) {
+                  mobileEmail.textContent = type.textContent;
+                }
+              }
+            }
+          };
+
+          // Initialize profile switchers - bypasses global event capture
+          window.initializeProfileSwitchers = function () {
+            const profileSwitchers = document.querySelectorAll(
+              ".mobile-profile-switcher",
+            );
+
+            profileSwitchers.forEach(function (switcher, index) {
+              const profileId = switcher.getAttribute("data-profile-id");
+              const accountType = switcher.getAttribute("data-account-type");
+
+              // Remove any existing listeners
+              switcher.removeEventListener(
+                "click",
+                switcher._profileSwitchHandler,
+              );
+
+              // Create and store the handler
+              switcher._profileSwitchHandler = function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                window.switchToProfile(profileId, accountType);
+              };
+
+              // Add the event listener
+              switcher.addEventListener(
+                "click",
+                switcher._profileSwitchHandler,
+                true,
+              );
+            });
+          };
+
+          // Initialize when DOM is ready and also when mobile menu is opened
+          function initializeAll() {
+            window.loadSavedMobileProfile();
+            window.initializeProfileSwitchers();
+          }
+
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initializeAll);
+          } else {
+            initializeAll();
+          }
+
+          // Mobile profile dropdown toggle functionality
+          window.toggleMobileProfileDropdown = function (event) {
+            if (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              event.stopImmediatePropagation();
+            }
+
+            const dropdown = document.getElementById(
+              "mobile-profile-dropdown-menu",
+            );
+            const button = document.getElementById(
+              "mobile-account-menu-button-inner",
+            );
+
+            if (!dropdown) {
+              // Try to find it with different selectors
+              const allDropdowns = document.querySelectorAll(
+                '[id*="profile-dropdown"], [class*="profile-dropdown"]',
+              );
+              allDropdowns.forEach((el, i) =>
+                console.log(`  ${i}:`, el.id, el.className),
+              );
+              return;
+            }
+
+            // Toggle dropdown visibility using active class
+            const isCurrentlyActive = dropdown.classList.contains("active");
+
+            if (!isCurrentlyActive) {
+              dropdown.classList.add("active");
+              if (button) button.classList.add("active");
+
+              // Re-initialize profile switchers for the newly visible dropdown
+              setTimeout(() => {
+                window.initializeProfileSwitchers();
+              }, 50);
+
+              // Add click outside listener
+              setTimeout(() => {
+                document.addEventListener(
+                  "click",
+                  window.closeMobileDropdownOnClickOutside,
+                );
+              }, 100);
+            } else {
+              dropdown.classList.remove("active");
+              if (button) button.classList.remove("active");
+
+              // Remove click outside listener
+              document.removeEventListener(
+                "click",
+                window.closeMobileDropdownOnClickOutside,
+              );
+            }
+          };
+
+          window.closeMobileProfileDropdown = function () {
+            const dropdown = document.getElementById(
+              "mobile-profile-dropdown-menu",
+            );
+            const button = document.getElementById(
+              "mobile-account-menu-button-inner",
+            );
+
+            if (dropdown) dropdown.classList.remove("active");
+            if (button) button.classList.remove("active");
+
+            // Remove click outside listener
+            document.removeEventListener(
+              "click",
+              window.closeMobileDropdownOnClickOutside,
+            );
+          };
+
+          window.closeMobileDropdownOnClickOutside = function (event) {
+            const dropdown = document.getElementById(
+              "mobile-profile-dropdown-menu",
+            );
+            const accountCard = document.getElementById(
+              "mobile-account-card",
+            );
+
+            if (
+              accountCard &&
+              !accountCard.contains(event.target) &&
+              dropdown &&
+              !dropdown.contains(event.target)
+            ) {
+              window.closeMobileProfileDropdown();
+            }
+          };
+
+          // Mobile Marketplace Dropdown Toggle
+          window.toggleMobileMarketplaceDropdown = function (event) {
+            // Prevent default behavior and event propagation
+            if (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              event.stopImmediatePropagation();
+            }
+
+            const chevron = document.querySelector(
+              ".mobile-burger-menu__nav-chevron",
+            );
+            const childrenContainer = document.getElementById(
+              "mobile-nav-children-marketplace",
+            );
+
+            if (!chevron || !childrenContainer) {
+              return;
+            }
+
+            // Toggle expanded state
+            const isExpanded = chevron.classList.contains(
+              "mobile-burger-menu__nav-chevron--expanded",
+            );
+
+            if (isExpanded) {
+              // Collapse
+              chevron.classList.remove(
+                "mobile-burger-menu__nav-chevron--expanded",
+              );
+              childrenContainer.classList.add(
+                "mobile-burger-menu__nav-children--collapsed",
+              );
+            } else {
+              // Expand
+              chevron.classList.add(
+                "mobile-burger-menu__nav-chevron--expanded",
+              );
+              childrenContainer.classList.remove(
+                "mobile-burger-menu__nav-children--collapsed",
+              );
+            }
+          };
+        </script>
+      </div>
+    </nav>
+  </template><!-- Hidden template for developer burger menu --><template
+    id="developer-mobile-menu-template"><!-- Mobile Burger Menu -->
+    <nav id="mobile-burger-menu" class="mobile-burger-menu">
+      <!-- Header -->
+      <div class="mobile-burger-menu__header">
+        <div class="mobile-burger-menu__header-container">
+          <!-- Logo -->
+          <div class="mobile-burger-menu__logo">
+            <img src="/images/Logo premium.svg" alt="POOOL" />
+          </div>
+          <!-- Close Button --><button class="mobile-burger-menu__close" onclick="closeMobileMenu()"
+            aria-label="Close menu">
+            <span class="mobile-burger-menu__close-icon"></span>
+          </button>
+        </div>
+      </div>
+      <!-- Navigation -->
+      <div class="mobile-burger-menu__nav">
+        <!-- Dynamic Navigation Items - Check if Developer Profile --><!-- DEVELOPER NAVIGATION -->
+        <!-- Dashboard -->
+        <a href="/developer/dashboard" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/static/images/Menu developer/Dashboard.svg" alt="Dashboard"
+              class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Dashboard</span>
+        </a><!-- Assets -->
+        <a href="/developer/assets" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/static/images/Menu developer/Assets.svg" alt="Assets"
+              class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Assets</span>
+        </a><!-- Notifications -->
+        <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/static/images/Menu developer/Notifications.svg" alt="Notifications"
+              class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Notifications</span>
+          <span class="mobile-burger-menu__nav-badge notifications-badge">10</span>
+        </div>
+        <!-- Ranking -->
+        <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/static/images/Menu developer/Ranking.svg" alt="Ranking"
+              class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Ranking</span>
+          <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
+        </div>
+        <!-- Settings -->
+        <a href="/developer/settings" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/static/images/Menu developer/Settings.svg" alt="Settings"
+              class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Settings</span>
+        </a><!-- Support -->
+        <a href="/support" class="mobile-burger-menu__nav-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper">
+            <img loading="lazy" src="/static/images/Menu developer/Support.svg" alt="Support"
+              class="mobile-burger-menu__nav-icon" />
+          </div>
+          <span class="mobile-burger-menu__nav-text">Support</span>
+          <div class="mobile-burger-menu__support-badge">
+            <span class="mobile-burger-menu__support-dot"></span>
+            <span class="mobile-burger-menu__support-text">Online</span>
+          </div>
+        </a><!-- Add Asset Button (Developer Special Feature) - Positioned at bottom -->
+        <a href="/developer/add-asset" class="mobile-burger-menu__nav-item mobile-burger-menu__add-asset-item">
+          <div class="mobile-burger-menu__nav-icon-wrapper mobile-burger-menu__add-asset-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 4.16667V15.8333M4.16667 10H15.8333" stroke="#FFFFFF" stroke-width="1.66667"
+                stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+          <span class="mobile-burger-menu__nav-text mobile-burger-menu__add-asset-text">Add Asset</span>
+        </a>
+      </div>
+      <!-- Footer -->
+      <div class="mobile-burger-menu__footer">
+        <!-- Featured Card - Only show for investor profile --><!-- Support Chat Card - Only show for developer profile -->
+        <div class="mobile-burger-menu__featured-card mobile-burger-menu__featured-card--support">
+          <!-- Close Button --><button class="mobile-burger-menu__featured-close" aria-label="Close">
+            <span class="mobile-burger-menu__featured-close-icon"></span></button><!-- Badge and text -->
+          <div class="mobile-burger-menu__featured-content">
+            <div class="mobile-burger-menu__featured-badge mobile-burger-menu__featured-badge--online">
+              <div class="mobile-burger-menu__support-dot"></div>
+              <span class="mobile-burger-menu__support-text">Online</span>
+            </div>
+            <div class="mobile-burger-menu__featured-text">
+              <h4 class="mobile-burger-menu__featured-title">
+                Have questions?
+              </h4>
+              <p class="mobile-burger-menu__featured-description">
+                Our support team is here to help.
+              </p>
+            </div>
+            <button class="mobile-burger-menu__featured-button mobile-burger-menu__featured-button--chat">
+              <img loading="lazy" src="/static/images/Menu developer/Support.svg" alt="Support" width="20"
+                height="20" />
+              <span>Chat to support</span>
+            </button>
+          </div>
+        </div>
+        <!-- Account Card -->
+        <div id="mobile-account-card" class="mobile-burger-menu__account-card"
+          onclick="toggleMobileProfileDropdown(event)" style="cursor: pointer" role="button" aria-label="Account menu"
+          tabindex="0">
+          <div class="mobile-burger-menu__avatar-group">
+            <div class="mobile-burger-menu__avatar">
+              <img loading="lazy" src="/images/Image.webp" alt="" />
+              <div class="mobile-burger-menu__avatar-online"></div>
+            </div>
+            <div class="mobile-burger-menu__account-text">
+              <span class="mobile-burger-menu__account-name"></span>
+              <span class="mobile-burger-menu__account-email">olivia@poool.dev</span>
+            </div>
+          </div>
+          <div id="mobile-account-menu-button" class="mobile-burger-menu__account-menu" style="pointer-events: none">
+            <div id="mobile-account-menu-button-inner" class="mobile-burger-menu__account-menu-button">
+              <svg class="mobile-burger-menu__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+                <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <!-- Mobile Profile Dropdown -->
+        <div id="mobile-profile-dropdown-menu" class="mobile-profile-dropdown-menu">
+          <!-- Menu items wrapper -->
+          <div id="mobile-profile-menu-wrapper" class="mobile-profile-menu-wrapper">
+            <!-- Top menu items -->
+            <div id="mobile-profile-menu-items-top" class="mobile-profile-menu-items">
+              <!-- Documentation -->
+              <div id="mobile-menu-item-documentation" class="mobile-profile-menu-item">
+                <div class="mobile-profile-menu-content">
+                  <div class="mobile-profile-icon-text">
+                    <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                      <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                    </svg>
+                    <span class="mobile-profile-menu-text">Documentation</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Switch account section -->
+            <div id="mobile-profile-switch-section" class="mobile-profile-switch-section">
+              <div class="mobile-profile-switch-header">
+                <span class="mobile-profile-switch-title">Switch account</span>
+              </div>
+              <!-- Current account (selected) -->
+              <div id="mobile-menu-item-current-account"
+                class="mobile-profile-menu-item account-item selected mobile-profile-switcher"
+                data-profile-id="olivia-investor" data-account-type="Investor Profile" style="cursor: pointer">
+                <div class="mobile-profile-account-content">
+                  <div class="mobile-profile-avatar-group">
+                    <div class="mobile-profile-avatar">
+                      <img loading="lazy" src="/images/Image.webp" alt="" />
+                      <div class="mobile-profile-avatar-border"></div>
+                      <div class="mobile-profile-online-indicator"></div>
+                    </div>
+                    <div class="mobile-profile-text-wrapper">
+                      <span class="mobile-profile-account-name"></span>
+                      <span class="mobile-profile-account-type">Investor Profile</span>
+                    </div>
+                  </div>
+                  <div class="mobile-profile-checkbox selected">
+                    <div class="mobile-profile-checkbox-check"></div>
+                  </div>
+                </div>
+              </div>
+              <!-- Other accounts -->
+              <div id="mobile-menu-item-account-olivia-developer"
+                class="mobile-profile-menu-item account-item mobile-profile-switcher" data-profile-id="olivia-developer"
+                data-account-type="Developer profile" style="cursor: pointer">
+                <div class="mobile-profile-account-content">
+                  <div class="mobile-profile-avatar-group">
+                    <div class="mobile-profile-avatar">
+                      <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                      <div class="mobile-profile-avatar-border"></div>
+                      <div class="mobile-profile-online-indicator"></div>
+                    </div>
+                    <div class="mobile-profile-text-wrapper">
+                      <span class="mobile-profile-account-name"></span>
+                      <span class="mobile-profile-account-type">Developer profile</span>
+                    </div>
+                  </div>
+                  <div class="mobile-profile-checkbox">
+                    <div class="mobile-profile-checkbox-check"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Footer items -->
+          <div id="mobile-profile-footer-items" class="mobile-profile-footer-items">
+            <!-- Sign out -->
+            <div id="mobile-menu-item-sign-out" class="mobile-profile-menu-item">
+              <div class="mobile-profile-menu-content">
+                <div class="mobile-profile-icon-text">
+                  <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                      stroke-linejoin="round"></path>
+                    <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
+                      stroke-width="1.67" stroke-linecap="round"></path>
+                  </svg>
+                  <span class="mobile-profile-menu-text">Sign out</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Mobile Profile Switching JavaScript -->
+        <script>
+          // Profile switching functionality - consistent with desktop
+          window.switchToProfile = function (profileId, accountType) {
+            // Close the mobile dropdown first
+            if (window.closeMobileProfileDropdown) {
+              window.closeMobileProfileDropdown();
+            }
+
+            // Close the burger menu
+            if (window.closeMobileMenu) {
+              window.closeMobileMenu();
+            }
+
+            // Determine profile type and save to localStorage (consistent with desktop)
+            let profileType = "investor"; // default
+            if (accountType === "Developer profile") {
+              profileType = "developer";
+            } else if (accountType === "Investor Profile") {
+              profileType = "investor";
+            }
+
+            localStorage.setItem("selectedProfile", profileType);
+            localStorage.setItem("selectedAccountId", profileId);
+
+            // Switch to appropriate dashboard
+            if (profileType === "developer") {
+              window.location.href = "/developer/dashboard";
+            } else {
+              window.location.href = "/marketplace";
+            }
+          };
+
+          // Load saved profile from localStorage - mirrors desktop behavior
+          window.loadSavedMobileProfile = function () {
+            const savedProfile = localStorage.getItem("selectedProfile");
+            const savedAccountId = localStorage.getItem("selectedAccountId");
+
+            if (savedProfile && savedAccountId) {
+              // Update dropdown selection state
+              const allAccountItems = document.querySelectorAll(
+                ".mobile-profile-menu-item.account-item",
+              );
+              allAccountItems.forEach(function (item) {
+                const checkbox = item.querySelector(
+                  ".mobile-profile-checkbox",
+                );
+                if (
+                  item.id.includes(savedAccountId) ||
+                  (savedAccountId === "olivia-investor" &&
+                    item.id === "mobile-menu-item-current-account")
+                ) {
+                  // This is the selected account
+                  item.classList.add("selected");
+                  if (checkbox) checkbox.classList.add("selected");
+                } else {
+                  // This is not the selected account
+                  item.classList.remove("selected");
+                  if (checkbox) checkbox.classList.remove("selected");
+                }
+              });
+
+              // Update mobile burger menu account display based on saved selection
+              const selectedItem = document.querySelector(
+                savedAccountId === "olivia-investor"
+                  ? "#mobile-menu-item-current-account"
+                  : "#mobile-menu-item-account-" + savedAccountId,
+              );
+
+              if (selectedItem) {
+                const avatar = selectedItem.querySelector(
+                  ".mobile-profile-avatar img",
+                );
+                const name = selectedItem.querySelector(
+                  ".mobile-profile-account-name",
+                );
+                const type = selectedItem.querySelector(
+                  ".mobile-profile-account-type",
+                );
+
+                const mobileAvatar = document.querySelector(
+                  ".mobile-burger-menu__avatar img",
+                );
+                const mobileName = document.querySelector(
+                  ".mobile-burger-menu__account-name",
+                );
+                const mobileEmail = document.querySelector(
+                  ".mobile-burger-menu__account-email",
+                );
+
+                if (avatar && mobileAvatar) {
+                  mobileAvatar.src = avatar.src;
+                  mobileAvatar.alt = avatar.alt;
+                }
+
+                if (name && mobileName) {
+                  mobileName.textContent = name.textContent;
+                }
+
+                if (type && mobileEmail) {
+                  mobileEmail.textContent = type.textContent;
+                }
+              }
+            }
+          };
+
+          // Initialize profile switchers - bypasses global event capture
+          window.initializeProfileSwitchers = function () {
+            const profileSwitchers = document.querySelectorAll(
+              ".mobile-profile-switcher",
+            );
+
+            profileSwitchers.forEach(function (switcher, index) {
+              const profileId = switcher.getAttribute("data-profile-id");
+              const accountType = switcher.getAttribute("data-account-type");
+
+              // Remove any existing listeners
+              switcher.removeEventListener(
+                "click",
+                switcher._profileSwitchHandler,
+              );
+
+              // Create and store the handler
+              switcher._profileSwitchHandler = function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                window.switchToProfile(profileId, accountType);
+              };
+
+              // Add the event listener
+              switcher.addEventListener(
+                "click",
+                switcher._profileSwitchHandler,
+                true,
+              );
+            });
+          };
+
+          // Initialize when DOM is ready and also when mobile menu is opened
+          function initializeAll() {
+            window.loadSavedMobileProfile();
+            window.initializeProfileSwitchers();
+          }
+
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initializeAll);
+          } else {
+            initializeAll();
+          }
+
+          // Mobile profile dropdown toggle functionality
+          window.toggleMobileProfileDropdown = function (event) {
+            if (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              event.stopImmediatePropagation();
+            }
+
+            const dropdown = document.getElementById(
+              "mobile-profile-dropdown-menu",
+            );
+            const button = document.getElementById(
+              "mobile-account-menu-button-inner",
+            );
+
+            if (!dropdown) {
+              // Try to find it with different selectors
+              const allDropdowns = document.querySelectorAll(
+                '[id*="profile-dropdown"], [class*="profile-dropdown"]',
+              );
+              allDropdowns.forEach((el, i) =>
+                console.log(`  ${i}:`, el.id, el.className),
+              );
+              return;
+            }
+
+            // Toggle dropdown visibility using active class
+            const isCurrentlyActive = dropdown.classList.contains("active");
+
+            if (!isCurrentlyActive) {
+              dropdown.classList.add("active");
+              if (button) button.classList.add("active");
+
+              // Re-initialize profile switchers for the newly visible dropdown
+              setTimeout(() => {
+                window.initializeProfileSwitchers();
+              }, 50);
+
+              // Add click outside listener
+              setTimeout(() => {
+                document.addEventListener(
+                  "click",
+                  window.closeMobileDropdownOnClickOutside,
+                );
+              }, 100);
+            } else {
+              dropdown.classList.remove("active");
+              if (button) button.classList.remove("active");
+
+              // Remove click outside listener
+              document.removeEventListener(
+                "click",
+                window.closeMobileDropdownOnClickOutside,
+              );
+            }
+          };
+
+          window.closeMobileProfileDropdown = function () {
+            const dropdown = document.getElementById(
+              "mobile-profile-dropdown-menu",
+            );
+            const button = document.getElementById(
+              "mobile-account-menu-button-inner",
+            );
+
+            if (dropdown) dropdown.classList.remove("active");
+            if (button) button.classList.remove("active");
+
+            // Remove click outside listener
+            document.removeEventListener(
+              "click",
+              window.closeMobileDropdownOnClickOutside,
+            );
+          };
+
+          window.closeMobileDropdownOnClickOutside = function (event) {
+            const dropdown = document.getElementById(
+              "mobile-profile-dropdown-menu",
+            );
+            const accountCard = document.getElementById(
+              "mobile-account-card",
+            );
+
+            if (
+              accountCard &&
+              !accountCard.contains(event.target) &&
+              dropdown &&
+              !dropdown.contains(event.target)
+            ) {
+              window.closeMobileProfileDropdown();
+            }
+          };
+
+          // Mobile Marketplace Dropdown Toggle
+          window.toggleMobileMarketplaceDropdown = function (event) {
+            // Prevent default behavior and event propagation
+            if (event) {
+              event.preventDefault();
+              event.stopPropagation();
+              event.stopImmediatePropagation();
+            }
+
+            const chevron = document.querySelector(
+              ".mobile-burger-menu__nav-chevron",
+            );
+            const childrenContainer = document.getElementById(
+              "mobile-nav-children-marketplace",
+            );
+
+            if (!chevron || !childrenContainer) {
+              return;
+            }
+
+            // Toggle expanded state
+            const isExpanded = chevron.classList.contains(
+              "mobile-burger-menu__nav-chevron--expanded",
+            );
+
+            if (isExpanded) {
+              // Collapse
+              chevron.classList.remove(
+                "mobile-burger-menu__nav-chevron--expanded",
+              );
+              childrenContainer.classList.add(
+                "mobile-burger-menu__nav-children--collapsed",
+              );
+            } else {
+              // Expand
+              chevron.classList.add(
+                "mobile-burger-menu__nav-chevron--expanded",
+              );
+              childrenContainer.classList.remove(
+                "mobile-burger-menu__nav-children--collapsed",
+              );
+            }
+          };
+        </script>
+      </div>
+    </nav>
+  </template><!-- Script to switch mobile burger menu based on saved profile -->
+  <script>
+    (function () {
+      // Function to replace mobile burger menu content
+      function replaceMobileBurgerMenu(profileType) {
+        const container = document.getElementById(
+          "mobile-burger-menu-container",
+        );
+        const templateId =
+          profileType === "developer"
+            ? "developer-mobile-menu-template"
+            : "investor-mobile-menu-template";
+        const template = document.getElementById(templateId);
+
+        if (container && template) {
+          // Clear current content
+          container.innerHTML = "";
+          // Clone and append new content
+          const newContent = template.content.cloneNode(true);
+          container.appendChild(newContent);
+
+          // Re-initialize mobile profile display after replacement
+          // Use setTimeout to ensure appended scripts have executed
+          setTimeout(function () {
+            if (typeof window.loadSavedMobileProfile === "function") {
+              window.loadSavedMobileProfile();
+            } else {
+            }
+          }, 0);
+
+          // Re-initialize mobile navigation functionality if needed
+        }
+      }
+
+      // Check current page to determine profile
+      const currentPath = window.location.pathname;
+
+      // If we're on a developer page, show developer menu
+      if (currentPath.startsWith("/developer/")) {
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", function () {
+            replaceMobileBurgerMenu("developer");
+          });
+        } else {
+          replaceMobileBurgerMenu("developer");
+        }
+      }
+      // Otherwise use investor menu (default)
+
+      // Listen for profile changes
+      window.addEventListener("storage", function (e) {
+        if (e.key === "selectedProfile") {
+          replaceMobileBurgerMenu(e.newValue || "investor");
+        }
+      });
+    })();
+  </script>
+  <div id="developer-document-upload-step3-page" class="document-upload-step3-page">
+    <!-- Developer Sidebar Navigation -->
+    <div id="developer-document-upload-step3-sidebar" class="document-upload-step3-sidebar">
+      <!-- Container that will show only one sidebar at a time -->
+      <div id="dynamic-sidebar-container">
+        <!-- Initial sidebar will be replaced by JavaScript -->
+        <aside id="sidebar-navigation" class="sidebar" data-profile="investor">
+          <div id="sidebar-content" class="sidebar__content">
+            <!-- Navigation Section -->
+            <div id="sidebar-navigation-section" class="sidebar__nav-section">
+              <!-- Header Section -->
+              <div id="sidebar-header" class="sidebar__header">
+                <!-- Logo --><a id="sidebar-logo" href="/" class="sidebar__logo"><img src="/images/Logo Pool.svg"
+                    alt="POOOL" width="139" height="37" /></a><!-- Search Input -->
+                <div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
+                  <div id="sidebar-search" class="sidebar__search">
+                    <div id="sidebar-search-content" class="sidebar__search-content">
+                      <svg id="sidebar-search-icon" class="sidebar__search-icon" width="20" height="20"
+                        viewBox="0 0 20 20" fill="none">
+                        <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.66667"></circle>
+                        <path d="M13 13L17 17" stroke="#717680" stroke-width="1.66667" stroke-linecap="round"></path>
+                      </svg>
+                      <input id="sidebar-search-input" type="search" placeholder="Search"
+                        class="sidebar__search-input" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Navigation Menu -->
+              <nav id="sidebar-nav" class="sidebar__nav">
+                <div id="nav-item-marketplace-parent" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Parent Item (expandable) -->
+                  <div id="nav-item-marketplace-parent-content"
+                    class="sidebar__nav-item-content sidebar__nav-item--parent" data-item-id="marketplace-parent"
+                    style="cursor: pointer">
+                    <div id="nav-text-icon-marketplace-parent" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-marketplace-parent" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/home-05.svg" alt="Marketplace" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-marketplace-parent" class="sidebar__nav-text">Marketplace</span>
+                    </div>
+                    <!-- Chevron Icon --><svg id="nav-chevron-marketplace-parent" class="sidebar__nav-chevron"
+                      width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                    </svg>
+                  </div>
+                  <!-- Children Container -->
+                  <div id="nav-children-marketplace-parent"
+                    class="sidebar__nav-children sidebar__nav-children--collapsed">
+                    <a id="nav-child-marketplace" href="/marketplace" class="sidebar__nav-child"><span
+                        class="sidebar__nav-child-text">Properties</span></a><a id="nav-child-commodities-marketplace"
+                      href="/commodities-marketplace" class="sidebar__nav-child"><span
+                        class="sidebar__nav-child-text">Commodities</span></a>
+                  </div>
+                </div>
+                <div id="nav-item-wallet" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+                  <a id="nav-item-wallet-content" href="/wallet" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-wallet" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-wallet" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/wallet-02.svg" alt="Wallet" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-wallet" class="sidebar__nav-text">Wallet</span>
+                    </div>
+                    <!-- Soon Badge for Rewards and Leaderboard tabs -->
+                  </a>
+                </div>
+                <div id="nav-item-portfolio" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+                  <a id="nav-item-portfolio-content" href="/portfolio" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-portfolio" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-portfolio" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/line-chart-up-02.svg" alt="Portfolio" class="nav-icon"
+                          width="20" height="20" />
+                      </div>
+                      <span id="nav-text-portfolio" class="sidebar__nav-text">Portfolio</span>
+                    </div>
+                    <!-- Soon Badge for Rewards and Leaderboard tabs -->
+                  </a>
+                </div>
+                <div id="nav-item-rewards" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Disabled Item -->
+                  <a id="nav-item-rewards-content" href="/rewards" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-rewards" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-rewards" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/star-01.svg" alt="Rewards" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-rewards" class="sidebar__nav-text">Rewards</span>
+                    </div>
+                  </a>
+                </div>
+                <div id="nav-item-cart" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+                  <a id="nav-item-cart-content" href="/cart" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-cart" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-cart" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/shopping-cart-01.svg" alt="Cart" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-cart" class="sidebar__nav-text">Cart</span>
+                    </div>
+                    <!-- Soon Badge for Rewards and Leaderboard tabs -->
+                  </a>
+                </div>
+                <div id="nav-item-leaderboard" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Disabled Item -->
+                  <div id="nav-item-leaderboard-content"
+                    class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+                    <div id="nav-text-icon-leaderboard" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-leaderboard" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/award-05.svg" alt="Leaderboard" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-leaderboard" class="sidebar__nav-text">Leaderboard</span>
+                    </div>
+                    <!-- Soon Badge for Rewards and Leaderboard tabs -->
+                    <div class="soon-badge"><span>Soon</span></div>
+                  </div>
+                </div>
+              </nav>
+            </div>
+            <!-- Footer Section -->
+            <div id="sidebar-footer" class="sidebar__footer">
+              <!-- Footer Navigation -->
+              <nav id="footer-nav" class="sidebar__footer-nav">
+                <div id="nav-item-settings" class="sidebar__nav-item">
+                  <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/settings-01.svg" alt="Settings" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-settings" class="sidebar__nav-text">Settings</span>
+                    </div>
+                  </a>
+                </div>
+                <div id="nav-item-support" class="sidebar__nav-item">
+                  <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-support" class="sidebar__nav-text">Support</span>
+                    </div>
+                    <div id="support-badge" class="support-badge">
+                      <div id="support-status-dot" class="support-status-dot"></div>
+                      <span id="support-badge-text" class="support-badge-text">Online</span>
+                    </div>
+                  </a>
+                </div>
+              </nav>
+              <!-- Community Card -->
+              <div id="nav-featured-card" class="nav-featured-card sidebar__featured-card">
+                <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close"
+                  aria-label="Close">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M14 14L6 6M6 14L14 6" stroke="#2E2EF9" stroke-width="1.66667" stroke-linecap="round">
+                    </path>
+                  </svg></button><!-- Text and supporting text -->
+                <div id="featured-card-text" class="sidebar__featured-text">
+                  <div class="featured-card-title-wrap">
+                    <h4 id="featured-card-title" class="sidebar__featured-title">
+                      Community soon
+                    </h4>
+                  </div>
+                  <p id="featured-card-description" class="sidebar__featured-description">
+                    Check out the new community feature. Connect with other
+                    investors soon.
+                  </p>
+                </div>
+                <!-- Image wrap --><!-- Actions -->
+                <div id="featured-card-actions" class="sidebar__featured-actions">
+                  <button id="featured-card-dismiss" class="sidebar__featured-button sidebar__featured-button--dismiss">
+                    Dismiss
+                  </button>
+                  <button id="featured-card-action" class="sidebar__featured-button sidebar__featured-button--action">
+                    What&#39;s new?
+                  </button>
+                </div>
+              </div>
+              <!-- Account Card - Now fully clickable -->
+              <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
+                style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
+                <!-- Avatar Group -->
+                <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
+                  <div id="account-avatar" class="sidebar__account-avatar">
+                    <img loading="lazy" src="/images/Image.webp" alt="" />
+                    <div id="account-online-indicator" class="sidebar__account-online"></div>
+                  </div>
+                  <div id="account-text-wrapper" class="sidebar__account-text">
+                    <span id="account-name" class="sidebar__account-name"></span>
+                    <span id="account-email" class="sidebar__account-email"></span>
+                  </div>
+                </div>
+                <!-- Menu Button Icon (no longer a button) -->
+                <div id="account-menu-button" class="sidebar__account-menu" style="pointer-events: none">
+                  <div id="account-menu-button-inner" class="sidebar__account-menu-button" aria-hidden="true">
+                    <svg class="sidebar__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                      <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                    </svg>
+                  </div>
+                </div>
+                <!-- Profile Dropdown Menu -->
+                <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
+                  <!-- Menu items wrapper -->
+                  <div id="profile-menu-wrapper" class="profile-menu-wrapper">
+                    <!-- Top menu items -->
+                    <div id="profile-menu-items-top" class="profile-menu-items">
+                      <!-- Documentation -->
+                      <div id="menu-item-documentation" class="profile-menu-item">
+                        <div class="profile-menu-content">
+                          <div class="profile-icon-text">
+                            <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                              <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                              <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
+                              </path>
+                            </svg>
+                            <span class="profile-menu-text">Documentation</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Switch account section -->
+                    <div id="profile-switch-section" class="profile-switch-section">
+                      <div class="profile-switch-header">
+                        <span class="profile-switch-title">Switch account</span>
+                      </div>
+                      <!-- Current account (selected) -->
+                      <div id="menu-item-current-account" class="profile-menu-item account-item selected">
+                        <div class="profile-account-content">
+                          <div class="profile-avatar-group">
+                            <div class="profile-avatar">
+                              <img loading="lazy" src="/images/Image.webp" alt="" />
+                              <div class="profile-avatar-border"></div>
+                              <div class="profile-online-indicator"></div>
+                            </div>
+                            <div class="profile-text-wrapper">
+                              <span class="profile-account-name"></span>
+                              <span class="profile-account-type">Investor Profile</span>
+                            </div>
+                          </div>
+                          <div class="profile-checkbox selected">
+                            <div class="profile-checkbox-check"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Other accounts -->
+                      <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
+                        <div class="profile-account-content">
+                          <div class="profile-avatar-group">
+                            <div class="profile-avatar">
+                              <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                              <div class="profile-avatar-border"></div>
+                              <div class="profile-online-indicator"></div>
+                            </div>
+                            <div class="profile-text-wrapper">
+                              <span class="profile-account-name"></span>
+                              <span class="profile-account-type">Developer profile</span>
+                            </div>
+                          </div>
+                          <div class="profile-checkbox">
+                            <div class="profile-checkbox-check"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Footer items -->
+                  <div id="profile-footer-items" class="profile-footer-items">
+                    <!-- Sign out -->
+                    <div id="menu-item-sign-out" class="profile-menu-item">
+                      <div class="profile-menu-content">
+                        <div class="profile-icon-text">
+                          <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                              stroke-linejoin="round"></path>
+                            <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7"
+                              stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                          </svg>
+                          <span class="profile-menu-text">Sign out</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Profile Dropdown JavaScript -->
+          <script>
+            // Profile Dropdown Functions - Global scope
+            window.toggleProfileDropdown = function () {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const button = document.getElementById(
+                "account-menu-button-inner",
+              );
+
+              if (!dropdown) {
+                return;
+              }
+
+              // SAFARI FIX: Move to body and restore proper styling
+
+              // Move to body to escape stacking context
+              if (dropdown.parentNode !== document.body) {
+                document.body.appendChild(dropdown);
+              }
+
+              // Apply proper dropdown styles (restore original design)
+              dropdown.style.display = "flex";
+              dropdown.style.position = "fixed";
+              dropdown.style.left = "248px"; // Original position
+              dropdown.style.bottom = "20px"; // Original position
+              dropdown.style.width = "264px"; // Original width
+              dropdown.style.height = "auto"; // Original height
+              dropdown.style.background = ""; // Clear test background
+              dropdown.style.border = ""; // Clear test border
+              dropdown.style.zIndex = "99999"; // High z-index for Safari
+
+              // Restore original CSS classes
+              dropdown.className = "profile-dropdown-menu";
+
+              if (button) button.classList.add("active");
+
+              // Add click outside listener
+              setTimeout(() => {
+                document.addEventListener(
+                  "click",
+                  window.closeDropdownOnClickOutside,
+                );
+              }, 100);
+            };
+
+            window.closeProfileDropdown = function () {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const button = document.getElementById(
+                "account-menu-button-inner",
+              );
+
+              if (dropdown) dropdown.style.display = "none";
+              if (button) button.classList.remove("active");
+
+              // Remove click outside listener
+              document.removeEventListener(
+                "click",
+                window.closeDropdownOnClickOutside,
+              );
+            };
+
+            window.closeDropdownOnClickOutside = function (event) {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const accountCard = document.getElementById("nav-account-card");
+
+              if (
+                accountCard &&
+                !accountCard.contains(event.target) &&
+                dropdown &&
+                !dropdown.contains(event.target)
+              ) {
+                window.closeProfileDropdown();
+              }
+            };
+
+            // Profile dropdown functionality is handled by profile-dropdown.js
+          </script>
+        </aside>
+      </div>
+      <!-- Template for investor sidebar (hidden, for cloning) --><template id="investor-sidebar-template">
+        <aside id="sidebar-navigation" class="sidebar" data-profile="investor">
+          <div id="sidebar-content" class="sidebar__content">
+            <!-- Navigation Section -->
+            <div id="sidebar-navigation-section" class="sidebar__nav-section">
+              <!-- Header Section -->
+              <div id="sidebar-header" class="sidebar__header">
+                <!-- Logo --><a id="sidebar-logo" href="/" class="sidebar__logo"><img src="/images/Logo Pool.svg"
+                    alt="POOOL" width="139" height="37" /></a><!-- Search Input -->
+                <div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
+                  <div id="sidebar-search" class="sidebar__search">
+                    <div id="sidebar-search-content" class="sidebar__search-content">
+                      <svg id="sidebar-search-icon" class="sidebar__search-icon" width="20" height="20"
+                        viewBox="0 0 20 20" fill="none">
+                        <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.66667"></circle>
+                        <path d="M13 13L17 17" stroke="#717680" stroke-width="1.66667" stroke-linecap="round"></path>
+                      </svg>
+                      <input id="sidebar-search-input" type="search" placeholder="Search"
+                        class="sidebar__search-input" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Navigation Menu -->
+              <nav id="sidebar-nav" class="sidebar__nav">
+                <div id="nav-item-marketplace-parent" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Parent Item (expandable) -->
+                  <div id="nav-item-marketplace-parent-content"
+                    class="sidebar__nav-item-content sidebar__nav-item--parent" data-item-id="marketplace-parent"
+                    style="cursor: pointer">
+                    <div id="nav-text-icon-marketplace-parent" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-marketplace-parent" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/home-05.svg" alt="Marketplace" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-marketplace-parent" class="sidebar__nav-text">Marketplace</span>
+                    </div>
+                    <!-- Chevron Icon --><svg id="nav-chevron-marketplace-parent" class="sidebar__nav-chevron"
+                      width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                    </svg>
+                  </div>
+                  <!-- Children Container -->
+                  <div id="nav-children-marketplace-parent"
+                    class="sidebar__nav-children sidebar__nav-children--collapsed">
+                    <a id="nav-child-marketplace" href="/marketplace" class="sidebar__nav-child"><span
+                        class="sidebar__nav-child-text">Properties</span></a><a id="nav-child-commodities-marketplace"
+                      href="/commodities-marketplace" class="sidebar__nav-child"><span
+                        class="sidebar__nav-child-text">Commodities</span></a>
+                  </div>
+                </div>
+                <div id="nav-item-wallet" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+                  <a id="nav-item-wallet-content" href="/wallet" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-wallet" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-wallet" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/wallet-02.svg" alt="Wallet" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-wallet" class="sidebar__nav-text">Wallet</span>
+                    </div>
+                    <!-- Soon Badge for Rewards and Leaderboard tabs -->
+                  </a>
+                </div>
+                <div id="nav-item-portfolio" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+                  <a id="nav-item-portfolio-content" href="/portfolio" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-portfolio" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-portfolio" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/line-chart-up-02.svg" alt="Portfolio" class="nav-icon"
+                          width="20" height="20" />
+                      </div>
+                      <span id="nav-text-portfolio" class="sidebar__nav-text">Portfolio</span>
+                    </div>
+                    <!-- Soon Badge for Rewards and Leaderboard tabs -->
+                  </a>
+                </div>
+                <div id="nav-item-rewards" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Disabled Item -->
+                  <a id="nav-item-rewards-content" href="/rewards" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-rewards" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-rewards" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/star-01.svg" alt="Rewards" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-rewards" class="sidebar__nav-text">Rewards</span>
+                    </div>
+                  </a>
+                </div>
+                <div id="nav-item-cart" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+                  <a id="nav-item-cart-content" href="/cart" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-cart" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-cart" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/shopping-cart-01.svg" alt="Cart" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-cart" class="sidebar__nav-text">Cart</span>
+                    </div>
+                    <!-- Soon Badge for Rewards and Leaderboard tabs -->
+                  </a>
+                </div>
+                <div id="nav-item-leaderboard" class="sidebar__nav-item">
+                  <!-- Check if item is a parent (expandable) --><!-- Disabled Item -->
+                  <div id="nav-item-leaderboard-content"
+                    class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+                    <div id="nav-text-icon-leaderboard" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-leaderboard" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/award-05.svg" alt="Leaderboard" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-leaderboard" class="sidebar__nav-text">Leaderboard</span>
+                    </div>
+                    <!-- Soon Badge for Rewards and Leaderboard tabs -->
+                    <div class="soon-badge"><span>Soon</span></div>
+                  </div>
+                </div>
+              </nav>
+            </div>
+            <!-- Footer Section -->
+            <div id="sidebar-footer" class="sidebar__footer">
+              <!-- Footer Navigation -->
+              <nav id="footer-nav" class="sidebar__footer-nav">
+                <div id="nav-item-settings" class="sidebar__nav-item">
+                  <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/images/settings-01.svg" alt="Settings" class="nav-icon" width="20"
+                          height="20" />
+                      </div>
+                      <span id="nav-text-settings" class="sidebar__nav-text">Settings</span>
+                    </div>
+                  </a>
+                </div>
+                <div id="nav-item-support" class="sidebar__nav-item">
+                  <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-support" class="sidebar__nav-text">Support</span>
+                    </div>
+                    <div id="support-badge" class="support-badge">
+                      <div id="support-status-dot" class="support-status-dot"></div>
+                      <span id="support-badge-text" class="support-badge-text">Online</span>
+                    </div>
+                  </a>
+                </div>
+              </nav>
+              <!-- Community Card -->
+              <div id="nav-featured-card" class="nav-featured-card sidebar__featured-card">
+                <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close"
+                  aria-label="Close">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M14 14L6 6M6 14L14 6" stroke="#2E2EF9" stroke-width="1.66667" stroke-linecap="round">
+                    </path>
+                  </svg></button><!-- Text and supporting text -->
+                <div id="featured-card-text" class="sidebar__featured-text">
+                  <div class="featured-card-title-wrap">
+                    <h4 id="featured-card-title" class="sidebar__featured-title">
+                      Community soon
+                    </h4>
+                  </div>
+                  <p id="featured-card-description" class="sidebar__featured-description">
+                    Check out the new community feature. Connect with other
+                    investors soon.
+                  </p>
+                </div>
+                <!-- Image wrap --><!-- Actions -->
+                <div id="featured-card-actions" class="sidebar__featured-actions">
+                  <button id="featured-card-dismiss" class="sidebar__featured-button sidebar__featured-button--dismiss">
+                    Dismiss
+                  </button>
+                  <button id="featured-card-action" class="sidebar__featured-button sidebar__featured-button--action">
+                    What&#39;s new?
+                  </button>
+                </div>
+              </div>
+              <!-- Account Card - Now fully clickable -->
+              <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
+                style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
+                <!-- Avatar Group -->
+                <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
+                  <div id="account-avatar" class="sidebar__account-avatar">
+                    <img loading="lazy" src="/images/Image.webp" alt="" />
+                    <div id="account-online-indicator" class="sidebar__account-online"></div>
+                  </div>
+                  <div id="account-text-wrapper" class="sidebar__account-text">
+                    <span id="account-name" class="sidebar__account-name"></span>
+                    <span id="account-email" class="sidebar__account-email"></span>
+                  </div>
+                </div>
+                <!-- Menu Button Icon (no longer a button) -->
+                <div id="account-menu-button" class="sidebar__account-menu" style="pointer-events: none">
+                  <div id="account-menu-button-inner" class="sidebar__account-menu-button" aria-hidden="true">
+                    <svg class="sidebar__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                      <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                    </svg>
+                  </div>
+                </div>
+                <!-- Profile Dropdown Menu -->
+                <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
+                  <!-- Menu items wrapper -->
+                  <div id="profile-menu-wrapper" class="profile-menu-wrapper">
+                    <!-- Top menu items -->
+                    <div id="profile-menu-items-top" class="profile-menu-items">
+                      <!-- Documentation -->
+                      <div id="menu-item-documentation" class="profile-menu-item">
+                        <div class="profile-menu-content">
+                          <div class="profile-icon-text">
+                            <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                              <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                              <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
+                              </path>
+                            </svg>
+                            <span class="profile-menu-text">Documentation</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Switch account section -->
+                    <div id="profile-switch-section" class="profile-switch-section">
+                      <div class="profile-switch-header">
+                        <span class="profile-switch-title">Switch account</span>
+                      </div>
+                      <!-- Current account (selected) -->
+                      <div id="menu-item-current-account" class="profile-menu-item account-item selected">
+                        <div class="profile-account-content">
+                          <div class="profile-avatar-group">
+                            <div class="profile-avatar">
+                              <img loading="lazy" src="/images/Image.webp" alt="" />
+                              <div class="profile-avatar-border"></div>
+                              <div class="profile-online-indicator"></div>
+                            </div>
+                            <div class="profile-text-wrapper">
+                              <span class="profile-account-name"></span>
+                              <span class="profile-account-type">Investor Profile</span>
+                            </div>
+                          </div>
+                          <div class="profile-checkbox selected">
+                            <div class="profile-checkbox-check"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Other accounts -->
+                      <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
+                        <div class="profile-account-content">
+                          <div class="profile-avatar-group">
+                            <div class="profile-avatar">
+                              <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                              <div class="profile-avatar-border"></div>
+                              <div class="profile-online-indicator"></div>
+                            </div>
+                            <div class="profile-text-wrapper">
+                              <span class="profile-account-name"></span>
+                              <span class="profile-account-type">Developer profile</span>
+                            </div>
+                          </div>
+                          <div class="profile-checkbox">
+                            <div class="profile-checkbox-check"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Footer items -->
+                  <div id="profile-footer-items" class="profile-footer-items">
+                    <!-- Sign out -->
+                    <div id="menu-item-sign-out" class="profile-menu-item">
+                      <div class="profile-menu-content">
+                        <div class="profile-icon-text">
+                          <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                              stroke-linejoin="round"></path>
+                            <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7"
+                              stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                          </svg>
+                          <span class="profile-menu-text">Sign out</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Profile Dropdown JavaScript -->
+          <script>
+            // Profile Dropdown Functions - Global scope
+            window.toggleProfileDropdown = function () {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const button = document.getElementById(
+                "account-menu-button-inner",
+              );
+
+              if (!dropdown) {
+                return;
+              }
+
+              // SAFARI FIX: Move to body and restore proper styling
+
+              // Move to body to escape stacking context
+              if (dropdown.parentNode !== document.body) {
+                document.body.appendChild(dropdown);
+              }
+
+              // Apply proper dropdown styles (restore original design)
+              dropdown.style.display = "flex";
+              dropdown.style.position = "fixed";
+              dropdown.style.left = "248px"; // Original position
+              dropdown.style.bottom = "20px"; // Original position
+              dropdown.style.width = "264px"; // Original width
+              dropdown.style.height = "auto"; // Original height
+              dropdown.style.background = ""; // Clear test background
+              dropdown.style.border = ""; // Clear test border
+              dropdown.style.zIndex = "99999"; // High z-index for Safari
+
+              // Restore original CSS classes
+              dropdown.className = "profile-dropdown-menu";
+
+              if (button) button.classList.add("active");
+
+              // Add click outside listener
+              setTimeout(() => {
+                document.addEventListener(
+                  "click",
+                  window.closeDropdownOnClickOutside,
+                );
+              }, 100);
+            };
+
+            window.closeProfileDropdown = function () {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const button = document.getElementById(
+                "account-menu-button-inner",
+              );
+
+              if (dropdown) dropdown.style.display = "none";
+              if (button) button.classList.remove("active");
+
+              // Remove click outside listener
+              document.removeEventListener(
+                "click",
+                window.closeDropdownOnClickOutside,
+              );
+            };
+
+            window.closeDropdownOnClickOutside = function (event) {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const accountCard = document.getElementById("nav-account-card");
+
+              if (
+                accountCard &&
+                !accountCard.contains(event.target) &&
+                dropdown &&
+                !dropdown.contains(event.target)
+              ) {
+                window.closeProfileDropdown();
+              }
+            };
+
+            // Profile dropdown functionality is handled by profile-dropdown.js
+          </script>
+        </aside>
+      </template><!-- Template for developer sidebar (hidden, for cloning) --><template id="developer-sidebar-template">
+        <aside id="sidebar-navigation" class="sidebar">
+          <div id="sidebar-content" class="sidebar__content">
+            <!-- Navigation Section -->
+            <div id="sidebar-navigation-section" class="sidebar__nav-section">
+              <!-- Header Section -->
+              <div id="sidebar-header" class="sidebar__header">
+                <!-- Logo --><a id="sidebar-logo" href="/" class="sidebar__logo"><img src="/images/Logo Pool.svg"
+                    alt="POOOL" width="139" height="37" /></a><!-- Search Input -->
+                <div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
+                  <div id="sidebar-search" class="sidebar__search">
+                    <div id="sidebar-search-content" class="sidebar__search-content">
+                      <svg id="sidebar-search-icon" class="sidebar__search-icon" width="20" height="20"
+                        viewBox="0 0 20 20" fill="none">
+                        <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.66667"></circle>
+                        <path d="M13 13L17 17" stroke="#717680" stroke-width="1.66667" stroke-linecap="round"></path>
+                      </svg>
+                      <input id="sidebar-search-input" type="search" placeholder="Search projects, assets..."
+                        class="sidebar__search-input" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Navigation Menu -->
+              <nav id="sidebar-nav" class="sidebar__nav">
+                <!-- Dashboard -->
+                <div id="nav-item-dashboard" class="sidebar__nav-item">
+                  <a id="nav-item-dashboard-content" href="/developer/dashboard" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-dashboard" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-dashboard" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Dashboard.svg" alt="Dashboard"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-dashboard" class="sidebar__nav-text">Dashboard</span>
+                    </div>
+                  </a>
+                </div>
+                <!-- Assets -->
+                <div id="nav-item-assets" class="sidebar__nav-item sidebar__nav-item--active">
+                  <a id="nav-item-assets-content" href="/developer/assets" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-assets" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-assets" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Assets.svg" alt="Assets" class="nav-icon"
+                          width="20" height="20" />
+                      </div>
+                      <span id="nav-text-assets" class="sidebar__nav-text">Assets</span>
+                    </div>
+                  </a>
+                </div>
+                <!-- Notifications -->
+                <div id="nav-item-notifications" class="sidebar__nav-item">
+                  <div id="nav-item-notifications-content"
+                    class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+                    <div id="nav-text-icon-notifications" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-notifications" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Notifications.svg" alt="Notifications"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-notifications" class="sidebar__nav-text">Notifications</span>
+                    </div>
+                    <span id="nav-badge-notifications" class="nav-badge notifications-badge">10</span>
+                  </div>
+                </div>
+                <!-- Ranking (formerly Reports) -->
+                <div id="nav-item-ranking" class="sidebar__nav-item">
+                  <div id="nav-item-ranking-content"
+                    class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+                    <div id="nav-text-icon-ranking" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-ranking" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Ranking.svg" alt="Ranking"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-ranking" class="sidebar__nav-text">Ranking</span>
+                    </div>
+                    <!-- Soon Badge -->
+                    <div class="soon-badge"><span>Soon</span></div>
+                  </div>
+                </div>
+                <!-- Settings -->
+                <div id="nav-item-settings" class="sidebar__nav-item">
+                  <a id="nav-item-settings-content" href="/developer/settings" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Settings.svg" alt="Settings"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-settings" class="sidebar__nav-text">Settings</span>
+                    </div>
+                  </a>
+                </div>
+                <!-- Support -->
+                <div id="nav-item-support" class="sidebar__nav-item">
+                  <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
+                    <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
+                      <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
+                        <img loading="lazy" src="/static/images/Menu developer/Support.svg" alt="Support"
+                          class="nav-icon" width="20" height="20" />
+                      </div>
+                      <span id="nav-text-support" class="sidebar__nav-text">Support</span>
+                    </div>
+                    <div id="support-badge" class="support-badge">
+                      <div id="support-status-dot" class="support-status-dot"></div>
+                      <span id="support-badge-text" class="support-badge-text">Online</span>
+                    </div>
+                  </a>
+                </div>
+                <!-- Add Asset Button -->
+                <div id="add-asset-section" class="add-asset-section">
+                  <button id="add-asset-btn" class="add-asset-btn" type="button"
+                    onclick="window.location.href = '/developer/add-asset'">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M10 4.16667V15.8333M4.16667 10H15.8333" stroke="#FFFFFF" stroke-width="1.66667"
+                        stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span class="add-asset-text">Add Asset</span>
+                  </button>
+                </div>
+              </nav>
+            </div>
+            <!-- Footer Section -->
+            <div id="sidebar-footer" class="sidebar__footer">
+              <!-- Support Chat Card -->
+              <div id="nav-featured-card" class="sidebar__featured-card sidebar__featured-card--support">
+                <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close"
+                  aria-label="Close">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M14 14L6 6M6 14L14 6" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round">
+                    </path>
+                  </svg></button><!-- Badge and text -->
+                <div class="sidebar__featured-content">
+                  <div class="sidebar__featured-badge sidebar__featured-badge--online">
+                    <div class="support-status-dot"></div>
+                    <span class="support-badge-text">Online</span>
+                  </div>
+                  <div class="sidebar__featured-text">
+                    <h4 class="sidebar__featured-title">Have questions?</h4>
+                    <p class="sidebar__featured-description">
+                      Our support team is here to help.
+                    </p>
+                  </div>
+                  <button class="sidebar__featured-button sidebar__featured-button--chat">
+                    <img loading="lazy" src="/static/images/message-chat-circle grey.svg" alt="Support" width="20"
+                      height="20" />
+                    <span>Chat to support</span>
+                  </button>
+                </div>
+              </div>
+              <!-- Account Card - Now fully clickable -->
+              <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
+                style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
+                <!-- Avatar Group -->
+                <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
+                  <div id="account-avatar" class="sidebar__account-avatar">
+                    <img loading="lazy" src="/images/Image.webp" alt="" />
+                    <div id="account-online-indicator" class="sidebar__account-online"></div>
+                  </div>
+                  <div id="account-text-wrapper" class="sidebar__account-text">
+                    <span id="account-name" class="sidebar__account-name"></span>
+                    <span id="account-email" class="sidebar__account-email">Developer profile</span>
+                  </div>
+                </div>
+                <!-- Menu Button Icon (no longer a button) -->
+                <div id="account-menu-button" class="sidebar__account-menu" style="pointer-events: none">
+                  <div id="account-menu-button-inner" class="sidebar__account-menu-button" aria-hidden="true">
+                    <svg class="account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                      <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                    </svg>
+                  </div>
+                </div>
+                <!-- Profile Dropdown Menu -->
+                <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
+                  <!-- Menu items wrapper -->
+                  <div id="profile-menu-wrapper" class="profile-menu-wrapper">
+                    <!-- Top menu items -->
+                    <div id="profile-menu-items-top" class="profile-menu-items">
+                      <!-- Documentation -->
+                      <div id="menu-item-documentation" class="profile-menu-item">
+                        <div class="profile-menu-content">
+                          <div class="profile-icon-text">
+                            <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                              <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                              <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
+                              </path>
+                            </svg>
+                            <span class="profile-menu-text">Documentation</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Switch account section -->
+                    <div id="profile-switch-section" class="profile-switch-section">
+                      <div class="profile-switch-header">
+                        <span class="profile-switch-title">Switch account</span>
+                      </div>
+                      <!-- Current account (selected) -->
+                      <div id="menu-item-current-account" class="profile-menu-item account-item selected">
+                        <div class="profile-account-content">
+                          <div class="profile-avatar-group">
+                            <div class="profile-avatar">
+                              <img loading="lazy" src="/images/Image.webp" alt="" />
+                              <div class="profile-avatar-border"></div>
+                              <div class="profile-online-indicator"></div>
+                            </div>
+                            <div class="profile-text-wrapper">
+                              <span class="profile-account-name"></span>
+                              <span class="profile-account-type">Investor Profile</span>
+                            </div>
+                          </div>
+                          <div class="profile-checkbox selected">
+                            <div class="profile-checkbox-check"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Other accounts -->
+                      <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
+                        <div class="profile-account-content">
+                          <div class="profile-avatar-group">
+                            <div class="profile-avatar">
+                              <img loading="lazy" src="/images/Featured icon.webp" alt="" />
+                              <div class="profile-avatar-border"></div>
+                              <div class="profile-online-indicator"></div>
+                            </div>
+                            <div class="profile-text-wrapper">
+                              <span class="profile-account-name"></span>
+                              <span class="profile-account-type">Developer profile</span>
+                            </div>
+                          </div>
+                          <div class="profile-checkbox">
+                            <div class="profile-checkbox-check"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Footer items -->
+                  <div id="profile-footer-items" class="profile-footer-items">
+                    <!-- Sign out -->
+                    <div id="menu-item-sign-out" class="profile-menu-item">
+                      <div class="profile-menu-content">
+                        <div class="profile-icon-text">
+                          <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                              stroke-linejoin="round"></path>
+                            <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7"
+                              stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                          </svg>
+                          <span class="profile-menu-text">Sign out</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Profile Dropdown JavaScript -->
+          <script>
+            // Profile Dropdown Functions - Global scope
+            window.toggleProfileDropdown = function () {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const button = document.getElementById(
+                "account-menu-button-inner",
+              );
+
+              if (!dropdown) {
+                return;
+              }
+
+              // SAFARI FIX: Move to body and restore proper styling
+
+              // Move to body to escape stacking context
+              if (dropdown.parentNode !== document.body) {
+                document.body.appendChild(dropdown);
+              }
+
+              // Apply proper dropdown styles (restore original design)
+              dropdown.style.display = "flex";
+              dropdown.style.position = "fixed";
+              dropdown.style.left = "248px"; // Original position
+              dropdown.style.bottom = "20px"; // Original position
+              dropdown.style.width = "264px"; // Original width
+              dropdown.style.height = "auto"; // Original height
+              dropdown.style.background = ""; // Clear test background
+              dropdown.style.border = ""; // Clear test border
+              dropdown.style.zIndex = "99999"; // High z-index for Safari
+
+              // Restore original CSS classes
+              dropdown.className = "profile-dropdown-menu";
+
+              if (button) button.classList.add("active");
+
+              // Add click outside listener
+              setTimeout(() => {
+                document.addEventListener(
+                  "click",
+                  window.closeDropdownOnClickOutside,
+                );
+              }, 100);
+            };
+
+            window.closeProfileDropdown = function () {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const button = document.getElementById(
+                "account-menu-button-inner",
+              );
+
+              if (dropdown) dropdown.style.display = "none";
+              if (button) button.classList.remove("active");
+
+              // Remove click outside listener
+              document.removeEventListener(
+                "click",
+                window.closeDropdownOnClickOutside,
+              );
+            };
+
+            window.closeDropdownOnClickOutside = function (event) {
+              const dropdown = document.getElementById(
+                "profile-dropdown-menu",
+              );
+              const accountCard = document.getElementById("nav-account-card");
+
+              if (
+                accountCard &&
+                !accountCard.contains(event.target) &&
+                dropdown &&
+                !dropdown.contains(event.target)
+              ) {
+                window.closeProfileDropdown();
+              }
+            };
+          </script>
+        </aside>
+      </template><!-- Profile Dropdown Functions - Global scope for all sidebars -->
+      <script>
+        // GLOBAL Profile Dropdown Functions (persistent across sidebar changes)
+        window.toggleProfileDropdown = function () {
+          const dropdown = document.getElementById("profile-dropdown-menu");
+          const button = document.getElementById("account-menu-button-inner");
+
+          if (!dropdown) {
+            return;
+          }
+
+          if (
+            dropdown.style.display === "none" ||
+            dropdown.style.display === ""
+          ) {
+            // SAFARI FIX: Move to body and restore proper styling
+
+            // Move to body to escape stacking context
+            if (dropdown.parentNode !== document.body) {
+              document.body.appendChild(dropdown);
+            }
+
+            // Apply proper dropdown styles (restore original design)
+            dropdown.style.display = "flex";
+            dropdown.style.position = "fixed";
+            dropdown.style.left = "248px"; // Original position
+            dropdown.style.bottom = "20px"; // Original position
+            dropdown.style.width = "264px"; // Original width
+            dropdown.style.height = "auto"; // Original height
+            dropdown.style.background = ""; // Clear test background
+            dropdown.style.border = ""; // Clear test border
+            dropdown.style.zIndex = "99999"; // High z-index for Safari
+
+            // Restore original CSS classes
+            dropdown.className = "profile-dropdown-menu";
+
+            if (button) button.classList.add("active");
+
+            // Add click outside listener
+            setTimeout(() => {
+              document.addEventListener(
+                "click",
+                window.closeDropdownOnClickOutside,
+              );
+            }, 100);
+          } else {
+            window.closeProfileDropdown();
+          }
+        };
+
+        window.closeProfileDropdown = function () {
+          const dropdown = document.getElementById("profile-dropdown-menu");
+          const button = document.getElementById("account-menu-button-inner");
+
+          if (dropdown) dropdown.style.display = "none";
+          if (button) button.classList.remove("active");
+
+          // Remove click outside listener
+          document.removeEventListener(
+            "click",
+            window.closeDropdownOnClickOutside,
+          );
+        };
+
+        window.closeDropdownOnClickOutside = function (event) {
+          const dropdown = document.getElementById("profile-dropdown-menu");
+          const accountCard = document.getElementById("nav-account-card");
+
+          if (
+            accountCard &&
+            !accountCard.contains(event.target) &&
+            dropdown &&
+            !dropdown.contains(event.target)
+          ) {
+            window.closeProfileDropdown();
+          }
+        };
+
+        // Profile switching functionality for wrapper - matches other layouts
+        window.switchProfile = function (profileType) {
+          localStorage.setItem("selectedProfile", profileType);
+
+          // Close dropdown first
+          window.closeProfileDropdown();
+
+          // Use same redirect logic as other pages
+          const currentPath = window.location.pathname;
+
+          if (profileType === "developer") {
+            // Always redirect to developer dashboard when switching to developer profile
+            window.location.href = "/developer/dashboard";
+          } else {
+            // Switch to investor flow
+            if (currentPath.startsWith("/developer/")) {
+              // Currently in developer path, redirect to investor marketplace
+              window.location.href = "/marketplace";
+            } else {
+              // Already in investor flow, redirect to marketplace
+              window.location.href = "/marketplace";
+            }
+          }
+        };
+
+        // Add click handlers for account switching
+        document.addEventListener("DOMContentLoaded", function () {
+          document.body.addEventListener("click", function (e) {
+            const accountItem = e.target.closest(
+              ".profile-menu-item.account-item",
+            );
+
+            if (accountItem) {
+              e.stopPropagation();
+
+              // Determine profile type from account item
+              const isSelected = accountItem.classList.contains("selected");
+              if (!isSelected) {
+                const accountId = accountItem.id;
+                const profileType = accountId.includes("developer")
+                  ? "developer"
+                  : "investor";
+
+                // Remove selected from all items
+                document
+                  .querySelectorAll(".profile-menu-item.account-item")
+                  .forEach((item) => {
+                    item.classList.remove("selected");
+                    const checkbox = item.querySelector(".profile-checkbox");
+                    if (checkbox) checkbox.classList.remove("selected");
+                  });
+
+                // Add selected to clicked item
+                accountItem.classList.add("selected");
+                const checkbox =
+                  accountItem.querySelector(".profile-checkbox");
+                if (checkbox) checkbox.classList.add("selected");
+
+                // Switch profile
+                window.switchProfile(profileType);
+              }
+            }
+          });
+        });
+
+        // GLOBAL Navigation Expand/Collapse Functions
+        window.toggleNavExpand = function (itemId) {
+          const childrenContainer = document.getElementById(
+            "nav-children-" + itemId,
+          );
+          const chevronIcon = document.getElementById(
+            "nav-chevron-" + itemId,
+          );
+
+          if (!childrenContainer || !chevronIcon) return;
+
+          // Check if currently collapsed
+          const isCollapsed = childrenContainer.classList.contains(
+            "sidebar__nav-children--collapsed",
+          );
+
+          // Toggle based on current state
+          if (isCollapsed) {
+            // Save current transition style
+            const originalTransition = childrenContainer.style.transition;
+
+            // Temporarily disable transitions for accurate measurement
+            // This prevents padding transition from affecting scrollHeight calculation
+            childrenContainer.style.transition = "none";
+
+            // Remove collapsed class (padding immediately becomes 4px instead of transitioning)
+            childrenContainer.classList.remove(
+              "sidebar__nav-children--collapsed",
+            );
+
+            // Force reflow to apply the padding change immediately
+            childrenContainer.offsetHeight;
+
+            // Measure scrollHeight (now includes full padding, not mid-transition)
+            const height = childrenContainer.scrollHeight;
+
+            // Set height to 0 as starting point for animation
+            childrenContainer.style.height = "0px";
+
+            // Force another reflow
+            childrenContainer.offsetHeight;
+
+            // Restore transitions
+            childrenContainer.style.transition = originalTransition || "";
+
+            // In next frame, set height to target (will animate smoothly from 0 to full height)
+            requestAnimationFrame(function () {
+              childrenContainer.style.height = height + "px";
+            });
+
+            chevronIcon.classList.add("sidebar__nav-chevron--expanded");
+            localStorage.setItem("nav-expanded-" + itemId, "true");
+          } else {
+            // Collapsing: set height to 0, then add collapsed class
+            childrenContainer.style.height = "0px";
+            childrenContainer.classList.add(
+              "sidebar__nav-children--collapsed",
+            );
+            chevronIcon.classList.remove("sidebar__nav-chevron--expanded");
+            localStorage.setItem("nav-expanded-" + itemId, "false");
+          }
+        };
+
+        // Event delegation for parent nav items
+        document.addEventListener("DOMContentLoaded", function () {
+          // Get sidebar element to add no-transition class
+          const sidebar = document.getElementById("sidebar-navigation");
+
+          // Add no-transition class to prevent animation flash during setup
+          if (sidebar) {
+            sidebar.classList.add("sidebar--no-transition");
+          }
+
+          // Use double requestAnimationFrame to ensure DOM is fully rendered
+          // before calculating heights (fixes clipping issue)
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              // Restore expanded state from localStorage first
+              const parentItems = document.querySelectorAll(
+                ".sidebar__nav-item--parent",
+              );
+              parentItems.forEach(function (parentItem) {
+                const itemId = parentItem.getAttribute("data-item-id");
+                if (itemId) {
+                  const savedState = localStorage.getItem(
+                    "nav-expanded-" + itemId,
+                  );
+                  const childrenContainer = document.getElementById(
+                    "nav-children-" + itemId,
+                  );
+                  const chevronIcon = document.getElementById(
+                    "nav-chevron-" + itemId,
+                  );
+
+                  if (childrenContainer && chevronIcon) {
+                    const isCurrentlyCollapsed =
+                      childrenContainer.classList.contains(
+                        "sidebar__nav-children--collapsed",
+                      );
+                    const shouldBeExpanded = savedState === "true";
+
+                    if (shouldBeExpanded && isCurrentlyCollapsed) {
+                      childrenContainer.classList.remove(
+                        "sidebar__nav-children--collapsed",
+                      );
+                      chevronIcon.classList.add(
+                        "sidebar__nav-chevron--expanded",
+                      );
+                    } else if (!shouldBeExpanded && !isCurrentlyCollapsed) {
+                      childrenContainer.classList.add(
+                        "sidebar__nav-children--collapsed",
+                      );
+                      chevronIcon.classList.remove(
+                        "sidebar__nav-chevron--expanded",
+                      );
+                    }
+                  }
+                }
+              });
+
+              // Set initial heights for all nav children after state is restored
+              document
+                .querySelectorAll(".sidebar__nav-children")
+                .forEach(function (container) {
+                  if (
+                    !container.classList.contains(
+                      "sidebar__nav-children--collapsed",
+                    )
+                  ) {
+                    const height = container.scrollHeight;
+                    container.style.height = height + "px";
+                  }
+                });
+
+              // Remove no-transition class to enable smooth animations from now on
+              if (sidebar) {
+                sidebar.classList.remove("sidebar--no-transition");
+              }
+            });
+          });
+
+          // Handle clicks on parent nav items
+          document.addEventListener("click", function (e) {
+            const parentItem = e.target.closest(".sidebar__nav-item--parent");
+            if (parentItem) {
+              const itemId = parentItem.getAttribute("data-item-id");
+              if (itemId) {
+                e.preventDefault();
+                window.toggleNavExpand(itemId);
+              }
+            }
+          });
+        });
+      </script>
+      <!-- Script to switch sidebars based on saved profile -->
+      <script>
+        (function () {
+          // Function to replace sidebar content
+          function replaceSidebar(profileType) {
+            const container = document.getElementById(
+              "dynamic-sidebar-container",
+            );
+            const templateId =
+              profileType === "developer"
+                ? "developer-sidebar-template"
+                : "investor-sidebar-template";
+            const template = document.getElementById(templateId);
+
+            if (container && template) {
+              // Clear current content
+              container.innerHTML = "";
+              // Clone and append new content
+              const newContent = template.content.cloneNode(true);
+              container.appendChild(newContent);
+
+              // Re-initialize profile dropdown functionality
+              if (typeof window.toggleProfileDropdown === "function") {
+                // The dropdown script should already be loaded
+              }
+            }
+          }
+
+          // Check saved profile on page load
+          const savedProfile = localStorage.getItem("selectedProfile");
+
+          // Set default profile if not set
+          if (!savedProfile) {
+            localStorage.setItem("selectedProfile", "investor");
+          }
+
+          // Replace sidebar with correct profile
+          if (savedProfile === "developer") {
+            replaceSidebar("developer");
+          }
+          // Investor is already loaded by default
+
+          // Listen for profile changes
+          window.addEventListener("storage", function (e) {
+            if (e.key === "selectedProfile") {
+              // Reload page when profile changes
+              window.location.reload();
+            }
+          });
+        })();
+      </script>
+    </div>
+    <!-- Main Content Area -->
+    <main id="developer-document-upload-step3-main" class="ds-main document-upload-step3-main">
+      <!-- Get all page data -->
+      <!-- Breadcrumbs -->
+      <div id="document-upload-breadcrumbs" class="document-upload-breadcrumbs">
+        <a href="/developer/assets" class="breadcrumb-link">Assets</a>
+        <svg class="breadcrumb-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M6 12L10 8L6 4" stroke="#D5D7DA" stroke-width="1.33333" stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+        <a href="/developer/add-asset" class="breadcrumb-link">Add Asset</a>
+        <svg class="breadcrumb-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M6 12L10 8L6 4" stroke="#D5D7DA" stroke-width="1.33333" stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+        <a href="/developer/application-form" class="breadcrumb-link">Property information</a>
+        <svg class="breadcrumb-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M6 12L10 8L6 4" stroke="#D5D7DA" stroke-width="1.33333" stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+        <span class="breadcrumb-current">Documents</span>
+      </div>
+      <!-- Step Indicator -->
+      <div id="form-step-indicator" class="form-step-indicator">
+        Step 3 of 4
+      </div>
+      <!-- Page Title -->
+      <h1 id="document-upload-title" class="document-upload-title">
+        Documents
+      </h1>
+      <!-- Document Section 1: Proof of Title -->
+      <div id="documents-section-1" class="document-section">
+        <h2 class="document-section-title">1. Proof of title</h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>Certificate of HGB (if held through PT PMA)</li>
+            <li>Certificate of Hak Pakai (if held by an individual)</li>
+            <li>HMSRS (in case of strata-title apartments)</li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-1" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <script>
+                  function __templ_clickFileInputScript_3e80(sectionID) {
+                    document
+                      .getElementById("file-input-" + sectionID)
+                      .click();
+                  }
+                </script>
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('1')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+            </div>
+            <input type="file" id="file-input-1" class="hidden-file-input" multiple
+              accept=".webp,.webp,.webp,.doc,.docx,.zip,.pdf,.mp4" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-1" class="uploaded-files-list">
+          <div id="file1-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">property-deed.pdf</span>
+                  <span class="file-size">2.5 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button -->
+            <script>
+              function __templ_removeFileScript_5b93(id) {
+                removeFile(id);
+              }
+            </script>
+            <button type="button" class="file-delete-btn" onclick="__templ_removeFileScript_5b93('file1-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Document Section 2: Legal Basis of Title -->
+      <div id="documents-section-2" class="document-section">
+        <h2 class="document-section-title">2. Legal basis of title</h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>Deed of Sale and Purchase (AJB)</li>
+            <li>Leasehold Agreement (if lease term exceeds 25 years)</li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-2" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('2')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+            </div>
+            <input type="file" id="file-input-2" class="hidden-file-input" multiple
+              accept=".webp,.webp,.webp,.doc,.docx,.zip,.pdf,.mp4" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-2" class="uploaded-files-list">
+          <div id="file2-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">management-agreement.pdf</span>
+                  <span class="file-size">1.8 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button --><button type="button" class="file-delete-btn"
+              onclick="__templ_removeFileScript_5b93('file2-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Document Section 3: Permits -->
+      <div id="documents-section-3" class="document-section">
+        <h2 class="document-section-title">
+          3. Permits (in case of existing structures)
+        </h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>Building Approval (PBG) / Building Permit (IMB)</li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-3" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('3')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+            </div>
+            <input type="file" id="file-input-3" class="hidden-file-input" multiple
+              accept=".webp,.webp,.webp,.doc,.docx,.zip,.pdf,.mp4" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-3" class="uploaded-files-list">
+          <div id="file3-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">floor-plans.pdf</span>
+                  <span class="file-size">4.2 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button --><button type="button" class="file-delete-btn"
+              onclick="__templ_removeFileScript_5b93('file3-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Document Section 4: Tax Documentation -->
+      <div id="documents-section-4" class="document-section">
+        <h2 class="document-section-title">4. Tax documentation</h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>SPPT PBB and proof of latest annual payment</li>
+            <li>BPHTB (if the acquisition was recent)</li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-4" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('4')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+            </div>
+            <input type="file" id="file-input-4" class="hidden-file-input" multiple
+              accept=".webp,.webp,.webp,.doc,.docx,.zip,.pdf,.mp4" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-4" class="uploaded-files-list">
+          <div id="file4-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">insurance-policy.pdf</span>
+                  <span class="file-size">1.8 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button --><button type="button" class="file-delete-btn"
+              onclick="__templ_removeFileScript_5b93('file4-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Document Section 5: KYC/Corporate Structure -->
+      <div id="documents-section-5" class="document-section">
+        <h2 class="document-section-title">5. KYC / Corporate structure</h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>Copy of owner's passport</li>
+            <li>
+              If relevant and through a PT PMA: Deed of Establishment,
+              Approval from the Ministry of Law and Human Rights (SK
+              Kemenkumham), Business Identification Number (NIB/OSS), Taxpayer
+              Identification Number (NPWP)
+            </li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-5" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('5')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+            </div>
+            <input type="file" id="file-input-5" class="hidden-file-input" multiple
+              accept=".webp,.webp,.webp,.doc,.docx,.zip,.pdf,.mp4" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-5" class="uploaded-files-list">
+          <div id="file5-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">incorporation-docs.pdf</span>
+                  <span class="file-size">3.1 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button --><button type="button" class="file-delete-btn"
+              onclick="__templ_removeFileScript_5b93('file5-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Document Section 6: Declarations -->
+      <div id="documents-section-6" class="document-section">
+        <h2 class="document-section-title">6. Declarations</h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>
+              Signed statement confirming absence of disputes, claims, or
+              encumbrances over the property
+            </li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-6" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('6')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+            </div>
+            <input type="file" id="file-input-6" class="hidden-file-input" multiple
+              accept=".webp,.webp,.webp,.doc,.docx,.zip,.pdf,.mp4" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-6" class="uploaded-files-list">
+          <div id="file6-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">additional-docs.pdf</span>
+                  <span class="file-size">2.3 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button --><button type="button" class="file-delete-btn"
+              onclick="__templ_removeFileScript_5b93('file6-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Important Note Section -->
+      <div id="documents-note-section" class="documents-note-section">
+        <p class="documents-note-text">
+          Please upload all the documents you have available, as this will
+          directly impact the speed of listing your property on our platform
+          and completing its tokenization process
+        </p>
+      </div>
+      <!-- Action Buttons -->
+      <div id="form-actions" class="form-actions">
+        <button id="form-back-btn" class="form-back-btn" onclick="window.location.href = '/developer/application-form'">
+          <svg class="back-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M12.5 5L7.5 10L12.5 15" stroke="#01011C" stroke-width="1.66667" stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+          <span>Previous</span>
+        </button>
+        <button id="form-next-btn" class="form-next-btn" onclick="window.location.href = '/developer/property-content'">
+          <span>Next Step</span>
+        </button>
+      </div>
+    </main>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,1515 @@
+/* ===========================
+   Developer Application Form Page Styles
+   =========================== */
+
+/* Main Container */
+.application-form-page {
+  display: flex;
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+.application-form-sidebar {
+  position: relative;
+  width: 256px;
+  background: #ffffff;
+  border-right: 1px solid #e9eaeb;
+  flex-shrink: 0;
+}
+
+.application-form-main {
+  width: 1144px;
+  min-height: 1136px;
+  background: #fafafa;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  z-index: 0;
+  position: relative;
+  padding-top: 72px; /* Space for KYC banner */
+  padding-bottom: 60px;
+}
+
+/* Step Indicator */
+.form-step-indicator {
+  position: absolute;
+  width: 74px;
+  height: 20px;
+  left: calc(50% - 74px / 2);
+  top: 180px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--primary-color);
+}
+
+/* Page Title */
+.application-form-title {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  position: absolute;
+  width: 354px;
+  height: 44px;
+  left: calc(50% - 354px / 2);
+  top: 208px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 44px;
+  text-align: center;
+  letter-spacing: -0.02em;
+  color: #181d27;
+  margin: 0;
+}
+
+/* Form Sections */
+.form-section {
+  box-sizing: border-box;
+  position: relative;
+  width: 772px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+}
+
+#property-details-section {
+  height: 530px;
+  margin-top: 204px; /* Distance from top of page to first card */
+  padding: 0;
+}
+
+#financials-section {
+  height: 190px;
+  margin-top: 16px; /* 16px gap from previous card */
+  padding: 0;
+}
+
+#documents-section {
+  height: 1262px;
+  margin-top: 16px; /* 16px gap from previous card */
+  padding: 32px;
+}
+
+.form-section-title {
+  position: absolute;
+  width: 213px;
+  height: 32px;
+  left: 32px;
+  top: 32px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  text-align: left; /* Changed from center to left */
+  color: #181d27;
+  margin: 0;
+}
+
+/* Form Grid */
+.form-grid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Financials Section Specific Positioning */
+#financials-section {
+  position: relative;
+}
+
+#financials-section .form-section-title {
+  position: absolute;
+  width: 146px;
+  height: 32px;
+  left: 32px;
+  top: 32px;
+  margin: 0;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  color: #181d27;
+}
+
+#financials-section .form-grid {
+  position: relative;
+  height: 100%;
+}
+
+/* Purchase Price field - left */
+#financials-section .form-field:first-child {
+  position: absolute;
+  width: 378px;
+  height: 70px;
+  left: 32px;
+  top: 88px;
+}
+
+#financials-section .form-field:first-child .form-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 6px;
+  width: 378px;
+  height: 70px;
+}
+
+#financials-section .form-field:first-child .form-input {
+  width: 378px !important;
+  height: 44px;
+}
+
+/* Expected Annual Yield field - right */
+#financials-section .form-field:last-child {
+  position: absolute;
+  width: 314px;
+  height: 70px;
+  left: 426px;
+  top: 88px;
+}
+
+#financials-section .form-field:last-child .form-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 6px;
+  width: 314px;
+  height: 70px;
+}
+
+#financials-section .form-field:last-child .form-input {
+  width: 314px !important;
+  height: 44px;
+  background: #f8f9fc;
+}
+
+.form-field {
+  width: 100%;
+}
+
+.form-field.full-width {
+  grid-column: span 2;
+}
+
+/* Form Input Components */
+.form-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 6px;
+}
+
+/* Base Form Input Styles - matching source design */
+.form-input,
+.form-select {
+  box-sizing: border-box;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #181d27;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow:
+    0px 1px 2px rgba(10, 13, 18, 0.05),
+    0px 0px 0px 4px rgba(0, 0, 255, 0.1);
+}
+
+.form-input::placeholder {
+  color: #717680;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+/* Form Input Labels - matching source design */
+.form-input-label {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.required-asterisk {
+  color: #f04438;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* Property Details Specific Input Positioning */
+#property-details-section .form-input-wrapper {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 6px;
+}
+
+/* Property Name - top left (378px × 70px) */
+#property-details-section #property-name-wrapper {
+  width: 378px;
+  height: 70px;
+  left: 32px;
+  top: 88px;
+}
+
+/* Property Type - top right (314px × 70px) */
+#property-details-section #property-type-wrapper {
+  width: 314px;
+  height: 70px;
+  left: 426px;
+  top: 88px;
+}
+
+#property-details-section #property-name-wrapper .form-input,
+#property-details-section #property-name-wrapper .form-select {
+  width: 378px !important;
+  height: 44px;
+}
+
+#property-details-section #property-type-wrapper .form-input,
+#property-details-section #property-type-wrapper .form-select {
+  width: 314px !important;
+  height: 44px;
+}
+
+#property-details-section #property-name-wrapper .form-input-label {
+  width: 102px;
+  height: 20px;
+}
+
+#property-details-section #property-type-wrapper .form-input-label {
+  width: 96px;
+  height: 20px;
+}
+
+#property-details-section #area-wrapper .form-input,
+#property-details-section #area-wrapper .form-select {
+  width: 378px !important;
+  height: 44px;
+}
+
+#property-details-section #address-wrapper .form-input,
+#property-details-section #address-wrapper .form-select {
+  width: 314px !important;
+  height: 44px;
+}
+
+#property-details-section #area-wrapper .form-input-label {
+  width: 38px;
+  height: 20px;
+}
+
+#property-details-section #address-wrapper .form-input-label {
+  width: 58px;
+  height: 20px;
+}
+
+#property-details-section #lease-type-wrapper .form-input,
+#property-details-section #lease-type-wrapper .form-select {
+  width: 378px !important;
+  height: 44px;
+}
+
+#property-details-section #lease-term-wrapper .form-input,
+#property-details-section #lease-term-wrapper .form-select {
+  width: 245px !important;
+  height: 44px;
+}
+
+#property-details-section #lease-type-wrapper .form-input-label {
+  width: 90px;
+  height: 20px;
+}
+
+#property-details-section #lease-term-wrapper .form-input-label {
+  width: 152px;
+  height: 20px;
+}
+
+/* Lease Term Unit Badge */
+#lease-term-unit-label {
+  position: absolute;
+  width: 65px;
+  height: 44px;
+  left: 675px;
+  top: 286px;
+}
+
+#lease-term-unit-label .unit-input {
+  box-sizing: border-box;
+  width: 65px;
+  height: 44px;
+  background: #f8f9fc;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #717680;
+  text-align: center;
+  cursor: default;
+}
+
+/* Area - left (378px × 70px) */
+#property-details-section #area-wrapper {
+  width: 378px;
+  height: 70px;
+  left: 32px;
+  top: 174px;
+}
+
+/* Address - right (314px × 70px) */
+#property-details-section #address-wrapper {
+  width: 314px;
+  height: 70px;
+  left: 426px;
+  top: 174px;
+}
+
+/* Lease Type - left (378px × 70px) */
+#property-details-section #lease-type-wrapper {
+  width: 378px;
+  height: 70px;
+  left: 32px;
+  top: 260px;
+}
+
+/* Lease Term - right (245px × 70px) with years badge */
+#property-details-section #lease-term-wrapper {
+  width: 245px;
+  height: 70px;
+  left: 426px;
+  top: 260px;
+}
+
+#property-details-section #type-wrapper .form-input,
+#property-details-section #type-wrapper .form-select {
+  width: 378px !important;
+  height: 44px;
+}
+
+#property-details-section #type-wrapper .form-input-label {
+  width: 42px;
+  height: 20px;
+}
+
+/* Row 4: 4 fields - Land Size, Building Size, Bedrooms, Bathrooms */
+/* Land Size - field 1 (114px × 70px) */
+#property-details-section #land-size-wrapper {
+  width: 114px;
+  height: 70px;
+  left: 32px;
+  top: 346px;
+}
+
+/* Building Size - field 2 (114px × 70px) */
+#property-details-section #building-size-wrapper {
+  width: 114px;
+  height: 70px;
+  left: 227px;
+  top: 346px;
+}
+
+/* Bedrooms - field 3 (151px × 70px) */
+#property-details-section #bedrooms-wrapper {
+  width: 151px;
+  height: 70px;
+  left: 426px;
+  top: 346px;
+}
+
+/* Bathrooms - field 4 (151px × 70px) */
+#property-details-section #bathrooms-wrapper {
+  width: 151px;
+  height: 70px;
+  left: 589px;
+  top: 346px;
+}
+
+/* Row 4 Input Field Specifications */
+#property-details-section #land-size-wrapper .form-input {
+  width: 114px !important;
+  height: 44px;
+}
+
+#property-details-section #land-size-wrapper .form-input-label {
+  width: 65px;
+  height: 20px;
+}
+
+#property-details-section #building-size-wrapper .form-input {
+  width: 114px !important;
+  height: 44px;
+}
+
+#property-details-section #building-size-wrapper .form-input-label {
+  width: 86px;
+  height: 20px;
+}
+
+#property-details-section #bedrooms-wrapper .form-input {
+  width: 151px !important;
+  height: 44px;
+}
+
+#property-details-section #bedrooms-wrapper .form-input-label {
+  width: 68px;
+  height: 20px;
+}
+
+#property-details-section #bathrooms-wrapper .form-input {
+  width: 151px !important;
+  height: 44px;
+}
+
+#property-details-section #bathrooms-wrapper .form-input-label {
+  width: 73px;
+  height: 20px;
+}
+
+/* Land Size Unit Badge */
+#land-size-unit-label {
+  position: absolute;
+  width: 65px;
+  height: 44px;
+  left: 150px; /* 32px + 114px + 4px gap */
+  top: 372px; /* 346px + 26px to align with input center */
+}
+
+#land-size-unit-label .unit-input {
+  box-sizing: border-box;
+  width: 65px;
+  height: 44px;
+  background: #f8f9fc;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #717680;
+  text-align: center;
+  cursor: default;
+}
+
+/* Building Size Unit Badge */
+#building-size-unit-label {
+  position: absolute;
+  width: 65px;
+  height: 44px;
+  left: 345px; /* 227px + 114px + 4px gap */
+  top: 372px; /* 346px + 26px to align with input center */
+}
+
+#building-size-unit-label .unit-input {
+  box-sizing: border-box;
+  width: 65px;
+  height: 44px;
+  background: #f8f9fc;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #717680;
+  text-align: center;
+  cursor: default;
+}
+
+/* Row 5: 2 wide fields - Status, Year Built */
+/* Status - left (378px × 70px) */
+#property-details-section #status-wrapper {
+  width: 378px;
+  height: 70px;
+  left: 32px;
+  top: 428px;
+}
+
+/* Year Built - right (314px × 70px) */
+#property-details-section #year-built-wrapper {
+  width: 314px;
+  height: 70px;
+  left: 426px;
+  top: 428px;
+}
+
+/* Row 5 Input Field Specifications */
+#property-details-section #status-wrapper .form-input,
+#property-details-section #status-wrapper .form-select {
+  width: 378px !important;
+  height: 44px;
+}
+
+#property-details-section #status-wrapper .form-input-label {
+  width: 44px;
+  height: 20px;
+}
+
+#property-details-section #year-built-wrapper .form-input {
+  width: 314px !important;
+  height: 44px;
+}
+
+#property-details-section #year-built-wrapper .form-input-label {
+  width: 144px;
+  height: 20px;
+}
+
+#property-details-section #location-wrapper .form-input {
+  width: 378px !important;
+  height: 44px;
+  padding: 10px 14px 10px 12px;
+}
+
+#property-details-section #location-wrapper .form-input-label {
+  width: 100px;
+  height: 20px;
+}
+
+/* Description - top left (378px × 70px) */
+#property-details-section #description-wrapper {
+  width: 378px;
+  height: 70px;
+  left: 32px;
+  top: 88px;
+}
+
+#property-details-section #description-wrapper .form-input {
+  width: 378px !important;
+  height: 44px;
+  padding: 10px 14px;
+}
+
+#property-details-section #description-wrapper .form-input-label {
+  width: 112px;
+  height: 20px;
+}
+
+/* Country - top right (314px × 70px) */
+#property-details-section #country-wrapper {
+  width: 314px;
+  height: 70px;
+  left: 426px;
+  top: 174px;
+}
+
+#property-details-section #country-wrapper .form-input,
+#property-details-section #country-wrapper .form-select {
+  width: 314px !important;
+  height: 44px;
+}
+
+#property-details-section #country-wrapper .form-input-label {
+  width: 66px;
+  height: 20px;
+}
+
+/* Total Area (sqm) - top right (245px × 70px) */
+#property-details-section #total-area-sqm-wrapper {
+  width: 245px;
+  height: 70px;
+  left: 426px;
+  top: 260px;
+}
+
+#property-details-section #total-area-sqm-wrapper .form-input {
+  width: 245px !important;
+  height: 44px;
+  padding: 10px 14px;
+}
+
+#property-details-section #total-area-sqm-wrapper .form-input-label {
+  width: 162px;
+  height: 20px;
+}
+
+/* Building Area (sqm) - bottom right (314px × 70px) */
+#property-details-section #building-area-sqm-wrapper {
+  width: 314px;
+  height: 70px;
+  left: 426px;
+  top: 428px;
+}
+
+#property-details-section #building-area-sqm-wrapper .form-input {
+  width: 314px !important;
+  height: 44px;
+}
+
+#property-details-section #building-area-sqm-wrapper .form-input-label {
+  width: 154px;
+  height: 20px;
+}
+
+/* Total Area (m²) - (114px × 70px) */
+#property-details-section #total-area-m2-wrapper {
+  width: 114px;
+  height: 70px;
+  left: 32px;
+  top: 346px;
+}
+
+#property-details-section #total-area-m2-wrapper .form-input {
+  width: 114px !important;
+  height: 44px;
+  padding: 10px 14px;
+}
+
+#property-details-section #total-area-m2-wrapper .form-input-label {
+  width: 75px;
+  height: 20px;
+}
+
+/* Total Area (sqft) - (151px × 70px) */
+#property-details-section #total-area-sqft-wrapper {
+  width: 151px;
+  height: 70px;
+  left: 426px;
+  top: 346px;
+}
+
+#property-details-section #total-area-sqft-wrapper .form-input {
+  width: 151px !important;
+  height: 44px;
+  padding: 10px 14px;
+}
+
+#property-details-section #total-area-sqft-wrapper .form-input-label {
+  width: 78px;
+  height: 20px;
+}
+
+/* Building Area (m²) - (114px × 70px) */
+#property-details-section #building-area-m2-wrapper {
+  width: 114px;
+  height: 70px;
+  left: 227px;
+  top: 346px;
+}
+
+#property-details-section #building-area-m2-wrapper .form-input {
+  width: 114px !important;
+  height: 44px;
+  padding: 10px 14px;
+}
+
+#property-details-section #building-area-m2-wrapper .form-input-label {
+  width: 96px;
+  height: 20px;
+}
+
+/* Building Area (sqft) - (151px × 70px) */
+#property-details-section #building-area-sqft-wrapper {
+  width: 151px;
+  height: 70px;
+  left: 589px;
+  top: 346px;
+}
+
+#property-details-section #building-area-sqft-wrapper .form-input {
+  width: 151px !important;
+  height: 44px;
+  padding: 10px 14px;
+}
+
+#property-details-section #building-area-sqft-wrapper .form-input-label {
+  width: 83px;
+  height: 20px;
+}
+
+/* Unit label fields (65px × 44px) */
+#property-details-section .unit-label-field {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0px;
+  width: 40px;
+  height: 20px;
+}
+
+#property-details-section .unit-label-field .unit-input {
+  border: none;
+  background: transparent;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #717680;
+  width: 40px;
+  height: 16px;
+  padding: 0;
+}
+
+/* Specific positioning for each unit label */
+#lease-term-unit-label {
+  left: 696px; /* 408 + 280 + 8 = 696px */
+  top: 310px; /* Aligned with Lease Term input */
+}
+
+.form-input-label {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 2px;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  white-space: nowrap; /* Prevent label text from wrapping */
+}
+
+.required-asterisk {
+  width: 8px;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #f04438;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.form-input {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #181d27;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.form-input::placeholder {
+  color: #717680;
+}
+
+.form-input:read-only {
+  background: #f8f9fc;
+  color: #717680;
+}
+
+/* Select Dropdown */
+.form-select-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.form-select {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 40px 10px 12px;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #181d27;
+  appearance: none;
+  cursor: pointer;
+}
+
+.form-select:disabled {
+  background: #f8f9fc;
+  color: #717680;
+  cursor: not-allowed;
+}
+
+.select-chevron {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Hide legacy chevron SVG inside converted POOOL dropdowns (avoids double-arrow) */
+.poool-dropdown .select-chevron,
+.form-select-wrapper .poool-dropdown ~ .select-chevron {
+  display: none !important;
+}
+
+/* Input with Icon */
+.form-input-with-icon {
+  position: relative;
+  width: 100%;
+}
+
+.form-input-with-icon .form-input {
+  padding-right: 40px;
+}
+
+.input-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Area Input Groups */
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+.area-inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.area-input {
+  flex: 1;
+}
+
+.area-input .form-input-wrapper {
+  margin: 0;
+}
+
+.area-unit {
+  width: 65px;
+}
+
+.unit-input {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 8px;
+  width: 65px;
+  height: 44px;
+  background: #f8f9fc;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #717680;
+}
+
+/* Documents Section */
+#documents-section {
+  position: relative;
+}
+
+#documents-section .form-section-title {
+  position: absolute;
+  width: 714px;
+  height: 32px;
+  left: 32px; /* Changed from 29px to match other sections */
+  top: 32px;
+  margin: 0;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  color: #181d27;
+}
+
+.documents-description {
+  position: absolute;
+  width: 714px;
+  height: 468px;
+  left: 32px; /* Changed from 29px for consistency */
+  top: 77px; /* 32px (title top) + 32px (title height) + 13px (gap) = 77px */
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: #535862;
+}
+
+.documents-description {
+  overflow-y: auto;
+}
+
+.doc-section {
+  margin-bottom: 12px;
+}
+
+.doc-section:last-child {
+  margin-bottom: 0;
+}
+
+.doc-title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: #535862;
+  margin: 0 0 4px 0;
+}
+
+.doc-subtitle {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: #535862;
+  margin: 0 0 4px 0;
+}
+
+.doc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0 20px;
+}
+
+.doc-list li {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: #535862;
+  margin: 0 0 4px 0;
+  padding-left: 15px;
+  position: relative;
+}
+
+.doc-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #535862;
+}
+
+.documents-note {
+  position: absolute;
+  width: 611px;
+  height: 63px;
+  left: 32px; /* Changed from 29px for consistency */
+  top: 558px; /* 77px (description top) + 468px (description height) + 13px (gap) = 558px */
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 21px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--primary-color);
+}
+
+/* File Upload Area */
+.file-upload-area {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 24px;
+  gap: 4px;
+  isolation: isolate;
+  position: absolute;
+  width: 714px;
+  height: 153px;
+  left: 32px; /* Changed from 29px for consistency */
+  top: 634px; /* 558px (note top) + 63px (note height) + 13px (gap) = 634px */
+  background: #ffffff;
+  border: 2px solid var(--primary-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-upload-area:hover {
+  background: #f8f9fc;
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 0;
+}
+
+.upload-icon-wrapper {
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.upload-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+  margin: 0;
+}
+
+.upload-link {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.upload-link:hover {
+  text-decoration: underline;
+}
+
+.upload-info {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #535862;
+  margin: 0;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+/* Drag Overlay */
+.drag-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 255, 0.05);
+  border: 2px dashed var(--primary-color);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.drag-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.drag-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--primary-color);
+}
+
+/* File Upload Items */
+.uploaded-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: absolute;
+  width: 714px;
+  left: 32px; /* Changed from 29px for consistency */
+  top: 799px; /* 634px (upload area top) + 153px (upload area height) + 12px (gap) = 799px */
+}
+
+.file-upload-item {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 16px;
+  gap: 4px;
+  isolation: isolate;
+  width: 714px;
+  height: 96px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  position: relative;
+}
+
+.file-content {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  z-index: 0;
+}
+
+/* File Icon */
+.file-type-icon {
+  width: 40px;
+  height: 40px;
+  position: relative;
+}
+
+.file-icon-page {
+  box-sizing: border-box;
+  position: absolute;
+  left: 17.5%;
+  right: 2.5%;
+  top: 0%;
+  bottom: 0%;
+  background: #ffffff;
+  border: 1.5px solid #d5d7da;
+  border-radius: 4px;
+  box-shadow:
+    0px 24px 48px -12px rgba(10, 13, 18, 0.18),
+    0px 4px 4px -2px rgba(10, 13, 18, 0.04);
+}
+
+.file-icon-earmark {
+  box-sizing: border-box;
+  position: absolute;
+  left: 62.5%;
+  right: 1.56%;
+  top: 1.25%;
+  bottom: 70%;
+  background: #ffffff;
+  border: 1.5px solid #d5d7da;
+  border-radius: 4px;
+}
+
+.file-type-badge {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 2px 3px;
+  gap: 8px;
+  position: absolute;
+  left: 2.5%;
+  right: 32.5%;
+  top: 45%;
+  bottom: 15%;
+  background: #d92d20;
+  border-radius: 2px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 10px;
+  line-height: 12px;
+  text-align: center;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* File Info */
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.file-name {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+.file-size {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+/* Progress Bar */
+.file-progress {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #e9eaeb;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill {
+  position: absolute;
+  height: 100%;
+  left: 0;
+  top: 0;
+  background: var(--primary-color);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-percentage {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  min-width: 37px;
+}
+
+/* Delete Button */
+.file-delete-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 6px;
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  right: 8px;
+  top: 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 1;
+  transition: background 0.2s ease;
+}
+
+.file-delete-btn:hover {
+  background: #f8f9fc;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 24px;
+  position: relative;
+  width: 548px;
+  height: 44px;
+  margin: 32px auto 40px auto;
+}
+
+.form-back-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 6px;
+  width: 268px;
+  height: 44px;
+  background: #ffffff;
+  border: 2px solid #e9eaeb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--brand-dark-blue);
+}
+
+.form-back-btn:hover {
+  background: #f8f9fc;
+  transform: translateY(-1px);
+}
+
+.form-next-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 6px;
+  width: 268px;
+  height: 44px;
+  background: #0000FF;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #98FB96;
+}
+
+.form-next-btn svg path,
+.form-next-btn svg polyline,
+.form-next-btn svg line {
+  stroke: #98FB96;
+}
+
+.form-next-btn:hover {
+  background: #0000CC;
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.back-arrow {
+  width: 20px;
+  height: 20px;
+}

@@ -1,0 +1,2028 @@
+/* ===========================
+   POOOL Marketplace Styles
+   Based on Figma Design System
+   =========================== */
+
+/* ===========================
+   1. CSS Variables & Global Styles
+   =========================== */
+:root {
+  /* Colors */
+  --color-base-white: #ffffff;
+  --color-base-black: #000000;
+
+  /* Gray Scale */
+  --color-gray-50: #fafafa;
+  --color-gray-200: #e9eaeb;
+  --color-gray-300: #d5d7da;
+  --color-gray-400: #a4a7ae;
+  --color-gray-500: #717680;
+  --color-gray-600: #535862;
+  --color-gray-700: #414651;
+  --color-gray-800: #252b37;
+  --color-gray-900: #181d27;
+
+  /* Brand Colors */
+  --color-brand-600: var(--primary-color);
+  --color-brand-primary: var(--primary-color);
+
+  /* Brand Green Accent */
+  --color-green-accent-50: rgba(3, 255, 136, 0.1);
+  --color-green-accent-500: var(--accent-color);
+
+  /* Shadows */
+  --shadow-xs: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  --shadow-sm:
+    0px 1px 3px rgba(10, 13, 18, 0.1), 0px 1px 2px -1px rgba(10, 13, 18, 0.1);
+  --shadow-xs-skeuomorphic:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  --shadow-focus-ring: 0px 0px 0px 2px #ffffff, 0px 0px 0px 4px #9e77ed;
+
+  /* Typography */
+  --font-family: 'TT Norms Pro', sans-serif;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 30px;
+}
+
+/* Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+#marketplace-body {
+  font-family: var(--font-family);
+  background: var(--color-gray-50);
+  color: var(--color-gray-900);
+  margin: 0;
+  padding: 0;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  min-height: 100vh;
+}
+
+/* ===========================
+   2. Page Layout
+   =========================== */
+.marketplace-page,
+#marketplace-page {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: #f5f5f5;
+  visibility: visible;
+  opacity: 1;
+}
+
+.marketplace-sidebar {
+  /* Sidebar is fixed positioned, no need for space here */
+  z-index: 100;
+}
+
+.marketplace-main,
+#marketplace-main {
+  width: calc(100% - 256px);
+  min-height: 1735px;
+  margin-left: 256px;
+  padding-top: 0;
+  padding-left: 24px;
+  padding-right: 24px;
+  background: #fafafa;
+  position: relative;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  z-index: 1;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+}
+
+/* ===========================
+   3. KYC Notification Bar
+   =========================== */
+.kyc-notification-container {
+  background: #fff9e6;
+  border: none;
+  border-bottom: 1px solid #f0d000;
+  border-radius: 0;
+  padding: 12px 32px;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 56px;
+  box-sizing: border-box;
+}
+
+.kyc-notification-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+}
+
+.kyc-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.kyc-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.kyc-notification-text {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-gray-700);
+}
+
+.kyc-link {
+  color: var(--color-brand-600);
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.kyc-link:hover {
+  text-decoration: none;
+}
+
+.kyc-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.kyc-complete-btn,
+.kyc-learn-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kyc-complete-btn {
+  background: var(--color-brand-600);
+  color: var(--color-base-white);
+  border: none;
+  box-shadow: none;
+}
+
+.kyc-complete-btn:hover {
+  opacity: 0.9;
+}
+
+.kyc-learn-btn {
+  background: var(--color-base-white);
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-gray-300);
+  box-shadow: none;
+}
+
+.kyc-learn-btn:hover {
+  background: var(--color-gray-50);
+}
+
+/* Marketplace Content Wrapper */
+.marketplace-content-wrapper {
+  position: relative;
+  width: 1144px;
+  /* Let content determine height naturally */
+  min-height: auto;
+  padding-top: 0;
+  padding-bottom: 0;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Inner content wrapper for HTMX updates */
+#marketplace-content-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  visibility: visible;
+  opacity: 1;
+}
+
+/* ===========================
+   4. Page Header
+   =========================== */
+.page-header {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  left: 0;
+  top: 48px;
+  /* 48px: matches padding-top on all pages */
+  z-index: 1;
+}
+
+.page-header-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.page-title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 44px;
+  letter-spacing: -0.02em;
+  color: var(--brand-dark-blue);
+}
+
+/* ===========================
+   5. Filter Bar Container
+   =========================== */
+.filter-bar-container {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 1080px;
+  left: 0;
+  top: 200px;
+  /* 116px (tabs top) + 56px (tabs height) + 28px (gap) = 200px */
+  border-radius: var(--radius-lg);
+  z-index: 100;
+}
+
+/* ===========================
+   6. Status Tabs
+   =========================== */
+.status-tabs {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 6px;
+  gap: 4px;
+  width: 1080px;
+  height: 56px;
+  left: 0;
+  top: 116px;
+  /* 48px (header) + 44px (header height) + 24px (gap) = 116px */
+  background: var(--color-base-white);
+  border: 1px solid var(--color-gray-200);
+  box-shadow: none;
+  border-radius: 30px;
+  z-index: 1;
+}
+
+.status-tab {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  flex: 1;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--color-base-black);
+  transition: all 0.2s ease;
+}
+
+.status-tab:hover:not(.active) {
+  background: var(--color-gray-50);
+  color: var(--color-gray-900);
+}
+
+.status-tab.active {
+  background: #98FB96 !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #0000FF !important;
+  font-weight: 700;
+}
+
+/* ===========================
+   7. Filter Controls
+   =========================== */
+.filter-controls {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  width: 1080px;
+  height: 70px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Dropdowns Container */
+.filter-dropdowns {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  width: 592px;
+  height: 70px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Filter Dropdown */
+.filter-dropdown {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 6px;
+  /* Exact 6px between label and dropdown */
+  height: 70px;
+  flex: none;
+  flex-grow: 0;
+}
+
+.filter-dropdown:nth-child(1) {
+  width: 200px;
+  order: 0;
+}
+
+.filter-dropdown:nth-child(2) {
+  width: 200px;
+  order: 1;
+}
+
+.filter-dropdown:nth-child(3) {
+  width: 168px;
+  order: 2;
+}
+
+/* Label Wrapper */
+.filter-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  margin: 0px;
+  gap: 2px;
+  height: 20px;
+  /* Exact height - no extra space */
+  max-height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  overflow: hidden;
+}
+
+.filter-label-text {
+  display: block;
+  height: 20px;
+  /* Exact text height */
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  /* Same as height - no extra space */
+  color: #414651;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Different label widths for each dropdown */
+.filter-dropdown:nth-child(1) .filter-label-text {
+  width: auto;
+  /* Location */
+  white-space: nowrap;
+}
+
+.filter-dropdown:nth-child(2) .filter-label-text {
+  width: auto;
+  /* Investment type */
+  white-space: nowrap;
+}
+
+.filter-dropdown:nth-child(3) .filter-label-text {
+  width: auto;
+  /* Type of property */
+  white-space: nowrap;
+}
+
+.help-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  order: 2;
+  flex-grow: 0;
+  cursor: help;
+}
+
+/* Dropdown Input Wrapper */
+.dropdown-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  /* Remove padding - will use select padding instead */
+  gap: 0;
+  height: 44px !important;
+  /* Exact height */
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: none;
+  border-radius: 8px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Specific widths for each dropdown - Location */
+#filter-bar-location .dropdown-wrapper,
+.filter-dropdown:nth-child(1) .dropdown-wrapper {
+  width: 200px !important;
+}
+
+/* Investment Type */
+#filter-bar-investment .dropdown-wrapper,
+.filter-dropdown:nth-child(2) .dropdown-wrapper {
+  width: 200px !important;
+}
+
+/* Property Type */
+#filter-bar-property .dropdown-wrapper,
+.filter-dropdown:nth-child(3) .dropdown-wrapper {
+  width: 168px !important;
+}
+
+.dropdown-wrapper:hover {
+  border-color: #a4a7ae;
+}
+
+.dropdown-icon {
+  width: 20px;
+  height: 20px;
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  /* Icon doesn't block clicks */
+  z-index: 1;
+}
+
+.dropdown-select {
+  width: 100%;
+  height: 100%;
+  /* Full height of wrapper */
+  border: none;
+  background: transparent;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  /* Regular weight by default */
+  font-size: 16px;
+  line-height: 44px;
+  /* Match wrapper height for vertical centering */
+  color: #717680;
+  /* Gray for placeholder state */
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 0 40px 0 42px;
+  /* Left: icon space, Right: chevron space */
+  margin: 0;
+}
+
+/* When option is selected */
+.dropdown-select:valid:not([value=""]) {
+  font-weight: 500;
+  /* Medium weight for selected text */
+  color: #181d27;
+  /* Dark color for selected */
+}
+
+.dropdown-select option {
+  padding: 8px;
+  font-weight: 400;
+  color: #181d27;
+}
+
+.dropdown-chevron {
+  width: 20px;
+  height: 20px;
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  /* Chevron doesn't block clicks */
+  z-index: 1;
+}
+
+/* More Filters Button */
+.more-filters-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 4px;
+  width: 134px;
+  height: 40px;
+  margin-top: 10px;
+  /* Centers it vertically in the 70px container */
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: none;
+  border-radius: 8px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.more-filters-btn:hover {
+  background: #fafafa;
+}
+
+.more-filters-btn-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.more-filters-btn-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  padding: 0px 2px;
+  white-space: nowrap;
+}
+
+/* ===========================
+   8. Search Bar
+   =========================== */
+.search-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 12px;
+  width: 100%;
+  height: 44px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.search-input-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: var(--input-padding, 10px 14px);
+  gap: 8px;
+  height: var(--input-height, 44px);
+  background: var(--input-bg, #FFFFFF);
+  border: 1px solid var(--input-border-color, #D0D5DD);
+  box-shadow: none;
+  border-radius: var(--input-border-radius, 8px);
+  flex: 1 1 0%;
+  min-width: 0;
+  order: 0;
+}
+
+.search-input-wrapper:focus-within {
+  border-color: var(--input-border-focus, #0000FF);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
+}
+
+.search-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.search-input {
+  width: 100%;
+  height: 24px;
+  border: none;
+  background: transparent;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 400;
+  font-size: var(--input-font-size, 16px);
+  line-height: 24px;
+  color: var(--input-text-color, #101828);
+  outline: none;
+  flex: none;
+  order: 1;
+  flex-grow: 1;
+}
+
+.search-input::placeholder {
+  color: var(--input-placeholder-color, #667085);
+}
+
+/* Clear Button */
+.clear-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 6px;
+  width: 78px;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: none;
+  border-radius: 8px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #414651;
+}
+
+.clear-btn:hover {
+  background: #fafafa;
+}
+
+/* Search Button */
+.search-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 6px;
+  width: 91px;
+  height: 44px;
+  background: var(--primary-color);
+  box-shadow: none;
+  border-radius: 8px;
+  flex: none;
+  order: 2;
+  flex-grow: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #ffffff;
+}
+
+.search-btn:hover {
+  background: var(--primary-color);
+}
+
+/* ===========================
+   9. Properties Section
+   =========================== */
+.properties-section {
+  position: absolute;
+  width: 1080px;
+  left: 0;
+  top: 356px;
+  /* 200px (filter) + 156px = 356px */
+  z-index: 0;
+  padding-bottom: 100px;
+}
+
+.property-grid,
+.property-grid-content {
+  display: grid;
+  grid-template-columns: repeat(3, 344px);
+  gap: 24px;
+  width: 1080px;
+  align-items: stretch;
+}
+
+.property-grid-item {
+  width: 344px;
+}
+
+/* ===========================
+   10. Property Card
+   =========================== */
+.property-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: 344px;
+  min-width: 320px;
+  min-height: 572px;
+  height: auto;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border-color, #e9eaeb);
+  border-radius: var(--card-border-radius, 16px);
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  overflow: hidden;
+  cursor: pointer;
+  /* Initial state for animation */
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out forwards;
+  /* Animation fill mode ensures final state is maintained */
+  animation-fill-mode: forwards;
+  /* Simple transition like developer dashboard */
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  /* Ensure cards are interactive during animation */
+  pointer-events: auto;
+}
+
+/* Hover state - same as developer dashboard cards */
+.property-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0px 4px 8px rgba(10, 13, 18, 0.1);
+  /* Force hover to work immediately */
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
+.property-card.loaded {
+  opacity: 1;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* ===========================
+   11. Property Gallery
+   =========================== */
+.property-gallery {
+  position: relative;
+  width: 344px;
+  height: 248px;
+  overflow: hidden;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.property-image-container {
+  position: relative;
+  width: 344px;
+  height: 248px;
+  overflow: hidden;
+}
+
+.property-image {
+  position: absolute;
+  width: 344px !important;
+  height: 248px !important;
+  left: 0px;
+  top: 0px;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  opacity: 0;
+  transform: scale(1.05);
+  transition:
+    opacity 0.4s ease-in-out,
+    transform 0.4s ease-in-out;
+  pointer-events: none;
+  display: block !important;
+  /* Image quality improvements to prevent pixelation during scale */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform, opacity;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.property-image.active {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+/* Navigation Arrows */
+.property-nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  transition:
+    opacity 0.3s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+  opacity: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.property-nav-prev {
+  left: 12px;
+}
+
+.property-nav-next {
+  right: 12px;
+}
+
+.property-nav-arrow:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.property-nav-arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* Show arrows on hover of image container */
+.property-image-container:hover .property-nav-arrow {
+  opacity: 1;
+}
+
+/* Pagination Dots */
+.property-dots {
+  position: absolute;
+  width: auto;
+  max-width: 80px;
+  height: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 12px;
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+}
+
+.property-dot {
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #999999;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.property-dot:hover {
+  background: rgba(100, 100, 100, 0.8);
+  border-color: #666666;
+}
+
+.property-dot.active {
+  background: #333333;
+  border: 1px solid #333333;
+}
+
+/* Property Type Badge on Image */
+.property-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 5px 12px 5px 10px;
+  gap: 6px;
+  position: absolute;
+  height: 32px;
+  left: 16px;
+  top: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  z-index: 2;
+}
+
+.badge-icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.badge-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+  color: #3538CD;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  white-space: nowrap;
+}
+
+/* Badge Color Variants */
+
+/* Standard Leasehold - Indigo */
+.badge-standard {
+  background: #eef4ff;
+  border: 1px solid #c7d7fe;
+}
+
+/* Freehold - Orange */
+.badge-freehold {
+  background: #fef6ee;
+  border: 1px solid #f9dbaf;
+}
+
+/* Commercial - Gray Blue */
+.badge-commercial {
+  background: #d5d9eb;
+  border: 1.5px solid #3e4784;
+}
+
+/* Short Term - Success/Green */
+.badge-shortterm {
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+}
+
+/* Flipping - Error/Red */
+.badge-flipping {
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+}
+
+/* Off-plan - Brand/Purple */
+.badge-offplan {
+  background: #e5e5ff;
+  border: 1px solid #a7a7ff;
+}
+
+/* Funding In Progress badge */
+.funding-progress {
+  background: rgba(3, 255, 136, 0.15);
+  border: 1px solid rgba(3, 255, 136, 0.4);
+}
+
+/* Commodity badge */
+.badge-commodity {
+  background: #f0f4ff;
+  border: 1px solid #c7d7fe;
+}
+
+.badge-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.badge-icon-wrapper img {
+  width: 14px;
+  height: 14px;
+}
+
+/* ===========================
+   12. Property Content
+   =========================== */
+.property-content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 16px;
+  gap: 12px;
+  width: 100%;
+  height: auto;
+  min-height: 300px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Categories Section */
+.property-categories {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  width: 300px;
+  height: 32px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.property-category {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 4px 0px;
+  gap: 4px;
+  height: 32px;
+  border-radius: 16px;
+  flex: none;
+  flex-grow: 0;
+}
+
+.property-category:nth-child(1) {
+  width: 38px;
+  order: 0;
+}
+
+.property-category:nth-child(3) {
+  width: 78px;
+  order: 2;
+}
+
+.property-category:nth-child(5) {
+  width: 107px;
+  order: 4;
+}
+
+.category-icon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.category-icon.rented-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.category-icon.location-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.category-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.category-separator {
+  width: 2px;
+  height: 20px;
+  background: #d9d9d9;
+  flex: none;
+  flex-grow: 0;
+  margin: 0 12px;
+}
+
+.category-separator:nth-child(2) {
+  order: 1;
+}
+
+.category-separator:nth-child(4) {
+  order: 3;
+}
+
+/* Commodity Categories - Flexible Width Layout */
+.commodity-categories {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  width: 300px;
+  height: 32px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.commodity-categories .property-category {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 4px 0px;
+  gap: 4px;
+  height: 32px;
+  border-radius: 16px;
+  flex: none;
+  flex-grow: 0;
+  width: auto;
+  /* Allow flexible width based on content */
+}
+
+.commodity-categories .category-separator {
+  width: 2px;
+  height: 20px;
+  background: #d9d9d9;
+  flex: none;
+  flex-grow: 0;
+  margin: 0 12px;
+}
+
+/* Heading and Icon Section */
+.property-heading {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 16px;
+  width: 312px;
+  min-height: 60px;
+  height: auto;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.property-title {
+  width: 272px;
+  min-height: 60px;
+  height: auto;
+  max-height: 120px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 30px;
+  color: #181d27;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.arrow-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 4px 0px 0px;
+  width: 24px;
+  height: 28px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.arrow-icon {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Loading Bar Section */
+.property-pricing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 8px;
+  width: 312px;
+  height: 46px;
+  flex: none;
+  order: 2;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Price and Percentage - First */
+.price-wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px;
+  gap: 35px;
+  width: 312px;
+  height: 30px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Progress Bar - Second */
+.property-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 1px;
+  gap: 10px;
+  width: 312px;
+  height: 8px;
+  background: #d5d7da;
+  border-radius: 30px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  overflow: hidden;
+}
+
+.progress-bar {
+  /* width is set dynamically via inline style (percentage of funding) */
+  height: 8px;
+  background: rgb(152, 251, 150);
+  border-radius: 30px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  min-width: 0;
+  transition: width 0.6s ease;
+}
+
+.property-price {
+  margin: 0;
+  width: auto;
+  min-width: 148px;
+  height: 30px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 30px;
+  color: var(--primary-color);
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  white-space: nowrap;
+}
+
+.funded-percentage {
+  margin: 0;
+  width: auto;
+  min-width: 81px;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: right;
+  color: #535862;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  white-space: nowrap;
+}
+
+/* Investment Details Box */
+.investment-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px;
+  gap: 10px;
+  width: 100%;
+  height: auto;
+  background: #f8f9fa;
+  border-radius: 8px;
+  flex: none;
+  order: 3;
+  align-self: stretch;
+  flex-grow: 0;
+  box-sizing: border-box;
+}
+
+.investment-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px;
+  width: 100%;
+  min-height: 16px;
+  flex: none;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.investment-row:nth-child(1) {
+  order: 0;
+}
+
+.investment-row:nth-child(2) {
+  order: 1;
+}
+
+.investment-row:nth-child(3) {
+  order: 2;
+}
+
+.investment-label {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: left;
+  color: #717680;
+  flex: 1 1 auto;
+  order: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding-right: 4px;
+}
+
+.investment-value {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: right;
+  color: var(--brand-dark-blue);
+  flex: 0 0 auto;
+  order: 1;
+  white-space: nowrap;
+}
+
+/* ===========================
+   Card Meta Row (Beds | Status | Location)
+   =========================== */
+.card-meta-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  width: 100%;
+  align-self: stretch;
+  min-height: 24px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.card-meta-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #414651;
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.card-meta-item:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+
+.card-meta-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-meta-item svg {
+  flex-shrink: 0;
+}
+
+.card-meta-divider {
+  width: 1px;
+  height: 16px;
+  background: #d5d7da;
+  flex-shrink: 0;
+  margin: 0 8px;
+}
+
+/* ===========================
+   13. Infinite Scroll & Animation
+   =========================== */
+
+/* Infinite scroll trigger */
+.infinite-scroll-trigger {
+  height: 1px;
+  margin-top: 50px;
+  visibility: hidden;
+}
+
+/* Loading indicator */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 0;
+  width: 100%;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e9eaeb;
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-indicator span {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #717680;
+}
+
+/* Property card with integrated fade-in animation */
+
+/* Stagger animation for all cards */
+.property-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.property-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.property-card:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.property-card:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.property-card:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+.property-card:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+.property-card:nth-child(7) {
+  animation-delay: 0.35s;
+}
+
+.property-card:nth-child(8) {
+  animation-delay: 0.4s;
+}
+
+.property-card:nth-child(9) {
+  animation-delay: 0.45s;
+}
+
+.property-card:nth-child(10) {
+  animation-delay: 0.5s;
+}
+
+.property-card:nth-child(11) {
+  animation-delay: 0.55s;
+}
+
+.property-card:nth-child(12) {
+  animation-delay: 0.6s;
+}
+
+/* Additional cards after 12 should have minimal delay */
+.property-card:nth-child(n + 13) {
+  animation-delay: 0.65s;
+}
+
+/* Fade in animation keyframes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* HTMX loading class */
+.htmx-request .loading-indicator {
+  display: flex;
+}
+
+/* Hide pagination - replaced by infinite scroll */
+.pagination-container {
+  display: none;
+}
+
+/* Button wrap containers */
+.button-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  width: auto;
+  height: 20px;
+  flex: 1;
+}
+
+.button-wrap.left {
+  order: 0;
+  justify-content: flex-start;
+}
+
+.button-wrap.right {
+  order: 2;
+  justify-content: flex-end;
+}
+
+/* Previous/Next buttons */
+.pagination-nav {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 6px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex: none;
+  flex-grow: 0;
+}
+
+.pagination-nav.prev {
+  width: 85px;
+  order: 0;
+}
+
+.pagination-nav.next {
+  width: 58px;
+  order: 0;
+}
+
+.pagination-nav:hover {
+  opacity: 0.8;
+}
+
+.pagination-nav:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Arrow icons */
+.pagination-arrow {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  flex-grow: 0;
+}
+
+.pagination-arrow.left {
+  order: 0;
+}
+
+.pagination-arrow.right {
+  order: 2;
+}
+
+/* Button text */
+.pagination-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+  flex: none;
+  flex-grow: 0;
+}
+
+.pagination-text.prev {
+  width: 59px;
+  order: 1;
+}
+
+.pagination-text.next {
+  width: 32px;
+  order: 1;
+}
+
+/* Pagination numbers container */
+.pagination-numbers {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  gap: 2px;
+  width: auto;
+  height: 40px;
+  flex: 0 0 auto;
+  order: 1;
+}
+
+/* Pagination number base */
+.page-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  flex: none;
+  flex-grow: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.page-number-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  left: 0;
+  top: 0;
+  border-radius: 20px;
+}
+
+.page-number-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #535862;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Active page number */
+.page-number.active {
+  background: #fafafa;
+}
+
+.page-number.active .page-number-text {
+  color: #252b37;
+  font-weight: 600;
+}
+
+.page-number:hover:not(.active) {
+  background: #f5f5f5;
+}
+
+.pagination-ellipsis {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #535862;
+  font-size: 14px;
+  line-height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+/* Sidebar styles removed - using sidebar-navigation.css instead */
+
+/* ===========================
+   Responsive Design
+   =========================== */
+@media (max-width: 1280px) {
+  .property-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+
+  /* Remove all text selection and tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    -khtml-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+  }
+
+  /* Hide desktop sidebar */
+  .marketplace-sidebar {
+    display: none !important;
+  }
+
+  /* Adjust main content for mobile */
+  .marketplace-main,
+  #marketplace-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 16px !important;
+    min-height: calc(100vh - 64px);
+    position: relative !important;
+    left: 0 !important;
+    /* Account for mobile header only */
+  }
+
+  /* Adjust content wrapper */
+  .marketplace-content-wrapper {
+    width: 100% !important;
+    padding: 20px 0 0 0 !important;
+  }
+
+  /* Hide filter controls on mobile, keep only status tabs */
+  .filter-bar-container,
+  .filter-controls,
+  .filter-dropdowns,
+  .search-container {
+    display: none !important;
+  }
+
+  /* Show only status tabs on mobile */
+  .status-tabs {
+    display: flex !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* Adjust page header */
+  .page-header {
+    position: relative !important;
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-size: 28px !important;
+    line-height: 36px !important;
+  }
+
+  /* Adjust filter bar container */
+  .filter-bar-container {
+    position: relative !important;
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin-bottom: 24px;
+  }
+
+  /* Adjust status tabs */
+  .status-tabs {
+    position: relative !important;
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin-bottom: 16px;
+    padding: 4px;
+    height: 48px;
+  }
+
+  .status-tab {
+    font-size: 14px !important;
+    padding: 6px 8px;
+    height: 40px;
+    cursor: pointer !important;
+    border: none !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    -khtml-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+  }
+
+  /* Filter controls */
+  .filter-controls {
+    flex-direction: column;
+    width: 100% !important;
+    height: auto !important;
+    gap: 12px;
+  }
+
+  /* Filter dropdowns */
+  .filter-dropdowns {
+    flex-direction: column;
+    width: 100% !important;
+    height: auto !important;
+    gap: 12px;
+  }
+
+  .filter-dropdown {
+    width: 100% !important;
+  }
+
+  .filter-dropdown .dropdown-wrapper {
+    width: 100% !important;
+  }
+
+  /* More filters button */
+  .more-filters-btn {
+    width: 100% !important;
+    margin-top: 0 !important;
+  }
+
+  /* Search bar */
+  .search-bar {
+    flex-direction: row;
+    width: 100% !important;
+    gap: 8px;
+  }
+
+  .search-input-wrapper {
+    width: 100% !important;
+    flex: 1;
+  }
+
+  .clear-btn,
+  .search-btn {
+    width: auto !important;
+    min-width: 60px;
+  }
+
+  /* Properties section */
+  .properties-section {
+    position: relative !important;
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    padding-bottom: 40px;
+  }
+
+  /* Property grid */
+  .property-grid,
+  .property-grid-content {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    gap: 16px;
+  }
+
+  /* Property card */
+  .property-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: auto !important;
+  }
+
+  /* Always show navigation arrows on mobile */
+  .property-nav-arrow {
+    opacity: 1 !important;
+    display: flex !important;
+  }
+
+  .property-nav-arrow--prev,
+  .property-nav-arrow--next {
+    opacity: 1 !important;
+    display: flex !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .property-gallery,
+  .property-image-container,
+  .property-image {
+    width: 100% !important;
+  }
+
+  .property-content {
+    width: 100% !important;
+    padding: 16px !important;
+  }
+
+  .property-categories,
+  .property-heading,
+  .property-pricing,
+  .investment-details {
+    width: 100% !important;
+  }
+
+  .property-title {
+    width: 100% !important;
+  }
+
+  .price-wrapper {
+    width: 100% !important;
+  }
+
+  .property-progress {
+    width: 100% !important;
+  }
+
+  .investment-details {
+    width: 100% !important;
+  }
+
+  .investment-row {
+    width: 100% !important;
+    padding: 0 8px;
+  }
+}

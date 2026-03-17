@@ -1,0 +1,671 @@
+/* ===========================
+   Mobile Developer Document Upload - Step 3
+   Document Upload with File Management
+   Based on desktop implementation (no source design file available)
+   =========================== */
+
+@media (max-width: 768px) {
+  /* Hide cart icon on all developer pages */
+  body[id*="developer"] .mobile-header__icons,
+  #developer-document-upload-step3-body .mobile-header__icons {
+    justify-content: flex-end !important;
+  }
+
+  /* Hide cart button on developer pages */
+  body[id*="developer"] .mobile-header__icon-btn--cart,
+  #developer-document-upload-step3-body .mobile-header__icon-btn--cart {
+    display: none !important;
+  }
+
+  /* ============================================
+     CRITICAL: Neutralize Desktop Absolute Positioning
+     ============================================ */
+  .document-upload-step3-main,
+  .form-step-indicator,
+  .document-upload-title,
+  .document-section,
+  .document-section-title,
+  .document-section-content,
+  .document-list,
+  .file-upload-area,
+  .uploaded-files-list,
+  .file-upload-item,
+  .documents-note-section,
+  .form-actions,
+  #form-actions {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+  }
+
+  /* ============================================
+     Page Structure
+     ============================================ */
+  #developer-document-upload-step3-body {
+    min-height: 100vh !important;
+    background: #fafafa !important;
+  }
+
+  .document-upload-step3-page {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    background: #fafafa !important;
+  }
+
+  /* Hide sidebar on mobile */
+  .document-upload-step3-sidebar,
+  #developer-document-upload-step3-sidebar {
+    display: none !important;
+  }
+
+  /* Main Content Area */
+  .document-upload-step3-main,
+  #developer-document-upload-step3-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: calc(100vh - 64px) !important;
+    padding: 32px 16px 40px 16px !important;
+    margin: 0 !important;
+    background: #fafafa !important;
+    padding-top: 96px !important; /* Account for mobile header */
+  }
+
+  /* ============================================
+     Breadcrumbs - Show Last 2 Items (... > Property information > Documents)
+     ============================================ */
+  .document-upload-breadcrumbs,
+  #document-upload-breadcrumbs {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 0px !important;
+    gap: 8px !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 0 16px 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap !important;
+  }
+
+  /* Hide first 2 items (Assets, Add Asset) and their chevrons */
+  .document-upload-breadcrumbs > .breadcrumb-link:nth-child(1),
+  .document-upload-breadcrumbs > .breadcrumb-chevron:nth-child(2),
+  .document-upload-breadcrumbs > .breadcrumb-link:nth-child(3),
+  .document-upload-breadcrumbs > .breadcrumb-chevron:nth-child(4) {
+    display: none !important;
+  }
+
+  /* Add "..." before the third breadcrumb item (Property information) */
+  .document-upload-breadcrumbs > .breadcrumb-link:nth-child(5)::before {
+    content: "..." !important;
+    margin-right: 8px !important;
+    color: #535862 !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+  }
+
+  .document-upload-breadcrumbs .breadcrumb-link,
+  .document-upload-breadcrumbs .breadcrumb-current {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .document-upload-breadcrumbs .breadcrumb-link {
+    color: #535862 !important;
+    text-decoration: none !important;
+  }
+
+  .document-upload-breadcrumbs .breadcrumb-current {
+    color: var(--primary-color) !important;
+  }
+
+  .document-upload-breadcrumbs .breadcrumb-chevron {
+    flex-shrink: 0 !important;
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* ============================================
+     Step Indicator - Hidden on Mobile
+     ============================================ */
+  .form-step-indicator {
+    display: none !important;
+  }
+
+  /* ============================================
+     Page Title - Centered
+     ============================================ */
+  .document-upload-title,
+  #document-upload-title {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    line-height: 32px !important;
+    text-align: center !important;
+    color: #181d27 !important;
+    margin: 0 auto 24px auto !important;
+    padding: 0 !important;
+  }
+
+  /* ============================================
+     Document Sections
+     ============================================ */
+  .document-section,
+  #documents-section-1,
+  #documents-section-2,
+  #documents-section-3,
+  #documents-section-4,
+  #documents-section-5,
+  #documents-section-6 {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 auto 16px auto !important;
+    padding: 20px 16px !important;
+    background: #ffffff !important;
+    border: 1px solid #e9eaeb !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 12px !important;
+  }
+
+  /* Section Title */
+  .document-section-title {
+    width: 100% !important;
+    height: auto !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+    color: #181d27 !important;
+    margin: 0 0 12px 0 !important;
+  }
+
+  /* Section Content */
+  .document-section-content {
+    width: 100% !important;
+    height: auto !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* Document List */
+  .document-list {
+    list-style: none !important;
+    padding: 0 0 0 16px !important;
+    margin: 0 !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 12px !important;
+    line-height: 18px !important;
+    color: #535862 !important;
+  }
+
+  .document-list li {
+    margin-bottom: 6px !important;
+    padding-left: 8px !important;
+    position: relative !important;
+  }
+
+  .document-list li::before {
+    content: "•" !important;
+    position: absolute !important;
+    left: -8px !important;
+    color: #535862 !important;
+  }
+
+  /* ============================================
+     File Upload Area
+     ============================================ */
+  .file-upload-area {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 16px 20px !important;
+    gap: 4px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 120px !important;
+    background: #ffffff !important;
+    border: 2px dashed #d5d7da !important;
+    border-radius: 12px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    margin-bottom: 12px !important;
+  }
+
+  .file-upload-area:hover {
+    border-color: var(--primary-color) !important;
+    background: rgba(0, 0, 255, 0.02) !important;
+  }
+
+  .file-upload-area.drag-active {
+    border-color: var(--primary-color) !important;
+    background: rgba(0, 0, 255, 0.05) !important;
+  }
+
+  /* Upload Content */
+  .upload-content {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .upload-icon-wrapper {
+    width: 36px !important;
+    height: 36px !important;
+    background: #ffffff !important;
+    border: 1px solid #e9eaeb !important;
+    box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05) !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .upload-icon-wrapper svg,
+  .upload-icon-wrapper img {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .upload-text {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 2px !important;
+  }
+
+  .upload-action {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 13px !important;
+    line-height: 18px !important;
+    color: #535862 !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+
+  .upload-link {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    line-height: 18px !important;
+    color: var(--primary-color) !important;
+    background: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    text-decoration: none !important;
+  }
+
+  .upload-link:hover {
+    text-decoration: underline !important;
+  }
+
+  .upload-info {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 11px !important;
+    line-height: 16px !important;
+    text-align: center !important;
+    color: #717680 !important;
+    margin: 0 !important;
+  }
+
+  .hidden-file-input {
+    display: none !important;
+  }
+
+  /* ============================================
+     Uploaded Files List
+     ============================================ */
+  .uploaded-files-list,
+  #uploaded-files-list-1,
+  #uploaded-files-list-2,
+  #uploaded-files-list-3,
+  #uploaded-files-list-4,
+  #uploaded-files-list-5,
+  #uploaded-files-list-6 {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* File Upload Item */
+  .file-upload-item {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    padding: 12px !important;
+    gap: 12px !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 72px !important;
+    background: #f8f9fc !important;
+    border: 1px solid #e9eaeb !important;
+    border-radius: 8px !important;
+    position: relative !important;
+  }
+
+  /* File Content */
+  .file-content {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    flex: 1 !important;
+  }
+
+  /* File Icon */
+  .file-type-icon {
+    width: 32px !important;
+    height: 32px !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+  }
+
+  .file-icon-page {
+    box-sizing: border-box !important;
+    position: absolute !important;
+    left: 17.5% !important;
+    right: 2.5% !important;
+    top: 0% !important;
+    bottom: 0% !important;
+    background: #ffffff !important;
+    border: 1.5px solid #d5d7da !important;
+    border-radius: 3px !important;
+    box-shadow: 0px 12px 24px -6px rgba(10, 13, 18, 0.12) !important;
+  }
+
+  .file-icon-earmark {
+    box-sizing: border-box !important;
+    position: absolute !important;
+    left: 62.5% !important;
+    right: 1.56% !important;
+    top: 1.25% !important;
+    bottom: 70% !important;
+    background: #ffffff !important;
+    border: 1.5px solid #d5d7da !important;
+    border-radius: 3px !important;
+  }
+
+  .file-type-badge {
+    position: absolute !important;
+    left: 2.5% !important;
+    right: 32.5% !important;
+    top: 45% !important;
+    bottom: 15% !important;
+    background: #d92d20 !important;
+    border-radius: 2px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 8px !important;
+    line-height: 10px !important;
+    text-align: center !important;
+    color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 2px 3px !important;
+  }
+
+  /* File Info */
+  .file-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .file-details {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+  }
+
+  .file-name {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    line-height: 18px !important;
+    color: #414651 !important;
+    word-break: break-word !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .file-size {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+    color: #717680 !important;
+  }
+
+  /* Progress Bar */
+  .file-progress {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .progress-bar {
+    flex: 1 !important;
+    height: 6px !important;
+    background: #e9eaeb !important;
+    border-radius: 3px !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  .progress-fill {
+    position: absolute !important;
+    height: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    background: var(--primary-color) !important;
+    border-radius: 3px !important;
+    transition: width 0.3s ease !important;
+  }
+
+  .progress-percentage {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+    color: #414651 !important;
+    min-width: 35px !important;
+    text-align: right !important;
+  }
+
+  /* Delete Button */
+  .file-delete-btn {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 4px !important;
+    position: absolute !important;
+    width: 24px !important;
+    height: 24px !important;
+    right: 8px !important;
+    top: 8px !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: background 0.2s ease !important;
+  }
+
+  .file-delete-btn:hover {
+    background: #ffffff !important;
+  }
+
+  .file-delete-btn svg,
+  .file-delete-btn img {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* ============================================
+     Important Note Section
+     ============================================ */
+  .documents-note-section {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 16px auto 24px auto !important;
+    padding: 16px !important;
+    background: rgba(0, 0, 255, 0.05) !important;
+    border: 1px solid rgba(0, 0, 255, 0.2) !important;
+    border-radius: 8px !important;
+  }
+
+  .documents-note-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+    line-height: 18px !important;
+    color: var(--primary-color) !important;
+    margin: 0 !important;
+    text-align: left !important;
+  }
+
+  /* ============================================
+     Form Actions - Stacked Buttons
+     ============================================ */
+  .form-actions,
+  #form-actions {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+
+  .form-back-btn,
+  .form-next-btn,
+  #form-back-btn,
+  #form-next-btn {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 12px 16px !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 44px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+  }
+
+  .form-next-btn,
+  #form-next-btn {
+    background: var(--primary-color) !important;
+    border: none !important;
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05) !important;
+    color: #ffffff !important;
+  }
+
+  .form-next-btn:hover,
+  #form-next-btn:hover {
+    background: var(--primary-color) !important;
+  }
+
+  .form-back-btn,
+  #form-back-btn {
+    background: #ffffff !important;
+    border: 2px solid #e9eaeb !important;
+    color: var(--brand-dark-blue) !important;
+  }
+
+  .form-back-btn:hover,
+  #form-back-btn:hover {
+    background: #f8f9fc !important;
+  }
+
+  .back-arrow,
+  .next-arrow {
+    width: 20px !important;
+    height: 20px !important;
+  }
+}
+
+/* ============================================
+   Extra Small Devices (< 375px)
+   ============================================ */
+@media (max-width: 374px) {
+  .document-upload-step3-main,
+  #developer-document-upload-step3-main {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .document-section {
+    max-width: 100% !important;
+  }
+
+  .document-upload-title {
+    font-size: 20px !important;
+    line-height: 28px !important;
+  }
+}

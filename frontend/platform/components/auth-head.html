@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title | default('POOOL') }}</title>
+    {% if meta_description %}
+    <meta name="description" content="{{ meta_description }}" />{% endif %}
+
+    <!-- Sentry Error Tracking (Auth Pages) -->
+    <script src="https://browser.sentry-cdn.com/9.7.0/bundle.min.js" crossorigin="anonymous"></script>
+    <script>
+        Sentry.init({
+            dsn: "https://afa08aaf5243c4068a9cda6547df30e1@o4511010305277952.ingest.de.sentry.io/4511013959762000",
+            environment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'development' : 'production',
+            release: "poool-frontend@1.0.0",
+            tracesSampleRate: 0,
+            beforeSend: function (event) {
+                if (event.request && event.request.url) {
+                    event.request.url = event.request.url.replace(/token=[^&]+/, 'token=[REDACTED]');
+                }
+                return event;
+            },
+        });
+
+        window.addEventListener('unhandledrejection', function (event) {
+            Sentry.captureException(event.reason || new Error('Unhandled Promise rejection'));
+        });
+    </script>
+
+    <!-- CSRF Token injection for HTMX requests -->
+    <script>
+        (function () {
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+            const token = getCookie('csrf_token');
+            if (token) {
+                document.addEventListener('htmx:configRequest', function (evt) {
+                    if (['post', 'put', 'patch', 'delete'].includes(evt.detail.verb)) {
+                        evt.detail.headers['X-CSRF-Token'] = decodeURIComponent(token);
+                    }
+                });
+            }
+        })();
+    </script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Design tokens only (no dashboard CSS) -->
+    <link rel="stylesheet" href="/static/css/dashboard-tokens.css?v={{ asset_version }}" />
+
+    <!-- Auth page CSS -->
+    <link rel="stylesheet" href="/static/css/login.css?v={{ asset_version }}" />
+
+    <!-- Reveal body once CSS is ready (required by dashboard-tokens.css anti-flicker rule) -->
+    <script>
+        (function () {
+            if (document.readyState !== 'loading') {
+                document.body && document.body.classList.add('dom-ready');
+            }
+            document.addEventListener('DOMContentLoaded', function () {
+                document.body.classList.add('dom-ready');
+            });
+            setTimeout(function () {
+                document.body && document.body.classList.add('dom-ready');
+            }, 500);
+        })();
+    </script>
+</head>

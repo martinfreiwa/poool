@@ -1,0 +1,663 @@
+/* Mobile Cart Page Styles */
+
+/* Hide desktop elements on mobile */
+@media (max-width: 768px) {
+  /* Hide desktop sidebar */
+  #cart-page-sidebar,
+  .cart-page-sidebar {
+    display: none !important;
+  }
+
+  /* Hide desktop cart content */
+  #cart-content-wrapper,
+  .cart-page-header,
+  .cart-page-content,
+  .cart-empty-wrapper,
+  .cart-items-container {
+    display: none !important;
+  }
+
+  /* Show mobile cart wrapper */
+  .mobile-cart-wrapper {
+    display: block !important;
+    width: 100%;
+    background: #fafafa;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+
+  /* Reset main container */
+  #cart-main,
+  .cart-page-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    position: relative !important;
+    background: #fafafa;
+  }
+
+  #cart-page,
+  .cart-page {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  #cart-app,
+  .cart-app {
+    width: 100% !important;
+    position: relative !important;
+    padding-top: 0 !important;
+  }
+
+  /* Mobile Cart Content Container */
+  .mobile-cart-content {
+    padding-top: 0;
+    /* No extra padding needed */
+    padding-bottom: 120px;
+    /* Fixed checkout section height */
+    min-height: 100vh;
+  }
+
+  /* Cart Title Section */
+  .mobile-cart-title-section {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 16px;
+  }
+
+  .mobile-cart-title-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mobile-cart-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .mobile-cart-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 32px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  .mobile-add-more-btn {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 4px;
+    height: 36px;
+    border: 1px solid #a4a7ae;
+    filter: drop-shadow(0px 1px 2px rgba(10, 13, 18, 0.05));
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+  }
+
+  .mobile-add-more-btn span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #181d27;
+  }
+
+  /* Mobile Cart Item Card */
+  .mobile-cart-item-card {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    gap: 20px;
+    width: calc(100% - 32px);
+    margin: 0 16px 24px;
+    background: #ffffff;
+    border: 1px solid #e9eaeb;
+    border-radius: 12px;
+  }
+
+  .mobile-cart-item-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 24px;
+    width: 100%;
+  }
+
+  .mobile-cart-item-header {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 16px;
+    width: 100%;
+    height: 91px;
+  }
+
+  .mobile-cart-item-image {
+    width: 128px;
+    height: 91px;
+    border-radius: 12px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .mobile-cart-item-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 12px;
+    flex: 1;
+  }
+
+  .mobile-cart-item-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 20px;
+    color: #181d27;
+    margin: 0;
+  }
+
+  /* Property metrics row */
+  .mobile-cart-metrics {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 24px;
+    width: 100%;
+  }
+
+  .mobile-cart-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 4px;
+  }
+
+  .mobile-cart-metric-label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+  }
+
+  .mobile-cart-metric-label span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 18px;
+    color: #414651;
+  }
+
+  .mobile-cart-help-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .mobile-cart-metric-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 18px;
+    color: #000000;
+  }
+
+  /* Progress and controls section */
+  .mobile-cart-controls-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0px;
+    gap: 24px;
+    width: 100%;
+  }
+
+  /* Loading bar */
+  .mobile-cart-loading-bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .mobile-cart-loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px 1px;
+    margin: 0 auto;
+    width: 230px;
+    height: 8px;
+    background: #d5d7da;
+    border-radius: 30px;
+    position: relative;
+  }
+
+  .mobile-cart-loading-fill {
+    width: 178px;
+    height: 8px;
+    background: var(--accent-color);
+    border-radius: 30px;
+  }
+
+  .mobile-cart-funded-text {
+    margin: 0 auto;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: right;
+    color: #535862;
+  }
+
+  /* Quantity controls */
+  .mobile-cart-quantity-controls {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 8px;
+    width: 100%;
+    height: 36px;
+  }
+
+  .mobile-cart-minus-btn,
+  .mobile-cart-plus-btn {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 38px;
+    height: 36px;
+    border: 1px solid #e9eaeb;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+  }
+
+  .mobile-cart-minus-icon,
+  .mobile-cart-plus-icon {
+    width: 14px;
+    height: 14px;
+    position: relative;
+  }
+
+  .mobile-cart-minus-icon {
+    height: 0px;
+    border-bottom: 2px solid var(--primary-color);
+  }
+
+  .mobile-cart-plus-icon::before,
+  .mobile-cart-plus-icon::after {
+    content: "";
+    position: absolute;
+    background: var(--primary-color);
+  }
+
+  .mobile-cart-plus-icon::before {
+    width: 14px;
+    height: 2px;
+    top: 6px;
+    left: 0;
+  }
+
+  .mobile-cart-plus-icon::after {
+    width: 2px;
+    height: 14px;
+    top: 0;
+    left: 6px;
+  }
+
+  .mobile-cart-price-display {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 32px;
+    gap: 10px;
+    flex: 1;
+    height: 36px;
+    border: 1px solid #e9eaeb;
+    border-radius: 12px;
+    background: white;
+  }
+
+  .mobile-cart-price-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 28px;
+    color: #181d27;
+  }
+
+  /* Remove button */
+  .mobile-cart-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    gap: 10px;
+    width: 100%;
+    height: 30px;
+  }
+
+  .mobile-cart-remove-btn {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 12px;
+    gap: 4px;
+    width: 89px;
+    height: 30px;
+    border: 1px solid #e9eaeb;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+  }
+
+  .mobile-cart-trash-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .mobile-cart-remove-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 18px;
+    color: #a4a7ae;
+  }
+
+  /* Cart summary section */
+  .mobile-cart-summary {
+    margin: 40px 16px 0;
+  }
+
+  .mobile-cart-divider {
+    width: calc(100% - 32px);
+    height: 1px;
+    background: #d5d7da;
+    margin: 0 16px 24px;
+  }
+
+  .mobile-cart-total-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px;
+    width: calc(100% - 32px);
+    height: 30px;
+    margin: 0 16px;
+  }
+
+  .mobile-cart-total-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 30px;
+    color: #949494;
+  }
+
+  .mobile-cart-total-wrapper {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0px;
+    gap: 4px;
+  }
+
+  .mobile-cart-total-amount {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 30px;
+    text-align: right;
+    color: #141417;
+  }
+
+  .mobile-cart-help-total {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Fixed checkout section */
+  .mobile-cart-checkout-section {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0px;
+    width: 100%;
+    height: 120px;
+    background: #ffffff;
+    border-top: 1px solid #e9eaeb;
+    z-index: 100;
+  }
+
+  .mobile-cart-checkout-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 16px;
+    width: 100%;
+    height: 120px;
+  }
+
+  .mobile-cart-checkout-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .mobile-cart-total-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 32px;
+    color: #181d27;
+  }
+
+  .mobile-cart-checkout-btn {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 14px;
+    gap: 4px;
+    width: 100%;
+    height: 40px;
+    background: var(--primary-color);
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .mobile-cart-checkout-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    color: #ffffff;
+  }
+
+  .mobile-cart-arrow-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Mobile Empty Cart Container */
+  .mobile-cart-empty-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    min-height: calc(100vh - 64px - 48px - 80px);
+    text-align: center;
+  }
+
+  /* Empty Cart Icon */
+  .mobile-cart-empty-icon {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 24px;
+  }
+
+  /* Empty Cart Heading */
+  .mobile-cart-empty-heading {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 32px;
+    color: #181d27;
+    margin: 0 0 12px 0;
+  }
+
+  /* Empty Cart Description */
+  .mobile-cart-empty-description {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: #535862;
+    margin: 0 0 32px 0;
+    max-width: 320px;
+  }
+
+  /* View Properties Button */
+  .mobile-cart-empty-button {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 14px;
+    gap: 4px;
+    width: 164px;
+    height: 40px;
+    background: var(--primary-color);
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #ffffff;
+  }
+
+  .mobile-cart-empty-button:hover {
+    background: var(--primary-color);
+  }
+
+  .mobile-cart-empty-button:active {
+    background: #0000cc;
+  }
+
+  /* Home Icon in Button */
+  .mobile-cart-empty-home-icon {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
+    /* Make icon white */
+  }
+}
+
+/* Hide mobile elements on desktop */
+@media (min-width: 769px) {
+  .mobile-cart-wrapper {
+    display: none !important;
+  }
+}
+
+/* Fix for Proceed to Payment button on mobile */
+@media (max-width: 768px) {
+  .proceed-payment-btn {
+    width: 100% !important;
+    max-width: 343px !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation !important;
+    display: flex !important;
+    z-index: 10 !important;
+    position: relative !important;
+  }
+
+  .proceed-payment-btn:active {
+    transform: scale(0.98);
+    background: #0000dd !important;
+  }
+
+  /* Ensure cart summary actions are clickable */
+  .cart-summary-actions {
+    position: relative !important;
+    z-index: 10 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Make sure the link is a block element and fills its container */
+  a.proceed-payment-btn {
+    display: flex !important;
+    text-decoration: none !important;
+  }
+}

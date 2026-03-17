@@ -1,0 +1,191 @@
+{% with title="POOOL", no_index=True, extra_css=['error-pages'] %}{% include "components/head.html" %}{% endwith %}
+
+<body>
+  <div class="page">
+    <div class="container">
+
+      <!-- Logo -->
+      <div class="logo-wrap">
+        <a href="/settings"><img src="/static/images/logo-pool.svg" alt="POOOL" /></a>
+      </div>
+
+      <!-- Success state (shown after submit) -->
+      <div id="deletion-success" role="alert">
+        <div class="success-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M23.333 7L10.5 19.833 4.667 14" stroke="#0000FF" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="success-title">Deletion request received</div>
+        <p class="success-body">
+          Your account deletion request has been submitted. You will receive a confirmation email shortly.<br><br>
+          Per <strong>GDPR Article 17</strong>, your data will be permanently deleted within <strong>30 days</strong>.
+          You will be logged out shortly.
+        </p>
+        <p style="font-size:13px;color:#a4a7ae;margin-top:24px;">Logging you out in <span
+            id="logout-countdown">10</span> seconds…</p>
+      </div>
+
+      <!-- Page content -->
+      <div id="deletion-page-content">
+
+        <!-- Warning icon -->
+        <div class="warn-icon-wrap" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <path
+              d="M16 11v7M16 21h.013M28 22L18 4.667a2.333 2.333 0 00-4 0L4 22a2.333 2.333 0 002 3.5h20A2.333 2.333 0 0028 22z"
+              stroke="#D92D20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+
+        <div class="page-badge" aria-label="GDPR Article 17">
+          ⚠️ Irreversible action
+        </div>
+
+        <h1>Delete your account</h1>
+        <p class="subtitle">
+          This will permanently delete your POOOL account, investments record, and all associated personal data in
+          accordance with <strong>GDPR Article 17 (Right to Erasure)</strong>.
+        </p>
+
+        <!-- Consequences -->
+        <div class="consequences" role="note" aria-label="What will be deleted">
+          <div class="consequences-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 6v3.5M8 11h.007M14 8A6 6 0 112 8a6 6 0 0112 0z" stroke="#b42318" stroke-width="1.5"
+                stroke-linecap="round" />
+            </svg>
+            The following will be permanently deleted
+          </div>
+          <ul class="consequences-list">
+            <li>Your account login and profile data</li>
+            <li>Wallet balance and transaction history</li>
+            <li>Investment records and portfolio data</li>
+            <li>KYC / identity verification records</li>
+            <li>Notification and settings preferences</li>
+          </ul>
+        </div>
+
+        <!-- Form -->
+        <form class="deletion-form" id="deletion-form" onsubmit="submitDeletionRequest(event)" novalidate>
+
+          <div class="form-group">
+            <label class="form-label" for="del-email">
+              Your email address <span class="required" aria-hidden="true">*</span>
+            </label>
+            <input id="del-email" class="form-input" type="email" name="email"
+              placeholder="Confirm your POOOL account email" autocomplete="email" required />
+          </div>
+
+          <div class="confirm-box">
+            <p>To confirm deletion, type the following phrase in the box below:</p>
+            <p><span class="confirm-code" id="confirm-phrase">delete my account</span></p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="del-confirm">
+              Type to confirm <span class="required" aria-hidden="true">*</span>
+            </label>
+            <input id="del-confirm" class="form-input confirm-input" type="text" name="confirmation"
+              placeholder='Type "delete my account"' autocomplete="off" required oninput="validateConfirmation(this)" />
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="del-understand" name="understood" required />
+            <span class="checkbox-label">
+              I understand this action is <strong>permanent and irreversible</strong>. POOOL cannot restore my account
+              or data once deletion is complete.
+            </span>
+          </label>
+
+          <div id="deletion-error" class="hidden"
+            style="color: #D92D20; font-size: 14px; margin-top: 10px; display: none; padding: 12px; border-radius: 8px; background: #FEF3F2; border: 1px solid #FECDCA;">
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <button type="submit" id="del-submit" class="btn-danger" disabled>
+              Permanently delete account
+            </button>
+            <a href="/settings" id="del-cancel" class="btn-cancel">
+              Cancel — keep my account
+            </a>
+          </div>
+
+        </form>
+      </div><!-- end #deletion-page-content -->
+
+    </div>
+  </div>
+
+  <script>
+    const CONFIRM_TEXT = "delete my account";
+
+    function validateConfirmation(input) {
+      const confirmMatch = input.value.trim().toLowerCase() === CONFIRM_TEXT;
+      const checkChecked = document.getElementById("del-understand").checked;
+      document.getElementById("del-submit").disabled = !(confirmMatch && checkChecked);
+    }
+
+    document.getElementById("del-understand").addEventListener("change", function () {
+      const confirmInput = document.getElementById("del-confirm");
+      validateConfirmation(confirmInput);
+    });
+
+    async function submitDeletionRequest(e) {
+      e.preventDefault();
+      const btn = document.getElementById("del-submit");
+      const errBox = document.getElementById("deletion-error");
+      btn.disabled = true;
+      btn.textContent = "Submitting…";
+      errBox.style.display = "none";
+      errBox.textContent = "";
+
+      const email = document.getElementById("del-email").value;
+
+      const payload = {
+        subject: "Account Deletion Request",
+        message: `User requested account deletion.\nEmail: ${email}\nAction: Confirmed irreversible deletion.`,
+        category: "general"
+      };
+
+      try {
+        const resp = await fetch("/api/support/tickets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (resp.ok) {
+          document.getElementById("deletion-page-content").style.display = "none";
+          document.getElementById("deletion-success").classList.add("shown");
+
+          // Countdown and logout
+          let secs = 10;
+          const el = document.getElementById("logout-countdown");
+          const timer = setInterval(() => {
+            secs--;
+            if (el) el.textContent = secs;
+            if (secs <= 0) {
+              clearInterval(timer);
+              window.location.href = "/logout";
+            }
+          }, 1000);
+        } else {
+          const errData = await resp.json().catch(() => ({}));
+          errBox.textContent = errData.error || "Failed to submit request. Please try again.";
+          errBox.style.display = "block";
+          btn.disabled = false;
+          btn.textContent = "Permanently delete account";
+        }
+      } catch (err) {
+        errBox.textContent = "Network error. Please try again.";
+        errBox.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Permanently delete account";
+      }
+    }
+  </script>
+</body>
+
+</html>

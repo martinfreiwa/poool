@@ -1,0 +1,220 @@
+.mobile-kyc-banner {
+  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+
+  position: relative;
+  width: 100%;
+  height: 128px;
+  margin-top: 64px; /* Distance from top accounting for mobile header (64px height) */
+
+  /* Warning/50 */
+  background: #fffaeb;
+  /* Warning/500 */
+  border-bottom: 1px solid #f79009;
+}
+
+/* Text + Icon Container */
+.mobile-kyc-banner__content {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 16px 16px 8px;
+  gap: 10px;
+
+  width: 100%;
+  height: 92px;
+
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Featured Icon Container */
+.mobile-kyc-banner__icon-container {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Icon Background */
+.mobile-kyc-banner__icon-bg {
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  bottom: 0px;
+
+  /* Warning/50 */
+  background: #fffaeb;
+  /* Warning/200 */
+  border: 1px solid #fedf89;
+  border-radius: 28px;
+}
+
+/* Icon Wrapper */
+.mobile-kyc-banner__icon-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  left: calc(50% - 36px / 2);
+  top: calc(50% - 36px / 2);
+
+  /* Warning/600 */
+  background: #dc6803;
+  border-radius: 18px;
+}
+
+/* Icon SVG */
+.mobile-kyc-banner__icon {
+  width: 20px;
+  height: 20px;
+
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Text Container */
+.mobile-kyc-banner__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+
+  width: 277px;
+  height: 68px;
+
+  flex: none;
+  order: 1;
+  flex-grow: 1;
+}
+
+/* Heading */
+.mobile-kyc-banner__heading {
+  width: 100%;
+  height: 20px;
+
+  /* Text sm / Bold */
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+
+  /* Gray/900 */
+  color: #181d27;
+
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  margin: 0;
+}
+
+/* Description */
+.mobile-kyc-banner__description {
+  width: 100%;
+  height: 36px;
+
+  /* Text xs/Regular */
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+
+  /* Base/Black */
+  color: #000000;
+
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  margin: 0;
+}
+
+/* Upload Documents Button */
+.mobile-kyc-banner__action {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 139px;
+
+  width: 100%;
+  height: 36px;
+
+  /* Warning/500 */
+  border-top: 1px solid #f79009;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.mobile-kyc-banner__action:hover {
+  background: rgba(247, 144, 9, 0.05);
+}
+
+/* Action Text */
+.mobile-kyc-banner__action-text {
+  width: 114px;
+  height: 20px;
+
+  /* Text sm / Bold */
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+
+  /* Warning/700 */
+  color: #b54708;
+
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Arrow Icon */
+.mobile-kyc-banner__arrow {
+  width: 20px;
+  height: 20px;
+
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.mobile-kyc-banner__arrow path {
+  stroke: #b54708;
+  stroke-width: 2px;
+}
+
+/* Hide on desktop, show only on mobile */
+@media (min-width: 769px) {
+  .mobile-kyc-banner {
+    display: none !important;
+  }
+}

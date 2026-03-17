@@ -1,0 +1,768 @@
+/* ═══════════════════════════════════════════════════════════
+   Developer Submissions Management Page
+   Uses Dashboard Design Tokens exclusively
+   ═══════════════════════════════════════════════════════════ */
+
+
+/* ── Summary Stats Row ──────────────────────────────────── */
+.sub-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.sub-stat {
+  background: var(--card-bg);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 1px var(--card-border-color);
+}
+
+.sub-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03), 0 0 0 1px var(--card-border-color);
+}
+
+.sub-stat.active {
+  box-shadow: 0 8px 24px rgba(0, 0, 255, 0.08), 0 0 0 1.5px var(--btn-primary-bg);
+}
+
+.sub-stat__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--btn-primary-bg);
+  color: #fff;
+}
+
+.sub-stat__icon--draft     { background: var(--badge-neutral-bg); color: var(--badge-neutral-color); }
+.sub-stat__icon--submitted { background: var(--badge-info-bg);    color: var(--badge-info-color); }
+.sub-stat__icon--in_review { background: var(--badge-warning-bg); color: var(--badge-warning-color); }
+.sub-stat__icon--approved  { background: var(--badge-success-bg); color: var(--badge-success-color); }
+.sub-stat__icon--rejected  { background: var(--badge-danger-bg);  color: var(--badge-danger-color); }
+
+.sub-stat__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sub-stat__count {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--value-color);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sub-stat__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-color);
+}
+
+
+/* ── Page Title Variant ──────────────────────────────────── */
+.ds-page-header__title--sm {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--value-color);
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+
+/* ── Bulk Action Bar (overlays search row) ───────────────── */
+.sub-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  margin-bottom: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border-color);
+  border-bottom: 1px solid var(--table-border-color);
+  border-radius: 16px 16px 0 0;
+  box-shadow: none;
+  animation: subFadeIn 0.15s ease;
+  /* Position: replace the search row visually */
+  position: relative;
+  z-index: 2;
+}
+
+.sub-bulk-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--value-color);
+  flex: 1;
+}
+
+.sub-bulk-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--btn-sm-padding);
+  border-radius: var(--btn-border-radius);
+  border: 1px solid var(--btn-danger-bg);
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-color);
+  font-size: var(--btn-sm-font-size);
+  font-weight: var(--btn-font-weight);
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--btn-transition);
+}
+
+.sub-bulk-delete-btn:hover {
+  background: var(--btn-danger-hover-bg);
+  border-color: var(--btn-danger-hover-bg);
+}
+
+.sub-bulk-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--btn-sm-padding);
+  border-radius: var(--btn-border-radius);
+  border: 1px solid var(--card-border-color);
+  background: transparent;
+  color: var(--body-color);
+  font-size: var(--btn-sm-font-size);
+  font-weight: var(--btn-font-weight);
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--btn-transition);
+}
+
+.sub-bulk-cancel-btn:hover {
+  background: var(--btn-ghost-hover-bg);
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-bg);
+}
+
+
+/* ── Table Search Row ────────────────────────────────────── */
+.sub-table-search-row {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--table-border-color);
+  background: var(--card-bg); /* Match card so it acts as top of the table */
+}
+
+.sub-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--card-border-color);
+  border-radius: 8px;
+  width: 320px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.sub-search:focus-within {
+  border-color: var(--btn-primary-bg);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.1);
+}
+
+.sub-search svg {
+  flex-shrink: 0;
+  color: var(--label-color);
+}
+
+.sub-search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: var(--body-font-size);
+  color: var(--value-color);
+  font-family: inherit;
+  width: 100%;
+}
+
+.sub-search input::placeholder {
+  color: var(--input-placeholder-color);
+}
+
+
+/* ── Checkbox Column ───────────────────────────────────────*/
+.col-checkbox {
+  width: 40px;
+  padding-left: 16px !important;
+}
+
+.sub-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.sub-checkbox-label input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.sub-checkbox-custom {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--card-border-color);
+  border-radius: 4px;
+  background: var(--card-bg);
+  display: inline-block;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+}
+
+.sub-checkbox-label input[type="checkbox"]:checked + .sub-checkbox-custom {
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+}
+
+.sub-checkbox-label input[type="checkbox"]:checked + .sub-checkbox-custom::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.sub-checkbox-label:hover .sub-checkbox-custom {
+  border-color: var(--btn-primary-bg);
+}
+
+/* Indeterminate state (some rows selected) */
+.sub-checkbox-label input[type="checkbox"]:indeterminate + .sub-checkbox-custom {
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+}
+
+.sub-checkbox-label input[type="checkbox"]:indeterminate + .sub-checkbox-custom::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 6px;
+  width: 8px;
+  height: 2px;
+  background: #fff;
+  border: none;
+  transform: none;
+}
+
+/* Row selected highlight */
+.submissions-table tbody tr.row-selected {
+  background: rgba(0, 0, 255, 0.04);
+}
+
+
+/* ── Table Container ────────────────────────────────────── */
+.submissions-table-container {
+  overflow-x: auto;
+  margin: 0 0 40px;
+  border: 1px solid var(--card-border-color);
+  border-radius: 16px;
+  background: var(--card-bg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.submissions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.submissions-table thead {
+  background: transparent;
+}
+
+.submissions-table th {
+  padding: 16px 20px;
+  text-align: left;
+  color: var(--label-color);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--table-border-color);
+}
+
+.submissions-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--table-border-color);
+  vertical-align: middle;
+  font-size: var(--table-cell-font-size);
+  color: var(--table-cell-color);
+  height: 72px; /* Ensure rows feel super premium and airy */
+}
+
+.submissions-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.submissions-table tbody tr:hover {
+  background: var(--table-row-hover-bg);
+}
+
+.submissions-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+/* ── Asset Cell ─────────────────────────────────────────── */
+.submission-asset-cell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.submission-cover-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--badge-neutral-bg);
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.submission-cover-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: var(--badge-neutral-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.submission-cover-placeholder svg {
+  opacity: 0.4;
+}
+
+.submission-asset-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.submission-title {
+  font-weight: 500;
+  color: var(--value-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Let flex container handle width naturally */
+  font-size: 14px;
+}
+
+.submission-asset-meta {
+  font-size: 12px;
+  color: var(--label-color);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
+/* ── Type Badge ─────────────────────────────────────────── */
+.submission-type-badge {
+  display: inline-block;
+  padding: var(--badge-padding);
+  border-radius: var(--badge-border-radius);
+  font-size: var(--badge-font-size);
+  font-weight: var(--badge-font-weight);
+  background: var(--badge-neutral-bg);
+  color: var(--badge-neutral-color);
+  text-transform: capitalize;
+}
+
+
+/* ── Progress ───────────────────────────────────────────── */
+.submission-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 140px;
+}
+
+.submission-progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--label-color);
+}
+
+.submission-progress-label strong {
+  color: var(--value-color);
+}
+
+.submission-progress-bar {
+  width: 100%;
+  height: 4px; /* Ultra-thin sleek line */
+  border-radius: 10px;
+  background: var(--progress-track-bg);
+  overflow: hidden;
+}
+
+.submission-progress-bar__fill {
+  height: 100%;
+  border-radius: var(--progress-border-radius);
+  background: var(--btn-primary-bg);
+  transition: width 0.4s ease;
+}
+
+.submission-progress-bar__fill--complete {
+  background: var(--progress-fill-bg);
+}
+
+
+/* ── Status Badges ──────────────────────────────────────── */
+.submission-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.submission-status--draft {
+  background: var(--badge-neutral-bg);
+  color: var(--badge-neutral-color);
+}
+
+.submission-status--submitted {
+  background: var(--badge-info-bg);
+  color: var(--badge-info-color);
+}
+
+.submission-status--in_review {
+  background: var(--badge-warning-bg);
+  color: var(--badge-warning-color);
+}
+
+.submission-status--approved {
+  background: var(--badge-success-bg);
+  color: var(--badge-success-color);
+}
+
+.submission-status--rejected {
+  background: var(--badge-danger-bg);
+  color: var(--badge-danger-color);
+}
+
+.submission-status--live {
+  background: var(--badge-success-bg);
+  color: var(--badge-success-color);
+}
+
+.submission-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  background: currentColor;
+}
+
+
+/* ── Updated Date ───────────────────────────────────────── */
+.submission-date {
+  font-size: 13px;
+  color: var(--label-color);
+  white-space: nowrap;
+}
+
+
+/* ── Icon Action Buttons ────────────────────────────────── */
+.submission-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.sub-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--card-border-color);
+  background: var(--card-bg);
+  color: var(--body-color);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+
+.sub-icon-btn:hover {
+  background: var(--btn-ghost-hover-bg);
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-bg);
+  transform: translateY(-1px);
+}
+
+.sub-icon-btn--primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-color);
+  border-color: var(--btn-primary-bg);
+}
+
+.sub-icon-btn--primary:hover {
+  background: #1414ff;
+  border-color: #1414ff;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.sub-icon-btn--danger {
+  color: var(--btn-danger-bg);
+  border-color: var(--badge-danger-bg);
+}
+
+.sub-icon-btn--danger:hover {
+  background: var(--badge-danger-bg);
+  color: var(--btn-danger-bg);
+  border-color: var(--btn-danger-bg);
+  transform: translateY(-1px);
+}
+
+
+/* ── Empty Row ──────────────────────────────────────────── */
+.sub-empty-row td {
+  border-bottom: none;
+}
+
+.sub-empty-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 64px 24px;
+  color: var(--label-color);
+  font-size: var(--body-font-size);
+  opacity: 0.6;
+}
+
+.sub-empty-cell svg {
+  opacity: 0.5;
+}
+
+
+
+/* ── Toast Notification ─────────────────────────────────── */
+.sub-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  padding: 12px 20px;
+  border-radius: var(--btn-border-radius);
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: subToastIn 0.3s ease;
+}
+
+.sub-toast--success { background: var(--badge-success-color); }
+.sub-toast--error   { background: var(--btn-danger-bg); }
+.sub-toast--info    { background: var(--btn-primary-bg); }
+
+@keyframes subToastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ── Loading State ──────────────────────────────────────── */
+.submissions-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 80px 24px;
+  color: var(--label-color);
+  font-size: var(--body-font-size);
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--card-border-color);
+  border-top-color: var(--btn-primary-bg);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+/* ── Delete Confirm Modal ───────────────────────────────── */
+.sub-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: subFadeIn 0.2s ease;
+}
+
+.sub-modal {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 32px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  animation: subScaleIn 0.2s ease;
+}
+
+.sub-modal__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--badge-danger-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--btn-danger-bg);
+}
+
+.sub-modal__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--value-color);
+  margin: 0 0 8px;
+}
+
+.sub-modal__text {
+  font-size: var(--body-font-size);
+  color: var(--label-color);
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.sub-modal__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.sub-modal__btn {
+  padding: var(--btn-md-padding);
+  border-radius: var(--btn-border-radius);
+  font-size: var(--btn-md-font-size);
+  font-weight: var(--btn-font-weight);
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--btn-transition);
+  border: 1px solid transparent;
+}
+
+.sub-modal__btn--cancel {
+  background: var(--card-bg);
+  color: var(--body-color);
+  border-color: var(--card-border-color);
+}
+
+.sub-modal__btn--cancel:hover {
+  background: var(--btn-ghost-hover-bg);
+}
+
+.sub-modal__btn--danger {
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-color);
+}
+
+.sub-modal__btn--danger:hover {
+  background: var(--btn-danger-hover-bg);
+}
+
+@keyframes subFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes subScaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .sub-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .sub-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .col-progress,
+  .col-updated {
+    display: none;
+  }
+
+  .submissions-table th,
+  .submissions-table td {
+    padding: 12px;
+  }
+
+  .submission-title {
+    max-width: 140px;
+  }
+
+  .sub-search {
+    width: 100%;
+  }
+
+  .sub-bulk-bar {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .sub-icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+}

@@ -1,0 +1,235 @@
+/* ===========================
+   Developer Document Upload Page Styles
+   =========================== */
+
+/* Main Container */
+.document-upload-page {
+  display: flex;
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+.document-upload-sidebar {
+  position: relative;
+  width: 256px;
+  background: #ffffff;
+  border-right: 1px solid #e9eaeb;
+  flex-shrink: 0;
+}
+
+.document-upload-main {
+  width: 1144px;
+  height: 3600px;
+  background: #fafafa;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  z-index: 0;
+  position: relative;
+  padding-top: 72px; /* Space for KYC banner */
+}
+
+/* Step Indicator - Step 3 of 4 */
+.step-indicator {
+  position: absolute;
+  width: 75px;
+  height: 20px;
+  left: calc(50% - 75px / 2 + 0.5px);
+  top: 180px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--primary-color);
+}
+
+/* Page Title - Document Upload */
+.document-upload-title {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  position: absolute;
+  width: 197px;
+  height: 44px;
+  left: calc(50% - 197px / 2);
+  top: 208px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 44px;
+  text-align: center;
+  letter-spacing: -0.02em;
+  color: #181d27;
+  margin: 0;
+}
+
+/* Document Form Containers */
+.document-form {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 32px 29px;
+  gap: 16px;
+  position: absolute;
+  width: 772px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  left: calc(50% - 772px / 2);
+}
+
+/* Document Form 1 */
+#document-form-1 {
+  height: 651px;
+  top: 268px;
+}
+
+/* Document Form 2 */
+#document-form-2 {
+  height: 525px;
+  top: 935px;
+}
+
+/* Document Form 3 */
+#document-form-3 {
+  height: 399px;
+  top: 1476px;
+}
+
+/* Document Form 4 */
+#document-form-4 {
+  height: 525px;
+  top: 1891px;
+}
+
+/* Document Form 5 */
+#document-form-5 {
+  height: 543px;
+  top: 2432px;
+}
+
+/* Document Form 6 */
+#document-form-6 {
+  height: 399px;
+  top: 2991px;
+}
+
+/* Success Message */
+.upload-success {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  gap: 16px;
+  position: absolute;
+  width: 772px;
+  height: 82px;
+  left: calc(50% - 772px / 2);
+  top: 3406px;
+  background: var(--accent-color);
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+}
+
+.success-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #056204;
+}
+
+/* Navigation Buttons */
+.form-navigation {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 24px;
+  position: absolute;
+  width: 548px;
+  height: 44px;
+  left: calc(50% - 548px / 2);
+  top: 3520px;
+  border-radius: 12px;
+}
+
+.step-back-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 6px;
+  width: 123px;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.step-back-btn:hover {
+  background: #f8f9fc;
+  transform: translateY(-1px);
+}
+
+.btn-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #181d27;
+}
+
+.step-back-btn .btn-text {
+  color: #181d27;
+}
+
+.next-step-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 6px;
+  width: 139px;
+  height: 44px;
+  background: var(--primary-color);
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.next-step-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.next-step-btn .btn-text {
+  color: #ffffff;
+}

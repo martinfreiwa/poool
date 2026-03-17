@@ -321,9 +321,6 @@
           ></div>
         </div>
         <div class="property-badge ds-badge ds-badge--overlay ds-badge--funding">
-          <div class="badge-icon-wrapper">
-             <img src="/images/chart-line-up.svg" alt="chart">
-          </div>
           <span class="badge-text">{% if asset.funding_status == "funding_in_progress" %}Funding In Progress{% elif asset.funding_status == "funded" %}Fully Funded{% elif asset.funding_status == "upcoming" %}Upcoming{% else %}{{ asset.funding_status | capitalize }}{% endif %}</span>
         </div>
       </div>

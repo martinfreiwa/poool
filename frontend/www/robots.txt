@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+Allow: /id/
+Allow: /blog/
+
+# Disallow authenticated app routes from indexing
+Disallow: /api/
+Disallow: /auth/
+Disallow: /marketplace
+Disallow: /portfolio
+Disallow: /wallet
+Disallow: /cart
+Disallow: /checkout
+Disallow: /rewards
+Disallow: /settings
+Disallow: /support
+Disallow: /kyc
+Disallow: /transactions
+Disallow: /developer/
+Disallow: /admin/
+Disallow: /static/
+
+# Sitemap location
+Sitemap: https://poool.finance/sitemap.xml
+Sitemap: https://poool.finance/blog/sitemap.xml

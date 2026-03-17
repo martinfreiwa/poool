@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Assets | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Manage live assets, funding progress, and marketplace listings." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a><span class="separator">›</span><span class="current">Live Assets</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-search">
+            <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="6" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" placeholder="Search assets…" id="admin-global-search" aria-label="Search" />
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Live Assets</h1>
+          <p class="admin-page-subtitle">
+            Manage published marketplace listings, funding progress, and token
+            distribution
+          </p>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="admin-kpi-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 20px">
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label">Total Assets</span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M8 12h8" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 26px" id="stat-total">
+              —
+            </div>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label">Funding Open</span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+                  <path d="M8 12.5l3 3 5-6" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 26px; color: var(--admin-success)" id="stat-funding">
+              —
+            </div>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label">Fully Funded</span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M8 12h8" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 26px" id="stat-funded">
+              —
+            </div>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label">Total AUM</span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M8 12h8" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 26px; color: var(--admin-text-primary)" id="stat-aum">
+              —
+            </div>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-header" style="margin-bottom: 6px">
+              <span class="admin-kpi-label">Tokens Sold</span>
+              <div class="admin-kpi-icon">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M8 12h8" />
+                </svg>
+              </div>
+            </div>
+            <div class="admin-kpi-value" style="font-size: 26px" id="stat-tokens-sold">
+              —
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="admin-card" style="margin-bottom: 16px">
+          <div style="
+                padding: 14px 20px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+              ">
+            <div class="admin-search" style="width: 220px">
+              <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="6" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input type="text" placeholder="Search assets…" id="asset-search" aria-label="Search assets" />
+            </div>
+            <select id="filter-type" class="admin-select">
+              <option value="">All Types</option>
+              <option value="real_estate">Real Estate</option>
+              <option value="commercial_property">Commercial</option>
+              <option value="commodity">Commodity</option>
+              <option value="business">Business</option>
+              <option value="startup">Startup</option>
+              <option value="land_plot">Land</option>
+            </select>
+            <select id="filter-status" class="admin-select">
+              <option value="">All Status</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="funding_open">Funding Open</option>
+              <option value="funding_in_progress">In Progress</option>
+              <option value="funded">Funded</option>
+              <option value="rented">Rented</option>
+              <option value="exited">Exited</option>
+            </select>
+            <label style="
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  font-size: 12px;
+                  color: var(--admin-text-secondary);
+                  cursor: pointer;
+                  margin-left: 8px;
+                "><input type="checkbox" id="filter-featured" style="accent-color: var(--admin-accent)" />
+              Featured only</label>
+            <span style="
+                  margin-left: auto;
+                  font-size: 12px;
+                  color: var(--admin-text-muted);
+                " id="asset-count-label">0 assets</span>
+          </div>
+        </div>
+
+        <!-- Assets Table -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th data-sort="title">Asset</th>
+                  <th data-sort="asset_type">Type</th>
+                  <th data-sort="total_value_cents">Value</th>
+                  <th data-sort="funding_progress">Funding Progress</th>
+                  <th data-sort="annual_yield_bps">Yield</th>
+                  <th data-sort="location_city">Location</th>
+                  <th data-sort="funding_status">Status</th>
+                  <th data-sort="featured">Featured</th>
+                  <th style="width: 120px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="assets-table-body">
+                <tr>
+                  <td colspan="10" style="
+                        text-align: center;
+                        padding: 40px;
+                        color: var(--admin-text-muted);
+                      ">
+                    <div style="
+                          margin: 0 auto 12px;
+                          width: 24px;
+                          height: 24px;
+                          border: 2px solid var(--admin-border);
+                          border-top-color: var(--admin-accent);
+                          border-radius: 50%;
+                          animation: spin 0.8s linear infinite;
+                        "></div>
+                    Loading assets…
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Pagination -->
+        <div style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-top: 16px;
+            ">
+          <span style="font-size: 13px; color: var(--admin-text-muted)" id="pagination-info">Page 1 of 1</span>
+          <div style="display: flex; gap: 6px">
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="prev-page" disabled>
+              ← Previous
+            </button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="next-page">
+              Next →
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/admin-assets.js"></script>
+</body>
+
+</html>

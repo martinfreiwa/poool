@@ -1,0 +1,532 @@
+/* Profile Dropdown Menu - Exact Figma Implementation */
+
+/* Menu container */
+.profile-dropdown-menu {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  position: fixed !important;
+  width: 264px;
+  height: auto;
+  max-height: 80vh;
+  left: 248px !important;
+  bottom: 20px !important;
+  /* Gray/50 */
+  background: #fafafa;
+  /* Gray/200 */
+  border: 1px solid #e9eaeb;
+  /* Shadows/shadow-lg */
+  box-shadow:
+    0px 12px 16px -4px rgba(10, 13, 18, 0.08),
+    0px 4px 6px -2px rgba(10, 13, 18, 0.03),
+    0px 2px 2px -1px rgba(10, 13, 18, 0.04);
+  border-radius: 12px;
+  flex: none;
+  order: 2;
+  flex-grow: 0;
+  z-index: 99999;
+}
+
+/* Menu items wrapper */
+.profile-menu-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: 264px;
+  height: auto;
+  /* Base/White */
+  background: #ffffff;
+  /* Gray/200 */
+  border: 1px solid #e9eaeb;
+  border-radius: 12px 12px 16px 16px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Menu items sections */
+.profile-menu-items {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 6px 0px;
+  gap: 2px;
+  width: 264px;
+  min-height: 0;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Individual menu item */
+.profile-menu-item {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 6px;
+  width: 264px;
+  height: 36px;
+  flex: none;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Menu item content */
+.profile-menu-content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px;
+  gap: 12px;
+  width: 252px;
+  height: 36px;
+  border-radius: 6px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.profile-menu-content:hover {
+  background: #f5f5f5;
+  transform: translateX(2px);
+}
+
+/* Icon and text group */
+.profile-icon-text {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+/* Menu icon */
+.profile-menu-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Menu text */
+.profile-menu-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  /* Gray/700 */
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Shortcut wrapper */
+.profile-shortcut-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 1px 4px;
+  mix-blend-mode: multiply;
+  /* Gray/200 */
+  border: 1px solid #e9eaeb;
+  border-radius: 4px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Shortcut text */
+.profile-shortcut {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  /* Gray/600 */
+  color: #535862;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Switch account section */
+.profile-switch-section {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 6px 0px;
+  gap: 2px;
+  width: 264px;
+  height: auto;
+  /* Gray/200 */
+  border-top: 1px solid #e9eaeb;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Switch account header */
+.profile-switch-header {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 6px 12px 4px;
+  width: 264px;
+  height: 28px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Switch account title */
+.profile-switch-title {
+  width: 240px;
+  height: 18px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  /* Gray/600 */
+  color: #535862;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+}
+
+/* Account item */
+.profile-menu-item.account-item {
+  height: 52px;
+}
+
+/* Account content */
+.profile-account-content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 8px;
+  gap: 12px;
+  isolation: isolate;
+  width: 252px;
+  height: 52px;
+  border-radius: 6px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Hover effect for account items */
+.profile-menu-item.account-item:hover .profile-account-content {
+  background: #f9f9ff;
+  transform: translateX(2px);
+}
+
+.profile-menu-item.account-item.selected .profile-account-content {
+  /* Gray/50 */
+  background: #fafafa;
+}
+
+/* Hover on selected item */
+.profile-menu-item.account-item.selected:hover .profile-account-content {
+  background: #f0f0fa;
+}
+
+/* Avatar group */
+.profile-avatar-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  width: 236px;
+  height: 40px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+  z-index: 0;
+}
+
+/* Avatar container */
+.profile-avatar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 200px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  overflow: visible;
+  transition: transform 0.2s ease;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 200px;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+/* Avatar hover effect */
+.profile-menu-item.account-item:hover .profile-avatar {
+  transform: scale(1.05);
+}
+
+.profile-menu-item.account-item:hover .profile-avatar img {
+  transform: scale(1.1);
+}
+
+/* Avatar contrast border */
+.profile-avatar-border {
+  box-sizing: border-box;
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  bottom: 0px;
+  opacity: 0.08;
+  /* Base/Black */
+  border: 0.75px solid #000000;
+  border-radius: 200px;
+}
+
+/* Online indicator */
+.profile-online-indicator {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  right: 0px;
+  bottom: 0px;
+  /* Success/500 */
+  background: #17b26a;
+  /* Base/White */
+  border: 1.5px solid #ffffff;
+  border-radius: 50%;
+  z-index: 3;
+}
+
+/* Text wrapper */
+.profile-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  flex: 1;
+  order: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Account name */
+.profile-account-name {
+  display: block;
+  min-height: 20px;
+  min-width: 120px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  /* Gray/900 */
+  color: #181d27;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Account type */
+.profile-account-type {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Account type colors */
+.profile-menu-item.account-item.selected .profile-account-type {
+  color: var(--primary-color);
+}
+
+.profile-menu-item.account-item:not(.selected) .profile-account-type {
+  color: #0e9053;
+}
+
+/* Checkbox */
+.profile-checkbox {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  right: 8px;
+  top: 8px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  z-index: 1;
+  transition: all 0.2s ease;
+}
+
+/* Selected checkbox */
+.profile-checkbox.selected {
+  /* Brand/600 */
+  background: var(--primary-color);
+  /* Brand/600 */
+  border: 1px solid var(--primary-color);
+}
+
+/* Unselected checkbox */
+.profile-checkbox:not(.selected) {
+  /* Gray/300 */
+  border: 1px solid #d5d7da;
+  background: transparent;
+}
+
+/* Hover effect on unselected checkbox */
+.profile-menu-item.account-item:hover .profile-checkbox:not(.selected) {
+  border-color: #a7a7ff;
+  background: #f9f9ff;
+}
+
+/* Hover effect on selected checkbox */
+.profile-menu-item.account-item:hover .profile-checkbox.selected {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Checkbox check mark */
+.profile-checkbox.selected .profile-checkbox-check {
+  position: absolute;
+  left: 31.25%;
+  right: 31.25%;
+  top: 31.25%;
+  bottom: 31.25%;
+  /* Base/White */
+  background: #ffffff;
+  border-radius: 9999px;
+}
+
+/* Add account section */
+.profile-add-account {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 2px 8px 8px;
+  gap: 8px;
+  width: 264px;
+  height: 46px;
+  flex: none;
+  order: 2;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Add account button */
+.profile-add-button {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 4px;
+  width: 248px;
+  height: 36px;
+  /* Base/White */
+  background: #ffffff;
+  /* Gray/300 */
+  border: 1px solid #d5d7da;
+  /* Shadows/shadow-xs-skeuomorphic */
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-add-button:hover {
+  background: #f9f9ff;
+  border-color: #a7a7ff;
+  transform: translateY(-1px);
+  box-shadow:
+    0px 2px 4px rgba(16, 24, 40, 0.08),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+}
+
+/* Add button text */
+.profile-add-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  /* Gray/700 */
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Footer items */
+.profile-footer-items {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 4px 0px 6px;
+  gap: 2px;
+  width: 264px;
+  height: auto;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}

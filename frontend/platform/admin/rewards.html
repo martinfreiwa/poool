@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rewards & Referrals | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Manage reward tiers, user balances, and referral programme." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- SIDEBAR -->
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a><span class="separator">›</span><span class="current">Rewards &amp;
+              Referrals</span>
+          </nav>
+        </div>
+      </header>
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Rewards &amp; Referrals</h1>
+          <p class="admin-page-subtitle">
+            Configure loyalty tiers, manage reward balances, and monitor
+            referral programme
+          </p>
+        </div>
+
+        <!-- KPIs -->
+        <div class="admin-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px">
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-label" style="margin-bottom: 6px">
+              Total Rewards Liability
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-text-primary)"
+              id="kpi-total-balance">
+              —
+            </div>
+            <span class="admin-kpi-subtext" id="kpi-wallet-count">0 wallets</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-label" style="margin-bottom: 6px">
+              Active Referrals
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-text-primary)" id="kpi-referrals">
+              —
+            </div>
+            <span class="admin-kpi-subtext" id="kpi-referral-sub">pending qualification</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-label" style="margin-bottom: 6px">
+              Rewards Paid Out
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px" id="kpi-paid-out">
+              —
+            </div>
+            <span class="admin-kpi-subtext" id="kpi-txn-count">0 transactions</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px">
+            <div class="admin-kpi-label" style="margin-bottom: 6px">
+              Tier Upgrades (30d)
+            </div>
+            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-text-primary)" id="kpi-upgrades">
+              —
+            </div>
+            <span class="admin-kpi-subtext">users upgraded tier</span>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div style="
+              border-bottom: 1px solid var(--admin-border);
+              margin-bottom: 20px;
+              display: flex;
+              gap: 0;
+            ">
+          <button class="admin-tab active" id="tab-tiers" onclick="switchTab('tiers')">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M10 2l2.4 4.8L18 7.6l-4 3.9.9 5.5L10 14.6 5.1 17l.9-5.5-4-3.9 5.6-.8L10 2z" />
+            </svg>
+            Tier Configuration
+          </button>
+          <button class="admin-tab" id="tab-user-tiers" onclick="switchTab('user-tiers')">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M14 17v-1.5A3.5 3.5 0 0010.5 12h-4A3.5 3.5 0 003 15.5V17" />
+              <circle cx="8.5" cy="6.5" r="3.5" />
+            </svg>
+            User Tiers
+          </button>
+          <button class="admin-tab" id="tab-balances" onclick="switchTab('balances')">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+              <rect x="2" y="5" width="16" height="12" rx="2" />
+              <path d="M14 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              <path d="M2 5l4-3h8l4 3" />
+            </svg>
+            Reward Balances
+          </button>
+          <button class="admin-tab" id="tab-referrals" onclick="switchTab('referrals')">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M17 11a5 5 0 00-10 0" />
+              <path d="M3 11a5 5 0 0010 0" />
+              <circle cx="12" cy="6" r="3" />
+              <circle cx="8" cy="14" r="2" />
+            </svg>
+            Referral Programme
+          </button>
+        </div>
+
+        <!-- ═══════════════ TAB: TIER CONFIGURATION ═══════════════ -->
+        <div id="panel-tiers">
+          <div style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+                align-items: start;
+              ">
+            <!-- Tier table -->
+            <div class="admin-card">
+              <div style="
+                    padding: 16px 20px;
+                    border-bottom: 1px solid var(--admin-border);
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                  ">
+                <div>
+                  <h3 style="
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: var(--admin-text-primary);
+                        margin: 0;
+                      ">
+                    Loyalty Tiers
+                  </h3>
+                  <span style="font-size: 12px; color: var(--admin-text-muted)">Click a row to edit</span>
+                </div>
+                <button class="admin-btn admin-btn--primary admin-btn--sm" onclick="createTier()">
+                  Add Tier
+                </button>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Tier</th>
+                      <th>Min Invest</th>
+                      <th>Cashback</th>
+                      <th>Referral Bonus</th>
+                      <th style="width: 60px">Edit</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tiers-table-body">
+                    <tr>
+                      <td colspan="5" style="
+                            text-align: center;
+                            padding: 40px;
+                            color: var(--admin-text-muted);
+                          ">
+                        Loading…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <!-- Edit panel -->
+            <div class="admin-card" style="padding: 20px" id="tier-edit-panel">
+              <h3 style="
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--admin-text-primary);
+                    margin: 0 0 16px;
+                  ">
+                Edit Tier
+              </h3>
+              <div id="tier-edit-form">
+                <div style="
+                      text-align: center;
+                      padding: 40px 20px;
+                      color: var(--admin-text-muted);
+                    ">
+                  <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3"
+                    style="margin-bottom: 8px; opacity: 0.4">
+                    <path d="M10 2l2.4 4.8L18 7.6l-4 3.9.9 5.5L10 14.6 5.1 17l.9-5.5-4-3.9 5.6-.8L10 2z" />
+                  </svg>
+                  <p style="margin: 0; font-size: 13px">
+                    Select a tier to edit its configuration
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Impact preview -->
+          <div class="admin-card" style="margin-top: 16px; padding: 20px">
+            <h3 style="
+                  font-size: 14px;
+                  font-weight: 600;
+                  color: var(--admin-text-primary);
+                  margin: 0 0 12px;
+                ">
+              Tier Distribution Overview
+            </h3>
+            <div id="tier-distribution" style="display: flex; gap: 12px; flex-wrap: wrap"></div>
+          </div>
+        </div>
+
+        <!-- ═══════════════ TAB: USER TIERS ═══════════════ -->
+        <div id="panel-user-tiers" style="display: none">
+          <div class="admin-card" style="margin-bottom: 16px">
+            <div style="
+                  padding: 14px 20px;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  flex-wrap: wrap;
+                ">
+              <div class="admin-search" style="width: 220px">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg><input type="text" placeholder="Search users…" id="ut-search" />
+              </div>
+              <select id="ut-filter-tier" class="admin-select">
+                <option value="">All Tiers</option>
+                <option value="Intro">Intro</option>
+                <option value="Plus">Plus</option>
+                <option value="Pro">Pro</option>
+                <option value="Elite">Elite</option>
+                <option value="Premium">Premium</option>
+              </select>
+              <span style="
+                    margin-left: auto;
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                  " id="ut-count">0 users</span>
+            </div>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th data-sort="name">User</th>
+                    <th data-sort="tier">Current Tier</th>
+                    <th data-sort="invested_12m">Invested (12m)</th>
+                    <th>Progress to Next</th>
+                    <th style="width: 110px">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="user-tiers-body">
+                  <tr>
+                    <td colspan="5" style="
+                          text-align: center;
+                          padding: 40px;
+                          color: var(--admin-text-muted);
+                        ">
+                      Loading…
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 16px;
+              ">
+            <span style="font-size: 13px; color: var(--admin-text-muted)" id="ut-pagination-info">Page 1 of 1</span>
+            <div style="display: flex; gap: 6px">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="ut-prev-page" disabled>
+                ← Previous
+              </button>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="ut-next-page">
+                Next →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════════ TAB: REWARD BALANCES ═══════════════ -->
+        <div id="panel-balances" style="display: none">
+          <!-- Aggregate totals -->
+          <div style="
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                margin-bottom: 16px;
+              ">
+            <div class="admin-card" style="padding: 16px">
+              <div style="
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                    margin-bottom: 4px;
+                  ">
+                Total Cashback
+              </div>
+              <div style="
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: var(--admin-text-primary);
+                  " id="agg-cashback">
+                —
+              </div>
+            </div>
+            <div class="admin-card" style="padding: 16px">
+              <div style="
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                    margin-bottom: 4px;
+                  ">
+                Total Referrals
+              </div>
+              <div style="
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: var(--admin-text-primary);
+                  " id="agg-referrals">
+                —
+              </div>
+            </div>
+            <div class="admin-card" style="padding: 16px">
+              <div style="
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                    margin-bottom: 4px;
+                  ">
+                Total Promotions
+              </div>
+              <div style="
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: var(--admin-text-primary);
+                  " id="agg-promotions">
+                —
+              </div>
+            </div>
+          </div>
+          <div class="admin-card" style="margin-bottom: 16px">
+            <div style="
+                  padding: 14px 20px;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                ">
+              <div class="admin-search" style="width: 220px">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg><input type="text" placeholder="Search users…" id="bal-search" />
+              </div>
+              <span style="
+                    margin-left: auto;
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                  " id="bal-count">0 users</span>
+            </div>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th data-sort="name">User</th>
+                    <th data-sort="cashback">Cashback</th>
+                    <th data-sort="referrals_amt">Referrals</th>
+                    <th data-sort="promotions">Promotions</th>
+                    <th data-sort="total">Total Balance</th>
+                    <th style="width: 80px">Adjust</th>
+                  </tr>
+                </thead>
+                <tbody id="balances-body">
+                  <tr>
+                    <td colspan="6" style="
+                          text-align: center;
+                          padding: 40px;
+                          color: var(--admin-text-muted);
+                        ">
+                      Loading…
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 16px;
+              ">
+            <span style="font-size: 13px; color: var(--admin-text-muted)" id="bal-pagination-info">Page 1 of 1</span>
+            <div style="display: flex; gap: 6px">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="bal-prev-page" disabled>
+                ← Previous
+              </button>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="bal-next-page">
+                Next →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════════ TAB: REFERRAL PROGRAMME ═══════════════ -->
+        <div id="panel-referrals" style="display: none">
+          <!-- Stats -->
+          <div style="
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 12px;
+                margin-bottom: 16px;
+              ">
+            <div class="admin-card" style="padding: 16px">
+              <div style="
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                    margin-bottom: 4px;
+                  ">
+                Total Referrals
+              </div>
+              <div style="font-size: 24px; font-weight: 700" id="ref-total">
+                —
+              </div>
+            </div>
+            <div class="admin-card" style="padding: 16px">
+              <div style="
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                    margin-bottom: 4px;
+                  ">
+                Qualified
+              </div>
+              <div style="
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: var(--admin-success);
+                  " id="ref-qualified">
+                —
+              </div>
+            </div>
+            <div class="admin-card" style="padding: 16px">
+              <div style="
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                    margin-bottom: 4px;
+                  ">
+                Pending
+              </div>
+              <div style="
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: var(--admin-warning);
+                  " id="ref-pending">
+                —
+              </div>
+            </div>
+            <div class="admin-card" style="padding: 16px">
+              <div style="
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                    margin-bottom: 4px;
+                  ">
+                Conversion Rate
+              </div>
+              <div style="
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: var(--admin-text-primary);
+                  " id="ref-conversion">
+                —
+              </div>
+            </div>
+          </div>
+          <div class="admin-card" style="margin-bottom: 16px">
+            <div style="
+                  padding: 14px 20px;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  flex-wrap: wrap;
+                ">
+              <div class="admin-search" style="width: 220px">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg><input type="text" placeholder="Search by name or email…" id="ref-search" />
+              </div>
+              <select id="ref-filter-status" class="admin-select">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="qualified">Qualified</option>
+                <option value="paid">Paid</option>
+                <option value="flagged">Flagged</option>
+              </select>
+              <span style="
+                    margin-left: auto;
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                  " id="ref-count">0 referrals</span>
+            </div>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th data-sort="referrer_name">Referrer</th>
+                    <th data-sort="referred_name">Referred User</th>
+                    <th data-sort="status">Status</th>
+                    <th data-sort="referrer_reward">Referrer Reward</th>
+                    <th data-sort="referred_reward">Referred Reward</th>
+                    <th data-sort="created_at">Date</th>
+                    <th style="width: 100px">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="referrals-body">
+                  <tr>
+                    <td colspan="7" style="
+                          text-align: center;
+                          padding: 40px;
+                          color: var(--admin-text-muted);
+                        ">
+                      Loading…
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 16px;
+              ">
+            <span style="font-size: 13px; color: var(--admin-text-muted)" id="ref-pagination-info">Page 1 of 1</span>
+            <div style="display: flex; gap: 6px">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="ref-prev-page" disabled>
+                ← Previous
+              </button>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="ref-next-page">
+                Next →
+              </button>
+            </div>
+          </div>
+
+          <!-- Referral Codes Table -->
+          <div class="admin-page-header" style="margin-top: 40px">
+            <h2 class="admin-page-title" style="font-size: 16px">
+              Referral Codes
+            </h2>
+          </div>
+          <div class="admin-card" style="margin-bottom: 16px">
+            <div style="
+                  padding: 14px 20px;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                ">
+              <div class="admin-search" style="width: 220px">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg><input type="text" placeholder="Search codes…" id="code-search" />
+              </div>
+              <span style="
+                    margin-left: auto;
+                    font-size: 12px;
+                    color: var(--admin-text-muted);
+                  " id="code-count">0 codes</span>
+            </div>
+          </div>
+          <div class="admin-card">
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th data-sort="code_user_name">User</th>
+                    <th data-sort="code">Referral Code</th>
+                    <th>URL</th>
+                    <th data-sort="code_created_at">Created At</th>
+                  </tr>
+                </thead>
+                <tbody id="codes-body">
+                  <tr>
+                    <td colspan="4" style="
+                          text-align: center;
+                          padding: 40px;
+                          color: var(--admin-text-muted);
+                        ">
+                      Loading…
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 16px;
+              ">
+            <span style="font-size: 13px; color: var(--admin-text-muted)" id="code-pagination-info">Page 1 of 1</span>
+            <div style="display: flex; gap: 6px">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="code-prev-page" disabled>
+                ← Previous
+              </button>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="code-next-page">
+                Next →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Adjust Balance Modal -->
+  <div id="adjust-modal" style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+      ">
+    <div style="
+          background: var(--admin-bg-card);
+          border: 1px solid var(--admin-border);
+          border-radius: var(--admin-radius-xl);
+          padding: 28px;
+          max-width: 420px;
+          width: 90%;
+          animation: admin-fadeIn 0.2s ease-out;
+        ">
+      <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+          ">
+        <h3 style="
+              font-size: 16px;
+              font-weight: 700;
+              color: var(--admin-text-primary);
+              margin: 0;
+            " id="adjust-modal-title">
+          Adjust Reward Balance
+        </h3>
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" id="adjust-modal-close">
+          ✕
+        </button>
+      </div>
+      <div style="margin-bottom: 14px">
+        <label style="
+              font-size: 11px;
+              font-weight: 600;
+              color: var(--admin-text-muted);
+              display: block;
+              margin-bottom: 4px;
+            ">User</label>
+        <div style="
+              font-size: 13px;
+              font-weight: 500;
+              color: var(--admin-text-primary);
+            " id="adjust-user-name">
+          —
+        </div>
+      </div>
+      <div style="margin-bottom: 14px">
+        <label style="
+              font-size: 11px;
+              font-weight: 600;
+              color: var(--admin-text-muted);
+              display: block;
+              margin-bottom: 4px;
+            ">Category</label>
+        <select id="adjust-category" class="admin-select" style="width: 100%">
+          <option value="cashback">Cashback</option>
+          <option value="referrals">Referrals</option>
+          <option value="promotions">Promotions</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 14px">
+        <label style="
+              font-size: 11px;
+              font-weight: 600;
+              color: var(--admin-text-muted);
+              display: block;
+              margin-bottom: 4px;
+            ">Amount (USD)</label>
+        <div style="display: flex; gap: 8px">
+          <select id="adjust-direction" class="admin-select" style="width: 90px">
+            <option value="credit">+ Credit</option>
+            <option value="debit">− Debit</option>
+          </select>
+          <input type="number" id="adjust-amount" class="admin-input" placeholder="0.00" step="0.01" min="0"
+            style="flex: 1" />
+        </div>
+      </div>
+      <div style="margin-bottom: 20px">
+        <label style="
+              font-size: 11px;
+              font-weight: 600;
+              color: var(--admin-text-muted);
+              display: block;
+              margin-bottom: 4px;
+            ">Reason (required)</label>
+        <textarea id="adjust-reason" class="admin-input" rows="2" placeholder="e.g. Promotion campaign, correction..."
+          style="width: 100%; resize: vertical"></textarea>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end">
+        <button class="admin-btn admin-btn--secondary" id="adjust-cancel">
+          Cancel
+        </button>
+        <button class="admin-btn admin-btn--primary" id="adjust-confirm">
+          Apply Adjustment
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Override Tier Modal -->
+  <div id="tier-override-modal" style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+      ">
+    <div style="
+          background: var(--admin-bg-card);
+          border: 1px solid var(--admin-border);
+          border-radius: var(--admin-radius-xl);
+          padding: 28px;
+          max-width: 380px;
+          width: 90%;
+          animation: admin-fadeIn 0.2s ease-out;
+        ">
+      <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+          ">
+        <h3 style="
+              font-size: 16px;
+              font-weight: 700;
+              color: var(--admin-text-primary);
+              margin: 0;
+            ">
+          Override Tier
+        </h3>
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" id="tier-override-close">
+          ✕
+        </button>
+      </div>
+      <div style="margin-bottom: 14px">
+        <div style="
+              font-size: 13px;
+              font-weight: 500;
+              color: var(--admin-text-primary);
+              margin-bottom: 4px;
+            " id="tier-override-user">
+          —
+        </div>
+        <div style="font-size: 12px; color: var(--admin-text-muted)">
+          Current tier will be manually overridden. This will be logged.
+        </div>
+      </div>
+      <div style="margin-bottom: 20px">
+        <label style="
+              font-size: 11px;
+              font-weight: 600;
+              color: var(--admin-text-muted);
+              display: block;
+              margin-bottom: 4px;
+            ">New Tier</label>
+        <select id="tier-override-select" class="admin-select" style="width: 100%">
+          <option value="Intro">Intro</option>
+          <option value="Plus">Plus</option>
+          <option value="Pro">Pro</option>
+          <option value="Elite">Elite</option>
+          <option value="Premium">Premium</option>
+        </select>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end">
+        <button class="admin-btn admin-btn--secondary" id="tier-override-cancel">
+          Cancel
+        </button>
+        <button class="admin-btn admin-btn--primary" id="tier-override-confirm">
+          Override Tier
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/admin-rewards.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,1242 @@
+{% set title="POOOL" %}{% include "components/head.html" %}
+
+  <body>
+    <div class="demo-container">
+      <div class="demo-header">
+        <h1>🔵 POOOL Dropdown Component</h1>
+        <p>
+          Custom dropdown design that matches the POOOL website style. All
+          variants shown below.
+        </p>
+      </div>
+
+      <!-- 1. Basic Dropdowns -->
+      <div class="demo-section">
+        <h2>Basic Dropdowns</h2>
+        <p>Standard dropdown with icon, label, and options.</p>
+        <div class="demo-row">
+          <!-- Country Dropdown -->
+          <div
+            class="poool-dropdown"
+            data-dropdown
+            data-placeholder="Select country..."
+          >
+            <label class="poool-dropdown__label">Country</label>
+            <button
+              class="poool-dropdown__trigger"
+              type="button"
+              data-dropdown-trigger
+            >
+              <span class="poool-dropdown__icon">🌏</span>
+              <span
+                class="poool-dropdown__value poool-dropdown__value--placeholder"
+                >Select country...</span
+              >
+              <span class="poool-dropdown__chevron">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            <div class="poool-dropdown__panel" data-dropdown-panel>
+              <div class="poool-dropdown__option" data-value="au">
+                <span class="poool-dropdown__option-icon">🇦🇺</span>
+                <span class="poool-dropdown__option-text">Australia</span>
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="us">
+                <span class="poool-dropdown__option-icon">🇺🇸</span>
+                <span class="poool-dropdown__option-text">United States</span>
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="de">
+                <span class="poool-dropdown__option-icon">🇩🇪</span>
+                <span class="poool-dropdown__option-text">Germany</span>
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="id">
+                <span class="poool-dropdown__option-icon">🇮🇩</span>
+                <span class="poool-dropdown__option-text">Indonesia</span>
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="sg">
+                <span class="poool-dropdown__option-icon">🇸🇬</span>
+                <span class="poool-dropdown__option-text">Singapore</span>
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Timezone Dropdown (pre-selected) -->
+          <div
+            class="poool-dropdown"
+            data-dropdown
+            data-placeholder="Select timezone..."
+          >
+            <label class="poool-dropdown__label">
+              Timezone
+              <span class="poool-dropdown__label-hint">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="5.83"
+                    stroke="currentColor"
+                    stroke-width="1.17"
+                  />
+                  <path
+                    d="M7 9.8V9.81"
+                    stroke="currentColor"
+                    stroke-width="1.17"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M7 7.58V4.2"
+                    stroke="currentColor"
+                    stroke-width="1.17"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </span>
+            </label>
+            <button
+              class="poool-dropdown__trigger"
+              type="button"
+              data-dropdown-trigger
+            >
+              <span class="poool-dropdown__icon">🕐</span>
+              <span
+                class="poool-dropdown__value poool-dropdown__value--selected"
+                >Pacific Standard Time (PST)</span
+              >
+              <span class="poool-dropdown__chevron">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            <div class="poool-dropdown__panel" data-dropdown-panel>
+              <div
+                class="poool-dropdown__option poool-dropdown__option--selected"
+                data-value="pst"
+              >
+                <span class="poool-dropdown__option-text"
+                  >Pacific Standard Time (PST) UTC-08:00</span
+                >
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="est">
+                <span class="poool-dropdown__option-text"
+                  >Eastern Standard Time (EST) UTC-05:00</span
+                >
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="cet">
+                <span class="poool-dropdown__option-text"
+                  >Central European Time (CET) UTC+01:00</span
+                >
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="sgt">
+                <span class="poool-dropdown__option-text"
+                  >Asia/Singapore UTC+08:00</span
+                >
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="wib">
+                <span class="poool-dropdown__option-text"
+                  >Western Indonesia Time (WIB) UTC+07:00</span
+                >
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Role Dropdown (no icon) -->
+          <div
+            class="poool-dropdown"
+            data-dropdown
+            data-placeholder="Select role..."
+          >
+            <label class="poool-dropdown__label poool-dropdown__label--required"
+              >Role</label
+            >
+            <button
+              class="poool-dropdown__trigger"
+              type="button"
+              data-dropdown-trigger
+            >
+              <span
+                class="poool-dropdown__value poool-dropdown__value--selected"
+                >Investor</span
+              >
+              <span class="poool-dropdown__chevron">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            <div class="poool-dropdown__panel" data-dropdown-panel>
+              <div
+                class="poool-dropdown__option poool-dropdown__option--selected"
+                data-value="investor"
+              >
+                <span class="poool-dropdown__option-text">Investor</span>
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="developer">
+                <span class="poool-dropdown__option-text">Developer</span>
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="admin">
+                <span class="poool-dropdown__option-text">Admin</span>
+                <span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+            </div>
+            <span class="poool-dropdown__helper"
+              >Select your primary role on the platform.</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Size Variants -->
+      <div class="demo-section">
+        <h2>Size Variants</h2>
+        <p>Small, default, and large sizing options.</p>
+        <div class="demo-row">
+          <!-- Small -->
+          <div
+            class="poool-dropdown poool-dropdown--sm"
+            data-dropdown
+            data-placeholder="Small..."
+          >
+            <label class="poool-dropdown__label"
+              ><span class="demo-badge">SM</span> Small Dropdown</label
+            >
+            <button
+              class="poool-dropdown__trigger"
+              type="button"
+              data-dropdown-trigger
+            >
+              <span
+                class="poool-dropdown__value poool-dropdown__value--placeholder"
+                >Select size...</span
+              >
+              <span class="poool-dropdown__chevron">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            <div class="poool-dropdown__panel" data-dropdown-panel>
+              <div class="poool-dropdown__option" data-value="xs">
+                <span class="poool-dropdown__option-text">Extra Small</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="sm">
+                <span class="poool-dropdown__option-text">Small</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="md">
+                <span class="poool-dropdown__option-text">Medium</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Default (already shown above) -->
+          <div
+            class="poool-dropdown"
+            data-dropdown
+            data-placeholder="Default..."
+          >
+            <label class="poool-dropdown__label"
+              ><span class="demo-badge">MD</span> Default Dropdown</label
+            >
+            <button
+              class="poool-dropdown__trigger"
+              type="button"
+              data-dropdown-trigger
+            >
+              <span
+                class="poool-dropdown__value poool-dropdown__value--placeholder"
+                >Select option...</span
+              >
+              <span class="poool-dropdown__chevron">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            <div class="poool-dropdown__panel" data-dropdown-panel>
+              <div class="poool-dropdown__option" data-value="1">
+                <span class="poool-dropdown__option-text">Option 1</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="2">
+                <span class="poool-dropdown__option-text">Option 2</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="3">
+                <span class="poool-dropdown__option-text">Option 3</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Large -->
+          <div
+            class="poool-dropdown poool-dropdown--lg"
+            data-dropdown
+            data-placeholder="Large..."
+          >
+            <label class="poool-dropdown__label"
+              ><span class="demo-badge">LG</span> Large Dropdown</label
+            >
+            <button
+              class="poool-dropdown__trigger"
+              type="button"
+              data-dropdown-trigger
+            >
+              <span class="poool-dropdown__icon">🏢</span>
+              <span
+                class="poool-dropdown__value poool-dropdown__value--placeholder"
+                >Select property type...</span
+              >
+              <span class="poool-dropdown__chevron">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            <div class="poool-dropdown__panel" data-dropdown-panel>
+              <div class="poool-dropdown__option" data-value="villa">
+                <span class="poool-dropdown__option-icon">🏡</span
+                ><span class="poool-dropdown__option-text">Villa</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="condo">
+                <span class="poool-dropdown__option-icon">🏢</span
+                ><span class="poool-dropdown__option-text">Condominium</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="commercial">
+                <span class="poool-dropdown__option-icon">🏬</span
+                ><span class="poool-dropdown__option-text">Commercial</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="land">
+                <span class="poool-dropdown__option-icon">🌄</span
+                ><span class="poool-dropdown__option-text">Land</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Searchable Dropdown -->
+      <div class="demo-section">
+        <h2>Searchable Dropdown</h2>
+        <p>
+          With built-in search for long option lists. Uses
+          <code>data-searchable</code> attribute.
+        </p>
+        <div class="demo-row-2col">
+          <div
+            class="poool-dropdown"
+            data-dropdown
+            data-searchable
+            data-placeholder="Search countries..."
+          >
+            <label class="poool-dropdown__label">Country (Searchable)</label>
+            <button
+              class="poool-dropdown__trigger"
+              type="button"
+              data-dropdown-trigger
+            >
+              <span class="poool-dropdown__icon">🌍</span>
+              <span
+                class="poool-dropdown__value poool-dropdown__value--placeholder"
+                >Search countries...</span
+              >
+              <span class="poool-dropdown__chevron">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            <div class="poool-dropdown__panel" data-dropdown-panel>
+              <div class="poool-dropdown__option" data-value="au">
+                <span class="poool-dropdown__option-icon">🇦🇺</span
+                ><span class="poool-dropdown__option-text">Australia</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="br">
+                <span class="poool-dropdown__option-icon">🇧🇷</span
+                ><span class="poool-dropdown__option-text">Brazil</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="ca">
+                <span class="poool-dropdown__option-icon">🇨🇦</span
+                ><span class="poool-dropdown__option-text">Canada</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="de">
+                <span class="poool-dropdown__option-icon">🇩🇪</span
+                ><span class="poool-dropdown__option-text">Germany</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="id">
+                <span class="poool-dropdown__option-icon">🇮🇩</span
+                ><span class="poool-dropdown__option-text">Indonesia</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="jp">
+                <span class="poool-dropdown__option-icon">🇯🇵</span
+                ><span class="poool-dropdown__option-text">Japan</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="sg">
+                <span class="poool-dropdown__option-icon">🇸🇬</span
+                ><span class="poool-dropdown__option-text">Singapore</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="th">
+                <span class="poool-dropdown__option-icon">🇹🇭</span
+                ><span class="poool-dropdown__option-text">Thailand</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="gb">
+                <span class="poool-dropdown__option-icon">🇬🇧</span
+                ><span class="poool-dropdown__option-text">United Kingdom</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="us">
+                <span class="poool-dropdown__option-icon">🇺🇸</span
+                ><span class="poool-dropdown__option-text">United States</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Event log -->
+          <div>
+            <label class="poool-dropdown__label" style="margin-bottom: 6px"
+              >Event Log</label
+            >
+            <div id="event-log" class="demo-event-log">
+              Select a value to see events here...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. States -->
+      <div class="demo-section">
+        <h2>States</h2>
+        <p>Error, disabled, and helper text states.</p>
+        <div class="demo-row">
+          <!-- Error State -->
+          <div
+            class="poool-dropdown"
+            data-dropdown
+            data-placeholder="Select..."
+          >
+            <label class="poool-dropdown__label poool-dropdown__label--required"
+              >Currency</label
+            >
+            <button
+              class="poool-dropdown__trigger poool-dropdown__trigger--error"
+              type="button"
+              data-dropdown-trigger
+            >
+              <span class="poool-dropdown__icon">💰</span>
+              <span
+                class="poool-dropdown__value poool-dropdown__value--placeholder"
+                >Select currency...</span
+              >
+              <span class="poool-dropdown__chevron">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            <div class="poool-dropdown__panel" data-dropdown-panel>
+              <div class="poool-dropdown__option" data-value="usd">
+                <span class="poool-dropdown__option-text">USD – US Dollar</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="eur">
+                <span class="poool-dropdown__option-text">EUR – Euro</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="idr">
+                <span class="poool-dropdown__option-text"
+                  >IDR – Indonesian Rupiah</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+            </div>
+            <span class="poool-dropdown__error"
+              >Please select a currency to continue.</span
+            >
+          </div>
+
+          <!-- Disabled State -->
+          <div
+            class="poool-dropdown"
+            data-dropdown
+            data-placeholder="Disabled..."
+          >
+            <label class="poool-dropdown__label">Investment Type</label>
+            <button
+              class="poool-dropdown__trigger poool-dropdown__trigger--disabled"
+              type="button"
+              disabled
+            >
+              <span
+                class="poool-dropdown__value poool-dropdown__value--selected"
+                >Fractional Ownership</span
+              >
+              <span class="poool-dropdown__chevron">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            <span class="poool-dropdown__helper"
+              >This field is locked for your account type.</span
+            >
+          </div>
+
+          <!-- Filled Variant -->
+          <div
+            class="poool-dropdown poool-dropdown--filled"
+            data-dropdown
+            data-placeholder="Select language..."
+          >
+            <label class="poool-dropdown__label">Language</label>
+            <button
+              class="poool-dropdown__trigger"
+              type="button"
+              data-dropdown-trigger
+            >
+              <span class="poool-dropdown__icon">🇬🇧</span>
+              <span
+                class="poool-dropdown__value poool-dropdown__value--selected"
+                >English</span
+              >
+              <span class="poool-dropdown__chevron">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path
+                    d="M5 7.5L10 12.5L15 7.5"
+                    stroke="currentColor"
+                    stroke-width="1.67"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+            <div class="poool-dropdown__panel" data-dropdown-panel>
+              <div
+                class="poool-dropdown__option poool-dropdown__option--selected"
+                data-value="en"
+              >
+                <span class="poool-dropdown__option-icon">🇬🇧</span
+                ><span class="poool-dropdown__option-text">English</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="de">
+                <span class="poool-dropdown__option-icon">🇩🇪</span
+                ><span class="poool-dropdown__option-text">Deutsch</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+              <div class="poool-dropdown__option" data-value="id">
+                <span class="poool-dropdown__option-icon">🇮🇩</span
+                ><span class="poool-dropdown__option-text">Indonesian</span
+                ><span class="poool-dropdown__check"
+                  ><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    /></svg
+                ></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Settings Form Layout -->
+      <div class="demo-section">
+        <h2>Settings Form Layout</h2>
+        <p>
+          How the dropdown looks in a typical settings form layout (like the
+          Settings page).
+        </p>
+
+        <div class="demo-form-row">
+          <div class="demo-form-label">Country</div>
+          <div style="max-width: 420px">
+            <div
+              class="poool-dropdown"
+              data-dropdown
+              data-placeholder="Select country..."
+            >
+              <button
+                class="poool-dropdown__trigger"
+                type="button"
+                data-dropdown-trigger
+              >
+                <span class="poool-dropdown__icon">🌏</span>
+                <span
+                  class="poool-dropdown__value poool-dropdown__value--selected"
+                  >Australia</span
+                >
+                <span class="poool-dropdown__chevron">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M5 7.5L10 12.5L15 7.5"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+              <div class="poool-dropdown__panel" data-dropdown-panel>
+                <div
+                  class="poool-dropdown__option poool-dropdown__option--selected"
+                  data-value="au"
+                >
+                  <span class="poool-dropdown__option-icon">🇦🇺</span
+                  ><span class="poool-dropdown__option-text">Australia</span
+                  ><span class="poool-dropdown__check"
+                    ><svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                        stroke="currentColor"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      /></svg
+                  ></span>
+                </div>
+                <div class="poool-dropdown__option" data-value="us">
+                  <span class="poool-dropdown__option-icon">🇺🇸</span
+                  ><span class="poool-dropdown__option-text">United States</span
+                  ><span class="poool-dropdown__check"
+                    ><svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                        stroke="currentColor"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      /></svg
+                  ></span>
+                </div>
+                <div class="poool-dropdown__option" data-value="de">
+                  <span class="poool-dropdown__option-icon">🇩🇪</span
+                  ><span class="poool-dropdown__option-text">Germany</span
+                  ><span class="poool-dropdown__check"
+                    ><svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                        stroke="currentColor"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      /></svg
+                  ></span>
+                </div>
+                <div class="poool-dropdown__option" data-value="id">
+                  <span class="poool-dropdown__option-icon">🇮🇩</span
+                  ><span class="poool-dropdown__option-text">Indonesia</span
+                  ><span class="poool-dropdown__check"
+                    ><svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                        stroke="currentColor"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      /></svg
+                  ></span>
+                </div>
+                <div class="poool-dropdown__option" data-value="sg">
+                  <span class="poool-dropdown__option-icon">🇸🇬</span
+                  ><span class="poool-dropdown__option-text">Singapore</span
+                  ><span class="poool-dropdown__check"
+                    ><svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                        stroke="currentColor"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      /></svg
+                  ></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-form-row">
+          <div class="demo-form-label">Timezone</div>
+          <div style="max-width: 420px">
+            <div
+              class="poool-dropdown"
+              data-dropdown
+              data-placeholder="Select timezone..."
+            >
+              <button
+                class="poool-dropdown__trigger"
+                type="button"
+                data-dropdown-trigger
+              >
+                <span class="poool-dropdown__icon">🕐</span>
+                <span
+                  class="poool-dropdown__value poool-dropdown__value--selected"
+                  >Pacific Standard Time (PST) UTC-08:00</span
+                >
+                <span class="poool-dropdown__chevron">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M5 7.5L10 12.5L15 7.5"
+                      stroke="currentColor"
+                      stroke-width="1.67"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+              <div class="poool-dropdown__panel" data-dropdown-panel>
+                <div
+                  class="poool-dropdown__option poool-dropdown__option--selected"
+                  data-value="pst"
+                >
+                  <span class="poool-dropdown__option-text"
+                    >Pacific Standard Time (PST) UTC-08:00</span
+                  ><span class="poool-dropdown__check"
+                    ><svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                        stroke="currentColor"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      /></svg
+                  ></span>
+                </div>
+                <div class="poool-dropdown__option" data-value="est">
+                  <span class="poool-dropdown__option-text"
+                    >Eastern Standard Time (EST) UTC-05:00</span
+                  ><span class="poool-dropdown__check"
+                    ><svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                        stroke="currentColor"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      /></svg
+                  ></span>
+                </div>
+                <div class="poool-dropdown__option" data-value="cet">
+                  <span class="poool-dropdown__option-text"
+                    >Central European Time (CET) UTC+01:00</span
+                  ><span class="poool-dropdown__check"
+                    ><svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                        stroke="currentColor"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      /></svg
+                  ></span>
+                </div>
+                <div class="poool-dropdown__option" data-value="wib">
+                  <span class="poool-dropdown__option-text"
+                    >Western Indonesia Time (WIB) UTC+07:00</span
+                  ><span class="poool-dropdown__check"
+                    ><svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                    >
+                      <path
+                        d="M16.6667 5L7.50001 14.1667L3.33334 10"
+                        stroke="currentColor"
+                        stroke-width="1.67"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      /></svg
+                  ></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/js/poool-dropdown.js"></script>
+    <script>
+      // Listen for dropdown changes for the event log
+      document.addEventListener("dropdown:change", function (e) {
+        const log = document.getElementById("event-log");
+        const time = new Date().toLocaleTimeString();
+        log.innerHTML =
+          `<div>[${time}] Selected: <strong>${e.detail.text}</strong> (value: ${e.detail.value})</div>` +
+          log.innerHTML;
+      });
+    </script>
+  </body>
+</html>

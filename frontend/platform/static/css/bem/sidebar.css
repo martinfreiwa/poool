@@ -1,0 +1,1406 @@
+/* ===========================
+   POOOL Sidebar - Complete BEM Implementation
+   This file contains ALL styles from sidebar-navigation.css and sidebar-developer.css
+   Mapped to BEM naming convention
+   =========================== */
+
+/* Import TT Norms Pro Font */
+
+/* ===========================
+   Sidebar Wrapper — ALL page-specific sidebar wrapper divs must have
+   width: 0 so they don't push content in flex layouts.
+   The inner <aside class="sidebar"> is position:fixed (out of flow),
+   so these wrappers should consume zero space.
+   =========================== */
+#dynamic-sidebar-container,
+.marketplace-sidebar,
+.portfolio-sidebar,
+.rewards-sidebar,
+.wallet-sidebar,
+.cart-page-sidebar,
+.commodity-page-sidebar,
+.property-page-sidebar,
+.kyc-sidebar,
+.developer-dashboard-sidebar,
+.developer-assets-sidebar,
+.submission-success-sidebar {
+  width: 0 !important;
+  min-width: 0 !important;
+  flex-shrink: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+/* ===========================
+   Block: Sidebar Container
+   From: .sidebar-navigation (sidebar-navigation.css:12-27)
+   =========================== */
+.sidebar {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  position: fixed;
+  width: 256px;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  background: #ffffff;
+  border-right: 1px solid #e9eaeb;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* From: .sidebar-content (sidebar-navigation.css:29-41) */
+.sidebar__content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0px;
+  width: 256px;
+  height: 100vh;
+  flex: 1;
+  order: 0;
+  align-self: stretch;
+}
+
+/* ===========================
+   Navigation Section
+   From: .sidebar-navigation-section (sidebar-navigation.css:46-60)
+   =========================== */
+.sidebar__nav-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px 0px 0px;
+  gap: 16px;
+  isolation: isolate;
+  width: 256px;
+  flex: 1 1 auto;
+  /* Allow to grow and shrink */
+  min-height: 0;
+  /* Important for overflow to work */
+  order: 0;
+  align-self: stretch;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ===========================
+   Header Section
+   From: .sidebar-header (sidebar-navigation.css:65-78)
+   =========================== */
+.sidebar__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 16px;
+  gap: 16px;
+  width: 256px;
+  min-height: 96.4px;
+  flex: 0 0 auto;
+  /* Don't grow or shrink */
+  order: 0;
+  align-self: stretch;
+  z-index: 1;
+}
+
+/* Logo
+   From: .sidebar-logo (sidebar-navigation.css:81-89) */
+.sidebar__logo {
+  display: block;
+  width: 143px;
+  height: 45px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  position: relative;
+}
+
+.sidebar__logo img {
+  width: 143px;
+  height: 45px;
+  display: block;
+}
+
+/* ===========================
+   Search Input
+   From: .sidebar-search-wrapper (sidebar-navigation.css:100-112)
+   =========================== */
+.sidebar__search-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 8px;
+  width: 216px;
+  height: 30px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* From: .sidebar-search (sidebar-navigation.css:114-131) */
+.sidebar__search {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 8px;
+  gap: 6px;
+  width: 216px;
+  height: 34px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  overflow: hidden;
+}
+
+/* Remove focus outline on search container */
+.sidebar__search:focus-within {
+  outline: none !important;
+  border: 1px solid #d5d7da !important;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
+}
+
+/* From: .sidebar-search-content (sidebar-navigation.css:133-144) */
+.sidebar__search-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 6px;
+  width: calc(100% - 4px);
+  height: 24px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+}
+
+/* From: .sidebar-search-icon (sidebar-navigation.css:146-162) */
+.sidebar__search-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.sidebar__search-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar__search-icon path {
+  stroke: #717680;
+  stroke-width: 1.66667px;
+}
+
+/* From: .sidebar-search-input (sidebar-navigation.css:164-183) */
+.sidebar__search-input {
+  width: 100%;
+  height: 24px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181d27;
+  border: none;
+  outline: none;
+  background: transparent;
+  flex: none;
+  order: 1;
+  flex-grow: 1;
+}
+
+/* Remove focus styles from search input */
+.sidebar__search-input:focus {
+  outline: none !important;
+  border: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.sidebar__search-input::placeholder {
+  color: #717680;
+}
+
+/* ===========================
+   Navigation Menu
+   From: .sidebar-nav (sidebar-navigation.css:188-200)
+   =========================== */
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 16px;
+  width: 224px;
+  height: auto;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  z-index: 0;
+}
+
+/* Nav Item Base
+   From: .nav-item (sidebar-navigation.css:203-214) */
+.sidebar__nav-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 0px;
+  width: 224px;
+  height: 38px;
+  flex: none;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* From: .nav-item-content (sidebar-navigation.css:216-233) */
+.sidebar__nav-item-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  gap: 8px;
+  width: 224px;
+  height: 36px;
+  background: #ffffff;
+  border-radius: 6px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+/* From: .nav-item-content:hover (sidebar-navigation.css:235-237) */
+.sidebar__nav-item-content:hover {
+  background: rgba(3, 255, 136, 0.08);
+}
+
+/* Prevent hover effect on disabled items */
+.sidebar__nav-item-content--disabled:hover {
+  background: #ffffff;
+}
+
+/* Active State
+   From: .nav-item.active .nav-item-content (sidebar-navigation.css:240-242) */
+.sidebar__nav-item--active .sidebar__nav-item-content {
+  background: rgba(3, 255, 136, 0.15);
+  /* Light green for investor navbar */
+}
+
+/* Disabled State for navigation items */
+.sidebar__nav-item-content--disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Apply opacity only to text and icons, not badges */
+.sidebar__nav-item-content--disabled .sidebar__nav-text,
+.sidebar__nav-item-content--disabled .sidebar__nav-icon-wrapper,
+.sidebar__nav-item-content--disabled .nav-icon {
+  opacity: 0.6;
+}
+
+/* Keep badges normal (full opacity) in disabled items */
+.sidebar__nav-item-content--disabled .soon-badge,
+.sidebar__nav-item-content--disabled .support-badge,
+.sidebar__nav-item-content--disabled .nav-badge,
+.sidebar__nav-item-content--disabled .notifications-badge,
+.sidebar__nav-item-content--disabled .sidebar__nav-badge {
+  opacity: 1;
+}
+
+/* Dashboard specific active state for developer
+   From: #nav-item-dashboard.active .nav-item-content (sidebar-developer.css:4-8) */
+#nav-item-dashboard.sidebar__nav-item--active .sidebar__nav-item-content {
+  background: rgba(3, 255, 136, 0.15);
+  /* Light green for developer dashboard */
+  border-radius: 6px;
+}
+
+/* Developer navbar active states */
+.sidebar--developer .sidebar__nav-item--active .sidebar__nav-item-content {
+  background: rgba(3, 255, 136, 0.15);
+  /* Light green for all developer navbar items */
+}
+
+/* Investor navbar active states */
+.sidebar--investor .sidebar__nav-item--active .sidebar__nav-item-content {
+  background: rgba(3, 255, 136, 0.15);
+  /* Different green for investor navbar items */
+}
+
+/* Text and Icon Container
+   From: .nav-text-icon (sidebar-navigation.css:245-256) */
+.sidebar__nav-text-icon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  height: 20px;
+  flex: 1;
+  order: 0;
+}
+
+/* Icon Wrapper
+   From: .nav-icon-wrapper (sidebar-navigation.css:259-269) */
+.sidebar__nav-icon-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px 2px 0px 0px;
+  width: 22px;
+  height: 20px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* From: .nav-icon (sidebar-navigation.css:271-278) */
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  display: block;
+}
+
+/* Icon filters for active state
+   From: .nav-item.active .nav-icon (sidebar-navigation.css:281-283) */
+.sidebar__nav-item--active .nav-icon {
+  filter: brightness(0) saturate(100%) invert(11%) sepia(97%) saturate(7484%) hue-rotate(247deg) brightness(94%) contrast(148%);
+}
+
+/* Default icon color filter
+   From: .nav-item:not(.active) .nav-icon (sidebar-navigation.css:286-288) */
+.sidebar__nav-item:not(.sidebar__nav-item--active) .nav-icon {
+  filter: brightness(0) saturate(100%) invert(46%) sepia(7%) saturate(568%) hue-rotate(185deg) brightness(92%) contrast(86%);
+}
+
+/* Nav Text
+   From: .nav-text (sidebar-navigation.css:291-301) */
+.sidebar__nav-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  flex: none;
+  order: 2;
+  flex-grow: 0;
+}
+
+/* From: .nav-item.active .nav-text (sidebar-navigation.css:303-305) */
+.sidebar__nav-item--active .sidebar__nav-text {
+  color: var(--brand-dark-blue);
+}
+
+/* Dashboard specific active text for developer
+   From: #nav-item-dashboard.active .nav-text (sidebar-developer.css:10-14) */
+#nav-item-dashboard.sidebar__nav-item--active .nav-text {
+  color: var(--brand-dark-blue);
+  font-weight: 600;
+}
+
+/* Badge base styles
+   From: .nav-badge (sidebar-navigation.css:308-329) */
+.sidebar__nav-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  height: 22px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  margin-left: auto;
+  flex-shrink: 0;
+  order: 1;
+}
+
+/* Notifications badge - green
+   From: .notifications-badge (sidebar-developer.css:17-39) */
+.sidebar__nav-badge--notifications,
+.notifications-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  width: 28px;
+  height: 20px;
+  background: #fafafa;
+  border: 1px solid #e9eaeb;
+  border-radius: 16px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  color: #17b26a;
+  margin-left: auto;
+  flex-shrink: 0;
+  order: 1;
+}
+
+/* Support online badge
+   From: .nav-badge.support-online-badge (sidebar-developer.css:74-84) */
+.sidebar__nav-badge--support {
+  padding: 2px 6px;
+  gap: 4px;
+  width: auto;
+  min-width: 61px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+  color: #414651;
+}
+
+/* ===========================
+   Footer Section
+   From: .sidebar-footer (sidebar-navigation.css:334-346)
+   =========================== */
+.sidebar__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 16px 16px;
+  gap: 16px;
+  margin-top: auto;
+  /* Push to bottom */
+  width: 256px;
+  flex: 0 0 auto;
+  /* Don't grow or shrink */
+  order: 1;
+  align-self: stretch;
+}
+
+/* Footer Navigation
+   From: .footer-nav (sidebar-navigation.css:349-359) */
+.sidebar__footer-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: 256px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Support Badge with Status
+   From: .support-badge (sidebar-navigation.css:362-379) */
+.support-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 6px;
+  gap: 4px;
+  min-width: 61px;
+  height: 22px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* From: .support-status-dot (sidebar-navigation.css:381-399) */
+.support-status-dot {
+  width: 8px;
+  height: 8px;
+  position: relative;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.support-status-dot::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  left: 1px;
+  top: 1px;
+  background: #17b26a;
+  border-radius: 50%;
+}
+
+/* From: .support-badge-text (sidebar-navigation.css:401-412) */
+.support-badge-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #414651;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* ===========================
+   Featured Card (Community/Support Chat)
+   From: .nav-featured-card (sidebar-navigation.css:417-433)
+   =========================== */
+.sidebar__featured-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 16px 16px;
+  gap: 12px;
+  isolation: isolate;
+  width: 224px;
+  height: auto;
+  background: rgba(3, 255, 136, 0.1);
+  /* Brand lime - community card */
+  border-radius: 12px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  position: relative;
+}
+
+/* Developer Support Chat Card specific
+   From: .nav-featured-card.support-chat-card (sidebar-developer.css:181-197) */
+.sidebar__featured-card--support {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px;
+  gap: 16px;
+  isolation: isolate;
+  width: 224px;
+  height: 182px;
+  margin: 0 0px 16px 0px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  position: relative;
+}
+
+/* Close Button
+   From: .featured-card-close (sidebar-navigation.css:436-455) */
+.sidebar__featured-close {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  right: 8px;
+  top: 8px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.sidebar__featured-close img {
+  width: 36px;
+  height: 36px;
+}
+
+/* Developer specific close button
+   From: .nav-featured-card .featured-card-close (sidebar-developer.css:200-225) */
+.sidebar__featured-card--support .sidebar__featured-close {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  right: 8px;
+  top: 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 0;
+}
+
+.sidebar__featured-card--support .sidebar__featured-close:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.sidebar__featured-card--support .sidebar__featured-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Card Text Content
+   From: .featured-card-text (sidebar-navigation.css:458-471) */
+.sidebar__featured-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 4px;
+  width: 232px;
+  height: auto;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+  z-index: 1;
+}
+
+/* Developer specific featured text
+   From: .featured-card-text (sidebar-developer.css:285-293) */
+.sidebar__featured-card--support .sidebar__featured-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 4px;
+  width: 192px;
+  height: 64px;
+}
+
+/* From: .featured-card-title (sidebar-navigation.css:473-485) */
+.sidebar__featured-title {
+  width: 224px;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+}
+
+/* Developer specific title
+   From: .featured-card-title (sidebar-developer.css:295-305) */
+.sidebar__featured-card--support .sidebar__featured-title {
+  width: 113px;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+/* From: .featured-card-description (sidebar-navigation.css:487-500) */
+.sidebar__featured-description {
+  width: 232px;
+  height: 60px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #000000;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Developer specific description
+   From: .featured-card-description (sidebar-developer.css:307-317) */
+.sidebar__featured-card--support .sidebar__featured-description {
+  width: 192px;
+  height: 40px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+  margin: 0;
+}
+
+/* Card Image
+   From: .featured-card-image (sidebar-navigation.css:503-520) */
+.sidebar__featured-image {
+  width: 100%;
+  height: auto;
+  max-height: 140px;
+  border-radius: 6px;
+  flex: none;
+  order: 2;
+  align-self: stretch;
+  flex-grow: 0;
+  z-index: 2;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar__featured-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/* Play button
+   From: .featured-card-play-button (sidebar-navigation.css:523-532) */
+.sidebar__featured-play {
+  position: absolute !important;
+  width: 48px !important;
+  height: 48px !important;
+  left: 12px !important;
+  bottom: 12px !important;
+  cursor: pointer;
+  z-index: 10;
+  object-fit: contain;
+}
+
+/* Card Actions
+   From: .featured-card-actions (sidebar-navigation.css:536-548) */
+.sidebar__featured-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 10px;
+  width: 152px;
+  height: 20px;
+  flex: none;
+  order: 3;
+  flex-grow: 0;
+  z-index: 3;
+}
+
+/* From: .featured-card-button (sidebar-navigation.css:550-581) */
+.sidebar__featured-button {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  height: 20px;
+  flex: none;
+  flex-grow: 0;
+  cursor: pointer;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.sidebar__featured-button--dismiss {
+  color: #535862;
+}
+
+.sidebar__featured-button--action {
+  color: var(--primary-color);
+}
+
+.sidebar__featured-button:hover {
+  opacity: 0.8;
+}
+
+/* Chat support button (developer specific)
+   From: .featured-card-button.chat-support-btn (sidebar-developer.css:320-354) */
+.sidebar__featured-button--chat {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 4px;
+  width: 192px;
+  height: 36px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.sidebar__featured-button--chat:hover {
+  background: #f8f9fc;
+}
+
+.sidebar__featured-button--chat svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar__featured-button--chat span {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+/* Developer Badge and content wrapper
+   From: .featured-card-content (sidebar-developer.css:228-237) */
+.sidebar__featured-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  width: 192px;
+  height: 98px;
+  z-index: 1;
+}
+
+/* Online badge
+   From: .featured-card-badge.online-badge (sidebar-developer.css:240-253) */
+.sidebar__featured-badge--online {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 6px;
+  gap: 4px;
+  width: 61px;
+  height: 22px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+}
+
+.sidebar__featured-badge--online .support-status-dot {
+  width: 8px;
+  height: 8px;
+  position: relative;
+}
+
+.sidebar__featured-badge--online .support-status-dot::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  left: 1px;
+  top: 1px;
+  background: #17b26a;
+  border-radius: 50%;
+}
+
+.sidebar__featured-badge--online .support-badge-text {
+  width: 37px;
+  height: 18px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #414651;
+}
+
+/* ===========================
+   Account Card
+   From: .nav-account-card (sidebar-navigation.css:586-606)
+   =========================== */
+.sidebar__account-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 12px;
+  gap: 16px;
+  isolation: isolate;
+  width: 224px;
+  height: 64px;
+  margin: 0 0;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  flex: none;
+  order: 2;
+  align-self: stretch;
+  flex-grow: 0;
+  position: relative;
+}
+
+/* Avatar label group
+   From: .account-avatar-group (sidebar-navigation.css:609-621) */
+.sidebar__account-avatar-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  width: 200px;
+  height: 40px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+  z-index: 0;
+}
+
+/* From: .account-avatar (sidebar-navigation.css:623-653) */
+.sidebar__account-avatar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.sidebar__account-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Contrast border */
+.sidebar__account-avatar::after {
+  content: "";
+  box-sizing: border-box;
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  bottom: 0px;
+  opacity: 0.08;
+  border: 0.75px solid #000000;
+  border-radius: 200px;
+  pointer-events: none;
+}
+
+/* Avatar online indicator
+   From: .account-online-indicator (sidebar-navigation.css:656-665) */
+.sidebar__account-online {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  right: 0px;
+  bottom: 0px;
+  background: #17b26a;
+  border: 1.5px solid #ffffff;
+  border-radius: 5px;
+}
+
+/* Text and supporting text
+   From: .account-text-wrapper (sidebar-navigation.css:668-678) */
+.sidebar__account-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: auto;
+  height: 40px;
+  flex: none;
+  order: 1;
+  flex-grow: 1;
+}
+
+/* From: .account-name (sidebar-navigation.css:680-692) */
+.sidebar__account-name {
+  display: block;
+  min-width: 120px;
+  width: auto;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181d27;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* From: .account-email (sidebar-navigation.css:694-706) */
+.sidebar__account-email {
+  display: block;
+  min-width: 120px;
+  width: auto;
+  height: 20px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Account Menu Button
+   From: .account-menu-button (sidebar-navigation.css:709-723) */
+.sidebar__account-menu {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  right: 6px;
+  top: 6px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  z-index: 1;
+}
+
+/* From: .account-menu-button-inner (sidebar-navigation.css:725-747) */
+.sidebar__account-menu-button {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  padding: 6px;
+  row-gap: 0px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.sidebar__account-menu-button:hover {
+  background: rgba(3, 255, 136, 0.08);
+}
+
+/* From: .account-menu-icon (sidebar-navigation.css:749-760) */
+.sidebar__account-menu-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.sidebar__account-menu-icon path {
+  stroke: #a4a7ae;
+  stroke-width: 1.66667px;
+}
+
+/* Soon badge
+   From: .soon-badge (sidebar-navigation.css:768-793 and sidebar-developer.css:46-71) */
+.soon-badge {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  gap: 4px;
+  min-width: 42px;
+  height: 22px;
+  background: #e5e5ff;
+  border: 1px solid #a7a7ff;
+  border-radius: 6px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: var(--primary-color);
+  margin-left: auto;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+/* Developer specific soon badge
+   From: #nav-item-reports .soon-badge (sidebar-developer.css:42-71) */
+#nav-item-reports .soon-badge {
+  width: 38px;
+  height: 20px;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+/* Position for specific nav items
+   From: #nav-item-rewards, #nav-item-leaderboard (sidebar-navigation.css:763-766) */
+#nav-item-rewards,
+#nav-item-leaderboard,
+#nav-item-reports {
+  position: relative;
+}
+
+/* ===========================
+   Developer Specific: Add Asset Button
+   From: .add-asset-section (sidebar-developer.css:104-111)
+   =========================== */
+.add-asset-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 0px 0px;
+  width: 224px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* From: .add-asset-btn (sidebar-developer.css:114-143) */
+.add-asset-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 6px;
+  width: 100%;
+  height: 38px;
+  background: #0000FF;
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-asset-btn:hover {
+  background: #0000a0;
+}
+
+.add-asset-btn:active {
+  background: #000050;
+}
+
+/* From: .add-asset-btn svg (sidebar-developer.css:146-157) */
+.add-asset-btn svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.add-asset-btn svg path {
+  stroke: #98FB96;
+  stroke-width: 1.66667px;
+}
+
+/* From: .add-asset-text (sidebar-developer.css:160-178) */
+.add-asset-text {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px 2px;
+  width: 100px;
+  height: 24px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #98FB96;
+  white-space: nowrap;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* ===========================
+   Profile Dropdown Animation
+   =========================== */
+
+/* Smooth dropdown animation */
+#profile-dropdown-menu {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    visibility 0.2s ease;
+  transform-origin: bottom left;
+}
+
+/* Animation keyframes for dropdown */
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dropdownSlideOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+}
+
+/* Active state for menu button */
+.sidebar__account-menu-button.active {
+  background: rgba(3, 255, 136, 0.15);
+}
+
+/* ===========================
+   Backwards Compatibility
+   Templates currently use both old and new classes
+   Old styles are handled by the original CSS files
+   =========================== */
+/* ===========================
+   Expandable Navigation Styles
+   Parent items with dropdowns
+   =========================== */
+
+/* Disable transitions during page load to prevent animation flash */
+.sidebar--no-transition .sidebar__nav-children {
+  transition: none !important;
+}
+
+.sidebar--no-transition .sidebar__nav-chevron {
+  transition: none !important;
+}
+
+/* Nav item containing expandable parent - stack vertically */
+.sidebar__nav-item:has(.sidebar__nav-item--parent) {
+  flex-direction: column;
+  align-items: flex-start;
+  height: auto;
+}
+
+/* Parent item with chevron */
+.sidebar__nav-item--parent {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Chevron icon */
+.sidebar__nav-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+}
+
+/* Rotated chevron when expanded */
+.sidebar__nav-chevron--expanded {
+  transform: rotate(180deg);
+}
+
+/* Children container */
+.sidebar__nav-children {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0px 4px 28px;
+  gap: 2px;
+  width: 100%;
+  overflow: hidden;
+  transition:
+    height 0.3s ease,
+    padding 0.3s ease;
+}
+
+/* Collapsed state */
+.sidebar__nav-children--collapsed {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Individual child item */
+.sidebar__nav-child {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 10px;
+  height: 32px;
+  background: #ffffff;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.sidebar__nav-child:hover {
+  background: rgba(3, 255, 136, 0.08);
+}
+
+/* Active child item */
+.sidebar__nav-child--active {
+  background: #e8ffe8;
+}
+
+.sidebar__nav-child--active:hover {
+  background: #e8ffe8;
+}
+
+/* Child item text */
+.sidebar__nav-child-text {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+.sidebar__nav-child--active .sidebar__nav-child-text {
+  color: var(--brand-dark-blue);
+  font-weight: 600;
+}

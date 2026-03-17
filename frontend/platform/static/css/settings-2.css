@@ -1,0 +1,1488 @@
+/* ================================
+   POOOL - Settings 2 Redesign CSS
+   Premium SaaS Dashboard Settings
+   ================================ */
+
+/* ─── Page Layout ─── */
+#settings-main {
+  margin-left: 256px !important;
+  width: calc(100% - 256px) !important;
+  padding: 48px 24px 120px 24px !important;
+  background: #fafafa !important;
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+#settings-content:not(.hidden) {
+  display: flex !important;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+/* ─── Top Bar ─── */
+.settings-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  max-width: 1096px;
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.settings-topbar__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-topbar__title-h1 {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  color: #181d27;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Layout: Nav & Feed ─── */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 48px;
+  max-width: 1096px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+  .settings-sticky-nav {
+    display: none; /* Mobile will rely on scroll */
+  }
+}
+
+/* ─── Left Sidebar (Sticky) ─── */
+.settings-sticky-nav {
+  position: sticky;
+  top: 48px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Profile Completeness Banner (inline, above sections) */
+.settings-completeness-banner {
+  background: #ffffff;
+  border: 1px solid #eaecf0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  animation: fadeInBanner 0.4s ease;
+}
+
+@keyframes fadeInBanner {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.settings-completeness-banner__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.settings-completeness-banner__info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-completeness-banner__info > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-completeness-banner__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #101828;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-completeness-banner__subtitle {
+  font-size: 12px;
+  color: #535862;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-completeness-banner__pct {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0000FF;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-completeness-banner__bar-bg {
+  width: 100%;
+  height: 6px;
+  background: #eaecf0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.settings-completeness-banner__bar-fill {
+  height: 100%;
+  background: #0000FF;
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.6s ease;
+}
+
+.settings-completeness-banner__missing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.settings-completeness-banner__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: #0000FF;
+  border: 1px solid rgba(0, 0, 255, 0.3);
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #98FB96;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-completeness-banner__tag svg {
+  flex-shrink: 0;
+}
+
+/* Nav Menu (wrapped in card) */
+.settings-nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #eaecf0;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+.settings-nav-link {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'TT Norms Pro', sans-serif;
+  color: #535862;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-nav-link svg {
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.settings-nav-link:hover {
+  background: rgba(3, 255, 136, 0.08);
+  color: #101828;
+}
+
+.settings-nav-link:hover svg {
+  opacity: 1;
+}
+
+.settings-nav-link.active {
+  background: rgba(3, 255, 136, 0.15);
+  color: #101828;
+  font-weight: 600;
+}
+
+.settings-nav-link.active svg {
+  opacity: 1;
+}
+
+/* ─── Right Content Feed ─── */
+.settings-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.settings-section__header {
+  margin-bottom: 24px;
+}
+
+.settings-section__header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  font-family: 'TT Norms Pro', sans-serif;
+  color: #181d27;
+  margin: 0 0 6px 0;
+}
+
+.settings-section__header p {
+  font-size: 14px;
+  font-family: 'TT Norms Pro', sans-serif;
+  color: #535862;
+  margin: 0;
+}
+
+.settings-card {
+  background: #ffffff;
+  border: 1px solid #eaecf0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-card-divider {
+  border: 0;
+  height: 1px;
+  background: #eaecf0;
+  margin: 0;
+}
+
+/* ─── Morph Group (Read to Edit) ─── */
+.settings-morph-group {
+  padding: 24px 32px;
+  transition: background 0.2s ease;
+}
+
+/* When in Read state, enable hover effect */
+.settings-morph-group.active-state-read:hover {
+  background: #fcfcfd;
+}
+
+.settings-morph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.settings-morph-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #101828;
+  font-family: 'TT Norms Pro', sans-serif;
+  margin: 0;
+}
+
+.settings-icon-btn {
+  background: transparent;
+  border: none;
+  color: #98a2b3;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0; /* Hidden by default */
+}
+
+.settings-icon-btn:hover {
+  background: #f2f4f7;
+  color: #181d27;
+}
+
+/* Show edit button on hover (only if in read state) */
+.settings-morph-group.active-state-read:hover .settings-icon-btn {
+  opacity: 1;
+}
+
+/* View Toggles */
+.settings-view-read,
+.settings-view-edit {
+  display: none;
+}
+
+.active-state-read .settings-view-read {
+  display: block;
+}
+
+.active-state-edit .settings-view-edit {
+  display: block;
+}
+
+.active-state-edit {
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(46, 46, 249, 0.2);
+  border-radius: 0; /* Overridden if needed */
+  z-index: 2;
+  position: relative;
+}
+
+.active-state-edit .settings-icon-btn {
+  display: none; /* Hide edit button when already editing */
+}
+
+/* ─── Read View Typography ─── */
+.settings-read-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.settings-read-row:last-child {
+  margin-bottom: 0;
+}
+
+.settings-read-label {
+  font-size: 14px;
+  color: #535862;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-read-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #181d27;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-read-avatar img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #eaecf0;
+}
+
+/* ─── Form Elements ─── */
+.settings-form-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  align-items: start;
+  margin-bottom: 24px;
+}
+
+.settings-form-row:last-child {
+  margin-bottom: 0;
+}
+
+.settings-form-row__label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #344054;
+  padding-top: 8px;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-form-row__content {
+  display: flex;
+  flex-direction: column;
+  max-width: 400px;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #181d27;
+  background: #ffffff;
+  font-family: 'TT Norms Pro', sans-serif;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: #2E2EF9;
+  box-shadow: 0 0 0 3px rgba(46, 46, 249, 0.08);
+}
+
+.settings-name-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.settings-morph-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 24px;
+  border-top: 1px solid #eaecf0;
+}
+
+/* ─── Financial Profile Styles ─── */
+.settings-fin-status {
+  padding: 24px 32px;
+  border-bottom: 1px solid #eaecf0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-fin-status__left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-fin-status__icon {
+  width: 40px;
+  height: 40px;
+  background: #f2f4f7;
+  color: #535862;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-fin-status__icon svg {
+  stroke: #535862;
+}
+
+.settings-fin-status__right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-fin-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  padding: 0;
+  background: #eaecf0;
+}
+
+@media (max-width: 800px) {
+  .settings-fin-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.settings-fin-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px 32px;
+  background: #fff;
+}
+
+.settings-fin-widget__label {
+  font-size: 13px;
+  color: #535862;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 500;
+}
+
+.settings-fin-widget__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #101828;
+  font-family: 'TT Norms Pro', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.settings-fin-widget--highlight {
+  background: #f9fafb;
+}
+
+.settings-fin-widget--highlight .settings-fin-widget__label {
+  color: #181d27;
+}
+
+.settings-fin-widget--highlight .settings-fin-widget__value {
+  color: #101828;
+}
+
+/* ─── Referral Code Section ─── */
+.settings-referral-section {
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-referral-section__info h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #101828;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-referral-section__info p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #535862;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-referral-code-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-referral-code-value {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 15px;
+  font-weight: 600;
+  color: #181d27;
+  background: #f9fafb;
+  border: 1px solid #eaecf0;
+  padding: 8px 20px;
+  border-radius: 8px;
+  letter-spacing: 1px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.settings-referral-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #eaecf0;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'TT Norms Pro', sans-serif;
+  color: #344054;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-referral-copy-btn:hover {
+  background: #f9fafb;
+  border-color: #d0d5dd;
+}
+
+.settings-referral-copy-btn.copied {
+  background: #ecfdf3;
+  border-color: #abefc6;
+  color: #067647;
+}
+
+/* ─── Security Rows ─── */
+.settings-security-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.settings-security-row:last-child {
+  border-bottom: none;
+}
+
+.settings-security-row__status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  color: #101828;
+  font-size: 14px;
+  min-width: 140px; /* Force consistent alignment for labels */
+}
+
+.settings-security-row__status--full {
+  min-width: 0;
+  flex: 1;
+}
+
+.settings-security-row__status-icon {
+  display: flex;
+  align-items: center;
+  color: #535862;
+}
+
+/* ─── iOS Toggles ─── */
+.settings-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.settings-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.settings-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e9eaeb;
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.settings-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+input:checked + .settings-toggle-slider {
+  background-color: #2E2EF9;
+}
+
+input:checked + .settings-toggle-slider:before {
+  transform: translateX(20px);
+}
+
+/* ─── Buttons ─── */
+.settings-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'TT Norms Pro', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-btn--primary {
+  background: #0000FF;
+  color: #98FB96;
+}
+
+.settings-btn--primary:hover {
+  background: #0000CC;
+}
+
+.settings-btn--secondary {
+  background: #ffffff;
+  border: 1px solid #eaecf0;
+  color: #344054;
+}
+
+.settings-btn--secondary:hover {
+  background: #fcfcfd;
+  color: #181d27;
+}
+
+/* Reusing Info Grid from existing settings */
+.settings-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.settings-info-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #eaecf0;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+
+.settings-info-card:hover {
+  border-color: rgba(3, 255, 136, 0.4);
+  background: rgba(3, 255, 136, 0.02);
+}
+
+.settings-info-icon {
+  flex-shrink: 0;
+}
+
+.settings-info-card__content h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  color: #101828;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+.settings-info-card__content p {
+  margin: 0;
+  font-size: 13px;
+  color: #475467;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+/* Learn Cards reuse */
+.settings-learn-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 16px;
+}
+.settings-learn-card {
+  background: white;
+  border: 1px solid #eaecf0;
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.settings-learn-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.settings-learn-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+}
+.settings-learn-tags {
+  padding: 16px 16px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #12B76A;
+  display: flex;
+  align-items: center;
+}
+.settings-learn-tag-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #12B76A;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+.settings-learn-card-title {
+  padding: 0 16px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+/* ─── Badges (Enhanced) ─── */
+.settings-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'TT Norms Pro', sans-serif;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.settings-badge--loading {
+  background: #f2f4f7;
+  color: #98a2b3;
+  letter-spacing: 2px;
+}
+
+.settings-badge--approved,
+.settings-badge--verified {
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.settings-badge--pending,
+.settings-badge--in_review {
+  background: #fffaeb;
+  color: #b54708;
+}
+
+.settings-badge--missing,
+.settings-badge--not_started,
+.settings-badge--rejected {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+/* ─── Section Header Icons ─── */
+.settings-section__header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Session Cards (Enhanced) ─── */
+.settings-session-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  transition: border-color 0.2s ease;
+}
+
+.settings-session-card:hover {
+  border-color: #d0d5dd;
+}
+
+.settings-session-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-session-card__device {
+  font-size: 14px;
+  font-weight: 500;
+  color: #181d27;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-session-card__current {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.settings-session-card__meta {
+  font-size: 13px;
+  color: #717680;
+}
+
+/* ─── OAuth Cards (Enhanced) ─── */
+.settings-oauth-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  transition: border-color 0.2s ease;
+}
+
+.settings-oauth-card:hover {
+  border-color: #d0d5dd;
+}
+
+.settings-oauth-card__provider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-oauth-card__provider-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.settings-oauth-card__provider-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #181d27;
+}
+
+.settings-oauth-card__email {
+  font-size: 13px;
+  color: #717680;
+  margin-left: 4px;
+}
+
+.settings-oauth-card__date {
+  font-size: 12px;
+  color: #98a2b3;
+}
+
+/* ─── Financial Card Pulse ─── */
+.settings-card--financial {
+  border: 1px solid #eaecf0;
+  overflow: hidden;
+}
+
+/* ─── Payment Methods ─── */
+.settings-payment-methods {
+  padding: 24px 32px;
+}
+
+.settings-payment-methods__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.settings-payment-methods__title h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #181d27;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-payment-methods__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-payment-methods__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Payment method card hover */
+.settings-pm-card:hover {
+  border-color: #d0d5dd;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+}
+
+/* Delete button — red hover */
+.settings-pm-delete-btn:hover {
+  color: #D92D20 !important;
+  border-color: #FDA29B !important;
+  background: #FEF3F2 !important;
+}
+
+/* ─── Info Card Icon Variants ─── */
+.settings-info-card .settings-info-icon div {
+  transition: transform 0.2s ease;
+}
+
+.settings-info-card:hover .settings-info-icon div {
+  transform: scale(1.1);
+  background: rgba(3, 255, 136, 0.15) !important;
+}
+
+.settings-legal-link {
+  transition: all 0.2s ease !important;
+}
+
+.settings-legal-link:hover {
+  background: rgba(3, 255, 136, 0.08) !important;
+  border-color: rgba(3, 255, 136, 0.4) !important;
+}
+
+.settings-section-divider {
+  height: 1px;
+  background: #eaecf0;
+  border: none;
+  margin: 0;
+}
+
+.settings-btn--secondary:hover {
+  background: #f9fafb;
+  border-color: #d0d5dd;
+}
+
+/* ─── Topbar Search ─── */
+.settings-topbar__search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-width: 380px;
+}
+
+.settings-topbar__search:hover {
+  border-color: #d0d5dd;
+  box-shadow: 0 1px 4px rgba(16,24,40,0.06);
+}
+
+.settings-topbar__search-text {
+  font-size: 14px;
+  color: #98a2b3;
+  font-family: 'TT Norms Pro', sans-serif;
+  flex: 1;
+}
+
+.settings-topbar__search-kbd {
+  font-size: 12px;
+  padding: 2px 6px;
+  background: #f2f4f7;
+  border-radius: 4px;
+  color: #717680;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+/* ─── Learn Header ─── */
+.settings-learn-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-learn-see-all {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #181d27;
+  text-decoration: none;
+  font-family: 'TT Norms Pro', sans-serif;
+  transition: color 0.2s;
+}
+
+.settings-learn-see-all:hover {
+  color: #2E2EF9;
+}
+
+/* ─── Loading Skeleton ─── */
+.settings-loading-skeleton {
+  padding: 32px;
+}
+
+.skeleton-box {
+  background: linear-gradient(90deg, #f2f4f7 25%, #e9eaeb 50%, #f2f4f7 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.settings-sk-topbar {
+  height: 40px;
+  width: 200px;
+  margin-bottom: 24px;
+}
+
+.settings-sk-tabs {
+  height: 32px;
+  width: 400px;
+  margin-bottom: 32px;
+}
+
+.settings-sk-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-sk-field {
+  height: 48px;
+  width: 100%;
+}
+
+/* ─── Empty State ─── */
+#settings-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+}
+
+#settings-empty-state h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #181d27;
+  margin: 0 0 8px 0;
+}
+
+#settings-empty-state p {
+  font-size: 14px;
+  color: #535862;
+  margin: 0 0 16px 0;
+}
+
+#settings-empty-state button {
+  padding: 8px 20px;
+  background: #2E2EF9;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ─── Modals ─── */
+.settings-modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(16, 24, 40, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.15);
+}
+
+.settings-modal__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #181d27;
+  margin: 0 0 20px 0;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eaecf0;
+}
+
+.settings-modal__error {
+  font-size: 13px;
+  color: #D92D20;
+  margin-top: 8px;
+}
+
+.settings-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #344054;
+  margin-bottom: 6px;
+  display: block;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+/* ─── Toast Notifications ─── */
+#settings-toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'TT Norms Pro', sans-serif;
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.1);
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.settings-toast--visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.settings-toast--success {
+  background: #ecfdf3;
+  color: #067647;
+  border: 1px solid #abefc6;
+}
+
+.settings-toast--error {
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+
+.settings-toast--info {
+  background: #eef2ff;
+  color: #2E2EF9;
+  border: 1px solid #c7d7fe;
+}
+
+.settings-toast__close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  padding: 0;
+  line-height: 1;
+}
+
+.settings-toast__close:hover {
+  opacity: 1;
+}
+
+/* ─── Avatar Upload Row (Core Profile Edit) ─── */
+.settings-avatar-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.settings-avatar-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #eaecf0;
+  flex-shrink: 0;
+  transition: border-color 0.2s ease;
+}
+
+.settings-avatar-preview:hover {
+  border-color: #2E2EF9;
+}
+
+.settings-avatar-upload-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.settings-avatar-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #98a2b3;
+  font-family: 'TT Norms Pro', sans-serif;
+  line-height: 1.4;
+}
+
+/* ─── Search Modal ─── */
+.settings-search-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(16, 24, 40, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.settings-search-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.settings-search-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(16, 24, 40, 0.2);
+  width: 100%;
+  max-width: 560px;
+  overflow: hidden;
+  transform: translateY(-12px);
+  transition: transform 0.2s ease;
+}
+
+.settings-search-overlay.active .settings-search-modal {
+  transform: translateY(0);
+}
+
+.settings-search-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.settings-search-input-wrapper svg {
+  flex-shrink: 0;
+  color: #98a2b3;
+}
+
+.settings-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  font-family: 'TT Norms Pro', sans-serif;
+  color: #181d27;
+  background: transparent;
+}
+
+.settings-search-input::placeholder {
+  color: #98a2b3;
+}
+
+.settings-search-input-wrapper .settings-search-close-kbd {
+  font-size: 11px;
+  padding: 3px 8px;
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  color: #717680;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.settings-search-results {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.settings-search-results:empty {
+  display: none;
+}
+
+.settings-search-no-results {
+  padding: 24px 20px;
+  text-align: center;
+  color: #717680;
+  font-size: 14px;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-search-result-group {
+  padding: 8px 20px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #98a2b3;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.settings-search-result-item:hover,
+.settings-search-result-item.active {
+  background: #f2f4f7;
+}
+
+.settings-search-result-item__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #eef2ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #2E2EF9;
+}
+
+.settings-search-result-item__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-search-result-item__title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #181d27;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-search-result-item__subtitle {
+  font-size: 12px;
+  color: #717680;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-search-result-item__title mark {
+  background: #FEF0C7;
+  color: #181d27;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.settings-search-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #eaecf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 12px;
+  color: #98a2b3;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.settings-search-footer kbd {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: #f2f4f7;
+  border: 1px solid #eaecf0;
+  border-radius: 4px;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+/* ─── Utility ─── */
+.hidden { display: none !important; }

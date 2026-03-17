@@ -1,0 +1,683 @@
+/* ═══════════════════════════════════════════════════════════════
+   Portfolio Page – Design Enhancements
+   Fluid layout, refined typography, polished micro-interactions
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Google Font ────────────────────────────────────────────── */
+
+/* ─── Layout: Make everything fluid ─────────────────────────── */
+.portfolio-main {
+    width: calc(100% - 256px);
+    min-height: 100vh;
+    margin-left: 256px;
+    padding: 48px 24px 64px 24px;
+    background: #fafafa;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    z-index: 0;
+}
+
+.portfolio-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 0;
+    width: 100%;
+    max-width: 1096px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.portfolio-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 0;
+}
+
+.portfolio-page-icon {
+    width: 32px !important;
+    height: 32px !important;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.portfolio-page-icon img {
+    width: 32px !important;
+    height: 32px !important;
+}
+
+.portfolio-page-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 36px !important;
+    line-height: 44px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: #181d27 !important;
+    margin: 0 !important;
+}
+
+/* ─── Portfolio Value Card – Premium Glassmorphism ───────────── */
+.portfolio-value-section {
+    padding-top: 24px;
+}
+
+.portfolio-value-card {
+    width: 100% !important;
+    max-width: 100%;
+    background: #ffffff;
+    border: 1px solid rgba(233, 234, 235, 0.8);
+    box-shadow:
+        0 1px 3px rgba(10, 13, 18, 0.04),
+        0 4px 12px rgba(10, 13, 18, 0.03);
+    border-radius: 16px;
+    transition: box-shadow 0.3s ease;
+}
+
+.portfolio-value-card:hover {
+    box-shadow:
+        0 1px 3px rgba(10, 13, 18, 0.06),
+        0 8px 24px rgba(10, 13, 18, 0.06);
+}
+
+.portfolio-value-card-header {
+    width: 100% !important;
+}
+
+.portfolio-value-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: #6b7280;
+    width: auto !important;
+}
+
+.portfolio-value-amount {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 800 !important;
+    font-size: 32px !important;
+    line-height: 40px !important;
+    letter-spacing: -0.8px;
+    color: #111827 !important;
+    width: auto !important;
+}
+
+.portfolio-value-badge {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border: 1px solid #a7f3d0;
+    border-radius: 20px;
+    padding: 3px 10px 3px 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: transform 0.2s ease;
+}
+
+.portfolio-value-badge:hover {
+    transform: scale(1.04);
+}
+
+.portfolio-value-badge span {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: #047857;
+}
+
+/* Show more button refinement */
+.portfolio-show-more-btn {
+    border-radius: 10px !important;
+    border: 1px solid #e5e7eb !important;
+    padding: 8px 16px !important;
+    transition: all 0.2s ease !important;
+    width: auto !important;
+}
+
+.portfolio-show-more-btn:hover {
+    background: #f3f4f6 !important;
+    border-color: #d1d5db !important;
+    transform: translateY(-1px);
+}
+
+/* ─── Chart Section ──────────────────────────────────────────── */
+.portfolio-chart-header {
+    width: 100% !important;
+}
+
+.portfolio-chart-title {
+    width: auto !important;
+}
+
+.chart-title-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 600;
+    color: #374151;
+}
+
+.chart-title-percentage {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 700;
+    color: #047857 !important;
+}
+
+/* Chart tabs premium styling */
+.portfolio-chart-tabs {
+    background: #f3f4f6 !important;
+    border-radius: 10px !important;
+    padding: 3px !important;
+    border: none !important;
+    width: auto !important;
+}
+
+.chart-tab {
+    border-radius: 8px !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    color: #6b7280 !important;
+    transition: all 0.2s ease !important;
+    border: none !important;
+    padding: 5px 12px !important;
+}
+
+.chart-tab.active {
+    background: #ffffff !important;
+    color: #111827 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    border: none !important;
+}
+
+.chart-tab:hover:not(.active) {
+    color: #374151 !important;
+    background: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Filter button refinement */
+.portfolio-chart-filter {
+    border-radius: 10px !important;
+    border: 1px solid #e5e7eb !important;
+    transition: all 0.2s ease !important;
+}
+
+.portfolio-chart-filter:hover {
+    background: #f9fafb !important;
+    border-color: #d1d5db !important;
+}
+
+/* Chart bars gradient */
+.chart-bar-week {
+    background: linear-gradient(180deg, #10b981 0%, #34d399 60%, #6ee7b7 100%) !important;
+    border-radius: 3px 3px 0 0 !important;
+    transition: all 0.2s ease !important;
+}
+
+.chart-bar-week:hover {
+    filter: brightness(1.05) !important;
+    transform: scaleY(1.02);
+    transform-origin: bottom;
+}
+
+.portfolio-chart-container {
+    width: 100% !important;
+}
+
+.chart-grid {
+    width: 100% !important;
+}
+
+.grid-line {
+    width: 100% !important;
+    border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.chart-bars {
+    width: 100% !important;
+}
+
+.chart-x-axis {
+    width: 100% !important;
+}
+
+/* ─── Key Financials – Refined Cards ─────────────────────────── */
+.key-financials-section {
+    margin-top: 36px !important;
+}
+
+.key-financials-section h2,
+.section-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 800 !important;
+    font-size: 22px !important;
+    line-height: 28px !important;
+    letter-spacing: -0.3px;
+    color: #111827 !important;
+}
+
+.key-financials-grid {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 16px !important;
+}
+
+.key-financials-card {
+    width: 100% !important;
+    min-height: 108px;
+    height: auto !important;
+    background: #ffffff;
+    border: 1px solid rgba(233, 234, 235, 0.8);
+    box-shadow:
+        0 1px 3px rgba(10, 13, 18, 0.04),
+        0 4px 12px rgba(10, 13, 18, 0.03);
+    border-radius: 14px !important;
+    transition: all 0.25s ease;
+}
+
+.key-financials-card:hover {
+    box-shadow:
+        0 1px 3px rgba(10, 13, 18, 0.06),
+        0 8px 20px rgba(10, 13, 18, 0.06);
+    transform: translateY(-2px);
+}
+
+/* Icon gradient enhancement */
+.financials-icon::before {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%) !important;
+    border-radius: 10px !important;
+}
+
+.financials-icon::after {
+    background: rgba(255, 255, 255, 0.65) !important;
+    border-radius: 10px !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.financials-icon-wrapper {
+    width: auto !important;
+}
+
+.financials-content {
+    width: auto !important;
+    flex: 1;
+}
+
+.financials-header {
+    width: auto !important;
+}
+
+.financials-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 500 !important;
+    color: #6b7280 !important;
+}
+
+.financials-value-wrapper {
+    width: auto !important;
+}
+
+.financials-value {
+    width: auto !important;
+    height: auto !important;
+}
+
+.financials-currency {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    line-height: 30px !important;
+    color: #111827 !important;
+}
+
+.financials-amount {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    line-height: 30px !important;
+    color: #111827 !important;
+}
+
+/* Change badge refinement */
+.financials-change {
+    border-radius: 8px !important;
+    border: 1px solid #e5e7eb !important;
+    width: auto !important;
+}
+
+.financials-percent {
+    font-family: 'TT Norms Pro', sans-serif;
+    width: auto !important;
+}
+
+.financials-period {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 13px !important;
+    color: #9ca3af !important;
+}
+
+/* ─── Insights & Investment Limit – Fluid Grid ──────────────── */
+.insights-limit-section {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+    margin-top: 40px !important;
+}
+
+.quick-insights-wrapper h2 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 800 !important;
+    font-size: 22px !important;
+    letter-spacing: -0.3px;
+}
+
+.quick-insights-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+}
+
+.quick-insights-card {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 150px;
+    background: #ffffff;
+    border: 1px solid rgba(233, 234, 235, 0.8);
+    box-shadow:
+        0 1px 3px rgba(10, 13, 18, 0.04),
+        0 4px 12px rgba(10, 13, 18, 0.03);
+    border-radius: 14px !important;
+    transition: all 0.25s ease;
+    padding: 20px !important;
+}
+
+.quick-insights-card:hover {
+    box-shadow:
+        0 1px 3px rgba(10, 13, 18, 0.06),
+        0 8px 20px rgba(10, 13, 18, 0.06);
+    transform: translateY(-2px);
+}
+
+.quick-insights-card:nth-child(2) {
+    width: 100% !important;
+}
+
+.insights-content {
+    width: 100% !important;
+    height: auto !important;
+}
+
+.insights-icon {
+    border-radius: 10px !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.insights-header {
+    width: auto !important;
+    height: auto !important;
+}
+
+.insights-title {
+    width: auto !important;
+    height: auto !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 500 !important;
+    color: #6b7280 !important;
+}
+
+.insights-value {
+    width: auto !important;
+    height: auto !important;
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 800 !important;
+    font-size: 20px !important;
+    line-height: 28px !important;
+    color: #111827 !important;
+}
+
+/* Investment Limit Card */
+.investment-limit-wrapper h2 {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 800 !important;
+    font-size: 22px !important;
+    letter-spacing: -0.3px;
+}
+
+.investment-limit-container {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 273px;
+    background: #ffffff;
+    border: 1px solid rgba(233, 234, 235, 0.8);
+    box-shadow:
+        0 1px 3px rgba(10, 13, 18, 0.04),
+        0 4px 12px rgba(10, 13, 18, 0.03);
+    border-radius: 14px !important;
+    transition: box-shadow 0.3s ease;
+}
+
+.investment-limit-container:hover {
+    box-shadow:
+        0 1px 3px rgba(10, 13, 18, 0.06),
+        0 8px 24px rgba(10, 13, 18, 0.06);
+}
+
+/* Progress bar premium styling */
+#investment-limit-container .progress-bar-container {
+    width: 100% !important;
+}
+
+#investment-limit-container .progress-bar-track {
+    background: #e5e7eb !important;
+    border-radius: 24px !important;
+    height: 10px !important;
+}
+
+#investment-limit-container .progress-bar-fill {
+    background: linear-gradient(90deg, #34d399, #6ee7b7, #a7f3d0) !important;
+    border-radius: 24px !important;
+    height: 10px !important;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-percentage {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    color: #374151 !important;
+}
+
+.limit-item-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 400 !important;
+    font-size: 15px !important;
+    color: #6b7280 !important;
+}
+
+.limit-item-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+    color: #111827 !important;
+}
+
+.limit-item .limit-item-bullet.invested {
+    background: #34d399 !important;
+}
+
+.limit-item .limit-item-bullet.available {
+    background: #e5e7eb !important;
+}
+
+/* ─── Assets Table – Premium ─────────────────────────────────── */
+.assets-section {
+    margin-top: 40px !important;
+}
+
+.portfolio-assets-table {
+    width: 100% !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(233, 234, 235, 0.8) !important;
+    box-shadow:
+        0 1px 3px rgba(10, 13, 18, 0.04),
+        0 4px 12px rgba(10, 13, 18, 0.03) !important;
+    overflow: hidden;
+}
+
+.portfolio-assets-header {
+    background: #f9fafb !important;
+    border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.portfolio-assets-header-text {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #9ca3af !important;
+}
+
+.portfolio-assets-row {
+    transition: background-color 0.2s ease !important;
+}
+
+.portfolio-assets-row:hover {
+    background-color: #fafbfc !important;
+}
+
+.portfolio-assets-property-name {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 600 !important;
+    color: #111827 !important;
+}
+
+.portfolio-assets-property-location {
+    font-family: 'TT Norms Pro', sans-serif;
+    color: #9ca3af !important;
+}
+
+.portfolio-assets-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 700 !important;
+    color: #111827 !important;
+}
+
+.portfolio-assets-property-image {
+    border-radius: 10px !important;
+    overflow: hidden;
+}
+
+.portfolio-assets-property-image img {
+    transition: transform 0.3s ease;
+}
+
+.portfolio-assets-row:hover .portfolio-assets-property-image img {
+    transform: scale(1.05);
+}
+
+/* Status badges */
+.portfolio-assets-status {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 500 !important;
+    border-radius: 20px !important;
+}
+
+
+
+/* ─── Loading Skeleton Refinement ────────────────────────────── */
+.skeleton-box {
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%) !important;
+    background-size: 200% 100% !important;
+    animation: shimmer 1.5s infinite ease-in-out !important;
+    border-radius: 12px !important;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ─── State Panels ───────────────────────────────────────────── */
+.portfolio-state-panel {
+    border-radius: 16px !important;
+}
+
+.state-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 700 !important;
+    color: #111827 !important;
+}
+
+.state-desc {
+    font-family: 'TT Norms Pro', sans-serif;
+    color: #6b7280 !important;
+}
+
+.retry-btn {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    transition: all 0.2s ease !important;
+}
+
+.retry-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* ─── Responsive breakpoints ─────────────────────────────────── */
+@media (max-width: 1400px) {
+    .key-financials-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+@media (max-width: 1200px) {
+    .insights-limit-section {
+        grid-template-columns: 1fr !important;
+    }
+
+    .key-financials-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .key-financials-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .quick-insights-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ─── Smooth scrollbar ───────────────────────────────────────── */
+.portfolio-main::-webkit-scrollbar {
+    width: 6px;
+}
+
+.portfolio-main::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.portfolio-main::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.portfolio-main::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}

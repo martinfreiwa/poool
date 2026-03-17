@@ -1,0 +1,80 @@
+[package]
+name = "poool-backend"
+version = "0.1.0"
+edition = "2021"
+publish = false
+default-run = "poool-backend"
+
+[dependencies]
+# Web framework
+axum = { version = "0.7", features = ["multipart"] }
+axum-extra = { version = "0.9", features = ["cookie"] }
+tokio = { version = "1.0", features = ["full"] }
+tower-http = { version = "0.6", features = ["fs", "cors", "trace", "compression-full"] }
+tower = { version = "0.5", features = ["limit"] }
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json", "macros", "rust_decimal"] }
+rust_decimal = "1.33"
+
+# Serialization/Deserialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Auth & Security
+argon2 = "0.5"
+rand = "0.8"
+base64 = "0.22"
+
+# OAuth2
+oauth2 = "4.4"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+# Environment variables & utilities
+dotenvy = "0.15"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+time = "0.3"
+
+# KYC Provider abstraction
+async-trait = "0.1"
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+
+# Templating (for HTML responses to HTMX)
+minijinja = { version = "2.0", features = ["loader"] }
+redis = { version = "0.24.0", features = ["tokio-comp"] }
+deadpool-redis = "0.14.0"
+# Error handling
+anyhow = "1.0"
+totp-rs = { version = "5.6.0", features = ["gen_secret", "otpauth", "qr"] }
+
+# File Storage (Google Cloud Storage)
+google-cloud-storage = { version = "0.22", default-features = false, features = ["default-tls", "auth"] }
+google-cloud-auth = { version = "0.17", default-features = false, features = ["default-tls"] }
+mime_guess = "2.0"
+
+# Error monitoring & performance tracking
+sentry = { version = "0.34", default-features = false, features = [
+    "backtrace",
+    "contexts",
+    "panic",
+    "reqwest",
+    "rustls",
+    "tracing",
+    "tower",
+] }
+sentry-tracing = "0.34"
+axum_csrf = "0.11.0"
+url = "2.5.8"
+
+# ─── Dev profile: optimize ALL dependencies ────────────────────
+# Argon2 password hashing is UNUSABLY SLOW in debug mode (2+ minutes
+# per hash on ARM Mac). This setting compiles all dependencies with
+# optimizations while keeping our own code in fast debug mode.
+# This is the recommended approach for crypto-heavy projects.
+[profile.dev.package."*"]
+opt-level = 2

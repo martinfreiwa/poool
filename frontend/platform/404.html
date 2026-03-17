@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 Page not found – POOOL</title>
+    <meta name="description" content="The page you're looking for doesn't exist or has been moved." />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="stylesheet" href="/static/css/dashboard-tokens.css?v=1.0.14" />
+    <link rel="stylesheet" href="/static/css/main.css?v=1.0.14" />
+    <link rel="stylesheet" href="/static/css/error-pages.css" />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head><body class="dom-ready">
+  <main class="error-page" id="error-404-page">
+
+    <!-- Logo -->
+    <a class="error-logo" href="/marketplace" aria-label="POOOL Home">
+      <img src="/static/images/logo-pool.svg" alt="POOOL" />
+    </a>
+
+    <!-- Illustration -->
+    <div class="error-icon-wrap" aria-hidden="true">
+      <div class="error-icon-ring error-icon-ring--blue">
+        <div class="error-icon-inner error-icon-inner--blue">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M20 13.333v6.667M20 26.667h.017M36.667 20c0 9.205-7.462 16.667-16.667 16.667S3.333 29.205 3.333 20 10.795 3.333 20 3.333 36.667 10.795 36.667 20z"
+              stroke="#0000FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badge -->
+    <span class="error-code error-code--blue">404 Error</span>
+
+    <!-- Text -->
+    <h1 class="error-title">Page not found</h1>
+    <p class="error-subtitle">
+      Sorry, the page you're looking for doesn't exist. It may have been moved, renamed, or never existed.
+    </p>
+
+    <!-- Actions -->
+    <div class="error-actions">
+      <a id="error-404-go-home" href="/marketplace" class="btn btn--primary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M2 6l6-4.667L14 6v7.333a.667.667 0 01-.667.667H10.5V10H5.5v4H2.667A.667.667 0 012 13.333V6z"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        Go to Marketplace
+      </a>
+      <button id="error-404-go-back" onclick="window.history.back()" class="btn btn--secondary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+        Go back
+      </button>
+    </div>
+
+    <!-- Footer hint -->
+    <p class="error-footer">
+      Need help? <a href="/support">Contact support</a> or <a href="/auth/login">sign in</a> to your account.
+    </p>
+
+  </main>
+</body>
+
+</html>

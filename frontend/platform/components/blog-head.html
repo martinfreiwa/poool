@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ meta_title | default(title ~ ' | POOOL Blog') }}</title>
+    <meta name="description" content="{{ meta_description | default(description | default('Insights on fractional real estate investing, tokenization, and building wealth with POOOL.')) }}" />
+    <link rel="canonical" href="{{ canonical_url | default(base_url ~ request_path) }}" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="{% if schema_type == 'BlogPosting' %}article{% else %}website{% endif %}" />
+    <meta property="og:title" content="{{ meta_title | default(title) }}" />
+    <meta property="og:description" content="{{ meta_description | default(description | default('')) }}" />
+    {% if og_image_url %}<meta property="og:image" content="{{ og_image_url }}" />{% endif %}
+    <meta property="og:url" content="{{ canonical_url | default(base_url ~ request_path) }}" />
+    <meta property="og:site_name" content="POOOL" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ meta_title | default(title) }}" />
+    <meta name="twitter:description" content="{{ meta_description | default(description | default('')) }}" />
+    {% if og_image_url %}<meta name="twitter:image" content="{{ og_image_url }}" />{% endif %}
+
+    <!-- Fonts (same as platform) -->
+    <link rel="stylesheet" href="/static/css/fonts.css" />
+
+    <!-- Blog Stylesheet -->
+    <link rel="stylesheet" href="/static/css/blog.css?v={{ asset_version }}" />
+
+    {% if extra_css %}
+    {% for css in extra_css %}
+    <link rel="stylesheet" href="/static/css/{{ css }}.css?v={{ asset_version }}" />
+    {% endfor %}
+    {% endif %}
+
+    <!-- RSS Feed Discovery -->
+    <link rel="alternate" type="application/rss+xml" title="POOOL Blog" href="/blog/feed.xml" />
+
+    <!-- Anti-Flicker -->
+    <script>
+        (function () {
+            if (document.readyState !== 'loading') {
+                document.body && document.body.classList.add('dom-ready');
+            }
+            document.addEventListener('DOMContentLoaded', function () {
+                document.body.classList.add('dom-ready');
+            });
+            setTimeout(function () {
+                document.body && document.body.classList.add('dom-ready');
+            }, 2000);
+        })();
+    </script>
+</head>

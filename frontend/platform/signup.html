@@ -1,0 +1,122 @@
+{% with title="Sign up – POOOL", meta_description="Create your POOOL account to start investing in fractional real estate and diversify your portfolio." %}{% include "components/auth-head.html" %}{% endwith %}
+
+<body>
+  <div id="login-container">
+    <section id="left-section">
+      <div id="container">
+        <div id="content">
+          <!-- Header -->
+          <div id="header">
+            <div id="logo-pool">
+              <img src="/static/images/logo-pool.svg" alt="Pool Logo" width="184" height="48">
+            </div>
+            <div id="text-and-supporting-text">
+              <h1 id="text">Create an account</h1>
+              <p id="supporting-text">Start your investment journey</p>
+            </div>
+          </div>
+
+          <!-- Error area -->
+          <div id="auth-error">
+            {% if error %}
+            <div class="auth-error-message" style="color: #F04438; background: #FEF3F2; border: 1px solid #FEE4E2; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px;">
+              {{ error }}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Social login buttons -->
+          <div id="social-buttons">
+            <button id="google-button" class="social-button" onclick="window.location.href='/auth/google'">
+              <div class="social-icon">
+                <img loading="lazy" src="/static/images/social-google.svg" alt="Google" width="24" height="24">
+              </div>
+              <span class="social-text">Sign up with Google</span>
+            </button>
+          </div>
+
+          <!-- Divider -->
+          <div id="content-divider">
+            <div id="divider-left"></div>
+            <span id="or-text">OR</span>
+            <div id="divider-right"></div>
+          </div>
+
+          <!-- Signup form -->
+          <form id="login-form" hx-post="/auth/signup" hx-target="#auth-error" hx-swap="innerHTML">
+            <div class="input-field">
+              <div class="input-with-label">
+                <label for="email-input" class="input-label">Email</label>
+                <div class="input-wrapper">
+                  <input type="email" id="email-input" name="email" placeholder="Enter your email" required autocomplete="email">
+                </div>
+              </div>
+            </div>
+
+            <div class="input-field">
+              <div class="input-with-label">
+                <label for="password-input" class="input-label">Password</label>
+                <div class="input-wrapper">
+                  <input type="password" id="password-input" name="password" placeholder="Create a strong password" required autocomplete="new-password" minlength="8">
+                </div>
+              </div>
+              <p style="font-size: 12px; color: #667085; margin-top: 6px;">
+                Min. 8 characters, uppercase, lowercase, and a number
+              </p>
+            </div>
+
+            <div id="terms-row" style="display: flex; align-items: flex-start; gap: 8px; margin-top: 4px;">
+              <input type="checkbox" id="terms-checkbox" name="terms_accepted" required style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0;">
+              <label for="terms-checkbox" style="font-size: 13px; color: #535862; line-height: 18px;">
+                I agree to the <a href="/terms" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">Terms &amp; Conditions</a>
+                and <a href="/privacy" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">Privacy Policy</a>
+              </label>
+            </div>
+
+            <button type="submit" id="login-button">
+              <span id="button-text">Get started</span>
+            </button>
+          </form>
+
+          <!-- Login link -->
+          <div id="signup-row">
+            <span id="signup-text">Already have an account?</span>
+            <a href="/auth/login" id="signup-link">
+              <span id="signup-link-text">Log in</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="right-section">
+      <div id="testimonial-image"></div>
+    </section>
+  </div>
+
+  <script>
+    document.body.addEventListener('htmx:beforeSwap', function (evt) {
+      if (evt.detail.xhr.status >= 400) {
+        evt.detail.shouldSwap = true;
+        evt.detail.isError = false;
+      }
+    });
+
+    document.body.addEventListener('htmx:beforeRequest', function (evt) {
+      var btn = document.getElementById('login-button');
+      if (btn) {
+        btn.disabled = true;
+        btn.querySelector('#button-text').textContent = 'Creating account...';
+      }
+    });
+
+    document.body.addEventListener('htmx:afterRequest', function (evt) {
+      var btn = document.getElementById('login-button');
+      if (btn) {
+        btn.disabled = false;
+        btn.querySelector('#button-text').textContent = 'Get started';
+      }
+    });
+  </script>
+</body>
+</html>

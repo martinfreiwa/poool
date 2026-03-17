@@ -1,0 +1,772 @@
+/* Developer Dashboard Styles */
+
+/* Main Content Area */
+.dashboard-main-content {
+  padding: 48px 40px 40px 24px;
+  background: #fafafa;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  height: 44px;
+  margin-bottom: 16px;
+}
+
+.dashboard-title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 44px;
+  letter-spacing: -0.02em;
+  color: #181d27;
+  margin: 0;
+}
+
+/* Metrics Section */
+.metrics-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  width: 100%;
+  gap: 16px;
+}
+
+/* Metric Card */
+.metric-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 20px;
+  gap: 20px;
+  position: relative;
+  width: 100%;
+  height: 154px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.metric-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0px 2px 4px rgba(10, 13, 18, 0.1);
+}
+
+.metric-heading {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #181d27;
+  align-self: stretch;
+}
+
+.metric-content {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  padding: 0px;
+  gap: 16px;
+  width: 100%;
+  height: 70px;
+}
+
+.metric-number-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  flex: 1;
+  height: 70px;
+}
+
+.metric-number {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 38px;
+  color: #181d27;
+}
+
+.metric-change-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+  height: 20px;
+}
+
+.metric-change {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 2px;
+  height: 20px;
+}
+
+.metric-change.up {
+  color: #067647;
+}
+
+.metric-change.down {
+  color: #b42318;
+}
+
+.metric-change span {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.metric-timeframe {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+.metric-chart-mini {
+  width: 112px;
+  height: 56px;
+}
+
+/* Animated chart lines */
+@keyframes drawChartLine {
+  from {
+    stroke-dashoffset: 2000;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeInChart {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.metric-chart-mini path:first-child {
+  opacity: 0;
+  animation: fadeInChart 2s ease-out 0.5s forwards;
+}
+
+.metric-chart-mini path:last-child {
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
+  animation: drawChartLine 10s ease-out forwards;
+}
+
+.metric-dropdown-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+/* Bottom Cards Row */
+.bottom-cards-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.bottom-metric-card {
+  width: 100%;
+}
+
+/* Sales Chart */
+.sales-chart-section {
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.sales-chart-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 32px 24px;
+  gap: 24px;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 12px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.sales-chart-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0px 2px 4px rgba(10, 13, 18, 0.1);
+}
+
+.chart-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0px;
+  width: 100%;
+  height: 36px;
+}
+
+.chart-title-section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 16px;
+}
+
+.chart-title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 28px;
+  color: #181d27;
+  margin: 0;
+}
+
+.chart-percentage {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 28px;
+  color: #079455;
+}
+
+/* Chart Tabs */
+.chart-tabs {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 2px;
+  height: 36px;
+  background: #ffffff;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+}
+
+.chart-tab {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  height: 36px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #717680;
+}
+
+.chart-tab.active {
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  color: #414651;
+}
+
+/* Chart Container */
+.chart-container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 4px;
+  width: 100%;
+  height: 268px;
+  position: relative;
+}
+
+.chart-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0px;
+  width: 40px;
+  height: 222px;
+}
+
+.chart-y-axis span {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: right;
+  color: #535862;
+}
+
+.chart-area {
+  flex: 1;
+  position: relative;
+  height: 240px;
+  background: #ffffff;
+  overflow: visible;
+}
+
+/* Chart Background Gradient - Removed, using SVG gradient instead */
+
+/* Chart animation for line drawing */
+@keyframes drawSalesChart {
+  from {
+    stroke-dashoffset: 3000;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeInArea {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.chart-area svg {
+  position: relative;
+  z-index: 2;
+}
+
+.chart-area svg path[stroke="#98FB96"] {
+  stroke-dasharray: 3000;
+  stroke-dashoffset: 3000;
+  animation: drawSalesChart 3s ease-out forwards;
+  stroke-width: 3;
+}
+
+.chart-area svg path[fill="url(#salesGradient)"] {
+  opacity: 0;
+  animation: fadeInArea 2s ease-out 1s forwards;
+}
+
+.chart-x-axis {
+  position: absolute;
+  bottom: -28px;
+  left: 48px;
+  right: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 24px 0px 64px;
+  gap: 24px;
+  height: 18px;
+}
+
+.chart-x-axis span {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  color: #535862;
+}
+
+/* Hide mobile-only chart text section on desktop */
+.chart-text-section {
+  display: none;
+}
+
+/* Assets Section */
+.assets-section {
+  margin-left: 0px;
+  margin-bottom: 32px;
+  width: 1096px;
+}
+
+.assets-section-title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  color: #181d27;
+  margin: 0 0 8px 0;
+}
+
+/* Assets Table Wrapper */
+.assets-table-wrapper {
+  width: 1096px;
+}
+
+/* Assets Table Header (outside card) */
+.assets-table-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 0 16px 0;
+  width: 100%;
+  border-bottom: none !important;
+  position: relative;
+  z-index: 10;
+}
+
+/* Assets Table Container (the card) */
+.assets-table-container {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  isolation: isolate;
+  width: 1096px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border-color, #e9eaeb);
+  box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
+  border-radius: var(--card-border-radius, 12px);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.assets-table-container:hover {
+  transform: translateY(-1px);
+  box-shadow: 0px 2px 4px rgba(10, 13, 18, 0.1);
+}
+
+/* Time Tabs - Using exact chart-tabs styling */
+.assets-time-tabs {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 2px;
+  height: 36px;
+  background: #fafafa;
+  border: 1px solid #e9eaeb;
+  border-radius: 8px;
+}
+
+.assets-tab {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  height: 36px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #717680;
+}
+
+.assets-tab.active {
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  color: #414651;
+}
+
+/* Table */
+.assets-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.assets-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.assets-table thead tr {
+  background: var(--table-header-bg, #FAFAFA);
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+}
+
+.assets-table th {
+  padding: var(--table-header-padding, 12px 24px);
+  text-align: left;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: var(--table-header-font-weight, 600);
+  font-size: var(--table-header-font-size, 12px);
+  line-height: 18px;
+  color: var(--table-header-color, #717680);
+}
+
+.assets-table th .th-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.assets-table th .th-content svg {
+  flex-shrink: 0;
+}
+
+.assets-table th .th-content span {
+  white-space: nowrap;
+}
+
+.assets-table tbody tr {
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+}
+
+.assets-table tbody tr:hover {
+  background: var(--table-row-hover-bg, #F8F9FC);
+}
+
+.assets-table td {
+  padding: var(--table-cell-padding, 16px 24px);
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  vertical-align: middle;
+}
+
+/* Asset Info Cell */
+.asset-info {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+}
+
+.asset-image {
+  width: 52px;
+  height: 52px;
+  border-radius: 52px;
+  object-fit: cover;
+}
+
+.asset-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.asset-name {
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  color: #181d27;
+  max-width: 143px;
+}
+
+/* Sales Cell */
+.asset-cell-sales {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  vertical-align: middle;
+}
+
+.asset-sales {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #000000;
+}
+
+.asset-change {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 8px 2px 6px;
+  gap: 4px;
+  height: 24px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 6px;
+}
+
+.asset-change span {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+/* Views Cell */
+.asset-cell-views {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+/* Conversion Cell */
+.asset-cell-conversion {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+/* Funding Cell */
+.asset-funding {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 8px;
+  width: 159px;
+}
+
+.asset-funding-text {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: right;
+  color: #535862;
+}
+
+.asset-funding-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 1px;
+  gap: 10px;
+  width: 159px;
+  height: 8px;
+  background: #d5d7da;
+  border-radius: 30px;
+}
+
+.asset-funding-progress {
+  height: 8px;
+  background: var(--accent-color);
+  border-radius: 30px;
+}
+
+/* Actions Cell */
+.asset-action-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #000000;
+}
+
+.asset-action-btn:hover {
+  color: var(--primary-color);
+}
+
+/* Show All Button */
+.assets-show-all {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+  width: 100%;
+}
+
+.assets-show-all-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+}
+
+.assets-show-all-btn:hover {
+  text-decoration: underline;
+}

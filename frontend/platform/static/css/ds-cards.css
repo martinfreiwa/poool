@@ -1,0 +1,96 @@
+/* =========================================================================
+ * DESIGN SYSTEM — CARDS (.ds-card)
+ * =========================================================================
+ * Base card component using design tokens. Every card on the platform
+ * (wallet cards, property cards, settings cards) should eventually
+ * inherit or adopt these core properties for visual consistency.
+ *
+ * Dependencies: dashboard-tokens.css
+ * ========================================================================= */
+
+.ds-card {
+  background-color: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: var(--card-border-radius, 12px);
+  padding: var(--card-padding, 24px);
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
+  overflow: hidden; /* Contains inner content like images flush to borders */
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Modifiers ──────────────────────────────────────────────────────── */
+
+/* Small padding for tighter layouts (e.g. key financials) */
+.ds-card--sm {
+  padding: 16px;
+}
+
+/* No padding for full-bleed content (e.g. image galleries or tables) */
+.ds-card--flush {
+  padding: 0;
+}
+
+/* Interactive cards (e.g. property cards in marketplace) */
+.ds-card--interactive {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.ds-card--interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.ds-card--interactive:active {
+  transform: translateY(0);
+}
+
+/* ── Card Elements ──────────────────────────────────────────────────── */
+
+.ds-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.ds-card__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #101828;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ds-card__subtitle {
+  font-size: 14px;
+  color: #475467;
+  margin: 4px 0 0 0;
+  font-weight: 400;
+}
+
+/* Body wrapper for spacing */
+.ds-card__body {
+  flex: 1; /* Pushes footer down if used in flex grid */
+}
+
+/* Footer spanning full width, usually bordered off from body */
+.ds-card__footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-border-color, #E5E7EB);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Divider inside card body */
+.ds-card__divider {
+  height: 1px;
+  background-color: var(--card-border-color, #E5E7EB);
+  margin: 16px 0;
+  border: none;
+}

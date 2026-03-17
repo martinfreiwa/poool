@@ -1,0 +1,1413 @@
+/* Portfolio Page Styles */
+
+.portfolio-page {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+
+
+.portfolio-main {
+  width: calc(100% - 256px);
+  min-height: 100vh;
+  margin-left: 256px;
+  padding: 48px 24px 64px 24px;
+  background: #fafafa;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+  z-index: 0;
+}
+
+/* Portfolio Header */
+.portfolio-page-icon-standard {
+  width: 32px;
+  height: 32px;
+  background: var(--primary-color);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  order: 0;
+}
+
+.portfolio-page-title {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 36px;
+  line-height: 44px;
+  color: #181D27;
+  margin: 0;
+}
+
+/* Portfolio Value Section */
+.portfolio-value-section {
+  position: relative;
+  padding-top: 20px;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.portfolio-value-container {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 32px 24px;
+  gap: 10px;
+  width: 100%;
+  height: 132px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border-color, #e9eaeb);
+  box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
+  border-radius: 12px;
+}
+
+.portfolio-value-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0px;
+  width: 100%;
+  height: 68px;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.portfolio-value-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 10px;
+  width: 261px;
+  height: 68px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.portfolio-value-label-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  width: 114px;
+  height: 20px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.portfolio-value-label {
+  width: 96px;
+  height: 20px;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.portfolio-value-info {
+  width: 14px;
+  height: 14px;
+  background: none;
+  border: none;
+  cursor: help;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.portfolio-value-info svg {
+  width: 14px;
+  height: 14px;
+}
+
+.portfolio-value-info svg path {
+  stroke: #a4a7ae;
+  stroke-width: 1.33333px;
+}
+
+.portfolio-value-amount-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 16px;
+  width: 261px;
+  height: 38px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.portfolio-value-currency,
+.portfolio-value-amount {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 38px;
+  color: #181d27;
+}
+
+.portfolio-value-price {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+}
+
+.portfolio-value-currency {
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.portfolio-value-amount {
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.portfolio-value-change {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 10px 2px 8px;
+  gap: 4px;
+  width: 72px;
+  height: 24px;
+  border-radius: 16px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.portfolio-value-change.change-increase {
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+}
+
+.portfolio-value-change.change-decrease {
+  background: #fef2f2;
+  border: 1px solid #febcbc;
+}
+
+.portfolio-value-change.change-neutral {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+}
+
+.portfolio-value-change svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.portfolio-value-change.change-increase svg path {
+  stroke: #17b26a;
+  stroke-width: 1.5px;
+}
+
+.portfolio-value-change.change-decrease svg path {
+  stroke: #dc2626;
+  stroke-width: 1.5px;
+}
+
+.portfolio-value-percent {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.portfolio-value-change.change-increase .portfolio-value-percent {
+  color: #067647;
+}
+
+.portfolio-value-change.change-decrease .portfolio-value-percent {
+  color: #991b1b;
+}
+
+.portfolio-value-change.change-neutral .portfolio-value-percent {
+  color: #6b7280;
+}
+
+.change-increase .portfolio-value-percent {
+  color: #067647;
+}
+
+.change-decrease .portfolio-value-percent {
+  color: #dc2626;
+}
+
+.change-neutral .portfolio-value-percent {
+  color: #6b7280;
+}
+
+.portfolio-show-more-btn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 4px;
+  width: 132px;
+  height: 40px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border-color, #e9eaeb);
+  border-radius: 8px;
+  cursor: pointer;
+  flex: none;
+  order: 2;
+  flex-grow: 0;
+}
+
+.portfolio-show-more-btn:hover {
+  background: #f8f9fc;
+}
+
+.show-more-text {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.portfolio-show-more-btn svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s ease;
+  flex: none;
+  order: 2;
+  flex-grow: 0;
+}
+
+.portfolio-show-more-btn svg path {
+  stroke: #414651;
+  stroke-width: 1.66667px;
+}
+
+.portfolio-show-more-btn svg.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.portfolio-value-details {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e9eaeb;
+}
+
+/* Key Financials Section */
+.key-financials-section {
+  position: relative;
+  margin-top: 42px;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.key-financials-section h2 {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  color: #181d27;
+  margin: 0 0 16px;
+}
+
+.key-financials-grid {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.key-financials-card {
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 20px 24px;
+  gap: 16px;
+  isolation: isolate;
+  flex: 1;
+  min-height: 108px;
+  height: auto;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border-color, #e9eaeb);
+  box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
+  border-radius: 12px;
+  order: 0;
+  transition: box-shadow 0.2s ease;
+}
+
+.key-financials-card:hover {
+  box-shadow: 0px 4px 12px rgba(10, 13, 18, 0.1);
+}
+
+.key-financials-card-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.financials-text-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.financials-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+}
+
+.financials-title {
+  white-space: nowrap;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+.financials-info {
+  width: 14px;
+  height: 14px;
+  background: none;
+  border: none;
+  cursor: help;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.financials-info svg {
+  width: 14px;
+  height: 14px;
+}
+
+.financials-info svg path,
+.financials-info svg circle {
+  stroke: #a4a7ae;
+}
+
+.financials-value-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0;
+}
+
+.financials-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+}
+
+.financials-currency,
+.financials-amount {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+  color: #181d27;
+}
+
+.financials-period-wrapper {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.financials-change {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 8px 2px 6px;
+  gap: 4px;
+  height: 24px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid #d5d7da;
+  border-radius: 6px;
+}
+
+.financials-change svg {
+  width: 12px;
+  height: 12px;
+}
+
+.financials-change.change-increase svg path {
+  stroke: #17b26a;
+  stroke-width: 1.5px;
+}
+
+.financials-change.change-decrease svg path {
+  stroke: #dc2626;
+  stroke-width: 1.5px;
+}
+
+.financials-change.change-increase .financials-percent {
+  color: #067647;
+}
+
+.financials-change.change-decrease .financials-percent {
+  color: #dc2626;
+}
+
+.financials-percent {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+.financials-period {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: #535862;
+  white-space: nowrap;
+}
+
+
+/* Quick Insights Section */
+.insights-limit-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  position: relative;
+  margin-top: 48px;
+  width: 100%;
+}
+
+.quick-insights-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.quick-insights-grid {
+  display: flex;
+  gap: 12px;
+}
+
+.quick-insights-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 24px;
+  gap: 16px;
+  width: 175px;
+  height: 180px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border-color, #e9eaeb);
+  box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
+  border-radius: 12px;
+}
+
+.insights-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.insights-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.insights-title {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+.insights-value {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+  color: #181d27;
+}
+
+.investment-limit-container {
+  box-sizing: border-box;
+  position: relative;
+  width: 522px;
+  height: 273px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border-color, #e9eaeb);
+  box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
+  border-radius: 12px;
+  padding: 24px;
+}
+
+/* Poool Premium Header */
+.investment-limit-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  margin-bottom: 20px;
+  width: 100%;
+  height: 24px;
+}
+
+.investment-limit-title {
+  display: none;
+  /* Not shown in this design */
+}
+
+.investment-limit-info {
+  display: none;
+  /* Not shown in this design */
+}
+
+/* Logo Container */
+.investment-limit-logo {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  padding: 0px;
+  gap: 8px;
+  margin: 0 auto;
+  width: 120px;
+  height: 24px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.investment-limit-logo img {
+  width: 120px;
+  height: 24px;
+}
+
+/* Divider */
+.investment-limit-container::before {
+  content: "";
+  position: absolute;
+  width: calc(100% - 48px);
+  height: 1px;
+  left: 24px;
+  right: 24px;
+  top: 68px;
+  background: #e9eaeb;
+}
+
+/* Progress Section */
+.investment-limit-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 12px;
+  margin-top: 45px;
+  margin-bottom: 24px;
+  width: 100%;
+  height: 33px;
+}
+
+.progress-percentage {
+  /* Supporting text */
+  width: 100%;
+  height: 9px;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  /* or 150% */
+  text-align: center;
+  /* Base/Black */
+  color: #000000;
+  /* Inside auto layout */
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  margin-bottom: 4px;
+}
+
+#investment-limit-container .progress-bar-container {
+  width: 474px;
+  height: 12px;
+  margin-top: 8px;
+}
+
+#investment-limit-container .progress-bar-track {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  background: #d5d7da;
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+#investment-limit-container .progress-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 12px;
+  /* width set via inline style */
+  background: var(--accent-color);
+  border-radius: 30px;
+}
+
+/* Balance Details */
+.investment-limit-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 8px;
+  width: 100%;
+  height: 100px;
+}
+
+/* Common Limit Item Styles */
+.limit-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px;
+  width: 100%;
+  height: 28px;
+  flex: none;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+/* Limit Item Wrapper */
+.limit-item-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 6px;
+  flex-shrink: 1;
+  flex-grow: 0;
+}
+
+.limit-item-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Bullet points for limit items */
+.limit-item-bullet {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.limit-item .limit-item-bullet.invested {
+  background: var(--accent-color) !important;
+}
+
+.limit-item .limit-item-bullet.available {
+  background: var(--accent-color) !important;
+}
+
+.limit-item-label {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 28px;
+  color: #535862;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.limit-item-value {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 28px;
+  color: #000000;
+  text-align: right;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  margin-left: auto;
+}
+
+/* Annual Limit Row */
+.limit-item:nth-child(1) {
+  order: 0;
+}
+
+.limit-item:nth-child(1) .limit-item-label {
+  width: auto;
+}
+
+.limit-item:nth-child(1) .limit-item-value {
+  width: auto;
+  min-width: 120px;
+}
+
+/* Invested Row */
+.limit-item:nth-child(2) {
+  order: 1;
+}
+
+.limit-item:nth-child(2) .limit-item-label {
+  width: auto;
+}
+
+.limit-item:nth-child(2) .limit-item-value {
+  width: auto;
+  min-width: 108px;
+}
+
+/* Available Row */
+.limit-item:nth-child(3) {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px;
+  width: 100%;
+  height: 28px;
+  flex: none;
+  order: 2;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.limit-item:nth-child(3) .limit-item-icon {
+  width: 8px;
+  height: 8px;
+  background: #e9eaeb;
+  border-radius: 50%;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Available Row */
+.limit-item:nth-child(3) {
+  order: 2;
+}
+
+.limit-item:nth-child(3) .limit-item-label {
+  width: auto;
+}
+
+.limit-item:nth-child(3) .limit-item-value {
+  width: auto;
+  min-width: 114px;
+}
+
+/* Assets Section */
+.assets-section {
+  position: relative;
+  margin-top: 48px;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+  width: 100%;
+  order: 99;
+}
+
+.assets-section h2 {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  color: #181d27;
+  margin: 0 0 16px;
+}
+
+.assets-table-container {
+  width: 100%;
+  max-width: 100%;
+  background: white;
+  border: 1px solid var(--card-border-color, #e9eaeb);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
+}
+
+.assets-table-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+}
+
+.assets-title {
+  font-size: 20px;
+  line-height: 30px;
+  font-weight: 700;
+  color: #181d27;
+  margin: 0;
+}
+
+.assets-table-wrapper {
+  overflow-x: auto;
+}
+
+.assets-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Table Header Row */
+.assets-thead {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  width: 100%;
+  height: 44px;
+  flex: none;
+  order: 2;
+  align-self: stretch;
+  flex-grow: 0;
+  z-index: 1;
+}
+
+/* Table Header Columns */
+.assets-th {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 24px;
+  gap: 12px;
+  height: 44px;
+  background: var(--table-header-bg, #FAFAFA);
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  flex: none;
+  align-self: stretch;
+  flex-grow: 0;
+  z-index: 10;
+}
+
+/* Column widths */
+.assets-th:nth-child(1) {
+  width: 145px;
+  flex: none;
+  order: 0;
+  flex-grow: 1;
+}
+
+.assets-th:nth-child(2) {
+  width: 162px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.assets-th:nth-child(3) {
+  width: 176px;
+  flex: none;
+  order: 2;
+  flex-grow: 0;
+}
+
+.assets-th:nth-child(4) {
+  width: 224px;
+  flex: none;
+  order: 3;
+  flex-grow: 0;
+}
+
+.assets-th:nth-child(5) {
+  width: 244px;
+  flex: none;
+  order: 4;
+  flex-grow: 0;
+}
+
+.assets-th:nth-child(6) {
+  width: 145px;
+  flex: none;
+  order: 5;
+  flex-grow: 0;
+}
+
+.th-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.th-label {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  color: #717680;
+  text-transform: uppercase;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+/* Specific label widths */
+.assets-th:nth-child(1) .th-label {
+  width: 51px;
+  height: 18px;
+}
+
+.assets-th:nth-child(2) .th-label {
+  width: 51px;
+  height: 18px;
+}
+
+.assets-th:nth-child(3) .th-label {
+  width: 100px;
+  height: 18px;
+}
+
+.assets-th:nth-child(4) .th-label {
+  width: 111px;
+  height: 18px;
+}
+
+.assets-th:nth-child(5) .th-label {
+  width: 38px;
+  height: 18px;
+}
+
+.assets-th:nth-child(6) .th-label {
+  width: 45px;
+  height: 18px;
+}
+
+/* Sort Icons */
+.th-sort-btn {
+  width: 16px;
+  height: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.th-sort-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.th-sort-btn svg path {
+  stroke: #717680;
+  stroke-width: 1px;
+}
+
+/* Special icon for Actions column */
+.assets-th:nth-child(6) .th-sort-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.assets-th:nth-child(6) .th-sort-btn svg path {
+  stroke: #a4a7ae;
+  stroke-width: 1.5px;
+}
+
+.th-info {
+  display: none;
+  /* Not shown in design */
+}
+
+.asset-row {
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  transition: background-color 0.2s;
+}
+
+.asset-row:hover {
+  background: var(--table-row-hover-bg, #F8F9FC);
+}
+
+.asset-td {
+  padding: 16px;
+}
+
+/* Removed redundant header rule */
+
+.property-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.property-image {
+  width: 48px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.property-name {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: #181d27;
+}
+
+.location-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.location-text {
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+.investment-value,
+.rental-income {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: #181d27;
+}
+
+.status-badge {
+  display: inline-flex;
+  padding: var(--badge-padding, 2px 8px);
+  border-radius: var(--badge-border-radius, 16px);
+  font-size: var(--badge-font-size, 12px);
+  line-height: 18px;
+  font-weight: var(--badge-font-weight, 500);
+}
+
+.status-active {
+  background: var(--badge-success-bg, #ECFDF3);
+  color: var(--badge-success-color, #027A48);
+}
+
+.status-pending {
+  background: var(--badge-warning-bg, #FFFAEB);
+  color: var(--badge-warning-color, #B54708);
+}
+
+.status-sold {
+  background: var(--badge-neutral-bg, #F2F4F7);
+  color: var(--badge-neutral-color, #344054);
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.2s;
+}
+
+.action-btn:hover {
+  opacity: 0.7;
+}
+
+/* Empty State */
+.assets-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  margin-bottom: 20px;
+}
+
+.icon-circle {
+  width: 96px;
+  height: 96px;
+  background: #f8f9fc;
+  border: 1px solid #e9eaeb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-title {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 700;
+  color: #181d27;
+  margin: 0 0 8px;
+}
+
+.empty-state-description {
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+  margin: 0;
+  max-width: 300px;
+}
+
+/* Show All Button Footer - Same as wallet */
+
+
+/* Responsive Design */
+@media (max-width: 1440px) {
+  .portfolio-main {
+    width: 100%;
+    max-width: 1144px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .quick-insights-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .portfolio-main {
+    width: 100%;
+    margin-left: 0;
+    padding: 16px;
+    padding-top: 80px;
+  }
+
+  .portfolio-header {
+    padding: 16px 0;
+  }
+
+  .portfolio-value-section,
+  .key-financials-section,
+  .insights-limit-section,
+  .assets-section {
+    padding: 0 0 16px;
+  }
+
+  .quick-insights-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Phase 4: Portfolio State Layers ────────────────────────── */
+
+.hidden {
+  display: none !important;
+}
+
+/* Skeleton shimmer (shared keyframe from wallet.css if loaded) */
+@keyframes portfolio-shimmer {
+  0% {
+    background-position: -800px 0;
+  }
+
+  100% {
+    background-position: 800px 0;
+  }
+}
+
+.skeleton-box {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 37%, #f0f0f0 63%);
+  background-size: 800px 100%;
+  animation: portfolio-shimmer 1.4s infinite linear;
+  border-radius: 12px;
+}
+
+/* Loading skeleton layout */
+.portfolio-loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 16px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.portfolio-sk-row {
+  display: flex;
+  gap: 16px;
+}
+
+.portfolio-sk-value-card {
+  height: 132px;
+  width: 100%;
+}
+
+.portfolio-sk-card {
+  height: 108px;
+  flex: 1;
+}
+
+.portfolio-sk-insights {
+  height: 160px;
+  flex: 1;
+}
+
+.portfolio-sk-limit {
+  height: 160px;
+  width: 522px;
+  flex-shrink: 0;
+}
+
+.portfolio-sk-table {
+  height: 320px;
+  width: 100%;
+}
+
+/* Error & Empty shared panel */
+.portfolio-state-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e9eaeb;
+  border-radius: 12px;
+  width: 100%;
+  margin-top: 24px;
+}
+
+#portfolio-empty-state>img {
+  opacity: 0.5;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+}
+
+#portfolio-empty-state .state-title {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #181d27;
+  margin: 0;
+}
+
+#portfolio-empty-state .state-desc {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #535862;
+  max-width: 352px;
+  margin: 0 0 16px 0;
+}
+
+#portfolio-empty-state .retry-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 6px;
+  width: 172px;
+  height: 44px;
+  background: #194bfb;
+  border-radius: 8px;
+  color: #ffffff;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  text-decoration: none;
+  cursor: pointer;
+}

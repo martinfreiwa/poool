@@ -1,0 +1,125 @@
+{% with title="Blog", description="Expert insights on fractional real estate investing, asset tokenization, and building wealth with POOOL.", request_path="/blog" %}{% include "components/blog-head.html" %}{% endwith %}
+
+<body>
+    {% include 'components/blog-header.html' %}
+
+    <main class="blog-main">
+        <!-- Hero -->
+        <section class="blog-hero">
+            <div class="blog-hero__eyebrow">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                Insights &amp; Guides
+            </div>
+            <h1 class="blog-hero__title">The POOOL <span>Blog</span></h1>
+            <p class="blog-hero__subtitle">Expert insights on fractional real estate, asset tokenization, and building lasting wealth.</p>
+        </section>
+
+        <!-- Featured Article -->
+        {% if featured %}
+        <section class="blog-featured">
+            <a href="/blog/{{ featured.slug }}" class="blog-featured__card">
+                {% if featured.cover_image_url %}
+                <div class="blog-featured__image" style="background-image: url('{{ featured.cover_image_url }}')"></div>
+                {% else %}
+                <div class="blog-featured__image blog-featured__image--placeholder"></div>
+                {% endif %}
+                <div class="blog-featured__content">
+                    <span class="blog-tag blog-tag--lg">{{ featured.category.name }}</span>
+                    <h2 class="blog-featured__title">{{ featured.title }}</h2>
+                    <p class="blog-featured__excerpt">{{ featured.excerpt }}</p>
+                    <div class="blog-featured__meta">
+                        {% if featured.author.avatar_url %}
+                        <img src="{{ featured.author.avatar_url }}" alt="{{ featured.author.name }}" class="blog-avatar" width="28" height="28" />
+                        {% endif %}
+                        <span>{{ featured.author.name }}</span>
+                        <span class="blog-meta__sep">&middot;</span>
+                        <span>{{ featured.reading_time_minutes }} min read</span>
+                    </div>
+                    <span class="blog-featured__cta">
+                        Read article
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
+                </div>
+            </a>
+        </section>
+        {% endif %}
+
+        <!-- Category Filter -->
+        <section class="blog-categories-bar">
+            <div class="blog-categories-bar__inner">
+                <a href="/blog" class="blog-category-pill {% if not active_category %}blog-category-pill--active{% endif %}">All Posts</a>
+                {% for cat in categories %}
+                <a href="/blog/category/{{ cat.slug }}" class="blog-category-pill {% if active_category == cat.slug %}blog-category-pill--active{% endif %}">{{ cat.name }}</a>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Articles Grid -->
+        <section class="blog-grid-section">
+            <div class="blog-grid">
+                {% for article in articles %}
+                <a href="/blog/{{ article.slug }}" class="blog-card">
+                    {% if article.cover_image_url %}
+                    <div class="blog-card__image" style="background-image: url('{{ article.cover_image_url }}')"></div>
+                    {% else %}
+                    <div class="blog-card__image blog-card__image--placeholder"></div>
+                    {% endif %}
+                    <div class="blog-card__body">
+                        <span class="blog-tag">{{ article.category.name }}</span>
+                        <h3 class="blog-card__title">{{ article.title }}</h3>
+                        <p class="blog-card__excerpt">{{ article.excerpt }}</p>
+                        <div class="blog-card__meta">
+                            <span>{{ article.author.name }}</span>
+                            <span class="blog-meta__sep">&middot;</span>
+                            <span>{{ article.reading_time_minutes }} min read</span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+
+            {% if articles | length == 0 %}
+            <div class="blog-empty">
+                <p>No articles published yet. Check back soon!</p>
+            </div>
+            {% endif %}
+
+            <!-- Pagination -->
+            {% if total_pages > 1 %}
+            <nav class="blog-pagination" aria-label="Blog pagination">
+                {% if page > 1 %}
+                <a href="/blog?page={{ page - 1 }}{% if active_category %}&category={{ active_category }}{% endif %}" class="blog-pagination__btn">&larr; Previous</a>
+                {% endif %}
+                <span class="blog-pagination__info">Page {{ page }} of {{ total_pages }}</span>
+                {% if page < total_pages %}
+                <a href="/blog?page={{ page + 1 }}{% if active_category %}&category={{ active_category }}{% endif %}" class="blog-pagination__btn">Next &rarr;</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </section>
+
+        <!-- CTA -->
+        <section class="blog-cta">
+            <div class="blog-cta__inner">
+                <span class="blog-cta__eyebrow">Start today</span>
+                <h2 class="blog-cta__title">Ready to invest in real estate?</h2>
+                <p class="blog-cta__text">Join thousands of investors building wealth through fractional ownership. Start with as little as $50.</p>
+                <a href="/auth/login" class="blog-cta__btn">Sign in</a>
+            </div>
+        </section>
+    </main>
+
+    {% include 'components/blog-footer.html' %}
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://poool.finance/" },
+            { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://poool.finance/blog" }
+        ]
+    }
+    </script>
+</body>
+</html>

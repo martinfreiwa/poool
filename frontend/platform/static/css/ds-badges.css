@@ -1,0 +1,161 @@
+/* ================================================================
+   POOOL Design System — Badges
+   ================================================================
+   Standardised badge/status pill classes for the entire dashboard.
+
+   Usage:
+     <span class="ds-badge ds-badge--success">Completed</span>
+     <span class="ds-badge ds-badge--warning">Pending</span>
+     <span class="ds-badge ds-badge--danger">Declined</span>
+     <span class="ds-badge ds-badge--info">New</span>
+     <span class="ds-badge ds-badge--neutral">Draft</span>
+
+     With dot indicator:
+     <span class="ds-badge ds-badge--success">
+       <span class="ds-badge__dot"></span> Active
+     </span>
+
+   RULES:
+   - No !important in this file
+   - All values use CSS custom properties from dashboard-tokens.css
+   ================================================================ */
+
+
+/* ── Base ────────────────────────────────────────────────────── */
+
+.ds-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: var(--badge-padding);
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: var(--badge-font-size);
+    font-weight: var(--badge-font-weight);
+    line-height: 1.4;
+    border-radius: var(--badge-border-radius);
+    white-space: nowrap;
+    -webkit-font-smoothing: antialiased;
+}
+
+
+/* ── Dot Indicator ───────────────────────────────────────────── */
+
+.ds-badge__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: currentColor;
+}
+
+
+/* ── Variants ────────────────────────────────────────────────── */
+
+.ds-badge--success {
+    background: var(--badge-success-bg);
+    color: var(--badge-success-color);
+}
+
+.ds-badge--warning {
+    background: var(--badge-warning-bg);
+    color: var(--badge-warning-color);
+}
+
+.ds-badge--danger {
+    background: var(--badge-danger-bg);
+    color: var(--badge-danger-color);
+}
+
+.ds-badge--info {
+    background: var(--badge-info-bg);
+    color: var(--badge-info-color);
+}
+
+.ds-badge--neutral {
+    background: var(--badge-neutral-bg);
+    color: var(--badge-neutral-color);
+}
+
+
+/* ── Property-Type Variants ──────────────────────────────────── */
+
+.ds-badge--leasehold {
+    background: var(--badge-leasehold-bg);
+    color: var(--badge-leasehold-color);
+    border: 1px solid var(--badge-leasehold-border);
+}
+
+.ds-badge--freehold {
+    background: var(--badge-freehold-bg);
+    color: var(--badge-freehold-color);
+    border: 1px solid var(--badge-freehold-border);
+}
+
+.ds-badge--commercial {
+    background: var(--badge-commercial-bg);
+    color: var(--badge-commercial-color);
+    border: 1.5px solid var(--badge-commercial-border);
+}
+
+.ds-badge--commodity {
+    background: var(--badge-commodity-bg);
+    color: var(--badge-commodity-color);
+    border: 1px solid var(--badge-commodity-border);
+}
+
+.ds-badge--funding {
+    background: var(--badge-funding-bg);
+    color: var(--badge-funding-color);
+    border: 1px solid var(--badge-funding-border);
+}
+
+.ds-badge--shortterm {
+    background: #ECFDF3;
+    color: #027A48;
+    border: 1px solid #ABEFC6;
+}
+
+.ds-badge--flipping {
+    background: #FEF3F2;
+    color: #B42318;
+    border: 1px solid #FECDCA;
+}
+
+.ds-badge--offplan {
+    background: #E5E5FF;
+    color: #3538CD;
+    border: 1px solid #A7A7FF;
+}
+
+
+/* ── Overlay Modifier ────────────────────────────────────────── */
+
+/* Use on card image overlays — adds absolute positioning + glass effect */
+.ds-badge--overlay {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    height: 32px;
+    padding: 5px 12px 5px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    z-index: 2;
+}
+
+/* When --overlay is used with a type variant, keep the border but use glass bg */
+.ds-badge--overlay.ds-badge--leasehold,
+.ds-badge--overlay.ds-badge--freehold,
+.ds-badge--overlay.ds-badge--commercial,
+.ds-badge--overlay.ds-badge--commodity,
+.ds-badge--overlay.ds-badge--funding,
+.ds-badge--overlay.ds-badge--shortterm,
+.ds-badge--overlay.ds-badge--flipping,
+.ds-badge--overlay.ds-badge--offplan {
+    background: rgba(255, 255, 255, 0.92);
+}
+

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log in - POOOL</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        // CSRF Token injection for HTMX requests
+        (function () {
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+            const token = getCookie('csrf_token');
+            if (token) {
+                document.addEventListener('htmx:configRequest', function (evt) {
+                    if (['post', 'put', 'patch', 'delete'].includes(evt.detail.verb)) {
+                        evt.detail.headers['X-CSRF-Token'] = decodeURIComponent(token);
+                    }
+                });
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/static/css/login.css">
+    <style>
+        :root {
+            --primary-color: #0000FF;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="login-container">
+        <section id="left-section">
+            <div id="container">
+                <div id="content">
+                    <!-- Header -->
+                    <div id="header">
+                        <div id="logo-pool">
+                            <img src="/static/images/logo-pool.svg" alt="Pool Logo" width="184" height="48">
+                        </div>
+                        <div id="text-and-supporting-text">
+                            <h1 id="text">Welcome back</h1>
+                            <p id="supporting-text">Please enter your details</p>
+                        </div>
+                    </div>
+
+                    <div id="content-inner">
+                        <!-- Error message container (populated by HTMX on failed login) -->
+                        <div id="auth-error">
+                            {% if error %}
+                            <div class="auth-error-message"
+                                style="color: #F04438; background: #FEF3F2; border: 1px solid #FEE4E2; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px;">
+                                {{ error }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Social login buttons -->
+                        <div id="social-buttons"
+                            style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                            <button id="google-button" class="social-button"
+                                onclick="window.location.href='/auth/google'">
+                                <div class="social-icon">
+                                    <img src="/static/images/social-google.svg" alt="Google" width="24" height="24">
+                                </div>
+                                <span class="social-text">Log in with Google</span>
+                            </button>
+                        </div>
+
+                        <!-- Divider -->
+                        <div id="content-divider">
+                            <div id="divider-left"></div>
+                            <span id="or-text">OR</span>
+                            <div id="divider-right"></div>
+                        </div>
+
+                        <!-- Login form -->
+                        <form id="login-form" hx-post="/auth/login" hx-target="#auth-error" hx-swap="innerHTML">
+
+                            <div id="input-field">
+                                <div id="input-with-label">
+                                    <div class="label-wrapper">
+                                        <label for="email-input" class="input-label">Email</label>
+                                    </div>
+                                    <div id="email-input-wrapper">
+                                        <input type="email" id="email-input" name="email" placeholder="Enter your email"
+                                            required autocomplete="email">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="input-field-password">
+                                <div id="input-with-label-password">
+                                    <div class="label-wrapper">
+                                        <label for="password-input" class="input-label">Password</label>
+                                    </div>
+                                    <div id="password-input-wrapper">
+                                        <input type="password" id="password-input" name="password"
+                                            placeholder="Enter your password" required autocomplete="current-password">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="remember-forgot-row">
+                                <div id="remember-me">
+                                    <input type="checkbox" id="remember-checkbox" name="remember">
+                                    <label for="remember-checkbox">Remember me</label>
+                                </div>
+                                <a href="/auth/forgot-password" id="forgot-password-link">
+                                    <span id="forgot-password-text">Forgot password?</span>
+                                </a>
+                            </div>
+
+                            <button type="submit" id="login-button">
+                                <div id="button-text-padding">
+                                    <span id="button-text">Log in</span>
+                                </div>
+                            </button>
+                        </form>
+
+                        <!-- Sign up link -->
+                        <div id="signup-row">
+                            <span id="signup-text">Don't have an account?</span>
+                            <a href="/auth/signup" id="signup-link">
+                                <span id="signup-link-text">Sign up</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="right-section">
+            <div id="testimonial-image"></div>
+        </section>
+    </div>
+
+    <script>
+        // ─── HTMX Error Handling ─────────────────────────────────
+        // HTMX does NOT swap content on 4xx/5xx responses by default.
+        // We must intercept the response and force the swap so that
+        // error messages from the server are displayed in #auth-error.
+        document.body.addEventListener('htmx:beforeSwap', function (evt) {
+            // Allow swap on 401 (Unauthorized), 400, 409, 422 responses
+            if (evt.detail.xhr.status === 401 || evt.detail.xhr.status === 400 ||
+                evt.detail.xhr.status === 403 || evt.detail.xhr.status === 409 ||
+                evt.detail.xhr.status === 422 || evt.detail.xhr.status === 500) {
+                evt.detail.shouldSwap = true;
+                evt.detail.isError = false;
+            }
+        });
+
+        // Loading state for the login button
+        document.body.addEventListener('htmx:beforeRequest', function (evt) {
+            var btn = document.getElementById('login-button');
+            if (btn) {
+                btn.disabled = true;
+                btn.querySelector('#button-text').textContent = 'Logging in...';
+            }
+        });
+
+        document.body.addEventListener('htmx:afterRequest', function (evt) {
+            var btn = document.getElementById('login-button');
+            if (btn) {
+                btn.disabled = false;
+                btn.querySelector('#button-text').textContent = 'Log in';
+            }
+        });
+    </script>
+</body>
+
+</html>

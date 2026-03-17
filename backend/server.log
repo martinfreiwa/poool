@@ -1,0 +1,15 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.26s
+     Running `target/debug/poool-backend`
+[2m2026-03-08T15:25:33.198706Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Starting POOOL Backend...
+[2m2026-03-08T15:25:33.198841Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Connecting to database...
+[2m2026-03-08T15:25:33.216220Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Database connection established ✓
+[2m2026-03-08T15:25:33.217651Z[0m [32m INFO[0m [2mpoool_backend::templates[0m[2m:[0m Template engine initialized ✓
+[2m2026-03-08T15:25:33.218291Z[0m [32m INFO[0m [2mpoool_backend::email[0m[2m:[0m Starting POOOL Email Drips Scheduler...
+[2m2026-03-08T15:25:33.221228Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Server listening on http://0.0.0.0:8888
+[2m2026-03-08T15:44:41.743330Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Internal error: Invalid password hash format: password hash string missing field
+[2m2026-03-08T15:44:41.804113Z[0m [31mERROR[0m [2mpoool_backend::wallet::routes[0m[2m:[0m No payment method provided for deposit
+[2m2026-03-08T15:44:41.856227Z[0m [32m INFO[0m [2mpoool_backend::payments::routes[0m[2m:[0m Checkout page hit: user=0ee84d65-6576-4d63-b767-0359b06b8ec5
+[2m2026-03-08T15:44:49.397784Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Internal error: Invalid password hash format: password hash string missing field
+[2m2026-03-08T15:44:49.463050Z[0m [31mERROR[0m [2mpoool_backend::wallet::routes[0m[2m:[0m No payment method provided for deposit
+[2m2026-03-08T15:44:49.503092Z[0m [32m INFO[0m [2mpoool_backend::payments::routes[0m[2m:[0m Checkout page hit: user=0ee84d65-6576-4d63-b767-0359b06b8ec5
+[2m2026-03-08T15:45:02.454421Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Internal error: Invalid password hash format: password hash string missing field

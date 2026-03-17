@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asset Details | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Manage asset details, lifecycle, and financial performance." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <style>
+    /* ─── Asset Header ─── */
+    .asset-header-card {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-lg);
+      padding: 20px 24px;
+      display: flex;
+      gap: 24px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .asset-header-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--admin-accent), #6366f1, #06b6d4);
+      pointer-events: none;
+    }
+
+    .asset-image-large {
+      width: 220px;
+      height: 150px;
+      border-radius: var(--admin-radius-md);
+      object-fit: cover;
+      background: var(--admin-bg);
+      border: 1px solid var(--admin-border);
+    }
+
+    /* ─── Tabs ─── */
+    .asset-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--admin-border);
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+
+    .asset-tab {
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--admin-text-muted);
+      cursor: pointer;
+      border: none;
+      background: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      white-space: nowrap;
+      transition:
+        color 0.15s,
+        border-color 0.15s;
+    }
+
+    .asset-tab:hover {
+      color: var(--admin-text-primary);
+    }
+
+    .asset-tab.active {
+      color: var(--admin-accent);
+      border-bottom-color: var(--admin-accent);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .tab-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--admin-accent);
+      color: #fff;
+      margin-left: 6px;
+    }
+
+    /* ─── Info Grid ─── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .info-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .info-item {
+      margin-bottom: 4px;
+    }
+
+    .info-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--admin-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .info-value {
+      font-size: 14px;
+      color: var(--admin-text-primary);
+      font-weight: 500;
+    }
+
+    /* ─── Funding Bar ─── */
+    .funding-bar-track {
+      height: 10px;
+      border-radius: 5px;
+      background: var(--admin-border);
+      overflow: hidden;
+    }
+
+    .funding-bar-fill {
+      height: 100%;
+      border-radius: 5px;
+      background: linear-gradient(90deg,
+          var(--admin-accent),
+          var(--admin-success));
+      transition: width 0.6s ease;
+    }
+
+    /* ─── Media Grid ─── */
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .media-item {
+      aspect-ratio: 16/10;
+      border-radius: var(--admin-radius-md);
+      background-size: cover;
+      background-position: center;
+      border: 1px solid var(--admin-border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: var(--admin-accent);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    /* ─── Document Item ─── */
+    .document-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--admin-bg);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md);
+      margin-bottom: 8px;
+    }
+
+    .document-type-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--admin-accent-bg, rgba(99, 102, 241, 0.1));
+      color: var(--admin-accent);
+    }
+
+    /* ─── Milestone Stepper ─── */
+    .milestone-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--admin-border);
+    }
+
+    .milestone-item:last-child {
+      border-bottom: none;
+    }
+
+    .milestone-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .milestone-dot.done {
+      background: var(--admin-success);
+      color: #fff;
+    }
+
+    .milestone-dot.pending {
+      background: var(--admin-border);
+      color: var(--admin-text-muted);
+    }
+
+    /* ─── Toggle Switch ─── */
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      background: var(--admin-border);
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-switch.active {
+      background: var(--admin-success);
+    }
+
+    .toggle-switch::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch.active::after {
+      transform: translateX(18px);
+    }
+  </style>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/assets">Assets</a>
+            <span class="separator">›</span>
+            <span class="current" id="breadcrumb-asset-title">Asset Details</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <button class="admin-btn admin-btn--secondary" id="btn-refresh" title="Refresh">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M1 1v5h5" />
+              <path d="M1 6a7 7 0 0113.2-3.2M15 15v-5h-5" />
+              <path d="M15 10A7 7 0 011.8 13.2" />
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <!-- Loading State -->
+        <div id="loading-overlay" style="padding: 60px; text-align: center">
+          <div style="
+                margin: 0 auto 16px;
+                width: 28px;
+                height: 28px;
+                border: 3px solid var(--admin-border);
+                border-top-color: var(--admin-accent);
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+              "></div>
+          <div style="color: var(--admin-text-muted); font-size: 14px">
+            Loading asset details…
+          </div>
+        </div>
+
+        <!-- Actual Content (hidden until loaded) -->
+        <div id="asset-content" style="display: none">
+          <!-- ─── HEADER CARD ─── -->
+          <div class="asset-header-card">
+            <img loading="lazy" id="asset-image" src="/images/placeholder-property.webp" alt=""
+              class="asset-image-large" />
+            <div style="flex: 1; min-width: 0">
+              <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 6px;
+                  ">
+                <h1 style="
+                      font-size: 22px;
+                      font-weight: 800;
+                      color: var(--admin-text-primary);
+                      margin: 0;
+                      word-break: break-word;
+                      overflow-wrap: break-word;
+                    " id="asset-title-main">
+                  —
+                </h1>
+                <span class="admin-badge admin-badge--neutral" id="asset-status-badge">—</span>
+                <span class="admin-badge admin-badge--neutral" id="asset-funding-badge">—</span>
+              </div>
+              <p style="
+                    font-size: 14px;
+                    color: var(--admin-text-muted);
+                    margin: 0 0 16px;
+                  " id="asset-location">
+                —
+              </p>
+
+              <!-- Funding Progress -->
+              <div style="margin-bottom: 16px">
+                <div style="
+                      display: flex;
+                      justify-content: space-between;
+                      font-size: 12px;
+                      color: var(--admin-text-muted);
+                      margin-bottom: 4px;
+                    ">
+                  <span id="funding-label">0 of 0 tokens sold</span>
+                  <span id="funding-pct" style="font-weight: 700; color: var(--admin-accent)">0%</span>
+                </div>
+                <div class="funding-bar-track">
+                  <div class="funding-bar-fill" id="funding-bar" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 28px; flex-wrap: wrap">
+                <div>
+                  <span class="info-label">Valuation</span><span class="info-value" id="asset-valuation">—</span>
+                </div>
+                <div>
+                  <span class="info-label">Token Price</span><span class="info-value" id="asset-token-price">—</span>
+                </div>
+                <div>
+                  <span class="info-label">Yield</span><span class="info-value" id="asset-yield"
+                    style="color: var(--admin-success); font-weight: 700">—</span>
+                </div>
+                <div>
+                  <span class="info-label">Type</span><span class="info-value" id="asset-type">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TABS ─── -->
+          <div class="asset-tabs" id="asset-tabs">
+            <button class="asset-tab active" data-tab="overview">
+              Overview
+            </button>
+            <button class="asset-tab" data-tab="media">Media</button>
+            <button class="asset-tab" data-tab="documents">Documents</button>
+            <button class="asset-tab" data-tab="financials">
+              Financials
+            </button>
+            <button class="asset-tab" data-tab="milestones">
+              Milestones
+            </button>
+            <button class="asset-tab" data-tab="captable">
+              Cap Table<span class="tab-badge" id="badge-investors">0</span>
+            </button>
+            <button class="asset-tab" data-tab="orders">
+              Orders<span class="tab-badge" id="badge-orders">0</span>
+            </button>
+            <button class="asset-tab" data-tab="settings">Settings</button>
+          </div>
+
+          <!-- ─── TAB: OVERVIEW ─── -->
+          <div class="tab-panel active" id="panel-overview">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+              <div class="admin-card" style="padding: 24px; min-width: 0; overflow: hidden;">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 16px">
+                  Description
+                </h3>
+                <p style="
+                      font-size: 14px;
+                      color: var(--admin-text-secondary);
+                      line-height: 1.7;
+                      margin: 0;
+                      white-space: pre-line;
+                      word-wrap: break-word;
+                      overflow-wrap: break-word;
+                      word-break: break-word;
+                      max-width: 100%;
+                    " id="asset-description">
+                  —
+                </p>
+
+                <h3 style="
+                      font-size: 15px;
+                      font-weight: 700;
+                      margin: 28px 0 16px;
+                    ">
+                  Property Details
+                </h3>
+                <div class="info-grid" id="property-details"></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 16px">
+                <div class="admin-card" style="padding: 20px">
+                  <h3 style="
+                        font-size: 14px;
+                        font-weight: 700;
+                        margin: 0 0 16px;
+                      ">
+                    Financial Summary
+                  </h3>
+                  <div id="financial-summary" style="display: flex; flex-direction: column; gap: 12px"></div>
+                </div>
+                <div class="admin-card" style="padding: 20px">
+                  <h3 style="
+                        font-size: 14px;
+                        font-weight: 700;
+                        margin: 0 0 12px;
+                      ">
+                    Quick Stats
+                  </h3>
+                  <div id="quick-stats" style="display: flex; flex-direction: column; gap: 10px"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TAB: MEDIA ─── -->
+          <div class="tab-panel" id="panel-media">
+            <div class="admin-card" style="padding: 24px">
+              <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                  ">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0">
+                  Image Gallery
+                </h3>
+                <span style="font-size: 12px; color: var(--admin-text-muted)" id="media-count">0 images</span>
+              </div>
+              <div class="media-grid" id="media-grid">
+                <p style="
+                      color: var(--admin-text-muted);
+                      font-size: 13px;
+                      grid-column: 1/-1;
+                      text-align: center;
+                      padding: 40px;
+                    ">
+                  No images uploaded.
+                </p>
+              </div>
+              <div style="margin-top: 24px" id="video-section" hidden>
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 12px">
+                  Video Tour
+                </h3>
+                <a href="#" target="_blank" class="admin-btn admin-btn--secondary" id="video-link">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+                    <polygon points="6,3 13,8 6,13" />
+                  </svg>
+                  Watch Video
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TAB: DOCUMENTS ─── -->
+          <div class="tab-panel" id="panel-documents">
+            <div class="admin-card" style="padding: 24px">
+              <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 20px">
+                Data Room
+              </h3>
+              <div id="documents-list">
+                <p style="
+                      color: var(--admin-text-muted);
+                      font-size: 13px;
+                      text-align: center;
+                      padding: 40px;
+                    ">
+                  No documents uploaded.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TAB: FINANCIALS ─── -->
+          <div class="tab-panel" id="panel-financials">
+            <div class="admin-card">
+              <div style="
+                    padding: 16px 24px;
+                    border-bottom: 1px solid var(--admin-border);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                  ">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0">
+                  Monthly Performance
+                </h3>
+                <span style="font-size: 12px; color: var(--admin-text-muted)" id="financials-count">0 records</span>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Period</th>
+                      <th>Rental Income</th>
+                      <th>Expenses</th>
+                      <th>Net Income</th>
+                      <th>Occupancy</th>
+                    </tr>
+                  </thead>
+                  <tbody id="financials-tbody">
+                    <tr>
+                      <td colspan="5" style="
+                            text-align: center;
+                            padding: 40px;
+                            color: var(--admin-text-muted);
+                          ">
+                        No financial records yet.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TAB: MILESTONES ─── -->
+          <div class="tab-panel" id="panel-milestones">
+            <div class="admin-card" style="padding: 24px">
+              <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 20px">
+                Roadmap & Milestones
+              </h3>
+              <div id="milestones-list">
+                <p style="
+                      color: var(--admin-text-muted);
+                      font-size: 13px;
+                      text-align: center;
+                      padding: 40px;
+                    ">
+                  No milestones defined.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TAB: CAP TABLE ─── -->
+          <div class="tab-panel" id="panel-captable">
+            <div class="admin-card">
+              <div style="
+                    padding: 16px 24px;
+                    border-bottom: 1px solid var(--admin-border);
+                  ">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0">
+                  Ownership / Cap Table
+                </h3>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Investor</th>
+                      <th>Tokens</th>
+                      <th>Purchase Value</th>
+                      <th>Current Value</th>
+                      <th>Dividends</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="captable-tbody">
+                    <tr>
+                      <td colspan="6" style="
+                            text-align: center;
+                            padding: 40px;
+                            color: var(--admin-text-muted);
+                          ">
+                        No investors yet.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TAB: ORDERS ─── -->
+          <div class="tab-panel" id="panel-orders">
+            <div class="admin-card">
+              <div style="
+                    padding: 16px 24px;
+                    border-bottom: 1px solid var(--admin-border);
+                  ">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0">
+                  Orders referencing this asset
+                </h3>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Order #</th>
+                      <th>User</th>
+                      <th>Tokens</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="orders-tbody">
+                    <tr>
+                      <td colspan="6" style="
+                            text-align: center;
+                            padding: 40px;
+                            color: var(--admin-text-muted);
+                          ">
+                        No orders found.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TAB: SETTINGS ─── -->
+          <div class="tab-panel" id="panel-settings">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px">
+              <div class="admin-card" style="padding: 24px">
+                <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 20px">
+                  Platform Settings
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 16px">
+                  <div style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                      ">
+                    <div>
+                      <div style="font-size: 14px; font-weight: 600">
+                        Featured on Landing
+                      </div>
+                      <div style="
+                            font-size: 12px;
+                            color: var(--admin-text-muted);
+                          ">
+                        Show on homepage carousel
+                      </div>
+                    </div>
+                    <div class="toggle-switch" id="toggle-featured"></div>
+                  </div>
+                  <div style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                      ">
+                    <div>
+                      <div style="font-size: 14px; font-weight: 600">
+                        Published
+                      </div>
+                      <div style="
+                            font-size: 12px;
+                            color: var(--admin-text-muted);
+                          ">
+                        Visible on marketplace
+                      </div>
+                    </div>
+                    <div class="toggle-switch" id="toggle-published"></div>
+                  </div>
+                  <div>
+                    <span class="info-label">Funding Status</span>
+                    <select class="admin-select" id="select-funding-status" style="width: 100%; margin-top: 4px">
+                      <option value="pre_funding">Pre-Funding</option>
+                      <option value="funding_open">Funding Open</option>
+                      <option value="fully_funded">Fully Funded</option>
+                      <option value="closed">Closed</option>
+                      <option value="exited">Exited</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="admin-card" style="padding: 24px">
+                <h3 style="
+                      font-size: 15px;
+                      font-weight: 700;
+                      margin: 0 0 20px;
+                      color: var(--admin-danger);
+                    ">
+                  Danger Zone
+                </h3>
+                <p style="
+                      font-size: 12px;
+                      color: var(--admin-text-muted);
+                      margin: 0 0 16px;
+                    ">
+                  These actions are irreversible. Proceed with caution.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 10px">
+                  <button class="admin-btn admin-btn--secondary" style="
+                        color: var(--admin-danger);
+                        border-color: var(--admin-danger);
+                      " id="btn-freeze">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                      stroke-width="1.7">
+                      <path d="M8 1v14M1 8h14M3.5 3.5l9 9M12.5 3.5l-9 9" />
+                    </svg>
+                    Freeze Trading
+                  </button>
+                  <button class="admin-btn admin-btn--secondary" style="
+                        color: var(--admin-danger);
+                        border-color: var(--admin-danger);
+                      " id="btn-unpublish">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                      stroke-width="1.7">
+                      <path d="M2 2l12 12" />
+                      <path d="M6.5 6.5A2.5 2.5 0 009.5 9.5" />
+                      <path d="M1.5 8s3-5.5 6.5-5.5c.88 0 1.7.23 2.43.61" />
+                      <path d="M14.5 8s-1.16 2.13-3 3.54" />
+                    </svg>
+                    Unpublish from Marketplace
+                  </button>
+                  <button class="admin-btn admin-btn--secondary" style="
+                        color: var(--admin-danger);
+                        border-color: var(--admin-danger);
+                      " id="btn-archive">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                      stroke-width="1.7">
+                      <path d="M2 4h12v2H2z" />
+                      <path d="M3 6v7a1 1 0 001 1h8a1 1 0 001-1V6" />
+                      <path d="M6 9h4" />
+                    </svg>
+                    Archive Asset
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <!-- /asset-content -->
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/admin-asset-details.js"></script>
+</body>
+
+</html>

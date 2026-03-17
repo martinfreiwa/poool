@@ -1,0 +1,115 @@
+warning: unused variable: `funding_status`
+   --> src/cart/routes.rs:494:13
+    |
+494 |         let funding_status: String = row.get("funding_status");
+    |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_funding_status`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `poool-backend` (bin "poool-backend") generated 1 warning (run `cargo fix --bin "poool-backend" -p poool-backend` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.15s
+warning: the following packages contain code that will be rejected by a future version of Rust: redis v0.24.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running `target/debug/poool-backend`
+[2m2026-03-13T15:17:10.180817Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Starting POOOL Backend...
+[2m2026-03-13T15:17:10.182378Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Connecting to database...
+[2m2026-03-13T15:17:10.189094Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Database connection established ✓
+[2m2026-03-13T15:17:10.192782Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_schema_migrations" already exists, skipping
+[2m2026-03-13T15:17:10.193981Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Database schema is up to date (32 migrations tracked)
+[2m2026-03-13T15:17:10.194233Z[0m [32m INFO[0m [2mpoool_backend::templates[0m[2m:[0m Template engine initialized (dev_mode=true, version=1773415030) ✓
+[2m2026-03-13T15:17:10.194292Z[0m [32m INFO[0m [2mpoool_backend::email[0m[2m:[0m Starting POOOL Email Drips Scheduler...
+[2m2026-03-13T15:17:10.198783Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Server listening on http://0.0.0.0:8888
+[2m2026-03-13T15:17:20.205894Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T15:18:09.454870Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T15:49:49.829231Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T15:50:25.240873Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T15:51:08.711665Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T15:51:30.008348Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T15:51:57.533385Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T15:52:06.907831Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Internal error: Invalid password hash format: salt invalid: value to short
+[2m2026-03-13T15:54:57.862510Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T15:55:59.476590Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T15:55:59.479294Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T15:55:59.602383Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T15:55:59.661745Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T15:55:59.664084Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T15:55:59.746999Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T15:56:33.971508Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T15:56:33.973147Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T15:56:43.454580Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T15:56:43.456094Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T15:56:46.548359Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:00:44.744887Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:02:55.883290Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:02:58.193983Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:02.481538Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:11.745028Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:43.672303Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:44.862099Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:46.717548Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:46.753227Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:46.760539Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:50.779816Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:50.781633Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:03:53.728455Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:55.262837Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:03:55.263772Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:06:42.677309Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:06:42.678553Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:06:43.464574Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:06:43.465533Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:06:48.633781Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:06:48.634659Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:06:49.653678Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:06:49.654649Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:07:11.467639Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:07:11.469123Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:07:13.012735Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:07:26.499835Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:07:27.042616Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:08:06.964967Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:08:08.707040Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:08:08.708294Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:08:29.999169Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:08:30.000612Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:09:03.607016Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:09:03.607970Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:10:41.402099Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:10:41.402787Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:10:44.542656Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:10:48.306531Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:14:41.529924Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:14:45.108737Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:16:07.765837Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:16:07.766533Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:16:15.889114Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:16:15.889863Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:16:28.606570Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:16:28.607340Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:16:31.584297Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:16:37.440888Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:17:51.646057Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:18:24.179564Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:18:25.571675Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:19:11.265659Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T16:19:18.373968Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T16:19:23.620063Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T16:20:07.236215Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T16:21:09.797785Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:21:48.717215Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:21:48.756486Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:21:48.761901Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:23:12.545742Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:23:12.548040Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:23:16.346335Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:23:16.347161Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:27:30.994564Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:27:30.997063Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:27:55.245569Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:27:55.247454Z[0m [31mERROR[0m [2mpoool_backend::developer::routes[0m[2m:[0m Failed to render developer/assets.html: undefined value (in developer/assets.html:212)
+[2m2026-03-13T16:27:57.633858Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:28:02.792094Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session s4k52P-MPQJJ4Q5Xc9EsmLl6vJEAuewrp-PzBAj9g7ijHghFIWI72FyuyfodyC6uFiJL-zMlta_TOilU9W9Fag valid for user admin@poool.app
+[2m2026-03-13T16:29:32.127686Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T16:29:50.177214Z[0m [33m WARN[0m [2mpoool_backend::auth::csrf[0m[2m:[0m CSRF token validation failed
+[2m2026-03-13T16:30:47.290326Z[0m [33m WARN[0m [2mpoool_backend::auth::service[0m[2m:[0m Session MfgKvfGGFh_PkufyOAZ8v5fP333_Zfnt5SdiYwxHD-REzcF1kz88XSIHLbSze4jUWSj5v0e0drO56wK9FCOQHA not found or expired in DB
+[2m2026-03-13T16:30:53.661258Z[0m [33m WARN[0m [2mpoool_backend::auth::service[0m[2m:[0m Session MfgKvfGGFh_PkufyOAZ8v5fP333_Zfnt5SdiYwxHD-REzcF1kz88XSIHLbSze4jUWSj5v0e0drO56wK9FCOQHA not found or expired in DB

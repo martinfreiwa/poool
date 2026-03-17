@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports &amp; Exports | Admin | POOOL</title>
+  <meta name="description"
+    content="POOOL Admin — Generate, preview, and export platform reports for compliance and analytics." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a><span class="separator">›</span><span class="current">Reports &amp;
+              Exports</span>
+          </nav>
+        </div>
+      </header>
+      <div class="admin-content">
+        <div class="admin-page-header" style="
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              flex-wrap: wrap;
+              gap: 12px;
+            ">
+          <div>
+            <h1 class="admin-page-title">Reports &amp; Exports</h1>
+            <p class="admin-page-subtitle">
+              Generate, preview, and download platform data for compliance,
+              analytics, and accounting
+            </p>
+          </div>
+          <!-- Global date range -->
+          <div style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+              ">
+            <label style="
+                  font-size: 12px;
+                  font-weight: 600;
+                  color: var(--admin-text-muted);
+                ">Date Range:</label>
+            <input type="date" id="range-from" class="admin-input" style="width: 140px" title="From" />
+            <span style="color: var(--admin-text-muted); font-size: 14px">→</span>
+            <input type="date" id="range-to" class="admin-input" style="width: 140px" title="To" />
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="setPreset('30d')">
+              30d
+            </button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="setPreset('90d')">
+              90d
+            </button>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="setPreset('ytd')">
+              YTD
+            </button>
+          </div>
+        </div>
+
+        <!-- Section: Financial Reports -->
+        <div style="margin-bottom: 28px">
+          <div style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 14px;
+              ">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--admin-neutral)"
+              stroke-width="1.7">
+              <rect x="2" y="5" width="16" height="12" rx="2" />
+              <path d="M14 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              <path d="M2 5l4-3h8l4 3" />
+            </svg>
+            <h2 style="
+                  font-size: 14px;
+                  font-weight: 700;
+                  color: var(--admin-text-primary);
+                  margin: 0;
+                ">
+              Financial
+            </h2>
+            <div style="flex: 1; height: 1px; background: var(--admin-border)"></div>
+          </div>
+          <div style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 14px;
+              " id="grid-financial"></div>
+        </div>
+
+        <!-- Section: User & Compliance Reports -->
+        <div style="margin-bottom: 28px">
+          <div style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 14px;
+              ">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--admin-neutral)"
+              stroke-width="1.7">
+              <path d="M10 1L2 5v4.5c0 5 3.5 9 8 10.5 4.5-1.5 8-5.5 8-10.5V5L10 1z" />
+              <path d="M7 10l2 2 4-4" />
+            </svg>
+            <h2 style="
+                  font-size: 14px;
+                  font-weight: 700;
+                  color: var(--admin-text-primary);
+                  margin: 0;
+                ">
+              Users &amp; Compliance
+            </h2>
+            <div style="flex: 1; height: 1px; background: var(--admin-border)"></div>
+          </div>
+          <div style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 14px;
+              " id="grid-compliance"></div>
+        </div>
+
+        <!-- Section: Asset & Investment Reports -->
+        <div style="margin-bottom: 28px">
+          <div style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 14px;
+              ">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--admin-neutral)"
+              stroke-width="1.7">
+              <path d="M2 7l8-5 8 5v9a2 2 0 01-2 2H4a2 2 0 01-2-2V7z" />
+              <path d="M7 18V10h6v8" />
+            </svg>
+            <h2 style="
+                  font-size: 14px;
+                  font-weight: 700;
+                  color: var(--admin-text-primary);
+                  margin: 0;
+                ">
+              Assets &amp; Investments
+            </h2>
+            <div style="flex: 1; height: 1px; background: var(--admin-border)"></div>
+          </div>
+          <div style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 14px;
+              " id="grid-assets"></div>
+        </div>
+
+        <!-- Section: Operational Reports -->
+        <div style="margin-bottom: 28px">
+          <div style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 14px;
+              ">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--admin-neutral)"
+              stroke-width="1.7">
+              <rect x="2" y="3" width="16" height="11" rx="2" />
+              <path d="M6 17h8M10 14v3" />
+            </svg>
+            <h2 style="
+                  font-size: 14px;
+                  font-weight: 700;
+                  color: var(--admin-text-primary);
+                  margin: 0;
+                ">
+              Operational
+            </h2>
+            <div style="flex: 1; height: 1px; background: var(--admin-border)"></div>
+          </div>
+          <div style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 14px;
+              " id="grid-operational"></div>
+        </div>
+
+        <!-- Section: Tax & Fiscal Reports -->
+        <div style="margin-bottom: 28px">
+          <div style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 14px;
+              ">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--admin-neutral)"
+              stroke-width="1.7">
+              <path d="M12 2v16m-6-16v16M2 10h16M2 6h16M2 14h16" />
+            </svg>
+            <h2 style="
+                  font-size: 14px;
+                  font-weight: 700;
+                  color: var(--admin-text-primary);
+                  margin: 0;
+                ">
+              Tax &amp; Fiscal
+            </h2>
+            <div style="flex: 1; height: 1px; background: var(--admin-border)"></div>
+          </div>
+          <div style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 14px;
+              " id="grid-tax"></div>
+        </div>
+
+        <!-- Preview Table -->
+        <div class="admin-card" id="preview-section" style="display: none">
+          <div style="
+                padding: 16px 20px;
+                border-bottom: 1px solid var(--admin-border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+              ">
+            <h3 style="
+                  font-size: 14px;
+                  font-weight: 600;
+                  color: var(--admin-text-primary);
+                  margin: 0;
+                " id="preview-title">
+              Preview
+            </h3>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="
+                  document.getElementById('preview-section').style.display =
+                    'none'
+                ">
+              Close
+            </button>
+          </div>
+          <div class="admin-card-body admin-card-body--flush" style="overflow-x: auto">
+            <table class="admin-table" id="preview-table">
+              <thead id="preview-thead"></thead>
+              <tbody id="preview-tbody"></tbody>
+            </table>
+          </div>
+          <div style="
+                padding: 12px 20px;
+                font-size: 12px;
+                color: var(--admin-text-muted);
+              " id="preview-footer">
+            Showing first 5 rows. Download for full dataset.
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="/static/js/admin-reports.js"></script>
+</body>
+
+</html>

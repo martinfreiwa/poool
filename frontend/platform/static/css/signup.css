@@ -1,0 +1,561 @@
+@import url("./fonts.css");
+/* Import TT Norms Pro font with specific weights */
+
+/* Reset */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+/* ─── Main Container ──────────────────────────────────────────── */
+#signup-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+/* ─── Left Section ────────────────────────────────────────────── */
+#left-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 50%;
+  min-width: 480px;
+  padding: 48px 32px;
+}
+
+#container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+#content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+}
+
+/* ─── Header ──────────────────────────────────────────────────── */
+#header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+}
+
+#logo-pool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#logo-pool img {
+  width: 184px;
+  height: 48px;
+}
+
+#text-and-supporting-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+#text {
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 38px;
+  text-align: center;
+  color: #181d27;
+}
+
+#supporting-text {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #535862;
+}
+
+/* ─── Content Inner ───────────────────────────────────────────── */
+#content-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+}
+
+/* ─── Social Buttons ──────────────────────────────────────────── */
+#social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.social-button {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 12px;
+  width: 100%;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.social-button:hover {
+  background-color: #f9fafb;
+}
+
+.apple-button {
+  background: #000000 !important;
+  border-color: #000000 !important;
+}
+
+.apple-button:hover {
+  background: #1a1a1a !important;
+}
+
+.social-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.social-icon img {
+  width: 24px;
+  height: 24px;
+}
+
+.social-text {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #414651;
+}
+
+.apple-button .social-text {
+  color: #ffffff;
+}
+
+/* ─── Divider ─────────────────────────────────────────────────── */
+#content-divider {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+#divider-left,
+#divider-right {
+  flex: 1;
+  height: 1px;
+  background: #e9eaeb;
+}
+
+#or-text {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #535862;
+  flex-shrink: 0;
+}
+
+/* ─── Form ────────────────────────────────────────────────────── */
+#signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Email Input field */
+#input-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+}
+
+#input-with-label,
+#input-with-label-password {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+}
+
+.label-wrapper {
+  display: flex;
+  align-items: center;
+  height: 20px;
+}
+
+.input-label {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #414651;
+}
+
+#email-input-wrapper,
+#password-input-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+#email-input-wrapper:focus-within,
+#password-input-wrapper:focus-within {
+  border-color: var(--primary-color);
+  box-shadow:
+    0px 1px 2px rgba(10, 13, 18, 0.05),
+    0px 0px 0px 4px rgba(0, 0, 255, 0.12);
+}
+
+#email-input-wrapper input,
+#password-input-wrapper input {
+  width: 100%;
+  height: 24px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #181d27;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+#email-input-wrapper input::placeholder,
+#password-input-wrapper input::placeholder {
+  color: #717680;
+}
+
+/* Password Input field */
+#input-field-password {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+}
+
+#hint-text {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+  margin-top: 2px;
+}
+
+/* ─── Submit Button ───────────────────────────────────────────── */
+#get-started-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px;
+  width: 100%;
+  height: 44px;
+  background: var(--primary-color);
+  border: none;
+  box-shadow:
+    0px 1px 2px rgba(16, 24, 40, 0.05),
+    inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+    inset 0px -2px 0px rgba(10, 13, 18, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 4px;
+}
+
+#get-started-button:hover {
+  background: var(--primary-color);
+}
+
+#button-text {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #ffffff;
+}
+
+/* ─── Login Row ───────────────────────────────────────────────── */
+#login-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+#login-text {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #535862;
+}
+
+#login-link {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+#login-link:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+/* ─── Right Section ───────────────────────────────────────────── */
+#right-section {
+  display: flex;
+  align-items: flex-start;
+  padding: 24px 24px 24px 0px;
+  width: 50%;
+  min-height: 100vh;
+}
+
+#testimonial-image {
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 48px);
+  background: url("../images/signup-background.webp");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─── Quote Panel ─────────────────────────────────────────────── */
+#quote-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 370px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  border-radius: 0 0 20px 20px;
+}
+
+#attribution-card {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+#testimonial-quote {
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+  color: #ffffff;
+}
+
+#name-and-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#name-and-stars {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+#author-name {
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+  color: #ffffff;
+}
+
+#stars-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+#supporting-text-arrows {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#text-and-supporting {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#author-title {
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 28px;
+  color: #ffffff;
+}
+
+#author-company {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--accent-color);
+}
+
+/* ─── Carousel Arrows ─────────────────────────────────────────── */
+#arrows-container {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.carousel-arrow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.carousel-arrow:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+/* ─── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  #signup-container {
+    flex-direction: column;
+  }
+
+  #left-section {
+    width: 100%;
+    min-width: unset;
+    padding: 40px 24px;
+    order: 1;
+  }
+
+  #right-section {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  #left-section {
+    padding: 32px 16px;
+  }
+
+  #container {
+    max-width: 100%;
+  }
+
+  #text {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  .social-button {
+    height: 48px;
+  }
+
+  #get-started-button {
+    height: 48px;
+  }
+
+  #testimonial-quote {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  #author-name {
+    font-size: 20px;
+    line-height: 28px;
+  }
+}

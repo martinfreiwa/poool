@@ -1,0 +1,376 @@
+/* ===========================
+   Mobile Responsive Design for Developer Assets
+   Updated for cart-page layout system
+   =========================== */
+@media (max-width: 768px) {
+
+  /* NUCLEAR OVERRIDE - Force all cards to be 100% width */
+  * [class*="property-card"],
+  * [class*="dev-asset-card"],
+  * [class*="property-gallery"],
+  * [class*="property-image"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Remove all text selection and tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    -khtml-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+  }
+
+  /* Hide desktop sidebar (cart-page layout) */
+  .cart-page-sidebar,
+  #developer-assets-sidebar {
+    display: none !important;
+  }
+
+  /* Hide page header on mobile */
+  #developer-assets-page-header,
+  #developer-assets-main > .ds-page-header,
+  #developer-assets-main > .page-header-divider {
+    display: none !important;
+  }
+
+  /* Adjust main content for mobile — override cart-page-main */
+  .cart-page-main,
+  #developer-assets-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    padding-top: 0 !important;
+    min-height: calc(100vh - 64px);
+    min-width: unset !important;
+  }
+
+  /* Adjust content wrapper - add horizontal padding here */
+  .table__wrapper,
+  #developer-assets-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 113px 16px 0 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Hide filter controls on mobile, keep only status tabs */
+  .filter-bar-container,
+  .filter-controls,
+  .filter-dropdowns,
+  .search-container {
+    display: none !important;
+  }
+
+  /* Show only status tabs on mobile */
+  .cart-page .status-tabs,
+  #filter-bar-status-tabs {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 4px !important;
+    gap: 8px !important;
+
+    position: relative !important;
+    width: 100% !important;
+    height: 44px !important;
+    margin: 16px 0 24px 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+
+    background: #ffffff !important;
+    border: 1px solid #e9eaeb !important;
+    box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 32px !important;
+  }
+
+  .status-tab {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 8px !important;
+    gap: 8px !important;
+
+    height: 36px !important;
+    flex: 1 !important;
+    align-self: stretch !important;
+
+    border-radius: 30px !important;
+    border: none !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    line-height: 18px !important;
+    color: #000000 !important;
+    background: transparent !important;
+  }
+
+  .status-tab.active {
+    background: rgba(3, 255, 136, 0.18) !important;
+    border: 1.5px solid rgba(3, 255, 136, 0.5) !important;
+    box-shadow: 0 0 0 3px rgba(3, 255, 136, 0.08) !important;
+    color: #08232F !important;
+    font-weight: 700 !important;
+  }
+
+  /* Page header - Mobile layout */
+  .page-header,
+  .dev-assets-header {
+    position: relative !important;
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .page-title {
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-style: normal !important;
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    line-height: 32px !important;
+    color: #181d27 !important;
+    width: auto !important;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Developer-specific: Change layout */
+  .dev-assets-header {
+    position: relative !important;
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    height: auto !important;
+    display: block !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Add Asset Button - Responsive width */
+  .dev-assets-header .add-asset-btn {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 10px 16px !important;
+    gap: 6px !important;
+
+    width: 100% !important;
+    height: 44px !important;
+    margin: 12px 0 0 0 !important;
+
+    background: var(--primary-color) !important;
+    box-shadow:
+      0px 1px 2px rgba(16, 24, 40, 0.05),
+      inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
+      inset 0px -2px 0px rgba(10, 13, 18, 0.05) !important;
+    border-radius: 8px !important;
+    border: none !important;
+  }
+
+  .dev-assets-header .add-asset-icon {
+    width: 20px !important;
+    height: 20px !important;
+    flex: none !important;
+    order: 0 !important;
+    flex-grow: 0 !important;
+  }
+
+  .dev-assets-header .add-asset-text {
+    width: 80px !important;
+    height: 24px !important;
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-style: normal !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+    color: #ffffff !important;
+    flex: none !important;
+    order: 1 !important;
+    flex-grow: 0 !important;
+    padding: 0px 2px !important;
+  }
+
+  /* Properties section */
+  .properties-section,
+  #marketplace-properties-section {
+    position: relative !important;
+    width: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 0 96px 0 !important;
+  }
+
+  /* Property grid - Single column, full width responsive */
+  .property-grid,
+  .property-grid-content {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    gap: 16px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .property-grid-container {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* FIX: Override the hardcoded 344px width from marketplace.css */
+  .property-grid-item {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Property card - responsive width */
+  .property-card,
+  .dev-asset-card,
+  #developer-assets-page .property-card,
+  #developer-assets-page .dev-asset-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    flex-basis: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+
+  /* Gallery elements */
+  .property-gallery,
+  .dev-asset-card .property-gallery,
+  .property-card .property-gallery {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 0 !important;
+    padding-bottom: 72.09% !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+  }
+
+  .property-image-container,
+  .dev-asset-card .property-image-container,
+  .property-card .property-image-container {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .property-image,
+  .dev-asset-card .property-image,
+  .property-card .property-image,
+  .property-gallery .property-image,
+  .property-image-container .property-image {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Card content */
+  .property-content,
+  .dev-asset-card .property-content,
+  .property-card .property-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: auto !important;
+    height: auto !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Pricing section */
+  .property-pricing,
+  .dev-asset-card .property-pricing,
+  .property-card .property-pricing {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: auto !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  /* All inner elements */
+  .property-categories,
+  .property-heading,
+  .investment-details,
+  .dev-asset-card .property-categories,
+  .dev-asset-card .property-heading {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Always show navigation arrows on mobile */
+  .property-nav-arrow {
+    opacity: 1 !important;
+    display: flex !important;
+  }
+
+  .property-nav-arrow--prev,
+  .property-nav-arrow--next {
+    opacity: 1 !important;
+    display: flex !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* Mobile header - FULL WIDTH */
+  .mobile-header {
+    display: flex !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure body/page containers are full width */
+  body,
+  html,
+  #developer-assets-body,
+  .cart-page,
+  #developer-assets-page {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}

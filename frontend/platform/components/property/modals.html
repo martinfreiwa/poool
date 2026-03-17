@@ -1,0 +1,39 @@
+<!-- Lightbox Modal -->
+<div class="lightbox-overlay" id="lightbox-overlay" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox(event)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+  </button>
+  <img loading="lazy" class="lightbox-content" id="lightbox-img" />
+  <div class="lightbox-caption" id="lightbox-caption"></div>
+  <button class="lightbox-prev" onclick="changeImage(-1)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+  </button>
+  <button class="lightbox-next" onclick="changeImage(1)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+  </button>
+</div>
+<!-- YouTube Video Modal -->
+<div id="youtube-modal-overlay" class="youtube-modal-overlay">
+  <div class="youtube-modal">
+    <div class="youtube-modal-header">
+      <button class="youtube-modal-close" id="close-youtube-modal">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="youtube-modal-content">
+      <div class="youtube-video-wrapper">
+        <iframe loading="lazy" id="youtube-iframe" width="100%" height="100%" src="" frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;"
+          allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+</div>

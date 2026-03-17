@@ -1,0 +1,534 @@
+{% with title="Developer Document Upload", meta_description="Upload property documents for listing on POOOL.", extra_css=['developer-document-upload-step3', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-document-upload', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
+
+<body id="developer-document-upload-step3-body">
+  {% include 'components/mobile-menu.html' %}
+
+  <div id="developer-document-upload-step3-page" class="cart-page">
+    <div id="developer-document-upload-step3-sidebar" class="cart-page-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
+    <!-- Main Content Area -->
+    <main id="developer-document-upload-step3-main" class="ds-main cart-page-main">
+      <!-- Page Header -->
+      <div class="ds-page-header cart-page-header">
+        <div class="ds-page-header__title-row cart-title-wrapper">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" class="ds-page-header__icon poool-icon-custom">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <h1 class="ds-page-header__title cart-page-title">Document Upload</h1>
+        </div>
+        <div class="checkout-steps">
+          <a href="/developer/add-asset" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Asset Type</a>
+          <span class="checkout-steps__divider">→</span>
+          <a href="/developer/application-form" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Property Info</a>
+          <span class="checkout-steps__divider">→</span>
+          <span class="checkout-steps__step checkout-steps__step--active">Documents</span>
+          <span class="checkout-steps__divider">→</span>
+          <span class="checkout-steps__step">Review</span>
+        </div>
+      </div>
+      <hr class="page-header-divider">
+      <!-- Document Section 1: Proof of Title -->
+      <div id="documents-section-1" class="document-section">
+        <h2 class="document-section-title">1. Proof of title</h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>Certificate of HGB (if held through PT PMA)</li>
+            <li>Certificate of Hak Pakai (if held by an individual)</li>
+            <li>HMSRS (in case of strata-title apartments)</li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-1" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <script>
+                  function __templ_clickFileInputScript_3e80(sectionID) {
+                    document
+                      .getElementById("file-input-" + sectionID)
+                      .click();
+                  }
+                </script>
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('1')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">PDF, DOC, DOCX, PNG, JPG or WebP (max. 20 MB)</p>
+            </div>
+            <input type="file" id="file-input-1" class="hidden-file-input" multiple
+              accept=".pdf,.doc,.docx,.zip,.jpg,.jpeg,.png,.webp" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-1" class="uploaded-files-list">
+          <div id="file1-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">property-deed.pdf</span>
+                  <span class="file-size">2.5 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button -->
+            <script>
+              function __templ_removeFileScript_5b93(id) {
+                removeFile(id);
+              }
+            </script>
+            <button type="button" class="file-delete-btn" onclick="__templ_removeFileScript_5b93('file1-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Document Section 2: Legal Basis of Title -->
+      <div id="documents-section-2" class="document-section">
+        <h2 class="document-section-title">2. Legal basis of title</h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>Deed of Sale and Purchase (AJB)</li>
+            <li>Leasehold Agreement (if lease term exceeds 25 years)</li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-2" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('2')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">PDF, DOC, DOCX, PNG, JPG or WebP (max. 20 MB)</p>
+            </div>
+            <input type="file" id="file-input-2" class="hidden-file-input" multiple
+              accept=".pdf,.doc,.docx,.zip,.jpg,.jpeg,.png,.webp" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-2" class="uploaded-files-list">
+          <div id="file2-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">management-agreement.pdf</span>
+                  <span class="file-size">1.8 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button --><button type="button" class="file-delete-btn"
+              onclick="__templ_removeFileScript_5b93('file2-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Document Section 3: Permits -->
+      <div id="documents-section-3" class="document-section">
+        <h2 class="document-section-title">
+          3. Permits (in case of existing structures)
+        </h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>Building Approval (PBG) / Building Permit (IMB)</li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-3" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('3')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">PDF, DOC, DOCX, PNG, JPG or WebP (max. 20 MB)</p>
+            </div>
+            <input type="file" id="file-input-3" class="hidden-file-input" multiple
+              accept=".pdf,.doc,.docx,.zip,.jpg,.jpeg,.png,.webp" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-3" class="uploaded-files-list">
+          <div id="file3-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">floor-plans.pdf</span>
+                  <span class="file-size">4.2 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button --><button type="button" class="file-delete-btn"
+              onclick="__templ_removeFileScript_5b93('file3-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Document Section 4: Tax Documentation -->
+      <div id="documents-section-4" class="document-section">
+        <h2 class="document-section-title">4. Tax documentation</h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>SPPT PBB and proof of latest annual payment</li>
+            <li>BPHTB (if the acquisition was recent)</li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-4" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('4')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">PDF, DOC, DOCX, PNG, JPG or WebP (max. 20 MB)</p>
+            </div>
+            <input type="file" id="file-input-4" class="hidden-file-input" multiple
+              accept=".pdf,.doc,.docx,.zip,.jpg,.jpeg,.png,.webp" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-4" class="uploaded-files-list">
+          <div id="file4-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">insurance-policy.pdf</span>
+                  <span class="file-size">1.8 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button --><button type="button" class="file-delete-btn"
+              onclick="__templ_removeFileScript_5b93('file4-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Document Section 5: KYC/Corporate Structure -->
+      <div id="documents-section-5" class="document-section">
+        <h2 class="document-section-title">5. KYC / Corporate structure</h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>Copy of owner's passport</li>
+            <li>
+              If relevant and through a PT PMA: Deed of Establishment,
+              Approval from the Ministry of Law and Human Rights (SK
+              Kemenkumham), Business Identification Number (NIB/OSS), Taxpayer
+              Identification Number (NPWP)
+            </li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-5" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('5')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">PDF, DOC, DOCX, PNG, JPG or WebP (max. 20 MB)</p>
+            </div>
+            <input type="file" id="file-input-5" class="hidden-file-input" multiple
+              accept=".pdf,.doc,.docx,.zip,.jpg,.jpeg,.png,.webp" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-5" class="uploaded-files-list">
+          <div id="file5-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">incorporation-docs.pdf</span>
+                  <span class="file-size">3.1 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button --><button type="button" class="file-delete-btn"
+              onclick="__templ_removeFileScript_5b93('file5-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Document Section 6: Declarations -->
+      <div id="documents-section-6" class="document-section">
+        <h2 class="document-section-title">6. Declarations</h2>
+        <div class="document-section-content">
+          <ul class="document-list">
+            <li>
+              Signed statement confirming absence of disputes, claims, or
+              encumbrances over the property
+            </li>
+          </ul>
+        </div>
+        <!-- File Upload Area -->
+        <div id="file-upload-area-6" class="file-upload-area">
+          <div class="upload-content">
+            <div class="upload-icon-wrapper">
+              <svg class="upload-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6.66667 13.3333L10 10M10 10L13.3333 13.3333M10 10V17.5" stroke="#535862"
+                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M16.6667 13.9167C17.5833 13.25 18.3333 11.9167 18.3333 10.4167C18.3333 8.08333 16.5 6.25 14.1667 6.25C13.8333 6.25 13.5 6.33333 13.25 6.41667C12.5833 3.83333 10.25 1.66667 7.5 1.66667C4.16667 1.66667 1.66667 4.16667 1.66667 7.5C1.66667 9.08333 2.25 10.5 3.16667 11.5833"
+                  stroke="#535862" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div class="upload-text">
+              <p class="upload-action">
+                <button type="button" class="upload-link" onclick="__templ_clickFileInputScript_3e80('6')">
+                  Click to upload
+                </button>
+                <span>or drag and drop</span>
+              </p>
+              <p class="upload-info">PDF, DOC, DOCX, PNG, JPG or WebP (max. 20 MB)</p>
+            </div>
+            <input type="file" id="file-input-6" class="hidden-file-input" multiple
+              accept=".pdf,.doc,.docx,.zip,.jpg,.jpeg,.png,.webp" />
+          </div>
+          <!-- Drag indicator (shown when dragging) -->
+          <div class="drag-overlay" style="display: none">
+            <div class="drag-content">
+              <svg class="drag-icon" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="8" fill="white"></rect>
+                <path d="M13.3333 26.6667L20 20M20 20L26.6667 26.6667M20 20V35" stroke="#0000FF" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"></path>
+                <path
+                  d="M33.3333 27.8333C35.1667 26.5 36.6667 23.8333 36.6667 20.8333C36.6667 16.1667 33 12.5 28.3333 12.5C27.6667 12.5 27 12.6667 26.5 12.8333C25.1667 7.66667 20.5 3.33333 15 3.33333C8.33333 3.33333 3.33333 8.33333 3.33333 15C3.33333 18.1667 4.5 21 6.33333 23.1667"
+                  stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <div class="drag-text">Drop files here</div>
+            </div>
+          </div>
+        </div>
+        <!-- Uploaded Files List -->
+        <div id="uploaded-files-list-6" class="uploaded-files-list">
+          <div id="file6-1" class="file-upload-item">
+            <div class="file-content">
+              <!-- File Icon -->
+              <div class="file-type-icon">
+                <img loading="lazy" src="/static/images/File type icon (1).svg" alt="File" width="40" height="40" />
+              </div>
+              <!-- File Info -->
+              <div class="file-info">
+                <div class="file-details">
+                  <span class="file-name">additional-docs.pdf</span>
+                  <span class="file-size">2.3 MB</span>
+                </div>
+              </div>
+            </div>
+            <!-- Delete Button --><button type="button" class="file-delete-btn"
+              onclick="__templ_removeFileScript_5b93('file6-1')">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4H14M5.33333 4V2.66667C5.33333 2.31305 5.47381 1.97391 5.72386 1.72386C5.97391 1.47381 6.31305 1.33333 6.66667 1.33333H9.33333C9.68696 1.33333 10.0261 1.47381 10.2761 1.72386C10.5262 1.97391 10.6667 2.31305 10.6667 2.66667V4M6.66667 7.33333V11.3333M9.33333 7.33333V11.3333M12.6667 4V12.6667C12.6667 13.0203 12.5262 13.3594 12.2761 13.6095C12.0261 13.8595 11.687 14 11.3333 14H4.66667C4.31305 14 3.97391 13.8595 3.72386 13.6095C3.47381 13.3594 3.33333 13.0203 3.33333 12.6667V4"
+                  stroke="#A4A7AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Important Note Section -->
+      <div id="documents-note-section" class="documents-note-section">
+        <p class="documents-note-text">
+          Please upload all the documents you have available, as this will
+          directly impact the speed of listing your property on our platform
+          and completing its tokenization process
+        </p>
+      </div>
+      <!-- Action Buttons -->
+      <div id="form-actions" class="form-actions">
+        <button id="form-back-btn" class="form-back-btn" onclick="var id1 = localStorage.getItem('draft_asset_id'); window.location.href = id1 ? '/developer/application-form?draft_id=' + id1 : '/developer/application-form'">
+          <svg class="back-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M12.5 5L7.5 10L12.5 15" stroke="#01011C" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+          <span>Previous</span>
+        </button>
+        <button type="button" class="form-save-exit-btn" onclick="var id = localStorage.getItem('draft_asset_id'); if (id) { window.location.href = '/developer/submissions?draft_id=' + id; } else { window.location.href = '/developer/submissions'; }" style="padding:10px 20px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;cursor:pointer;font-weight:500;color:#414651;font-size:0.9rem;">
+          Save &amp; Exit
+        </button>
+        <button id="form-next-btn" class="form-next-btn" onclick="var id2 = localStorage.getItem('draft_asset_id'); window.location.href = id2 ? '/developer/property-content?draft_id=' + id2 : '/developer/property-content'">
+          <span>Next Step</span>
+        </button>
+      </div>
+    </main>
+  </div>
+</body>
+
+</html>

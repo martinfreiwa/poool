@@ -1,0 +1,1074 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Details | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Deep-dive into user profile, financials, KYC, and activity." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/users">Users</a>
+            <span class="separator">›</span>
+            <span class="current" id="breadcrumb-name">User Details</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-search">
+            <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="6" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input type="text" placeholder="Search users, assets, orders…" id="admin-global-search"
+              aria-label="Global admin search" />
+          </div>
+          <button class="admin-notification-btn" title="Notifications" aria-label="View notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9z" fill="currentColor" fill-opacity="0.1" />
+              <path d="M13.73 21a2 2 0 01-3.46 0" />
+            </svg>
+            <span class="admin-notification-badge" style="display:none"></span>
+          </button>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <!-- Loading state -->
+        <div id="user-loading" style="text-align: center; padding: 80px 0">
+          <div style="
+                margin: 0 auto 16px;
+                width: 32px;
+                height: 32px;
+                border: 3px solid var(--admin-border);
+                border-top-color: var(--admin-accent);
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+              "></div>
+          <p style="color: var(--admin-text-muted)">Loading user details…</p>
+        </div>
+
+        <!-- Main content (hidden until loaded) -->
+        <div id="user-content" style="display: none">
+          <!-- User Header Card -->
+          <div class="admin-card" style="margin-bottom: 20px">
+            <div style="
+                  padding: 24px;
+                  display: flex;
+                  align-items: center;
+                  gap: 20px;
+                  flex-wrap: wrap;
+                ">
+              <!-- Avatar -->
+              <div id="user-avatar" style="
+                    width: 64px;
+                    height: 64px;
+                    border-radius: 50%;
+                    background: var(--admin-accent);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 24px;
+                    font-weight: 800;
+                    color: #fff;
+                    flex-shrink: 0;
+                  "></div>
+              <!-- Identity -->
+              <div style="flex: 1; min-width: 200px">
+                <h1 class="admin-page-title" style="margin: 0 0 2px" id="user-fullname">
+                  —
+                </h1>
+                <p style="
+                      margin: 0;
+                      font-size: 13px;
+                      color: var(--admin-text-muted);
+                    " id="user-email">
+                  —
+                </p>
+                <div style="
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                      margin-top: 8px;
+                      flex-wrap: wrap;
+                    ">
+                  <div id="user-badges" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        flex-wrap: wrap;
+                      "></div>
+                  <button class="admin-btn admin-btn--secondary" style="padding: 2px 6px; font-size: 10px"
+                    id="btn-edit-roles" title="Edit Roles">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+                      stroke-linecap="round">
+                      <path d="M12 4.5l-2-2L2 10.5V14h3.5l8-8z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <!-- Quick stats -->
+              <div style="display: flex; gap: 28px; flex-wrap: wrap">
+                <div style="text-align: center; position: relative">
+                  <div style="
+                        font-size: 11px;
+                        color: var(--admin-text-muted);
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        margin-bottom: 4px;
+                      ">
+                    Cash Balance
+                  </div>
+                  <div style="
+                        font-size: 20px;
+                        font-weight: 700;
+                        color: var(--admin-text-primary);
+                        font-variant-numeric: tabular-nums;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                      ">
+                    <span id="user-cash-balance">—</span>
+                    <button class="admin-btn admin-btn--secondary" style="padding: 2px 6px; font-size: 10px"
+                      id="btn-edit-balance" title="Adjust Balance">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                        stroke-width="1.7" stroke-linecap="round">
+                        <path d="M8 2v12M2 8h12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div style="text-align: center">
+                  <div style="
+                        font-size: 11px;
+                        color: var(--admin-text-muted);
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        margin-bottom: 4px;
+                      ">
+                    Rewards
+                  </div>
+                  <div style="
+                        font-size: 20px;
+                        font-weight: 700;
+                        color: var(--admin-text-primary);
+                        font-variant-numeric: tabular-nums;
+                      " id="user-rewards-balance">
+                    —
+                  </div>
+                </div>
+                <div style="text-align: center">
+                  <div style="
+                        font-size: 11px;
+                        color: var(--admin-text-muted);
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        margin-bottom: 4px;
+                      ">
+                    Joined
+                  </div>
+                  <div style="
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: var(--admin-text-primary);
+                      " id="user-joined">
+                    —
+                  </div>
+                </div>
+              </div>
+              <!-- Actions -->
+              <div style="
+                    display: flex;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                    margin-left: auto;
+                  ">
+                <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-suspend-trigger"
+                  title="Suspend/Activate User">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+                    stroke-linecap="round">
+                    <circle cx="8" cy="8" r="6.5" />
+                    <path d="M4 4l8 8" />
+                  </svg>
+                  <span id="btn-suspend-label">Suspend</span>
+                </button>
+                <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-freeze-trigger"
+                  title="Freeze Account (Safety mechanism)" style="
+                      border-color: var(--admin-danger);
+                      color: var(--admin-danger);
+                    ">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <span id="btn-freeze-label">Freeze</span>
+                </button>
+                <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-logout-all"
+                  title="Force logout all sessions">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+                    stroke-linecap="round">
+                    <path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3" />
+                    <path d="M10 11l3-3-3-3M6 8h7" />
+                  </svg>
+                  Logout All
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs Navigation -->
+          <div class="admin-tabs" style="margin-bottom: 20px">
+            <button class="admin-tab active" data-tab="overview">
+              Overview
+            </button>
+            <button class="admin-tab" data-tab="wallets">
+              Wallets & Transactions
+            </button>
+            <button class="admin-tab" data-tab="kyc">KYC & Compliance</button>
+            <button class="admin-tab" data-tab="investments">
+              Investments
+            </button>
+            <button class="admin-tab" data-tab="orders">Orders</button>
+            <button class="admin-tab" data-tab="sessions">
+              Sessions & Security
+            </button>
+            <button class="admin-tab" data-tab="audit">Audit Trail</button>
+          </div>
+
+          <!-- Tab: Overview -->
+          <div class="admin-tab-panel active" id="tab-overview">
+            <div class="admin-section-grid">
+              <!-- Personal Information -->
+              <div class="admin-card">
+                <div class="admin-card-header">
+                  <h3 class="admin-card-title">Personal Information</h3>
+                  <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-edit-profile">
+                    Edit
+                  </button>
+                </div>
+                <div class="admin-card-body">
+                  <div class="admin-detail-grid" id="personal-info">
+                    <!-- populated by JS -->
+                  </div>
+                </div>
+              </div>
+              <!-- Account Information -->
+              <div class="admin-card">
+                <div class="admin-card-header">
+                  <h3 class="admin-card-title">Account Settings</h3>
+                </div>
+                <div class="admin-card-body">
+                  <div class="admin-detail-grid" id="account-info">
+                    <!-- populated by JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Methods -->
+            <div class="admin-card" style="margin-top: 16px">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Payment Methods</h3>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table" id="payment-methods-table">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Details</th>
+                      <th>Status</th>
+                      <th>Default</th>
+                      <th>Added</th>
+                    </tr>
+                  </thead>
+                  <tbody id="payment-methods-body">
+                    <tr>
+                      <td colspan="5" style="
+                            text-align: center;
+                            padding: 24px;
+                            color: var(--admin-text-muted);
+                          ">
+                        Loading…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Wallets & Transactions -->
+          <div class="admin-tab-panel" id="tab-wallets" style="display: none">
+            <!-- Wallet cards -->
+            <div class="admin-kpi-grid" style="
+                  grid-template-columns: repeat(3, 1fr);
+                  margin-bottom: 20px;
+                " id="wallet-cards">
+              <!-- populated by JS -->
+            </div>
+
+            <!-- Transactions table -->
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Transaction History</h3>
+                <div class="admin-card-actions">
+                  <select id="filter-tx-type" class="admin-select" aria-label="Filter by transaction type">
+                    <option value="">All Types</option>
+                    <option value="deposit">Deposit</option>
+                    <option value="withdrawal">Withdrawal</option>
+                    <option value="purchase">Purchase</option>
+                    <option value="sale">Sale</option>
+                    <option value="dividend">Dividend</option>
+                    <option value="reward">Reward</option>
+                    <option value="refund">Refund</option>
+                    <option value="fee">Fee</option>
+                  </select>
+                  <select id="filter-tx-status" class="admin-select" aria-label="Filter by status">
+                    <option value="">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="failed">Failed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                      <th>Description</th>
+                      <th>Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody id="transactions-body">
+                    <tr>
+                      <td colspan="6" style="
+                            text-align: center;
+                            padding: 24px;
+                            color: var(--admin-text-muted);
+                          ">
+                        Loading…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: KYC & Compliance -->
+          <div class="admin-tab-panel" id="tab-kyc" style="display: none">
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">KYC Records</h3>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Provider</th>
+                      <th>Status</th>
+                      <th>Document Type</th>
+                      <th>PEP Check</th>
+                      <th>Sanctions</th>
+                      <th>Verified</th>
+                      <th>Expires</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="kyc-records-body">
+                    <tr>
+                      <td colspan="8" style="
+                            text-align: center;
+                            padding: 24px;
+                            color: var(--admin-text-muted);
+                          ">
+                        Loading…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Investments -->
+          <div class="admin-tab-panel" id="tab-investments" style="display: none">
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Portfolio</h3>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Asset</th>
+                      <th>Tokens</th>
+                      <th>Purchase Value</th>
+                      <th>Current Value</th>
+                      <th>Total Rental</th>
+                      <th>Status</th>
+                      <th>Purchased</th>
+                    </tr>
+                  </thead>
+                  <tbody id="investments-body">
+                    <tr>
+                      <td colspan="7" style="
+                            text-align: center;
+                            padding: 24px;
+                            color: var(--admin-text-muted);
+                          ">
+                        Loading…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Orders -->
+          <div class="admin-tab-panel" id="tab-orders" style="display: none">
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Order History</h3>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Order #</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Payment Method</th>
+                      <th>Created</th>
+                      <th>Completed</th>
+                    </tr>
+                  </thead>
+                  <tbody id="orders-body">
+                    <tr>
+                      <td colspan="6" style="
+                            text-align: center;
+                            padding: 24px;
+                            color: var(--admin-text-muted);
+                          ">
+                        Loading…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Sessions & Security -->
+          <div class="admin-tab-panel" id="tab-sessions" style="display: none">
+            <div class="admin-section-grid">
+              <!-- Active Sessions -->
+              <div class="admin-card">
+                <div class="admin-card-header">
+                  <h3 class="admin-card-title">Active Sessions</h3>
+                  <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-revoke-all-sessions">
+                    Revoke All
+                  </button>
+                </div>
+                <div class="admin-card-body admin-card-body--flush">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>IP Address</th>
+                        <th>User Agent</th>
+                        <th>Remember Me</th>
+                        <th>Created</th>
+                        <th>Expires</th>
+                      </tr>
+                    </thead>
+                    <tbody id="sessions-body">
+                      <tr>
+                        <td colspan="5" style="
+                              text-align: center;
+                              padding: 24px;
+                              color: var(--admin-text-muted);
+                            ">
+                          Loading…
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- OAuth Providers -->
+              <div class="admin-card">
+                <div class="admin-card-header">
+                  <h3 class="admin-card-title">OAuth Accounts</h3>
+                </div>
+                <div class="admin-card-body admin-card-body--flush">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Provider</th>
+                        <th>Email</th>
+                        <th>Linked</th>
+                      </tr>
+                    </thead>
+                    <tbody id="oauth-body">
+                      <tr>
+                        <td colspan="3" style="
+                              text-align: center;
+                              padding: 24px;
+                              color: var(--admin-text-muted);
+                            ">
+                          Loading…
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Audit Trail -->
+          <div class="admin-tab-panel" id="tab-audit" style="display: none">
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Audit Log</h3>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Action</th>
+                      <th>Entity</th>
+                      <th>IP Address</th>
+                      <th>Timestamp</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody id="audit-body">
+                    <tr>
+                      <td colspan="6" style="
+                            text-align: center;
+                            padding: 24px;
+                            color: var(--admin-text-muted);
+                          ">
+                        Loading…
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Edit Profile Modal -->
+  <div id="edit-profile-modal" style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+      ">
+    <div style="
+          background: var(--admin-bg-card);
+          border: 1px solid var(--admin-border);
+          border-radius: var(--admin-radius-xl);
+          padding: 28px;
+          max-width: 600px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          animation: admin-fadeIn 0.2s ease-out;
+        ">
+      <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+          ">
+        <h3 style="
+              font-size: 18px;
+              font-weight: 700;
+              color: var(--admin-text-primary);
+              margin: 0;
+            ">
+          Edit Personal Information
+        </h3>
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" id="edit-profile-close">
+          ✕
+        </button>
+      </div>
+      <form id="edit-profile-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+        <div>
+          <label class="admin-label">First Name</label>
+          <input type="text" id="edit-first-name" class="admin-input" />
+        </div>
+        <div>
+          <label class="admin-label">Last Name</label>
+          <input type="text" id="edit-last-name" class="admin-input" />
+        </div>
+        <div>
+          <label class="admin-label">Date of Birth</label>
+          <input type="date" id="edit-dob" class="admin-input" />
+        </div>
+        <div>
+          <label class="admin-label">Nationality (ISO Country Code)</label>
+          <select id="edit-nationality" class="admin-select" style="width:100%;">
+            <option value="">— Select nationality —</option>
+            <option value="AF">Afghanistan</option>
+            <option value="AL">Albania</option>
+            <option value="DZ">Algeria</option>
+            <option value="AR">Argentina</option>
+            <option value="AU">Australia</option>
+            <option value="AT">Austria</option>
+            <option value="AZ">Azerbaijan</option>
+            <option value="BH">Bahrain</option>
+            <option value="BD">Bangladesh</option>
+            <option value="BE">Belgium</option>
+            <option value="BR">Brazil</option>
+            <option value="CA">Canada</option>
+            <option value="CN">China</option>
+            <option value="CO">Colombia</option>
+            <option value="HR">Croatia</option>
+            <option value="CY">Cyprus</option>
+            <option value="CZ">Czech Republic</option>
+            <option value="DK">Denmark</option>
+            <option value="EG">Egypt</option>
+            <option value="FI">Finland</option>
+            <option value="FR">France</option>
+            <option value="DE">Germany</option>
+            <option value="GH">Ghana</option>
+            <option value="GR">Greece</option>
+            <option value="HK">Hong Kong</option>
+            <option value="HU">Hungary</option>
+            <option value="IN">India</option>
+            <option value="ID">Indonesia</option>
+            <option value="IE">Ireland</option>
+            <option value="IL">Israel</option>
+            <option value="IT">Italy</option>
+            <option value="JP">Japan</option>
+            <option value="JO">Jordan</option>
+            <option value="KZ">Kazakhstan</option>
+            <option value="KE">Kenya</option>
+            <option value="KW">Kuwait</option>
+            <option value="LB">Lebanon</option>
+            <option value="LU">Luxembourg</option>
+            <option value="MY">Malaysia</option>
+            <option value="MX">Mexico</option>
+            <option value="MA">Morocco</option>
+            <option value="NL">Netherlands</option>
+            <option value="NZ">New Zealand</option>
+            <option value="NG">Nigeria</option>
+            <option value="NO">Norway</option>
+            <option value="OM">Oman</option>
+            <option value="PK">Pakistan</option>
+            <option value="PH">Philippines</option>
+            <option value="PL">Poland</option>
+            <option value="PT">Portugal</option>
+            <option value="QA">Qatar</option>
+            <option value="RO">Romania</option>
+            <option value="RU">Russia</option>
+            <option value="SA">Saudi Arabia</option>
+            <option value="SG">Singapore</option>
+            <option value="ZA">South Africa</option>
+            <option value="KR">South Korea</option>
+            <option value="ES">Spain</option>
+            <option value="SE">Sweden</option>
+            <option value="CH">Switzerland</option>
+            <option value="TW">Taiwan</option>
+            <option value="TH">Thailand</option>
+            <option value="TN">Tunisia</option>
+            <option value="TR">Turkey</option>
+            <option value="UA">Ukraine</option>
+            <option value="AE">United Arab Emirates</option>
+            <option value="GB">United Kingdom</option>
+            <option value="US">United States</option>
+            <option value="VN">Vietnam</option>
+          </select>
+        </div>
+        <div>
+          <label class="admin-label">Phone Number</label>
+          <input type="text" id="edit-phone" class="admin-input" placeholder="+49123456789" />
+          <span style="font-size:11px;color:var(--admin-text-muted);margin-top:3px;display:block;">Include country code,
+            e.g. +49 for Germany</span>
+        </div>
+        <div>
+          <label class="admin-label">Tax ID</label>
+          <input type="text" id="edit-tax-id" class="admin-input" />
+        </div>
+        <div style="grid-column: 1/-1">
+          <label class="admin-label">Address Line 1</label>
+          <input type="text" id="edit-address-1" class="admin-input" />
+        </div>
+        <div style="grid-column: 1/-1">
+          <label class="admin-label">Address Line 2</label>
+          <input type="text" id="edit-address-2" class="admin-input" />
+        </div>
+        <div>
+          <label class="admin-label">City</label>
+          <input type="text" id="edit-city" class="admin-input" />
+        </div>
+        <div>
+          <label class="admin-label">State / Province</label>
+          <input type="text" id="edit-state" class="admin-input" />
+        </div>
+        <div>
+          <label class="admin-label">Postal Code</label>
+          <input type="text" id="edit-postal" class="admin-input" />
+        </div>
+        <div>
+          <label class="admin-label">Country of Residence</label>
+          <select id="edit-country" class="admin-select" style="width:100%;">
+            <option value="">— Select country —</option>
+            <option value="AF">Afghanistan</option>
+            <option value="AL">Albania</option>
+            <option value="DZ">Algeria</option>
+            <option value="AR">Argentina</option>
+            <option value="AU">Australia</option>
+            <option value="AT">Austria</option>
+            <option value="AZ">Azerbaijan</option>
+            <option value="BH">Bahrain</option>
+            <option value="BD">Bangladesh</option>
+            <option value="BE">Belgium</option>
+            <option value="BR">Brazil</option>
+            <option value="CA">Canada</option>
+            <option value="CN">China</option>
+            <option value="CO">Colombia</option>
+            <option value="HR">Croatia</option>
+            <option value="CY">Cyprus</option>
+            <option value="CZ">Czech Republic</option>
+            <option value="DK">Denmark</option>
+            <option value="EG">Egypt</option>
+            <option value="FI">Finland</option>
+            <option value="FR">France</option>
+            <option value="DE">Germany</option>
+            <option value="GH">Ghana</option>
+            <option value="GR">Greece</option>
+            <option value="HK">Hong Kong</option>
+            <option value="HU">Hungary</option>
+            <option value="IN">India</option>
+            <option value="ID">Indonesia</option>
+            <option value="IE">Ireland</option>
+            <option value="IL">Israel</option>
+            <option value="IT">Italy</option>
+            <option value="JP">Japan</option>
+            <option value="JO">Jordan</option>
+            <option value="KZ">Kazakhstan</option>
+            <option value="KE">Kenya</option>
+            <option value="KW">Kuwait</option>
+            <option value="LB">Lebanon</option>
+            <option value="LU">Luxembourg</option>
+            <option value="MY">Malaysia</option>
+            <option value="MX">Mexico</option>
+            <option value="MA">Morocco</option>
+            <option value="NL">Netherlands</option>
+            <option value="NZ">New Zealand</option>
+            <option value="NG">Nigeria</option>
+            <option value="NO">Norway</option>
+            <option value="OM">Oman</option>
+            <option value="PK">Pakistan</option>
+            <option value="PH">Philippines</option>
+            <option value="PL">Poland</option>
+            <option value="PT">Portugal</option>
+            <option value="QA">Qatar</option>
+            <option value="RO">Romania</option>
+            <option value="RU">Russia</option>
+            <option value="SA">Saudi Arabia</option>
+            <option value="SG">Singapore</option>
+            <option value="ZA">South Africa</option>
+            <option value="KR">South Korea</option>
+            <option value="ES">Spain</option>
+            <option value="SE">Sweden</option>
+            <option value="CH">Switzerland</option>
+            <option value="TW">Taiwan</option>
+            <option value="TH">Thailand</option>
+            <option value="TN">Tunisia</option>
+            <option value="TR">Turkey</option>
+            <option value="UA">Ukraine</option>
+            <option value="AE">United Arab Emirates</option>
+            <option value="GB">United Kingdom</option>
+            <option value="US">United States</option>
+            <option value="VN">Vietnam</option>
+          </select>
+        </div>
+        <div style="
+              grid-column: 1/-1;
+              display: flex;
+              justify-content: flex-end;
+              gap: 12px;
+              margin-top: 16px;
+            ">
+          <button type="button" class="admin-btn admin-btn--secondary" id="edit-profile-cancel">
+            Cancel
+          </button>
+          <button type="submit" class="admin-btn admin-btn--primary" id="edit-profile-submit">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Balance Modal -->
+  <div id="edit-balance-modal" style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+      ">
+    <div style="
+          background: var(--admin-bg-card);
+          border: 1px solid var(--admin-border);
+          border-radius: var(--admin-radius-xl);
+          padding: 28px;
+          max-width: 400px;
+          width: 90%;
+          animation: admin-fadeIn 0.2s ease-out;
+        ">
+      <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+          ">
+        <h3 style="
+              font-size: 18px;
+              font-weight: 700;
+              color: var(--admin-text-primary);
+              margin: 0;
+            ">
+          Adjust Balance
+        </h3>
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" id="edit-balance-close">
+          ✕
+        </button>
+      </div>
+      <form id="edit-balance-form" style="display: flex; flex-direction: column; gap: 16px">
+        <div>
+          <label class="admin-label">Wallet</label>
+          <select id="edit-balance-wallet" class="admin-select">
+            <option value="cash">Cash (USD)</option>
+            <option value="rewards">Rewards (USD)</option>
+          </select>
+        </div>
+        <div>
+          <label class="admin-label">Adjustment Amount ($)</label>
+          <input type="number" step="0.01" id="edit-balance-amount" class="admin-input"
+            placeholder="e.g. 50.00 or -25.00" required />
+          <span style="
+                font-size: 11px;
+                color: var(--admin-text-muted);
+                margin-top: 4px;
+                display: block;
+              ">Positive to add, negative to deduct.</span>
+        </div>
+        <div>
+          <label class="admin-label">Reason</label>
+          <input type="text" id="edit-balance-reason" class="admin-input" placeholder="e.g. Compensation for issue"
+            required />
+        </div>
+        <div style="
+              display: flex;
+              justify-content: flex-end;
+              gap: 12px;
+              margin-top: 16px;
+            ">
+          <button type="button" class="admin-btn admin-btn--secondary" id="edit-balance-cancel">
+            Cancel
+          </button>
+          <button type="submit" class="admin-btn admin-btn--primary" id="edit-balance-submit">
+            Adjust Balance
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Confirm Suspension Modal -->
+  <div id="suspend-modal" style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+      ">
+    <div style="
+          background: var(--admin-bg-card);
+          border: 1px solid var(--admin-border);
+          border-radius: var(--admin-radius-xl);
+          padding: 28px;
+          max-width: 400px;
+          width: 90%;
+          animation: admin-fadeIn 0.2s ease-out;
+        ">
+      <div style="text-align: center; margin-bottom: 20px">
+        <div style="
+              width: 56px;
+              height: 56px;
+              background: var(--admin-danger-bg);
+              color: var(--admin-danger);
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 0 auto 16px;
+            ">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h3 style="
+              font-size: 18px;
+              font-weight: 700;
+              color: var(--admin-text-primary);
+              margin: 0 0 8px;
+            " id="suspend-modal-title">
+          Suspend User?
+        </h3>
+        <p style="
+              font-size: 14px;
+              color: var(--admin-text-secondary);
+              margin: 0;
+              line-height: 1.5;
+            " id="suspend-modal-text">
+          This user will be immediately logged out and blocked from all
+          platform features.
+        </p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <button class="admin-btn admin-btn--danger" style="width: 100%; padding: 12px" id="btn-confirm-suspend">
+          Confirm Suspension
+        </button>
+        <button class="admin-btn admin-btn--secondary" style="width: 100%; padding: 12px" id="suspend-modal-cancel">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Roles Modal -->
+  <div id="edit-roles-modal" style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+      ">
+    <div style="
+          background: var(--admin-bg-card);
+          border: 1px solid var(--admin-border);
+          border-radius: var(--admin-radius-xl);
+          padding: 28px;
+          max-width: 400px;
+          width: 90%;
+          animation: admin-fadeIn 0.2s ease-out;
+        ">
+      <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+          ">
+        <h3 style="
+              font-size: 18px;
+              font-weight: 700;
+              color: var(--admin-text-primary);
+              margin: 0;
+            ">
+          Edit Roles
+        </h3>
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" id="edit-roles-close">
+          ✕
+        </button>
+      </div>
+      <form id="edit-roles-form" style="display: flex; flex-direction: column; gap: 12px">
+        <label class="admin-label" style="display: flex; align-items: center; gap: 8px">
+          <input type="checkbox" name="role" value="investor" class="admin-checkbox" />
+          Investor
+        </label>
+        <label class="admin-label" style="display: flex; align-items: center; gap: 8px">
+          <input type="checkbox" name="role" value="developer" class="admin-checkbox" />
+          Developer
+        </label>
+        <label class="admin-label" style="display: flex; align-items: center; gap: 8px">
+          <input type="checkbox" name="role" value="admin" class="admin-checkbox" />
+          Admin
+        </label>
+        <label class="admin-label" style="display: flex; align-items: center; gap: 8px">
+          <input type="checkbox" name="role" value="super_admin" class="admin-checkbox" />
+          Super Admin
+        </label>
+        <div style="
+              display: flex;
+              justify-content: flex-end;
+              gap: 12px;
+              margin-top: 16px;
+            ">
+          <button type="button" class="admin-btn admin-btn--secondary" id="edit-roles-cancel">
+            Cancel
+          </button>
+          <button type="submit" class="admin-btn admin-btn--primary" id="edit-roles-submit">
+            Save Roles
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/admin-user-details.js"></script>
+</body>
+
+</html>
