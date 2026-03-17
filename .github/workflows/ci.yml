@@ -5,6 +5,7 @@ on:
     branches: [main, staging, develop]
   pull_request:
     branches: [main, staging]
+  workflow_call:
 
 env:
   CARGO_TERM_COLOR: always
