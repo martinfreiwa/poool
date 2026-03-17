@@ -387,7 +387,7 @@
 
 /* Row selected */
 .submissions-table tbody tr.row-selected {
-  background: rgba(0, 0, 255, 0.025);
+  background: rgba(3, 255, 136, 0.05);
 }
 
 
@@ -440,7 +440,7 @@
 }
 
 .submissions-table tbody tr:hover {
-  background: #f8f9ff;
+  background: rgba(3, 255, 136, 0.04);
 }
 
 .submissions-table tbody tr:last-child td {
@@ -489,12 +489,12 @@
 }
 
 .submission-title {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--value-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-size: 11px;
   letter-spacing: -0.01em;
   max-width: 320px;
   display: block;
@@ -783,22 +783,22 @@
 }
 
 .sub-icon-btn:hover {
-  background: #f0f0ff;
-  color: var(--btn-primary-bg);
+  background: rgba(3, 255, 136, 0.1);
+  color: #17b26a;
 }
 
 .sub-icon-btn--primary {
-  background: var(--btn-primary-bg);
+  background: #17b26a;
   color: #fff;
-  border-color: var(--btn-primary-bg);
+  border-color: #17b26a;
 }
 
 .sub-icon-btn--primary:hover {
-  background: #1414ff;
-  border-color: #1414ff;
+  background: #0f9353;
+  border-color: #0f9353;
   color: #fff;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 255, 0.25);
+  box-shadow: 0 2px 8px rgba(23, 178, 106, 0.25);
 }
 
 .sub-icon-btn--danger:hover {

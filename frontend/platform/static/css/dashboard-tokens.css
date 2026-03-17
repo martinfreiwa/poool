@@ -415,7 +415,6 @@
 .application-form-title,
 .document-upload-title,
 .add-asset-title,
-.submission-title,
 .property-content-title {
     font-family: var(--font-family) !important;
     font-size: var(--page-title-font-size) !important;
@@ -587,7 +586,6 @@ body {
     .application-form-title,
     .document-upload-title,
     .add-asset-title,
-    .submission-title,
     .property-content-title {
         font-size: 28px !important;
     }
