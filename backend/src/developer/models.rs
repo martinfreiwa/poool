@@ -80,6 +80,7 @@ pub struct DeveloperTopAsset {
     pub city: Option<String>,
     pub bedrooms: Option<i32>,
     pub total_value_display: String,
+    pub total_value_cents: i64,
     pub is_rented: bool,
     pub country: Option<String>,
     pub lease_type: Option<String>,

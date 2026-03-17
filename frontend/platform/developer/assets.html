@@ -112,14 +112,13 @@
               </div>
 
               <div class="property-heading">
-                <h3 class="property-title">
-                  {{ asset.title }}
-                </h3>
+                <h3 class="property-title">{{ asset.title }}</h3>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#535862" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               </div>
 
               <div class="property-pricing">
                 <div class="price-wrapper">
-                  <span class="property-price">USD {{ asset.total_value_display }}</span>
+                  <span class="property-price">USD {{ ((asset.total_value_cents / 100) | int) | format_number }}</span>
                   <span class="funded-percentage">{{ (funded_percentage | round(1)) }}% funded</span>
                 </div>
                 <div class="property-progress ds-progress">
