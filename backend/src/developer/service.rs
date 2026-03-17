@@ -286,23 +286,31 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     }
 }
 
+#[derive(sqlx::FromRow)]
+struct AssetRow {
+    id: Uuid,
+    title: String,
+    cover_image_url: Option<String>,
+    total_sales_cents: i64,
+    investor_count: i64,
+    tokens_total: i32,
+    tokens_available: i32,
+    funding_status: String,
+    city: Option<String>,
+    bedrooms: Option<i32>,
+    total_value_cents: i64,
+    occupancy_rate_bps: Option<i32>,
+    country: Option<String>,
+    lease_type: Option<String>,
+    lease_term_years: Option<i32>,
+    capital_appreciation_bps: Option<i32>,
+    annual_yield_bps: Option<i32>,
+}
+
 /// Fetch top assets for the developer, with sales/views/conversion data.
 async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTopAsset> {
     // Fetch the developer's assets with their aggregated investment data
-    let rows = sqlx::query_as::<_, (
-        Uuid,          // id
-        String,        // title
-        Option<String>,// cover_image_url
-        i64,           // total_sales_cents
-        i64,           // investor_count
-        i32,           // tokens_total
-        i32,           // tokens_available
-        String,        // funding_status
-        Option<String>,// city
-        Option<i32>,   // bedrooms
-        i64,           // total_value_cents
-        Option<i32>,   // occupancy_rate_bps
-    )>(
+    let rows = sqlx::query_as::<_, AssetRow>(
         r#"
         SELECT
             a.id,
@@ -315,8 +323,13 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
             a.funding_status,
             a.location_city as city,
             a.bedrooms,
-            COALESCE(a.total_value_cents, 0),
-            a.occupancy_rate_bps
+            COALESCE(a.total_value_cents, 0) as total_value_cents,
+            a.occupancy_rate_bps,
+            a.location_country as country,
+            a.lease_type,
+            a.lease_term_years,
+            a.capital_appreciation_bps,
+            a.annual_yield_bps
         FROM assets a
         INNER JOIN developer_projects dp ON dp.asset_id = a.id
         LEFT JOIN investments i ON i.asset_id = a.id AND i.status != 'exited'
@@ -336,25 +349,9 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
     rows.into_iter()
         .enumerate()
         .map(
-            |(
-                idx,
-                (
-                    id,
-                    title,
-                    cover_img,
-                    sales_cents,
-                    investors,
-                    tokens_total,
-                    tokens_available,
-                    status,
-                    city,
-                    bedrooms,
-                    total_value,
-                    occ_bps,
-                ),
-            )| {
-                let funding_pct = if tokens_total > 0 {
-                    ((tokens_total - tokens_available) as f64 / tokens_total as f64) * 100.0
+            |(idx, row)| {
+                let funding_pct = if row.tokens_total > 0 {
+                    ((row.tokens_total - row.tokens_available) as f64 / row.tokens_total as f64) * 100.0
                 } else {
                     0.0
                 };
@@ -365,18 +362,18 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
                 let views: i64 = 0; // Will be populated by API endpoint
 
                 let conversion_rate = if views > 0 {
-                    (investors as f64 / views as f64) * 100.0
+                    (row.investor_count as f64 / views as f64) * 100.0
                 } else {
                     0.0
                 };
 
                 DeveloperTopAsset {
                     index: idx + 1,
-                    id: id.to_string(),
-                    title,
-                    cover_image_url: cover_img.unwrap_or_else(|| "/images/villa1.webp".to_string()),
-                    total_sales_display: format_usd_compact(sales_cents),
-                    total_sales_cents: sales_cents,
+                    id: row.id.to_string(),
+                    title: row.title,
+                    cover_image_url: row.cover_image_url.unwrap_or_else(|| "/images/villa1.webp".to_string()),
+                    total_sales_display: format_usd_compact(row.total_sales_cents),
+                    total_sales_cents: row.total_sales_cents,
                     sales_change_pct: 0.0,
                     sales_trend: "neutral".to_string(),
                     views,
@@ -384,11 +381,16 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
                     conversion_display: format_pct(conversion_rate),
                     funding_pct,
                     funding_display: format_pct(funding_pct),
-                    status,
-                    city,
-                    bedrooms,
-                    total_value_display: format_usd_compact(total_value),
-                    is_rented: occ_bps.unwrap_or(0) > 0,
+                    status: row.funding_status,
+                    city: row.city,
+                    bedrooms: row.bedrooms,
+                    total_value_display: format_usd_compact(row.total_value_cents),
+                    is_rented: row.occupancy_rate_bps.unwrap_or(0) > 0,
+                    country: row.country,
+                    lease_type: row.lease_type,
+                    lease_term_years: row.lease_term_years,
+                    capital_appreciation_bps: row.capital_appreciation_bps,
+                    annual_yield_bps: row.annual_yield_bps,
                 }
             },
         )
@@ -398,20 +400,7 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
 /// Fetch all assets for the developer, with sales/views/conversion data.
 pub async fn fetch_all_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTopAsset> {
     // Fetch the developer's assets with their aggregated investment data
-    let rows = sqlx::query_as::<_, (
-        Uuid,          // id
-        String,        // title
-        Option<String>,// cover_image_url
-        i64,           // total_sales_cents
-        i64,           // investor_count
-        i32,           // tokens_total
-        i32,           // tokens_available
-        String,        // funding_status
-        Option<String>,// city
-        Option<i32>,   // bedrooms
-        i64,           // total_value_cents
-        Option<i32>,   // occupancy_rate_bps
-    )>(
+    let rows = sqlx::query_as::<_, AssetRow>(
         r#"
         SELECT
             a.id,
@@ -424,8 +413,13 @@ pub async fn fetch_all_assets(pool: &PgPool, developer_id: Uuid) -> Vec<Develope
             a.funding_status,
             a.location_city as city,
             a.bedrooms,
-            COALESCE(a.total_value_cents, 0),
-            a.occupancy_rate_bps
+            COALESCE(a.total_value_cents, 0) as total_value_cents,
+            a.occupancy_rate_bps,
+            a.location_country as country,
+            a.lease_type,
+            a.lease_term_years,
+            a.capital_appreciation_bps,
+            a.annual_yield_bps
         FROM assets a
         INNER JOIN developer_projects dp ON dp.asset_id = a.id
         LEFT JOIN investments i ON i.asset_id = a.id AND i.status != 'exited'
@@ -444,25 +438,9 @@ pub async fn fetch_all_assets(pool: &PgPool, developer_id: Uuid) -> Vec<Develope
     rows.into_iter()
         .enumerate()
         .map(
-            |(
-                idx,
-                (
-                    id,
-                    title,
-                    cover_img,
-                    sales_cents,
-                    investors,
-                    tokens_total,
-                    tokens_available,
-                    status,
-                    city,
-                    bedrooms,
-                    total_value,
-                    occ_bps,
-                ),
-            )| {
-                let funding_pct = if tokens_total > 0 {
-                    ((tokens_total - tokens_available) as f64 / tokens_total as f64) * 100.0
+            |(idx, row)| {
+                let funding_pct = if row.tokens_total > 0 {
+                    ((row.tokens_total - row.tokens_available) as f64 / row.tokens_total as f64) * 100.0
                 } else {
                     0.0
                 };
@@ -470,18 +448,18 @@ pub async fn fetch_all_assets(pool: &PgPool, developer_id: Uuid) -> Vec<Develope
                 let views: i64 = 0;
 
                 let conversion_rate = if views > 0 {
-                    (investors as f64 / views as f64) * 100.0
+                    (row.investor_count as f64 / views as f64) * 100.0
                 } else {
                     0.0
                 };
 
                 DeveloperTopAsset {
                     index: idx + 1,
-                    id: id.to_string(),
-                    title,
-                    cover_image_url: cover_img.unwrap_or_else(|| "/images/villa1.webp".to_string()),
-                    total_sales_display: format_usd_compact(sales_cents),
-                    total_sales_cents: sales_cents,
+                    id: row.id.to_string(),
+                    title: row.title,
+                    cover_image_url: row.cover_image_url.unwrap_or_else(|| "/images/villa1.webp".to_string()),
+                    total_sales_display: format_usd_compact(row.total_sales_cents),
+                    total_sales_cents: row.total_sales_cents,
                     sales_change_pct: 0.0,
                     sales_trend: "neutral".to_string(),
                     views,
@@ -489,11 +467,16 @@ pub async fn fetch_all_assets(pool: &PgPool, developer_id: Uuid) -> Vec<Develope
                     conversion_display: format_pct(conversion_rate),
                     funding_pct,
                     funding_display: format_pct(funding_pct),
-                    status,
-                    city,
-                    bedrooms,
-                    total_value_display: format_usd_compact(total_value),
-                    is_rented: occ_bps.unwrap_or(0) > 0,
+                    status: row.funding_status,
+                    city: row.city,
+                    bedrooms: row.bedrooms,
+                    total_value_display: format_usd_compact(row.total_value_cents),
+                    is_rented: row.occupancy_rate_bps.unwrap_or(0) > 0,
+                    country: row.country,
+                    lease_type: row.lease_type,
+                    lease_term_years: row.lease_term_years,
+                    capital_appreciation_bps: row.capital_appreciation_bps,
+                    annual_yield_bps: row.annual_yield_bps,
                 }
             },
         )

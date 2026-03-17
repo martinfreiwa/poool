@@ -686,7 +686,13 @@ pub async fn api_developer_update_draft(
         q = q.bind(v);
     }
 
-    q.execute(&state.db).await?;
+    match q.execute(&state.db).await {
+        Ok(_) => {},
+        Err(e) => {
+            tracing::error!("Failed to update draft {}: {} — SQL: {}", id, e, sql);
+            return Err(AppError::Internal(format!("Failed to update draft: {}", e)));
+        }
+    }
 
     Ok(Json(serde_json::json!({
         "status": "success",

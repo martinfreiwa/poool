@@ -81,6 +81,11 @@ pub struct DeveloperTopAsset {
     pub bedrooms: Option<i32>,
     pub total_value_display: String,
     pub is_rented: bool,
+    pub country: Option<String>,
+    pub lease_type: Option<String>,
+    pub lease_term_years: Option<i32>,
+    pub capital_appreciation_bps: Option<i32>,
+    pub annual_yield_bps: Option<i32>,
 }
 
 /// The full developer dashboard stats payload (API + SSR).
@@ -138,7 +143,7 @@ pub struct UpdateDraftAsset {
     pub year_built: Option<i32>,
     pub total_value_cents: Option<i64>,
     pub token_price_cents: Option<i64>,
-    pub tokens_total: Option<i64>,
+    pub tokens_total: Option<i32>,
 }
 
 /// A row in the developer drafts listing (Submissions page).

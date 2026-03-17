@@ -1,5 +1,13 @@
 // Application Form JavaScript – Wired to POST /api/developer/draft
 
+/** Read the CSRF token from the cookie (shared helper). */
+function getCsrfToken() {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; csrf_token=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return '';
+}
+
 /**
  * Find the PooolDropdown instance that wraps a given native <select> element.
  * The poool-dropdown-init.js moves the <select> inside the wrapper div,
@@ -114,17 +122,10 @@ async function saveAndExitStep2(btn) {
   numFields.forEach(([key, val]) => { if (val !== null) payload[key] = val; });
 
   try {
-    const url = existingId ? `/api/developer/draft/${existingId}` : '/api/developer/draft';
-    const method = existingId ? 'PUT' : 'POST';
+    let url = existingId ? `/api/developer/draft/${existingId}` : '/api/developer/draft';
+    let method = existingId ? 'PUT' : 'POST';
 
-    const getCsrfToken = () => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; csrf_token=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return "";
-    };
-
-    const resp = await fetch(url, {
+    let resp = await fetch(url, {
       method,
       headers: { 
         'Content-Type': 'application/json',
@@ -132,15 +133,29 @@ async function saveAndExitStep2(btn) {
       },
       body: JSON.stringify(payload),
     });
+
+    // If PUT failed (stale draft ID), clear it and fall back to POST
+    if (!resp.ok && existingId) {
+      console.warn('Save & Exit: PUT failed (' + resp.status + '), falling back to POST (new draft)');
+      localStorage.removeItem('draft_asset_id');
+      resp = await fetch('/api/developer/draft', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken()
+        },
+        body: JSON.stringify(payload),
+      });
+    }
+
     if (resp.ok) {
       const text = await resp.text();
       try {
         const data = JSON.parse(text);
-        const savedId = existingId || data.asset_id;
+        const savedId = data.asset_id;
         if (savedId) localStorage.setItem('draft_asset_id', savedId);
       } catch { /* non-JSON success response is fine */ }
     } else {
-      // Non-2xx: try to get a message but don't block navigation
       const rawText = await resp.text().catch(() => '');
       let msg = `Save failed (${resp.status})`;
       try { const j = JSON.parse(rawText); msg = j.error || j.message || msg; } catch {}
@@ -163,7 +178,15 @@ document.addEventListener("DOMContentLoaded", function () {
   const existingDraftId = localStorage.getItem("draft_asset_id");
   if (existingDraftId) {
     fetch(`/api/developer/draft/${existingDraftId}`)
-        .then(r => r.ok ? r.json() : null)
+        .then(r => {
+            if (!r.ok) {
+              // Stale draft ID — clear it so next save creates a fresh draft
+              console.warn('Draft ' + existingDraftId + ' not found (status ' + r.status + '), clearing stale ID');
+              localStorage.removeItem('draft_asset_id');
+              return null;
+            }
+            return r.json();
+        })
         .then(data => {
             if (!data) return;
             const setVal = (id, val) => {
@@ -372,17 +395,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       try {
         const existingId = localStorage.getItem("draft_asset_id");
-        const url = existingId ? `/api/developer/draft/${existingId}` : "/api/developer/draft";
-        const method = existingId ? "PUT" : "POST";
+        let url = existingId ? `/api/developer/draft/${existingId}` : "/api/developer/draft";
+        let method = existingId ? "PUT" : "POST";
 
-        const getCsrfToken = () => {
-          const value = `; ${document.cookie}`;
-          const parts = value.split(`; csrf_token=`);
-          if (parts.length === 2) return parts.pop().split(';').shift();
-          return "";
-        };
-
-        const resp = await fetch(url, {
+        let resp = await fetch(url, {
           method: method,
           headers: { 
             "Content-Type": "application/json",
@@ -391,11 +407,25 @@ document.addEventListener("DOMContentLoaded", function () {
           body: JSON.stringify(payload),
         });
 
+        // If PUT failed (stale/deleted draft), clear ID and fall back to POST
+        if (!resp.ok && existingId) {
+          console.warn('Next Step: PUT failed (' + resp.status + '), falling back to POST (new draft)');
+          localStorage.removeItem('draft_asset_id');
+          resp = await fetch('/api/developer/draft', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': getCsrfToken()
+            },
+            body: JSON.stringify(payload),
+          });
+        }
+
         if (resp.ok) {
           const rawText = await resp.text();
           let data = {};
           try { data = JSON.parse(rawText); } catch { /* ok */ }
-          const savedId = existingId || data.asset_id;
+          const savedId = data.asset_id || existingId;
           if (savedId) localStorage.setItem("draft_asset_id", savedId);
           window.location.href = "/developer/document-upload-step3?draft_id=" + savedId;
         } else {

@@ -56,6 +56,9 @@ document.addEventListener("DOMContentLoaded", function () {
       // Persist to localStorage so the application form can read it
       localStorage.setItem("selectedAssetType", window.selectedAssetType);
 
+      // Clear any stale draft ID — we're starting a brand-new asset
+      localStorage.removeItem("draft_asset_id");
+
       // Navigate to application form with selected asset type
       window.location.href = "/developer/application-form";
     });
