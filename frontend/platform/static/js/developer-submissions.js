@@ -1,10 +1,11 @@
 /**
- * Developer Submissions Page — Premium Dashboard UI
+ * Developer Submissions Page — Professional Management UI
  * Fetches drafts from API, renders stat cards + searchable/sortable table.
  */
 
 let allItems = [];
 let currentFilter = "all";
+let currentSort = "newest";
 let selectedIds = new Set();
 
 function getCsrfToken() {
@@ -20,9 +21,17 @@ document.addEventListener("DOMContentLoaded", async function () {
   const emptyEl = document.getElementById("submissions-empty-state");
   const tableContainer = document.getElementById("submissions-table-container");
   const statsRow = document.getElementById("sub-stats-row");
-  const bulkBar = document.getElementById("sub-bulk-bar");
 
   if (!tbody) return;
+
+  // Close sort dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    const menu = document.getElementById("sub-sort-menu");
+    const trigger = document.getElementById("sub-sort-trigger");
+    if (menu && menu.style.display !== "none" && !menu.contains(e.target) && !trigger.contains(e.target)) {
+      menu.style.display = "none";
+    }
+  });
 
   try {
     const res = await fetch("/api/developer/drafts");
@@ -35,7 +44,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       tableContainer.style.display = "none";
       emptyEl.style.display = "block";
       if (statsRow) statsRow.style.display = "none";
-      if (bulkBar) bulkBar.style.display = "none";
       return;
     }
 
@@ -45,10 +53,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     allItems = data.items;
     updateStats(allItems);
     renderTable(allItems);
+    updateResultCount(allItems.length, allItems.length);
   } catch (err) {
     console.error("Error loading submissions:", err);
     loadingEl.innerHTML =
-      '<span style="color:var(--btn-danger-bg);">Failed to load submissions. Please try again.</span>';
+      '<span style="color:#dc2626;">Failed to load submissions. Please try again.</span>';
   }
 });
 
@@ -69,6 +78,7 @@ const STATUS_LABELS = {
   approved: "Approved",
   rejected: "Rejected",
   live: "Live",
+  revision_requested: "Revision Requested",
 };
 
 const STEP_URLS = {
@@ -82,7 +92,7 @@ const STEP_URLS = {
 // ─── Stats ────────────────────────────────────────────────
 
 function updateStats(items) {
-  const counts = { all: items.length, draft: 0, submitted: 0, in_review: 0, approved: 0, rejected: 0 };
+  const counts = { all: items.length, draft: 0, submitted: 0, in_review: 0, approved: 0, rejected: 0, revision_requested: 0 };
   items.forEach((it) => {
     const s = it.project_status || "draft";
     if (counts[s] !== undefined) counts[s]++;
@@ -106,6 +116,40 @@ function animateCount(el, target) {
   requestAnimationFrame(tick);
 }
 
+// ─── Result Count ─────────────────────────────────────────
+
+function updateResultCount(shown, total) {
+  const el = document.getElementById("sub-result-count");
+  if (!el) return;
+  if (shown === total) {
+    el.textContent = `${total} total`;
+  } else {
+    el.textContent = `${shown} of ${total}`;
+  }
+}
+
+// ─── Sort Dropdown ────────────────────────────────────────
+
+function toggleSortDropdown() {
+  const menu = document.getElementById("sub-sort-menu");
+  if (menu) menu.style.display = menu.style.display === "none" ? "block" : "none";
+}
+
+function setSortOrder(sort, btn) {
+  currentSort = sort;
+  // Update active state
+  document.querySelectorAll(".sub-sort-option").forEach((o) => o.classList.remove("active"));
+  btn.classList.add("active");
+  // Update label
+  const label = document.getElementById("sub-sort-label");
+  if (label) label.textContent = btn.textContent.trim();
+  // Close menu
+  const menu = document.getElementById("sub-sort-menu");
+  if (menu) menu.style.display = "none";
+  // Re-render
+  applyFiltersAndSort();
+}
+
 // ─── Render Table ─────────────────────────────────────────
 
 function renderTable(items) {
@@ -117,17 +161,17 @@ function renderTable(items) {
       <tr class="sub-empty-row">
         <td colspan="6">
           <div class="sub-empty-cell">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
             </svg>
-            <span>No submissions match this filter.</span>
+            <span>No submissions match your search.</span>
           </div>
         </td>
       </tr>`;
     return;
   }
 
-  items.forEach((item) => {
+  items.forEach((item, index) => {
     const step = item.submission_step || 1;
     const stepLabel = STEP_LABELS[step] || `Step ${step}`;
     const progressPct = Math.min((step / 5) * 100, 100);
@@ -144,11 +188,14 @@ function renderTable(items) {
         })
       : "—";
 
+    // Relative time
+    const relativeTime = item.updated_at ? getRelativeTime(item.updated_at) : "";
+
     const resumeUrl = STEP_URLS[step] || "/developer/add-asset";
 
     const coverHtml = item.cover_image_url
       ? `<img class="submission-cover-thumb" src="${item.cover_image_url}" alt="" />`
-      : `<div class="submission-cover-placeholder"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A4A7AE" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>`;
+      : `<div class="submission-cover-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4A7AE" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>`;
 
     const isSelected = selectedIds.has(item.id);
 
@@ -169,16 +216,14 @@ function renderTable(items) {
           ${coverHtml}
           <div class="submission-asset-info">
             <span class="submission-title">${escapeHtml(item.title)}</span>
-            <span class="submission-asset-meta" style="display: flex; gap: 8px; align-items: center;">
+            <span class="submission-asset-meta">
               <span class="submission-type-badge">${typeLabel}</span>
-              <span class="submission-app-number" style="font-family: monospace; font-size: 11px; color: var(--text-muted, #71717a); padding: 2px 6px; background: var(--bg-surface, #f4f4f5); border-radius: 4px; border: 1px solid var(--border-color, #e4e4e7); font-weight: 500;">
-                #APP-${(item.id || '').substring(0, 6).toUpperCase()}
-              </span>
+              <span class="submission-app-number">#APP-${(item.id || '').substring(0, 6).toUpperCase()}</span>
             </span>
           </div>
         </div>
       </td>
-      <td>
+      <td class="col-progress">
         <div class="submission-progress">
           <span class="submission-progress-label">
             <span>${stepLabel}</span>
@@ -195,38 +240,87 @@ function renderTable(items) {
           ${statusLabel}
         </span>
       </td>
-      <td class="col-updated"><span class="submission-date">${updatedDate}</span></td>
+      <td class="col-updated">
+        <span class="submission-date" title="${updatedDate}">${relativeTime || updatedDate}</span>
+      </td>
       <td class="col-actions">
         <div class="submission-actions">
           ${
             status === "draft"
-              ? `<button class="sub-icon-btn sub-icon-btn--primary" title="Resume" onclick="resumeDraft('${item.id}', '${resumeUrl}')">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              ? `<button class="sub-icon-btn sub-icon-btn--primary" title="Resume editing" onclick="resumeDraft('${item.id}', '${resumeUrl}')"> 
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                  </button>
                  <button class="sub-icon-btn" title="Duplicate" onclick="duplicateDraft('${item.id}')">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                  </button>
                  <button class="sub-icon-btn sub-icon-btn--danger" title="Delete" onclick="confirmDelete('${item.id}', '${escapeHtml(item.title)}')">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                  </button>`
-              : `<button class="sub-icon-btn" title="View" onclick="window.location.href='/developer/asset-detail?id=${item.id}'">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              : status === "revision_requested"
+              ? `<button class="sub-edit-btn" title="Edit submission" onclick="resumeDraft('${item.id}', '/developer/property-content')">
+                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                   Edit
+                 </button>
+                 <button class="sub-resubmit-btn" title="Resubmit for review" onclick="resubmitDraft('${item.id}', '${escapeHtml(item.title)}')">
+                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                   Resubmit
+                 </button>`
+              : `<button class="sub-icon-btn" title="View details" onclick="window.location.href='/developer/asset-detail?id=${item.id}'">
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                  </button>
                  <button class="sub-icon-btn" title="Duplicate" onclick="duplicateDraft('${item.id}')">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                  </button>`
           }
         </div>
       </td>
     `;
     tbody.appendChild(tr);
+
+    // If revision_requested, add a notes banner row below
+    if (status === "revision_requested" && item.revision_notes) {
+      const notesTr = document.createElement("tr");
+      notesTr.className = "revision-notes-row";
+      notesTr.dataset.status = status;
+      notesTr.innerHTML = `
+        <td colspan="6">
+          <div class="revision-notes-banner">
+            <svg class="revision-notes-banner__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <div class="revision-notes-banner__content">
+              <div class="revision-notes-banner__label">Admin Feedback — Changes Required</div>
+              <div class="revision-notes-banner__text">${escapeHtml(item.revision_notes)}</div>
+            </div>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(notesTr);
+    }
   });
+}
+
+// ─── Relative Time ────────────────────────────────────────
+
+function getRelativeTime(dateStr) {
+  const now = new Date();
+  const then = new Date(dateStr);
+  const diffMs = now - then;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  if (diffDay < 30) return `${Math.floor(diffDay / 7)}w ago`;
+  return "";  // Fall back to absolute date
 }
 
 // ─── Filtering ────────────────────────────────────────────
 
 function filterByCard(status, el) {
-  // Update active card
   document.querySelectorAll(".sub-stat").forEach((c) => c.classList.remove("active"));
   el.classList.add("active");
   currentFilter = status;
@@ -242,17 +336,28 @@ function applyFiltersAndSort(searchQuery) {
 
   let filtered = allItems.filter((item) => {
     const statusMatch = currentFilter === "all" || (item.project_status || "draft") === currentFilter;
-    const searchMatch = !searchQuery || (item.title || "").toLowerCase().includes(searchQuery);
+    const title = (item.title || "").toLowerCase();
+    const type = (item.asset_type || "").replace(/_/g, " ").toLowerCase();
+    const appNum = (item.id || "").substring(0, 6).toLowerCase();
+    const searchMatch = !searchQuery || title.includes(searchQuery) || type.includes(searchQuery) || appNum.includes(searchQuery);
     return statusMatch && searchMatch;
   });
 
-  // Always sort newest first
+  // Sort
   filtered.sort((a, b) => {
-    const dA = new Date(a.updated_at || 0);
-    const dB = new Date(b.updated_at || 0);
-    return dB - dA;
+    switch (currentSort) {
+      case "oldest":
+        return new Date(a.updated_at || 0) - new Date(b.updated_at || 0);
+      case "name-az":
+        return (a.title || "").localeCompare(b.title || "");
+      case "name-za":
+        return (b.title || "").localeCompare(a.title || "");
+      default: // newest
+        return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+    }
   });
 
+  updateResultCount(filtered.length, allItems.length);
   renderTable(filtered);
 }
 
@@ -290,15 +395,15 @@ function toggleSelectAll(checked) {
 function updateBulkBar() {
   const bar = document.getElementById("sub-bulk-bar");
   const countEl = document.getElementById("sub-bulk-count");
-  const searchRow = document.getElementById("sub-search-row");
+  const normalToolbar = document.getElementById("sub-toolbar-normal");
   if (!bar) return;
   if (selectedIds.size > 0) {
     bar.style.display = "flex";
-    if (searchRow) searchRow.style.display = "none";
+    if (normalToolbar) normalToolbar.style.display = "none";
     countEl.textContent = `${selectedIds.size} selected`;
   } else {
     bar.style.display = "none";
-    if (searchRow) searchRow.style.display = "";
+    if (normalToolbar) normalToolbar.style.display = "";
   }
 }
 
@@ -331,7 +436,7 @@ function confirmBulkDelete() {
   overlay.innerHTML = `
     <div class="sub-modal">
       <div class="sub-modal__icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
           <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
         </svg>
@@ -363,7 +468,7 @@ function confirmBulkDelete() {
     }
     overlay.remove();
     if (failed === 0) {
-      showToast("success", `${count} draft${count > 1 ? 's' : ''} deleted successfully`);
+      showToast("success", `${count} draft${count > 1 ? 's' : ''} deleted`);
     } else {
       showToast("error", `${failed} deletion${failed > 1 ? 's' : ''} failed`);
     }
@@ -392,11 +497,30 @@ async function duplicateDraft(assetId) {
       headers: { "X-CSRF-Token": getCsrfToken() },
     });
     if (!res.ok) throw new Error("Duplicate failed");
-    showToast("success", "Asset duplicated successfully");
+    showToast("success", "Asset duplicated");
     setTimeout(() => window.location.reload(), 800);
   } catch (err) {
     console.error("Duplicate error:", err);
     showToast("error", "Failed to duplicate. Please try again.");
+  }
+}
+
+async function resubmitDraft(assetId, title) {
+  if (!confirm(`Resubmit "${title}" for review?`)) return;
+  try {
+    const res = await fetch(`/api/developer/draft/${assetId}/submit`, {
+      method: "POST",
+      headers: { "X-CSRF-Token": getCsrfToken() },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.message || "Resubmit failed");
+    }
+    showToast("success", "Submission sent for review");
+    setTimeout(() => window.location.reload(), 800);
+  } catch (err) {
+    console.error("Resubmit error:", err);
+    showToast("error", err.message || "Failed to resubmit. Please try again.");
   }
 }
 
@@ -408,7 +532,7 @@ function confirmDelete(assetId, title) {
   overlay.innerHTML = `
     <div class="sub-modal">
       <div class="sub-modal__icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
           <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
         </svg>
@@ -423,7 +547,6 @@ function confirmDelete(assetId, title) {
   `;
   document.body.appendChild(overlay);
 
-  // Close on backdrop click
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) overlay.remove();
   });
@@ -436,7 +559,7 @@ function confirmDelete(assetId, title) {
       const res = await fetch(`/api/developer/draft/${assetId}`, { method: "DELETE", headers: { "X-CSRF-Token": getCsrfToken() } });
       if (!res.ok) throw new Error("Delete failed");
       overlay.remove();
-      showToast("success", "Draft deleted successfully");
+      showToast("success", "Draft deleted");
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       console.error("Delete error:", err);

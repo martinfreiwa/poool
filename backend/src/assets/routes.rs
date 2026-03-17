@@ -127,7 +127,7 @@ pub async fn page_property(
                 ) AS "investor_count?"
             FROM assets a
             LEFT JOIN asset_images ai ON a.id = ai.asset_id AND ai.is_cover = true
-            WHERE a.slug = $1
+            WHERE a.slug = $1 AND a.published = true
             "#,
             slug
         )
@@ -262,7 +262,7 @@ pub async fn page_commodity(
                 ) AS "investor_count?"
             FROM assets a
             LEFT JOIN asset_images ai ON a.id = ai.asset_id AND ai.is_cover = true
-            WHERE a.slug = $1
+            WHERE a.slug = $1 AND a.published = true
             "#,
             slug
         )

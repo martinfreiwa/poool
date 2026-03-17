@@ -3,6 +3,14 @@
  * Vanilla JS logic for the Continuous Scroll & Inline Morphing architecture
  */
 
+/** CSRF token helper for non-SettingsDataService fetch calls */
+function getSettingsCsrfToken() {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; csrf_token=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+}
+
 /** Global utility: Escape HTML for search results and display */
 function escapeSearchHtml(str) {
     if (!str) return "";
@@ -635,7 +643,7 @@ async function revokeSession(sessionId, cardIndex) {
         const res = await fetch('/api/settings/sessions/revoke', {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getSettingsCsrfToken() },
             body: JSON.stringify({ session_id: sessionId })
         });
         
@@ -1057,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 const resp = await fetch('/api/leaderboard/preferences', {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getSettingsCsrfToken() },
                     body: JSON.stringify(body),
                 });
                 if (resp.ok) {
@@ -1170,7 +1178,7 @@ window.loadPaymentMethods = loadPaymentMethods;
 async function deletePaymentMethod(id) {
     if (!confirm('Are you sure you want to delete this payment method?')) return;
     try {
-        const resp = await fetch(`/api/payment-methods/${id}`, { method: 'DELETE' });
+        const resp = await fetch(`/api/payment-methods/${id}`, { method: 'DELETE', headers: { 'X-CSRF-Token': getSettingsCsrfToken() } });
         if (resp.ok) {
             showToast('Payment method deleted', 'success');
             loadPaymentMethods();
@@ -1252,7 +1260,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const res = await fetch('/api/payment-methods/card', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': getSettingsCsrfToken() },
                     body: body
                 });
                 if (res.ok) {
@@ -1371,7 +1379,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const res = await fetch('/api/payment-methods/bank', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': getSettingsCsrfToken() },
                     body: body
                 });
                 if (res.ok) {

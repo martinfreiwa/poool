@@ -2,7 +2,8 @@ use axum::{
     extract::Request,
     http::{header, Method, StatusCode},
     middleware::Next,
-    response::Response,
+    response::{IntoResponse, Response},
+    Json,
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 use std::collections::HashMap;
@@ -89,6 +90,18 @@ pub async fn csrf_middleware(
                     );
                 },
             );
+            // Return JSON for API endpoints so the frontend can parse it
+            if path.starts_with("/api/") {
+                return Ok((
+                    StatusCode::FORBIDDEN,
+                    Json(serde_json::json!({
+                        "error": "CSRF token missing or invalid. Please refresh the page and try again.",
+                        "success": false,
+                        "message": "CSRF token missing or invalid. Please refresh the page and try again."
+                    })),
+                )
+                    .into_response());
+            }
             return Err(StatusCode::FORBIDDEN);
         }
     }

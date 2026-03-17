@@ -81,6 +81,7 @@
 
     } catch (err) {
       console.error("Settings load failed:", err);
+      showToast(err.message || "Failed to load settings. Please refresh.", "error");
       showLayer("error");
     }
   }

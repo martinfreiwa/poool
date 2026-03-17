@@ -751,11 +751,12 @@ pub async fn api_admin_project_notes_create(
         }
 
         "request_revision" => {
-            // 1. Return to 'submitted' so it goes back to queue
+            // 1. Set status to 'revision_requested' and store the revision notes
             let result = sqlx::query(
-                "UPDATE developer_projects SET status = 'submitted', updated_at = NOW() WHERE id = $1"
+                "UPDATE developer_projects SET status = 'revision_requested', revision_notes = $2, updated_at = NOW() WHERE id = $1"
             )
             .bind(pid)
+            .bind(&notes)
             .execute(&mut *tx)
             .await;
 
@@ -766,14 +767,14 @@ pub async fn api_admin_project_notes_create(
                 )));
             }
 
-            // 2. Notify developer with revision notes
+            // 2. Notify developer with revision notes (in-app)
             let msg = format!(
-                "Your project \"{}\" requires revisions before it can be approved. Admin notes: {}",
+                "Your project \"{}\" requires revisions before it can be approved. Reason: {}",
                 project_name, notes
             );
             let result = sqlx::query(
                 r#"INSERT INTO notifications (user_id, title, message, type, action_url)
-                   VALUES ($1, 'Revision Required for Your Project', $2, 'system', '/developer/assets')"#
+                   VALUES ($1, 'Revision Required for Your Project', $2, 'system', '/developer/submissions')"#
             )
             .bind(developer_id)
             .bind(&msg)
@@ -808,7 +809,7 @@ pub async fn api_admin_project_notes_create(
             .bind(admin_user.as_ref().map(|u| u.id))
             .bind(pid)
             .bind(serde_json::json!({"status": previous_status}))
-            .bind(serde_json::json!({"status": "submitted", "revision_notes": &notes}))
+            .bind(serde_json::json!({"status": "revision_requested", "revision_notes": &notes}))
             .execute(&mut *tx)
             .await;
 
@@ -824,9 +825,59 @@ pub async fn api_admin_project_notes_create(
                 )));
             }
 
+            // 5. Send email notification (after commit, non-blocking)
+            let developer_email: String = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+                .bind(developer_id)
+                .fetch_optional(&state.db)
+                .await
+                .unwrap_or(None)
+                .unwrap_or_default();
+
+            if !developer_email.is_empty() {
+                let base_url = std::env::var("BASE_URL").unwrap_or_else(|_| "https://poool-backend-c54klbv5ka-ew.a.run.app".to_string());
+                let email_body = format!(
+                    r#"<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+                        <div style="text-align: center; margin-bottom: 32px;">
+                            <h1 style="color: #0000FF; font-size: 28px; margin: 0;">POOOL</h1>
+                        </div>
+                        <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 32px;">
+                            <div style="background: #FFF7ED; border: 1px solid #FDBA74; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px;">
+                                <span style="color: #9A3412; font-weight: 600; font-size: 14px;">⚠️ Revision Required</span>
+                            </div>
+                            <h2 style="font-size: 20px; color: #111; margin: 0 0 8px;">Your submission needs changes</h2>
+                            <p style="color: #6b7280; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+                                Your project <strong>"{pname}"</strong> has been reviewed and requires revisions before it can be approved.
+                            </p>
+                            <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+                                <p style="color: #374151; font-size: 13px; font-weight: 600; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.05em;">Admin Feedback</p>
+                                <p style="color: #1f2937; font-size: 14px; line-height: 1.6; margin: 0;">{revision_notes}</p>
+                            </div>
+                            <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0 0 24px;">
+                                Please review the feedback above, make the necessary changes, and resubmit your project.
+                            </p>
+                            <a href="{base}/developer/submissions" style="display: inline-block; background: #0000FF; color: #fff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+                                View My Submissions
+                            </a>
+                        </div>
+                        <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 24px;">
+                            &copy; 2026 POOOL. All rights reserved.
+                        </p>
+                    </div>"#,
+                    pname = project_name,
+                    revision_notes = notes,
+                    base = base_url,
+                );
+
+                let _ = crate::common::email::send_email(
+                    &developer_email,
+                    &format!("Revision Required: {}", project_name),
+                    &email_body,
+                ).await;
+            }
+
             Ok(Json(serde_json::json!({
                 "status": "revision_requested",
-                "message": "Revision request sent to developer. Project returned to submissions queue."
+                "message": "Revision request sent to developer. Developer has been notified via email and in-app notification."
             })).into_response())
         }
 

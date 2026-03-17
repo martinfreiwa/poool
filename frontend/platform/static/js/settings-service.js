@@ -77,8 +77,16 @@ const SettingsDataService = (function () {
                 return null;
             }
 
-            // Parse JSON even for 4xx so we can relay server error messages to user
-            return await res.json();
+            // Check if response is JSON before parsing
+            const contentType = res.headers.get("content-type") || "";
+            if (contentType.includes("application/json")) {
+                return await res.json();
+            }
+
+            // Non-JSON response (e.g. bare 403/500 status page)
+            const text = await res.text();
+            console.warn(`Settings API non-JSON response [${method}] ${url}: ${res.status} ${text.substring(0, 200)}`);
+            return { success: false, message: `Server error (${res.status}). Please refresh and try again.` };
         } catch (err) {
             console.error(`Settings API error [${method}] ${url}:`, err);
             if (typeof Sentry !== 'undefined') Sentry.captureException(err);

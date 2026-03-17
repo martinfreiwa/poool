@@ -52,9 +52,11 @@ fn make_metric(label: &str, value: String, change_pct: f64) -> DeveloperMetric {
 
 /// Fetch all developer dashboard statistics for a given developer user.
 pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> DeveloperDashboardStats {
-    // ── 1. Total Assets ────────────────────────────────────────────
+    // ── 1. Total Assets (only approved/live) ─────────────────────
     let total_assets: i64 =
-        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM assets WHERE developer_user_id = $1")
+        sqlx::query_scalar(
+            "SELECT COUNT(*)::bigint FROM assets a INNER JOIN developer_projects dp ON dp.asset_id = a.id WHERE a.developer_user_id = $1 AND dp.status IN ('approved', 'live') AND a.deleted_at IS NULL"
+        )
             .bind(developer_id)
             .fetch_one(pool)
             .await
@@ -316,8 +318,11 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
             COALESCE(a.total_value_cents, 0),
             a.occupancy_rate_bps
         FROM assets a
+        INNER JOIN developer_projects dp ON dp.asset_id = a.id
         LEFT JOIN investments i ON i.asset_id = a.id AND i.status != 'exited'
         WHERE a.developer_user_id = $1
+          AND dp.status IN ('approved', 'live')
+          AND a.deleted_at IS NULL
         GROUP BY a.id
         ORDER BY COALESCE(SUM(i.purchase_value_cents), 0) DESC
         LIMIT 10
@@ -422,8 +427,11 @@ pub async fn fetch_all_assets(pool: &PgPool, developer_id: Uuid) -> Vec<Develope
             COALESCE(a.total_value_cents, 0),
             a.occupancy_rate_bps
         FROM assets a
+        INNER JOIN developer_projects dp ON dp.asset_id = a.id
         LEFT JOIN investments i ON i.asset_id = a.id AND i.status != 'exited'
         WHERE a.developer_user_id = $1
+          AND dp.status IN ('approved', 'live')
+          AND a.deleted_at IS NULL
         GROUP BY a.id
         ORDER BY a.created_at DESC
         "#,

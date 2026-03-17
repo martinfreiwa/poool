@@ -537,6 +537,23 @@ pub async fn api_developer_update_draft(
         return Err(AppError::Forbidden("Not authorized".to_string()));
     }
 
+    // Only allow edits on draft assets; approved/live assets must use change request flow
+    let project_status: Option<String> =
+        sqlx::query_scalar("SELECT dp.status FROM developer_projects dp JOIN assets a ON a.id = dp.asset_id WHERE a.id = $1 LIMIT 1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None);
+
+    if let Some(ref status) = project_status {
+        if status != "draft" && status != "revision_requested" {
+            return Err(AppError::BadRequest(format!(
+                "Cannot edit asset in '{}' status. Only draft or revision-requested assets can be edited.",
+                status
+            )));
+        }
+    }
+
     // Build dynamic UPDATE query for only provided fields
     let mut set_clauses: Vec<String> = vec!["updated_at = NOW()".to_string()];
     let mut param_idx = 2u32; // $1 = asset_id
@@ -811,6 +828,7 @@ pub async fn api_developer_list_drafts(
         SELECT a.id, a.title, COALESCE(a.asset_type, 'real_estate') as asset_type,
                COALESCE(a.submission_step, 1) as submission_step,
                COALESCE(dp.status, 'draft') as project_status,
+               dp.revision_notes,
                a.updated_at::text,
                (SELECT image_url FROM asset_images WHERE asset_id = a.id ORDER BY is_cover DESC, sort_order ASC LIMIT 1) as cover_image_url
         FROM assets a
@@ -835,6 +853,7 @@ pub async fn api_developer_list_drafts(
                 "asset_type": row.get::<String, _>("asset_type"),
                 "submission_step": row.get::<i32, _>("submission_step"),
                 "project_status": row.get::<String, _>("project_status"),
+                "revision_notes": row.get::<Option<String>, _>("revision_notes"),
                 "updated_at": row.get::<String, _>("updated_at"),
                 "cover_image_url": row.get::<Option<String>, _>("cover_image_url"),
             })
@@ -871,6 +890,23 @@ pub async fn api_developer_submit_draft(
         return Err(AppError::Forbidden("Not authorized".to_string()));
     }
 
+    // Only allow submit from draft or revision_requested
+    let current_status: Option<String> =
+        sqlx::query_scalar("SELECT dp.status FROM developer_projects dp WHERE dp.asset_id = $1 LIMIT 1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None);
+
+    if let Some(ref status) = current_status {
+        if status != "draft" && status != "revision_requested" {
+            return Err(AppError::BadRequest(format!(
+                "Cannot submit from '{}' status. Only draft or revision-requested assets can be submitted.",
+                status
+            )));
+        }
+    }
+
     let mut tx = state.db.begin().await.map_err(|e| {
         tracing::error!("Failed to begin transaction: {e}");
         AppError::Internal("Database error".to_string())
@@ -882,9 +918,9 @@ pub async fn api_developer_submit_draft(
         .execute(&mut *tx)
         .await?;
 
-    // Update developer_projects status to 'submitted'
+    // Update developer_projects status to 'submitted' and clear revision_notes
     sqlx::query(
-        "UPDATE developer_projects SET status = 'submitted', updated_at = NOW() WHERE asset_id = $1",
+        "UPDATE developer_projects SET status = 'submitted', revision_notes = NULL, updated_at = NOW() WHERE asset_id = $1",
     )
     .bind(id)
     .execute(&mut *tx)
@@ -949,7 +985,7 @@ pub async fn api_developer_duplicate_draft(
         SELECT
             developer_user_id, title || ' (Copy)', $2, asset_type, total_value_cents,
             token_price_cents, tokens_total, tokens_available, 'upcoming',
-            false, false, NOW(), submission_step,
+            false, false, NOW(), 1,
             property_type, area, location_address, lease_type, lease_term_years,
             land_size_sqm, building_size_sqm, bedrooms, bathrooms,
             construction_status, year_built,
@@ -1010,6 +1046,38 @@ pub async fn api_developer_delete_draft(
 
     if owner_id != Some(user.id) {
         return Err(AppError::Forbidden("Not authorized".to_string()));
+    }
+
+    // Block deletion of approved/live assets
+    let project_status: Option<String> =
+        sqlx::query_scalar("SELECT dp.status FROM developer_projects dp WHERE dp.asset_id = $1 LIMIT 1")
+            .bind(id)
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None);
+
+    if let Some(ref status) = project_status {
+        if status == "approved" || status == "live" {
+            return Err(AppError::BadRequest(
+                "Cannot delete an approved or live asset. Please contact support.".to_string(),
+            ));
+        }
+    }
+
+    // Block deletion of assets with existing investments
+    let has_investors: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM investments WHERE asset_id = $1 AND status != 'exited')"
+    )
+    .bind(id)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(Some(false))
+    .unwrap_or(false);
+
+    if has_investors {
+        return Err(AppError::BadRequest(
+            "Cannot delete an asset with active investors.".to_string(),
+        ));
     }
 
     // Soft-delete: set deleted_at timestamp

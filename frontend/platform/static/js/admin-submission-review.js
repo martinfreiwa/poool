@@ -38,15 +38,31 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function updateApproveButtonState() {
-  // Only consider visible checkboxes — hidden conditional items (video, gmap)
-  // should not block the Approve button when they aren't applicable.
+  // Checklist is advisory — the approve button is always enabled.
+  // We show a warning indicator if some items are unchecked.
   const checkboxes = Array.from(document.querySelectorAll(".validation-chk")).filter((c) => {
     const row = c.closest(".checklist-item");
     return !row || row.style.display !== "none";
   });
-  const allChecked = checkboxes.every((c) => c.checked);
+  const uncheckedCount = checkboxes.filter((c) => !c.checked).length;
   const btn = document.getElementById("btn-approve");
-  if (btn) btn.disabled = !allChecked;
+  if (!btn) return;
+  // Always keep button enabled
+  btn.disabled = false;
+
+  // Show/update warning badge
+  let badge = document.getElementById("approve-warning-badge");
+  if (uncheckedCount > 0) {
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.id = "approve-warning-badge";
+      badge.style.cssText = "display:block;text-align:center;font-size:11px;color:var(--admin-text-muted);margin-top:4px;";
+      btn.insertAdjacentElement("afterend", badge);
+    }
+    badge.textContent = `⚠ ${uncheckedCount} checklist item${uncheckedCount > 1 ? "s" : ""} unchecked`;
+  } else if (badge) {
+    badge.remove();
+  }
 }
 
 // ─── Data Loading ─────────────────────────────────────────────────────────────

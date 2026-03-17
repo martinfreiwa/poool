@@ -37,7 +37,7 @@
       <div id="sub-stats-row" class="sub-stats" style="display: none;">
         <div class="sub-stat active" data-filter="all" onclick="filterByCard('all', this)">
           <div class="sub-stat__icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           </div>
           <div class="sub-stat__content">
             <span class="sub-stat__count" id="stat-all">—</span>
@@ -46,7 +46,7 @@
         </div>
         <div class="sub-stat" data-filter="draft" onclick="filterByCard('draft', this)">
           <div class="sub-stat__icon sub-stat__icon--draft">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </div>
           <div class="sub-stat__content">
             <span class="sub-stat__count" id="stat-draft">—</span>
@@ -55,7 +55,7 @@
         </div>
         <div class="sub-stat" data-filter="submitted" onclick="filterByCard('submitted', this)">
           <div class="sub-stat__icon sub-stat__icon--submitted">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
           </div>
           <div class="sub-stat__content">
             <span class="sub-stat__count" id="stat-submitted">—</span>
@@ -64,16 +64,25 @@
         </div>
         <div class="sub-stat" data-filter="in_review" onclick="filterByCard('in_review', this)">
           <div class="sub-stat__icon sub-stat__icon--in_review">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
           <div class="sub-stat__content">
             <span class="sub-stat__count" id="stat-in_review">—</span>
             <span class="sub-stat__label">In Review</span>
           </div>
         </div>
+        <div class="sub-stat" data-filter="revision_requested" onclick="filterByCard('revision_requested', this)">
+          <div class="sub-stat__icon sub-stat__icon--revision_requested" style="color: #EA580C;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="sub-stat__content">
+            <span class="sub-stat__count" id="stat-revision_requested">—</span>
+            <span class="sub-stat__label">Revision</span>
+          </div>
+        </div>
         <div class="sub-stat" data-filter="approved" onclick="filterByCard('approved', this)">
           <div class="sub-stat__icon sub-stat__icon--approved">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           </div>
           <div class="sub-stat__content">
             <span class="sub-stat__count" id="stat-approved">—</span>
@@ -84,26 +93,59 @@
 
       <!-- Submissions Table -->
       <div id="submissions-table-container" class="submissions-table-container" style="display: none;">
-        <!-- Bulk Action Bar (overlays search row when rows selected) -->
-        <div id="sub-bulk-bar" class="sub-bulk-bar" style="display:none;">
-          <span id="sub-bulk-count" class="sub-bulk-count">0 selected</span>
-          <button class="sub-bulk-delete-btn" onclick="confirmBulkDelete()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-            Delete Selected
-          </button>
-          <button class="sub-bulk-cancel-btn" onclick="clearSelection()">
-            Cancel
-          </button>
-        </div>
-        <!-- Search bar inside table container -->
-        <div id="sub-search-row" class="sub-table-search-row">
-          <div class="sub-search">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-            </svg>
-            <input type="text" id="sub-search-input" placeholder="Search submissions..." oninput="searchSubmissions(this.value)">
+        <!-- Toolbar: Search + Sort -->
+        <div id="sub-toolbar" class="sub-toolbar">
+          <!-- Bulk Action Bar (shown when rows selected) -->
+          <div id="sub-bulk-bar" class="sub-bulk-bar" style="display:none;">
+            <span id="sub-bulk-count" class="sub-bulk-count">0 selected</span>
+            <div class="sub-bulk-actions">
+              <button class="sub-bulk-delete-btn" onclick="confirmBulkDelete()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                Delete
+              </button>
+              <button class="sub-bulk-cancel-btn" onclick="clearSelection()">Cancel</button>
+            </div>
+          </div>
+          <!-- Normal toolbar (hidden when bulk bar active) -->
+          <div id="sub-toolbar-normal" class="sub-toolbar-normal">
+            <div class="sub-search">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+              </svg>
+              <input type="text" id="sub-search-input" placeholder="Search by name, type, or ID..." oninput="searchSubmissions(this.value)">
+            </div>
+            <div class="sub-toolbar-right">
+              <div class="sub-sort-dropdown">
+                <button class="sub-sort-btn" id="sub-sort-trigger" onclick="toggleSortDropdown()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+                  <span id="sub-sort-label">Newest</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div id="sub-sort-menu" class="sub-sort-menu" style="display:none;">
+                  <button class="sub-sort-option active" data-sort="newest" onclick="setSortOrder('newest', this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    Newest first
+                  </button>
+                  <button class="sub-sort-option" data-sort="oldest" onclick="setSortOrder('oldest', this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+                    Oldest first
+                  </button>
+                  <button class="sub-sort-option" data-sort="name-az" onclick="setSortOrder('name-az', this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h7M3 12h10M3 18h4"/></svg>
+                    Name A–Z
+                  </button>
+                  <button class="sub-sort-option" data-sort="name-za" onclick="setSortOrder('name-za', this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h4M3 12h10M3 18h7"/></svg>
+                    Name Z–A
+                  </button>
+                </div>
+              </div>
+              <span class="sub-result-count" id="sub-result-count"></span>
+            </div>
           </div>
         </div>
+
+        <!-- Table -->
         <table id="submissions-table" class="submissions-table">
           <thead>
             <tr>
@@ -114,7 +156,7 @@
                 </label>
               </th>
               <th>Asset</th>
-              <th>Progress</th>
+              <th class="col-progress">Progress</th>
               <th>Status</th>
               <th class="col-updated">Updated</th>
               <th class="col-actions" style="text-align:right;">Actions</th>
