@@ -1,0 +1,142 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                a.id,\n                a.title,\n                a.slug,\n                a.short_description,\n                a.asset_type,\n                a.location_city,\n                a.location_country,\n                a.total_value_cents,\n                a.token_price_cents,\n                a.tokens_total,\n                a.tokens_available,\n                a.annual_yield_bps,\n                a.capital_appreciation_bps,\n                a.funding_status,\n                ai.image_url AS \"cover_image_url?\",\n                a.bedrooms,\n                a.lease_type,\n                a.term_months,\n                a.area,\n                a.land_size_sqm,\n                (\n                    SELECT COUNT(DISTINCT o.user_id)\n                    FROM order_items oi\n                    JOIN orders o ON oi.order_id = o.id\n                    WHERE oi.asset_id = a.id\n                      AND o.status = 'completed'\n                ) AS \"investor_count?\"\n            FROM assets a\n            LEFT JOIN asset_images ai ON a.id = ai.asset_id AND ai.is_cover = true\n            WHERE a.published = true\n              AND a.asset_type != 'commodity'\n              AND a.id != $1\n              AND a.funding_status IN ('funding_open', 'funding_in_progress')\n            ORDER BY a.featured DESC, a.created_at DESC\n            LIMIT 3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "short_description",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "asset_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "location_city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "location_country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "total_value_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "token_price_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "tokens_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "tokens_available",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "annual_yield_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "capital_appreciation_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "funding_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 14,
+        "name": "cover_image_url?",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "bedrooms",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 16,
+        "name": "lease_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "term_months",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 18,
+        "name": "area",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 19,
+        "name": "land_size_sqm",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 20,
+        "name": "investor_count?",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "a158b40a7f556ea19a28bdb21764c8b600a4d7ec2c178d2a9c2ba19f9f788497"
+}

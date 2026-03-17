@@ -1,0 +1,27 @@
+# ── Build performance ──────────────────────────────────────────
+# These settings dramatically speed up local dev builds on macOS (Apple Silicon).
+
+[target.aarch64-apple-darwin]
+# Use Apple's native linker which is significantly faster than the default
+# Note: If you install `lld` later, consider switching to that.
+rustflags = ["-C", "link-arg=-fuse-ld=/usr/bin/ld"]
+
+[build]
+# Use all available CPU cores for codegen
+jobs = 14
+
+[profile.dev]
+# Split codegen into more units for better parallelism during incremental builds
+# Trade-off: slightly larger binaries, but much faster compile times
+codegen-units = 256
+# Faster linking (skips some optimizations in debug)
+lto = false
+# Incremental compilation (should be on by default, but let's be explicit)
+incremental = true
+# Minimal debug info — faster linking, still get backtraces
+debug = "line-tables-only"
+
+[profile.release]
+# For production: balance speed and size
+codegen-units = 16
+lto = "thin"
