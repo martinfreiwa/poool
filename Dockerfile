@@ -51,6 +51,9 @@ RUN bash /app/frontend/platform/static/css/build-bundle.sh
 # Copy templates for runtime (if needed by minijinja loader) 
 COPY backend/templates /app/backend/templates
 
+# Copy database migrations so they run on startup
+COPY database/ /app/database/
+
 # The backend serves static files from ../frontend/platform relative to CWD
 RUN mkdir -p /app/backend
 WORKDIR /app/backend
