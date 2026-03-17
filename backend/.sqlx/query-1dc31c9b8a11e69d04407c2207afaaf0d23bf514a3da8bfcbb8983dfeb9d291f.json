@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            id, \n            name, \n            min_invest, \n            badge_color, \n            sort_order, \n            cashback_pct::float8 as \"cashback_pct!\"\n        FROM tiers\n        ORDER BY sort_order ASC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "min_invest",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "badge_color",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "sort_order",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "cashback_pct!",
+        "type_info": "Float8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "1dc31c9b8a11e69d04407c2207afaaf0d23bf514a3da8bfcbb8983dfeb9d291f"
+}

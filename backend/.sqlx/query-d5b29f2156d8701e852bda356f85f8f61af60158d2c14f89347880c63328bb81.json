@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COALESCE(rt.subid, '(direct)') as \"subid!\", \n               COALESCE(SUM(inv.purchase_value_cents), 0)::BIGINT as \"revenue!\"\n        FROM referral_tracking rt\n        JOIN investments inv ON inv.user_id = rt.referred_id AND inv.status = 'active'\n        WHERE rt.referrer_id = $1\n        GROUP BY rt.subid\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subid!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "revenue!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "d5b29f2156d8701e852bda356f85f8f61af60158d2c14f89347880c63328bb81"
+}

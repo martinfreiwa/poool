@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT order_number FROM orders WHERE user_id = $1 AND created_at > NOW() - INTERVAL '30 seconds' ORDER BY created_at DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "order_number",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f2ff8d1e6e6676130e7729518defb83a91a54e3c7baef6224065e2e10e4217ca"
+}

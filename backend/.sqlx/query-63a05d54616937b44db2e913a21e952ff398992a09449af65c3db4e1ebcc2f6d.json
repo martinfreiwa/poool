@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COALESCE(SUM(amount_cents), 0)::BIGINT as \"total!\"\n        FROM dividend_payouts\n        WHERE user_id = $1\n          AND payout_type = 'rental'\n          AND status = 'paid'\n          AND EXTRACT(MONTH FROM paid_at) = EXTRACT(MONTH FROM NOW())\n          AND EXTRACT(YEAR FROM paid_at) = EXTRACT(YEAR FROM NOW())\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "63a05d54616937b44db2e913a21e952ff398992a09449af65c3db4e1ebcc2f6d"
+}

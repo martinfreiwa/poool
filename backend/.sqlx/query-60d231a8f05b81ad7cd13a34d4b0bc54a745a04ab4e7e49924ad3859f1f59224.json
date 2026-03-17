@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT u.id::text, u.email, COALESCE(up.first_name, '') as fn, COALESCE(up.last_name, '') as ln,\n                  t.name as tier_name, ut.invested_12m\n           FROM user_tiers ut\n           JOIN users u ON u.id = ut.user_id\n           JOIN tiers t ON t.id = ut.tier_id\n           LEFT JOIN user_profiles up ON up.user_id = u.id\n           ORDER BY ut.invested_12m DESC LIMIT 1000",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "fn",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "ln",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "tier_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "invested_12m",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      false,
+      null,
+      null,
+      false,
+      false
+    ]
+  },
+  "hash": "60d231a8f05b81ad7cd13a34d4b0bc54a745a04ab4e7e49924ad3859f1f59224"
+}

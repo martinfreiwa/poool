@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO leaderboard_preferences (user_id, visible, show_avatar, display_name, updated_at)\n        VALUES ($1, $2, $3, $4, NOW())\n        ON CONFLICT (user_id) DO UPDATE SET\n            visible = $2,\n            show_avatar = $3,\n            display_name = $4,\n            updated_at = NOW()\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Bool",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ed11549331a07a9940702b5967fc1040f0efae72f2b7fae86c6af3353a927822"
+}

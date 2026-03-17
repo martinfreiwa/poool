@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT name, min_invest, max_invest, cashback_pct::float8 as \"cashback_pct!\", \n                  badge_color, sort_order, referral_bonus FROM tiers ORDER BY sort_order ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "min_invest",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "max_invest",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "cashback_pct!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 4,
+        "name": "badge_color",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "sort_order",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "referral_bonus",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      null,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "2dacef52b4a2db161f6b1cb85ea1ef413b1b18c41a153cd14257fe9a9835f881"
+}

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COALESCE(subid, '(direct)') as \"subid!\", count(*) as \"qualified!\"\n        FROM referral_tracking\n        WHERE referrer_id = $1 AND status = 'qualified'\n        GROUP BY subid\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subid!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "qualified!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "bb11686bcd82466e824686b628267910afb7da38c288b6376923b6ae2a050d1b"
+}

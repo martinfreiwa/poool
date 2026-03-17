@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COALESCE(subid, '(direct)') as \"subid!\", count(*) as \"clicks!\"\n        FROM referral_clicks\n        WHERE code = $1\n        GROUP BY subid\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subid!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "clicks!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "e0e28142865674e5f0749d4eb421a96ab9621bc4f6532b956107024d3e515dc4"
+}
