@@ -430,7 +430,7 @@ document.addEventListener("DOMContentLoaded", function () {
       // 1. Update the draft with all content + financial data
       const updateRes = await fetch(`/api/developer/draft/${assetId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify(payload),
       });
 
@@ -442,7 +442,7 @@ document.addEventListener("DOMContentLoaded", function () {
       // 2. Submit the draft for review
       const submitRes = await fetch(`/api/developer/draft/${assetId}/submit`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
       });
 
       if (!submitRes.ok) {

@@ -3,7 +3,7 @@ compliance with GDPR and applicable privacy laws.", extra_css=['marketplace', 'w
 'portfolio-assets-table', 'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards'], extra_js=['htmx-init',
 'profile-dropdown'] %}{% include "components/head.html" %}{% endwith %}
 
-<body id="legal-body">
+<body id="legal-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
   <div id="portfolio-page" class="portfolio-page">
     <!-- Sidebar Navigation -->

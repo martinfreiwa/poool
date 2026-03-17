@@ -1,6 +1,6 @@
 {% with title="Developer Add Asset", meta_description="Add a new property or asset to POOOL.", extra_css=['developer-add-asset', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['htmx-init', 'developer-add-asset', 'profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
 
-<body id="developer-add-asset-body">
+<body id="developer-add-asset-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
   <div id="developer-add-asset-page" class="cart-page">
     <div id="developer-add-asset-sidebar" class="cart-page-sidebar">

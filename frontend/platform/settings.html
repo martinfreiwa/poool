@@ -3,6 +3,8 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 'legal-enhancements',
 'mobile-navigation', 'marketplace-search'] %}{% include "components/head.html" %}{% endwith %}
 
+<body id="settings-body" class="fouc-guard">
+	{% include 'components/mobile-menu.html' %}
 	<div id="marketplace-page" class="marketplace-page"><!-- Sidebar Navigation -->
 		<div id="marketplace-sidebar" class="marketplace-sidebar">
 			<!-- Container that will show only one sidebar at a time -->

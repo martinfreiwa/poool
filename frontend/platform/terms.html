@@ -3,7 +3,7 @@ of the fractional real world asset investment platform.", extra_css=['marketplac
 'portfolio-assets-table', 'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards'], extra_js=['htmx-init',
 'profile-dropdown'] %}{% include "components/head.html" %}{% endwith %}
 
-<body id="rewards-body">
+<body id="rewards-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
   <div id="portfolio-page" class="portfolio-page">
     <!-- Sidebar Navigation -->

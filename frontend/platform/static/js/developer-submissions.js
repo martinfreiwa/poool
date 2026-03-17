@@ -7,6 +7,13 @@ let allItems = [];
 let currentFilter = "all";
 let selectedIds = new Set();
 
+function getCsrfToken() {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; csrf_token=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return "";
+}
+
 document.addEventListener("DOMContentLoaded", async function () {
   const tbody = document.getElementById("submissions-tbody");
   const loadingEl = document.getElementById("submissions-loading");
@@ -350,7 +357,7 @@ function confirmBulkDelete() {
     let failed = 0;
     for (const id of ids) {
       try {
-        const res = await fetch(`/api/developer/draft/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/developer/draft/${id}`, { method: "DELETE", headers: { "X-CSRF-Token": getCsrfToken() } });
         if (!res.ok) failed++;
       } catch { failed++; }
     }
@@ -382,6 +389,7 @@ async function duplicateDraft(assetId) {
   try {
     const res = await fetch(`/api/developer/draft/${assetId}/duplicate`, {
       method: "POST",
+      headers: { "X-CSRF-Token": getCsrfToken() },
     });
     if (!res.ok) throw new Error("Duplicate failed");
     showToast("success", "Asset duplicated successfully");
@@ -425,7 +433,7 @@ function confirmDelete(assetId, title) {
     btn.textContent = "Deleting...";
     btn.disabled = true;
     try {
-      const res = await fetch(`/api/developer/draft/${assetId}`, { method: "DELETE" });
+      const res = await fetch(`/api/developer/draft/${assetId}`, { method: "DELETE", headers: { "X-CSRF-Token": getCsrfToken() } });
       if (!res.ok) throw new Error("Delete failed");
       overlay.remove();
       showToast("success", "Draft deleted successfully");

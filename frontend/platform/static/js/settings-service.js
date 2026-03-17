@@ -45,6 +45,13 @@
 const SettingsDataService = (function () {
     "use strict";
 
+    function getCsrfToken() {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; csrf_token=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return "";
+    }
+
     // ─── Core API Helper ─────────────────────────────────────────
 
     /**
@@ -58,7 +65,7 @@ const SettingsDataService = (function () {
         const opts = {
             method,
             credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         };
         if (body) opts.body = JSON.stringify(body);
 
@@ -90,6 +97,7 @@ const SettingsDataService = (function () {
             const res = await fetch(url, {
                 method: "POST",
                 credentials: "same-origin",
+                headers: { "X-CSRF-Token": getCsrfToken() },
                 body: formData,
             });
 
