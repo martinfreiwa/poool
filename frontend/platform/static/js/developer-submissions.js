@@ -32,6 +32,9 @@ document.addEventListener("DOMContentLoaded", async function () {
       return;
     }
 
+    tableContainer.style.display = "block";
+    if (statsRow) statsRow.style.display = "grid";
+
     allItems = data.items;
     updateStats(allItems);
     renderTable(allItems);

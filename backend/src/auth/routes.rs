@@ -477,7 +477,7 @@ pub async fn signup_submit(
         .path("/")
         .http_only(true)
         .secure(cookie_is_secure())
-        .same_site(axum_extra::extract::cookie::SameSite::Strict)
+        .same_site(axum_extra::extract::cookie::SameSite::Lax)
         .max_age(time::Duration::seconds(24 * 60 * 60));
 
     // Also clear referral cookie if it was used

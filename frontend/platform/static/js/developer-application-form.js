@@ -77,11 +77,22 @@ async function saveAndExitStep2(btn) {
   const totalValueCents = Math.round(purchasePrice * 100);
   const tokenPriceCents = Math.round(tokenPrice * 100);
 
-  // Build partial payload — only include fields that have values
-  const payload = {};
+  // Build payload — always include required fields for POST (CreateDraftAsset)
+  // Required by backend: title, asset_type, total_value_cents, token_price_cents, tokens_total
+  const existingId = localStorage.getItem('draft_asset_id');
   const title = getVal('property-name');
-  if (title) payload.title = title;
-  payload.asset_type = assetTypeMap[assetType] || 'real_estate';
+
+  const payload = {
+    // Always include required fields with defaults for new drafts (POST)
+    title: title || 'Untitled Draft',
+    asset_type: assetTypeMap[assetType] || 'real_estate',
+    total_value_cents: totalValueCents || 0,
+    token_price_cents: tokenPriceCents || 50000,
+    tokens_total: tokenPriceCents > 0 ? (Math.ceil(totalValueCents / tokenPriceCents) || 1) : 1,
+  };
+
+  // For PUT (update), we can strip out fields with no value — backend handles optionals
+  // For POST (create), we already have defaults above
   const fields = [
     ['property_type', getDropdownVal('property-type')],
     ['area', getDropdownVal('area')],
@@ -101,14 +112,8 @@ async function saveAndExitStep2(btn) {
     ['year_built', getInt('year-built')],
   ];
   numFields.forEach(([key, val]) => { if (val !== null) payload[key] = val; });
-  if (totalValueCents > 0) payload.total_value_cents = totalValueCents;
-  if (tokenPriceCents > 0) {
-    payload.token_price_cents = tokenPriceCents;
-    payload.tokens_total = Math.ceil(totalValueCents / tokenPriceCents) || 1000;
-  }
 
   try {
-    const existingId = localStorage.getItem('draft_asset_id');
     const url = existingId ? `/api/developer/draft/${existingId}` : '/api/developer/draft';
     const method = existingId ? 'PUT' : 'POST';
 
