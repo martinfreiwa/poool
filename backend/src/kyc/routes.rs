@@ -90,7 +90,7 @@ pub async fn initiate(
     };
 
     let provider = service::build_provider();
-    let callback_url = format!("{}/kyc?completed=true", state.config.base_url);
+    let callback_url = format!("{}/kyc", state.config.base_url);
 
     match service::initiate_kyc(
         &state.db,

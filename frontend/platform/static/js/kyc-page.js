@@ -34,14 +34,12 @@ document.addEventListener("alpine:init", () => {
     async initKyc() {
       console.log("[KYC] initKyc() starting...");
 
-      // Check if we're returning from provider redirect
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("completed") === "true") {
-        // User was redirected back from Didit/Sumsub — they completed the flow
+      // Check if we're returning from provider redirect using localStorage instead of query params
+      // This solves strict URL matching issues with Didit's dashboard.
+      if (localStorage.getItem("poool_kyc_pending") === "true") {
+        localStorage.removeItem("poool_kyc_pending");
         this.status = "in_review";
-        // Clean URL
-        history.replaceState(null, "", "/kyc");
-        console.log("[KYC] Returned from provider redirect, status=in_review");
+        console.log("[KYC] Returned from provider redirect (detected via localStorage), status=in_review");
         return;
       }
 
@@ -227,6 +225,8 @@ document.addEventListener("alpine:init", () => {
           if (response.ok) {
             const data = await response.json();
             if (data.verification_url) {
+              // Set flag so we know they are returning from Didit
+              localStorage.setItem("poool_kyc_pending", "true");
               // Redirect user to the provider verification page
               window.location.href = data.verification_url;
               return;
