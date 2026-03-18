@@ -1,6 +1,13 @@
 // Mobile Navigation JavaScript
 // Handles mobile header and burger menu interactions
 
+// ─── XSS-safe HTML escaper ───────────────────────────────────
+function escHtmlNav(str) {
+  if (typeof str !== 'string') return String(str);
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(str));
+  return d.innerHTML;
+}
 // Toggle Mobile Menu
 function toggleMobileMenu() {
   const burgerBtn = document.getElementById("mobile-burger-btn");
@@ -586,7 +593,7 @@ function initGlobalSearch() {
       if (results.length === 0) {
         dropdown.innerHTML = `
                     <div style="padding: 12px 16px; color: #717680; font-size: 14px; text-align: center;">
-                        No results found for "${query}"
+                        No results found for "${escHtmlNav(query)}"
                     </div>
                 `;
       } else {

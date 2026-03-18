@@ -15,6 +15,10 @@ pub fn router() -> Router<AppState> {
     use fragments::*;
     use routes::*;
     Router::new()
+        .route(
+            "/developer",
+            get(|| async { axum::response::Redirect::to("/developer/dashboard") }),
+        )
         .route("/developer/dashboard", get(page_developer_dashboard))
         .route("/developer/assets", get(page_developer_assets))
         .route("/developer/add-asset", get(page_developer_add_asset))

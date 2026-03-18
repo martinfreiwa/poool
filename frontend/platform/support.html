@@ -19,25 +19,42 @@ extra_css=['support'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobi
           <div class="support-hero">
             <div class="ds-page-header support-page-header">
               <div class="ds-page-header__title-row">
-                <img loading="lazy" src="/images/message-chat-circle grey.svg" alt="Support" width="32" height="32" class="ds-page-header__icon support-page-icon" />
+                <svg class="ds-page-header__icon support-page-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#535862" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
                 <h1 class="ds-page-header__title support-page-title">Support</h1>
               </div>
             </div>
             <p class="support-page-subtitle">Get help from our team — we typically respond within 24 hours</p>
           </div>
-          <hr style="border: none; border-top: 1px solid #eaecf0; margin: 0 0 24px 0;" />
+          <hr class="support-divider" />
 
           <!-- Stats Row -->
           <div class="support-stats">
-            <div class="support-stat-card">
+            <div class="support-stat-card support-stat-card--open">
+              <div class="support-stat-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                </svg>
+              </div>
               <div class="support-stat-value" id="stat-open-count">—</div>
               <div class="support-stat-label">Open Tickets</div>
             </div>
-            <div class="support-stat-card">
+            <div class="support-stat-card support-stat-card--resolved">
+              <div class="support-stat-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/>
+                </svg>
+              </div>
               <div class="support-stat-value" id="stat-resolved-count">—</div>
               <div class="support-stat-label">Resolved</div>
             </div>
-            <div class="support-stat-card">
+            <div class="support-stat-card support-stat-card--total">
+              <div class="support-stat-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+              </div>
               <div class="support-stat-value" id="stat-total-count">—</div>
               <div class="support-stat-label">Total Tickets</div>
             </div>
@@ -76,21 +93,32 @@ extra_css=['support'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobi
                 <textarea id="ticket-message" class="ds-textarea" placeholder="Describe your issue in detail… (min 20 characters)" rows="4"
                   required minlength="20" maxlength="5000"></textarea>
               </div>
+
+              <!-- Drag & Drop File Upload -->
               <div class="support-form-group">
-                <label for="ticket-attachment">Attachment (Optional)</label>
-                <input type="file" id="ticket-attachment" name="attachment"
-                  accept="image/png, image/jpeg, application/pdf" class="support-file-input" />
-                <div class="support-file-hint" style="font-size: 12px; color: #717680; margin-top: 4px;">Max file size:
-                  5MB. Formats: JPG, PNG, PDF.</div>
-              </div>
-              <!-- FAQ Suggestion Container -->
-              <div id="faq-suggestion-container"
-                style="display: none; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 16px;">
+                <label>Attachment (Optional)</label>
+                <div class="drop-zone" id="drop-zone">
+                  <input type="file" id="ticket-attachment" name="attachment"
+                    accept="image/png, image/jpeg, application/pdf" class="drop-zone-input" />
+                  <div class="drop-zone-content">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span class="drop-zone-text">Drag & drop or <strong>click to browse</strong></span>
+                    <span class="drop-zone-hint">Max 5MB — JPG, PNG, or PDF</span>
+                  </div>
+                  <div class="drop-zone-file-info" id="drop-zone-file-info" style="display: none;"></div>
+                </div>
               </div>
 
-              <div class="support-form-row" style="align-items: flex-end;">
-                <div class="support-form-group" style="margin-bottom: 0">
-                  <label for="ticket-priority" style="display: flex; justify-content: space-between;">Priority <span id="expected-response-time" style="font-size: 12px; font-weight: 400; color: #10b981;">Response: ~4 hours</span></label>
+              <!-- FAQ Suggestion Container -->
+              <div id="faq-suggestion-container" class="faq-suggestion-container"></div>
+
+              <div class="support-form-row">
+                <div class="support-form-group support-form-group--no-margin">
+                  <label for="ticket-priority" class="priority-label">Priority <span id="expected-response-time" class="response-time-badge">Response: ~4 hours</span></label>
                   <select id="ticket-priority" class="ds-select">
                     <option value="low">Low — General question</option>
                     <option value="normal" selected>Normal — Standard issue</option>
@@ -98,7 +126,10 @@ extra_css=['support'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobi
                     <option value="urgent">Urgent — Funds at risk</option>
                   </select>
                 </div>
-                <button type="submit" class="ds-btn ds-btn--primary ds-btn--full support-submit-btn" id="submit-ticket-btn" style="margin-bottom: 0;">
+                <button type="submit" class="ds-btn ds-btn--primary ds-btn--full support-submit-btn" id="submit-ticket-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
                   Submit Ticket
                 </button>
               </div>
@@ -128,7 +159,7 @@ extra_css=['support'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobi
           </div>
 
           <!-- FAQ / Knowledge Base -->
-          <div class="support-form-card">
+          <div class="support-form-card support-faq-card">
             <h2>
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
                 stroke-linecap="round" stroke-linejoin="round">

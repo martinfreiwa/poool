@@ -1269,7 +1269,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadPaymentMethods();
                 } else {
                     const t = await res.text();
-                    errEl.innerHTML = t || 'Error saving card';
+                    errEl.textContent = t || 'Error saving card';
                 }
             } catch (_) {
                 errEl.textContent = 'A network error occurred.';
@@ -1388,7 +1388,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadPaymentMethods();
                 } else {
                     const t = await res.text();
-                    errEl.innerHTML = t || 'Error saving bank account';
+                    errEl.textContent = t || 'Error saving bank account';
                 }
             } catch (_) {
                 errEl.textContent = 'A network error occurred.';

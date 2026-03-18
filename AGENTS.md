@@ -96,7 +96,7 @@ poool/
 │   ├── DATABASE_SCHEMA.md   # Full schema reference
 │   └── KNOWLEDGE_HANDOFF.md # Historical ADRs & decisions
 ├── .agent/workflows/        # Agent workflow files (18 workflows)
-├── BROKEN_FEATURES.md       # Known bugs & QA tracker — update, don't delete
+├── BROKEN_LOGICS.md         # Known bugs & logic tracker — consolidated tracker
 └── AGENTS.md                # This file
 ```
 
@@ -150,11 +150,11 @@ poool/
 
 ## ⚠️ Known Issues
 
-See `BROKEN_FEATURES.md` for the full tracker. Key outstanding items:
+See `BROKEN_LOGICS.md` for the full tracker. Key outstanding items:
 - Several admin system APIs not yet implemented (background jobs, sessions, webhooks)
 - Admin approval "phantom approval" bug (marks approved but doesn't trigger business logic)
 - Some report endpoints return all-time data regardless of date filters
-- Dividend distribution uses float math (rounding error risk)
+- /checkout route missing (CRITICAL)
 
 ---
 

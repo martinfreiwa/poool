@@ -42,6 +42,8 @@ pub struct AppState {
     pub config: crate::config::Config,
     /// Optional Redis connection pool for caching sessions or query results.
     pub redis: Option<deadpool_redis::Pool>,
+    /// Rate limiter for auth endpoints (login, signup, password reset).
+    pub auth_rate_limiter: super::rate_limit::RateLimiter,
 }
 
 // Implement FromRef so the auth middleware extractors can access PgPool
@@ -142,6 +144,23 @@ pub async fn login_submit(
     headers: HeaderMap,
     Form(form): Form<LoginForm>,
 ) -> Result<Response, AppError> {
+    // Rate limiting — check before doing expensive Argon2 work
+    let client_ip = headers
+        .get("x-forwarded-for")
+        .or_else(|| headers.get("x-real-ip"))
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("unknown")
+        .split(',')
+        .next()
+        .unwrap_or("unknown")
+        .trim()
+        .to_string();
+
+    if let Err(retry_after) = state.auth_rate_limiter.check(&format!("login:{}", client_ip)).await {
+        tracing::warn!("Rate limit exceeded for login from IP: {}", client_ip);
+        return Err(AppError::RateLimited(retry_after));
+    }
+
     // 1. Authenticate user (password check)
     let user = service::authenticate_user(&state.db, &form.email, &form.password).await?;
 
@@ -352,6 +371,23 @@ pub async fn signup_submit(
     headers: HeaderMap,
     Form(form): Form<SignupForm>,
 ) -> Result<Response, AppError> {
+    // Rate limiting — prevent mass account creation
+    let client_ip = headers
+        .get("x-forwarded-for")
+        .or_else(|| headers.get("x-real-ip"))
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("unknown")
+        .split(',')
+        .next()
+        .unwrap_or("unknown")
+        .trim()
+        .to_string();
+
+    if let Err(retry_after) = state.auth_rate_limiter.check(&format!("signup:{}", client_ip)).await {
+        tracing::warn!("Rate limit exceeded for signup from IP: {}", client_ip);
+        return Err(AppError::RateLimited(retry_after));
+    }
+
     // ── Terms acceptance guard ──────────────────────────────────
     if !form.terms_accepted() {
         let html = r#"<div id="signup-error" style="color:#D92D20;font-size:14px;padding:8px 12px;background:#FEF3F2;border-radius:8px;border:1px solid #FDA29B;margin-bottom:8px;">
@@ -496,8 +532,26 @@ pub async fn signup_submit(
 /// POST /auth/forgot-password
 pub async fn forgot_password_submit(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Form(form): Form<super::models::ForgotPasswordForm>,
 ) -> Result<Response, AppError> {
+    // Rate limiting — prevent email bombing
+    let client_ip = headers
+        .get("x-forwarded-for")
+        .or_else(|| headers.get("x-real-ip"))
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("unknown")
+        .split(',')
+        .next()
+        .unwrap_or("unknown")
+        .trim()
+        .to_string();
+
+    if let Err(retry_after) = state.auth_rate_limiter.check(&format!("forgot:{}", client_ip)).await {
+        tracing::warn!("Rate limit exceeded for forgot-password from IP: {}", client_ip);
+        return Err(AppError::RateLimited(retry_after));
+    }
+
     service::create_password_reset_token(&state.db, &form.email, &state.config.base_url).await?;
 
     let html = r##"

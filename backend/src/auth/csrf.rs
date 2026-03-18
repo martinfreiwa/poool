@@ -19,10 +19,10 @@ use uuid::Uuid;
 /// 4. Validates the provided token against the cookie.
 pub async fn csrf_middleware(
     jar: CookieJar,
-    req: Request,
+    mut req: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    let path = req.uri().path();
+    let path = req.uri().path().to_string();
     if path.starts_with("/static/")
         || path.starts_with("/fonts/")
         || path.starts_with("/images/")
@@ -48,8 +48,8 @@ pub async fn csrf_middleware(
     let token = current_token.unwrap();
 
     // Validate token for state-changing methods
-    let method = req.method();
-    if [Method::POST, Method::PUT, Method::DELETE, Method::PATCH].contains(method) {
+    let method = req.method().clone();
+    if [Method::POST, Method::PUT, Method::DELETE, Method::PATCH].contains(&method) {
         let mut is_valid = false;
 
         // 1. Check HTTP Header (used by HTMX and Fetch)
@@ -61,7 +61,31 @@ pub async fn csrf_middleware(
             }
         }
 
-        // 2. Check Query String if Header is absent (used by plain HTML form submissions)
+        // 2. Check form body (used by HTML forms with <input type="hidden" name="csrf_token">)
+        if !is_valid {
+            if let Some(content_type) = req.headers().get(header::CONTENT_TYPE) {
+                if let Ok(ct_str) = content_type.to_str() {
+                    if ct_str.starts_with("application/x-www-form-urlencoded") {
+                        let (parts, body) = req.into_parts();
+                        if let Ok(bytes) = axum::body::to_bytes(body, 2 * 1024 * 1024).await {
+                            let params: HashMap<String, String> = form_urlencoded::parse(&bytes)
+                                .into_owned()
+                                .collect();
+                            if let Some(body_token) = params.get("csrf_token") {
+                                if body_token == &token {
+                                    is_valid = true;
+                                }
+                            }
+                            req = Request::from_parts(parts, axum::body::Body::from(bytes));
+                        } else {
+                            req = Request::from_parts(parts, axum::body::Body::empty());
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Check Query String if Header and Body are absent (used by plain HTML form submissions without body payload fallback)
         if !is_valid {
             if let Some(query) = req.uri().query() {
                 let params: HashMap<String, String> = form_urlencoded::parse(query.as_bytes())
@@ -80,7 +104,7 @@ pub async fn csrf_middleware(
             sentry::with_scope(
                 |scope| {
                     scope.set_tag("security.event", "csrf_failure");
-                    scope.set_tag("request.path", path);
+                    scope.set_tag("request.path", &path);
                     scope.set_tag("request.method", &method.to_string());
                 },
                 || {

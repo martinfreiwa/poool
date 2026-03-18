@@ -3,11 +3,6 @@
  * and populates all tabs (Overview, Wallets, KYC, Investments, Orders, Sessions, Audit).
  */
 
-function getCsrfToken() {
-  const match = document.cookie.match(/(?:^|; )csrf_token=([^;]+)/);
-  return match ? match[1] : "";
-}
-
 let userData = null;
 let allTransactions = [];
 const userId = new URLSearchParams(window.location.search).get("id");
@@ -597,9 +592,9 @@ function renderAccountInfo() {
   const d = userData;
   const settings = d.settings || {};
   document.getElementById("account-info").innerHTML = `
-        ${detailRow("User ID", `<code style="font-size:11px;color:var(--admin-text-muted);background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;">${esc(d.id)}</code>`)}
-        ${detailRow("Email Verified", d.email_verified ? '<span class="admin-badge admin-badge--success">Yes</span>' : '<span class="admin-badge admin-badge--danger">No</span>')}
-        ${detailRow("2FA Enabled", settings.totp_enabled ? '<span class="admin-badge admin-badge--success">Enabled</span>' : '<span class="admin-badge admin-badge--neutral">Disabled</span>')}
+        ${detailRowHtml("User ID", `<code style="font-size:11px;color:var(--admin-text-muted);background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;">${esc(d.id)}</code>`)}
+        ${detailRowHtml("Email Verified", d.email_verified ? '<span class="admin-badge admin-badge--success">Yes</span>' : '<span class="admin-badge admin-badge--danger">No</span>')}
+        ${detailRowHtml("2FA Enabled", settings.totp_enabled ? '<span class="admin-badge admin-badge--success">Enabled</span>' : '<span class="admin-badge admin-badge--neutral">Disabled</span>')}
         ${detailRow("Language", settings.language || "en")}
         ${detailRow("Currency", settings.currency || "USD")}
         ${detailRow("Timezone", settings.timezone || "—")}
@@ -951,7 +946,13 @@ function toggleAuditDetail(btn, jsonStr) {
 // ─── Helpers ────────────────────────────────────────────────────
 
 function detailRow(label, value) {
-  return `<div class="admin-detail-row"><span class="admin-detail-label">${label}</span><span class="admin-detail-value">${value || "—"}</span></div>`;
+  const safeValue = value ? esc(String(value)) : "—";
+  return `<div class="admin-detail-row"><span class="admin-detail-label">${label}</span><span class="admin-detail-value">${safeValue}</span></div>`;
+}
+
+/** Like detailRow but value is trusted HTML (badges, code blocks, etc.) */
+function detailRowHtml(label, htmlValue) {
+  return `<div class="admin-detail-row"><span class="admin-detail-label">${label}</span><span class="admin-detail-value">${htmlValue || "—"}</span></div>`;
 }
 
 function esc(str) {

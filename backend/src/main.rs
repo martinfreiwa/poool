@@ -128,16 +128,119 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None
     };
 
+    let auth_rate_limiter = if let Some(ref rp) = redis_pool {
+        tracing::info!("Rate limiter: using Redis backend (shared across instances)");
+        auth::rate_limit::RateLimiter::new_redis(
+            rp.clone(),
+            10,
+            std::time::Duration::from_secs(15 * 60),
+        )
+    } else {
+        tracing::info!("Rate limiter: using in-memory backend (single instance only)");
+        auth::rate_limit::RateLimiter::new(
+            10,
+            std::time::Duration::from_secs(15 * 60),
+        )
+    };
+
     let state = AppState {
         db: pool.clone(),
         templates,
         config: config.clone(),
         redis: redis_pool,
+        auth_rate_limiter: auth_rate_limiter.clone(),
     };
 
     // Spawn background tasks
     tokio::spawn(email::run_email_scheduler(pool.clone()));
     tokio::spawn(support::sla::monitor_sla_breaches(pool.clone()));
+
+    // Rate limiter cleanup (every 10 minutes)
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(10 * 60));
+        loop {
+            interval.tick().await;
+            auth_rate_limiter.cleanup().await;
+        }
+    });
+
+    // Payments: Token reclaim worker
+    let cleanup_pool = pool.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(15 * 60)); // 15 mins
+        loop {
+            interval.tick().await;
+            if let Err(e) = crate::payments::service::cleanup_expired_orders(&cleanup_pool).await {
+                tracing::error!("Error cleaning up expired orders: {}", e);
+            }
+        }
+    });
+
+    // Housekeeping: Purge expired sessions and used password reset tokens
+    let housekeeping_pool = pool.clone();
+    tokio::spawn(async move {
+        // Run every 6 hours
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(6 * 60 * 60));
+        loop {
+            interval.tick().await;
+            // 1. Delete expired sessions
+            match sqlx::query("DELETE FROM user_sessions WHERE expires_at < NOW()")
+                .execute(&housekeeping_pool)
+                .await
+            {
+                Ok(res) => {
+                    if res.rows_affected() > 0 {
+                        tracing::info!(
+                            "Housekeeping: purged {} expired sessions",
+                            res.rows_affected()
+                        );
+                    }
+                }
+                Err(e) => tracing::error!("Housekeeping: failed to purge sessions: {}", e),
+            }
+
+            // 2. Delete used or expired password reset tokens (older than 24h)
+            match sqlx::query(
+                "DELETE FROM password_reset_tokens WHERE used_at IS NOT NULL OR expires_at < NOW() - interval '24 hours'"
+            )
+            .execute(&housekeeping_pool)
+            .await
+            {
+                Ok(res) => {
+                    if res.rows_affected() > 0 {
+                        tracing::info!(
+                            "Housekeeping: purged {} spent/expired reset tokens",
+                            res.rows_affected()
+                        );
+                    }
+                }
+                Err(e) => tracing::error!("Housekeeping: failed to purge reset tokens: {}", e),
+            }
+
+            // 3. Delete expired email verification tokens (older than 48h)
+            match sqlx::query(
+                "DELETE FROM email_verification_tokens WHERE expires_at < NOW() - interval '48 hours'"
+            )
+            .execute(&housekeeping_pool)
+            .await
+            {
+                Ok(res) => {
+                    if res.rows_affected() > 0 {
+                        tracing::info!(
+                            "Housekeeping: purged {} expired email verification tokens",
+                            res.rows_affected()
+                        );
+                    }
+                }
+                Err(e) => {
+                    // Table might not exist yet — suppress error
+                    if !e.to_string().contains("does not exist") {
+                        tracing::error!("Housekeeping: failed to purge email tokens: {}", e);
+                    }
+                }
+            }
+        }
+    });
 
     //  3. Router configuration
     let app = Router::new()
@@ -811,16 +914,20 @@ async fn api_admin_reports(
             let rows = sqlx::query(
                 r#"SELECT
                      u.email,
-                     rb.cashback_cents, rb.referral_cents, rb.promotion_cents,
-                     rb.total_cents,
+                     rb.cashback, rb.referrals, rb.promotions,
+                     (rb.cashback + rb.referrals + rb.promotions) as total_cents,
                      t.name as tier_name,
-                     ut.invested_12m_cents
+                     ut.invested_12m
                    FROM rewards_balances rb
                    JOIN users u ON rb.user_id = u.id
                    LEFT JOIN user_tiers ut ON rb.user_id = ut.user_id
                    LEFT JOIN tiers t ON ut.tier_id = t.id
-                   ORDER BY rb.total_cents DESC"#,
+                   WHERE ($1::text = '' OR rb.updated_at >= $1::date)
+                     AND ($2::text = '' OR rb.updated_at <= ($2::date + interval '1 day'))
+                   ORDER BY (rb.cashback + rb.referrals + rb.promotions) DESC"#,
             )
+            .bind(&date_from)
+            .bind(&date_to)
             .fetch_all(&state.db)
             .await
             .unwrap_or_default();
@@ -830,12 +937,12 @@ async fn api_admin_reports(
                 .map(|r| {
                     serde_json::json!({
                         "email": r.get::<String, _>("email"),
-                        "cashback_cents": r.get::<Option<i64>, _>("cashback_cents"),
-                        "referral_cents": r.get::<Option<i64>, _>("referral_cents"),
-                        "promotion_cents": r.get::<Option<i64>, _>("promotion_cents"),
+                        "cashback_cents": r.get::<Option<i64>, _>("cashback"),
+                        "referral_cents": r.get::<Option<i64>, _>("referrals"),
+                        "promotion_cents": r.get::<Option<i64>, _>("promotions"),
                         "total_cents": r.get::<Option<i64>, _>("total_cents"),
                         "tier": r.get::<Option<String>, _>("tier_name"),
-                        "invested_12m_cents": r.get::<Option<i64>, _>("invested_12m_cents"),
+                        "invested_12m_cents": r.get::<Option<i64>, _>("invested_12m"),
                     })
                 })
                 .collect();
@@ -849,7 +956,7 @@ async fn api_admin_reports(
                      u1.email as referrer_email,
                      u2.email as referred_email,
                      rt.status,
-                     rt.referrer_reward_cents, rt.referred_reward_cents,
+                     rt.referrer_reward, rt.referred_reward,
                      rt.created_at::text, rt.qualified_at::text
                    FROM referral_tracking rt
                    JOIN users u1 ON rt.referrer_id = u1.id
@@ -871,8 +978,8 @@ async fn api_admin_reports(
                         "referrer_email": r.get::<String, _>("referrer_email"),
                         "referred_email": r.get::<String, _>("referred_email"),
                         "status": r.get::<String, _>("status"),
-                        "referrer_reward_cents": r.get::<Option<i64>, _>("referrer_reward_cents"),
-                        "referred_reward_cents": r.get::<Option<i64>, _>("referred_reward_cents"),
+                        "referrer_reward_cents": r.get::<i64, _>("referrer_reward"),
+                        "referred_reward_cents": r.get::<i64, _>("referred_reward"),
                         "created_at": r.get::<String, _>("created_at"),
                         "qualified_at": r.get::<Option<String>, _>("qualified_at"),
                     })
@@ -1309,117 +1416,7 @@ async fn api_me(jar: CookieJar, State(state): State<AppState>) -> axum::response
     }
 }
 
-//  KYC User-Facing API
-
-/// POST /api/kyc/submit  Submit a new KYC verification request.
-///
-/// Creates a `kyc_records` row with status='pending'.
-/// Accepts JSON body with: document_type, pep_check_passed, sanctions_check.
-#[allow(dead_code)]
-async fn api_kyc_submit(
-    jar: CookieJar,
-    State(state): State<AppState>,
-    Json(body): Json<serde_json::Value>,
-) -> axum::response::Response {
-    let user = match auth::middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Not authenticated"})),
-            )
-                .into_response();
-        }
-    };
-
-    // Check if user already has a pending/approved KYC
-    let existing: Option<String> = sqlx::query_scalar(
-        "SELECT status FROM kyc_records WHERE user_id = $1 AND status IN ('pending', 'in_review', 'approved') ORDER BY created_at DESC LIMIT 1",
-    )
-    .bind(user.id)
-    .fetch_optional(&state.db)
-    .await
-    .ok()
-    .flatten();
-
-    if let Some(status) = &existing {
-        if status == "approved" {
-            return (
-                axum::http::StatusCode::CONFLICT,
-                Json(serde_json::json!({"error": "KYC already approved"})),
-            )
-                .into_response();
-        }
-        if status == "pending" || status == "in_review" {
-            return (
-                axum::http::StatusCode::CONFLICT,
-                Json(serde_json::json!({"error": "KYC submission already pending review"})),
-            )
-                .into_response();
-        }
-    }
-
-    let document_type = body["document_type"].as_str().unwrap_or("passport");
-    let pep_check = body["pep_check_passed"].as_bool().unwrap_or(false);
-    let sanctions_check = body["sanctions_check"].as_bool().unwrap_or(false);
-
-    // Validate document_type
-    if !matches!(
-        document_type,
-        "passport" | "national_id" | "driving_license"
-    ) {
-        return (
-            axum::http::StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({"error": "Invalid document_type. Must be: passport, national_id, or driving_license"})),
-        )
-            .into_response();
-    }
-
-    // Create KYC record
-    let result = sqlx::query_scalar::<_, String>(
-        r#"INSERT INTO kyc_records (user_id, document_type, pep_check_passed, sanctions_check, status)
-           VALUES ($1, $2, $3, $4, 'pending')
-           RETURNING id::text"#,
-    )
-    .bind(user.id)
-    .bind(document_type)
-    .bind(pep_check)
-    .bind(sanctions_check)
-    .fetch_one(&state.db)
-    .await;
-
-    match result {
-        Ok(kyc_id) => {
-            tracing::info!("KYC submitted for user {} (kyc_id={})", user.id, kyc_id);
-
-            // Log to audit_logs if table exists
-            let _ = sqlx::query(
-                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
-                   VALUES ($1, 'kyc.submitted', 'kyc_records', $2::uuid, '{"status": "pending"}'::jsonb)"#,
-            )
-            .bind(user.id)
-            .bind(&kyc_id)
-            .execute(&state.db)
-            .await;
-
-            Json(serde_json::json!({
-                "success": true,
-                "kyc_id": kyc_id,
-                "status": "pending",
-                "message": "KYC submitted successfully. We'll review your documents within 24 hours."
-            }))
-            .into_response()
-        }
-        Err(e) => {
-            tracing::error!("Failed to create KYC record for user {}: {e}", user.id);
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "Failed to submit KYC"})),
-            )
-                .into_response()
-        }
-    }
-}
+// NOTE: KYC submission is now handled by the `kyc` module's own router.
 
 // ─── Automated Migration Runner ──────────────────────────────────────────────
 

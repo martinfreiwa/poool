@@ -1,13 +1,6 @@
 // Application Form JavaScript – Wired to POST /api/developer/draft
 
 /** Read the CSRF token from the cookie (shared helper). */
-function getCsrfToken() {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; csrf_token=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return '';
-}
-
 /**
  * Find the PooolDropdown instance that wraps a given native <select> element.
  * The poool-dropdown-init.js moves the <select> inside the wrapper div,
@@ -587,6 +580,14 @@ document.addEventListener("DOMContentLoaded", function () {
 //  Error Display System
 // ═══════════════════════════════════════════════════════
 
+// ─── XSS-safe HTML escaper for form messages ───────────────────────
+function escFormHtml(str) {
+  if (typeof str !== 'string') return String(str);
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(str));
+  return d.innerHTML;
+}
+
 /**
  * Show a per-field inline error (red border + helper text below the field)
  */
@@ -618,7 +619,7 @@ function showFieldError(fieldId, message) {
 
   var errorMsg = document.createElement('span');
   errorMsg.className = 'field-error-msg';
-  errorMsg.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F04438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ' + message;
+  errorMsg.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F04438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ' + escFormHtml(message);
   errorMsg.style.cssText = 'display:flex;align-items:center;gap:6px;color:#F04438;font-size:13px;font-weight:500;margin-top:6px;animation:fadeIn 0.2s ease';
 
   parent.appendChild(errorMsg);
@@ -680,7 +681,7 @@ function showFormError(message) {
         '<line x1="12" y1="8" x2="12" y2="12"/>' +
         '<line x1="12" y1="16" x2="12.01" y2="16"/>' +
       '</svg>' +
-      '<span>' + message + '</span>' +
+      '<span>' + escFormHtml(message) + '</span>' +
     '</div>' +
     '<button class="form-error-toast__close" onclick="dismissFormError()" aria-label="Dismiss">' +
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F04438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -744,7 +745,7 @@ function showToast(message, type) {
       '<line x1="12" y1="8" x2="12" y2="12"/>' +
       '<line x1="12" y1="16" x2="12.01" y2="16"/>' +
     '</svg>' +
-    '<span>' + message + '</span>';
+    '<span>' + escFormHtml(message) + '</span>';
 
   document.body.appendChild(toast);
   setTimeout(function () {
@@ -800,7 +801,7 @@ function addFileToList(file) {
         '</div>' +
         '<div class="file-info">' +
           '<div class="file-details">' +
-            '<span class="file-name">' + file.name + '</span>' +
+            '<span class="file-name">' + escFormHtml(file.name) + '</span>' +
             '<span class="file-size">' + fileSize + '</span>' +
           '</div>' +
           '<div class="file-progress">' +

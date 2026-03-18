@@ -45,13 +45,6 @@
 const SettingsDataService = (function () {
     "use strict";
 
-    function getCsrfToken() {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; csrf_token=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return "";
-    }
-
     // ─── Core API Helper ─────────────────────────────────────────
 
     /**

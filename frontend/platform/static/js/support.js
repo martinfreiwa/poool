@@ -82,7 +82,69 @@
       // Initial trigger
       prioritySelect.dispatchEvent(new Event("change"));
     }
+
+    // Drag-and-drop file upload
+    initDragDropUpload();
   });
+
+  function initDragDropUpload() {
+    const dropZone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("ticket-attachment");
+    const fileInfo = document.getElementById("drop-zone-file-info");
+    if (!dropZone || !fileInput) return;
+
+    dropZone.addEventListener("click", () => fileInput.click());
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("drag-over");
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("drag-over");
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("drag-over");
+      if (e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        updateFileInfo(fileInput.files[0], fileInfo, dropZone);
+      }
+    });
+
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files.length > 0) {
+        updateFileInfo(fileInput.files[0], fileInfo, dropZone);
+      } else {
+        resetFileInfo(fileInfo, dropZone);
+      }
+    });
+  }
+
+  function updateFileInfo(file, infoEl, dropZone) {
+    if (!infoEl) return;
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    infoEl.innerHTML = `<strong>${esc(file.name)}</strong> (${sizeMB} MB)
+      <button type="button" class="drop-zone-remove" aria-label="Remove file">&times;</button>`;
+    infoEl.style.display = "block";
+    dropZone.classList.add("has-file");
+
+    infoEl.querySelector(".drop-zone-remove")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const input = document.getElementById("ticket-attachment");
+      if (input) input.value = "";
+      resetFileInfo(infoEl, dropZone);
+    });
+  }
+
+  function resetFileInfo(infoEl, dropZone) {
+    if (infoEl) {
+      infoEl.textContent = "";
+      infoEl.style.display = "none";
+    }
+    if (dropZone) dropZone.classList.remove("has-file");
+  }
 
   async function loadMyTickets() {
     try {
@@ -101,13 +163,17 @@
     }
   }
 
+  function isOpenStatus(status) {
+    return status === "open" || status === "in_progress" || status === "waiting_on_customer";
+  }
+
+  function isClosedStatus(status) {
+    return status === "resolved" || status === "closed";
+  }
+
   function updateStats() {
-    const open = allTickets.filter(
-      (t) => t.status === "open" || t.status === "in_progress",
-    ).length;
-    const resolved = allTickets.filter(
-      (t) => t.status === "resolved" || t.status === "closed",
-    ).length;
+    const open = allTickets.filter((t) => isOpenStatus(t.status)).length;
+    const resolved = allTickets.filter((t) => isClosedStatus(t.status)).length;
     setEl("stat-open-count", open);
     setEl("stat-resolved-count", resolved);
     setEl("stat-total-count", allTickets.length);
@@ -119,22 +185,18 @@
 
     let filtered = allTickets;
     if (currentFilter === "open")
-      filtered = allTickets.filter(
-        (t) => t.status === "open" || t.status === "in_progress",
-      );
+      filtered = allTickets.filter((t) => isOpenStatus(t.status));
     if (currentFilter === "resolved")
-      filtered = allTickets.filter(
-        (t) => t.status === "resolved" || t.status === "closed",
-      );
+      filtered = allTickets.filter((t) => isClosedStatus(t.status));
 
     if (filtered.length === 0) {
       container.innerHTML = `
                 <div class="support-empty">
-                    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="var(--support-muted)" stroke-width="1.5">
-                        <path d="M18 10c0 4.418-3.582 8-8 8a8.07 8.07 0 01-3.2-.66L2 18l.66-4.8A8.07 8.07 0 012 10c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D0D5DD" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                     </svg>
-                    <p>No tickets ${currentFilter ? `with "${currentFilter}" status` : "yet"}.</p>
-                    <p class="muted">Submit a ticket above and we'll get back to you within 24 hours.</p>
+                    <p style="font-size: 16px; font-weight: 600; color: #344054; margin-top: 12px;">No tickets ${currentFilter ? `with "${currentFilter}" status` : "yet"}</p>
+                    <p class="muted">Submit a ticket above and we'll get back to you shortly.</p>
                 </div>`;
       return;
     }
@@ -142,10 +204,13 @@
     container.innerHTML = filtered
       .map(
         (t) => `
-            <div class="support-ticket-card" onclick="document.getElementById('detail-${esc(t.id)}')?.classList.toggle('open')">
-                <div class="ticket-card-header">
+            <div class="support-ticket-card ticket-priority-border--${esc(t.priority || "normal")}" data-ticket-id="${esc(t.id)}">
+                <div class="ticket-card-header" onclick="document.getElementById('detail-${esc(t.id)}')?.classList.toggle('open')">
                     <div class="ticket-card-left">
-                        <span class="ticket-priority ticket-priority--${esc(t.priority || "normal")}">${esc((t.priority || "normal").toUpperCase())}</span>
+                        <div class="ticket-card-meta">
+                            <span class="ticket-priority ticket-priority--${esc(t.priority || "normal")}">${esc((t.priority || "normal").toUpperCase())}</span>
+                            ${t.category && t.category !== 'general' ? `<span class="ticket-category-tag">${esc(t.category)}</span>` : ''}
+                        </div>
                         <h3 class="ticket-card-subject">${esc(t.subject)}</h3>
                     </div>
                     <div class="ticket-card-right">
@@ -168,20 +233,7 @@
                                         <span class="reply-date">${formatDate(r.created_at)}</span>
                                     </div>
                                     <div class="reply-body">${esc(r.message)}</div>
-                                    ${r.attachments_json && r.attachments_json.length > 0 ? `
-                                        <div class="reply-attachments" style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
-                                            ${r.attachments_json.map(a => {
-                                                // Skip gs:// URLs that browsers can't open directly
-                                                const url = a.file_url && !a.file_url.startsWith('gs://') ? esc(a.file_url) : '#';
-                                                const isDisabled = url === '#' ? 'style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(0,0,0,0.05); border-radius: 4px; font-size: 12px; text-decoration: none; color: #9ca3af; cursor: not-allowed;" title="File not available for preview"' : 'style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: rgba(0,0,0,0.05); border-radius: 4px; font-size: 12px; text-decoration: none; color: #535862;"';
-                                                return `
-                                                <a href="${url}" target="_blank" class="attachment-link" ${isDisabled}>
-                                                    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path></svg>
-                                                    Attachment
-                                                </a>`;
-                                            }).join('')}
-                                        </div>
-                                    ` : ''}
+                                    ${renderAttachments(r.attachments_json)}
                                 </div>
                             `,
               )
@@ -191,7 +243,7 @@
             : ""
           }
                     <div class="ticket-actions" onclick="event.stopPropagation()">
-                        ${t.status === "open" || t.status === "in_progress"
+                        ${isOpenStatus(t.status)
             ? `
                             <form class="ticket-reply-form" onsubmit="window._submitReply(event, '${esc(t.id)}')">
                                 <textarea class="ticket-reply-input" placeholder="Type your reply…" required rows="2"></textarea>
@@ -200,7 +252,7 @@
                         `
             : ""
           }
-                        ${t.status === "resolved" || t.status === "closed"
+                        ${isClosedStatus(t.status)
             ? `
                             <button class="ticket-reopen-btn" onclick="window._reopenTicket('${esc(t.id)}')">Reopen Ticket</button>
                         `
@@ -212,6 +264,26 @@
         `,
       )
       .join("");
+  }
+
+  function renderAttachments(attachmentsJson) {
+    // Null-safe: handle null, undefined, and non-array values
+    if (!attachmentsJson || !Array.isArray(attachmentsJson) || attachmentsJson.length === 0) {
+      return '';
+    }
+    return `<div class="reply-attachments">
+      ${attachmentsJson.map(a => {
+        const url = a.file_url && !a.file_url.startsWith('gs://') ? esc(a.file_url) : '#';
+        const isDisabled = url === '#';
+        return `<a href="${url}" target="_blank" class="attachment-link ${isDisabled ? 'attachment-disabled' : ''}" 
+                   ${isDisabled ? 'title="File not available for preview" onclick="event.preventDefault()"' : ''}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                  Attachment
+                </a>`;
+      }).join('')}
+    </div>`;
   }
 
   // Expose reply and reopen to window for inline handlers
@@ -322,11 +394,14 @@
         document.getElementById("ticket-message").value = "";
         const fileInput = document.getElementById("ticket-attachment");
         if (fileInput) fileInput.value = "";
+        const dropZone = document.getElementById("drop-zone");
+        const fileInfo = document.getElementById("drop-zone-file-info");
+        resetFileInfo(fileInfo, dropZone);
         const suggestionBox = document.getElementById("faq-suggestion-container");
         if (suggestionBox) suggestionBox.style.display = "none";
 
         showToast(
-          "Ticket submitted! We'll respond within 24 hours.",
+          "Ticket submitted! We'll respond shortly.",
           "success",
         );
         loadMyTickets();
@@ -383,20 +458,20 @@
       document.querySelectorAll(".faq-item").forEach((item) => {
         const text = item.textContent.toLowerCase();
         if (text.includes(q)) {
-          const question = item.querySelector('.faq-question')?.textContent?.trim();
-          // Remove the svg arrow text if present
-          const cleanQuestion = question ? question.replace('How', 'How').trim() : null;
+          const questionBtn = item.querySelector('.faq-question');
+          // Get text content excluding the SVG arrow
+          const cleanQuestion = questionBtn ? questionBtn.childNodes[0]?.textContent?.trim() : null;
           if (cleanQuestion) matches.push({ title: cleanQuestion, node: item });
         }
       });
 
       if (matches.length > 0) {
         matches = matches.slice(0, 2); // Show top 2
-        let html = `<div style="font-weight: 600; font-size: 13px; color: #344054; margin-bottom: 6px;">Suggested Answers:</div>`;
+        let html = `<div class="faq-suggestion-header">💡 Suggested Answers:</div>`;
         matches.forEach(m => {
-          html += `<div style="font-size: 13px; color: #2E2EF9; cursor: pointer; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;" onclick="document.getElementById('faq-search').focus(); window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});">
+          html += `<div class="faq-suggestion-item" onclick="document.getElementById('faq-search').focus(); window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});">
             <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v16M2 10h16"></path></svg>
-            <span>Did you mean: ${m.title}</span>
+            <span>Did you mean: ${esc(m.title)}</span>
           </div>`;
         });
         container.innerHTML = html;
@@ -411,6 +486,7 @@
     const m = {
       open: "Open",
       in_progress: "In Progress",
+      waiting_on_customer: "Awaiting Reply",
       resolved: "Resolved",
       closed: "Closed",
     };
@@ -446,10 +522,20 @@
   function showToast(msg, type) {
     const colors = { success: "#22c55e", error: "#ef4444", info: "#6366f1" };
     const t = document.createElement("div");
-    t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:14px 22px;border-radius:12px;font-size:14px;font-weight:500;background:${colors[type] || colors.info};color:#fff;box-shadow:0 8px 30px rgba(0,0,0,0.2);animation:fadeIn 0.25s ease;`;
+    t.className = "support-toast support-toast--" + (type || "info");
+    t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:14px 22px;border-radius:12px;font-size:14px;font-weight:500;background:${colors[type] || colors.info};color:#fff;box-shadow:0 8px 30px rgba(0,0,0,0.2);opacity:0;transform:translateY(10px);transition:opacity 0.25s ease,transform 0.25s ease;`;
     t.textContent = msg;
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), 4000);
+    // Trigger animation
+    requestAnimationFrame(() => {
+      t.style.opacity = "1";
+      t.style.transform = "translateY(0)";
+    });
+    setTimeout(() => {
+      t.style.opacity = "0";
+      t.style.transform = "translateY(10px)";
+      setTimeout(() => t.remove(), 300);
+    }, 4000);
   }
 
   function getCookie(name) {

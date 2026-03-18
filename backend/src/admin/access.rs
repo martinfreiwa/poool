@@ -245,6 +245,7 @@ pub async fn api_admin_invite(
     };
 
     let token = uuid::Uuid::new_v4().to_string();
+    let token_hash = crate::config::hash_token(&token);
     let expires_at = chrono::Utc::now() + chrono::Duration::hours(24);
 
     let result = sqlx::query!(
@@ -252,7 +253,7 @@ pub async fn api_admin_invite(
         payload.email,
         role_id,
         user.id,
-        token,
+        token_hash,
         expires_at
     )
     .execute(&state.db)
@@ -663,9 +664,18 @@ pub async fn api_admin_invitation_resend(
             .execute(&state.db)
             .await;
 
-            let token_row = sqlx::query_scalar!("SELECT token_hash FROM admin_invitations WHERE id = $1", invite_id).fetch_optional(&state.db).await.unwrap_or_default();
+            // Generate a new token for the resend (the old hash is no longer usable as raw token)
+            let new_token = uuid::Uuid::new_v4().to_string();
+            let new_token_hash = crate::config::hash_token(&new_token);
+            let _ = sqlx::query!(
+                "UPDATE admin_invitations SET token_hash = $1 WHERE id = $2",
+                new_token_hash,
+                invite_id
+            )
+            .execute(&state.db)
+            .await;
             
-            if let Some(token) = token_row {
+            {
                 let subject = "You have been invited to be a POOOL Admin";
                 let body = format!(
                     r#"
@@ -674,7 +684,7 @@ pub async fn api_admin_invitation_resend(
                     <p>Please click the link below to accept the invitation:</p>
                     <p><a href="{}/auth/admin/accept-invite?token={}">Accept Invitation</a></p>
                     "#,
-                    state.config.base_url, token
+                    state.config.base_url, new_token
                 );
                 let _ = crate::common::email::send_email(&record.email, subject, &body).await;
             }

@@ -525,6 +525,7 @@ pub async fn create_password_reset_token(
     };
 
     let token = generate_session_token();
+    let token_hash = crate::config::hash_token(&token);
     let expires_at = Utc::now() + Duration::hours(1);
 
     sqlx::query(
@@ -534,7 +535,7 @@ pub async fn create_password_reset_token(
         "#,
     )
     .bind(user.id)
-    .bind(&token)
+    .bind(&token_hash)
     .bind(expires_at)
     .execute(pool)
     .await?;
@@ -568,6 +569,9 @@ pub async fn reset_password(
 
     let mut tx = pool.begin().await?;
 
+    // Hash the incoming token to compare with stored hash
+    let token_hash = crate::config::hash_token(token);
+
     // Find valid token
     let token_row = sqlx::query_as::<_, (Uuid, Uuid)>(
         r#"
@@ -575,7 +579,7 @@ pub async fn reset_password(
         WHERE token_hash = $1 AND expires_at > NOW() AND used_at IS NULL
         "#,
     )
-    .bind(token)
+    .bind(&token_hash)
     .fetch_optional(&mut *tx)
     .await?
     .ok_or_else(|| AppError::BadRequest("Invalid or expired password reset link.".to_string()))?;
@@ -612,6 +616,7 @@ pub async fn create_email_verification_token(
     base_url: &str,
 ) -> Result<(), AppError> {
     let token = generate_session_token();
+    let token_hash = crate::config::hash_token(&token);
     let expires_at = Utc::now() + Duration::hours(24);
 
     sqlx::query(
@@ -621,7 +626,7 @@ pub async fn create_email_verification_token(
         "#,
     )
     .bind(user_id)
-    .bind(&token)
+    .bind(&token_hash)
     .bind(expires_at)
     .execute(pool)
     .await?;
@@ -649,13 +654,16 @@ pub async fn create_email_verification_token(
 pub async fn verify_email(pool: &PgPool, token: &str) -> Result<(), AppError> {
     let mut tx = pool.begin().await?;
 
+    // Hash the incoming token to compare with stored hash
+    let token_hash = crate::config::hash_token(token);
+
     let token_row = sqlx::query_as::<_, (Uuid, Uuid)>(
         r#"
         SELECT id, user_id FROM email_verification_tokens
         WHERE token_hash = $1 AND expires_at > NOW()
         "#,
     )
-    .bind(token)
+    .bind(&token_hash)
     .fetch_optional(&mut *tx)
     .await?
     .ok_or_else(|| {

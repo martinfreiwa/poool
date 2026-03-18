@@ -27,9 +27,9 @@ const targetFiles = [
 ];
 
 const basePath = "/Users/martin/Projects/poool/frontend/platform";
-const searchString = '<script src="/static/js/user-data.js"></script>';
+const searchRegex = /<script src="\/static\/js\/user-data\.js.*?"\s*><\/script>/;
 const replacementString =
-  '<script src="/static/js/user-data.js"></script><link rel="stylesheet" href="/static/css/poool-dropdown.css"><script src="/static/js/poool-dropdown.js"></script><script src="/static/js/poool-dropdown-init.js"></script>';
+  '<script src="/static/js/user-data.js"></script>\n  <link rel="stylesheet" href="/static/css/poool-dropdown.css">\n  <script src="/static/js/poool-dropdown.js"></script>\n  <script src="/static/js/poool-dropdown-init.js"></script>';
 
 let modifiedCount = 0;
 
@@ -43,8 +43,8 @@ targetFiles.forEach((file) => {
       return;
     }
 
-    if (content.includes(searchString)) {
-      content = content.replace(searchString, replacementString);
+    if (searchRegex.test(content)) {
+      content = content.replace(searchRegex, replacementString);
       fs.writeFileSync(filePath, content, "utf8");
       modifiedCount++;
     } else {

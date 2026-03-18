@@ -9,13 +9,6 @@
  * Save & Exit — persists whatever the user has typed so far (no validation)
  * then navigates to the submissions list.
  */
-function getCsrfToken() {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; csrf_token=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return "";
-}
-
 async function saveAndExitStep4(btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
@@ -450,7 +443,9 @@ document.addEventListener("DOMContentLoaded", function () {
         throw new Error(err.error || "Failed to submit for review");
       }
 
-      // Success — redirect to the success page
+      // Success — clear draft state and redirect to the success page
+      localStorage.removeItem("draft_asset_id");
+      localStorage.removeItem("selectedAssetType");
       window.location.href = "/developer/submission-success";
     } catch (err) {
       console.error("Submission error:", err);

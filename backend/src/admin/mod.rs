@@ -280,6 +280,23 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/rewards/referrals/:ref_id",
             patch(api_admin_referral_update),
         )
+        // Change Requests
+        .route(
+            "/api/admin/change-requests",
+            get(crate::developer::change_requests::admin_list),
+        )
+        .route(
+            "/api/admin/change-requests/:id",
+            get(crate::developer::change_requests::admin_detail),
+        )
+        .route(
+            "/api/admin/change-requests/:id/approve",
+            post(crate::developer::change_requests::admin_approve),
+        )
+        .route(
+            "/api/admin/change-requests/:id/reject",
+            post(crate::developer::change_requests::admin_reject),
+        )
         // Support
         .route("/api/admin/support", get(api_admin_support_tickets))
         .route("/api/admin/support/bulk", patch(api_admin_support_bulk))

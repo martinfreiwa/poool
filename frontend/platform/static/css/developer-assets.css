@@ -17,7 +17,7 @@
   overflow: hidden !important;
   border: 1px solid #e9eaeb !important;
   width: 100% !important;
-  max-width: 1200px;
+  max-width: none !important;
   height: 56px !important;
   padding: 6px !important;
   top: auto !important;
@@ -64,10 +64,10 @@
 #developer-assets-main .property-grid,
 .cart-page-main .property-grid {
   display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
+  grid-template-columns: repeat(auto-fill, minmax(344px, 1fr)) !important;
   gap: 24px !important;
   width: 100% !important;
-  max-width: 1200px;
+  max-width: none !important;
   position: static !important;
   top: auto !important;
   left: auto !important;
@@ -75,7 +75,6 @@
 
 #developer-assets-main .property-card,
 .cart-page-main .property-card {
-  width: 100% !important;
   min-width: 0 !important;
 }
 

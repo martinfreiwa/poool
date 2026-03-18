@@ -257,7 +257,7 @@ pub struct WalletTransactionApiEntry {
     pub tx_type: String,
     pub status: String,
     pub amount_cents: i64,
-    pub amount_usd: f64,
+    pub amount_display: String,
     pub wallet_type: String,
     pub created_at: String,
 }

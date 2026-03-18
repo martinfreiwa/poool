@@ -114,19 +114,19 @@ function processTransactions(transactionsData) {
                         ${getTxTypeIcon(tx.type)}
                     </div>
                 </div>
-                <span class="wallet-transaction-type-text">${txTypeLabel}</span>
+                <span class="wallet-transaction-type-text">${escHtml(txTypeLabel)}</span>
             </div>
             <div class="table__cell table__cell--status">
                 ${getStatusBadge(tx.status)}
             </div>
             <div class="table__cell table__cell--date">
-                <span class="table__cell-text-value">${formatDate(tx.created_at)}</span>
+                <span class="table__cell-text-value">${escHtml(formatDate(tx.created_at))}</span>
             </div>
             <div class="table__cell table__cell--wallet">
                 <span class="table__cell-text-value">${tx.wallet_type === 'cash' ? 'Cash balance' : 'Rewards balance'}</span>
             </div>
             <div class="table__cell table__cell--amount">
-                <span class="${amountCss}">${amountPrefix} USD ${formatUSD(tx.amount_cents)}</span>
+                <span class="${escHtml(amountCss)}">${escHtml(amountPrefix)} USD ${escHtml(formatUSD(tx.amount_cents))}</span>
             </div>
             <div class="table__cell table__cell--actions">
                 <button class="wallet-transaction-action-btn">
@@ -139,8 +139,14 @@ function processTransactions(transactionsData) {
     });
 }
 
+function escHtml(str) {
+    if (typeof str !== 'string') return String(str);
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(str));
+    return d.innerHTML;
+}
+
 async function loadTransactions() {
-    console.log("Loading transactions...");
     const skeleton = document.getElementById('transactions-loading-skeleton');
     const content = document.getElementById('transactions-content');
     const fetchError = document.getElementById('transactions-fetch-error');

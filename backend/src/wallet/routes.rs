@@ -17,6 +17,7 @@ use crate::payment_methods;
 // ─── Forms ──────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct DepositForm {
     pub amount: String, // from the UI, e.g. "100"
     pub payment_method_id: Option<String>,
@@ -308,6 +309,28 @@ fn build_payment_method_html(
     )
 }
 
+/// Parse a user-supplied dollar string into cents using string manipulation.
+/// Avoids IEEE754 float rounding errors (e.g., 19.99 * 100 != 1999).
+fn parse_dollars_to_cents(raw: &str) -> i64 {
+    let cleaned: String = raw.chars().filter(|c| c.is_ascii_digit() || *c == '.').collect();
+    if cleaned.is_empty() {
+        return 0;
+    }
+    let parts: Vec<&str> = cleaned.split('.').collect();
+    let dollars: i64 = parts[0].parse().unwrap_or(0);
+    let cents: i64 = if parts.len() > 1 {
+        let frac = parts[1];
+        match frac.len() {
+            0 => 0,
+            1 => frac.parse::<i64>().unwrap_or(0) * 10,       // "5" → 50 cents
+            _ => frac[..2].parse::<i64>().unwrap_or(0),        // "99" or "995" → 99 cents
+        }
+    } else {
+        0
+    };
+    dollars * 100 + cents
+}
+
 // ─── Deposit / Withdraw Handlers ────────────────────────────────
 
 /// POST /wallet/deposit
@@ -321,13 +344,13 @@ pub async fn handle_deposit(
         None => return Redirect::to("/auth/login").into_response(),
     };
 
-    let amount_clean: String = form
-        .amount
-        .chars()
-        .filter(|c| c.is_ascii_digit() || *c == '.')
-        .collect();
-    let amount_dollars = amount_clean.parse::<f64>().unwrap_or(0.0);
-    let amount_cents = (amount_dollars * 100.0).round() as i64;
+    let amount_cents = parse_dollars_to_cents(&form.amount);
+
+    // Reject unreasonably large deposits (max $1,000,000)
+    const MAX_DEPOSIT_CENTS: i64 = 100_000_000;
+    if amount_cents > MAX_DEPOSIT_CENTS {
+        return Redirect::to("/wallet?error=amount_too_large").into_response();
+    }
 
     if amount_cents > 0 {
         // We defer to payments service to create the deposit intent
@@ -358,81 +381,107 @@ pub async fn handle_withdraw(
         None => return Redirect::to("/auth/login").into_response(),
     };
 
-    let amount_clean: String = form
-        .amount
-        .chars()
-        .filter(|c| c.is_ascii_digit() || *c == '.')
-        .collect();
-    let amount_dollars = amount_clean.parse::<f64>().unwrap_or(0.0);
-    let amount_cents = (amount_dollars * 100.0).round() as i64;
+    let amount_cents = parse_dollars_to_cents(&form.amount);
 
     if amount_cents > 0 {
-        let current_balance: i64 = sqlx::query_scalar(
-            "SELECT balance_cents FROM wallets WHERE user_id = $1 AND wallet_type = 'cash'",
+        // Use a transaction with FOR UPDATE lock to prevent TOCTOU double-spend race
+        let mut tx = match state.db.begin().await {
+            Ok(t) => t,
+            Err(e) => {
+                tracing::error!("Withdraw TX begin failed: {}", e);
+                return Redirect::to("/wallet?error=withdraw_failed").into_response();
+            }
+        };
+
+        // Lock the wallet row and check balance atomically
+        let wallet_row = sqlx::query_as::<_, (Uuid, i64)>(
+            "SELECT id, balance_cents FROM wallets WHERE user_id = $1 AND wallet_type = 'cash' AND currency = 'USD' FOR UPDATE",
         )
         .bind(user.id)
-        .fetch_optional(&state.db)
-        .await
-        .unwrap_or(Some(0))
-        .unwrap_or(0);
+        .fetch_optional(&mut *tx)
+        .await;
 
-        // We check balance here as a UX sanity check. The admin confirm step will check again.
-        // We aren't freezing the balance, we're just recording the pending request.
-        if current_balance >= amount_cents {
-            let pm_uuid = if let Some(pm_id) = &form.payment_method_id {
-                Uuid::parse_str(pm_id).ok()
-            } else {
-                None
-            };
-
-            let req_id: Result<Uuid, sqlx::Error> = sqlx::query_scalar(
-                r#"
-                INSERT INTO withdrawal_requests (user_id, amount_cents, currency, payment_method_id, status)
-                VALUES ($1, $2, 'USD', $3, 'pending')
-                RETURNING id
-                "#
-            )
-            .bind(user.id)
-            .bind(amount_cents)
-            .bind(pm_uuid)
-            .fetch_one(&state.db)
-            .await;
-
-            match req_id {
-                Ok(id) => {
-                    tracing::info!("Created withdrawal request {} for user {} (amount {})", id, user.id, amount_cents);
-
-                    // Add a pending transaction purely for UI visibility in the ledger
-                    let _ = ensure_wallets(&state.db, user.id).await;
-                    let wallet_id: Option<Uuid> = sqlx::query_scalar(
-                        "SELECT id FROM wallets WHERE user_id = $1 AND wallet_type = 'cash'"
-                    )
-                    .bind(user.id)
-                    .fetch_optional(&state.db)
-                    .await
-                    .unwrap_or(None);
-
-                    if let Some(wid) = wallet_id {
-                        let _ = sqlx::query(
-                            "INSERT INTO wallet_transactions (wallet_id, type, status, amount_cents, external_ref_id) VALUES ($1, 'withdrawal', 'pending', $2, $3)"
-                        )
-                        .bind(wid)
-                        .bind(-amount_cents)
-                        .bind(id.to_string())
-                        .execute(&state.db)
-                        .await;
-                    }
-
-                    return Redirect::to("/wallet?withdraw_requested=true").into_response();
-                }
-                Err(e) => {
-                    tracing::error!("Failed to create withdrawal request for user {}: {}", user.id, e);
-                    return Redirect::to("/wallet?error=withdraw_failed").into_response();
-                }
+        let (wallet_id, current_balance) = match wallet_row {
+            Ok(Some(row)) => row,
+            Ok(None) => {
+                let _ = tx.rollback().await;
+                tracing::warn!("No wallet found for user {}", user.id);
+                return Redirect::to("/wallet?error=insufficient_funds").into_response();
             }
-        } else {
+            Err(e) => {
+                let _ = tx.rollback().await;
+                tracing::error!("Wallet lookup failed: {}", e);
+                return Redirect::to("/wallet?error=withdraw_failed").into_response();
+            }
+        };
+
+        if current_balance < amount_cents {
+            let _ = tx.rollback().await;
             tracing::warn!("Insufficient funds: user {} has {} cents, tried to withdraw {} cents", user.id, current_balance, amount_cents);
             return Redirect::to("/wallet?error=insufficient_funds").into_response();
+        }
+
+        let pm_uuid = if let Some(pm_id) = &form.payment_method_id {
+            Uuid::parse_str(pm_id).ok()
+        } else {
+            None
+        };
+
+        // Deduct balance to freeze funds
+        if let Err(e) = sqlx::query("UPDATE wallets SET balance_cents = balance_cents - $1 WHERE id = $2")
+            .bind(amount_cents)
+            .bind(wallet_id)
+            .execute(&mut *tx)
+            .await 
+        {
+            let _ = tx.rollback().await;
+            tracing::error!("Failed to freeze balance: {}", e);
+            return Redirect::to("/wallet?error=withdraw_failed").into_response();
+        }
+
+        // Create withdrawal request inside the transaction
+        let req_id: Result<Uuid, sqlx::Error> = sqlx::query_scalar(
+            r#"
+            INSERT INTO withdrawal_requests (user_id, amount_cents, currency, payment_method_id, status)
+            VALUES ($1, $2, 'USD', $3, 'pending')
+            RETURNING id
+            "#
+        )
+        .bind(user.id)
+        .bind(amount_cents)
+        .bind(pm_uuid)
+        .fetch_one(&mut *tx)
+        .await;
+
+        match req_id {
+            Ok(id) => {
+                // Add a pending transaction for UI visibility in the ledger
+                let _ = sqlx::query(
+                    "INSERT INTO wallet_transactions (wallet_id, type, status, amount_cents, external_ref_id) VALUES ($1, 'withdrawal', 'pending', $2, $3)"
+                )
+                .bind(wallet_id)
+                .bind(-amount_cents)
+                .bind(id.to_string())
+                .execute(&mut *tx)
+                .await;
+
+                // Commit the atomic operation
+                match tx.commit().await {
+                    Ok(_) => {
+                        tracing::info!("Created withdrawal request {} for user {} (amount {})", id, user.id, amount_cents);
+                        return Redirect::to("/wallet?withdraw_requested=true").into_response();
+                    }
+                    Err(e) => {
+                        tracing::error!("Withdraw TX commit failed: {}", e);
+                        return Redirect::to("/wallet?error=withdraw_failed").into_response();
+                    }
+                }
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                tracing::error!("Failed to create withdrawal request for user {}: {}", user.id, e);
+                return Redirect::to("/wallet?error=withdraw_failed").into_response();
+            }
         }
     }
 
@@ -627,7 +676,11 @@ pub async fn api_wallet_transactions(
                 tx_type: tx_type.clone(),
                 status: status.clone(),
                 amount_cents: *amount,
-                amount_usd: *amount as f64 / 100.0,
+                amount_display: {
+                    let abs = amount.unsigned_abs();
+                    let sign = if *amount < 0 { "-" } else { "" };
+                    format!("{}${}.{:02}", sign, abs / 100, abs % 100)
+                },
                 wallet_type: wallet_type.clone(),
                 created_at: created_at.to_rfc3339(),
             },

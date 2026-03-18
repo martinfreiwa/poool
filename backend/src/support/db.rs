@@ -8,7 +8,8 @@ pub async fn list_user_tickets(
     user_id: Uuid,
 ) -> Result<Vec<SupportTicket>, sqlx::Error> {
     sqlx::query_as::<_, SupportTicket>(
-        r#"SELECT id::text, subject, message, priority, status, created_at::text, updated_at::text
+        r#"SELECT id::text, subject, message, priority, status, category,
+                  created_at::text, updated_at::text
            FROM support_tickets WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50"#,
     )
     .bind(user_id)
@@ -16,7 +17,8 @@ pub async fn list_user_tickets(
     .await
 }
 
-/// Fetches all replies for a given ticket ID, ordered chronologically.
+/// Fetches all non-initial replies for a given ticket ID, ordered chronologically.
+/// Excludes the 'initial' reply type to avoid showing the duplicate message.
 pub async fn get_ticket_replies(
     pool: &PgPool,
     ticket_id: &str,
@@ -32,12 +34,63 @@ pub async fn get_ticket_replies(
                       '[]'::json
                   ) as attachments_json
            FROM support_ticket_replies r 
-           WHERE r.ticket_id = $1::uuid 
-           ORDER BY r.created_at ASC"#
+           WHERE r.ticket_id = $1::uuid
+             AND r.type != 'initial'
+           ORDER BY r.created_at ASC"#,
     )
     .bind(ticket_id)
     .fetch_all(pool)
     .await
+}
+
+/// Batch-loads all replies for multiple ticket IDs in a single query.
+/// Returns replies grouped by ticket_id to eliminate the N+1 problem.
+pub async fn get_replies_for_tickets(
+    pool: &PgPool,
+    ticket_ids: &[String],
+) -> Result<std::collections::HashMap<String, Vec<SupportTicketReply>>, sqlx::Error> {
+    use sqlx::Row;
+
+    if ticket_ids.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+
+    let rows = sqlx::query(
+        r#"SELECT r.ticket_id::text as tid,
+                  r.content as message,
+                  (r.author_role IN ('admin', 'agent')) as is_admin,
+                  r.author_name,
+                  r.created_at::text as created_at,
+                  COALESCE(
+                      (SELECT json_agg(json_build_object('file_url', a.file_url, 'file_type', a.file_type)) 
+                       FROM support_ticket_attachments a WHERE a.reply_id = r.id), 
+                      '[]'::json
+                  ) as attachments_json
+           FROM support_ticket_replies r 
+           WHERE r.ticket_id = ANY($1::uuid[])
+             AND r.type != 'initial'
+           ORDER BY r.created_at ASC"#,
+    )
+    .bind(ticket_ids)
+    .fetch_all(pool)
+    .await?;
+
+    let mut map: std::collections::HashMap<String, Vec<SupportTicketReply>> =
+        std::collections::HashMap::new();
+
+    for row in rows {
+        let tid: String = row.get("tid");
+        let reply = SupportTicketReply {
+            message: row.get("message"),
+            is_admin: row.get("is_admin"),
+            author_name: row.get("author_name"),
+            created_at: row.get("created_at"),
+            attachments_json: row.get("attachments_json"),
+        };
+        map.entry(tid).or_default().push(reply);
+    }
+
+    Ok(map)
 }
 
 /// Checks if a ticket belongs to a user and returns its current status.
@@ -58,7 +111,7 @@ pub async fn check_ticket_ownership(
 /// Retrieves the profile display name of a user.
 pub async fn get_user_display_name(pool: &PgPool, user_id: Uuid) -> String {
     sqlx::query_scalar(
-        "SELECT COALESCE(first_name || ' ' || last_name, 'User') FROM user_profiles WHERE user_id = $1"
+        "SELECT COALESCE(first_name || ' ' || last_name, 'User') FROM user_profiles WHERE user_id = $1",
     )
     .bind(user_id)
     .fetch_optional(pool)
@@ -66,26 +119,6 @@ pub async fn get_user_display_name(pool: &PgPool, user_id: Uuid) -> String {
     .ok()
     .flatten()
     .unwrap_or_else(|| "User".to_string())
-}
-
-/// Inserts a new support ticket into the database.
-pub async fn create_ticket(
-    pool: &PgPool,
-    user_id: Uuid,
-    subject: &str,
-    message: &str,
-    priority: &str,
-) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO support_tickets (user_id, subject, message, priority) VALUES ($1, $2, $3, $4)",
-    )
-    .bind(user_id)
-    .bind(subject)
-    .bind(message)
-    .bind(priority)
-    .execute(pool)
-    .await
-    .map(|_| ())
 }
 
 pub async fn get_user_context(
@@ -141,6 +174,9 @@ pub async fn get_user_context(
     }))
 }
 
+/// Creates a new ticket and its initial reply. Returns (ticket_id, reply_id).
+/// SLA breach times match the response times shown to users:
+///   urgent = 1 hour, high = 2 hours, normal = 4 hours, low = 24 hours
 pub async fn create_ticket_v2(
     pool: &PgPool,
     user_id: Uuid,
@@ -149,16 +185,20 @@ pub async fn create_ticket_v2(
     priority: &str,
     category: &str,
     metadata: &serde_json::Value,
-) -> Result<String, sqlx::Error> {
+) -> Result<(String, String), sqlx::Error> {
     let breach_hours = match priority {
-        "urgent" => 2,
-        "high" => 12,
-        _ => 24, // normal, low
+        "urgent" => 1,
+        "high" => 2,
+        "normal" => 4,
+        _ => 24, // low
     };
+
+    // Use a transaction so ticket + initial reply are atomic
+    let mut tx = pool.begin().await?;
 
     let ticket_id: Uuid = sqlx::query_scalar(
         r#"INSERT INTO support_tickets (user_id, subject, message, priority, category, metadata, sla_breach_at) 
-           VALUES ($1, $2, $3, $4, $5, $6, NOW() + make_interval(hours => CAST($7 AS INT))) RETURNING id"#
+           VALUES ($1, $2, $3, $4, $5, $6, NOW() + make_interval(hours => CAST($7 AS INT))) RETURNING id"#,
     )
     .bind(user_id)
     .bind(subject)
@@ -167,13 +207,26 @@ pub async fn create_ticket_v2(
     .bind(category)
     .bind(metadata)
     .bind(breach_hours)
-    .fetch_one(pool)
+    .fetch_one(&mut *tx)
     .await?;
 
     // Create the initial reply to anchor attachments
-    let _ = add_initial_reply(pool, &ticket_id.to_string(), user_id, message).await?;
+    let author_name = get_user_display_name(pool, user_id).await;
 
-    Ok(ticket_id.to_string())
+    let reply_id: Uuid = sqlx::query_scalar(
+        r#"INSERT INTO support_ticket_replies (ticket_id, author_id, author_name, author_role, type, content)
+           VALUES ($1::uuid, $2, $3, 'user', 'initial', $4) RETURNING id"#,
+    )
+    .bind(ticket_id.to_string())
+    .bind(user_id)
+    .bind(&author_name)
+    .bind(message)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok((ticket_id.to_string(), reply_id.to_string()))
 }
 
 pub async fn add_initial_reply(
@@ -186,7 +239,7 @@ pub async fn add_initial_reply(
 
     let reply_id: Uuid = sqlx::query_scalar(
         r#"INSERT INTO support_ticket_replies (ticket_id, author_id, author_name, author_role, type, content)
-           VALUES ($1::uuid, $2, $3, 'user', 'initial', $4) RETURNING id"#
+           VALUES ($1::uuid, $2, $3, 'user', 'initial', $4) RETURNING id"#,
     )
     .bind(ticket_id)
     .bind(author_id)
@@ -198,31 +251,21 @@ pub async fn add_initial_reply(
     Ok(reply_id.to_string())
 }
 
+/// Links an attachment to a specific reply by reply_id (no guessing).
 pub async fn add_ticket_attachment(
     pool: &PgPool,
-    ticket_id: &str,
-    user_id: Uuid,
+    reply_id: &str,
     file_url: &str,
     file_type: &str,
 ) -> Result<(), sqlx::Error> {
-    let reply_id: Option<Uuid> = sqlx::query_scalar(
-        "SELECT id FROM support_ticket_replies WHERE ticket_id = $1::uuid AND author_id = $2 ORDER BY created_at DESC LIMIT 1"
+    sqlx::query(
+        "INSERT INTO support_ticket_attachments (reply_id, file_url, file_type) VALUES ($1::uuid, $2, $3)",
     )
-    .bind(ticket_id)
-    .bind(user_id)
-    .fetch_optional(pool)
+    .bind(reply_id)
+    .bind(file_url)
+    .bind(file_type)
+    .execute(pool)
     .await?;
-
-    if let Some(r_id) = reply_id {
-        sqlx::query(
-            "INSERT INTO support_ticket_attachments (reply_id, file_url, file_type) VALUES ($1, $2, $3)"
-        )
-        .bind(r_id)
-        .bind(file_url)
-        .bind(file_type)
-        .execute(pool)
-        .await?;
-    }
 
     Ok(())
 }
@@ -250,16 +293,16 @@ pub async fn add_reply(
     author_name: &str,
     content: &str,
 ) -> Result<(), sqlx::Error> {
-    let _ = sqlx::query(
+    sqlx::query(
         r#"INSERT INTO support_ticket_replies (ticket_id, author_id, author_name, author_role, type, content)
-           VALUES ($1::uuid, $2, $3, 'user', 'reply', $4)"#
+           VALUES ($1::uuid, $2, $3, 'user', 'reply', $4)"#,
     )
     .bind(ticket_id)
     .bind(author_id)
     .bind(author_name)
     .bind(content)
     .execute(pool)
-    .await;
+    .await?;
 
     sqlx::query("UPDATE support_tickets SET updated_at = NOW() WHERE id = $1::uuid")
         .bind(ticket_id)
@@ -275,7 +318,7 @@ pub async fn reopen_ticket(
     user_id: Uuid,
 ) -> Result<(), sqlx::Error> {
     sqlx::query(
-        "UPDATE support_tickets SET status = 'open', updated_at = NOW() WHERE id = $1::uuid AND user_id = $2"
+        "UPDATE support_tickets SET status = 'open', updated_at = NOW() WHERE id = $1::uuid AND user_id = $2",
     )
     .bind(ticket_id)
     .bind(user_id)

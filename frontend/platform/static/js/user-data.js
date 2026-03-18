@@ -9,6 +9,12 @@
 (function () {
   "use strict";
 
+  /** Escape HTML special characters to prevent XSS in innerHTML */
+  function escHtml(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+  }
+
   // Fetch current user profile from the backend
   const savedProfile = localStorage.getItem("selectedProfile");
 
@@ -163,7 +169,7 @@
                                     <div class="profile-online-indicator"></div>
                                 </div>
                                 <div class="profile-text-wrapper">
-                                    <span class="profile-account-name">${user.name}</span>
+                                    <span class="profile-account-name">${escHtml(user.name)}</span>
                                     <span class="profile-account-type">Admin Dashboard</span>
                                 </div>
                             </div>
@@ -208,7 +214,7 @@
                                     <div class="mobile-profile-online-indicator"></div>
                                 </div>
                                 <div class="mobile-profile-text-wrapper">
-                                    <span class="mobile-profile-account-name">${user.name}</span>
+                                    <span class="mobile-profile-account-name">${escHtml(user.name)}</span>
                                     <span class="mobile-profile-account-type">Admin Dashboard</span>
                                 </div>
                             </div>
@@ -357,11 +363,11 @@
                             <div id="menu-item-current-account" class="profile-menu-item account-item ${!savedProfile || savedProfile === "investor" ? "selected" : ""}">
                                 <div class="profile-account-content">
                                     <div class="profile-avatar-group">
-                                        <div class="profile-avatar"><img src="${generateInitialsAvatar(user.initials)}" alt="${user.name}">
+                                        <div class="profile-avatar"><img src="${generateInitialsAvatar(user.initials)}" alt="${escHtml(user.name)}">
                                             <div class="profile-avatar-border"></div>
                                             <div class="profile-online-indicator"></div>
                                         </div>
-                                        <div class="profile-text-wrapper"><span class="profile-account-name">${user.name}</span> <span class="profile-account-type">Investor Profile</span></div>
+                                        <div class="profile-text-wrapper"><span class="profile-account-name">${escHtml(user.name)}</span> <span class="profile-account-type">Investor Profile</span></div>
                                     </div>
                                     <div class="profile-checkbox ${!savedProfile || savedProfile === "investor" ? "selected" : ""}">
                                         <div class="profile-checkbox-check"></div>
@@ -369,14 +375,14 @@
                                 </div>
                             </div>
 
-                            <div id="menu-item-account-developer" class="profile-menu-item account-item ${savedProfile === "developer" ? "selected" : ""}" data-profile-id="${user.email}-developer">
+                            <div id="menu-item-account-developer" class="profile-menu-item account-item ${savedProfile === "developer" ? "selected" : ""}" data-profile-id="${escHtml(user.email)}-developer">
                                 <div class="profile-account-content">
                                     <div class="profile-avatar-group">
-                                        <div class="profile-avatar"><img src="/images/Featured icon.webp" alt="${user.name}">
+                                        <div class="profile-avatar"><img src="/images/Featured icon.webp" alt="${escHtml(user.name)}">
                                             <div class="profile-avatar-border"></div>
                                             <div class="profile-online-indicator"></div>
                                         </div>
-                                        <div class="profile-text-wrapper"><span class="profile-account-name">${user.name}</span> <span class="profile-account-type">Developer profile</span></div>
+                                        <div class="profile-text-wrapper"><span class="profile-account-name">${escHtml(user.name)}</span> <span class="profile-account-type">Developer profile</span></div>
                                     </div>
                                     <div class="profile-checkbox ${savedProfile === "developer" ? "selected" : ""}">
                                         <div class="profile-checkbox-check"></div>
@@ -384,7 +390,7 @@
                                 </div>
                             </div>
 
-                            <div id="menu-item-account-admin" class="profile-menu-item account-item ${savedProfile === "admin" ? "selected" : ""}" data-profile-id="${user.email}-admin">
+                            <div id="menu-item-account-admin" class="profile-menu-item account-item ${savedProfile === "admin" ? "selected" : ""}" data-profile-id="${escHtml(user.email)}-admin">
                                 <div class="profile-account-content">
                                     <div class="profile-avatar-group">
                                         <div class="profile-avatar">
@@ -397,7 +403,7 @@
                                             <div class="profile-avatar-border"></div>
                                             <div class="profile-online-indicator"></div>
                                         </div>
-                                        <div class="profile-text-wrapper"><span class="profile-account-name">${user.name}</span> <span class="profile-account-type">Admin Dashboard</span></div>
+                                        <div class="profile-text-wrapper"><span class="profile-account-name">${escHtml(user.name)}</span> <span class="profile-account-type">Admin Dashboard</span></div>
                                     </div>
                                     <div class="profile-checkbox ${savedProfile === "admin" ? "selected" : ""}">
                                         <div class="profile-checkbox-check"></div>

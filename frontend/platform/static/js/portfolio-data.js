@@ -13,6 +13,20 @@
 (function () {
   "use strict";
 
+  // ─── XSS-safe HTML escaper ───────────────────────────────────
+  function escHtml(str) {
+    if (typeof str !== "string") return String(str);
+    var d = document.createElement("div");
+    d.appendChild(document.createTextNode(str));
+    return d.innerHTML;
+  }
+
+  /** Sanitize slug to only allow safe URL path characters */
+  function safeSlug(slug) {
+    if (typeof slug !== "string") return "";
+    return slug.replace(/[^a-zA-Z0-9_-]/g, "");
+  }
+
   // ─── State Layer IDs ─────────────────────────────────────────
   const SECTION_IDS = [
     "portfolio-value-section",
@@ -151,43 +165,49 @@
       return;
     }
 
-    body.innerHTML = investments.map((inv) => `
+    body.innerHTML = investments.map((inv) => {
+      const slug = safeSlug(inv.assetSlug);
+      const title = escHtml(inv.assetTitle);
+      const cover = escHtml(inv.coverImage);
+      const statusCss = escHtml(inv.statusCss);
+      const statusLabel = escHtml(inv.statusLabel);
+      return `
       <div class="portfolio-assets-row">
         <div class="portfolio-assets-cell property-col">
           <div class="portfolio-assets-property">
             <div class="portfolio-assets-property-image">
-              <img loading="lazy" src="${inv.coverImage}" alt="${inv.assetTitle}"
+              <img loading="lazy" src="${cover}" alt="${title}"
                 width="48" height="48" onerror="this.src='/images/property-placeholder.webp'" />
             </div>
             <div class="portfolio-assets-property-info">
-              <div class="portfolio-assets-property-name">${inv.assetTitle}</div>
+              <div class="portfolio-assets-property-name">${title}</div>
             </div>
           </div>
         </div>
         <div class="portfolio-assets-cell investment-col">
           <div class="portfolio-assets-investment">
-            <div class="portfolio-assets-value">${inv.currentValueDisplay}</div>
-            <div class="portfolio-assets-change ${inv.appreciationClass}">
+            <div class="portfolio-assets-value">${escHtml(inv.currentValueDisplay)}</div>
+            <div class="portfolio-assets-change ${escHtml(inv.appreciationClass)}">
               <span class="portfolio-assets-change-icon"></span>
-              <span>${inv.appreciationDisplay}</span>
+              <span>${escHtml(inv.appreciationDisplay)}</span>
             </div>
           </div>
         </div>
         <div class="portfolio-assets-cell rental-col">
           <div class="portfolio-assets-rental">
-            <div class="portfolio-assets-value">${inv.totalRentalDisplay}</div>
+            <div class="portfolio-assets-value">${escHtml(inv.totalRentalDisplay)}</div>
           </div>
         </div>
         <div class="portfolio-assets-cell status-col">
-          ${buildStatusBadgeHtml(inv.statusCss, inv.statusLabel)}
+          ${buildStatusBadgeHtml(statusCss, statusLabel)}
         </div>
         <div class="portfolio-assets-cell actions-col">
           <button class="portfolio-assets-action-btn"
-            onclick="window.location.href='/property/${inv.assetSlug}'">
+            onclick="window.location.href='/property/${slug}'">
             See Details
           </button>
         </div>
-      </div>`).join("");
+      </div>`;}).join("");
   }
 
   function updateMobileAssetsTable(investments) {
@@ -199,43 +219,49 @@
       return;
     }
 
-    body.innerHTML = investments.map((inv) => `
+    body.innerHTML = investments.map((inv) => {
+      const slug = safeSlug(inv.assetSlug);
+      const title = escHtml(inv.assetTitle);
+      const cover = escHtml(inv.coverImage);
+      const statusCss = escHtml(inv.statusCss);
+      const statusLabel = escHtml(inv.statusLabel);
+      return `
       <tr class="mobile-assets-row"
-        onclick="window.location.href='/property/${inv.assetSlug}'" style="cursor:pointer;">
+        onclick="window.location.href='/property/${slug}'" style="cursor:pointer;">
         <td class="mobile-assets-cell-property">
           <div class="mobile-assets-property-content">
-            <img loading="lazy" src="${inv.coverImage}" alt="Property"
+            <img loading="lazy" src="${cover}" alt="Property"
               class="mobile-assets-property-image" onerror="this.src='/images/property-placeholder.webp'" />
             <div class="mobile-assets-property-text-wrapper">
               <span class="mobile-assets-property-line"
                 style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; display:inline-block;">
-                ${inv.assetTitle}
+                ${title}
               </span>
             </div>
           </div>
         </td>
         <td class="mobile-assets-cell-investment">
           <div class="mobile-assets-investment-content">
-            <span class="mobile-assets-investment-value">${inv.currentValueDisplay}</span>
+            <span class="mobile-assets-investment-value">${escHtml(inv.currentValueDisplay)}</span>
             <div class="mobile-assets-change-badge">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <path d="M3 9L9 3M9 3H5M9 3V7" stroke="#17B26A" stroke-width="1.5"
                   stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>${inv.appreciationDisplay}</span>
+              <span>${escHtml(inv.appreciationDisplay)}</span>
             </div>
           </div>
         </td>
         <td class="mobile-assets-cell-rental">
-          <span class="mobile-assets-rental-value">${inv.totalRentalDisplay}</span>
+          <span class="mobile-assets-rental-value">${escHtml(inv.totalRentalDisplay)}</span>
         </td>
         <td class="mobile-assets-cell-status">
-          <div class="mobile-assets-status-badge ${inv.statusCss}">
+          <div class="mobile-assets-status-badge ${statusCss}">
             <div class="status-dot"></div>
-            <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60px;">${inv.statusLabel}</span>
+            <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60px;">${statusLabel}</span>
           </div>
         </td>
-      </tr>`).join("");
+      </tr>`;}).join("");
   }
 
   function updatePieChart(pieChartData) {

@@ -23,6 +23,47 @@ pub const BANK_DETAILS_IDR: &str = r#"{
     "account_number": "0987654321"
 }"#;
 
+// ─── FX Rate Cache ──────────────────────────────────────────────
+
+use std::sync::atomic::{AtomicU64, Ordering};
+static CACHED_IDR_RATE: AtomicU64 = AtomicU64::new(0); // f64 stored as u64
+static CACHED_IDR_TIMESTAMP: AtomicU64 = AtomicU64::new(0); // unix timestamp
+
+/// Fetch the latest USD to IDR exchange rate, cached for 1 hour.
+pub async fn get_usd_to_idr_rate() -> f64 {
+    let now = Utc::now().timestamp() as u64;
+    let last_fetched = CACHED_IDR_TIMESTAMP.load(Ordering::SeqCst);
+    
+    // Cache for 1 hour (3600 seconds)
+    if now - last_fetched < 3600 {
+        let rate_bits = CACHED_IDR_RATE.load(Ordering::SeqCst);
+        if rate_bits != 0 {
+            return f64::from_bits(rate_bits);
+        }
+    }
+
+    // Fetch from a free API
+    #[derive(serde::Deserialize)]
+    struct FxResponse {
+        rates: std::collections::HashMap<String, f64>,
+    }
+
+    let client = reqwest::Client::new();
+    if let Ok(resp) = client.get("https://open.er-api.com/v6/latest/USD").timeout(std::time::Duration::from_secs(5)).send().await {
+        if let Ok(data) = resp.json::<FxResponse>().await {
+            if let Some(rate) = data.rates.get("IDR") {
+                // Store rate first, then timestamp (SeqCst ensures ordering)
+                CACHED_IDR_RATE.store(rate.to_bits(), Ordering::SeqCst);
+                CACHED_IDR_TIMESTAMP.store(now, Ordering::SeqCst);
+                return *rate;
+            }
+        }
+    }
+
+    // Fallback if API is down
+    crate::config::DEFAULT_USD_TO_IDR_RATE
+}
+
 // ─── Wallet Helpers ─────────────────────────────────────────────
 
 /// Ensure a wallet exists for a given user, type, and currency.
@@ -106,11 +147,14 @@ pub async fn create_deposit_request(
             format_idr(amount_cents),
             &provider_ref
         ),
-        "USD" => format!(
-            "Wire ${:.2} to POOOL GmbH, IBAN: DE89370400440532013000, Reference: {}",
-            amount_cents as f64 / 100.0,
-            &provider_ref
-        ),
+        "USD" => {
+            let display = crate::common::currency::format_usd(amount_cents);
+            format!(
+                "Wire {} to POOOL GmbH, IBAN: DE89370400440532013000, Reference: {}",
+                display,
+                &provider_ref
+            )
+        }
         _ => "Please contact support for deposit instructions.".to_string(),
     };
 
@@ -283,6 +327,13 @@ pub async fn execute_checkout(
         ..Default::default()
     });
 
+    // We fetch the FX rate before entering the DB transaction to avoid holding locks during I/O
+    let fx_rate = if payment_currency == "IDR" {
+        Some(get_usd_to_idr_rate().await)
+    } else {
+        None
+    };
+
     let mut tx = pool.begin().await.map_err(|e| format!("TX begin: {}", e))?;
 
     // 1. Fetch cart items with asset details (lock assets)
@@ -324,20 +375,21 @@ pub async fn execute_checkout(
     sentry::add_breadcrumb(sentry::Breadcrumb {
         category: Some("checkout".into()),
         message: Some(format!(
-            "Cart validated: {} items, total=${:.2}",
+            "Cart validated: {} items, total={}",
             items_count,
-            total_cents as f64 / 100.0
+            crate::common::currency::format_usd(total_cents)
         )),
         level: sentry::Level::Info,
         ..Default::default()
     });
 
     // 3. Handle FX if payment currency differs from asset currency (USD)
-    // TODO: Replace this hardcoded rate with a live FX rate API call
-    //       (e.g., OpenExchangeRates or the PSP's conversion oracle).
     let (final_deduct_cents, fx_rate_applied): (i64, Option<f64>) = if payment_currency == "IDR" {
-        let rate: f64 = 15_500.0;
-        let idr_total = (total_cents as f64 * rate / 100.0) as i64;
+        let rate = fx_rate.unwrap_or(crate::config::DEFAULT_USD_TO_IDR_RATE);
+        // Integer math: convert cents→dollars then multiply by rate
+        // total_cents / 100 = dollars, * rate_i64 = IDR whole amount
+        let rate_i64 = rate as i64;
+        let idr_total = (total_cents / 100) * rate_i64;
         (idr_total, Some(rate))
     } else {
         (total_cents, None)
@@ -375,7 +427,7 @@ pub async fn execute_checkout(
             let needed = if payment_currency == "IDR" {
                 format!("Rp {}", format_idr(final_deduct_cents))
             } else {
-                format!("${:.2}", final_deduct_cents as f64 / 100.0)
+                crate::common::currency::format_usd(final_deduct_cents)
             };
             return Err(format!(
                 "Insufficient {} balance. Required: {}. Please deposit funds.",
@@ -405,7 +457,7 @@ pub async fn execute_checkout(
     }
 
     // 5. Generate order details
-    let order_number = format!("ORD-{}", Utc::now().format("%Y%m%d%H%M%S"));
+    let order_number = format!("ORD-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), &Uuid::new_v4().to_string()[..6]);
     let order_status = if payment_method == "wallet" {
         "completed"
     } else {
@@ -595,9 +647,9 @@ pub async fn execute_checkout(
     sentry::add_breadcrumb(sentry::Breadcrumb {
         category: Some("checkout".into()),
         message: Some(format!(
-            "Checkout complete: order={} total=${:.2}",
+            "Checkout complete: order={} total={}",
             order_number,
-            total_cents as f64 / 100.0
+            crate::common::currency::format_usd(total_cents)
         )),
         level: sentry::Level::Info,
         ..Default::default()
@@ -682,7 +734,6 @@ pub async fn get_user_deposits(
 
 /// Cleanup expired pending orders and restore their asset tokens.
 /// Industry standard: run this periodically via a background worker or cron job.
-#[allow(dead_code)]
 pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
@@ -759,7 +810,7 @@ pub fn calculate_fx_deduction(total_usd_cents: i64, payment_currency: &str) -> (
     if payment_currency == "IDR" {
         // Mock exchange rate: 1 USD = 15,500 IDR
         // In production, fetch from an FX API (OpenExchangeRates, etc.)
-        let rate: f64 = 15_500.0;
+        let rate: f64 = crate::config::DEFAULT_USD_TO_IDR_RATE;
         let idr_total = (total_usd_cents as f64 * rate / 100.0) as i64; // Convert USD cents to IDR cents
         (idr_total, Some(rate))
     } else {
@@ -768,7 +819,7 @@ pub fn calculate_fx_deduction(total_usd_cents: i64, payment_currency: &str) -> (
 }
 
 /// Admin: Approve a pending order (e.g. after manual bank transfer verified).
-pub async fn approve_order(pool: &sqlx::PgPool, order_id: uuid::Uuid) -> Result<(), String> {
+pub async fn approve_order(pool: &sqlx::PgPool, order_id: uuid::Uuid, admin_user_id: uuid::Uuid) -> Result<(), String> {
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     // 1. Fetch order and lock it
@@ -833,13 +884,14 @@ pub async fn approve_order(pool: &sqlx::PgPool, order_id: uuid::Uuid) -> Result<
         VALUES ($1, $2, $3, $4, $5)
         "#,
     )
-    .bind(user_id)
+    .bind(admin_user_id)
     .bind("ORDER_APPROVED")
     .bind("orders")
     .bind(order_id)
     .bind(serde_json::json!({
         "order_number": order_num,
-        "admin_action": true
+        "admin_action": true,
+        "customer_user_id": user_id.to_string()
     }))
     .execute(&mut *tx)
     .await
@@ -870,7 +922,7 @@ pub async fn approve_order(pool: &sqlx::PgPool, order_id: uuid::Uuid) -> Result<
 }
 
 /// Admin: Reject a pending order.
-pub async fn reject_order(pool: &sqlx::PgPool, order_id: uuid::Uuid) -> Result<(), String> {
+pub async fn reject_order(pool: &sqlx::PgPool, order_id: uuid::Uuid, admin_user_id: uuid::Uuid) -> Result<(), String> {
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     // 1. Fetch order, lock it
@@ -945,13 +997,14 @@ pub async fn reject_order(pool: &sqlx::PgPool, order_id: uuid::Uuid) -> Result<(
         VALUES ($1, $2, $3, $4, $5)
         "#,
     )
-    .bind(user_id)
+    .bind(admin_user_id)
     .bind("ORDER_REJECTED")
     .bind("orders")
     .bind(order_id)
     .bind(serde_json::json!({
         "order_number": order_num,
-        "admin_action": true
+        "admin_action": true,
+        "customer_user_id": user_id.to_string()
     }))
     .execute(&mut *tx)
     .await

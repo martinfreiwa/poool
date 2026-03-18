@@ -149,6 +149,7 @@ pub struct UpdateDraftAsset {
 
 /// A row in the developer drafts listing (Submissions page).
 #[derive(Debug, Serialize)]
+#[allow(dead_code)]
 pub struct DraftListItem {
     pub id: String,
     pub title: String,

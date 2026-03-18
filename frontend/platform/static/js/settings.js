@@ -24,10 +24,19 @@
 
     const toast = document.createElement("div");
     toast.className = `settings-toast settings-toast--${type}`;
-    toast.innerHTML = `
-      <span class="settings-toast__message">${message}</span>
-      <button class="settings-toast__close" onclick="this.parentElement.remove()" aria-label="Close notification">×</button>
-    `;
+
+    const msgSpan = document.createElement("span");
+    msgSpan.className = "settings-toast__message";
+    msgSpan.textContent = message;
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "settings-toast__close";
+    closeBtn.setAttribute("aria-label", "Close notification");
+    closeBtn.textContent = "×";
+    closeBtn.addEventListener("click", () => toast.remove());
+
+    toast.appendChild(msgSpan);
+    toast.appendChild(closeBtn);
     container.appendChild(toast);
 
     requestAnimationFrame(() => toast.classList.add("settings-toast--visible"));

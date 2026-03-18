@@ -16,6 +16,8 @@ pub struct SupportTicket {
     pub priority: String,
     /// The current status (e.g., open, closed).
     pub status: String,
+    /// The ticket category (e.g., general, account, billing).
+    pub category: Option<String>,
     /// ISO timestamp of when the ticket was created.
     pub created_at: String,
     /// ISO timestamp of the last update, if any.

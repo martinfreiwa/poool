@@ -1,5 +1,21 @@
 /// Application configuration loaded from environment variables.
 
+/// Default USD → IDR exchange rate (fallback when live API is unreachable).
+/// Used by: cart display, checkout FX conversion, invoice generation, currency formatting.
+/// In production, the live rate from `get_usd_to_idr_rate()` takes precedence.
+pub const DEFAULT_USD_TO_IDR_RATE: f64 = 15_500.0;
+pub const DEFAULT_USD_TO_IDR_RATE_I64: i64 = 15_500;
+
+/// Hash a plaintext token with SHA-256 and return hex string.
+/// Used for password reset tokens, email verification tokens, and admin invitation tokens.
+/// The raw token is sent to the user (via email link); only the hash is stored in the DB.
+pub fn hash_token(token: &str) -> String {
+    use sha2::{Sha256, Digest};
+    let mut hasher = Sha256::new();
+    hasher.update(token.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
+
 #[derive(Debug, Clone)]
 pub struct Config {
     pub database_url: String,

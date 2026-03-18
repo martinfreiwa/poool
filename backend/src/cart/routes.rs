@@ -94,17 +94,24 @@ fn format_cart_usd(cents: i64) -> String {
 }
 
 fn format_idr(cents: i64) -> String {
-    let idr_conversion_rate = 15700.0;
-    let idr_val = (cents as f64 / 100.0) * idr_conversion_rate;
-    let idr_str = (idr_val as i64).to_string();
-    let mut formatted = String::new();
-    for (count, c) in idr_str.chars().rev().enumerate() {
-        if count != 0 && count % 3 == 0 {
-            formatted.push(',');
-        }
-        formatted.push(c);
+    // Must match the rate in payments/service.rs::execute_checkout (15,500)
+    // TODO: Centralize FX rate into a shared config / live API call
+    let idr_conversion_rate: i64 = crate::config::DEFAULT_USD_TO_IDR_RATE_I64;
+    // Integer math: cents → dollars → IDR (no float rounding)
+    let idr_val = (cents / 100) * idr_conversion_rate;
+    let is_negative = idr_val < 0;
+    let val = idr_val.abs().to_string();
+    let mut result = String::new();
+    if is_negative {
+        result.push('-');
     }
-    let result: String = formatted.chars().rev().collect();
+    let bytes = val.as_bytes();
+    for (i, &c) in bytes.iter().enumerate() {
+        if i > 0 && (bytes.len() - i).is_multiple_of(3) {
+            result.push('.');
+        }
+        result.push(c as char);
+    }
     format!("Rp {}", result)
 }
 
@@ -138,9 +145,22 @@ pub async fn add_to_cart(
     // 3. Parse the investment amount (form sends e.g. "2000" or "2,000")
     let raw_amount = form.investment_amount.unwrap_or_else(|| "500".to_string());
     let amount_str = raw_amount.replace(',', "");
-    let amount_cents: i64 = match amount_str.parse::<f64>() {
-        Ok(v) => (v * 100.0) as i64,
-        Err(_) => 50_000, // Default $500
+    // Parse dollars to cents using string manipulation to avoid float rounding errors
+    let amount_cents: i64 = {
+        let parts: Vec<&str> = amount_str.split('.').collect();
+        let dollars: i64 = parts[0].parse().unwrap_or(500);
+        let cents: i64 = if parts.len() > 1 {
+            let frac = parts[1];
+            match frac.len() {
+                0 => 0,
+                1 => frac.parse::<i64>().unwrap_or(0) * 10,
+                _ => frac[..2].parse::<i64>().unwrap_or(0),
+            }
+        } else {
+            0
+        };
+        let total = dollars * 100 + cents;
+        if total <= 0 { 50_000 } else { total }  // Default $500
     };
 
     // 3. Resolve asset_id from property_id – can be a UUID *or* a slug
@@ -148,19 +168,28 @@ pub async fn add_to_cart(
     let property_id = form.property_id.unwrap_or_else(|| "property-1".to_string());
 
     // Try by UUID first, then fall back to slug lookup
+    // Use a transaction with FOR UPDATE to prevent TOCTOU race on tokens_available
+    let mut tx = match state.db.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            tracing::error!("Failed to begin add-to-cart transaction: {}", e);
+            return Redirect::to("/cart").into_response();
+        }
+    };
+
     let asset_row = if let Ok(uuid) = property_id.parse::<Uuid>() {
         sqlx::query_as::<_, (Uuid, i64, i32)>(
-            "SELECT id, token_price_cents, tokens_available FROM assets WHERE id = $1 LIMIT 1",
+            "SELECT id, token_price_cents, tokens_available FROM assets WHERE id = $1 FOR UPDATE LIMIT 1",
         )
         .bind(uuid)
-        .fetch_optional(&state.db)
+        .fetch_optional(&mut *tx)
         .await
     } else {
         sqlx::query_as::<_, (Uuid, i64, i32)>(
-            "SELECT id, token_price_cents, tokens_available FROM assets WHERE slug = $1 LIMIT 1",
+            "SELECT id, token_price_cents, tokens_available FROM assets WHERE slug = $1 FOR UPDATE LIMIT 1",
         )
         .bind(&property_id)
-        .fetch_optional(&state.db)
+        .fetch_optional(&mut *tx)
         .await
     };
 
@@ -172,6 +201,7 @@ pub async fn add_to_cart(
                 "Asset not found for id/slug '{}', skipping cart add",
                 property_id
             );
+            let _ = tx.commit().await;
             return Redirect::to("/cart").into_response();
         }
     };
@@ -199,8 +229,16 @@ pub async fn add_to_cart(
     .bind(tokens_to_buy)
     .bind(token_price_cents)
     .bind(_tokens_available)
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await;
+
+    if let Err(e) = &result {
+        tracing::error!("Cart upsert failed: {}", e);
+        let _ = tx.rollback().await;
+        return Redirect::to("/cart").into_response();
+    }
+
+    let _ = tx.commit().await;
 
     match result {
         Ok(_) => {
@@ -273,21 +311,50 @@ pub async fn update_cart_item(
         }
     };
 
-    let tokens = std::cmp::max(1, form.tokens_quantity);
+    let requested_tokens = std::cmp::max(1, form.tokens_quantity);
+
+    // Use a transaction with FOR UPDATE to prevent TOCTOU race on tokens_available
+    let mut tx = match state.db.begin().await {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::error!("Failed to begin update_cart_item transaction: {}", e);
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Server error"})),
+            )
+                .into_response();
+        }
+    };
+
+    // Fetch available tokens for this asset with row lock
+    let max_avail: Option<i32> = sqlx::query_scalar(
+        "SELECT a.tokens_available FROM assets a JOIN cart_items ci ON ci.asset_id = a.id WHERE ci.id = $1 FOR UPDATE OF a"
+    )
+    .bind(cart_item_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .unwrap_or(None);
+
+    let tokens = match max_avail {
+        Some(avail) => std::cmp::min(requested_tokens, avail),
+        None => requested_tokens,
+    };
 
     let result =
         sqlx::query("UPDATE cart_items SET tokens_quantity = $1 WHERE id = $2 AND user_id = $3")
             .bind(tokens)
             .bind(cart_item_id)
             .bind(user.id)
-            .execute(&state.db)
+            .execute(&mut *tx)
             .await;
 
     match result {
         Ok(_) => {
+            let _ = tx.commit().await;
             Json(serde_json::json!({"success": true, "tokens_quantity": tokens})).into_response()
         }
         Err(e) => {
+            let _ = tx.rollback().await;
             tracing::error!("Failed to update cart item: {}", e);
             (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
@@ -314,7 +381,7 @@ pub async fn api_cart(jar: CookieJar, State(state): State<AppState>) -> axum::re
     let rows = sqlx::query(
         r#"
         SELECT
-            ci.id, ci.asset_id, ci.tokens_quantity, ci.token_price_cents,
+            ci.id, ci.asset_id, ci.tokens_quantity, a.token_price_cents as token_price_cents,
             a.title, a.slug,
             a.location_city, a.location_country, a.short_description,
             a.asset_type, a.annual_yield_bps, a.funding_status, a.tokens_available, a.tokens_total,
@@ -398,7 +465,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     let rows = sqlx::query(
         r#"
         SELECT
-            ci.id, ci.asset_id, ci.tokens_quantity, ci.token_price_cents,
+            ci.id, ci.asset_id, ci.tokens_quantity, a.token_price_cents as token_price_cents,
             a.title, a.slug,
             a.location_city, a.location_country,
             a.asset_type, a.annual_yield_bps, a.funding_status,

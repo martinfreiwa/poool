@@ -17,6 +17,14 @@
 (function () {
     "use strict";
 
+    // ─── XSS-safe HTML escaper ───────────────────────────────────
+    function escHtml(str) {
+        if (typeof str !== "string") return String(str);
+        var d = document.createElement("div");
+        d.appendChild(document.createTextNode(str));
+        return d.innerHTML;
+    }
+
     // ─── State Layer IDs ─────────────────────────────────────────
     const LAYERS = {
         loading: "wallet-loading-layer",
@@ -131,28 +139,31 @@
      */
     function buildTxRowHtml(tx) {
         const icon = ICON_SVGS[tx.iconKey] || ICON_SVGS.purchase;
+        // Escape all API-sourced values to prevent XSS
+        const safeStatusCss = escHtml(tx.statusCss);
+        const safeAmountCss = escHtml(tx.amountCss);
         return `
       <div class="table__row">
         <div class="table__cell table__cell--type" style="width:182px">
           <div class="wallet-transaction-type-icon">
             <div class="featured-icon">${icon}</div>
           </div>
-          <span class="wallet-transaction-type-text">${tx.typeLabel}</span>
+          <span class="wallet-transaction-type-text">${escHtml(tx.typeLabel)}</span>
         </div>
         <div class="table__cell table__cell--status" style="width:163px">
-          <div class="wallet-transaction-status-badge ${tx.statusCss}">
+          <div class="wallet-transaction-status-badge ${safeStatusCss}">
             <div class="wallet-transaction-status-dot"></div>
-            <span class="wallet-transaction-status-text">${tx.statusLabel}</span>
+            <span class="wallet-transaction-status-text">${escHtml(tx.statusLabel)}</span>
           </div>
         </div>
         <div class="table__cell table__cell--date" style="width:200px">
-          <span class="table__cell-text-value">${tx.dateDisplay}</span>
+          <span class="table__cell-text-value">${escHtml(tx.dateDisplay)}</span>
         </div>
         <div class="table__cell table__cell--wallet" style="width:180px">
-          <span class="table__cell-text-value">${tx.walletLabel}</span>
+          <span class="table__cell-text-value">${escHtml(tx.walletLabel)}</span>
         </div>
         <div class="table__cell table__cell--amount" style="width:183px">
-          <span class="${tx.amountCss}">${tx.amountPrefix} ${tx.amountDisplay}</span>
+          <span class="${safeAmountCss}">${escHtml(tx.amountPrefix)} ${escHtml(tx.amountDisplay)}</span>
         </div>
         <div class="table__cell table__cell--actions" style="width:188px">
           <button class="wallet-transaction-action-btn">
@@ -313,7 +324,9 @@
         const params = new URLSearchParams(window.location.search);
 
         if (params.has("deposit_created")) {
-            const ref = params.get("ref") || "–";
+            const rawRef = params.get("ref") || "–";
+            // Escape HTML to prevent reflected XSS via the ref parameter
+            const ref = rawRef.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
             const amountCents = parseInt(params.get("amount") || "0", 10);
             const amountFmt = amountCents > 0
                 ? "$" + (amountCents / 100).toFixed(2)
@@ -341,32 +354,41 @@
     }
 
     function showDepositInstructionsModal(ref, amountFmt) {
-        // Check if a modal already exists (re-use the current deposit overlay)
+        // Build modal using DOM construction to prevent XSS via ref/amount params
         const overlay = document.createElement("div");
         overlay.id = "deposit-instructions-modal";
         overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;";
 
+        // Use static HTML for the structural shell only (no user data)
         overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:32px;max-width:520px;width:90%;box-shadow:0 24px 48px rgba(0,0,0,0.18);font-family:inherit;">' +
             '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">' +
             '<div style="width:40px;height:40px;background:#F0FDF4;border-radius:50%;display:flex;align-items:center;justify-content:center;">' +
             '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.667 5L7.5 14.167 3.333 10" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
             '<h2 style="margin:0;font-size:18px;font-weight:600;color:#101828;">Deposit Request Created</h2></div>' +
-            '<p style="color:#475467;font-size:14px;margin:0 0 20px;">Please wire <strong>' + amountFmt + '</strong> to the following account. Use the reference number below so we can match your transfer.</p>' +
+            '<p style="color:#475467;font-size:14px;margin:0 0 20px;">Please wire <strong id="dim-amount"></strong> to the following account. Use the reference number below so we can match your transfer.</p>' +
             '<div style="background:#F9FAFB;border:1px solid #EAECF0;border-radius:12px;padding:16px 20px;margin-bottom:20px;">' +
             '<div style="display:Grid;gap:10px;">' +
             row("Bank", "Deutsche Bank AG") +
             row("Account Name", "POOOL GmbH") +
             row("IBAN", "DE89 3704 0044 0532 0130 00") +
             row("BIC / SWIFT", "DEUTDEDB") +
-            row("Reference", '<strong style="color:#1570EF;font-family:monospace">' + ref + '</strong>') +
+            '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #EAECF0;font-size:13px;">' +
+            '<span style="color:#667085;">Reference</span>' +
+            '<strong id="dim-ref" style="color:#1570EF;font-family:monospace"></strong></div>' +
             '</div></div>' +
             '<div style="background:#FFFAEB;border:1px solid #FEF0C7;border-radius:8px;padding:12px 16px;margin-bottom:24px;font-size:13px;color:#B45309;">' +
             '⚠️ Include the reference number in your transfer, otherwise we cannot match your deposit.' +
             '</div>' +
             '<button onclick="document.getElementById(\'deposit-instructions-modal\').remove()" ' +
-            'style="width:100%;padding:12px;background:#1570EF;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;border-radius:8px;">Got it – I\'ll wire the funds</button></div>';
+            'style="width:100%;padding:12px;background:#1570EF;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Got it – I\'ll wire the funds</button></div>';
 
         document.body.appendChild(overlay);
+
+        // Safely inject user-controlled values via textContent (prevents XSS)
+        var amountEl = document.getElementById("dim-amount");
+        if (amountEl) amountEl.textContent = amountFmt;
+        var refEl = document.getElementById("dim-ref");
+        if (refEl) refEl.textContent = ref;
 
         function row(label, value) {
             return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #EAECF0;font-size:13px;">' +
@@ -387,8 +409,15 @@
         const c = colors[type] || colors.info;
         const toast = document.createElement("div");
         toast.style.cssText = "position:fixed;top:24px;right:24px;z-index:99999;max-width:360px;background:" + c.bg + ";border:1px solid " + c.border + ";border-radius:12px;padding:16px 20px;box-shadow:0 8px 24px rgba(0,0,0,0.1);font-family:inherit;animation:slideIn 0.25s ease;";
-        toast.innerHTML = '<div style="font-weight:600;font-size:14px;color:' + c.text + ';margin-bottom:4px;">' + title + '</div>' +
-            '<div style="font-size:13px;color:#475467;">' + message + '</div>';
+        // Use DOM construction instead of innerHTML to prevent XSS
+        var titleDiv = document.createElement("div");
+        titleDiv.style.cssText = "font-weight:600;font-size:14px;color:" + c.text + ";margin-bottom:4px;";
+        titleDiv.textContent = title;
+        var msgDiv = document.createElement("div");
+        msgDiv.style.cssText = "font-size:13px;color:#475467;";
+        msgDiv.textContent = message;
+        toast.appendChild(titleDiv);
+        toast.appendChild(msgDiv);
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 7000);
     }

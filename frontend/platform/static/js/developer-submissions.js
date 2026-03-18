@@ -8,13 +8,6 @@ let currentFilter = "all";
 let currentSort = "newest";
 let selectedIds = new Set();
 
-function getCsrfToken() {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; csrf_token=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return "";
-}
-
 document.addEventListener("DOMContentLoaded", async function () {
   const tbody = document.getElementById("submissions-tbody");
   const loadingEl = document.getElementById("submissions-loading");

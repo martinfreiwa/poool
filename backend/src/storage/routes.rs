@@ -366,9 +366,9 @@ pub async fn upload_asset_document(
         }
     };
 
-    // Verify ownership or Admin role
+    // Verify ownership or Admin role and ensure asset is not deleted
     let owner_id: Option<Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1")
+        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
             .bind(asset_id)
             .fetch_optional(&state.db)
             .await
@@ -378,7 +378,7 @@ pub async fn upload_asset_document(
     if owner_id != Some(user.id) && !is_admin {
         return (
             StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Not authorized"})),
+            Json(serde_json::json!({"error": "Not authorized or asset deleted"})),
         )
             .into_response();
     }
@@ -550,9 +550,9 @@ pub async fn upload_asset_image(
         }
     };
 
-    // Verify ownership
+    // Verify ownership and ensure asset is not deleted
     let owner_id: Option<Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1")
+        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
             .bind(asset_id)
             .fetch_optional(&state.db)
             .await
@@ -562,7 +562,7 @@ pub async fn upload_asset_image(
     if owner_id != Some(user.id) && !is_admin {
         return (
             StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Not authorized"})),
+            Json(serde_json::json!({"error": "Not authorized or asset deleted"})),
         )
             .into_response();
     }
@@ -679,13 +679,26 @@ pub async fn upload_asset_image(
         }
     };
 
+    // Use a transaction to atomically unset old cover + insert new image
+    let mut tx = match state.db.begin().await {
+        Ok(t) => t,
+        Err(e) => {
+            tracing::error!("Failed to begin image insert transaction: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Server error"})),
+            )
+                .into_response();
+        }
+    };
+
     // If this is marked as cover, unset any existing cover
     if is_cover {
         let _ = sqlx::query(
             "UPDATE asset_images SET is_cover = false WHERE asset_id = $1 AND is_cover = true",
         )
         .bind(asset_id)
-        .execute(&state.db)
+        .execute(&mut *tx)
         .await;
     }
 
@@ -702,11 +715,15 @@ pub async fn upload_asset_image(
     })
     .bind(sort_order)
     .bind(is_cover)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await
     {
-        Ok(id) => id,
+        Ok(id) => {
+            let _ = tx.commit().await;
+            id
+        }
         Err(e) => {
+            let _ = tx.rollback().await;
             tracing::error!("Failed to insert asset_image: {}", e);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -745,7 +762,7 @@ pub async fn delete_asset_document(
     };
 
     let owner_id: Option<Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1")
+        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
             .bind(asset_id)
             .fetch_optional(&state.db)
             .await
@@ -755,7 +772,7 @@ pub async fn delete_asset_document(
     if owner_id != Some(user.id) && !is_admin {
         return (
             StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Not authorized"})),
+            Json(serde_json::json!({"error": "Not authorized or asset deleted"})),
         )
             .into_response();
     }
@@ -799,7 +816,7 @@ pub async fn delete_asset_image(
     };
 
     let owner_id: Option<Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1")
+        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
             .bind(asset_id)
             .fetch_optional(&state.db)
             .await
@@ -809,7 +826,7 @@ pub async fn delete_asset_image(
     if owner_id != Some(user.id) && !is_admin {
         return (
             StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Not authorized"})),
+            Json(serde_json::json!({"error": "Not authorized or asset deleted"})),
         )
             .into_response();
     }
@@ -861,7 +878,7 @@ pub async fn reorder_asset_images(
     };
 
     let owner_id: Option<Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1")
+        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
             .bind(asset_id)
             .fetch_optional(&state.db)
             .await
@@ -871,7 +888,7 @@ pub async fn reorder_asset_images(
     if owner_id != Some(user.id) && !is_admin {
         return (
             StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Not authorized"})),
+            Json(serde_json::json!({"error": "Not authorized or asset deleted"})),
         )
             .into_response();
     }

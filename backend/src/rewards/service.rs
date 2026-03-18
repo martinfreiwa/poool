@@ -6,10 +6,72 @@ use chrono::NaiveDate;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+/// Recalculates the user's invested_12m and tier_id based on active investments in the last 12 months.
+pub async fn recalculate_user_tier(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> {
+    let sum: Option<i64> = sqlx::query_scalar!(
+        r#"
+        SELECT SUM(purchase_value_cents)::BIGINT
+        FROM investments
+        WHERE user_id = $1 
+          AND status = 'active'
+          AND purchased_at >= NOW() - INTERVAL '1 year'
+        "#,
+        user_id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    let invested_12m = sum.unwrap_or(0);
+
+    let tier_id_opt: Option<i32> = sqlx::query_scalar!(
+        r#"
+        SELECT id FROM tiers
+        WHERE min_invest <= $1
+        ORDER BY min_invest DESC
+        LIMIT 1
+        "#,
+        invested_12m
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    let tier_id = match tier_id_opt {
+        Some(t) => t,
+        None => {
+            // Fallback to Intro tier (sort_order = 1) if something goes wrong
+            sqlx::query_scalar!("SELECT id FROM tiers WHERE sort_order = 1 LIMIT 1")
+                .fetch_optional(pool)
+                .await?
+                .unwrap_or(1)
+        }
+    };
+
+    sqlx::query!(
+        r#"
+        INSERT INTO user_tiers (user_id, tier_id, invested_12m, updated_at)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (user_id) DO UPDATE SET
+            tier_id = EXCLUDED.tier_id,
+            invested_12m = EXCLUDED.invested_12m,
+            updated_at = NOW()
+        "#,
+        user_id,
+        tier_id,
+        invested_12m
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 pub async fn get_rewards_overview(
     pool: &PgPool,
     user_id: Uuid,
 ) -> Result<RewardsOverview, AppError> {
+    // 0. Recalculate tier based on rolling 12m active investments
+    recalculate_user_tier(pool, user_id).await?;
+
     // 1. Fetch rewards_balances
     let balances = sqlx::query!(
         r#"

@@ -7,8 +7,9 @@
       var isDeveloperPage = path.indexOf("/developer/") === 0 || path === "/developer";
       var styles = "";
 
-      // Hide investor sidebar immediately if developer profile or on a developer page
-      if (profile === "developer" || isDeveloperPage) {
+      // Hide investor sidebar immediately if on a developer page
+      // Non-developer pages (marketplace, wallet, portfolio, etc.) always show investor sidebar
+      if (isDeveloperPage) {
         styles += '#sidebar-navigation[data-profile="investor"] { display: none !important; }\n';
       }
 
@@ -940,7 +941,7 @@
           </div>
           <!-- Support -->
           <div id="nav-item-support" class="sidebar__nav-item">
-            <div id="nav-item-support-content" class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
+            <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
               <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
                 <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
                   <img loading="lazy" src="/static/images/Menu developer/Support.svg" alt="Support" class="nav-icon"
@@ -952,7 +953,7 @@
                 <div id="support-status-dot" class="support-status-dot"></div>
                 <span id="support-badge-text" class="support-badge-text">Online</span>
               </div>
-            </div>
+            </a>
           </div>
           <!-- Add Asset Button -->
           <div id="add-asset-section" class="add-asset-section">
@@ -1538,7 +1539,9 @@
       localStorage.setItem("selectedProfile", "investor");
     }
 
-    // Determine the correct sidebar: developer pages always get developer sidebar
+    // Determine the correct sidebar based on the current page path
+    // Developer pages (/developer/*) always get the developer sidebar
+    // All other pages (marketplace, wallet, portfolio, etc.) always get the investor sidebar
     const currentPath = window.location.pathname;
     const isDeveloperPage = currentPath.startsWith("/developer/") || currentPath === "/developer";
 
@@ -1546,10 +1549,8 @@
       // Developer pages always show developer sidebar
       replaceSidebar("developer");
       localStorage.setItem("selectedProfile", "developer");
-    } else if (savedProfile === "developer") {
-      replaceSidebar("developer");
     }
-    // Investor is already loaded by default
+    // Non-developer pages always show investor sidebar (already loaded by default)
 
     // Listen for profile changes
     window.addEventListener("storage", function (e) {

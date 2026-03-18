@@ -170,6 +170,38 @@ pub async fn api_admin_rewards_balance_adjust(
     Json(payload): Json<AdminAdjustRewardsPayload>,
 ) -> Result<axum::response::Response, ApiError> {
     let uid = ApiError::parse_uuid(&user_id)?;
+    let admin_user = _admin.user.clone();
+
+    // Validate: at least one non-zero adjustment
+    if payload.cashback == 0 && payload.referrals == 0 && payload.promotions == 0 {
+        return Err(ApiError::BadRequest("At least one adjustment amount must be non-zero".to_string()));
+    }
+
+    let mut tx = state.db.begin().await.map_err(|e| {
+        tracing::error!("Failed to begin rewards adjust tx: {e}");
+        ApiError::Internal("Server error".to_string())
+    })?;
+
+    // Check current balances to prevent negative results
+    let current = sqlx::query_as::<_, (i64, i64, i64)>(
+        "SELECT COALESCE(cashback, 0), COALESCE(referrals, 0), COALESCE(promotions, 0) FROM rewards_balances WHERE user_id = $1 FOR UPDATE"
+    )
+    .bind(uid)
+    .fetch_optional(&mut *tx)
+    .await
+    .unwrap_or(None)
+    .unwrap_or((0, 0, 0));
+
+    let new_cashback = current.0 + payload.cashback;
+    let new_referrals = current.1 + payload.referrals;
+    let new_promotions = current.2 + payload.promotions;
+
+    if new_cashback < 0 || new_referrals < 0 || new_promotions < 0 {
+        let _ = tx.rollback().await;
+        return Err(ApiError::BadRequest(
+            "Adjustment would result in negative balance".to_string(),
+        ));
+    }
 
     let result = sqlx::query(
         "INSERT INTO rewards_balances (user_id, cashback, referrals, promotions) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id) DO UPDATE SET cashback = rewards_balances.cashback + EXCLUDED.cashback, referrals = rewards_balances.referrals + EXCLUDED.referrals, promotions = rewards_balances.promotions + EXCLUDED.promotions"
@@ -178,12 +210,37 @@ pub async fn api_admin_rewards_balance_adjust(
     .bind(payload.cashback)
     .bind(payload.referrals)
     .bind(payload.promotions)
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await;
 
     match result {
-        Ok(_) => Ok(Json(serde_json::json!({"status":"updated"})).into_response()),
+        Ok(_) => {
+            // Record audit log
+            let _ = sqlx::query(
+                "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
+            )
+            .bind(admin_user.id)
+            .bind("rewards.balance_adjusted")
+            .bind("rewards_balances")
+            .bind(uid)
+            .bind(serde_json::json!({
+                "cashback_delta": payload.cashback,
+                "referrals_delta": payload.referrals,
+                "promotions_delta": payload.promotions,
+                "new_cashback": new_cashback,
+                "new_referrals": new_referrals,
+                "new_promotions": new_promotions,
+            }))
+            .execute(&mut *tx).await;
+
+            tx.commit().await.map_err(|e| {
+                tracing::error!("Failed to commit rewards adjust tx: {e}");
+                ApiError::Internal("Server error".to_string())
+            })?;
+            Ok(Json(serde_json::json!({"status":"updated"})).into_response())
+        }
         Err(e) => {
+            let _ = tx.rollback().await;
             tracing::error!("Failed to adjust rewards balance {user_id}: {e}");
             return Err(ApiError::Internal("Database error".to_string()));
         }
@@ -219,8 +276,7 @@ pub async fn api_admin_tier_update(
     let result = sqlx::query(
         r#"UPDATE tiers SET 
            min_invest = $1, max_invest = $2, cashback_pct = $3, 
-           referral_bonus = $4, badge_color = $5, sort_order = $6,
-           updated_at = NOW()
+           referral_bonus = $4, badge_color = $5, sort_order = $6
            WHERE name = $7"#,
     )
     .bind(payload.min_invest)
@@ -297,6 +353,10 @@ pub async fn api_admin_tier_create(
 ///
 /// Handles status transitions (pending, qualified, paid, flagged) and
 /// automatically credits users when marked as 'paid'.
+///
+/// The 'paid' flow is wrapped in a transaction with an idempotency guard:
+/// only a transition from 'qualified' → 'paid' triggers reward crediting,
+/// preventing double-credits on duplicate requests.
 pub async fn api_admin_referral_update(
     _admin: AdminUser,
     State(state): State<AppState>,
@@ -304,44 +364,121 @@ pub async fn api_admin_referral_update(
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
     let uid = ApiError::parse_uuid(&ref_id)?;
+    let admin_user = _admin.user.clone();
 
     let new_status = match body.get("status").and_then(|v| v.as_str()) {
-        Some(s) => s,
+        Some(s) => s.to_string(),
         None => {
             return Err(ApiError::BadRequest("Status is required".to_string()));
         }
     };
 
+    // Validate allowed statuses
+    if !["pending", "qualified", "paid", "flagged"].contains(&new_status.as_str()) {
+        return Err(ApiError::BadRequest("Invalid status value".to_string()));
+    }
+
+    // For 'paid' status, use a transaction to prevent double-crediting
+    if new_status == "paid" {
+        let mut tx = state.db.begin().await.map_err(|e| {
+            tracing::error!("Failed to begin referral tx: {e}");
+            ApiError::Internal("Server error".to_string())
+        })?;
+
+        // Idempotency guard: only transition from 'qualified' to 'paid'
+        let rows_affected = sqlx::query(
+            "UPDATE referral_tracking SET status = 'paid', qualified_at = COALESCE(qualified_at, NOW()) WHERE id = $1 AND status = 'qualified'"
+        )
+        .bind(uid)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to update referral {ref_id}: {e}");
+            ApiError::Internal("Database error".to_string())
+        })?
+        .rows_affected();
+
+        if rows_affected == 0 {
+            // Either not found or already paid/not qualified
+            let _ = tx.rollback().await;
+            return Err(ApiError::BadRequest(
+                "Referral not found or not in 'qualified' status".to_string(),
+            ));
+        }
+
+        // Fetch rewards amounts and user IDs within the same transaction
+        let row = sqlx::query!(
+            "SELECT referrer_id, referred_id, referrer_reward, referred_reward FROM referral_tracking WHERE id = $1",
+            uid
+        ).fetch_optional(&mut *tx).await.map_err(|e| {
+            tracing::error!("Failed to fetch referral details: {e}");
+            ApiError::Internal("Database error".to_string())
+        })?;
+
+        if let Some(r) = row {
+            // Credit Referrer
+            sqlx::query(
+                "INSERT INTO rewards_balances (user_id, referrals) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET referrals = rewards_balances.referrals + EXCLUDED.referrals"
+            ).bind(r.referrer_id).bind(r.referrer_reward).execute(&mut *tx).await.map_err(|e| {
+                tracing::error!("Failed to credit referrer: {e}");
+                ApiError::Internal("Database error".to_string())
+            })?;
+
+            // Credit Referred
+            sqlx::query(
+                "INSERT INTO rewards_balances (user_id, referrals) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET referrals = rewards_balances.referrals + EXCLUDED.referrals"
+            ).bind(r.referred_id).bind(r.referred_reward).execute(&mut *tx).await.map_err(|e| {
+                tracing::error!("Failed to credit referred: {e}");
+                ApiError::Internal("Database error".to_string())
+            })?;
+
+            // Audit log
+            let _ = sqlx::query(
+                "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
+            )
+            .bind(admin_user.id)
+            .bind("referral.marked_paid")
+            .bind("referral_tracking")
+            .bind(uid)
+            .bind(serde_json::json!({
+                "referrer_id": r.referrer_id,
+                "referred_id": r.referred_id,
+                "referrer_reward": r.referrer_reward,
+                "referred_reward": r.referred_reward
+            }))
+            .execute(&mut *tx).await;
+        }
+
+        tx.commit().await.map_err(|e| {
+            tracing::error!("Failed to commit referral tx: {e}");
+            ApiError::Internal("Server error".to_string())
+        })?;
+
+        return Ok(Json(serde_json::json!({"status":"updated"})).into_response());
+    }
+
+    // Non-paid status transitions (no financial impact, no transaction needed)
     let result = sqlx::query(
-        "UPDATE referral_tracking SET status = $1, qualified_at = CASE WHEN $1 IN ('qualified', 'paid') THEN NOW() ELSE qualified_at END WHERE id = $2"
+        "UPDATE referral_tracking SET status = $1, qualified_at = CASE WHEN $1 = 'qualified' THEN NOW() ELSE qualified_at END WHERE id = $2"
     )
-    .bind(new_status)
+    .bind(&new_status)
     .bind(uid)
     .execute(&state.db)
     .await;
 
     match result {
         Ok(r) if r.rows_affected() > 0 => {
-            // If status changed to 'paid', we should credit the users
-            if new_status == "paid" {
-                // Fetch rewards amounts and user IDs
-                let row = sqlx::query!(
-                    "SELECT referrer_id, referred_id, referrer_reward, referred_reward FROM referral_tracking WHERE id = $1",
-                    uid
-                ).fetch_optional(&state.db).await.unwrap_or(None);
+            // Audit log
+            let _ = sqlx::query(
+                "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
+            )
+            .bind(admin_user.id)
+            .bind(format!("referral.status_changed_to_{}", new_status))
+            .bind("referral_tracking")
+            .bind(uid)
+            .bind(serde_json::json!({"new_status": new_status}))
+            .execute(&state.db).await;
 
-                if let Some(r) = row {
-                    // Credit Referrer
-                    let _ = sqlx::query(
-                        "INSERT INTO rewards_balances (user_id, referrals) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET referrals = rewards_balances.referrals + EXCLUDED.referrals"
-                    ).bind(r.referrer_id).bind(r.referrer_reward).execute(&state.db).await;
-
-                    // Credit Referred
-                    let _ = sqlx::query(
-                        "INSERT INTO rewards_balances (user_id, referrals) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET referrals = rewards_balances.referrals + EXCLUDED.referrals"
-                    ).bind(r.referred_id).bind(r.referred_reward).execute(&state.db).await;
-                }
-            }
             Ok(Json(serde_json::json!({"status":"updated"})).into_response())
         }
         Ok(_) => return Err(ApiError::NotFound("Referral not found".to_string())),

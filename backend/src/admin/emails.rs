@@ -34,21 +34,65 @@ pub async fn api_admin_emails(
         })
         .collect();
 
-    // 2. Mock Stats / Real aggregation
-    let count_sent: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM email_logs WHERE status != 'queued'")
-            .fetch_one(&state.db)
-            .await
-            .unwrap_or(0);
+    // 2. Real Aggregation
+    let stats_row = sqlx::query!(
+        r#"
+        SELECT 
+            COUNT(*)::bigint as total_sent,
+            COUNT(*) FILTER (WHERE status IN ('delivered', 'opened', 'clicked'))::bigint as total_delivered,
+            COUNT(*) FILTER (WHERE status IN ('opened', 'clicked'))::bigint as total_opened,
+            COUNT(*) FILTER (WHERE status = 'clicked')::bigint as total_clicked,
+            COUNT(*) FILTER (WHERE status = 'bounced')::bigint as total_bounced
+        FROM email_logs
+        WHERE status != 'queued'
+        "#
+    )
+    .fetch_one(&state.db)
+    .await;
+
+    let (total_sent, total_delivered, total_opened, total_clicked, total_bounced) = match stats_row {
+        Ok(r) => (
+            r.total_sent.unwrap_or(0),
+            r.total_delivered.unwrap_or(0),
+            r.total_opened.unwrap_or(0),
+            r.total_clicked.unwrap_or(0),
+            r.total_bounced.unwrap_or(0),
+        ),
+        Err(_) => (0i64, 0i64, 0i64, 0i64, 0i64),
+    };
+
+    let delivery_rate = if total_sent > 0 {
+        (total_delivered as f64 / total_sent as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    let open_rate = if total_delivered > 0 {
+        (total_opened as f64 / total_delivered as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    let click_rate = if total_opened > 0 {
+        (total_clicked as f64 / total_opened as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    let bounce_rate = if total_sent > 0 {
+        (total_bounced as f64 / total_sent as f64) * 100.0
+    } else {
+        0.0
+    };
 
     let stats = serde_json::json!({
-        "deliveryRate": 99.8,
-        "deliveryTrend": 0.2,
-        "openRate": 42.5,
-        "clickRate": 18.2,
-        "bounceRate": 0.2,
-        "bouncesTotal": 14,
-        "totalSent": count_sent
+        "deliveryRate": (delivery_rate * 10.0).round() / 10.0,
+        "deliveryTrend": 0.0,
+        "openRate": (open_rate * 10.0).round() / 10.0,
+        "clickRate": (click_rate * 10.0).round() / 10.0,
+        "bounceRate": (bounce_rate * 10.0).round() / 10.0,
+        "bouncesTotal": total_bounced,
+        "totalSent": total_sent
     });
 
     // 3. Logs

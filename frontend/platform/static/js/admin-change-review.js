@@ -6,7 +6,6 @@
 let requestData = null;
 let requestId = null;
 
-// Human-readable field labels
 const FIELD_LABELS = {
   title: "Title",
   description: "Description",
@@ -181,7 +180,7 @@ async function approveRequest() {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "X-CSRF-Token": typeof csrfToken === "function" ? csrfToken() : "",
+        "X-CSRF-Token": getCsrfToken(),
       },
       body: JSON.stringify({ notes: notes || null }),
     });
@@ -224,7 +223,7 @@ async function rejectRequest() {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "X-CSRF-Token": typeof csrfToken === "function" ? csrfToken() : "",
+        "X-CSRF-Token": getCsrfToken(),
       },
       body: JSON.stringify({ notes }),
     });

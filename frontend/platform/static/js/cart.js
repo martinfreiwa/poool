@@ -205,16 +205,30 @@ function updateCartTotal() {
 
   let total = 0;
 
-  // Get all property item prices (support both legacy and current class names)
-  const priceElements = document.querySelectorAll(
-    ".property-item-price, .cart-item-card__price",
-  );
-  priceElements.forEach((priceEl) => {
-    let price = priceEl.textContent.trim();
-    // Remove USD prefix, $ sign and commas
-    price = price.replace(/USD\s*/g, "").replace(/[$,]/g, "");
-    total += parseFloat(price) || 0;
-  });
+  // Calculate total from data attributes to avoid brittle DOM text parsing
+  const quantityInputs = document.querySelectorAll(".quantity-input");
+  
+  if (quantityInputs.length > 0) {
+    quantityInputs.forEach((input) => {
+      // Check if this input belongs to the active view (desktop vs mobile cart)
+      if (input.closest(".mobile-cart-item-card") && window.innerWidth > 768) return;
+      if (input.closest(".cart-item-card") && window.innerWidth <= 768) return;
+      
+      const qty = parseInt(input.value) || 0;
+      const unitPrice = parseFloat(input.dataset.unitPrice) || 0;
+      total += (qty * unitPrice);
+    });
+  } else {
+    // Fallback for static summary displays without inputs
+    const priceElements = document.querySelectorAll(
+      ".property-item-price, .cart-item-card__price",
+    );
+    priceElements.forEach((priceEl) => {
+      let price = priceEl.textContent.trim();
+      price = price.replace(/USD\s*/g, "").replace(/[$,]/g, "");
+      total += parseFloat(price) || 0;
+    });
+  }
 
   // Calculate platform fee if needed in future (currently 0)
   let fee = 0;
@@ -364,69 +378,6 @@ document.addEventListener("DOMContentLoaded", function () {
     updateCheckoutTotal();
   }
   startCheckoutTimer();
-
-  // ─── Promo code Apply button ───────────────────────────────
-  var promoApplyBtn = document.querySelector(".promo-apply-btn");
-  if (promoApplyBtn) {
-    promoApplyBtn.addEventListener("click", async function () {
-      var input =
-        document.querySelector(".promo-input, #promo-code-input, input[name='promo_code']");
-      var code = input ? input.value.trim() : "";
-
-      // Feedback element – inject next to button if missing
-      var feedbackId = "promo-feedback";
-      var feedback = document.getElementById(feedbackId);
-      if (!feedback) {
-        feedback = document.createElement("span");
-        feedback.id = feedbackId;
-        feedback.style.cssText =
-          "font-size:13px;margin-left:8px;font-weight:500;";
-        promoApplyBtn.parentNode.insertBefore(feedback, promoApplyBtn.nextSibling);
-      }
-
-      if (!code) {
-        feedback.style.color = "#d92d20";
-        feedback.textContent = "Please enter a promo code";
-        return;
-      }
-
-      promoApplyBtn.disabled = true;
-      promoApplyBtn.textContent = "Applying...";
-      feedback.textContent = "";
-
-      try {
-        var resp = await fetch("/cart/promo", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "promo_code=" + encodeURIComponent(code),
-        });
-
-        if (resp.status === 404) {
-          // Promo endpoint not yet available
-          feedback.style.color = "#d92d20";
-          feedback.textContent = "Promo codes are not available yet";
-        } else if (resp.ok) {
-          var data = await resp.json().catch(function () { return {}; });
-          feedback.style.color = "#12b76a";
-          feedback.textContent =
-            data.message || "Promo code applied!";
-          if (data.discount) {
-            updateCartTotal(); // re-run total calc if discount applied
-          }
-        } else {
-          var errText = await resp.text().catch(function () { return ""; });
-          feedback.style.color = "#d92d20";
-          feedback.textContent = errText || "Invalid promo code";
-        }
-      } catch (e) {
-        feedback.style.color = "#d92d20";
-        feedback.textContent = "Could not apply code. Try again.";
-      } finally {
-        promoApplyBtn.disabled = false;
-        promoApplyBtn.textContent = "Apply";
-      }
-    });
-  }
 });
 
 // Handle HTMX events if using HTMX

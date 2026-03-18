@@ -6,6 +6,13 @@
 (function () {
   'use strict';
 
+  // ─── XSS-safe HTML escaper ───────────────────────────────────
+  function escHtml(str) {
+    if (typeof str !== 'string') return String(str);
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(str));
+    return d.innerHTML;
+  }
   let currentTimeframe = 'alltime';
   let currentPage = 1;
   let currentSearch = '';
@@ -245,10 +252,10 @@
         tt.className = 'lb-score-tooltip';
         tt.innerHTML =
           '<div class="lb-tt-header">Score Breakdown</div>' +
-          '<div class="lb-tt-row"><span>Investment:</span> <span>' + entry.score_breakdown.invest_score + '</span></div>' +
-          '<div class="lb-tt-row"><span>Referrals:</span> <span>' + entry.score_breakdown.referral_score + '</span></div>' +
-          '<div class="lb-tt-row"><span>Tier:</span> <span>' + entry.score_breakdown.tier_score + '</span></div>' +
-          '<div class="lb-tt-row"><span>Diversity:</span> <span>' + entry.score_breakdown.diversity_score + '</span></div>';
+          '<div class="lb-tt-row"><span>Investment:</span> <span>' + escHtml(String(entry.score_breakdown.invest_score)) + '</span></div>' +
+          '<div class="lb-tt-row"><span>Referrals:</span> <span>' + escHtml(String(entry.score_breakdown.referral_score)) + '</span></div>' +
+          '<div class="lb-tt-row"><span>Tier:</span> <span>' + escHtml(String(entry.score_breakdown.tier_score)) + '</span></div>' +
+          '<div class="lb-tt-row"><span>Diversity:</span> <span>' + escHtml(String(entry.score_breakdown.diversity_score)) + '</span></div>';
         scoreDiv.appendChild(tt);
       }
 

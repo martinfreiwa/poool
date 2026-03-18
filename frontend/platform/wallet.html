@@ -685,7 +685,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </div>
         </form>
 
-        <script src="https://js.stripe.com/v3/"></script>
+        <!-- Stripe.js already loaded via external_scripts in head.html -->
         <script>
           document.addEventListener("DOMContentLoaded", function () {
             var stripeKey = "{{ stripe_publishable_key | default('') }}";
@@ -891,7 +891,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                   closeCardModal(); 
                   window.location.reload(); 
                 } else { 
-                  return res.text().then(function (t) { errEl.innerHTML = t || "Error saving card to server"; }); 
+                  return res.text().then(function (t) { errEl.textContent = t || "Error saving card to server"; }); 
                 }
                 btn.disabled = false; btn.textContent = "Save Card";
               })

@@ -1,11 +1,9 @@
 use super::extractors::{AdminUser, ApiError};
-use crate::auth;
 use crate::auth::routes::AppState;
 use axum::{
     extract::{Json, State},
     response::IntoResponse,
 };
-use axum_extra::extract::CookieJar;
 use sqlx::Row;
 
 //
@@ -93,19 +91,27 @@ pub async fn api_admin_tax_reports_generate(
 
     let user_uuid = ApiError::parse_uuid(&user_id_str)?;
 
+    // Filter investments by fiscal year
+    let year_start = format!("{}-01-01", fiscal_year);
+    let year_end = format!("{}-01-01", fiscal_year + 1);
+
     let total_investment_cents: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(SUM(purchase_value_cents), 0)::bigint FROM investments WHERE user_id = $1",
+        "SELECT COALESCE(SUM(purchase_value_cents), 0)::bigint FROM investments WHERE user_id = $1 AND purchased_at >= $2::date AND purchased_at < $3::date",
     )
     .bind(user_uuid)
+    .bind(&year_start)
+    .bind(&year_end)
     .fetch_optional(&state.db)
     .await
     .unwrap_or(Some(0))
     .unwrap_or(0);
 
     let total_dividends_cents: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(SUM(total_rental_cents), 0)::bigint FROM investments WHERE user_id = $1",
+        "SELECT COALESCE(SUM(total_rental_cents), 0)::bigint FROM investments WHERE user_id = $1 AND purchased_at >= $2::date AND purchased_at < $3::date",
     )
     .bind(user_uuid)
+    .bind(&year_start)
+    .bind(&year_end)
     .fetch_optional(&state.db)
     .await
     .unwrap_or(Some(0))
@@ -183,19 +189,11 @@ pub async fn api_admin_disputes(
 
 /// PUT /api/admin/disputes/:id/status — Update dispute status
 pub async fn api_admin_disputes_status_update(
-    jar: CookieJar,
+    _admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
     Json(payload): Json<serde_json::Value>,
 ) -> axum::response::Response {
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error":"Admin access required"})),
-        )
-            .into_response();
-    }
-
     let dispute_id: sqlx::types::Uuid = match id.parse() {
         Ok(u) => u,
         Err(_) => {
@@ -216,12 +214,33 @@ pub async fn api_admin_disputes_status_update(
             .into_response();
     }
 
+    let valid_statuses = ["won", "lost", "under_review", "resolved", "escalated"];
+    if !valid_statuses.contains(&status) {
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": format!("Invalid status. Must be one of: {}", valid_statuses.join(", "))})),
+        )
+            .into_response();
+    }
+
     let _ =
         sqlx::query("UPDATE payment_disputes SET status = $1, updated_at = NOW() WHERE id = $2")
             .bind(status)
             .bind(dispute_id)
             .execute(&state.db)
             .await;
+
+    // Audit log
+    let _ = sqlx::query(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
+    )
+    .bind(_admin.user.id)
+    .bind("admin.dispute_status_update")
+    .bind("payment_disputes")
+    .bind(dispute_id)
+    .bind(serde_json::json!({"new_status": status}))
+    .execute(&state.db)
+    .await;
 
     Json(serde_json::json!({"status": "success", "message": "Dispute updated"})).into_response()
 }

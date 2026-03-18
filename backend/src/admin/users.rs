@@ -600,6 +600,19 @@ pub async fn api_admin_user_update_profile(
 
     let uid = ApiError::parse_uuid(&user_id)?;
 
+    let parsed_dob = if let Some(d) = &payload.date_of_birth {
+        if d.trim().is_empty() {
+            None
+        } else {
+            match d.parse::<chrono::NaiveDate>() {
+                Ok(date) => Some(date),
+                Err(_) => return Err(ApiError::BadRequest("Invalid Date of Birth format. Expected YYYY-MM-DD".to_string())),
+            }
+        }
+    } else {
+        None
+    };
+
     // 1. Update Profile Information
     let profile_result = sqlx::query(
         r#"INSERT INTO user_profiles (user_id, first_name, last_name, date_of_birth, nationality, phone_number, address_line_1, address_line_2, city, state_province, postal_code, country, tax_id)
@@ -621,7 +634,7 @@ pub async fn api_admin_user_update_profile(
     .bind(uid)
     .bind(&payload.first_name)
     .bind(&payload.last_name)
-    .bind(payload.date_of_birth.as_ref().and_then(|d| if d.is_empty() { None } else { Some(d.parse::<chrono::NaiveDate>().ok()?) }))
+    .bind(parsed_dob)
     .bind(&payload.nationality)
     .bind(&payload.phone_number)
     .bind(&payload.address_line_1)
@@ -740,32 +753,44 @@ pub async fn api_admin_user_update_balance(
     };
 
     // Get or create wallet
-    let wallet_id: sqlx::types::Uuid = match sqlx::query_scalar(
-        r#"SELECT id FROM wallets WHERE user_id = $1 AND wallet_type = $2"#
+    let wallet_row: Option<(uuid::Uuid, i64)> = match sqlx::query_as(
+        r#"SELECT id, balance_cents FROM wallets WHERE user_id = $1 AND wallet_type = $2 FOR UPDATE"#
     )
     .bind(uid)
     .bind(target_wallet_type)
     .fetch_optional(&mut *tx)
     .await
     {
-        Ok(Some(id)) => id,
-        Ok(None) => match sqlx::query_scalar(
+        Ok(Some(row)) => Some(row),
+        Ok(None) => None,
+        Err(_) => return Err(ApiError::Internal("Failed to query wallet".to_string())),
+    };
+
+    let (wallet_id, current_balance) = if let Some((id, bal)) = wallet_row {
+        (id, bal)
+    } else {
+        match sqlx::query_scalar(
             r#"INSERT INTO wallets (user_id, wallet_type, currency) VALUES ($1, $2, 'USD') RETURNING id"#
         )
         .bind(uid)
         .bind(target_wallet_type)
         .fetch_one(&mut *tx).await {
-            Ok(id) => id,
+            Ok(id) => (id, 0_i64),
             Err(_) => return Err(ApiError::Internal("Failed to create wallet".to_string())),
-        },
-        Err(_) => return Err(ApiError::Internal("Failed to query wallet".to_string())),
+        }
     };
 
+    if payload.amount_cents < 0 && current_balance + payload.amount_cents < 0 {
+        return Err(ApiError::BadRequest(format!("Insufficient funds: trying to deduct {}, but wallet only has {}", -payload.amount_cents, current_balance)));
+    }
+
     // Add transaction
+    let tx_type = if payload.amount_cents >= 0 { "admin_credit" } else { "admin_debit" };
     let insert_tx = sqlx::query(
-        r#"INSERT INTO wallet_transactions (wallet_id, type, amount_cents, status, description) VALUES ($1, 'reward', $2, 'completed', $3)"#
+        r#"INSERT INTO wallet_transactions (wallet_id, type, amount_cents, status, description) VALUES ($1, $2, $3, 'completed', $4)"#
     )
     .bind(wallet_id)
+    .bind(tx_type)
     .bind(payload.amount_cents)
     .bind(format!("Admin adjustment [{}]: {}", payload.wallet_type, payload.reason))
     .execute(&mut *tx).await;
@@ -939,7 +964,7 @@ pub async fn api_admin_user_update_roles(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
            VALUES ($1, 'admin.roles_update', 'users', $2, $3)"#,
     )
-    .bind(uid)
+    .bind(_admin.user.id)
     .bind(uid)
     .bind(serde_json::json!({ "new_roles": payload.roles }))
     .execute(&mut *tx)

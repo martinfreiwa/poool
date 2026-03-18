@@ -383,10 +383,10 @@ async function loadDisputes() {
                         <td>${getStatusBadge(d.status)}</td>
                         <td style="font-size:12px;color:var(--admin-text-muted);">${formatDateTime(d.created_at)}</td>
                         <td>
-                            ${d.evidence_url ? `<a href="${d.evidence_url}" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">View Bundle</a>` : `<button onclick="buildEvidence('${d.id}')" class="admin-btn admin-btn--secondary admin-btn--sm">Build Bundle</button>`}
+                            ${d.evidence_url && (d.evidence_url.startsWith('http://') || d.evidence_url.startsWith('https://')) ? `<a href="${esc(d.evidence_url)}" target="_blank" rel="noopener" class="admin-btn admin-btn--secondary admin-btn--sm">View Bundle</a>` : `<button onclick="buildEvidence('${esc(d.id)}')" class="admin-btn admin-btn--secondary admin-btn--sm">Build Bundle</button>`}
                         </td>
                         <td>
-                            <button class="admin-btn admin-btn--primary admin-btn--sm" onclick="resolveDispute('${d.id}')">Update</button>
+                            <button class="admin-btn admin-btn--primary admin-btn--sm" onclick="resolveDispute('${esc(d.id)}')">Update</button>
                         </td>
                     </tr>
                 `,

@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use uuid::Uuid;
 
+use super::extractors::AdminUser;
 use crate::{auth::routes::AppState, error::AppError};
 
 /// API view model for a withdrawal request in the admin interface.
@@ -41,6 +42,7 @@ pub struct RejectWithdrawalPayload {
 
 /// GET /api/admin/withdrawals
 pub async fn api_admin_withdrawals(
+    _admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<WithdrawalRequestView>>, AppError> {
     let rows = sqlx::query(
@@ -76,6 +78,7 @@ pub async fn api_admin_withdrawals(
 /// POST /api/admin/withdrawals/:req_id/approve
 /// Atomically: verify balance → deduct → mark approved → update ledger tx
 pub async fn api_admin_withdrawal_approve(
+    _admin: AdminUser,
     State(state): State<AppState>,
     Path(req_id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, AppError> {
@@ -106,33 +109,10 @@ pub async fn api_admin_withdrawal_approve(
         )));
     }
 
-    // 2. Fetch cash wallet with row lock
-    let wallet_info: Option<(Uuid, i64)> = sqlx::query_as(
-        "SELECT id, balance_cents FROM wallets WHERE user_id = $1 AND wallet_type = 'cash' FOR UPDATE",
-    )
-    .bind(user_id)
-    .fetch_optional(&mut *tx)
-    .await
-    .map_err(|e| AppError::Internal(format!("Wallet fetch failed: {}", e)))?;
-
-    let (wallet_id, balance_cents) = match wallet_info {
-        Some(w) => w,
-        None => return Err(AppError::BadRequest("User has no cash wallet".into())),
-    };
-
-    if balance_cents < amount_cents {
-        return Err(AppError::BadRequest("User has insufficient funds".into()));
-    }
-
-    // 3. Deduct balance
-    sqlx::query("UPDATE wallets SET balance_cents = balance_cents - $1 WHERE id = $2")
-        .bind(amount_cents)
-        .bind(wallet_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| AppError::Internal(format!("Balance deduction failed: {}", e)))?;
-
-    // 4. Mark withdrawal request as approved
+    // Funds are already frozen/deducted during the withdrawal request.
+    // We just need to mark as approved.
+    
+    // 2. Mark withdrawal request as approved
     sqlx::query(
         "UPDATE withdrawal_requests SET status = 'approved', approved_at = NOW() WHERE id = $1",
     )
@@ -176,6 +156,7 @@ pub async fn api_admin_withdrawal_approve(
 
 /// POST /api/admin/withdrawals/:req_id/reject
 pub async fn api_admin_withdrawal_reject(
+    _admin: AdminUser,
     State(state): State<AppState>,
     Path(req_id): Path<Uuid>,
     Json(payload): Json<RejectWithdrawalPayload>,
@@ -186,16 +167,17 @@ pub async fn api_admin_withdrawal_reject(
         .await
         .map_err(|e| AppError::Internal(format!("TX begin failed: {}", e)))?;
 
-    let status: Option<String> = sqlx::query_scalar(
-        "SELECT status FROM withdrawal_requests WHERE id = $1 FOR UPDATE",
+    // Fetch status, amount, currency, and user_id atomically with row lock
+    let req: Option<(String, i64, String, Uuid)> = sqlx::query_as(
+        "SELECT status, amount_cents, currency, user_id FROM withdrawal_requests WHERE id = $1 FOR UPDATE",
     )
     .bind(req_id)
     .fetch_optional(&mut *tx)
     .await
     .map_err(|e| AppError::Internal(format!("Withdrawal fetch failed: {}", e)))?;
 
-    let status = match status {
-        Some(s) => s,
+    let (status, amount_cents, currency, user_id) = match req {
+        Some(r) => r,
         None => return Err(AppError::NotFound("Withdrawal request not found".into())),
     };
 
@@ -206,6 +188,7 @@ pub async fn api_admin_withdrawal_reject(
         )));
     }
 
+    // Mark as rejected
     sqlx::query(
         "UPDATE withdrawal_requests SET status = 'rejected', admin_notes = $1 WHERE id = $2",
     )
@@ -215,7 +198,16 @@ pub async fn api_admin_withdrawal_reject(
     .await
     .map_err(|e| AppError::Internal(format!("Withdrawal rejection failed: {}", e)))?;
 
-    // Mark the pending ledger tx as failed (amount will not be deducted)
+    // Refund the wallet specifically matching the currency
+    sqlx::query("UPDATE wallets SET balance_cents = balance_cents + $1 WHERE user_id = $2 AND wallet_type = 'cash' AND currency = $3")
+        .bind(amount_cents)
+        .bind(user_id)
+        .bind(currency)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::Internal(format!("Wallet refund failed: {}", e)))?;
+
+    // Mark the pending ledger tx as failed
     sqlx::query(
         "UPDATE wallet_transactions SET status = 'failed' WHERE external_ref_id = $1 AND type = 'withdrawal'",
     )

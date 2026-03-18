@@ -76,14 +76,6 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("property-location")?.textContent.trim() ||
         "Bali, Uluwatu";
 
-      // Debug log
-      console.log("Adding to cart:", {
-        title: propertyTitle,
-        amount: amount,
-        propertyId: propertyId,
-        image: propertyImage,
-        location: propertyLocation,
-      });
 
       // Prepare form data
       const formData = new URLSearchParams();

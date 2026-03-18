@@ -154,7 +154,7 @@
     </script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 
     <!-- External Scripts -->
     {% if external_scripts %}
@@ -165,6 +165,7 @@
 
     <!-- CSS Bundle (design system + common styles, built by build-bundle.sh) -->
     <link rel="stylesheet" href="/static/css/bundle.css?v=1.1.0" />
+    <link rel="stylesheet" href="/static/css/poool-dropdown.css?v={{ asset_version }}" />
     <script src="/static/js/user-data.js?v={{ asset_version }}"></script>
     <script src="/static/js/poool-dropdown.js?v={{ asset_version }}"></script>
     <script src="/static/js/poool-dropdown-init.js?v={{ asset_version }}"></script>

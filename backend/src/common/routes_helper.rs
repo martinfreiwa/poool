@@ -48,6 +48,7 @@ pub async fn serve_protected(
 ///
 /// Checks if the user is authenticated AND has an 'admin' or 'super_admin' role.
 /// If not an admin, redirects to the marketplace (if authenticated) or login.
+#[allow(dead_code)]
 pub async fn serve_admin_protected(
     jar: CookieJar,
     state: &AppState,

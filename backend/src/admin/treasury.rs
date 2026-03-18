@@ -109,7 +109,7 @@ pub async fn api_admin_treasury(
            JOIN users u ON u.id = w.user_id
            LEFT JOIN user_profiles up ON up.user_id = u.id
            ORDER BY wt.created_at DESC
-           LIMIT 10000"#,
+           LIMIT 500"#,
     )
     .fetch_all(&state.db)
     .await

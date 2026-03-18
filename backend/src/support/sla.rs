@@ -7,13 +7,6 @@ use uuid::Uuid;
 /// Background task to monitor SLA breaches
 pub async fn monitor_sla_breaches(pool: PgPool) {
     loop {
-        sentry::add_breadcrumb(sentry::Breadcrumb {
-            category: Some("background_job".into()),
-            message: Some("SLA monitor tick started".into()),
-            level: sentry::Level::Info,
-            ..Default::default()
-        });
-
         // Find tickets that just breached their SLA
         let breached: Vec<sqlx::postgres::PgRow> = match sqlx::query(
             r#"SELECT id, subject, status, priority, sla_breach_at

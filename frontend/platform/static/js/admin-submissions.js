@@ -278,13 +278,6 @@ function closeModal() {
   reviewingName = null;
 }
 
-function getCsrfToken() {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; csrf_token=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-  return "";
-}
-
 async function handleQuickAction(action) {
   const notes = document.getElementById("review-notes")?.value?.trim() || "";
 

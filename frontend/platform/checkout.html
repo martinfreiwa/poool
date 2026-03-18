@@ -637,48 +637,7 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
         }, 1000);
       }
 
-      // ── Promo Code Handler ───────────────────────────────────────
-      var promoBtn = document.getElementById("promo-apply-btn");
-      if (promoBtn) {
-        promoBtn.addEventListener("click", function () {
-          var input = document.getElementById("promo-input");
-          var code = input ? input.value.trim() : "";
-          if (!code) return;
-
-          promoBtn.textContent = "Applying...";
-          promoBtn.disabled = true;
-
-          fetch("/cart/promo", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: code })
-          }).then(function (res) {
-            if (res.ok) {
-              promoBtn.textContent = "Applied ✓";
-              promoBtn.style.background = "#039855";
-              promoBtn.style.color = "#fff";
-            } else {
-              promoBtn.textContent = "Invalid";
-              promoBtn.style.background = "#FEF3F2";
-              promoBtn.style.color = "#B42318";
-              setTimeout(function () {
-                promoBtn.textContent = "Apply";
-                promoBtn.style.background = "";
-                promoBtn.style.color = "";
-                promoBtn.disabled = false;
-              }, 2000);
-            }
-          }).catch(function () {
-            promoBtn.textContent = "Error";
-            setTimeout(function () {
-              promoBtn.textContent = "Apply";
-              promoBtn.style.background = "";
-              promoBtn.style.color = "";
-              promoBtn.disabled = false;
-            }, 2000);
-          });
-        });
-      }
+  // Promo code feature not implemented yet
 
       // ── Payment Method Selection ────────────────────────────────
       function selectPaymentMethod(method) {

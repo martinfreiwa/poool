@@ -213,6 +213,42 @@ impl KycProvider for DiditProvider {
         }
 
         // --- Parse the webhook body ---
+        self.parse_didit_body(payload)
+    }
+
+    async fn get_session_result(&self, session_id: &str) -> Result<KycStatusUpdate, AppError> {
+        let url = format!(
+            "https://verification.didit.me/v3/session/{}/decision/",
+            session_id
+        );
+
+        let resp = self
+            .http_client
+            .get(&url)
+            .header("x-api-key", &self.config.api_key)
+            .send()
+            .await
+            .map_err(|e| AppError::Internal(format!("Didit retrieve session failed: {e}")))?;
+
+        if !resp.status().is_success() {
+            let err = resp.text().await.unwrap_or_default();
+            return Err(AppError::Internal(format!("Didit retrieve failed: {err}")));
+        }
+
+        let data = resp
+            .bytes()
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to read Didit response: {e}")))?;
+
+        // Parse the response body directly (no signature check needed for direct API calls)
+        self.parse_didit_body(&data)
+    }
+}
+
+impl DiditProvider {
+    /// Parse a Didit webhook/decision JSON body into a KycStatusUpdate.
+    /// Shared by both the webhook handler and direct API polling.
+    fn parse_didit_body(&self, payload: &[u8]) -> Result<KycStatusUpdate, AppError> {
         let body: serde_json::Value = serde_json::from_slice(payload)
             .map_err(|e| AppError::BadRequest(format!("Invalid webhook JSON: {e}")))?;
 
@@ -307,35 +343,6 @@ impl KycProvider for DiditProvider {
             pep_check_passed: pep_check,
             sanctions_check_passed: sanctions_check,
         })
-    }
-
-    async fn get_session_result(&self, session_id: &str) -> Result<KycStatusUpdate, AppError> {
-        let url = format!(
-            "https://verification.didit.me/v3/session/{}/decision/",
-            session_id
-        );
-
-        let resp = self
-            .http_client
-            .get(&url)
-            .header("x-api-key", &self.config.api_key)
-            .send()
-            .await
-            .map_err(|e| AppError::Internal(format!("Didit retrieve session failed: {e}")))?;
-
-        if !resp.status().is_success() {
-            let err = resp.text().await.unwrap_or_default();
-            return Err(AppError::Internal(format!("Didit retrieve failed: {err}")));
-        }
-
-        let data = resp
-            .bytes()
-            .await
-            .map_err(|e| AppError::Internal(format!("Failed to read Didit response: {e}")))?;
-
-        // Re-use the webhook parser since the decision structure is identical
-        // We skip signature check for direct API calls (no signature header provided)
-        self.process_webhook(&data, None).await
     }
 }
 

@@ -58,12 +58,23 @@ pub async fn initiate_deposit(
         }
     };
 
+    // Reject unreasonably large deposits (max $1,000,000 USD or equivalent)
+    const MAX_DEPOSIT_USD_CENTS: i64 = 100_000_000;
+    const MAX_DEPOSIT_IDR: i64 = 1_550_000_000_000; // ~$100M at 15,500 rate
+    let max_allowed = if currency == "USD" { MAX_DEPOSIT_USD_CENTS } else { MAX_DEPOSIT_IDR };
+    if amount_cents > max_allowed {
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">Amount exceeds maximum allowed deposit.</div>"#.to_string()),
+        ).into_response();
+    }
+
     match service::create_deposit_request(&state.db, user.id, &currency, amount_cents).await {
         Ok(response) => {
             // Return success HTML for HTMX swap
             let ref_id = response.provider_reference.unwrap_or_default();
             let amount_display = if currency == "USD" {
-                format!("${:.2}", amount_cents as f64 / 100.0)
+                format!("${}.{:02}", amount_cents / 100, (amount_cents % 100).abs())
             } else {
                 format!("Rp {}", amount_str)
             };
@@ -103,8 +114,17 @@ pub async fn payment_webhook(
     Json(payload): Json<WebhookPayload>,
 ) -> axum::response::Response {
     // Ensure requests have the correct secret signature to prevent unauthorized calls
-    let secret =
-        std::env::var("PAYMENT_WEBHOOK_SECRET").unwrap_or_else(|_| "dev_secret".to_string());
+    let secret = match std::env::var("PAYMENT_WEBHOOK_SECRET") {
+        Ok(s) if !s.is_empty() => s,
+        _ => {
+            tracing::error!("PAYMENT_WEBHOOK_SECRET is not set — rejecting all webhooks");
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Webhook processing unavailable"})),
+            )
+                .into_response();
+        }
+    };
     if payload.signature.as_deref() != Some(secret.as_str()) {
         tracing::warn!("Webhook rejected: invalid or missing signature");
         return (
@@ -278,7 +298,7 @@ pub async fn checkout_page(
                 "balance_display": if currency == "IDR" {
                     format!("Rp {}", balance) // Simplified display for context
                 } else {
-                    format!("${:.2}", balance as f64 / 100.0)
+                    format!("${}.{:02}", balance / 100, (balance % 100).abs())
                 }
             })
         })
@@ -779,7 +799,7 @@ pub async fn list_wallets(
                         "balance_display": if currency == "IDR" {
                             format!("Rp {}", format_idr_simple(balance))
                         } else {
-                            format!("${:.2}", balance as f64 / 100.0)
+                            format!("${}.{:02}", balance / 100, (balance % 100).abs())
                         }
                     })
                 })
@@ -983,7 +1003,7 @@ pub async fn api_admin_approve_order(
             .into_response();
     }
 
-    match service::approve_order(&state.db, id).await {
+    match service::approve_order(&state.db, id, _user.id).await {
         Ok(_) => {
             Json(serde_json::json!({"success": true, "message": "Order approved successfully"}))
                 .into_response()
@@ -1021,7 +1041,7 @@ pub async fn api_admin_reject_order(
             .into_response();
     }
 
-    match service::reject_order(&state.db, id).await {
+    match service::reject_order(&state.db, id, _user.id).await {
         Ok(_) => {
             Json(serde_json::json!({"success": true, "message": "Order rejected successfully"}))
                 .into_response()

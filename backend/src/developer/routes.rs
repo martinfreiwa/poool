@@ -237,6 +237,18 @@ pub async fn api_developer_create_draft(
             "Only developers can create assets".into(),
         ));
     }
+    // ── XSS Sanitization on create ──
+    use crate::common::sanitize::sanitize_text;
+    let mut payload = payload;
+    payload.title = sanitize_text(&payload.title);
+    payload.asset_type = sanitize_text(&payload.asset_type);
+    if let Some(ref v) = payload.property_type { payload.property_type = Some(sanitize_text(v)); }
+    if let Some(ref v) = payload.area { payload.area = Some(sanitize_text(v)); }
+    if let Some(ref v) = payload.address { payload.address = Some(sanitize_text(v)); }
+    if let Some(ref v) = payload.city { payload.city = Some(sanitize_text(v)); }
+    if let Some(ref v) = payload.country { payload.country = Some(sanitize_text(v)); }
+    if let Some(ref v) = payload.lease_type { payload.lease_type = Some(sanitize_text(v)); }
+    if let Some(ref v) = payload.construction_status { payload.construction_status = Some(sanitize_text(v)); }
 
     // Use full UUID to avoid slug collisions (B8 fix)
     let slug_base = payload
@@ -373,7 +385,7 @@ pub async fn api_developer_asset_detail(
                 COALESCE(a.featured,false) as featured,
                 COALESCE(a.published,false) as published,
                 a.construction_status, a.developer_user_id
-         FROM assets a WHERE a.id = $1",
+         FROM assets a WHERE a.id = $1 AND a.deleted_at IS NULL",
     )
     .bind(id)
     .fetch_optional(&state.db)
@@ -525,16 +537,16 @@ pub async fn api_developer_update_draft(
         None => return Err(AppError::Unauthorized("Please log in".to_string())),
     };
 
-    // Verify ownership
+    // Verify ownership and ensure asset is not deleted
     let owner_id: Option<uuid::Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1")
+        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
             .bind(id)
             .fetch_optional(&state.db)
             .await
             .unwrap_or(None);
 
     if owner_id != Some(user.id) {
-        return Err(AppError::Forbidden("Not authorized".to_string()));
+        return Err(AppError::Forbidden("Not authorized or asset deleted".to_string()));
     }
 
     // Only allow edits on draft assets; approved/live assets must use change request flow
@@ -552,6 +564,49 @@ pub async fn api_developer_update_draft(
                 status
             )));
         }
+    }
+
+    // ── XSS Sanitization: sanitize all user-supplied text fields ──
+    use crate::common::sanitize::{sanitize_text, sanitize_multiline, sanitize_url};
+    let mut payload = payload;
+    if let Some(ref v) = payload.title {
+        payload.title = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.short_description {
+        payload.short_description = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.description {
+        payload.description = Some(sanitize_multiline(v));
+    }
+    if let Some(ref v) = payload.location_description {
+        payload.location_description = Some(sanitize_multiline(v));
+    }
+    if let Some(ref v) = payload.google_maps_url {
+        payload.google_maps_url = sanitize_url(v);
+    }
+    if let Some(ref v) = payload.video_url {
+        payload.video_url = sanitize_url(v);
+    }
+    if let Some(ref v) = payload.property_type {
+        payload.property_type = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.area {
+        payload.area = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.address {
+        payload.address = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.city {
+        payload.city = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.country {
+        payload.country = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.lease_type {
+        payload.lease_type = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.construction_status {
+        payload.construction_status = Some(sanitize_text(v));
     }
 
     // Build dynamic UPDATE query for only provided fields
@@ -595,6 +650,9 @@ pub async fn api_developer_update_draft(
     push_field!(payload.total_value_cents, "total_value_cents");
     push_field!(payload.token_price_cents, "token_price_cents");
     push_field!(payload.tokens_total, "tokens_total");
+    if payload.tokens_total.is_some() {
+        set_clauses.push(format!("tokens_available = ${}", param_idx - 1));
+    }
 
     let sql = format!("UPDATE assets SET {} WHERE id = $1", set_clauses.join(", "));
 
@@ -884,16 +942,16 @@ pub async fn api_developer_submit_draft(
         None => return Err(AppError::Unauthorized("Please log in".to_string())),
     };
 
-    // Verify ownership
+    // Verify ownership and ensure asset is not deleted
     let owner_id: Option<uuid::Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1")
+        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
             .bind(id)
             .fetch_optional(&state.db)
             .await
             .unwrap_or(None);
 
     if owner_id != Some(user.id) {
-        return Err(AppError::Forbidden("Not authorized".to_string()));
+        return Err(AppError::Forbidden("Not authorized or asset deleted".to_string()));
     }
 
     // Only allow submit from draft or revision_requested
@@ -954,16 +1012,16 @@ pub async fn api_developer_duplicate_draft(
         None => return Err(AppError::Unauthorized("Please log in".to_string())),
     };
 
-    // Verify ownership
+    // Verify ownership and ensure asset is not deleted
     let owner_id: Option<uuid::Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1")
+        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
             .bind(id)
             .fetch_optional(&state.db)
             .await
             .unwrap_or(None);
 
     if owner_id != Some(user.id) {
-        return Err(AppError::Forbidden("Not authorized".to_string()));
+        return Err(AppError::Forbidden("Not authorized or asset deleted".to_string()));
     }
 
     let new_slug = format!("copy-{}", uuid::Uuid::new_v4());
@@ -990,7 +1048,7 @@ pub async fn api_developer_duplicate_draft(
         )
         SELECT
             developer_user_id, title || ' (Copy)', $2, asset_type, total_value_cents,
-            token_price_cents, tokens_total, tokens_available, 'upcoming',
+            token_price_cents, tokens_total, tokens_total, 'upcoming',
             false, false, NOW(), 1,
             property_type, area, location_address, lease_type, lease_term_years,
             land_size_sqm, building_size_sqm, bedrooms, bathrooms,

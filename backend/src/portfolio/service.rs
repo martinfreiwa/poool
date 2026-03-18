@@ -21,10 +21,10 @@ pub async fn get_portfolio(
             ) AS cover_image,
             i.tokens_owned,
             i.purchase_value_cents,
-            i.current_value_cents,
+            (i.tokens_owned * a.token_price_cents) AS "current_value_cents!",
             i.total_rental_cents,
             CASE WHEN i.purchase_value_cents > 0
-                 THEN ((i.current_value_cents - i.purchase_value_cents) * 10000 / i.purchase_value_cents)::INT
+                 THEN (((i.tokens_owned * a.token_price_cents) - i.purchase_value_cents) * 10000 / i.purchase_value_cents)::INT
                  ELSE 0
             END AS "appreciation_pct_bps!",
             i.status,

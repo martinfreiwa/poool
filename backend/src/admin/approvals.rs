@@ -105,6 +105,7 @@ pub async fn api_admin_approvals_create(
         "settings.update",
         "submission.approve",
         "submission.reject",
+        "dividend.process",
     ];
     if !valid_actions.contains(&action_type) {
         return Err(ApiError::BadRequest(format!(
@@ -319,6 +320,16 @@ pub async fn api_admin_approvals_reject(
                 return (
                     axum::http::StatusCode::CONFLICT,
                     Json(serde_json::json!({"error": format!("Request is already {}", status)})),
+                )
+                    .into_response();
+            }
+
+            // Four-eyes: requester cannot also reject their own request
+            let requester_id: uuid::Uuid = row.get("requester_id");
+            if requester_id == user.id {
+                return (
+                    axum::http::StatusCode::FORBIDDEN,
+                    Json(serde_json::json!({"error": "You cannot reject your own request (four-eyes rule)"})),
                 )
                     .into_response();
             }
@@ -577,15 +588,17 @@ async fn execute_approved_action(
                 .map_err(|e| format!("TX error: {e}"))?;
 
             let asset_title_res: Result<String, _> =
-                sqlx::query_scalar("SELECT title FROM assets WHERE id = $1")
+                sqlx::query_scalar("SELECT title FROM assets WHERE id = $1 FOR UPDATE")
                     .bind(aid)
                     .fetch_one(&mut *tx)
                     .await;
             let asset_title = asset_title_res.unwrap_or_else(|_| "Unknown Asset".to_string());
 
-            let total_tokens_owned_res: Result<Option<i32>, _> = sqlx::query_scalar("SELECT SUM(tokens_owned)::int4 FROM investments WHERE asset_id = $1 AND status = 'active'")
-                .bind(aid).fetch_one(&mut *tx).await;
-            let total_tokens_owned = total_tokens_owned_res.unwrap_or(Some(0)).unwrap_or(0);
+            let rows: Vec<(uuid::Uuid, i32)> = sqlx::query_as(
+                "SELECT user_id, tokens_owned FROM investments WHERE asset_id = $1 AND status = 'active' AND tokens_owned > 0 FOR UPDATE"
+            ).bind(aid).fetch_all(&mut *tx).await.unwrap_or_default();
+
+            let total_tokens_owned: i32 = rows.iter().map(|(_, t)| *t).sum();
 
             if total_tokens_owned == 0 {
                 return Err("No active investments found for asset".to_string());
@@ -595,10 +608,6 @@ async fn execute_approved_action(
             sqlx::query("INSERT INTO dividend_payouts (id, asset_id, amount_cents, status) VALUES ($1, $2, $3, 'processing')")
                 .bind(payout_id).bind(aid).bind(total_amount_cents).execute(&mut *tx).await
                 .map_err(|e| format!("Failed to create payout record: {e}"))?;
-
-            let rows: Vec<(uuid::Uuid, i32)> = sqlx::query_as(
-                "SELECT user_id, tokens_owned FROM investments WHERE asset_id = $1 AND status = 'active' AND tokens_owned > 0"
-            ).bind(aid).fetch_all(&mut *tx).await.unwrap_or_default();
 
             let mut cumulative_allocated: i64 = 0;
             let mut cumulative_exact: u128 = 0;

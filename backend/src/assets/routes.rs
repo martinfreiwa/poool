@@ -9,6 +9,16 @@ use std::collections::HashMap;
 use super::models::{MarketplaceAsset, PropertyDisplayData};
 use crate::auth::routes::AppState;
 
+/// Escape HTML special characters to prevent XSS in manually-built HTML
+/// (HTMX tab handlers bypass MiniJinja's auto-escaping).
+fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;")
+}
+
 pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     if !crate::auth::middleware::is_authenticated(&jar, &state.db).await {
         return Redirect::to("/auth/login").into_response();
@@ -84,9 +94,10 @@ pub async fn page_property(
     path_slug: Option<Path<String>>,
     Query(params): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
-    if !crate::auth::middleware::is_authenticated(&jar, &state.db).await {
-        return Redirect::to("/auth/login").into_response();
-    }
+    let user = match crate::auth::middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return Redirect::to("/auth/login").into_response(),
+    };
 
     // Accept slug from either /property/:slug (path) or /property?id=slug (query)
     let slug = path_slug
@@ -137,6 +148,39 @@ pub async fn page_property(
     } else {
         None
     };
+
+    // Record the page view in asset_views (fire-and-forget)
+    // Idempotent by date and user to avoid unbounded writes per reload
+    if let Some(ref a) = asset {
+        let pool = state.db.clone();
+        let asset_id = a.id;
+        let user_id = user.id;
+        tokio::spawn(async move {
+            // First check if already viewed today to avoid huge insert locks/errors
+            let already_viewed: bool = sqlx::query_scalar!(
+                "SELECT EXISTS(SELECT 1 FROM asset_views WHERE asset_id = $1 AND user_id = $2 AND DATE(viewed_at) = CURRENT_DATE)",
+                asset_id,
+                user_id
+            )
+            .fetch_one(&pool)
+            .await
+            .unwrap_or(Some(false))
+            .unwrap_or(false);
+
+            if !already_viewed {
+                if let Err(e) = sqlx::query(
+                    "INSERT INTO asset_views (asset_id, user_id) VALUES ($1, $2)"
+                )
+                .bind(asset_id)
+                .bind(user_id)
+                .execute(&pool)
+                .await
+                {
+                    tracing::warn!("Failed to record asset view: {}", e);
+                }
+            }
+        });
+    }
 
     // Fetch similar properties (up to 3, excluding the current one)
     let similar_assets = if let Some(ref a) = asset {
@@ -333,14 +377,14 @@ pub async fn api_marketplace_tab(
 
     use sqlx::Row;
     for asset in assets {
-        let slug = asset.get::<String, _>("slug");
-        let title = asset.get::<String, _>("title");
-        let location_city = asset
+        let slug = html_escape(&asset.get::<String, _>("slug"));
+        let title = html_escape(&asset.get::<String, _>("title"));
+        let location_city = html_escape(&asset
             .get::<Option<String>, _>("location_city")
-            .unwrap_or_else(|| "Bali".to_string());
-        let location_country = asset
+            .unwrap_or_else(|| "Bali".to_string()));
+        let location_country = html_escape(&asset
             .get::<Option<String>, _>("location_country")
-            .unwrap_or_else(|| "ID".to_string());
+            .unwrap_or_else(|| "ID".to_string()));
         let total_value_cents = asset.get::<i64, _>("total_value_cents");
         let price_usd = format_usd(total_value_cents / 100);
 
@@ -358,9 +402,9 @@ pub async fn api_marketplace_tab(
             0.0
         };
 
-        let cover_image = asset
+        let cover_image = html_escape(&asset
             .get::<Option<String>, _>("cover_image")
-            .unwrap_or_else(|| "/images/villa1.webp".to_string());
+            .unwrap_or_else(|| "/images/villa1.webp".to_string()));
 
         let bedrooms = asset.get::<Option<i32>, _>("bedrooms");
         let lease_type = asset
@@ -590,14 +634,14 @@ pub async fn api_commodities_tab(
 
     use sqlx::Row;
     for asset in assets {
-        let slug = asset.get::<String, _>("slug");
-        let title = asset.get::<String, _>("title");
-        let location_city = asset
+        let slug = html_escape(&asset.get::<String, _>("slug"));
+        let title = html_escape(&asset.get::<String, _>("title"));
+        let location_city = html_escape(&asset
             .get::<Option<String>, _>("location_city")
-            .unwrap_or_else(|| "Bali".to_string());
-        let location_country = asset
+            .unwrap_or_else(|| "Bali".to_string()));
+        let location_country = html_escape(&asset
             .get::<Option<String>, _>("location_country")
-            .unwrap_or_else(|| "ID".to_string());
+            .unwrap_or_else(|| "ID".to_string()));
         let price_cents = asset.get::<i64, _>("total_value_cents");
         let price_usd = format_usd(price_cents / 100);
         let yield_bps = asset.get::<Option<i32>, _>("annual_yield_bps").unwrap_or(0);
@@ -614,9 +658,9 @@ pub async fn api_commodities_tab(
             0.0
         };
 
-        let cover_image = asset
+        let cover_image = html_escape(&asset
             .get::<Option<String>, _>("cover_image")
-            .unwrap_or_else(|| "/images/commodity1.jpg".to_string());
+            .unwrap_or_else(|| "/images/commodity1.jpg".to_string()));
 
         let status = asset.get::<String, _>("funding_status");
         let funding_status_label = match status.as_str() {

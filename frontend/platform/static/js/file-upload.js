@@ -1,6 +1,14 @@
 // File Upload Functionality
 // Alpine.js component for file upload handling
 
+// ─── XSS-safe HTML escaper ───────────────────────────────────
+function escFuHtml(str) {
+  if (typeof str !== 'string') return String(str);
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(str));
+  return d.innerHTML;
+}
+
 document.addEventListener("alpine:init", () => {
   Alpine.data("fileUpload", (type) => ({
     files: [],
@@ -180,7 +188,7 @@ document.addEventListener("alpine:init", () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         imageContainer.innerHTML = `
-                    <img src="${e.target.result}" alt="${fileObj.name}" class="uploaded-image"/>
+                    <img src="${e.target.result}" alt="${escFuHtml(fileObj.name)}" class="uploaded-image"/>
                     <button type="button" class="image-remove-btn" onclick="removeImage('${fileObj.id}')" aria-label="Remove image">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                             <path d="M10.5 3.5L3.5 10.5" stroke="white" stroke-width="1.16667" stroke-linecap="round" stroke-linejoin="round"/>
@@ -210,7 +218,7 @@ document.addEventListener("alpine:init", () => {
                     </svg>
                 </div>
                 <div class="document-info">
-                    <span class="document-name">${fileObj.name}</span>
+                    <span class="document-name">${escFuHtml(fileObj.name)}</span>
                     <span class="document-size">${fileObj.size}</span>
                 </div>
                 <div class="document-progress">

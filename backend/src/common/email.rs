@@ -3,7 +3,13 @@ use serde_json::json;
 
 /// Send an email using Resend API.
 pub async fn send_email(to: &str, subject: &str, html_body: &str) -> Result<(), crate::error::AppError> {
-    let api_key = std::env::var("RESEND_API_KEY").unwrap_or_else(|_| "re_Ae5N4puN_PcZ53YJjgZZjCdeLvQ5hbabu".to_string());
+    let api_key = match std::env::var("RESEND_API_KEY") {
+        Ok(key) if !key.is_empty() => key,
+        _ => {
+            tracing::warn!("RESEND_API_KEY not configured — email to {} not sent", to);
+            return Ok(()); // Silently skip in dev; in prod this env var must be set
+        }
+    };
     
     let client = Client::new();
     let res = client.post("https://api.resend.com/emails")

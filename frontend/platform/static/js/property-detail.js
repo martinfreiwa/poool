@@ -683,30 +683,32 @@ document.addEventListener("DOMContentLoaded", function () {
   // Store last calculated data for tooltips
   let lastCalculationData = [];
 
-  // Real Estate Investment Calculation Function
+  // Real Estate Investment Calculation Function using Integer Cents
   function calculateInvestmentReturns(
     investment,
     annualGrowthRate,
     annualYieldRate,
   ) {
     const returns = [];
-    let currentPropertyValue = investment;
+    // Convert to cents to prevent IEEE754 float precision errors
+    const investmentCents = Math.round(investment * 100);
+    let currentPropertyValueCents = investmentCents;
 
     for (let year = 1; year <= 5; year++) {
-      // Property appreciation for this year (compound growth)
-      const appreciation = currentPropertyValue * (annualGrowthRate / 100);
-      currentPropertyValue += appreciation;
+      // Property appreciation for this year (compound growth in cents)
+      const appreciationCents = Math.round(currentPropertyValueCents * (annualGrowthRate / 100));
+      currentPropertyValueCents += appreciationCents;
 
-      // Rental income (based on original investment amount)
-      const rentalIncome = investment * (annualYieldRate / 100);
+      // Rental income (based on original investment amount, in cents)
+      const rentalIncomeCents = Math.round(investmentCents * (annualYieldRate / 100));
 
-      // Total annual return components
+      // Total annual return components (converted back to dollars for UI display)
       const yearData = {
         year: year,
-        investment: investment,
-        appreciation: appreciation,
-        rental: rentalIncome,
-        total: investment + appreciation + rentalIncome,
+        investment: investmentCents / 100,
+        appreciation: appreciationCents / 100,
+        rental: rentalIncomeCents / 100,
+        total: (investmentCents + appreciationCents + rentalIncomeCents) / 100,
       };
 
       returns.push(yearData);

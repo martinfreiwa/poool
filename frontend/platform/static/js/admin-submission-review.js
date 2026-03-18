@@ -7,14 +7,6 @@
 let projectId = null;
 let projectData = null;
 
-function getCsrfToken() {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; csrf_token=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-  return "";
-}
-
-
 document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   projectId = urlParams.get("id");

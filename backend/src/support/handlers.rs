@@ -44,7 +44,7 @@ pub async fn api_support_tickets_submit(
     let user = match crate::auth::middleware::get_current_user(&jar, &state.db).await {
         Some(u) => u,
         None => {
-            tracing::error!("Auth failed in support submit! Cookies: {:?}", jar);
+            tracing::warn!("Auth failed in support submit");
             return (
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Unauthorized"})),
@@ -69,6 +69,18 @@ pub async fn api_support_tickets_submit(
         if name == "attachment" {
             file_name = field.file_name().map(|s| s.to_string());
             file_type = field.content_type().map(|s| s.to_string());
+
+            // Validate MIME type server-side
+            if let Some(ref mime) = file_type {
+                if !["image/png", "image/jpeg", "application/pdf"].contains(&mime.as_str()) {
+                    return (
+                        axum::http::StatusCode::BAD_REQUEST,
+                        Json(serde_json::json!({"error": "Invalid file type. Allowed: JPG, PNG, PDF."})),
+                    )
+                        .into_response();
+                }
+            }
+
             if let Ok(data) = field.bytes().await {
                 if !data.is_empty() {
                     file_bytes = Some(data.to_vec());
@@ -94,6 +106,23 @@ pub async fn api_support_tickets_submit(
             .into_response();
     }
 
+    // Validate lengths
+    if subject.trim().len() < 5 {
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "Subject must be at least 5 characters"})),
+        )
+            .into_response();
+    }
+
+    if message.trim().len() < 20 {
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "Message must be at least 20 characters"})),
+        )
+            .into_response();
+    }
+
     match service::submit_ticket(
         &state,
         user.id,
@@ -113,12 +142,22 @@ pub async fn api_support_tickets_submit(
                 .into_response()
         }
         Err(e) => {
-            tracing::error!("Failed to create ticket: {:?}", e);
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "Failed to create support ticket"})),
-            )
-                .into_response()
+            let err_msg = e.to_string();
+            // Return validation errors as 400, everything else as 500
+            if err_msg.contains("Validation error") || err_msg.contains("too large") {
+                (
+                    axum::http::StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({"error": err_msg})),
+                )
+                    .into_response()
+            } else {
+                tracing::error!("Failed to create ticket: {:?}", e);
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({"error": "Failed to create support ticket"})),
+                )
+                    .into_response()
+            }
         }
     }
 }

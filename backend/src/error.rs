@@ -24,6 +24,8 @@ pub enum AppError {
     Conflict(String),
     /// Database error – wrapped and hidden from client.
     Database(sqlx::Error),
+    /// Rate limit exceeded – retry-after seconds.
+    RateLimited(u64),
 }
 
 impl std::fmt::Display for AppError {
@@ -36,6 +38,7 @@ impl std::fmt::Display for AppError {
             AppError::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
             AppError::Conflict(msg) => write!(f, "Conflict: {}", msg),
             AppError::Database(err) => write!(f, "Database: {}", err),
+            AppError::RateLimited(secs) => write!(f, "RateLimited: retry after {}s", secs),
         }
     }
 }
@@ -63,6 +66,19 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "An unexpected error occurred. Please try again.".to_string(),
                 )
+            }
+            AppError::RateLimited(retry_after) => {
+                return (
+                    StatusCode::TOO_MANY_REQUESTS,
+                    [(
+                        axum::http::header::RETRY_AFTER,
+                        retry_after.to_string(),
+                    )],
+                    Json(serde_json::json!({
+                        "error": format!("Too many requests. Please try again in {} seconds.", retry_after)
+                    })),
+                )
+                    .into_response();
             }
         };
 

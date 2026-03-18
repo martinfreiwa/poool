@@ -63,6 +63,12 @@
     /* 32px icon + 12px gap */
 }
 
+.support-divider {
+    border: none;
+    border-top: 1px solid #eaecf0;
+    margin: 0 0 24px 0;
+}
+
 /* ─── Stats Row ────────────────────────────────── */
 .support-stats {
     display: flex;
@@ -79,7 +85,29 @@
     padding: 20px 24px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+    transition: box-shadow 0.2s ease;
+}
+
+.support-stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Stat card accent borders */
+.support-stat-card--open {
+    border-left: 3px solid #3B82F6;
+}
+
+.support-stat-card--resolved {
+    border-left: 3px solid #10B981;
+}
+
+.support-stat-card--total {
+    border-left: 3px solid #6B7280;
+}
+
+.support-stat-icon {
+    margin-bottom: 4px;
 }
 
 .support-stat-value {
@@ -119,12 +147,21 @@
     margin: 0 0 20px 0;
 }
 
+/* FAQ section gets subtle background */
+.support-faq-card {
+    background: #fafbfc;
+}
+
 /* ─── Form Elements ────────────────────────────── */
 .support-form-group {
     display: flex;
     flex-direction: column;
     gap: 6px;
     margin-bottom: 16px;
+}
+
+.support-form-group--no-margin {
+    margin-bottom: 0;
 }
 
 .support-form-group label {
@@ -173,6 +210,18 @@
     flex: 1;
 }
 
+/* ─── Priority Label ──────────────────────────── */
+.priority-label {
+    display: flex;
+    justify-content: space-between;
+}
+
+.response-time-badge {
+    font-size: 12px;
+    font-weight: 400;
+    color: #10b981;
+}
+
 /* ─── Submit Button ────────────────────────────── */
 .support-submit-btn {
     display: flex;
@@ -181,7 +230,7 @@
     padding: 10px 24px;
     height: 40px;
     cursor: pointer;
-    transition: opacity 0.2s, background 0.2s;
+    transition: opacity 0.2s, background 0.2s, transform 0.15s;
     white-space: nowrap;
     flex-shrink: 0;
     align-self: flex-end;
@@ -190,11 +239,130 @@
 
 .support-submit-btn:hover {
     opacity: 0.88;
+    transform: translateY(-1px);
+}
+
+.support-submit-btn:active {
+    transform: translateY(0);
 }
 
 .support-submit-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
+}
+
+/* ─── Drag & Drop File Upload ──────────────────── */
+.drop-zone {
+    border: 2px dashed #D0D5DD;
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+    position: relative;
+}
+
+.drop-zone:hover {
+    border-color: var(--primary-color, #2E2EF9);
+    background: #f8f8ff;
+}
+
+.drop-zone.drag-over {
+    border-color: var(--primary-color, #2E2EF9);
+    background: #f0f0ff;
+    border-style: solid;
+}
+
+.drop-zone.has-file {
+    border-color: #10B981;
+    background: #f0fdf4;
+}
+
+.drop-zone-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.drop-zone-text {
+    font-size: 14px;
+    color: #535862;
+    font-family: var(--font-family, "TT Norms Pro", sans-serif);
+}
+
+.drop-zone-text strong {
+    color: var(--primary-color, #2E2EF9);
+}
+
+.drop-zone-hint {
+    font-size: 12px;
+    color: #9CA3AF;
+}
+
+.drop-zone-file-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #344054;
+    margin-top: 8px;
+}
+
+.drop-zone-remove {
+    background: none;
+    border: none;
+    color: #EF4444;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 4px;
+    font-weight: 600;
+}
+
+.drop-zone-remove:hover {
+    color: #DC2626;
+}
+
+/* ─── FAQ Suggestion Container ─────────────────── */
+.faq-suggestion-container {
+    display: none;
+    padding: 12px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.faq-suggestion-header {
+    font-weight: 600;
+    font-size: 13px;
+    color: #344054;
+    margin-bottom: 6px;
+}
+
+.faq-suggestion-item {
+    font-size: 13px;
+    color: #2E2EF9;
+    cursor: pointer;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.faq-suggestion-item:hover {
+    color: #1a1ab0;
 }
 
 /* ─── FAQ Category Tabs ────────────────────────── */
@@ -352,7 +520,7 @@
     border-radius: 8px;
     margin-bottom: 12px;
     padding: 16px;
-    cursor: pointer;
+    padding-left: 20px;
     transition: box-shadow 0.2s, border-color 0.2s;
 }
 
@@ -361,10 +529,28 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
+/* Priority left-border accents on ticket cards */
+.ticket-priority-border--urgent {
+    border-left: 3px solid #EF4444;
+}
+
+.ticket-priority-border--high {
+    border-left: 3px solid #F59E0B;
+}
+
+.ticket-priority-border--normal {
+    border-left: 3px solid #3B82F6;
+}
+
+.ticket-priority-border--low {
+    border-left: 3px solid #D1D5DB;
+}
+
 .ticket-card-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    cursor: pointer;
 }
 
 .ticket-card-left {
@@ -373,16 +559,54 @@
     gap: 4px;
 }
 
+.ticket-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .ticket-priority {
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.5px;
-    color: #717680;
+    padding: 2px 8px;
+    border-radius: 4px;
 }
 
-.ticket-priority--urgent,
+/* Priority badge colors */
+.ticket-priority--urgent {
+    background: #FEF2F2;
+    color: #991B1B;
+    border: 1px solid #FECACA;
+}
+
 .ticket-priority--high {
-    color: #ef4444;
+    background: #FFFBEB;
+    color: #92400E;
+    border: 1px solid #FDE68A;
+}
+
+.ticket-priority--normal {
+    background: #EFF6FF;
+    color: #1E40AF;
+    border: 1px solid #BFDBFE;
+}
+
+.ticket-priority--low {
+    background: #F9FAFB;
+    color: #6B7280;
+    border: 1px solid #E5E7EB;
+}
+
+/* Category tag */
+.ticket-category-tag {
+    font-size: 11px;
+    font-weight: 500;
+    color: #717680;
+    background: #F2F4F7;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: capitalize;
 }
 
 .ticket-card-subject {
@@ -414,9 +638,24 @@
     color: #175cd3;
 }
 
+.ticket-status--in_progress {
+    background: #FFF4ED;
+    color: #B93815;
+}
+
+.ticket-status--waiting_on_customer {
+    background: #FFFAEB;
+    color: #B54708;
+}
+
 .ticket-status--resolved {
-    background: #fdf5fa;
-    color: #c11574;
+    background: #ECFDF3;
+    color: #067647;
+}
+
+.ticket-status--closed {
+    background: #f2f4f7;
+    color: #667085;
 }
 
 .ticket-card-date {
@@ -431,8 +670,7 @@
 }
 
 .ticket-card-detail.open {
-    max-height: 1000px;
-    /* Arbitrary large max-height for animation */
+    max-height: 2000px;
     margin-top: 16px;
     border-top: 1px solid #e9eaeb;
     padding-top: 16px;
@@ -486,6 +724,41 @@
     line-height: 1.5;
 }
 
+/* ─── Reply Attachments ────────────────────────── */
+.reply-attachments {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.attachment-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    font-size: 12px;
+    text-decoration: none;
+    color: #535862;
+    transition: background 0.15s;
+}
+
+.attachment-link:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.attachment-disabled {
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.attachment-disabled:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* ─── Ticket Actions ──────────────────────────── */
 .ticket-actions {
     margin-top: 16px;
 }
@@ -546,9 +819,12 @@
 /* ─── Empty State ──────────────────────────────── */
 .support-empty {
     text-align: center;
-    padding: 32px 16px;
+    padding: 40px 16px;
     color: #717680;
     font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* ─── Responsive ──────────────────────────────── */
@@ -568,5 +844,36 @@
 
     .support-page-subtitle {
         padding-left: 0;
+    }
+
+    .faq-category-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+    }
+
+    .faq-category-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .faq-cat-tab {
+        flex-shrink: 0;
+    }
+
+    .ticket-card-header {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .ticket-card-right {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .drop-zone {
+        padding: 16px;
     }
 }
