@@ -162,22 +162,22 @@
   color: var(--input-placeholder-color);
 }
 
-/* ── Full Width Overrides ──────────────────────────────── */
-.ds-main .cart-page-header {
-    max-width: none !important;
+/* ── Max Width Overrides for Design System Consistency ── */
+#developer-submissions-main .cart-page-header {
+    max-width: 1096px !important;
 }
 
-/* HR line spans full width — same as the table */
 #developer-submissions-main .page-header-divider {
-    max-width: none !important;
+    max-width: 1096px !important;
     width: 100% !important;
 }
 
+.sub-stats,
+.sub-toolbar,
 .submissions-table-container {
+    max-width: 1096px !important;
     width: 100%;
 }
-
-
 
 /* ── Sort Dropdown ──────────────────────────────────────── */
 .sub-sort-dropdown {

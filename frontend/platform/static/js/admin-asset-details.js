@@ -86,7 +86,7 @@ function renderAll(a) {
   document.getElementById("breadcrumb-asset-title").textContent = a.title;
   document.getElementById("asset-title-main").innerHTML = `${esc(a.title)} <code style="font-family:monospace;font-size:14px;padding:2px 8px;background:var(--admin-border);border-radius:4px;color:var(--admin-text-secondary);font-weight:500;margin-left:8px;vertical-align:middle;">#APP-${(a.id || '').substring(0, 6).toUpperCase()}</code>`;
   document.getElementById("asset-location").textContent =
-    [a.city, a.country].filter(Boolean).join(", ") || "Location not specified";
+    [a.city, formatCountry(a.country)].filter(Boolean).join(", ") || "Location not specified";
 
   // Status badges
   const statusBadge = document.getElementById("asset-status-badge");
@@ -448,6 +448,16 @@ function formatUSD(cents) {
       maximumFractionDigits: 2,
     })
   );
+}
+
+function formatCountry(code) {
+  if (!code || code.trim().length !== 2) return typeof code === 'string' ? code.toUpperCase() : (code || "");
+  try {
+    const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    return regionNames.of(code.trim().toUpperCase());
+  } catch(e) {
+    return code.toUpperCase();
+  }
 }
 
 function bpsToPercent(bps) {

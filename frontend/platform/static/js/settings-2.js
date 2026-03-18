@@ -102,9 +102,9 @@ const COMPLETENESS_FIELDS = [
     { key: 'last_name', label: 'Last Name' },
     { key: 'phone_number', label: 'Phone' },
     { key: 'avatar_url', label: 'Avatar' },
-    { key: 'address_line1', label: 'Address' },
+    { key: 'address_line_1', label: 'Address' },
     { key: 'city', label: 'City' },
-    { key: 'country_code', label: 'Country' },
+    { key: 'country', label: 'Country' },
     { key: 'date_of_birth', label: 'Birthday' },
     { key: 'nationality', label: 'Nationality' },
     { key: 'email_verified', label: 'Email Verified', check: v => v === true },
@@ -177,15 +177,18 @@ function populateProfileData(profile) {
     document.getElementById('edit-last-name').value = profile.last_name || '';
 
     // Address (Read)
-    let addrParts = [profile.address_line1, profile.address_line2, profile.city, profile.state_province, profile.postal_code, profile.country_code].filter(Boolean);
+    let addrParts = [profile.address_line_1 || profile.address_line1, profile.address_line_2 || profile.address_line2, profile.city, profile.state_province, profile.postal_code, profile.country].filter(Boolean);
     document.getElementById('read-full-address').innerText = addrParts.length > 0 ? addrParts.join(', ') : 'Not provided';
 
     // Address (Edit)
-    document.getElementById('edit-address-1').value = profile.address_line1 || '';
-    document.getElementById('edit-address-2').value = profile.address_line2 || '';
+    document.getElementById('edit-address-1').value = profile.address_line_1 || profile.address_line1 || '';
+    document.getElementById('edit-address-2').value = profile.address_line_2 || profile.address_line2 || '';
     document.getElementById('edit-city').value = profile.city || '';
     document.getElementById('edit-state').value = profile.state_province || '';
     document.getElementById('edit-postal').value = profile.postal_code || '';
+    if (document.getElementById('edit-country')) {
+        document.getElementById('edit-country').value = profile.country || '';
+    }
 
     // Identity Vault (Read)
     document.getElementById('read-dob').innerText = profile.date_of_birth || 'Not provided';
@@ -494,11 +497,12 @@ function initMorphForms() {
                         };
                     } else if (group.id === 'morph-address') {
                         payload = {
-                            address_line1: document.getElementById('edit-address-1').value,
-                            address_line2: document.getElementById('edit-address-2').value,
+                            address_line_1: document.getElementById('edit-address-1').value,
+                            address_line_2: document.getElementById('edit-address-2').value,
                             city: document.getElementById('edit-city').value,
                             state_province: document.getElementById('edit-state').value,
-                            postal_code: document.getElementById('edit-postal').value
+                            postal_code: document.getElementById('edit-postal').value,
+                            country: document.getElementById('edit-country') ? document.getElementById('edit-country').value : undefined
                         };
                     } else {
                         // Identity vault
@@ -516,7 +520,7 @@ function initMorphForms() {
                         if(group.id === 'morph-core-profile') {
                             document.getElementById('read-name').innerText = `${document.getElementById('edit-first-name').value} ${document.getElementById('edit-last-name').value}`.trim() || 'Not provided';
                         } else if (group.id === 'morph-address') {
-                            const parts = [document.getElementById('edit-address-1').value, document.getElementById('edit-city').value, document.getElementById('edit-postal').value].filter(Boolean);
+                            const parts = [document.getElementById('edit-address-1').value, document.getElementById('edit-city').value, document.getElementById('edit-postal').value, document.getElementById('edit-country') ? document.getElementById('edit-country').value : ''].filter(Boolean);
                             document.getElementById('read-full-address').innerText = parts.length > 0 ? parts.join(', ') : 'Not provided';
                         } else {
                             document.getElementById('read-dob').innerText = document.getElementById('edit-dob').value || 'Not provided';

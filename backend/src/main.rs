@@ -1,4 +1,5 @@
 #![recursion_limit = "256"]
+#![allow(clippy::type_complexity)]
 #![deny(missing_docs)]
 
 /*!
@@ -48,11 +49,13 @@ use axum::{
     extract::{Path, State},
     response::{IntoResponse, Json, Redirect},
     routing::{get, post},
-    Router,
+    Router, ServiceExt,
 };
 use axum_extra::extract::cookie::CookieJar;
 
 use std::net::SocketAddr;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use tower_http::services::{ServeDir, ServeFile};
 
 #[tokio::main]
@@ -243,7 +246,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     //  3. Router configuration
-    let app = Router::new()
+    //
+    // Two routers for host-based routing:
+    //   • www_router   → Landing page (www.poool.app)
+    //   • platform_router → Dashboard / API (platform.poool.app)
+    //   • poool.app (bare domain) → 301 redirect to www.poool.app
+    //   • localhost → serves platform (dev default)
+
+    // ── WWW Landing Page Router ───────────────────────────────────────
+    let www_router = Router::new()
+        .route("/health", get(handle_health))
+        // Language-specific landing pages
+        .nest_service("/id", ServeDir::new("../frontend/www/id"))
+        // Shared assets referenced by the Angular SPA
+        .nest_service("/fonts", ServeDir::new("../frontend/www/fonts"))
+        .nest_service("/png", ServeDir::new("../frontend/www/png"))
+        .nest_service("/svg", ServeDir::new("../frontend/www/svg"))
+        .nest_service("/webp", ServeDir::new("../frontend/www/webp"))
+        .nest_service("/webm", ServeDir::new("../frontend/www/webm"))
+        .route_service("/robots.txt", ServeFile::new("../frontend/www/robots.txt"))
+        .route_service("/sitemap.xml", ServeFile::new("../frontend/www/sitemap.xml"))
+        // All other paths → serve from /en/ (Angular SPA root)
+        // This handles /, /chunk-*.js, /styles-*.css, /main-*.js, etc.
+        .fallback_service(
+            ServeDir::new("../frontend/www/en")
+                .fallback(ServeFile::new("../frontend/www/en/index.html")),
+        )
+        .layer(tower_http::compression::CompressionLayer::new())
+        .layer(axum::middleware::from_fn(apply_security_headers));
+
+    // ── Platform Router (login, dashboard, API) ──────────────────────
+    let platform_router = Router::new()
         // ── Authentication ─────────────────────────────────────────────
         .nest("/auth", auth::routes::router(state.clone()))
         .route("/logout", get(auth::routes::logout))
@@ -311,7 +344,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     axum::http::header::AUTHORIZATION,
                 ]);
 
-            // In production/staging, restrict CORS to the configured BASE_URL domain.
+            // In production/staging, restrict CORS to configured domains.
             // In development, allow any origin for local testing convenience.
             let is_dev = matches!(
                 std::env::var("POOOL_ENV").as_deref(),
@@ -321,12 +354,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if is_dev {
                 cors.allow_origin(tower_http::cors::Any)
             } else {
-                // Parse the BASE_URL into an allowed origin
-                let base = config.base_url.clone();
-                let origin: axum::http::HeaderValue = base
-                    .parse()
-                    .unwrap_or_else(|_| "https://poool.finance".parse().unwrap());
-                cors.allow_origin([origin])
+                // Allow both platform and www domains
+                let origins: Vec<axum::http::HeaderValue> = [
+                    "https://platform.poool.app",
+                    "https://www.poool.app",
+                    "https://poool.app",
+                ]
+                .iter()
+                .filter_map(|o| o.parse().ok())
+                .collect();
+                cors.allow_origin(origins)
             }
         })
         .layer(tower::limit::concurrency::ConcurrencyLimitLayer::new(100))
@@ -341,6 +378,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .layer(sentry::integrations::tower::SentryLayer::new_from_top())
         .layer(sentry::integrations::tower::NewSentryLayer::new_from_top());
 
+    // ── Host-based dispatch ───────────────────────────────────────────
+    let app = HostDispatch {
+        www: www_router,
+        platform: platform_router,
+    };
+
     //  Start server
     let addr = SocketAddr::from((
         config
@@ -352,7 +395,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Server listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app.into_make_service()).await?;
 
     Ok(())
 }
@@ -1348,12 +1391,83 @@ async fn handle_health() -> impl IntoResponse {
     }))
 }
 
-/// Root `/` redirect. If authenticated, go to marketplace; otherwise go to login.
+/// Root `/` redirect (platform only). If authenticated, go to marketplace; otherwise go to login.
 async fn handle_root(jar: CookieJar, State(state): State<AppState>) -> Redirect {
     if crate::auth::middleware::is_authenticated(&jar, &state.db).await {
         Redirect::to("/marketplace")
     } else {
         Redirect::to("/auth/login")
+    }
+}
+
+// ── Host-based routing service ────────────────────────────────────────────
+//
+// Dispatches incoming requests to the correct router based on the `Host` header:
+//   • www.poool.app     → www_router (landing page)
+//   • poool.app         → 301 redirect to https://www.poool.app{path}
+//   • platform.poool.app / localhost / anything else → platform_router
+
+/// A tower `Service` that dispatches to either the www or platform router
+/// based on the HTTP `Host` header.
+#[derive(Clone)]
+struct HostDispatch {
+    www: Router,
+    platform: Router,
+}
+
+impl tower::Service<axum::http::Request<axum::body::Body>> for HostDispatch {
+    type Response = axum::response::Response;
+    type Error = std::convert::Infallible;
+    type Future = Pin<Box<dyn std::future::Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, req: axum::http::Request<axum::body::Body>) -> Self::Future {
+        let host = req
+            .headers()
+            .get(axum::http::header::HOST)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("")
+            .split(':')
+            .next()
+            .unwrap_or("")
+            .to_lowercase();
+
+        match host.as_str() {
+            // Bare domain → permanent redirect to www
+            "poool.app" => {
+                let path_and_query = req
+                    .uri()
+                    .path_and_query()
+                    .map(|pq| pq.as_str().to_string())
+                    .unwrap_or_else(|| "/".to_string());
+                Box::pin(async move {
+                    Ok(Redirect::permanent(&format!(
+                        "https://www.poool.app{}",
+                        path_and_query
+                    ))
+                    .into_response())
+                })
+            }
+            // WWW → landing page
+            "www.poool.app" => {
+                let mut router = self.www.clone();
+                Box::pin(async move {
+                    let resp = tower::Service::call(&mut router, req).await;
+                    Ok(resp.into_response())
+                })
+            }
+            // Everything else (platform.poool.app, localhost, Cloud Run URL) → platform
+            _ => {
+                let mut router = self.platform.clone();
+                Box::pin(async move {
+                    let resp = tower::Service::call(&mut router, req).await;
+                    Ok(resp.into_response())
+                })
+            }
+        }
     }
 }
 

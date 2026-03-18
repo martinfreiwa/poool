@@ -88,7 +88,7 @@ function renderAll(a) {
   const pageHeading = document.getElementById("page-heading-title");
   if (pageHeading) pageHeading.textContent = a.title;
   document.getElementById("asset-location").textContent =
-    [a.city, a.country].filter(Boolean).join(", ") || "Location not specified";
+    [a.city, formatCountry(a.country)].filter(Boolean).join(", ") || "Location not specified";
 
   // Status badges
   const statusBadge = document.getElementById("asset-status-badge");
@@ -440,6 +440,16 @@ function formatUSD(cents) {
       maximumFractionDigits: 2,
     })
   );
+}
+
+function formatCountry(code) {
+  if (!code || code.trim().length !== 2) return typeof code === 'string' ? code.toUpperCase() : (code || "");
+  try {
+    const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    return regionNames.of(code.trim().toUpperCase());
+  } catch(e) {
+    return code.toUpperCase();
+  }
 }
 
 function bpsToPercent(bps) {

@@ -1,20 +1,22 @@
 /* Developer Dashboard Styles */
 
-/* Main Content Area — width/padding handled by ds-main wrapper */
 .dashboard-main-content {
   width: 100%;
+  max-width: 1096px !important;
   margin: 0;
 }
 
 
 /* Dashboard Header */
-.dashboard-header {
+.dashboard-header,
+.dashboard-page-header {
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 0px;
   gap: 4px;
   height: 44px;
+  max-width: 1096px !important;
   margin-bottom: 16px;
 }
 

@@ -21,6 +21,7 @@
   flex-direction: column;
   gap: 24px;
   width: 100%;
+  max-width: 1096px !important;
 }
 
 /* ─── Top Bar ─── */
