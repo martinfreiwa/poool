@@ -112,7 +112,10 @@ pub async fn add_bank(
     let bank_name = sanitize::sanitize_text(&form.bank_name);
     let holder_name = sanitize::sanitize_text(&form.account_holder_name);
     let default_label = format!("{} ending in {}", bank_name, last_four);
-    let final_label = form.label.map(|l| sanitize::sanitize_text(&l)).unwrap_or(default_label);
+    let final_label = form
+        .label
+        .map(|l| sanitize::sanitize_text(&l))
+        .unwrap_or(default_label);
 
     let res = sqlx::query_as::<_, PaymentMethod>(
         r#"

@@ -125,19 +125,45 @@ pub async fn submit_edit(
 
     // 4. Sanitize and build changed fields
     let mut payload = payload;
-    if let Some(ref v) = payload.title { payload.title = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.short_description { payload.short_description = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.description { payload.description = Some(sanitize::sanitize_multiline(v)); }
-    if let Some(ref v) = payload.location_city { payload.location_city = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.location_country { payload.location_country = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.location_address { payload.location_address = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.location_description { payload.location_description = Some(sanitize::sanitize_multiline(v)); }
-    if let Some(ref v) = payload.google_maps_url { payload.google_maps_url = sanitize::sanitize_url(v); }
-    if let Some(ref v) = payload.video_url { payload.video_url = sanitize::sanitize_url(v); }
-    if let Some(ref v) = payload.property_type { payload.property_type = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.area { payload.area = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.lease_type { payload.lease_type = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.construction_status { payload.construction_status = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.title {
+        payload.title = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.short_description {
+        payload.short_description = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.description {
+        payload.description = Some(sanitize::sanitize_multiline(v));
+    }
+    if let Some(ref v) = payload.location_city {
+        payload.location_city = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.location_country {
+        payload.location_country = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.location_address {
+        payload.location_address = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.location_description {
+        payload.location_description = Some(sanitize::sanitize_multiline(v));
+    }
+    if let Some(ref v) = payload.google_maps_url {
+        payload.google_maps_url = sanitize::sanitize_url(v);
+    }
+    if let Some(ref v) = payload.video_url {
+        payload.video_url = sanitize::sanitize_url(v);
+    }
+    if let Some(ref v) = payload.property_type {
+        payload.property_type = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.area {
+        payload.area = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.lease_type {
+        payload.lease_type = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.construction_status {
+        payload.construction_status = Some(sanitize::sanitize_text(v));
+    }
 
     let (original_values, proposed_values) = build_diff(&asset_row, &payload);
 

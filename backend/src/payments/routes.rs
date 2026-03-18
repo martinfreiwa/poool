@@ -61,7 +61,11 @@ pub async fn initiate_deposit(
     // Reject unreasonably large deposits (max $1,000,000 USD or equivalent)
     const MAX_DEPOSIT_USD_CENTS: i64 = 100_000_000;
     const MAX_DEPOSIT_IDR: i64 = 1_550_000_000_000; // ~$100M at 15,500 rate
-    let max_allowed = if currency == "USD" { MAX_DEPOSIT_USD_CENTS } else { MAX_DEPOSIT_IDR };
+    let max_allowed = if currency == "USD" {
+        MAX_DEPOSIT_USD_CENTS
+    } else {
+        MAX_DEPOSIT_IDR
+    };
     if amount_cents > max_allowed {
         return (
             axum::http::StatusCode::BAD_REQUEST,

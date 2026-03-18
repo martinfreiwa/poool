@@ -602,18 +602,42 @@ pub async fn api_admin_user_update_profile(
     let uid = ApiError::parse_uuid(&user_id)?;
 
     let mut payload = payload;
-    if let Some(ref v) = payload.first_name { payload.first_name = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.last_name { payload.last_name = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.nationality { payload.nationality = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.phone_number { payload.phone_number = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.address_line_1 { payload.address_line_1 = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.address_line_2 { payload.address_line_2 = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.city { payload.city = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.state_province { payload.state_province = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.postal_code { payload.postal_code = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.country { payload.country = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.tax_id { payload.tax_id = Some(sanitize::sanitize_text(v)); }
-    if let Some(ref v) = payload.tier { payload.tier = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.first_name {
+        payload.first_name = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.last_name {
+        payload.last_name = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.nationality {
+        payload.nationality = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.phone_number {
+        payload.phone_number = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.address_line_1 {
+        payload.address_line_1 = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.address_line_2 {
+        payload.address_line_2 = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.city {
+        payload.city = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.state_province {
+        payload.state_province = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.postal_code {
+        payload.postal_code = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.country {
+        payload.country = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.tax_id {
+        payload.tax_id = Some(sanitize::sanitize_text(v));
+    }
+    if let Some(ref v) = payload.tier {
+        payload.tier = Some(sanitize::sanitize_text(v));
+    }
 
     let parsed_dob = if let Some(d) = &payload.date_of_birth {
         if d.trim().is_empty() {
@@ -621,7 +645,11 @@ pub async fn api_admin_user_update_profile(
         } else {
             match d.parse::<chrono::NaiveDate>() {
                 Ok(date) => Some(date),
-                Err(_) => return Err(ApiError::BadRequest("Invalid Date of Birth format. Expected YYYY-MM-DD".to_string())),
+                Err(_) => {
+                    return Err(ApiError::BadRequest(
+                        "Invalid Date of Birth format. Expected YYYY-MM-DD".to_string(),
+                    ))
+                }
             }
         }
     } else {
@@ -796,11 +824,18 @@ pub async fn api_admin_user_update_balance(
     };
 
     if payload.amount_cents < 0 && current_balance + payload.amount_cents < 0 {
-        return Err(ApiError::BadRequest(format!("Insufficient funds: trying to deduct {}, but wallet only has {}", -payload.amount_cents, current_balance)));
+        return Err(ApiError::BadRequest(format!(
+            "Insufficient funds: trying to deduct {}, but wallet only has {}",
+            -payload.amount_cents, current_balance
+        )));
     }
 
     // Add transaction
-    let tx_type = if payload.amount_cents >= 0 { "admin_credit" } else { "admin_debit" };
+    let tx_type = if payload.amount_cents >= 0 {
+        "admin_credit"
+    } else {
+        "admin_debit"
+    };
     let insert_tx = sqlx::query(
         r#"INSERT INTO wallet_transactions (wallet_id, type, amount_cents, status, description) VALUES ($1, $2, $3, 'completed', $4)"#
     )

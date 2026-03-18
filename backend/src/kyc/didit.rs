@@ -201,8 +201,14 @@ impl KycProvider for DiditProvider {
                 let timestamp = body["timestamp"].as_i64().unwrap_or(0);
                 let now = chrono::Utc::now().timestamp();
                 if (now - timestamp).abs() > 300 {
-                    tracing::warn!("Didit webhook timestamp too old: {} (now={})", timestamp, now);
-                    return Err(AppError::Unauthorized("Webhook timestamp expired".to_string()));
+                    tracing::warn!(
+                        "Didit webhook timestamp too old: {} (now={})",
+                        timestamp,
+                        now
+                    );
+                    return Err(AppError::Unauthorized(
+                        "Webhook timestamp expired".to_string(),
+                    ));
                 }
             } else {
                 tracing::warn!("Didit webhook received without signature header");

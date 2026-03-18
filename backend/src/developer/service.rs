@@ -371,53 +371,53 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
 
     rows.into_iter()
         .enumerate()
-        .map(
-            |(idx, row)| {
-                let funding_pct = if row.tokens_total > 0 {
-                    ((row.tokens_total - row.tokens_available) as f64 / row.tokens_total as f64) * 100.0
-                } else {
-                    0.0
-                };
+        .map(|(idx, row)| {
+            let funding_pct = if row.tokens_total > 0 {
+                ((row.tokens_total - row.tokens_available) as f64 / row.tokens_total as f64) * 100.0
+            } else {
+                0.0
+            };
 
-                // Views per asset — try asset_views table, fallback to 0
-                // We don't do per-asset view query here to keep it efficient;
-                // the JS can lazy-load this via API if needed.
-                let views: i64 = 0; // Will be populated by API endpoint
+            // Views per asset — try asset_views table, fallback to 0
+            // We don't do per-asset view query here to keep it efficient;
+            // the JS can lazy-load this via API if needed.
+            let views: i64 = 0; // Will be populated by API endpoint
 
-                let conversion_rate = if views > 0 {
-                    (row.investor_count as f64 / views as f64) * 100.0
-                } else {
-                    0.0
-                };
+            let conversion_rate = if views > 0 {
+                (row.investor_count as f64 / views as f64) * 100.0
+            } else {
+                0.0
+            };
 
-                DeveloperTopAsset {
-                    index: idx + 1,
-                    id: row.id.to_string(),
-                    title: row.title,
-                    cover_image_url: row.cover_image_url.unwrap_or_else(|| "/images/villa1.webp".to_string()),
-                    total_sales_display: format_usd_compact(row.total_sales_cents),
-                    total_sales_cents: row.total_sales_cents,
-                    sales_change_pct: 0.0,
-                    sales_trend: "neutral".to_string(),
-                    views,
-                    conversion_rate,
-                    conversion_display: format_pct(conversion_rate),
-                    funding_pct,
-                    funding_display: format_pct(funding_pct),
-                    status: row.funding_status,
-                    city: row.city,
-                    bedrooms: row.bedrooms,
-                    total_value_display: format_usd_compact(row.total_value_cents),
-                    total_value_cents: row.total_value_cents,
-                    is_rented: row.occupancy_rate_bps.unwrap_or(0) > 0,
-                    country: row.country,
-                    lease_type: row.lease_type,
-                    lease_term_years: row.lease_term_years,
-                    capital_appreciation_bps: row.capital_appreciation_bps,
-                    annual_yield_bps: row.annual_yield_bps,
-                }
-            },
-        )
+            DeveloperTopAsset {
+                index: idx + 1,
+                id: row.id.to_string(),
+                title: row.title,
+                cover_image_url: row
+                    .cover_image_url
+                    .unwrap_or_else(|| "/images/villa1.webp".to_string()),
+                total_sales_display: format_usd_compact(row.total_sales_cents),
+                total_sales_cents: row.total_sales_cents,
+                sales_change_pct: 0.0,
+                sales_trend: "neutral".to_string(),
+                views,
+                conversion_rate,
+                conversion_display: format_pct(conversion_rate),
+                funding_pct,
+                funding_display: format_pct(funding_pct),
+                status: row.funding_status,
+                city: row.city,
+                bedrooms: row.bedrooms,
+                total_value_display: format_usd_compact(row.total_value_cents),
+                total_value_cents: row.total_value_cents,
+                is_rented: row.occupancy_rate_bps.unwrap_or(0) > 0,
+                country: row.country,
+                lease_type: row.lease_type,
+                lease_term_years: row.lease_term_years,
+                capital_appreciation_bps: row.capital_appreciation_bps,
+                annual_yield_bps: row.annual_yield_bps,
+            }
+        })
         .collect()
 }
 
@@ -461,49 +461,49 @@ pub async fn fetch_all_assets(pool: &PgPool, developer_id: Uuid) -> Vec<Develope
 
     rows.into_iter()
         .enumerate()
-        .map(
-            |(idx, row)| {
-                let funding_pct = if row.tokens_total > 0 {
-                    ((row.tokens_total - row.tokens_available) as f64 / row.tokens_total as f64) * 100.0
-                } else {
-                    0.0
-                };
+        .map(|(idx, row)| {
+            let funding_pct = if row.tokens_total > 0 {
+                ((row.tokens_total - row.tokens_available) as f64 / row.tokens_total as f64) * 100.0
+            } else {
+                0.0
+            };
 
-                let views: i64 = 0;
+            let views: i64 = 0;
 
-                let conversion_rate = if views > 0 {
-                    (row.investor_count as f64 / views as f64) * 100.0
-                } else {
-                    0.0
-                };
+            let conversion_rate = if views > 0 {
+                (row.investor_count as f64 / views as f64) * 100.0
+            } else {
+                0.0
+            };
 
-                DeveloperTopAsset {
-                    index: idx + 1,
-                    id: row.id.to_string(),
-                    title: row.title,
-                    cover_image_url: row.cover_image_url.unwrap_or_else(|| "/images/villa1.webp".to_string()),
-                    total_sales_display: format_usd_compact(row.total_sales_cents),
-                    total_sales_cents: row.total_sales_cents,
-                    sales_change_pct: 0.0,
-                    sales_trend: "neutral".to_string(),
-                    views,
-                    conversion_rate,
-                    conversion_display: format_pct(conversion_rate),
-                    funding_pct,
-                    funding_display: format_pct(funding_pct),
-                    status: row.funding_status,
-                    city: row.city,
-                    bedrooms: row.bedrooms,
-                    total_value_display: format_usd_compact(row.total_value_cents),
-                    total_value_cents: row.total_value_cents,
-                    is_rented: row.occupancy_rate_bps.unwrap_or(0) > 0,
-                    country: row.country,
-                    lease_type: row.lease_type,
-                    lease_term_years: row.lease_term_years,
-                    capital_appreciation_bps: row.capital_appreciation_bps,
-                    annual_yield_bps: row.annual_yield_bps,
-                }
-            },
-        )
+            DeveloperTopAsset {
+                index: idx + 1,
+                id: row.id.to_string(),
+                title: row.title,
+                cover_image_url: row
+                    .cover_image_url
+                    .unwrap_or_else(|| "/images/villa1.webp".to_string()),
+                total_sales_display: format_usd_compact(row.total_sales_cents),
+                total_sales_cents: row.total_sales_cents,
+                sales_change_pct: 0.0,
+                sales_trend: "neutral".to_string(),
+                views,
+                conversion_rate,
+                conversion_display: format_pct(conversion_rate),
+                funding_pct,
+                funding_display: format_pct(funding_pct),
+                status: row.funding_status,
+                city: row.city,
+                bedrooms: row.bedrooms,
+                total_value_display: format_usd_compact(row.total_value_cents),
+                total_value_cents: row.total_value_cents,
+                is_rented: row.occupancy_rate_bps.unwrap_or(0) > 0,
+                country: row.country,
+                lease_type: row.lease_type,
+                lease_term_years: row.lease_term_years,
+                capital_appreciation_bps: row.capital_appreciation_bps,
+                annual_yield_bps: row.annual_yield_bps,
+            }
+        })
         .collect()
 }

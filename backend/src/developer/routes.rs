@@ -215,10 +215,7 @@ pub async fn api_developer_create_draft(
                 e,
                 &body_str[..body_str.len().min(500)]
             );
-            return Err(AppError::BadRequest(format!(
-                "Invalid request body: {}",
-                e
-            )));
+            return Err(AppError::BadRequest(format!("Invalid request body: {}", e)));
         }
     };
 
@@ -258,13 +255,27 @@ pub async fn api_developer_create_draft(
     let mut payload = payload;
     payload.title = sanitize_text(&payload.title);
     payload.asset_type = sanitize_text(&payload.asset_type);
-    if let Some(ref v) = payload.property_type { payload.property_type = Some(sanitize_text(v)); }
-    if let Some(ref v) = payload.area { payload.area = Some(sanitize_text(v)); }
-    if let Some(ref v) = payload.address { payload.address = Some(sanitize_text(v)); }
-    if let Some(ref v) = payload.city { payload.city = Some(sanitize_text(v)); }
-    if let Some(ref v) = payload.country { payload.country = Some(sanitize_text(v)); }
-    if let Some(ref v) = payload.lease_type { payload.lease_type = Some(sanitize_text(v)); }
-    if let Some(ref v) = payload.construction_status { payload.construction_status = Some(sanitize_text(v)); }
+    if let Some(ref v) = payload.property_type {
+        payload.property_type = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.area {
+        payload.area = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.address {
+        payload.address = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.city {
+        payload.city = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.country {
+        payload.country = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.lease_type {
+        payload.lease_type = Some(sanitize_text(v));
+    }
+    if let Some(ref v) = payload.construction_status {
+        payload.construction_status = Some(sanitize_text(v));
+    }
 
     // Use full UUID to avoid slug collisions (B8 fix)
     let slug_base = payload
@@ -554,15 +565,18 @@ pub async fn api_developer_update_draft(
     };
 
     // Verify ownership and ensure asset is not deleted
-    let owner_id: Option<uuid::Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
-            .bind(id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+    let owner_id: Option<uuid::Uuid> = sqlx::query_scalar(
+        "SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL",
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
 
     if owner_id != Some(user.id) {
-        return Err(AppError::Forbidden("Not authorized or asset deleted".to_string()));
+        return Err(AppError::Forbidden(
+            "Not authorized or asset deleted".to_string(),
+        ));
     }
 
     // Only allow edits on draft assets; approved/live assets must use change request flow
@@ -583,7 +597,7 @@ pub async fn api_developer_update_draft(
     }
 
     // ── XSS Sanitization: sanitize all user-supplied text fields ──
-    use crate::common::sanitize::{sanitize_text, sanitize_multiline, sanitize_url};
+    use crate::common::sanitize::{sanitize_multiline, sanitize_text, sanitize_url};
     let mut payload = payload;
     if let Some(ref v) = payload.title {
         payload.title = Some(sanitize_text(v));
@@ -761,7 +775,7 @@ pub async fn api_developer_update_draft(
     }
 
     match q.execute(&state.db).await {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(e) => {
             tracing::error!("Failed to update draft {}: {} — SQL: {}", id, e, sql);
             return Err(AppError::Internal(format!("Failed to update draft: {}", e)));
@@ -961,24 +975,28 @@ pub async fn api_developer_submit_draft(
     };
 
     // Verify ownership and ensure asset is not deleted
-    let owner_id: Option<uuid::Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
-            .bind(id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+    let owner_id: Option<uuid::Uuid> = sqlx::query_scalar(
+        "SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL",
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
 
     if owner_id != Some(user.id) {
-        return Err(AppError::Forbidden("Not authorized or asset deleted".to_string()));
+        return Err(AppError::Forbidden(
+            "Not authorized or asset deleted".to_string(),
+        ));
     }
 
     // Only allow submit from draft or revision_requested
-    let current_status: Option<String> =
-        sqlx::query_scalar("SELECT dp.status FROM developer_projects dp WHERE dp.asset_id = $1 LIMIT 1")
-            .bind(id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+    let current_status: Option<String> = sqlx::query_scalar(
+        "SELECT dp.status FROM developer_projects dp WHERE dp.asset_id = $1 LIMIT 1",
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
 
     if let Some(ref status) = current_status {
         if status != "draft" && status != "revision_requested" {
@@ -1031,15 +1049,18 @@ pub async fn api_developer_duplicate_draft(
     };
 
     // Verify ownership and ensure asset is not deleted
-    let owner_id: Option<uuid::Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
-            .bind(id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+    let owner_id: Option<uuid::Uuid> = sqlx::query_scalar(
+        "SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL",
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
 
     if owner_id != Some(user.id) {
-        return Err(AppError::Forbidden("Not authorized or asset deleted".to_string()));
+        return Err(AppError::Forbidden(
+            "Not authorized or asset deleted".to_string(),
+        ));
     }
 
     // ── Enforce 100-draft limit ──
@@ -1146,12 +1167,13 @@ pub async fn api_developer_delete_draft(
     }
 
     // Block deletion of approved/live assets
-    let project_status: Option<String> =
-        sqlx::query_scalar("SELECT dp.status FROM developer_projects dp WHERE dp.asset_id = $1 LIMIT 1")
-            .bind(id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+    let project_status: Option<String> = sqlx::query_scalar(
+        "SELECT dp.status FROM developer_projects dp WHERE dp.asset_id = $1 LIMIT 1",
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
 
     if let Some(ref status) = project_status {
         if status == "approved" || status == "live" {
@@ -1163,7 +1185,7 @@ pub async fn api_developer_delete_draft(
 
     // Block deletion of assets with existing investments
     let has_investors: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM investments WHERE asset_id = $1 AND status != 'exited')"
+        "SELECT EXISTS(SELECT 1 FROM investments WHERE asset_id = $1 AND status != 'exited')",
     )
     .bind(id)
     .fetch_one(&state.db)

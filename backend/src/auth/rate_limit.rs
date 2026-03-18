@@ -131,7 +131,11 @@ impl RateLimitBackend for RedisBackend {
             .cmd("ZADD")
             .arg(&redis_key)
             .arg(now_ms)
-            .arg(format!("{}:{}", now_ms, uuid::Uuid::new_v4().as_u128() & 0xFFFF))
+            .arg(format!(
+                "{}:{}",
+                now_ms,
+                uuid::Uuid::new_v4().as_u128() & 0xFFFF
+            ))
             .ignore()
             .cmd("EXPIRE")
             .arg(&redis_key)

@@ -312,7 +312,10 @@ fn build_payment_method_html(
 /// Parse a user-supplied dollar string into cents using string manipulation.
 /// Avoids IEEE754 float rounding errors (e.g., 19.99 * 100 != 1999).
 fn parse_dollars_to_cents(raw: &str) -> i64 {
-    let cleaned: String = raw.chars().filter(|c| c.is_ascii_digit() || *c == '.').collect();
+    let cleaned: String = raw
+        .chars()
+        .filter(|c| c.is_ascii_digit() || *c == '.')
+        .collect();
     if cleaned.is_empty() {
         return 0;
     }
@@ -322,8 +325,8 @@ fn parse_dollars_to_cents(raw: &str) -> i64 {
         let frac = parts[1];
         match frac.len() {
             0 => 0,
-            1 => frac.parse::<i64>().unwrap_or(0) * 10,       // "5" → 50 cents
-            _ => frac[..2].parse::<i64>().unwrap_or(0),        // "99" or "995" → 99 cents
+            1 => frac.parse::<i64>().unwrap_or(0) * 10, // "5" → 50 cents
+            _ => frac[..2].parse::<i64>().unwrap_or(0), // "99" or "995" → 99 cents
         }
     } else {
         0
@@ -354,14 +357,29 @@ pub async fn handle_deposit(
 
     if amount_cents > 0 {
         // We defer to payments service to create the deposit intent
-        match crate::payments::service::create_deposit_request(&state.db, user.id, "USD", amount_cents).await {
+        match crate::payments::service::create_deposit_request(
+            &state.db,
+            user.id,
+            "USD",
+            amount_cents,
+        )
+        .await
+        {
             Ok(deposit_res) => {
                 let ref_id = deposit_res.provider_reference.unwrap_or_default();
                 // Redirect back to wallet with success param to show instructions
-                return Redirect::to(&format!("/wallet?deposit_created=true&ref={}&amount={}", ref_id, amount_cents)).into_response();
+                return Redirect::to(&format!(
+                    "/wallet?deposit_created=true&ref={}&amount={}",
+                    ref_id, amount_cents
+                ))
+                .into_response();
             }
             Err(e) => {
-                tracing::error!("Failed to create deposit request for user {}: {}", user.id, e);
+                tracing::error!(
+                    "Failed to create deposit request for user {}: {}",
+                    user.id,
+                    e
+                );
                 return Redirect::to("/wallet?error=deposit_failed").into_response();
             }
         }
@@ -417,7 +435,12 @@ pub async fn handle_withdraw(
 
         if current_balance < amount_cents {
             let _ = tx.rollback().await;
-            tracing::warn!("Insufficient funds: user {} has {} cents, tried to withdraw {} cents", user.id, current_balance, amount_cents);
+            tracing::warn!(
+                "Insufficient funds: user {} has {} cents, tried to withdraw {} cents",
+                user.id,
+                current_balance,
+                amount_cents
+            );
             return Redirect::to("/wallet?error=insufficient_funds").into_response();
         }
 
@@ -428,11 +451,12 @@ pub async fn handle_withdraw(
         };
 
         // Deduct balance to freeze funds
-        if let Err(e) = sqlx::query("UPDATE wallets SET balance_cents = balance_cents - $1 WHERE id = $2")
-            .bind(amount_cents)
-            .bind(wallet_id)
-            .execute(&mut *tx)
-            .await 
+        if let Err(e) =
+            sqlx::query("UPDATE wallets SET balance_cents = balance_cents - $1 WHERE id = $2")
+                .bind(amount_cents)
+                .bind(wallet_id)
+                .execute(&mut *tx)
+                .await
         {
             let _ = tx.rollback().await;
             tracing::error!("Failed to freeze balance: {}", e);
@@ -468,7 +492,12 @@ pub async fn handle_withdraw(
                 // Commit the atomic operation
                 match tx.commit().await {
                     Ok(_) => {
-                        tracing::info!("Created withdrawal request {} for user {} (amount {})", id, user.id, amount_cents);
+                        tracing::info!(
+                            "Created withdrawal request {} for user {} (amount {})",
+                            id,
+                            user.id,
+                            amount_cents
+                        );
                         return Redirect::to("/wallet?withdraw_requested=true").into_response();
                     }
                     Err(e) => {
@@ -479,7 +508,11 @@ pub async fn handle_withdraw(
             }
             Err(e) => {
                 let _ = tx.rollback().await;
-                tracing::error!("Failed to create withdrawal request for user {}: {}", user.id, e);
+                tracing::error!(
+                    "Failed to create withdrawal request for user {}: {}",
+                    user.id,
+                    e
+                );
                 return Redirect::to("/wallet?error=withdraw_failed").into_response();
             }
         }

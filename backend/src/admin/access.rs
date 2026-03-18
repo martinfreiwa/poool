@@ -282,7 +282,7 @@ pub async fn api_admin_invite(
                 "#,
                 payload.role, state.config.base_url, token
             );
-            
+
             // Ignore error so we still return success even if email fails, or handle it? Let's ignore it like the mock.
             let _ = crate::common::email::send_email(&payload.email, subject, &body).await;
 
@@ -674,7 +674,7 @@ pub async fn api_admin_invitation_resend(
             )
             .execute(&state.db)
             .await;
-            
+
             {
                 let subject = "You have been invited to be a POOOL Admin";
                 let body = format!(

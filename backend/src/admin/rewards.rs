@@ -174,7 +174,9 @@ pub async fn api_admin_rewards_balance_adjust(
 
     // Validate: at least one non-zero adjustment
     if payload.cashback == 0 && payload.referrals == 0 && payload.promotions == 0 {
-        return Err(ApiError::BadRequest("At least one adjustment amount must be non-zero".to_string()));
+        return Err(ApiError::BadRequest(
+            "At least one adjustment amount must be non-zero".to_string(),
+        ));
     }
 
     let mut tx = state.db.begin().await.map_err(|e| {

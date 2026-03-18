@@ -111,7 +111,7 @@ pub async fn api_admin_withdrawal_approve(
 
     // Funds are already frozen/deducted during the withdrawal request.
     // We just need to mark as approved.
-    
+
     // 2. Mark withdrawal request as approved
     sqlx::query(
         "UPDATE withdrawal_requests SET status = 'approved', approved_at = NOW() WHERE id = $1",

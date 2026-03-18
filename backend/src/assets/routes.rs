@@ -168,13 +168,12 @@ pub async fn page_property(
             .unwrap_or(false);
 
             if !already_viewed {
-                if let Err(e) = sqlx::query(
-                    "INSERT INTO asset_views (asset_id, user_id) VALUES ($1, $2)"
-                )
-                .bind(asset_id)
-                .bind(user_id)
-                .execute(&pool)
-                .await
+                if let Err(e) =
+                    sqlx::query("INSERT INTO asset_views (asset_id, user_id) VALUES ($1, $2)")
+                        .bind(asset_id)
+                        .bind(user_id)
+                        .execute(&pool)
+                        .await
                 {
                     tracing::warn!("Failed to record asset view: {}", e);
                 }
@@ -243,7 +242,9 @@ pub async fn page_property(
     let display_data = asset.as_ref().map(PropertyDisplayData::from_asset);
 
     match state.templates.get_template("property.html") {
-        Ok(template) => match template.render(context! { asset => display_data, similar_assets => similar_display }) {
+        Ok(template) => match template
+            .render(context! { asset => display_data, similar_assets => similar_display })
+        {
             Ok(html) => Html(html).into_response(),
             Err(e) => {
                 tracing::error!("Template rendering error: {}", e);
@@ -379,12 +380,16 @@ pub async fn api_marketplace_tab(
     for asset in assets {
         let slug = html_escape(&asset.get::<String, _>("slug"));
         let title = html_escape(&asset.get::<String, _>("title"));
-        let location_city = html_escape(&asset
-            .get::<Option<String>, _>("location_city")
-            .unwrap_or_else(|| "Bali".to_string()));
-        let location_country = html_escape(&asset
-            .get::<Option<String>, _>("location_country")
-            .unwrap_or_else(|| "ID".to_string()));
+        let location_city = html_escape(
+            &asset
+                .get::<Option<String>, _>("location_city")
+                .unwrap_or_else(|| "Bali".to_string()),
+        );
+        let location_country = html_escape(
+            &asset
+                .get::<Option<String>, _>("location_country")
+                .unwrap_or_else(|| "ID".to_string()),
+        );
         let total_value_cents = asset.get::<i64, _>("total_value_cents");
         let price_usd = format_usd(total_value_cents / 100);
 
@@ -402,9 +407,11 @@ pub async fn api_marketplace_tab(
             0.0
         };
 
-        let cover_image = html_escape(&asset
-            .get::<Option<String>, _>("cover_image")
-            .unwrap_or_else(|| "/images/villa1.webp".to_string()));
+        let cover_image = html_escape(
+            &asset
+                .get::<Option<String>, _>("cover_image")
+                .unwrap_or_else(|| "/images/villa1.webp".to_string()),
+        );
 
         let bedrooms = asset.get::<Option<i32>, _>("bedrooms");
         let lease_type = asset
@@ -636,12 +643,16 @@ pub async fn api_commodities_tab(
     for asset in assets {
         let slug = html_escape(&asset.get::<String, _>("slug"));
         let title = html_escape(&asset.get::<String, _>("title"));
-        let location_city = html_escape(&asset
-            .get::<Option<String>, _>("location_city")
-            .unwrap_or_else(|| "Bali".to_string()));
-        let location_country = html_escape(&asset
-            .get::<Option<String>, _>("location_country")
-            .unwrap_or_else(|| "ID".to_string()));
+        let location_city = html_escape(
+            &asset
+                .get::<Option<String>, _>("location_city")
+                .unwrap_or_else(|| "Bali".to_string()),
+        );
+        let location_country = html_escape(
+            &asset
+                .get::<Option<String>, _>("location_country")
+                .unwrap_or_else(|| "ID".to_string()),
+        );
         let price_cents = asset.get::<i64, _>("total_value_cents");
         let price_usd = format_usd(price_cents / 100);
         let yield_bps = asset.get::<Option<i32>, _>("annual_yield_bps").unwrap_or(0);
@@ -658,9 +669,11 @@ pub async fn api_commodities_tab(
             0.0
         };
 
-        let cover_image = html_escape(&asset
-            .get::<Option<String>, _>("cover_image")
-            .unwrap_or_else(|| "/images/commodity1.jpg".to_string()));
+        let cover_image = html_escape(
+            &asset
+                .get::<Option<String>, _>("cover_image")
+                .unwrap_or_else(|| "/images/commodity1.jpg".to_string()),
+        );
 
         let status = asset.get::<String, _>("funding_status");
         let funding_status_label = match status.as_str() {

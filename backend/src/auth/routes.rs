@@ -156,7 +156,11 @@ pub async fn login_submit(
         .trim()
         .to_string();
 
-    if let Err(retry_after) = state.auth_rate_limiter.check(&format!("login:{}", client_ip)).await {
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("login:{}", client_ip))
+        .await
+    {
         tracing::warn!("Rate limit exceeded for login from IP: {}", client_ip);
         return Err(AppError::RateLimited(retry_after));
     }
@@ -383,7 +387,11 @@ pub async fn signup_submit(
         .trim()
         .to_string();
 
-    if let Err(retry_after) = state.auth_rate_limiter.check(&format!("signup:{}", client_ip)).await {
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("signup:{}", client_ip))
+        .await
+    {
         tracing::warn!("Rate limit exceeded for signup from IP: {}", client_ip);
         return Err(AppError::RateLimited(retry_after));
     }
@@ -547,8 +555,15 @@ pub async fn forgot_password_submit(
         .trim()
         .to_string();
 
-    if let Err(retry_after) = state.auth_rate_limiter.check(&format!("forgot:{}", client_ip)).await {
-        tracing::warn!("Rate limit exceeded for forgot-password from IP: {}", client_ip);
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("forgot:{}", client_ip))
+        .await
+    {
+        tracing::warn!(
+            "Rate limit exceeded for forgot-password from IP: {}",
+            client_ip
+        );
         return Err(AppError::RateLimited(retry_after));
     }
 

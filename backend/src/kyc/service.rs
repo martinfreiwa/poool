@@ -97,12 +97,11 @@ pub async fn initiate_kyc(
         // Delete the stale record so they can start fresh.
         if status == "pending" {
             tracing::info!(user_id = %user_id, "Deleting stale pending KYC record to allow restart");
-            let _ = sqlx::query(
-                "DELETE FROM kyc_records WHERE user_id = $1 AND status = 'pending'"
-            )
-            .bind(user_id)
-            .execute(pool)
-            .await;
+            let _ =
+                sqlx::query("DELETE FROM kyc_records WHERE user_id = $1 AND status = 'pending'")
+                    .bind(user_id)
+                    .execute(pool)
+                    .await;
         }
     }
 

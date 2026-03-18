@@ -163,10 +163,7 @@ pub async fn update_leaderboard_handler(
         Ok(()) => Json(ApiResponse::ok("Leaderboard settings saved.")).into_response(),
         Err(e) => {
             tracing::warn!("Leaderboard update failed for user {}: {}", user_id, e);
-            Json(ApiResponse::err(
-                "Failed to update leaderboard settings.",
-            ))
-            .into_response()
+            Json(ApiResponse::err("Failed to update leaderboard settings.")).into_response()
         }
     }
 }

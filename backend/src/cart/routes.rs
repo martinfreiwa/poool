@@ -160,7 +160,11 @@ pub async fn add_to_cart(
             0
         };
         let total = dollars * 100 + cents;
-        if total <= 0 { 50_000 } else { total }  // Default $500
+        if total <= 0 {
+            50_000
+        } else {
+            total
+        } // Default $500
     };
 
     // 3. Resolve asset_id from property_id – can be a UUID *or* a slug

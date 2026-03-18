@@ -438,13 +438,8 @@ pub async fn api_admin_developer_project_review(
     Json(payload): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
     // Delegate to the full review handler (api_admin_project_notes_create)
-    api_admin_project_notes_create(
-        admin,
-        State(state),
-        axum::extract::Path(id),
-        Json(payload),
-    )
-    .await
+    api_admin_project_notes_create(admin, State(state), axum::extract::Path(id), Json(payload))
+        .await
 }
 
 // ==============================================================================
@@ -826,15 +821,18 @@ pub async fn api_admin_project_notes_create(
             }
 
             // 5. Send email notification (after commit, non-blocking)
-            let developer_email: String = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-                .bind(developer_id)
-                .fetch_optional(&state.db)
-                .await
-                .unwrap_or(None)
-                .unwrap_or_default();
+            let developer_email: String =
+                sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+                    .bind(developer_id)
+                    .fetch_optional(&state.db)
+                    .await
+                    .unwrap_or(None)
+                    .unwrap_or_default();
 
             if !developer_email.is_empty() {
-                let base_url = std::env::var("BASE_URL").unwrap_or_else(|_| "https://poool-backend-c54klbv5ka-ew.a.run.app".to_string());
+                let base_url = std::env::var("BASE_URL").unwrap_or_else(|_| {
+                    "https://poool-backend-c54klbv5ka-ew.a.run.app".to_string()
+                });
                 let email_body = format!(
                     r#"<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
                         <div style="text-align: center; margin-bottom: 32px;">
@@ -872,7 +870,8 @@ pub async fn api_admin_project_notes_create(
                     &developer_email,
                     &format!("Revision Required: {}", project_name),
                     &email_body,
-                ).await;
+                )
+                .await;
             }
 
             Ok(Json(serde_json::json!({

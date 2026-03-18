@@ -33,7 +33,7 @@ static CACHED_IDR_TIMESTAMP: AtomicU64 = AtomicU64::new(0); // unix timestamp
 pub async fn get_usd_to_idr_rate() -> f64 {
     let now = Utc::now().timestamp() as u64;
     let last_fetched = CACHED_IDR_TIMESTAMP.load(Ordering::SeqCst);
-    
+
     // Cache for 1 hour (3600 seconds)
     if now - last_fetched < 3600 {
         let rate_bits = CACHED_IDR_RATE.load(Ordering::SeqCst);
@@ -49,7 +49,12 @@ pub async fn get_usd_to_idr_rate() -> f64 {
     }
 
     let client = reqwest::Client::new();
-    if let Ok(resp) = client.get("https://open.er-api.com/v6/latest/USD").timeout(std::time::Duration::from_secs(5)).send().await {
+    if let Ok(resp) = client
+        .get("https://open.er-api.com/v6/latest/USD")
+        .timeout(std::time::Duration::from_secs(5))
+        .send()
+        .await
+    {
         if let Ok(data) = resp.json::<FxResponse>().await {
             if let Some(rate) = data.rates.get("IDR") {
                 // Store rate first, then timestamp (SeqCst ensures ordering)
@@ -151,8 +156,7 @@ pub async fn create_deposit_request(
             let display = crate::common::currency::format_usd(amount_cents);
             format!(
                 "Wire {} to POOOL GmbH, IBAN: DE89370400440532013000, Reference: {}",
-                display,
-                &provider_ref
+                display, &provider_ref
             )
         }
         _ => "Please contact support for deposit instructions.".to_string(),
@@ -457,7 +461,11 @@ pub async fn execute_checkout(
     }
 
     // 5. Generate order details
-    let order_number = format!("ORD-{}-{}", Utc::now().format("%Y%m%d%H%M%S"), &Uuid::new_v4().to_string()[..6]);
+    let order_number = format!(
+        "ORD-{}-{}",
+        Utc::now().format("%Y%m%d%H%M%S"),
+        &Uuid::new_v4().to_string()[..6]
+    );
     let order_status = if payment_method == "wallet" {
         "completed"
     } else {
@@ -819,7 +827,11 @@ pub fn calculate_fx_deduction(total_usd_cents: i64, payment_currency: &str) -> (
 }
 
 /// Admin: Approve a pending order (e.g. after manual bank transfer verified).
-pub async fn approve_order(pool: &sqlx::PgPool, order_id: uuid::Uuid, admin_user_id: uuid::Uuid) -> Result<(), String> {
+pub async fn approve_order(
+    pool: &sqlx::PgPool,
+    order_id: uuid::Uuid,
+    admin_user_id: uuid::Uuid,
+) -> Result<(), String> {
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     // 1. Fetch order and lock it
@@ -922,7 +934,11 @@ pub async fn approve_order(pool: &sqlx::PgPool, order_id: uuid::Uuid, admin_user
 }
 
 /// Admin: Reject a pending order.
-pub async fn reject_order(pool: &sqlx::PgPool, order_id: uuid::Uuid, admin_user_id: uuid::Uuid) -> Result<(), String> {
+pub async fn reject_order(
+    pool: &sqlx::PgPool,
+    order_id: uuid::Uuid,
+    admin_user_id: uuid::Uuid,
+) -> Result<(), String> {
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     // 1. Fetch order, lock it

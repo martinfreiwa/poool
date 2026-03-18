@@ -367,12 +367,13 @@ pub async fn upload_asset_document(
     };
 
     // Verify ownership or Admin role and ensure asset is not deleted
-    let owner_id: Option<Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
-            .bind(asset_id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+    let owner_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL",
+    )
+    .bind(asset_id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
 
     let is_admin = middleware::is_admin(&jar, &state.db).await;
     if owner_id != Some(user.id) && !is_admin {
@@ -551,12 +552,13 @@ pub async fn upload_asset_image(
     };
 
     // Verify ownership and ensure asset is not deleted
-    let owner_id: Option<Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
-            .bind(asset_id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+    let owner_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL",
+    )
+    .bind(asset_id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
 
     let is_admin = middleware::is_admin(&jar, &state.db).await;
     if owner_id != Some(user.id) && !is_admin {
@@ -761,12 +763,13 @@ pub async fn delete_asset_document(
         }
     };
 
-    let owner_id: Option<Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
-            .bind(asset_id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+    let owner_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL",
+    )
+    .bind(asset_id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
 
     let is_admin = middleware::is_admin(&jar, &state.db).await;
     if owner_id != Some(user.id) && !is_admin {
@@ -815,12 +818,13 @@ pub async fn delete_asset_image(
         }
     };
 
-    let owner_id: Option<Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
-            .bind(asset_id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+    let owner_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL",
+    )
+    .bind(asset_id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
 
     let is_admin = middleware::is_admin(&jar, &state.db).await;
     if owner_id != Some(user.id) && !is_admin {
@@ -877,12 +881,13 @@ pub async fn reorder_asset_images(
         }
     };
 
-    let owner_id: Option<Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL")
-            .bind(asset_id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
+    let owner_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL",
+    )
+    .bind(asset_id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
 
     let is_admin = middleware::is_admin(&jar, &state.db).await;
     if owner_id != Some(user.id) && !is_admin {

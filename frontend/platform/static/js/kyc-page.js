@@ -32,6 +32,8 @@ document.addEventListener("alpine:init", () => {
     },
 
     async initKyc() {
+      console.log("[KYC] initKyc() starting...");
+
       // Check if we're returning from provider redirect
       const params = new URLSearchParams(window.location.search);
       if (params.get("completed") === "true") {
@@ -39,14 +41,17 @@ document.addEventListener("alpine:init", () => {
         this.status = "in_review";
         // Clean URL
         history.replaceState(null, "", "/kyc");
+        console.log("[KYC] Returned from provider redirect, status=in_review");
         return;
       }
 
+      // 1. Fetch current KYC status
       try {
-        // 1. Fetch current KYC status
         const statusResp = await fetch("/api/kyc/status");
+        console.log("[KYC] /api/kyc/status response:", statusResp.status);
         if (statusResp.ok) {
           const data = await statusResp.json();
+          console.log("[KYC] Status data:", JSON.stringify(data));
           this.status = data.status || "not_started";
           if (data.provider) this.provider = data.provider;
         } else if (statusResp.status === 401) {
@@ -54,22 +59,32 @@ document.addEventListener("alpine:init", () => {
           window.location.href = "/auth/login";
           return;
         } else {
-          console.warn("KYC status API returned:", statusResp.status);
+          console.warn("[KYC] Status API returned:", statusResp.status);
           this.status = "not_started";
         }
+      } catch (err) {
+        console.error("[KYC] Status fetch failed:", err);
+        if (typeof Sentry !== 'undefined') Sentry.captureException(err);
+        this.status = "not_started";
+      }
 
-        // 2. Detect the active provider
+      // 2. Detect the active provider (separate try/catch so status is preserved)
+      try {
         const providerResp = await fetch("/api/kyc/provider");
+        console.log("[KYC] /api/kyc/provider response:", providerResp.status);
         if (providerResp.ok) {
           const pdata = await providerResp.json();
+          console.log("[KYC] Provider data:", JSON.stringify(pdata));
           this.provider = pdata.provider || "manual";
           this.supportsRedirect = pdata.supports_redirect || false;
         }
       } catch (err) {
-        console.error("KYC initialization failed:", err);
-        if (typeof Sentry !== 'undefined') Sentry.captureException(err);
-        this.status = "error";
+        console.error("[KYC] Provider fetch failed:", err);
+        // Don't change status — the status fetch already set it
       }
+
+      console.log("[KYC] Final state: status=%s, provider=%s, supportsRedirect=%s",
+        this.status, this.provider, this.supportsRedirect);
     },
 
     getStatusMessage() {

@@ -1,7 +1,7 @@
 use super::db;
 use super::models::SupportTicketWithReplies;
-use crate::AppState;
 use crate::common::sanitize;
+use crate::AppState;
 use anyhow::Result;
 use uuid::Uuid;
 
@@ -9,7 +9,14 @@ use uuid::Uuid;
 const VALID_PRIORITIES: &[&str] = &["low", "normal", "high", "urgent"];
 /// Valid category values accepted by the system.
 const VALID_CATEGORIES: &[&str] = &[
-    "general", "account", "deposits", "investments", "kyc", "technical", "billing", "other",
+    "general",
+    "account",
+    "deposits",
+    "investments",
+    "kyc",
+    "technical",
+    "billing",
+    "other",
 ];
 
 /// Maximum attachment size: 5 MB.
@@ -121,7 +128,13 @@ pub async fn submit_ticket(
     let sanitized_message = sanitize::sanitize_multiline(message);
 
     let (ticket_id, reply_id) = db::create_ticket_v2(
-        &state.db, user_id, &sanitized_subject, &sanitized_message, priority, category, &combined_context,
+        &state.db,
+        user_id,
+        &sanitized_subject,
+        &sanitized_message,
+        priority,
+        category,
+        &combined_context,
     )
     .await?;
 
@@ -129,9 +142,7 @@ pub async fn submit_ticket(
     if let Some(bytes) = file_bytes {
         if let Some(mime) = file_type {
             let ext = crate::storage::service::extension_for_mime(&mime);
-            let fname = file_name
-                .as_deref()
-                .unwrap_or("attachment");
+            let fname = file_name.as_deref().unwrap_or("attachment");
             let object_path = format!("support/{}/{}_{}.{}", ticket_id, Uuid::new_v4(), fname, ext);
 
             let bucket = state.config.gcs_bucket.as_deref().unwrap_or("poool-bucket");
@@ -177,9 +188,15 @@ pub async fn reply_to_ticket(
 
     let sanitized_message = sanitize::sanitize_multiline(message);
 
-    db::add_reply(&state.db, ticket_id, user_id, &author_name, &sanitized_message)
-        .await
-        .map_err(|e| format!("Failed to add reply: {}", e))?;
+    db::add_reply(
+        &state.db,
+        ticket_id,
+        user_id,
+        &author_name,
+        &sanitized_message,
+    )
+    .await
+    .map_err(|e| format!("Failed to add reply: {}", e))?;
 
     Ok(())
 }

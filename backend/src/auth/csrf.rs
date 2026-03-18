@@ -68,9 +68,8 @@ pub async fn csrf_middleware(
                     if ct_str.starts_with("application/x-www-form-urlencoded") {
                         let (parts, body) = req.into_parts();
                         if let Ok(bytes) = axum::body::to_bytes(body, 2 * 1024 * 1024).await {
-                            let params: HashMap<String, String> = form_urlencoded::parse(&bytes)
-                                .into_owned()
-                                .collect();
+                            let params: HashMap<String, String> =
+                                form_urlencoded::parse(&bytes).into_owned().collect();
                             if let Some(body_token) = params.get("csrf_token") {
                                 if body_token == &token {
                                     is_valid = true;

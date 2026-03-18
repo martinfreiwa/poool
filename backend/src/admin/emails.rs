@@ -50,7 +50,8 @@ pub async fn api_admin_emails(
     .fetch_one(&state.db)
     .await;
 
-    let (total_sent, total_delivered, total_opened, total_clicked, total_bounced) = match stats_row {
+    let (total_sent, total_delivered, total_opened, total_clicked, total_bounced) = match stats_row
+    {
         Ok(r) => (
             r.total_sent.unwrap_or(0),
             r.total_delivered.unwrap_or(0),

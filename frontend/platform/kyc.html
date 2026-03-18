@@ -455,6 +455,22 @@ include "components/head.html" %}{% endwith %}
               </div>
             </template>
 
+            <!-- FALLBACK STATE — catches any unhandled status value -->
+            <template x-if="status !== 'loading' && status !== 'error' && status !== 'in_review' && status !== 'approved' && status !== 'rejected' && status !== 'expired' && !canStartVerification()">
+              <div class="kyc-center-state">
+                <div class="kyc-status-icon kyc-status-icon--start">
+                  <svg  width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                </div>
+                <h2 class="kyc-state-title">Identity Verification</h2>
+                <p class="kyc-state-desc">
+                  Something went wrong loading the verification form. Please refresh the page to try again.
+                </p>
+                <button class="kyc-btn-primary full-width-btn" onclick="window.location.reload()">Refresh Page</button>
+              </div>
+            </template>
+
           </div><!-- end .kyc-card -->
         </div><!-- end .kyc-content-wrapper -->
       </div><!-- end .kyc-container -->

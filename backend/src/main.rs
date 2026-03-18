@@ -140,10 +140,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
     } else {
         tracing::info!("Rate limiter: using in-memory backend (single instance only)");
-        auth::rate_limit::RateLimiter::new(
-            10,
-            std::time::Duration::from_secs(15 * 60),
-        )
+        auth::rate_limit::RateLimiter::new(10, std::time::Duration::from_secs(15 * 60))
     };
 
     let state = AppState {
@@ -265,7 +262,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest_service("/webp", ServeDir::new("../frontend/www/webp"))
         .nest_service("/webm", ServeDir::new("../frontend/www/webm"))
         .route_service("/robots.txt", ServeFile::new("../frontend/www/robots.txt"))
-        .route_service("/sitemap.xml", ServeFile::new("../frontend/www/sitemap.xml"))
+        .route_service(
+            "/sitemap.xml",
+            ServeFile::new("../frontend/www/sitemap.xml"),
+        )
         // All other paths → serve from /en/ (Angular SPA root)
         // This handles /, /chunk-*.js, /styles-*.css, /main-*.js, etc.
         .fallback_service(
@@ -354,15 +354,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if is_dev {
                 cors.allow_origin(tower_http::cors::Any)
             } else {
-                // Allow both platform and www domains
-                let origins: Vec<axum::http::HeaderValue> = [
-                    "https://platform.poool.app",
-                    "https://www.poool.app",
-                    "https://poool.app",
-                ]
-                .iter()
-                .filter_map(|o| o.parse().ok())
-                .collect();
+                // Dynamically allow origins based on BASE_URL
+                let base_url = std::env::var("BASE_URL")
+                    .unwrap_or_else(|_| "https://platform.poool.app".to_string());
+                let mut origins: Vec<axum::http::HeaderValue> = Vec::new();
+                if let Ok(v) = base_url.parse() {
+                    origins.push(v);
+                }
+
+                let base_host = base_url.replace("https://", "").replace("http://", "");
+                let bare_domain = base_host.replace("platform.", "");
+
+                let scheme = if base_url.starts_with("https") {
+                    "https"
+                } else {
+                    "http"
+                };
+
+                let www_url = format!("{}://www.{}", scheme, bare_domain);
+                if let Ok(v) = www_url.parse() {
+                    origins.push(v);
+                }
+
+                let bare_url = format!("{}://{}", scheme, bare_domain);
+                if let Ok(v) = bare_url.parse() {
+                    origins.push(v);
+                }
+
                 cors.allow_origin(origins)
             }
         })
@@ -1418,7 +1436,8 @@ struct HostDispatch {
 impl tower::Service<axum::http::Request<axum::body::Body>> for HostDispatch {
     type Response = axum::response::Response;
     type Error = std::convert::Infallible;
-    type Future = Pin<Box<dyn std::future::Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+    type Future =
+        Pin<Box<dyn std::future::Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
@@ -1435,38 +1454,39 @@ impl tower::Service<axum::http::Request<axum::body::Body>> for HostDispatch {
             .unwrap_or("")
             .to_lowercase();
 
-        match host.as_str() {
+        let base_url =
+            std::env::var("BASE_URL").unwrap_or_else(|_| "https://platform.poool.app".to_string());
+        let base_host = base_url.replace("https://", "").replace("http://", "");
+        let bare_domain = base_host.replace("platform.", "");
+        let www_domain = format!("www.{}", bare_domain);
+
+        if host == bare_domain {
             // Bare domain → permanent redirect to www
-            "poool.app" => {
-                let path_and_query = req
-                    .uri()
-                    .path_and_query()
-                    .map(|pq| pq.as_str().to_string())
-                    .unwrap_or_else(|| "/".to_string());
-                Box::pin(async move {
-                    Ok(Redirect::permanent(&format!(
-                        "https://www.poool.app{}",
-                        path_and_query
-                    ))
-                    .into_response())
-                })
-            }
+            let path_and_query = req
+                .uri()
+                .path_and_query()
+                .map(|pq| pq.as_str().to_string())
+                .unwrap_or_else(|| "/".to_string());
+            Box::pin(async move {
+                Ok(
+                    Redirect::permanent(&format!("https://{}{}", www_domain, path_and_query))
+                        .into_response(),
+                )
+            })
+        } else if host == www_domain {
             // WWW → landing page
-            "www.poool.app" => {
-                let mut router = self.www.clone();
-                Box::pin(async move {
-                    let resp = tower::Service::call(&mut router, req).await;
-                    Ok(resp.into_response())
-                })
-            }
-            // Everything else (platform.poool.app, localhost, Cloud Run URL) → platform
-            _ => {
-                let mut router = self.platform.clone();
-                Box::pin(async move {
-                    let resp = tower::Service::call(&mut router, req).await;
-                    Ok(resp.into_response())
-                })
-            }
+            let mut router = self.www.clone();
+            Box::pin(async move {
+                let resp = tower::Service::call(&mut router, req).await;
+                Ok(resp.into_response())
+            })
+        } else {
+            // Everything else (platform, localhost, Cloud Run URL) → platform
+            let mut router = self.platform.clone();
+            Box::pin(async move {
+                let resp = tower::Service::call(&mut router, req).await;
+                Ok(resp.into_response())
+            })
         }
     }
 }

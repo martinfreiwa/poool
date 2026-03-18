@@ -55,7 +55,7 @@ pub fn sanitize_text(input: &str) -> String {
 pub fn sanitize_multiline(input: &str) -> String {
     let stripped = strip_tags(input);
     let cleaned = stripped.replace('\0', "");
-    
+
     let mut result = String::with_capacity(cleaned.len());
     let mut consecutive_blanks = 0;
 
@@ -86,11 +86,29 @@ pub fn sanitize_multiline(input: &str) -> String {
 /// - Strips all scripts, event handlers, and dangerous attributes.
 pub fn sanitize_html(input: &str) -> String {
     let mut cleaner = ammonia::Builder::new();
-    
+
     // Configure safe tags
     cleaner.tags(maplit::hashset![
-        "b", "i", "u", "s", "p", "br", "blockquote", "code", "pre",
-        "ol", "ul", "li", "div", "h1", "h2", "h3", "span", "a", "strong", "em"
+        "b",
+        "i",
+        "u",
+        "s",
+        "p",
+        "br",
+        "blockquote",
+        "code",
+        "pre",
+        "ol",
+        "ul",
+        "li",
+        "div",
+        "h1",
+        "h2",
+        "h3",
+        "span",
+        "a",
+        "strong",
+        "em"
     ]);
 
     // Allowed attributes - only on specific tags
@@ -115,7 +133,7 @@ pub fn sanitize_url(input: &str) -> Option<String> {
     }
 
     let lower = trimmed.to_lowercase();
-    
+
     // Allow http, https, mailto, and protocol-relative URLs
     if lower.starts_with("http://")
         || lower.starts_with("https://")
@@ -123,11 +141,17 @@ pub fn sanitize_url(input: &str) -> Option<String> {
         || lower.starts_with("//")
     {
         Some(trimmed.to_string())
-    } else if !lower.contains("://") && !lower.starts_with("javascript:") && !lower.starts_with("data:") {
+    } else if !lower.contains("://")
+        && !lower.starts_with("javascript:")
+        && !lower.starts_with("data:")
+    {
         // Relative URL or bare domain — allow
         Some(trimmed.to_string())
     } else {
-        tracing::warn!("Rejected unsafe URL scheme: {}", &trimmed[..trimmed.len().min(100)]);
+        tracing::warn!(
+            "Rejected unsafe URL scheme: {}",
+            &trimmed[..trimmed.len().min(100)]
+        );
         None
     }
 }
@@ -151,10 +175,7 @@ mod tests {
 
     #[test]
     fn test_strip_tags_attributes() {
-        assert_eq!(
-            strip_tags(r#"<img src="x" onerror="alert(1)">"#),
-            ""
-        );
+        assert_eq!(strip_tags(r#"<img src="x" onerror="alert(1)">"#), "");
         assert_eq!(
             strip_tags(r#"<a href="javascript:alert(1)">Click</a>"#),
             "Click"
@@ -182,16 +203,31 @@ mod tests {
 
     #[test]
     fn test_sanitize_url_safe() {
-        assert_eq!(sanitize_url("https://example.com"), Some("https://example.com".into()));
-        assert_eq!(sanitize_url("http://example.com"), Some("http://example.com".into()));
-        assert_eq!(sanitize_url("mailto:user@example.com"), Some("mailto:user@example.com".into()));
-        assert_eq!(sanitize_url("/relative/path"), Some("/relative/path".into()));
+        assert_eq!(
+            sanitize_url("https://example.com"),
+            Some("https://example.com".into())
+        );
+        assert_eq!(
+            sanitize_url("http://example.com"),
+            Some("http://example.com".into())
+        );
+        assert_eq!(
+            sanitize_url("mailto:user@example.com"),
+            Some("mailto:user@example.com".into())
+        );
+        assert_eq!(
+            sanitize_url("/relative/path"),
+            Some("/relative/path".into())
+        );
     }
 
     #[test]
     fn test_sanitize_url_dangerous() {
         assert_eq!(sanitize_url("javascript:alert(1)"), None);
-        assert_eq!(sanitize_url("data:text/html,<script>alert(1)</script>"), None);
+        assert_eq!(
+            sanitize_url("data:text/html,<script>alert(1)</script>"),
+            None
+        );
         assert_eq!(sanitize_url("  "), None);
     }
 }
