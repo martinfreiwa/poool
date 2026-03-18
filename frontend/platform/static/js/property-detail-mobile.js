@@ -185,16 +185,18 @@ function initializeAddToCart() {
         body: formData,
       })
         .then((response) => {
-          if (!response.ok) {
-            console.error("Add to cart failed", response.status);
+          // Check where the server actually sent us after following redirects
+          const finalUrl = new URL(response.url, window.location.origin);
+          if (finalUrl.pathname !== "/cart") {
+            // Server redirected somewhere else (e.g. /kyc, /auth/login)
+            window.location.href = finalUrl.pathname + finalUrl.search;
+          } else {
+            window.location.href = "/cart";
           }
-          return response.text();
-        })
-        .then((data) => {
-          window.location.href = "/cart";
         })
         .catch((error) => {
           console.error("Add to cart error:", error);
+          window.location.href = "/cart";
         });
     });
   }
