@@ -16,7 +16,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::models::{
-    SettingsResponse, UpdateNotificationsForm, UpdatePreferencesForm, UpdateProfileForm,
+    SettingsResponse, UpdateLeaderboardForm, UpdateNotificationsForm, UpdatePreferencesForm,
+    UpdateProfileForm,
 };
 use crate::common::sanitize;
 use crate::error::AppError;
@@ -59,12 +60,16 @@ pub async fn get_settings(
                k.status as kyc_status,
                COALESCE(s.email_notifications, TRUE) as email_notifications,
                COALESCE(s.push_notifications, TRUE) as push_notifications,
-               COALESCE(s.totp_enabled, FALSE) as totp_enabled
+               COALESCE(s.totp_enabled, FALSE) as totp_enabled,
+               COALESCE(lb_p.visible, FALSE) as lb_visible,
+               COALESCE(lb_p.show_avatar, FALSE) as lb_avatar,
+               lb_p.display_name as lb_display_name
         FROM users u
         LEFT JOIN user_profiles p ON u.id = p.user_id
         LEFT JOIN user_settings s ON u.id = s.user_id
         LEFT JOIN user_roles ur ON u.id = ur.user_id
         LEFT JOIN roles r ON ur.role_id = r.id
+        LEFT JOIN leaderboard_preferences lb_p ON u.id = lb_p.user_id
         LEFT JOIN LATERAL (
             SELECT status FROM kyc_records
             WHERE user_id = u.id
@@ -121,6 +126,9 @@ pub async fn get_settings(
         oauth_accounts: vec![],
         latest_terms_version: None,
         latest_terms_accepted_at: None,
+        lb_visible: row.try_get("lb_visible").unwrap_or(false),
+        lb_avatar: row.try_get("lb_avatar").unwrap_or(false),
+        lb_display_name: row.try_get("lb_display_name").ok(),
     };
 
     // ─── Fetch Referrals & Tiers ──────────────────────────────
@@ -383,6 +391,30 @@ pub async fn update_notifications(
     .bind(user_id)
     .bind(form.email_notifications)
     .bind(form.push_notifications)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+// ─── UPDATE: Leaderboard ───────────────────────────────────────
+
+/// Update leaderboard preferences.
+pub async fn update_leaderboard(
+    pool: &PgPool,
+    user_id: Uuid,
+    form: UpdateLeaderboardForm,
+) -> Result<(), AppError> {
+    sqlx::query(
+        r#"INSERT INTO leaderboard_preferences (user_id, visible, show_avatar, display_name)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (user_id) DO UPDATE
+           SET visible = $2, show_avatar = $3, display_name = $4, updated_at = NOW()"#,
+    )
+    .bind(user_id)
+    .bind(form.visible)
+    .bind(form.show_avatar)
+    .bind(sanitize_opt(&form.display_name).filter(|s| !s.is_empty()))
     .execute(pool)
     .await?;
 

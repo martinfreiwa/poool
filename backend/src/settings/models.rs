@@ -43,6 +43,10 @@ pub struct SettingsResponse {
     pub oauth_accounts: Vec<OauthAccountInfo>,
     pub latest_terms_version: Option<String>,
     pub latest_terms_accepted_at: Option<String>,
+    // Leaderboard
+    pub lb_visible: bool,
+    pub lb_avatar: bool,
+    pub lb_display_name: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -114,6 +118,15 @@ pub struct UpdateProfileForm {
 pub struct UpdateNotificationsForm {
     pub email_notifications: bool,
     pub push_notifications: bool,
+}
+
+// ─── Request: Leaderboard tab ─────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateLeaderboardForm {
+    pub visible: bool,
+    pub show_avatar: bool,
+    pub display_name: Option<String>,
 }
 
 // ─── Request: Preferences tab ─────────────────────────────────

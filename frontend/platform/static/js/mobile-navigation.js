@@ -136,54 +136,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (typeof htmx !== "undefined") {
   }
 
-  // Test what's blocking events
-  setTimeout(function () {
-    // Add a global click listener to see what's being clicked
-    document.addEventListener("click", function (e) {}, true);
 
-    document.addEventListener("touchstart", function (e) {}, true);
-
-    // Check what element is on top of tabs
-    const tabs = document.querySelectorAll(".status-tab");
-    tabs.forEach((tab) => {
-      const rect = tab.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const elementAtPoint = document.elementFromPoint(centerX, centerY);
-
-      // Force add a click handler using a different method
-      tab.onclick = function () {
-        const url = this.getAttribute("hx-get");
-        const target = this.getAttribute("hx-target");
-        if (url && target && typeof htmx !== "undefined") {
-          // Update active state
-          document
-            .querySelectorAll(".status-tab")
-            .forEach((t) => t.classList.remove("active"));
-          this.classList.add("active");
-
-          // Trigger HTMX request
-          htmx.ajax("GET", url, target).then(function () {
-            // Re-initialize property images after content swap
-            setTimeout(function () {
-              if (typeof initializePropertyDots === "function") {
-                initializePropertyDots();
-              }
-              if (typeof initializeMobileSwipe === "function") {
-                initializeMobileSwipe();
-              }
-            }, 100);
-          });
-        }
-      };
-    });
-
-    // Do the same for galleries
-    const galleries = document.querySelectorAll(".property-gallery");
-    galleries.forEach((gallery, index) => {
-      const rect = gallery.getBoundingClientRect();
-    });
-  }, 1000);
 
   // Close menu when clicking on nav links
   const navLinks = document.querySelectorAll(".mobile-burger-menu__nav-item");

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO user_tiers (user_id, tier_id, invested_12m, updated_at)\n        VALUES ($1, $2, $3, NOW())\n        ON CONFLICT (user_id) DO UPDATE SET\n            tier_id = EXCLUDED.tier_id,\n            invested_12m = EXCLUDED.invested_12m,\n            updated_at = NOW()\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0fa1e650a7b5c176de2fc3ad149c4b4d92c9e08224e75388b22504d66c319179"
+}

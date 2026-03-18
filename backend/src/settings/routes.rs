@@ -15,8 +15,8 @@ use axum::{
 use axum_extra::extract::cookie::CookieJar;
 
 use super::models::{
-    ApiResponse, ChangeEmailForm, ChangePasswordForm, ChangePhoneForm, UpdateNotificationsForm,
-    UpdatePreferencesForm, UpdateProfileForm,
+    ApiResponse, ChangeEmailForm, ChangePasswordForm, ChangePhoneForm, UpdateLeaderboardForm,
+    UpdateNotificationsForm, UpdatePreferencesForm, UpdateProfileForm,
 };
 use super::service;
 use crate::auth::middleware;
@@ -140,6 +140,31 @@ pub async fn update_notifications_handler(
             tracing::warn!("Notifications update failed for user {}: {}", user_id, e);
             Json(ApiResponse::err(
                 "Failed to update notification preferences.",
+            ))
+            .into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/leaderboard ──────────────────────────
+
+/// Save leaderboard preferences.
+pub async fn update_leaderboard_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<UpdateLeaderboardForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::update_leaderboard(&state.db, user_id, form).await {
+        Ok(()) => Json(ApiResponse::ok("Leaderboard settings saved.")).into_response(),
+        Err(e) => {
+            tracing::warn!("Leaderboard update failed for user {}: {}", user_id, e);
+            Json(ApiResponse::err(
+                "Failed to update leaderboard settings.",
             ))
             .into_response()
         }

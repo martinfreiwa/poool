@@ -26,6 +26,10 @@ pub fn router() -> Router<AppState> {
             "/api/settings/notifications",
             post(update_notifications_handler),
         )
+        .route(
+            "/api/settings/leaderboard",
+            post(update_leaderboard_handler),
+        )
         .route("/api/settings/2fa/disable", post(disable_totp_handler))
         .route("/api/settings/email", post(change_email_handler))
         .route("/api/settings/password", post(change_password_handler))
