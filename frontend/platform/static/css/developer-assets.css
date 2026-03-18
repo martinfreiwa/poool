@@ -8,11 +8,18 @@
    Override marketplace absolute positioning
    =========================== */
 
-/* HR divider sits flush below the tabs — provides spacing to the card grid */
+#developer-assets-main .ds-page-header,
+.cart-page-main .ds-page-header {
+  max-width: 1096px !important;
+  width: 100% !important;
+}
+
 #developer-assets-main > .page-header-divider,
 .cart-page-main > .page-header-divider {
   margin-top: 0 !important;
   margin-bottom: 24px !important;
+  max-width: 1096px !important;
+  width: 100% !important;
 }
 
 #developer-assets-main .status-tabs,
@@ -25,7 +32,7 @@
   overflow: hidden !important;
   border: 1px solid #e9eaeb !important;
   width: 100% !important;
-  max-width: none !important;
+  max-width: 1096px !important;
   height: 56px !important;
   padding: 6px !important;
   top: auto !important;
@@ -75,7 +82,7 @@
   grid-template-columns: repeat(auto-fill, minmax(344px, 1fr)) !important;
   gap: 24px !important;
   width: 100% !important;
-  max-width: none !important;
+  max-width: 1096px !important;
   position: static !important;
   top: auto !important;
   left: auto !important;
@@ -345,6 +352,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  grid-column: 1 / -1;
 }
 
 .dev-tab-empty-msg {
@@ -371,6 +379,10 @@
 
 /* Individual ghost card — mirrors .property-card shape */
 .ghost-card {
+  box-sizing: border-box;
+  width: 344px;
+  min-width: 320px;
+  height: auto;
   border: 2px dashed #D5D7DA;
   border-radius: 16px;
   background: #FAFBFC;
@@ -378,23 +390,19 @@
   display: flex;
   flex-direction: column;
   opacity: 0.7;
+  min-height: 572px;
 }
 
 .ghost-card__image {
+  box-sizing: border-box;
   width: 100%;
-  height: 180px;
+  height: 248px;
   background: #F3F4F6;
   display: flex;
   align-items: center;
   justify-content: center;
   border-bottom: 2px dashed #E4E7EC;
-}
-
-.ghost-card__content {
-  padding: 16px 18px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-shrink: 0;
 }
 
 /* Skeleton primitives */
@@ -414,12 +422,12 @@
 .skel-pill--wide { width: 64px; }
 
 .skel-line--title {
-  height: 14px;
+  height: 18px;
   width: 60%;
 }
 
 .skel-line--price {
-  height: 16px;
+  height: 20px;
   width: 45%;
 }
 .skel-line--pct {
@@ -434,50 +442,6 @@
 .skel-line--val {
   height: 10px;
   width: 20%;
-}
-
-/* Meta row */
-.ghost-card__meta {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-/* Price row */
-.ghost-card__price-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* Progress bar */
-.ghost-card__progress {
-  height: 5px;
-  border-radius: 3px;
-  background: #E9EAEB;
-  width: 100%;
-}
-
-.ghost-card__progress-fill {
-  height: 100%;
-  width: 0%;
-  border-radius: 3px;
-  background: #C5C7CD;
-}
-
-/* Detail rows */
-.ghost-card__details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid #F0F0F0;
-}
-
-.ghost-card__detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 @media (max-width: 600px) {

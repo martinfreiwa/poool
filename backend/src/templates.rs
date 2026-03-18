@@ -19,7 +19,7 @@ pub fn create_engine() -> Templates {
         Ok("development") | Ok("dev") | Ok("local")
     ) || std::env::var("BASE_URL")
         .map(|url| url.contains("localhost"))
-        .unwrap_or(false);
+        .unwrap_or(true); // default to dev when BASE_URL is not set
 
     let version = if is_dev {
         // Use current timestamp as version in dev mode to break cache

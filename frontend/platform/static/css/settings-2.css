@@ -1486,5 +1486,169 @@ input:checked + .settings-toggle-slider:before {
   font-weight: 500;
 }
 
+/* ─── Nationality Searchable Dropdown ─── */
+.nationality-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.nationality-dropdown__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  cursor: pointer;
+  background: #ffffff;
+  text-align: left;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  color: #181d27;
+  padding: 10px 14px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.nationality-dropdown__trigger:focus,
+.nationality-dropdown.open .nationality-dropdown__trigger {
+  outline: none;
+  border-color: #2E2EF9;
+  box-shadow: 0 0 0 3px rgba(46, 46, 249, 0.08);
+}
+
+.nationality-dropdown__trigger svg {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.nationality-dropdown.open .nationality-dropdown__trigger svg {
+  transform: rotate(180deg);
+}
+
+.nationality-dropdown__value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nationality-dropdown__value.placeholder {
+  color: #98a2b3;
+}
+
+.nationality-dropdown__panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12), 0 2px 6px rgba(16, 24, 40, 0.06);
+  z-index: 100;
+  overflow: hidden;
+  animation: nationalityPanelIn 0.15s ease;
+}
+
+@keyframes nationalityPanelIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.nationality-dropdown.open .nationality-dropdown__panel {
+  display: block;
+}
+
+.nationality-dropdown__search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.nationality-dropdown__search-wrap svg {
+  flex-shrink: 0;
+}
+
+.nationality-dropdown__search {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-family: 'TT Norms Pro', sans-serif;
+  color: #181d27;
+  background: transparent;
+  width: 100%;
+}
+
+.nationality-dropdown__search::placeholder {
+  color: #98a2b3;
+}
+
+.nationality-dropdown__list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.nationality-dropdown__list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.nationality-dropdown__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nationality-dropdown__list::-webkit-scrollbar-thumb {
+  background: #d0d5dd;
+  border-radius: 3px;
+}
+
+.nationality-dropdown__list li {
+  padding: 8px 14px;
+  font-size: 14px;
+  font-family: 'TT Norms Pro', sans-serif;
+  color: #344054;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.12s ease;
+}
+
+.nationality-dropdown__list li:hover,
+.nationality-dropdown__list li.highlighted {
+  background: #f9fafb;
+}
+
+.nationality-dropdown__list li.selected {
+  background: #eff0ff;
+  color: #0000FF;
+  font-weight: 600;
+}
+
+.nationality-dropdown__list li .country-flag {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.nationality-dropdown__list .nationality-no-results {
+  padding: 16px 14px;
+  text-align: center;
+  color: #98a2b3;
+  font-size: 13px;
+  cursor: default;
+}
+
+.nationality-dropdown__list .nationality-no-results:hover {
+  background: transparent;
+}
+
 /* ─── Utility ─── */
 .hidden { display: none !important; }

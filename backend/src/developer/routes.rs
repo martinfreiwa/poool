@@ -237,6 +237,22 @@ pub async fn api_developer_create_draft(
             "Only developers can create assets".into(),
         ));
     }
+
+    // ── Enforce 100-draft limit ──
+    let draft_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::bigint FROM assets a LEFT JOIN developer_projects dp ON dp.asset_id = a.id WHERE a.developer_user_id = $1 AND a.deleted_at IS NULL AND COALESCE(dp.status, 'draft') = 'draft'"
+    )
+    .bind(user.id)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(0);
+
+    if draft_count >= 100 {
+        return Err(AppError::BadRequest(
+            "You can have a maximum of 100 drafts. Please delete unused drafts before creating a new one.".to_string(),
+        ));
+    }
+
     // ── XSS Sanitization on create ──
     use crate::common::sanitize::sanitize_text;
     let mut payload = payload;
@@ -894,6 +910,7 @@ pub async fn api_developer_list_drafts(
                COALESCE(dp.status, 'draft') as project_status,
                dp.revision_notes,
                a.updated_at::text,
+               a.created_at::text,
                (SELECT image_url FROM asset_images WHERE asset_id = a.id ORDER BY is_cover DESC, sort_order ASC LIMIT 1) as cover_image_url
         FROM assets a
         LEFT JOIN developer_projects dp ON dp.asset_id = a.id
@@ -919,6 +936,7 @@ pub async fn api_developer_list_drafts(
                 "project_status": row.get::<String, _>("project_status"),
                 "revision_notes": row.get::<Option<String>, _>("revision_notes"),
                 "updated_at": row.get::<String, _>("updated_at"),
+                "created_at": row.get::<String, _>("created_at"),
                 "cover_image_url": row.get::<Option<String>, _>("cover_image_url"),
             })
         })
@@ -1022,6 +1040,21 @@ pub async fn api_developer_duplicate_draft(
 
     if owner_id != Some(user.id) {
         return Err(AppError::Forbidden("Not authorized or asset deleted".to_string()));
+    }
+
+    // ── Enforce 100-draft limit ──
+    let draft_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::bigint FROM assets a LEFT JOIN developer_projects dp ON dp.asset_id = a.id WHERE a.developer_user_id = $1 AND a.deleted_at IS NULL AND COALESCE(dp.status, 'draft') = 'draft'"
+    )
+    .bind(user.id)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(0);
+
+    if draft_count >= 100 {
+        return Err(AppError::BadRequest(
+            "You can have a maximum of 100 drafts. Please delete unused drafts before creating a new one.".to_string(),
+        ));
     }
 
     let new_slug = format!("copy-{}", uuid::Uuid::new_v4());

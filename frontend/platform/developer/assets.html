@@ -1,4 +1,7 @@
-{% with title="Developer Assets", meta_description="Manage your properties and assets on POOOL.", extra_css=['developer-assets', 'mobile-developer-assets', 'marketplace', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigation', 'marketplace'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Developer Assets", meta_description="Manage your properties and assets on POOOL.",
+extra_css=['developer-assets', 'mobile-developer-assets', 'marketplace', 'cart', 'checkout', 'poool-icon-custom'],
+extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigation', 'marketplace'] %}{% include
+"components/head.html" %}{% endwith %}
 
 <body id="developer-assets-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -12,11 +15,11 @@
       <!-- Page Header -->
       <div id="developer-assets-page-header" class="ds-page-header">
         <div class="ds-page-header__title-row">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.8"
-            stroke-linecap="round" stroke-linejoin="round" class="ds-page-header__icon poool-icon-custom">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <path d="M3 9h18"/>
-            <path d="M9 21V9"/>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round" class="ds-page-header__icon poool-icon-custom">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <path d="M3 9h18" />
+            <path d="M9 21V9" />
           </svg>
           <h1 id="developer-assets-page-title" class="ds-page-header__title">
             My Assets
@@ -50,186 +53,238 @@
       <!-- Properties Grid -->
       <div id="dev-assets-grid" class="property-grid">
         {% if developer_assets %}
-          {% for asset in developer_assets %}
-          {% set funded_percentage = 0 %}
-          {% if asset.funding_pct is defined %}
-            {% set funded_percentage = asset.funding_pct %}
-          {% endif %}
-          {% set is_funded = funded_percentage >= 100 %}
-          {% set funding_status_label = "Available" %}
-          {% if asset.status == "funded" or is_funded %}{% set funding_status_label = "Funded" %}
-          {% elif asset.status == "rented" %}{% set funding_status_label = "Rented" %}
-          {% elif asset.status == "exited" %}{% set funding_status_label = "Exited" %}
-          {% elif asset.status == "upcoming" %}{% set funding_status_label = "Upcoming" %}
-          {% endif %}
-
-          {% set lease_label = "Standard Leasehold" %}
-          {% if asset.lease_type == "freehold" %}{% set lease_label = "Freehold" %}{% endif %}
-          {% set badge_class = "ds-badge--leasehold" %}
-          {% if asset.lease_type == "freehold" %}{% set badge_class = "ds-badge--freehold" %}{% endif %}
-
-          <div class="property-card dev-asset-card"
-               data-status="{{ asset.status }}"
-               data-funded="{{ is_funded }}"
-               data-funding-pct="{{ funded_percentage }}"
-               onclick="window.location.href = '/developer/asset-detail?id={{ asset.id }}'">
-            <div class="property-gallery">
-              <div class="property-image-container">
-                <div class="property-image active"
-                  style="background-image: url('{{ asset.cover_image_url }}'); background-size: cover; background-position: center;"
-                  aria-label="{{ asset.title }}"></div>
-                <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                </button>
-                <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>
-                <div class="property-dots"><div class="property-dot active"></div></div>
-              </div>
-              <div class="property-badge ds-badge ds-badge--overlay {{ badge_class }}">
-                <span class="badge-text">{{ lease_label }}</span>
-              </div>
-            </div>
-            <div class="property-content">
-              <div class="card-meta-row">
-                {% if asset.bedrooms %}
-                <div class="card-meta-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#535862" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
-                  <span>{{ asset.bedrooms }}</span>
-                </div>
-                <div class="card-meta-divider"></div>
-                {% endif %}
-                <div class="card-meta-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                  <span>{{ funding_status_label }}</span>
-                </div>
-                {% if asset.city %}
-                <div class="card-meta-divider"></div>
-                <div class="card-meta-item">
-                  <img src="/images/{{ asset.country | default('ID') }}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{{ asset.country | default('ID') }}">
-                  <span>{{ asset.city }}{% if asset.country %}, {{ asset.country }}{% endif %}</span>
-                </div>
-                {% endif %}
-              </div>
-
-              <div class="property-heading">
-                <h3 class="property-title">{{ asset.title }}</h3>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#535862" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              </div>
-
-              <div class="property-pricing">
-                <div class="price-wrapper">
-                  <span class="property-price">USD {{ ((asset.total_value_cents / 100) | int) | format_number }}</span>
-                  <span class="funded-percentage">{{ (funded_percentage | round(1)) }}% funded</span>
-                </div>
-                <div class="property-progress ds-progress">
-                  <div class="ds-progress__fill" style="width: {{ funded_percentage }}%"></div>
-                </div>
-              </div>
-
-              <div class="investment-details">
-                <div class="investment-row">
-                  <span class="investment-label">Investment duration</span>
-                  <span class="investment-value">
-                    {% if asset.lease_term_years %}{{ asset.lease_term_years * 12 }} months{% else %}N/A{% endif %}
-                  </span>
-                </div>
-                <div class="investment-row">
-                  <span class="investment-label">Projected return</span>
-                  <span class="investment-value">
-                    {% if asset.capital_appreciation_bps %}{{ (asset.capital_appreciation_bps / 100) }}%{% else %}N/A{% endif %}
-                  </span>
-                </div>
-                <div class="investment-row">
-                  <span class="investment-label">Projected annualised net return</span>
-                  <span class="investment-value">
-                    {% if asset.annual_yield_bps %}{{ (asset.annual_yield_bps / 100) }}%{% else %}N/A{% endif %}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-
-          <!-- Tab empty-state ghost cards (hidden by default, shown by JS) -->
-          <div id="dev-tab-empty-state" class="dev-tab-empty-wrap" style="display:none;">
-            <p class="dev-tab-empty-msg" id="dev-tab-empty-title">No funded assets yet</p>
-            <p class="dev-tab-empty-sub" id="dev-tab-empty-cta">Once your properties reach 100% funding they will appear here</p>
-            <div class="dev-tab-empty-grid">
-              {% for _ in range(6) %}
-              <div class="ghost-card">
-                <div class="ghost-card__image">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D5D7DA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
-                  </svg>
-                </div>
-                <div class="ghost-card__content">
-                  <div class="ghost-card__meta">
-                    <span class="skel-pill"></span>
-                    <span class="skel-pill skel-pill--wide"></span>
-                  </div>
-                  <span class="skel-line skel-line--title"></span>
-                  <div class="ghost-card__price-row">
-                    <span class="skel-line skel-line--price"></span>
-                    <span class="skel-line skel-line--pct"></span>
-                  </div>
-                  <div class="ghost-card__progress"><div class="ghost-card__progress-fill"></div></div>
-                  <div class="ghost-card__details">
-                    <div class="ghost-card__detail-row"><span class="skel-line skel-line--label"></span><span class="skel-line skel-line--val"></span></div>
-                    <div class="ghost-card__detail-row"><span class="skel-line skel-line--label"></span><span class="skel-line skel-line--val"></span></div>
-                    <div class="ghost-card__detail-row"><span class="skel-line skel-line--label"></span><span class="skel-line skel-line--val"></span></div>
-                  </div>
-                </div>
-              </div>
-              {% endfor %}
-            </div>
-          </div>
-        {% else %}
-          <!-- Empty State — Full page -->
-          <div class="dev-empty-state">
-            <!-- Illustration -->
-            <div class="dev-empty-state__icon">
-              <div class="dev-empty-state__icon-bg"></div>
-              <div class="dev-empty-state__icon-front">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <path d="M3 9h18"/>
-                  <path d="M9 21V9"/>
-                </svg>
-              </div>
-            </div>
-
-            <h2 class="dev-empty-state__title">No assets in your portfolio yet</h2>
-            <p class="dev-empty-state__description">
-              Once you add a property, it will appear here. You'll be able to track funding progress, investor activity, and manage your listings all from this page.
-            </p>
-
-            <!-- Feature hints -->
-            <div class="dev-empty-state__features">
-              <div class="dev-empty-state__feature">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                <span>Track funding progress</span>
-              </div>
-              <div class="dev-empty-state__feature">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span>Monitor investor activity</span>
-              </div>
-              <div class="dev-empty-state__feature">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                <span>Manage your listings</span>
-              </div>
-            </div>
-
-            <button class="dev-empty-state__cta" onclick="window.location.href = '/developer/add-asset'">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#62F7A4" stroke-width="2" stroke-linecap="round">
-                <path d="M10 4v12M4 10h12" />
-              </svg>
-              <span>Add your first asset</span>
-            </button>
+        {% for asset in developer_assets %}
+        {% set funded_percentage = 0 %}
+        {% if asset.funding_pct is defined %}
+        {% set funded_percentage = asset.funding_pct %}
         {% endif %}
-      </div>
+        {% set is_funded = funded_percentage >= 100 %}
+        {% set funding_status_label = "Available" %}
+        {% if asset.status == "funded" or is_funded %}{% set funding_status_label = "Funded" %}
+        {% elif asset.status == "rented" %}{% set funding_status_label = "Rented" %}
+        {% elif asset.status == "exited" %}{% set funding_status_label = "Exited" %}
+        {% elif asset.status == "upcoming" %}{% set funding_status_label = "Upcoming" %}
+        {% endif %}
+
+        {% set lease_label = "Standard Leasehold" %}
+        {% if asset.lease_type == "freehold" %}{% set lease_label = "Freehold" %}{% endif %}
+        {% set badge_class = "ds-badge--leasehold" %}
+        {% if asset.lease_type == "freehold" %}{% set badge_class = "ds-badge--freehold" %}{% endif %}
+
+        <div class="property-card dev-asset-card" data-status="{{ asset.status }}" data-funded="{{ is_funded }}"
+          data-funding-pct="{{ funded_percentage }}"
+          onclick="window.location.href = '/developer/asset-detail?id={{ asset.id }}'">
+          <div class="property-gallery">
+            <div class="property-image-container">
+              <div class="property-image active"
+                style="background-image: url('{{ asset.cover_image_url }}'); background-size: cover; background-position: center;"
+                aria-label="{{ asset.title }}"></div>
+              <button class="property-nav-arrow property-nav-prev"
+                onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+              <button class="property-nav-arrow property-nav-next"
+                onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+              <div class="property-dots">
+                <div class="property-dot active"></div>
+              </div>
+            </div>
+            <div class="property-badge ds-badge ds-badge--overlay {{ badge_class }}">
+              <span class="badge-text">{{ lease_label }}</span>
+            </div>
+          </div>
+          <div class="property-content">
+            <div class="card-meta-row">
+              {% if asset.bedrooms %}
+              <div class="card-meta-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#535862" stroke-width="1.8"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 4v16" />
+                  <path d="M2 8h18a2 2 0 0 1 2 2v10" />
+                  <path d="M2 17h20" />
+                  <path d="M6 8v9" />
+                </svg>
+                <span>{{ asset.bedrooms }}</span>
+              </div>
+              <div class="card-meta-divider"></div>
+              {% endif %}
+              <div class="card-meta-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+                <span>{{ funding_status_label }}</span>
+              </div>
+              {% if asset.city %}
+              <div class="card-meta-divider"></div>
+              <div class="card-meta-item">
+                <img src="/images/{{ asset.country | default('ID') }}.webp" onerror="this.style.display='none'"
+                  width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;"
+                  alt="{{ asset.country | default('ID') }}">
+                <span>{{ asset.city }}{% if asset.country %}, {{ asset.country }}{% endif %}</span>
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="property-heading">
+              <h3 class="property-title">{{ asset.title }}</h3>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#535862" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+            </div>
+
+            <div class="property-pricing">
+              <div class="price-wrapper">
+                <span class="property-price">USD {{ ((asset.total_value_cents / 100) | int) | format_number }}</span>
+                <span class="funded-percentage">{{ (funded_percentage | round(1)) }}% funded</span>
+              </div>
+              <div class="property-progress ds-progress">
+                <div class="ds-progress__fill" style="width: {{ funded_percentage }}%"></div>
+              </div>
+            </div>
+
+            <div class="investment-details">
+              <div class="investment-row">
+                <span class="investment-label">Investment duration</span>
+                <span class="investment-value">
+                  {% if asset.lease_term_years %}{{ asset.lease_term_years * 12 }} months{% else %}N/A{% endif %}
+                </span>
+              </div>
+              <div class="investment-row">
+                <span class="investment-label">Projected return</span>
+                <span class="investment-value">
+                  {% if asset.capital_appreciation_bps %}{{ (asset.capital_appreciation_bps / 100) }}%{% else %}N/A{%
+                  endif %}
+                </span>
+              </div>
+              <div class="investment-row">
+                <span class="investment-label">Projected annualised net return</span>
+                <span class="investment-value">
+                  {% if asset.annual_yield_bps %}{{ (asset.annual_yield_bps / 100) }}%{% else %}N/A{% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+
+        <!-- Ghost cards — always in the grid, individually toggled by JS to fill up to 6 -->
+        {% for _ in range(8) %}
+        <div class="ghost-card" style="display:none;">
+          <div class="ghost-card__image">
+            <img src="/static/images/logo-pool.svg" alt="POOOL" style="width: 48px; height: auto; opacity: 0.18;">
+          </div>
+          <div class="property-content" style="flex: 1;">
+            <div class="card-meta-row" style="opacity: 0.5;">
+              <span class="skel-pill"></span>
+              <div class="card-meta-divider"></div>
+              <span class="skel-pill skel-pill--wide"></span>
+              <div class="card-meta-divider"></div>
+              <span class="skel-pill"></span>
+            </div>
+
+            <div class="property-heading">
+              <span class="skel-line skel-line--title" style="margin: 0; width: 60%;"></span>
+              <span class="skel-pill" style="width: 16px; height: 16px; border-radius: 4px; margin: 0; opacity: 0.5;"></span>
+            </div>
+
+            <div class="property-pricing">
+              <div class="price-wrapper">
+                <span class="skel-line skel-line--price" style="margin: 0; width: 45%;"></span>
+                <span class="skel-line skel-line--pct" style="margin: 0; width: 22%;"></span>
+              </div>
+              <div class="property-progress ds-progress" style="background: #D5D7DA; width: 100%;">
+                <div class="ds-progress__fill" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="investment-details" style="opacity: 0.7;">
+              <div class="investment-row">
+                <span class="skel-line skel-line--label"></span>
+                <span class="skel-line skel-line--val"></span>
+              </div>
+              <div class="investment-row">
+                <span class="skel-line skel-line--label"></span>
+                <span class="skel-line skel-line--val"></span>
+              </div>
+              <div class="investment-row">
+                <span class="skel-line skel-line--label"></span>
+                <span class="skel-line skel-line--val"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <!-- Empty State — Full page -->
+        <div class="dev-empty-state">
+          <!-- Illustration -->
+          <div class="dev-empty-state__icon">
+            <div class="dev-empty-state__icon-bg"></div>
+            <div class="dev-empty-state__icon-front">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <path d="M3 9h18" />
+                <path d="M9 21V9" />
+              </svg>
+            </div>
+          </div>
+
+
+          <!-- Feature hints -->
+          <div class="dev-empty-state__features">
+            <div class="dev-empty-state__feature">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+              <span>Track funding progress</span>
+            </div>
+            <div class="dev-empty-state__feature">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span>Monitor investor activity</span>
+            </div>
+            <div class="dev-empty-state__feature">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
+              </svg>
+              <span>Manage your listings</span>
+            </div>
+          </div>
+
+          <button class="dev-empty-state__cta" onclick="window.location.href = '/developer/add-asset'">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#62F7A4" stroke-width="2"
+              stroke-linecap="round">
+              <path d="M10 4v12M4 10h12" />
+            </svg>
+            <span>Add your first asset</span>
+          </button>
+          {% endif %}
+        </div>
     </main>
   </div>
 
@@ -244,37 +299,33 @@
       cards.forEach(card => {
         let isFunded = false;
         try {
-            const status = (card.dataset.status || '').toLowerCase();
-            const fundedStr = (card.dataset.funded || '').toLowerCase();
-            const isFundedStatus = ['funded', 'rented', 'exited'].includes(status);
-            const pct = parseFloat(card.dataset.fundingPct) || 0;
-            isFunded = isFundedStatus || fundedStr === 'true' || pct >= 100;
-        } catch(e) { console.error("Filter error:", e); }
+          const status = (card.dataset.status || '').toLowerCase();
+          const fundedStr = (card.dataset.funded || '').toLowerCase();
+          const isFundedStatus = ['funded', 'rented', 'exited'].includes(status);
+          const pct = parseFloat(card.dataset.fundingPct) || 0;
+          isFunded = isFundedStatus || fundedStr === 'true' || pct >= 100;
+        } catch (e) { console.error("Filter error:", e); }
 
         const show = tab === 'available' ? !isFunded : isFunded;
         card.style.setProperty('display', show ? 'flex' : 'none', 'important');
         if (show) visibleCount++;
       });
 
-      // Toggle tab-specific empty state placeholder
-      const placeholder = document.getElementById('dev-tab-empty-state');
-      if (placeholder) {
-        const titleEl = document.getElementById('dev-tab-empty-title');
-        const ctaEl   = document.getElementById('dev-tab-empty-cta');
-        if (visibleCount === 0) {
-          if (tab === 'funded') {
-            titleEl.textContent = 'No funded assets yet';
-            ctaEl.textContent   = 'Once your properties reach 100% funding they will appear here';
-          } else {
-            titleEl.textContent = 'No available assets';
-            ctaEl.textContent   = 'Add a new property to get started';
-          }
-          placeholder.style.setProperty('display', 'flex', 'important');
-        } else {
-          placeholder.style.setProperty('display', 'none', 'important');
-        }
-      }
+      // Show ghost cards to fill up to 8 total
+      const ghostCards = document.querySelectorAll('#dev-assets-grid .ghost-card');
+      const ghostsToShow = Math.max(0, 8 - visibleCount);
+      ghostCards.forEach((gc, i) => {
+        gc.style.setProperty('display', i < ghostsToShow ? 'flex' : 'none', 'important');
+      });
+
     }
+
+    // Auto-init: show ghost cards on default "Available" tab
+    document.addEventListener('DOMContentLoaded', function() {
+      if (document.getElementById('dev-assets-status-tabs')) {
+        showDevTab('available');
+      }
+    });
   </script>
 </body>
 

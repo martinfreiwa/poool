@@ -94,36 +94,39 @@ async function initLoadData() {
     }
 }
 
+// Cached profile data for completeness recalculation
+let _cachedProfile = {};
+
+const COMPLETENESS_FIELDS = [
+    { key: 'first_name', label: 'First Name' },
+    { key: 'last_name', label: 'Last Name' },
+    { key: 'phone_number', label: 'Phone' },
+    { key: 'avatar_url', label: 'Avatar' },
+    { key: 'address_line1', label: 'Address' },
+    { key: 'city', label: 'City' },
+    { key: 'country_code', label: 'Country' },
+    { key: 'date_of_birth', label: 'Birthday' },
+    { key: 'nationality', label: 'Nationality' },
+    { key: 'email_verified', label: 'Email Verified', check: v => v === true },
+    { key: 'status', label: 'KYC Verified', check: v => v === 'verified' || v === 'approved' },
+];
+
 /**
- * Populates the UI for Profile (Identity & Contact)
+ * Recalculates and updates the completeness banner from cached profile data.
+ * Can be called after any save to refresh the banner.
  */
-function populateProfileData(profile) {
-    // Determine completeness
-    const fields = [
-        { key: 'first_name', label: 'First Name' },
-        { key: 'last_name', label: 'Last Name' },
-        { key: 'phone_number', label: 'Phone' },
-        { key: 'avatar_url', label: 'Avatar' },
-        { key: 'address_line1', label: 'Address' },
-        { key: 'city', label: 'City' },
-        { key: 'country_code', label: 'Country' },
-        { key: 'date_of_birth', label: 'Birthday' },
-        { key: 'nationality', label: 'Nationality' },
-        { key: 'email_verified', label: 'Email Verified', check: v => v === true },
-        { key: 'status', label: 'KYC Verified', check: v => v === 'verified' || v === 'approved' },
-    ];
+function updateCompletenessBanner() {
     let filled = 0;
     const missing = [];
-    fields.forEach(f => {
-        const val = profile[f.key];
+    COMPLETENESS_FIELDS.forEach(f => {
+        const val = _cachedProfile[f.key];
         const isFilled = f.check ? f.check(val) : !!val;
         if (isFilled) { filled++; }
         else { missing.push(f.label); }
     });
-    
-    const pct = Math.round((filled / fields.length) * 100);
-    
-    // Update the banner
+
+    const pct = Math.round((filled / COMPLETENESS_FIELDS.length) * 100);
+
     const banner = document.getElementById('completeness-banner');
     if (banner) {
         if (pct >= 100) {
@@ -132,20 +135,33 @@ function populateProfileData(profile) {
             banner.classList.remove('hidden');
             document.getElementById('completeness-pct').innerText = `${pct}%`;
             document.getElementById('completeness-bar-fill').style.width = `${pct}%`;
-            
+
             const subtitle = document.getElementById('completeness-subtitle');
             if (missing.length > 0) {
                 subtitle.innerText = `${missing.length} field${missing.length > 1 ? 's' : ''} remaining to complete your profile.`;
+            } else {
+                subtitle.innerText = 'All done! Your profile is complete.';
             }
-            
+
             const missingEl = document.getElementById('completeness-missing');
             if (missingEl) {
-                missingEl.innerHTML = missing.map(m => 
+                missingEl.innerHTML = missing.map(m =>
                     `<span class="settings-completeness-banner__tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${m}</span>`
                 ).join('');
             }
         }
     }
+}
+
+/**
+ * Populates the UI for Profile (Identity & Contact)
+ */
+function populateProfileData(profile) {
+    // Cache profile for completeness recalculation after saves
+    _cachedProfile = Object.assign({}, profile);
+
+    // Calculate and render completeness banner
+    updateCompletenessBanner();
 
     // Core Profile (Read)
     const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
@@ -178,7 +194,11 @@ function populateProfileData(profile) {
 
     // Identity Vault (Edit)
     document.getElementById('edit-dob').value = profile.date_of_birth || '';
-    document.getElementById('edit-nationality').value = profile.nationality || '';
+    if (window.setNationalityDropdownValue) {
+        window.setNationalityDropdownValue(profile.nationality || '');
+    } else {
+        document.getElementById('edit-nationality').value = profile.nationality || '';
+    }
     document.getElementById('edit-tax-id').value = profile.tax_id || '';
 }
 
@@ -500,10 +520,14 @@ function initMorphForms() {
                             document.getElementById('read-full-address').innerText = parts.length > 0 ? parts.join(', ') : 'Not provided';
                         } else {
                             document.getElementById('read-dob').innerText = document.getElementById('edit-dob').value || 'Not provided';
-                            document.getElementById('read-nationality').innerText = document.getElementById('edit-nationality').value || 'Not provided';
+                            const natVal = document.getElementById('edit-nationality').value;
+                            document.getElementById('read-nationality').innerText = natVal || 'Not provided';
                             const txid = document.getElementById('edit-tax-id').value;
                             document.getElementById('read-tax-id').innerText = txid ? '•••• ' + txid.slice(-4) : 'Not provided';
                         }
+                        // Merge saved fields into cached profile and recalculate completeness
+                        Object.assign(_cachedProfile, payload);
+                        updateCompletenessBanner();
                         showToast('Updated successfully', 'success');
                     } else {
                         showToast(result?.message || 'Failed to save', 'error');

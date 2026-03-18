@@ -154,10 +154,26 @@
                   <span class="sub-checkbox-custom"></span>
                 </label>
               </th>
-              <th>Asset</th>
-              <th class="col-progress">Progress</th>
-              <th>Status</th>
-              <th class="col-updated">Updated</th>
+              <th class="sortable" data-sort-field="title" onclick="sortByColumn('title')">
+                Asset
+                <svg class="sort-indicator" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </th>
+              <th class="col-progress sortable" data-sort-field="progress" onclick="sortByColumn('progress')">
+                Progress
+                <svg class="sort-indicator" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </th>
+              <th class="sortable" data-sort-field="status" onclick="sortByColumn('status')">
+                Status
+                <svg class="sort-indicator" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </th>
+              <th class="col-created sortable" data-sort-field="created" onclick="sortByColumn('created')">
+                Created
+                <svg class="sort-indicator" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </th>
+              <th class="col-updated sortable" data-sort-field="updated" onclick="sortByColumn('updated')">
+                Updated
+                <svg class="sort-indicator" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </th>
               <th class="col-actions" style="text-align:right;">Actions</th>
             </tr>
           </thead>
@@ -165,6 +181,8 @@
             <!-- Rows populated by JS -->
           </tbody>
         </table>
+        <!-- Pagination -->
+        <div id="sub-pagination" class="sub-pagination"></div>
       </div>
 
       <!-- Empty State -->

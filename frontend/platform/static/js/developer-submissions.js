@@ -1,12 +1,20 @@
 /**
  * Developer Submissions Page — Professional Management UI
- * Fetches drafts from API, renders stat cards + searchable/sortable table.
+ * Fetches drafts from API, renders stat cards + searchable/sortable/paginated table.
  */
 
 let allItems = [];
 let currentFilter = "all";
-let currentSort = "newest";
 let selectedIds = new Set();
+
+// ─── Sorting State ────────────────────────────────────────
+let currentSortField = "updated"; // default sort field
+let currentSortDir = "desc";       // "asc" or "desc"
+
+// ─── Pagination State ─────────────────────────────────────
+const ITEMS_PER_PAGE = 20;
+let currentPage = 1;
+let totalPages = 1;
 
 document.addEventListener("DOMContentLoaded", async function () {
   const tbody = document.getElementById("submissions-tbody");
@@ -45,8 +53,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     allItems = data.items;
     updateStats(allItems);
-    renderTable(allItems);
-    updateResultCount(allItems.length, allItems.length);
+    applyFiltersAndSort();
   } catch (err) {
     console.error("Error loading submissions:", err);
     loadingEl.innerHTML =
@@ -72,6 +79,16 @@ const STATUS_LABELS = {
   rejected: "Rejected",
   live: "Live",
   revision_requested: "Revision Requested",
+};
+
+const STATUS_SORT_ORDER = {
+  draft: 0,
+  revision_requested: 1,
+  submitted: 2,
+  in_review: 3,
+  approved: 4,
+  rejected: 5,
+  live: 6,
 };
 
 const STEP_URLS = {
@@ -121,7 +138,7 @@ function updateResultCount(shown, total) {
   }
 }
 
-// ─── Sort Dropdown ────────────────────────────────────────
+// ─── Sort Dropdown (legacy, still functional) ─────────────
 
 function toggleSortDropdown() {
   const menu = document.getElementById("sub-sort-menu");
@@ -129,7 +146,13 @@ function toggleSortDropdown() {
 }
 
 function setSortOrder(sort, btn) {
-  currentSort = sort;
+  // Map legacy sort values to field+dir
+  switch (sort) {
+    case "newest":  currentSortField = "updated"; currentSortDir = "desc"; break;
+    case "oldest":  currentSortField = "updated"; currentSortDir = "asc";  break;
+    case "name-az": currentSortField = "title";   currentSortDir = "asc";  break;
+    case "name-za": currentSortField = "title";   currentSortDir = "desc"; break;
+  }
   // Update active state
   document.querySelectorAll(".sub-sort-option").forEach((o) => o.classList.remove("active"));
   btn.classList.add("active");
@@ -140,7 +163,34 @@ function setSortOrder(sort, btn) {
   const menu = document.getElementById("sub-sort-menu");
   if (menu) menu.style.display = "none";
   // Re-render
+  currentPage = 1;
   applyFiltersAndSort();
+}
+
+// ─── Column Sorting ───────────────────────────────────────
+
+function sortByColumn(field) {
+  if (currentSortField === field) {
+    // Toggle direction
+    currentSortDir = currentSortDir === "asc" ? "desc" : "asc";
+  } else {
+    currentSortField = field;
+    currentSortDir = field === "title" ? "asc" : "desc"; // dates default desc, text default asc
+  }
+  currentPage = 1;
+  updateSortIndicators();
+  applyFiltersAndSort();
+}
+
+function updateSortIndicators() {
+  document.querySelectorAll(".submissions-table th.sortable").forEach((th) => {
+    const field = th.dataset.sortField;
+    const svg = th.querySelector(".sort-indicator");
+    th.classList.remove("sort-active", "sort-asc", "sort-desc");
+    if (field === currentSortField) {
+      th.classList.add("sort-active", currentSortDir === "asc" ? "sort-asc" : "sort-desc");
+    }
+  });
 }
 
 // ─── Render Table ─────────────────────────────────────────
@@ -152,7 +202,7 @@ function renderTable(items) {
   if (items.length === 0) {
     tbody.innerHTML = `
       <tr class="sub-empty-row">
-        <td colspan="6">
+        <td colspan="8">
           <div class="sub-empty-cell">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
@@ -180,9 +230,17 @@ function renderTable(items) {
           year: "numeric",
         })
       : "—";
+    const createdDate = item.created_at
+      ? new Date(item.created_at).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "—";
 
     // Relative time
-    const relativeTime = item.updated_at ? getRelativeTime(item.updated_at) : "";
+    const relativeTimeUpdated = item.updated_at ? getRelativeTime(item.updated_at) : "";
+    const relativeTimeCreated = item.created_at ? getRelativeTime(item.created_at) : "";
 
     const resumeUrl = STEP_URLS[step] || "/developer/add-asset";
 
@@ -233,8 +291,11 @@ function renderTable(items) {
           ${statusLabel}
         </span>
       </td>
+      <td class="col-created">
+        <span class="submission-date" title="${createdDate}">${relativeTimeCreated || createdDate}</span>
+      </td>
       <td class="col-updated">
-        <span class="submission-date" title="${updatedDate}">${relativeTime || updatedDate}</span>
+        <span class="submission-date" title="${updatedDate}">${relativeTimeUpdated || updatedDate}</span>
       </td>
       <td class="col-actions">
         <div class="submission-actions">
@@ -276,7 +337,7 @@ function renderTable(items) {
       notesTr.className = "revision-notes-row";
       notesTr.dataset.status = status;
       notesTr.innerHTML = `
-        <td colspan="6">
+        <td colspan="8">
           <div class="revision-notes-banner">
             <svg class="revision-notes-banner__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -317,10 +378,12 @@ function filterByCard(status, el) {
   document.querySelectorAll(".sub-stat").forEach((c) => c.classList.remove("active"));
   el.classList.add("active");
   currentFilter = status;
+  currentPage = 1;
   applyFiltersAndSort();
 }
 
 function searchSubmissions(query) {
+  currentPage = 1;
   applyFiltersAndSort(query.toLowerCase());
 }
 
@@ -336,22 +399,107 @@ function applyFiltersAndSort(searchQuery) {
     return statusMatch && searchMatch;
   });
 
-  // Sort
+  // Sort by current field/direction
   filtered.sort((a, b) => {
-    switch (currentSort) {
-      case "oldest":
-        return new Date(a.updated_at || 0) - new Date(b.updated_at || 0);
-      case "name-az":
-        return (a.title || "").localeCompare(b.title || "");
-      case "name-za":
-        return (b.title || "").localeCompare(a.title || "");
-      default: // newest
-        return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+    let cmp = 0;
+    switch (currentSortField) {
+      case "title":
+        cmp = (a.title || "").localeCompare(b.title || "");
+        break;
+      case "progress":
+        cmp = (a.submission_step || 1) - (b.submission_step || 1);
+        break;
+      case "status":
+        cmp = (STATUS_SORT_ORDER[a.project_status || "draft"] || 0) - (STATUS_SORT_ORDER[b.project_status || "draft"] || 0);
+        break;
+      case "created":
+        cmp = new Date(a.created_at || 0) - new Date(b.created_at || 0);
+        break;
+      case "updated":
+      default:
+        cmp = new Date(a.updated_at || 0) - new Date(b.updated_at || 0);
+        break;
+    }
+    return currentSortDir === "asc" ? cmp : -cmp;
+  });
+
+  // Update result count
+  updateResultCount(filtered.length, allItems.length);
+
+  // Update sort header indicators
+  updateSortIndicators();
+
+  // Pagination
+  totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const pageItems = filtered.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+
+  renderTable(pageItems);
+  renderPagination(filtered.length);
+}
+
+// ─── Pagination ───────────────────────────────────────────
+
+function renderPagination(totalItems) {
+  const container = document.getElementById("sub-pagination");
+  if (!container) return;
+
+  if (totalItems <= ITEMS_PER_PAGE) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const endItem = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
+
+  let pagesHtml = "";
+
+  // Generate page numbers with ellipsis
+  const pages = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (currentPage > 3) pages.push("...");
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+      pages.push(i);
+    }
+    if (currentPage < totalPages - 2) pages.push("...");
+    pages.push(totalPages);
+  }
+
+  pages.forEach((p) => {
+    if (p === "...") {
+      pagesHtml += `<span class="sub-page-ellipsis">…</span>`;
+    } else {
+      pagesHtml += `<button class="sub-page-btn${p === currentPage ? ' sub-page-btn--active' : ''}" onclick="goToPage(${p})">${p}</button>`;
     }
   });
 
-  updateResultCount(filtered.length, allItems.length);
-  renderTable(filtered);
+  container.innerHTML = `
+    <span class="sub-page-info">Showing ${startItem}–${endItem} of ${totalItems}</span>
+    <div class="sub-page-controls">
+      <button class="sub-page-nav" ${currentPage <= 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Previous
+      </button>
+      <div class="sub-page-numbers">${pagesHtml}</div>
+      <button class="sub-page-nav" ${currentPage >= totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})">
+        Next
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  `;
+}
+
+function goToPage(page) {
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  applyFiltersAndSort();
+  // Scroll to top of table
+  const table = document.getElementById("submissions-table-container");
+  if (table) table.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 // ─── Multi-Select ──────────────────────────────────────────
@@ -489,12 +637,15 @@ async function duplicateDraft(assetId) {
       method: "POST",
       headers: { "X-CSRF-Token": getCsrfToken() },
     });
-    if (!res.ok) throw new Error("Duplicate failed");
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.message || data.error || "Duplicate failed");
+    }
     showToast("success", "Asset duplicated");
     setTimeout(() => window.location.reload(), 800);
   } catch (err) {
     console.error("Duplicate error:", err);
-    showToast("error", "Failed to duplicate. Please try again.");
+    showToast("error", err.message || "Failed to duplicate. Please try again.");
   }
 }
 

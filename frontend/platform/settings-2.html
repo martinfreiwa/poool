@@ -233,9 +233,24 @@
 											<div class="settings-form-row__content"><input id="edit-dob" type="date" class="settings-input ds-input"></div>
 										</div>
 										<div class="settings-form-row">
-											<div class="settings-form-row__label">Nationality</div>
-											<div class="settings-form-row__content"><input id="edit-nationality" type="text" class="settings-input ds-input" placeholder="e.g. German, American"></div>
+									<div class="settings-form-row__label">Nationality</div>
+									<div class="settings-form-row__content">
+										<input type="hidden" id="edit-nationality" value="">
+										<div class="nationality-dropdown" id="nationality-dropdown">
+											<button type="button" class="nationality-dropdown__trigger settings-input ds-input" id="nationality-trigger">
+												<span class="nationality-dropdown__value" id="nationality-display">Select nationality...</span>
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+											</button>
+											<div class="nationality-dropdown__panel" id="nationality-panel">
+												<div class="nationality-dropdown__search-wrap">
+													<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98a2b3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+													<input type="text" class="nationality-dropdown__search" id="nationality-search" placeholder="Search countries..." autocomplete="off">
+												</div>
+												<ul class="nationality-dropdown__list" id="nationality-list"></ul>
+											</div>
 										</div>
+									</div>
+								</div>
 										<div class="settings-form-row">
 											<div class="settings-form-row__label">Tax ID / SSN</div>
 											<div class="settings-form-row__content"><input id="edit-tax-id" type="text" class="settings-input ds-input" placeholder="Your tax identification number"></div>
@@ -881,7 +896,8 @@
 		</div>
 
 		<script src="/static/js/settings-service.js?v=11"></script>
-		<script src="/static/js/settings-2.js?v=11"></script>
+		<script src="/static/js/nationality-dropdown.js?v=1"></script>
+		<script src="/static/js/settings-2.js?v=12"></script>
 	</div> <!-- End marketplace-page -->
 </body>
 </html>

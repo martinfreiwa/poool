@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
-    <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Asset Details | Developer | POOOL</title>
   <meta name="description"
@@ -43,9 +43,19 @@
   <script src="/static/js/poool-dropdown-init.js"></script>
   <style>
     /* Tab panels — minimal override */
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
   </style>
   <!-- Anti-Flicker: reveal body once DOM + CSS are fully loaded -->
   <script>
@@ -3203,7 +3213,11 @@
           </button>
           <div class="edit-toolbar" id="edit-toolbar" style="display:none;">
             <button class="btn-edit-mode" id="btn-edit-mode" title="Edit asset details">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
               Edit
             </button>
             <button class="btn-save-changes" id="btn-save-changes">Save Changes</button>
@@ -3217,8 +3231,8 @@
         <div class="ds-page-header dashboard-page-header">
           <div class="ds-page-header__title-row dashboard-title-wrapper">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" class="ds-page-header__icon poool-icon-custom">
-              <rect x="2" y="7" width="20" height="14" rx="2" stroke-width="1.8"/>
-              <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" stroke-width="1.8"/>
+              <rect x="2" y="7" width="20" height="14" rx="2" stroke-width="1.8" />
+              <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" stroke-width="1.8" />
             </svg>
             <h1 id="page-heading-title" class="ds-page-header__title dashboard-page-title">Asset Details</h1>
           </div>
@@ -3242,7 +3256,10 @@
         <!-- Pending Changes Banner -->
         <div class="pending-changes-banner" id="pending-changes-banner">
           <div class="banner-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4M12 16h.01" />
+            </svg>
           </div>
           <div class="banner-text">
             <strong>Changes Pending Review</strong>
@@ -3256,7 +3273,8 @@
           <!-- ─── HERO HEADER ─── -->
           <div class="ad-hero">
             <div class="ad-hero__image-wrap">
-              <img loading="lazy" id="asset-image" src="/images/placeholder-property.webp" alt="" class="ad-hero__image" />
+              <img loading="lazy" id="asset-image" src="/images/placeholder-property.webp" alt=""
+                class="ad-hero__image" />
               <div class="ad-hero__image-overlay"></div>
             </div>
             <div class="ad-hero__body">
@@ -3286,7 +3304,9 @@
           <div class="ad-kpi-row">
             <div class="ad-kpi">
               <div class="ad-kpi__icon ad-kpi__icon--blue">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                </svg>
               </div>
               <div class="ad-kpi__content">
                 <span class="ad-kpi__label">Valuation</span>
@@ -3295,7 +3315,10 @@
             </div>
             <div class="ad-kpi">
               <div class="ad-kpi__icon ad-kpi__icon--purple">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
               </div>
               <div class="ad-kpi__content">
                 <span class="ad-kpi__label">Token Price</span>
@@ -3304,7 +3327,10 @@
             </div>
             <div class="ad-kpi">
               <div class="ad-kpi__icon ad-kpi__icon--green">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
+                </svg>
               </div>
               <div class="ad-kpi__content">
                 <span class="ad-kpi__label">Annual Yield</span>
@@ -3313,7 +3339,10 @@
             </div>
             <div class="ad-kpi">
               <div class="ad-kpi__icon ad-kpi__icon--amber">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" />
+                  <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
+                </svg>
               </div>
               <div class="ad-kpi__content">
                 <span class="ad-kpi__label">Asset Type</span>
@@ -3325,31 +3354,59 @@
           <!-- ─── TABS ─── -->
           <div class="ad-tabs" id="asset-tabs">
             <button class="ad-tabs__item active" data-tab="overview">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+              </svg>
               Overview
             </button>
             <button class="ad-tabs__item" data-tab="media">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
               Media
             </button>
             <button class="ad-tabs__item" data-tab="documents">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
               Documents
             </button>
             <button class="ad-tabs__item" data-tab="financials">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="20" x2="12" y2="10" />
+                <line x1="18" y1="20" x2="18" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="16" />
+              </svg>
               Financials
             </button>
             <button class="ad-tabs__item" data-tab="milestones">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
               Milestones
             </button>
             <button class="ad-tabs__item" data-tab="captable">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 00-3-3.87" />
+                <path d="M16 3.13a4 4 0 010 7.75" />
+              </svg>
               Cap Table<span class="ad-tabs__badge" id="badge-investors">0</span>
             </button>
             <button class="ad-tabs__item" data-tab="orders">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+              </svg>
               Orders<span class="ad-tabs__badge" id="badge-orders">0</span>
             </button>
 
@@ -3415,7 +3472,10 @@
                 <div style="margin-top: 24px" id="video-section" hidden>
                   <h4 class="ad-card__subtitle">Video Tour</h4>
                   <a href="#" target="_blank" class="ad-btn ad-btn--outline" id="video-link">
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="6,3 13,8 6,13" /></svg>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                      stroke-width="1.7">
+                      <polygon points="6,3 13,8 6,13" />
+                    </svg>
                     Watch Video
                   </a>
                 </div>
@@ -3447,10 +3507,18 @@
               <div class="ad-card__body" style="padding:0;">
                 <table class="ad-table">
                   <thead>
-                    <tr><th>Period</th><th>Rental Income</th><th>Expenses</th><th>Net Income</th><th>Occupancy</th></tr>
+                    <tr>
+                      <th>Period</th>
+                      <th>Rental Income</th>
+                      <th>Expenses</th>
+                      <th>Net Income</th>
+                      <th>Occupancy</th>
+                    </tr>
                   </thead>
                   <tbody id="financials-tbody">
-                    <tr><td colspan="5" class="ad-empty" style="padding:48px;">No financial records yet.</td></tr>
+                    <tr>
+                      <td colspan="5" class="ad-empty" style="padding:48px;">No financial records yet.</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -3480,10 +3548,19 @@
               <div class="ad-card__body" style="padding:0;">
                 <table class="ad-table">
                   <thead>
-                    <tr><th>Investor</th><th>Tokens</th><th>Purchase Value</th><th>Current Value</th><th>Dividends</th><th>Status</th></tr>
+                    <tr>
+                      <th>Investor</th>
+                      <th>Tokens</th>
+                      <th>Purchase Value</th>
+                      <th>Current Value</th>
+                      <th>Dividends</th>
+                      <th>Status</th>
+                    </tr>
                   </thead>
                   <tbody id="captable-tbody">
-                    <tr><td colspan="6" class="ad-empty" style="padding:48px;">No investors yet.</td></tr>
+                    <tr>
+                      <td colspan="6" class="ad-empty" style="padding:48px;">No investors yet.</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -3499,10 +3576,19 @@
               <div class="ad-card__body" style="padding:0;">
                 <table class="ad-table">
                   <thead>
-                    <tr><th>Order #</th><th>User</th><th>Tokens</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+                    <tr>
+                      <th>Order #</th>
+                      <th>User</th>
+                      <th>Tokens</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                    </tr>
                   </thead>
                   <tbody id="orders-tbody">
-                    <tr><td colspan="6" class="ad-empty" style="padding:48px;">No orders found.</td></tr>
+                    <tr>
+                      <td colspan="6" class="ad-empty" style="padding:48px;">No orders found.</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>

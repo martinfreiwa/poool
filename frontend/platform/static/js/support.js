@@ -153,7 +153,6 @@
         const data = await resp.json();
         allTickets = data.tickets || data || [];
         renderTickets();
-        updateStats();
       } else if (resp.status === 401) {
         window.location.href = "/auth/login";
       }
@@ -171,13 +170,7 @@
     return status === "resolved" || status === "closed";
   }
 
-  function updateStats() {
-    const open = allTickets.filter((t) => isOpenStatus(t.status)).length;
-    const resolved = allTickets.filter((t) => isClosedStatus(t.status)).length;
-    setEl("stat-open-count", open);
-    setEl("stat-resolved-count", resolved);
-    setEl("stat-total-count", allTickets.length);
-  }
+
 
   function renderTickets() {
     const container = document.getElementById("tickets-list");

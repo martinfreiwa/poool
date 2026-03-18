@@ -7,6 +7,7 @@
 .table__wrapper--wallet {
   /* Wallet tables have specific width but must remain responsive */
   width: 100%;
+  max-width: 100%;
 }
 
 /* Wallet-specific column widths - proportional flex sizing */
