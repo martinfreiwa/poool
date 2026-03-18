@@ -168,7 +168,7 @@ function formatValue(key, val) {
 }
 
 async function approveRequest() {
-  if (!confirm("Are you sure you want to approve and apply these changes?")) return;
+  if (!await pooolConfirm({ title: 'Approve changes', message: 'Apply these proposed changes to the live asset?', confirmText: 'Approve & Apply', type: 'success' })) return;
 
   const notes = document.getElementById("admin-notes")?.value || "";
   const btn = document.getElementById("btn-approve");
@@ -212,7 +212,7 @@ async function rejectRequest() {
     return;
   }
 
-  if (!confirm("Are you sure you want to reject these changes?")) return;
+  if (!await pooolConfirm({ title: 'Reject changes', message: 'The developer will be notified with the reason you provided.', confirmText: 'Reject', type: 'danger' })) return;
 
   const btn = document.getElementById("btn-reject");
   btn.disabled = true;

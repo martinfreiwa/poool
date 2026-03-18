@@ -91,7 +91,7 @@ document.addEventListener("alpine:init", () => {
 
     // ─── Maintenance Utils ────────────────────────────
     async clearCache() {
-      if (!confirm("Are you sure you want to clear the system cache?")) return;
+      if (!await pooolConfirm({ title: 'Clear system cache', message: 'This will purge all cached data. Are you sure?', confirmText: 'Clear Cache', type: 'warning' })) return;
       try {
         const resp = await fetch("/api/admin/maintenance/clear-cache", {
           method: "POST",
@@ -108,7 +108,7 @@ document.addEventListener("alpine:init", () => {
     },
 
     async runLogRotation() {
-      if (!confirm("Trigger log rotation now?")) return;
+      if (!await pooolConfirm({ title: 'Trigger log rotation', message: 'This will rotate logs immediately. Continue?', confirmText: 'Rotate Now', type: 'warning' })) return;
       try {
         const resp = await fetch("/api/admin/maintenance/rotate-logs", {
           method: "POST",
@@ -264,7 +264,7 @@ document.addEventListener("alpine:init", () => {
 
     // ─── Remove Admin User ────────────────────────────
     async removeAdmin(userId) {
-      if (!confirm("Remove admin role from this user?")) return;
+      if (!await pooolConfirm({ title: 'Remove admin role', message: 'This user will lose all admin access.', confirmText: 'Remove', type: 'danger' })) return;
       try {
         const resp = await fetch(`/api/admin/settings/admins/${userId}`, {
           method: "DELETE",

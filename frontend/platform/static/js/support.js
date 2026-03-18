@@ -327,7 +327,7 @@
   };
 
   window._reopenTicket = async function (ticketId) {
-    if (!confirm("Reopen this ticket?")) return;
+    if (!await pooolConfirm({ title: 'Reopen ticket', message: 'This will reopen the ticket and notify our support team.', confirmText: 'Reopen', type: 'default' })) return;
     try {
       const resp = await fetch(`/api/support/tickets/${ticketId}/reopen`, {
         method: "PUT",

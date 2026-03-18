@@ -121,9 +121,12 @@ document.addEventListener("alpine:init", () => {
     // ─── Remove Admin ──────────────────────────────────
     async removeAdmin(admin) {
       if (
-        !confirm(
-          `Remove admin privileges from ${admin.email}? They will lose all admin access immediately.`,
-        )
+        !await pooolConfirm({
+          title: 'Remove admin privileges',
+          message: `Remove admin privileges from ${admin.email}? They will lose all admin access immediately.`,
+          confirmText: 'Remove',
+          type: 'danger',
+        })
       )
         return;
 
@@ -146,9 +149,12 @@ document.addEventListener("alpine:init", () => {
     // ─── Kill Sessions ─────────────────────────────────
     async killSessions(adminId) {
       if (
-        !confirm(
-          "Terminate all sessions for this admin? They will be logged out immediately.",
-        )
+        !await pooolConfirm({
+          title: 'Terminate all sessions',
+          message: 'All sessions for this admin will be terminated and they will be logged out immediately.',
+          confirmText: 'Terminate',
+          type: 'danger',
+        })
       )
         return;
 
@@ -199,8 +205,8 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    resetMatrix() {
-      if (confirm("Revert all unsaved permission changes?")) {
+    async resetMatrix() {
+      if (await pooolConfirm({ title: 'Revert changes', message: 'Revert all unsaved permission changes?', confirmText: 'Revert', type: 'warning' })) {
         this.loadData();
       }
     },

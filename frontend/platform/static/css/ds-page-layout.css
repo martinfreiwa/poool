@@ -76,6 +76,7 @@
     justify-content: space-between;
     padding: 0;
     margin: 0 0 var(--ds-page-gap) 0;
+    width: 100%;
 }
 
 
@@ -106,6 +107,25 @@
     height: 100%;
 }
 
+.ds-page-header__icon.poool-icon-custom {
+    background-color: var(--btn-primary-bg, #0000FF) !important;
+    border-radius: 10px !important;
+    padding: 9px !important;
+    width: 44px !important;
+    height: 44px !important;
+    box-sizing: border-box !important;
+}
+
+.ds-page-header__icon.poool-icon-custom svg path,
+.ds-page-header__icon.poool-icon-custom path,
+.ds-page-header__icon.poool-icon-custom circle,
+.ds-page-header__icon.poool-icon-custom rect,
+.ds-page-header__icon.poool-icon-custom polyline,
+.ds-page-header__icon.poool-icon-custom line,
+.ds-page-header__icon.poool-icon-custom polygon {
+    stroke: #03FF88 !important;
+}
+
 
 /* ── Page Title (h1) ──────────────────────────────────────────── */
 
@@ -117,6 +137,19 @@
     line-height: var(--ds-header-title-lh);
     letter-spacing: -0.02em;
     margin: 0;
+}
+
+
+/* ── Page Header Divider ──────────────────────────────────────── */
+/* The HR fills 100% of whatever container it's in.
+   Layout width constraints belong on the container, not the HR. */
+
+.page-header-divider {
+    border: none;
+    height: 1px;
+    background: #e9eaeb;
+    margin: 0 0 24px 0;
+    width: 100%;
 }
 
 

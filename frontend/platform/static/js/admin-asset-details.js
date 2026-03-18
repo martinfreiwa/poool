@@ -411,16 +411,19 @@ async function togglePublished() {
   showToast("Published status toggled (save pending)");
 }
 
-function dangerAction(action) {
+async function dangerAction(action) {
   const names = {
     freeze: "freeze trading on",
     unpublish: "unpublish",
     archive: "archive",
   };
   if (
-    !confirm(
-      `Are you sure you want to ${names[action]} "${assetData?.title}"? This action may be irreversible.`,
-    )
+    !await pooolConfirm({
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} asset`,
+      message: `Are you sure you want to ${names[action]} "${assetData?.title}"? This action may be irreversible.`,
+      confirmText: action.charAt(0).toUpperCase() + action.slice(1),
+      type: 'danger',
+    })
   )
     return;
   showToast(

@@ -732,12 +732,12 @@ async function updateRefStatus(id, status) {
 window.qualifyRef = function (id) {
   updateRefStatus(id, "qualified");
 };
-window.flagRef = function (id) {
-  if (confirm("Flag this referral as fraud?")) updateRefStatus(id, "flagged");
+window.flagRef = async function (id) {
+  if (await pooolConfirm({ title: 'Flag as fraud', message: 'Flag this referral as fraud?', confirmText: 'Flag', type: 'danger' })) updateRefStatus(id, 'flagged');
 };
-window.payRef = function (id) {
-  if (confirm("Mark this referral as paid? Rewards will be credited to users."))
-    updateRefStatus(id, "paid");
+window.payRef = async function (id) {
+  if (await pooolConfirm({ title: 'Mark referral as paid', message: 'Rewards will be credited to both users.', confirmText: 'Mark Paid', type: 'success' }))
+    updateRefStatus(id, 'paid');
 };
 
 // ═══════════════ Modals ═══════════════

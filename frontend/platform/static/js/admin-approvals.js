@@ -164,9 +164,12 @@
   // Expose approve/reject actions
   window._approveRequest = async function (id) {
     if (
-      !confirm(
-        "Are you sure you want to APPROVE this request? The action will be executed immediately.",
-      )
+      !await pooolConfirm({
+        title: 'Approve & Execute',
+        message: 'This action will be executed immediately and cannot be undone.',
+        confirmText: 'Approve',
+        type: 'success',
+      })
     )
       return;
 

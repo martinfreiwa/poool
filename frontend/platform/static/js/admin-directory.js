@@ -219,7 +219,7 @@ document.addEventListener("alpine:init", () => {
 
     async revokeInvite(inviteId) {
       if (
-        !confirm("Revoke this invitation? The invite link will no longer work.")
+        !await pooolConfirm({ title: 'Revoke invitation', message: 'The invite link will no longer work.', confirmText: 'Revoke', type: 'danger' })
       )
         return;
 
@@ -292,9 +292,12 @@ document.addEventListener("alpine:init", () => {
       const action = newStatus === "suspended" ? "SUSPEND" : "ACTIVATE";
 
       if (
-        !confirm(
-          `Are you sure you want to ${action} ${admin.email}? ${newStatus === "suspended" ? "All active sessions will be revoked immediately." : ""}`,
-        )
+        !await pooolConfirm({
+          title: `${action} admin`,
+          message: `${admin.email}${newStatus === 'suspended' ? ' — all active sessions will be revoked immediately.' : ' — access will be restored.'}`,
+          confirmText: action,
+          type: newStatus === 'suspended' ? 'danger' : 'success',
+        })
       )
         return;
 
@@ -324,9 +327,7 @@ document.addEventListener("alpine:init", () => {
     // ── Session Kill ──
     async killSessions(adminId) {
       if (
-        !confirm(
-          "Terminate ALL sessions for this admin? They will be immediately logged out.",
-        )
+        !await pooolConfirm({ title: 'Terminate all sessions', message: 'This admin will be immediately logged out of all devices.', confirmText: 'Terminate', type: 'danger' })
       )
         return;
 
@@ -350,7 +351,7 @@ document.addEventListener("alpine:init", () => {
 
     // ── Force Password Reset ──
     async forcePasswordReset(adminId) {
-      if (!confirm("Force this admin to reset their password on next login?"))
+      if (!await pooolConfirm({ title: 'Force password reset', message: 'This admin will be required to reset their password on next login.', confirmText: 'Force Reset', type: 'warning' }))
         return;
 
       try {

@@ -158,12 +158,12 @@ pub async fn page_developer_asset_detail(
     crate::common::routes_helper::serve_protected(jar, &state, "developer/asset-detail.html").await
 }
 
-/// GET /developer/settings — Render the developer settings page.
+/// GET /developer/settings — Render the developer settings page (uses unified settings-2 design).
 pub async fn page_developer_settings(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    crate::common::routes_helper::serve_protected(jar, &state, "developer/settings.html").await
+    crate::common::routes_helper::serve_protected(jar, &state, "settings-2.html").await
 }
 
 /// GET /developer/submissions — Render the submissions management page.

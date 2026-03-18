@@ -493,7 +493,7 @@
   }
 
   async function disable2FA() {
-    if (!confirm("Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.")) return;
+    if (!await pooolConfirm({ title: 'Disable Two-Factor Authentication', message: 'This will make your account less secure. Are you sure?', confirmText: 'Disable 2FA', type: 'danger' })) return;
     const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
     const btn = e && e.target;
     setButtonState(btn, true, "Disabling...");

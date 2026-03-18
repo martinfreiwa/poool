@@ -337,7 +337,7 @@ async function extendDeposit(depositId) {
   const label = dep
     ? `${dep.user_name} (${formatAmount(dep.amount_cents, dep.currency)})`
     : depositId;
-  if (!confirm(`Extend expiry by 48 hours for deposit from ${label}?`)) return;
+  if (!await pooolConfirm({ title: 'Extend deposit expiry', message: `Extend expiry by 48 hours for deposit from ${label}?`, confirmText: 'Extend', type: 'warning' })) return;
   try {
     const resp = await fetch(`/api/admin/deposits/${depositId}/extend`, {
       method: "POST",

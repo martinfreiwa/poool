@@ -378,7 +378,7 @@ async fn apply_security_headers(
     );
     headers.insert(
         axum::http::header::CONTENT_SECURITY_POLICY,
-        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com; worker-src 'self' blob:; base-uri 'self'; form-action 'self';"),
+        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com; worker-src 'self' blob:; base-uri 'self'; form-action 'self';"),
     );
     headers.insert(
         axum::http::header::REFERRER_POLICY,

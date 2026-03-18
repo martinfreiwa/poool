@@ -2,12 +2,20 @@
  * sidebar-community.js — Global community card dismiss handler
  * =============================================================
  * Loaded on every page via head.html so that the sidebar
- * "Community soon" card can be dismissed from any page.
+ * "Community soon" / "Chat to support" card can be dismissed from any page.
  *
- * Buttons handled:
- *   #featured-card-close   — X button
- *   #featured-card-dismiss — "Dismiss" text button
- *   #featured-card-action  — "What's new?" button
+ * Uses event delegation so it works even when the sidebar is stamped into the
+ * DOM dynamically from a <template> after DOMContentLoaded.
+ *
+ * Buttons handled (desktop sidebar):
+ *   #featured-card-close                        — X button (dismiss card)
+ *   #featured-card-dismiss                      — "Dismiss" text button
+ *   #featured-card-action                       — "What's new?" button
+ *   .sidebar__featured-button--chat             — "Chat to support" button
+ *
+ * Buttons handled (mobile burger menu):
+ *   .mobile-burger-menu__featured-close         — X button (dismiss card)
+ *   .mobile-burger-menu__featured-button--chat  — "Chat to support" button
  */
 (function () {
   "use strict";
@@ -31,8 +39,7 @@
     } catch (e) { /* private browsing */ }
   }
 
-  function init() {
-    // Respect previously dismissed state
+  function hideDismissedCards() {
     try {
       if (localStorage.getItem(STORAGE_KEY) === "1") {
         document
@@ -40,57 +47,76 @@
           .forEach(function (card) {
             card.style.display = "none";
           });
-        return; // No need to wire buttons if already hidden
       }
     } catch (e) { /* private browsing */ }
-
-    // Close (X) button
-    document
-      .querySelectorAll("#featured-card-close")
-      .forEach(function (btn) {
-        if (btn.getAttribute("data-community-wired")) return;
-        btn.setAttribute("data-community-wired", "1");
-        btn.addEventListener("click", function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var card = btn.closest(
-            "#nav-featured-card, .sidebar__featured-card, .nav-featured-card"
-          );
-          hideCard(card);
-        });
-      });
-
-    // Dismiss button
-    document
-      .querySelectorAll("#featured-card-dismiss")
-      .forEach(function (btn) {
-        if (btn.getAttribute("data-community-wired")) return;
-        btn.setAttribute("data-community-wired", "1");
-        btn.addEventListener("click", function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var card = btn.closest(
-            "#nav-featured-card, .sidebar__featured-card, .nav-featured-card"
-          );
-          hideCard(card);
-        });
-      });
-
-    // "What's new?" button — opens changelog
-    document
-      .querySelectorAll("#featured-card-action")
-      .forEach(function (btn) {
-        if (btn.getAttribute("data-community-wired")) return;
-        btn.setAttribute("data-community-wired", "1");
-        btn.addEventListener("click", function () {
-          window.open("/changelog", "_blank", "noopener");
-        });
-      });
   }
 
+  // Use event delegation on document so handlers work for dynamically
+  // injected elements (e.g. sidebar cloned from a <template>).
+  document.addEventListener("click", function (e) {
+    var target = e.target;
+
+    // ── Desktop sidebar: X / close button ─────────────────────────────────
+    var closeBtn = target.closest("#featured-card-close");
+    if (closeBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var card = closeBtn.closest(
+        "#nav-featured-card, .sidebar__featured-card, .nav-featured-card"
+      );
+      hideCard(card);
+      return;
+    }
+
+    // ── Desktop sidebar: Dismiss button ───────────────────────────────────
+    var dismissBtn = target.closest("#featured-card-dismiss");
+    if (dismissBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var dCard = dismissBtn.closest(
+        "#nav-featured-card, .sidebar__featured-card, .nav-featured-card"
+      );
+      hideCard(dCard);
+      return;
+    }
+
+    // ── Desktop sidebar: "What's new?" button ─────────────────────────────
+    var actionBtn = target.closest("#featured-card-action");
+    if (actionBtn) {
+      window.open("/changelog", "_blank", "noopener");
+      return;
+    }
+
+    // ── Desktop sidebar: "Chat to support" button ─────────────────────────
+    var chatBtn = target.closest(".sidebar__featured-button--chat");
+    if (chatBtn) {
+      window.location.href = "/support";
+      return;
+    }
+
+    // ── Mobile menu: X / close button ─────────────────────────────────────
+    var mobileCloseBtn = target.closest(".mobile-burger-menu__featured-close");
+    if (mobileCloseBtn) {
+      e.stopPropagation();
+      var mCard = mobileCloseBtn.closest(".mobile-burger-menu__featured-card");
+      if (mCard) {
+        mCard.style.display = "none";
+      }
+      return;
+    }
+
+    // ── Mobile menu: "Chat to support" button ─────────────────────────────
+    var mobileChatBtn = target.closest(".mobile-burger-menu__featured-button--chat");
+    if (mobileChatBtn) {
+      window.location.href = "/support";
+      return;
+    }
+  }, true); // capture phase so we beat any stopPropagation in child handlers
+
+  // Hide already-dismissed cards whenever DOM is ready (handles normal pages)
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", hideDismissedCards);
   } else {
-    init();
+    hideDismissedCards();
   }
 })();

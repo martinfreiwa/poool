@@ -141,7 +141,12 @@ function setupModals() {
       if (!userData) return;
       const isFrozen = userData.status === "frozen";
       const action = isFrozen ? "Unfreeze" : "Freeze";
-      if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+      if (!await pooolConfirm({
+        title: action + ' user',
+        message: `Are you sure you want to ${action.toLowerCase()} this user?`,
+        confirmText: action,
+        type: isFrozen ? 'success' : 'danger',
+      })) return;
 
       try {
         const res = await fetch(`/api/admin/users/${userId}/status`, {
@@ -176,9 +181,12 @@ function setupModals() {
   // Logout All Action
   const logoutAction = async () => {
     if (
-      !confirm(
-        "Are you sure you want to revoke all active sessions for this user? They will be logged out immediately.",
-      )
+      !await pooolConfirm({
+        title: 'Revoke all sessions',
+        message: 'This user will be logged out of all devices immediately.',
+        confirmText: 'Revoke All',
+        type: 'danger',
+      })
     )
       return;
     try {
@@ -794,9 +802,12 @@ function renderOrders() {
 
 async function approveOrder(id, num) {
   if (
-    !confirm(
-      `Are you sure you want to APPROVE Order ${num}? This will confirm payment and activate the user's investments.`,
-    )
+    !await pooolConfirm({
+      title: `Approve Order ${num}`,
+      message: `This will confirm payment and activate the user's investments.`,
+      confirmText: 'Approve',
+      type: 'success',
+    })
   )
     return;
   try {
@@ -819,9 +830,12 @@ async function approveOrder(id, num) {
 
 async function rejectOrder(id, num) {
   if (
-    !confirm(
-      `Are you sure you want to REJECT Order ${num}? This will FAIL the order and return the reserved tokens to availability.`,
-    )
+    !await pooolConfirm({
+      title: `Reject Order ${num}`,
+      message: `This will fail the order and return reserved tokens to availability.`,
+      confirmText: 'Reject',
+      type: 'danger',
+    })
   )
     return;
   try {

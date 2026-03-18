@@ -3,22 +3,22 @@
 <body id="developer-assets-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
 
-  <div id="developer-assets-page" class="cart-page">
-    <div id="developer-assets-sidebar" class="cart-page-sidebar">
+  <div id="developer-assets-page">
+    <div id="developer-assets-sidebar">
       {% include 'components/sidebar.html' %}
     </div>
     <!-- Main Content Area -->
-    <main id="developer-assets-main" class="ds-main cart-page-main">
+    <main id="developer-assets-main" class="ds-main">
       <!-- Page Header -->
-      <div id="developer-assets-page-header" class="ds-page-header cart-page-header">
-        <div class="ds-page-header__title-row cart-title-wrapper">
+      <div id="developer-assets-page-header" class="ds-page-header">
+        <div class="ds-page-header__title-row">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8"
             stroke-linecap="round" stroke-linejoin="round" class="ds-page-header__icon poool-icon-custom">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
             <path d="M3 9h18"/>
             <path d="M9 21V9"/>
           </svg>
-          <h1 id="developer-assets-page-title" class="ds-page-header__title cart-page-title">
+          <h1 id="developer-assets-page-title" class="ds-page-header__title">
             My Assets
           </h1>
         </div>
@@ -32,7 +32,7 @@
           </button>
         </div>
       </div>
-      <hr class="page-header-divider">
+
 
       <!-- Status Tabs: Available / Funded -->
       {% if developer_assets %}
@@ -45,6 +45,7 @@
         </button>
       </div>
       {% endif %}
+
 
       <!-- Properties Grid -->
       <div id="dev-assets-grid" class="property-grid">
@@ -204,11 +205,19 @@
 
       const cards = document.querySelectorAll('#dev-assets-grid .property-card');
       cards.forEach(card => {
-        const isFunded = card.dataset.funded === 'true' || card.dataset.funded === 'True' || parseFloat(card.dataset.fundingPct) >= 100;
+        let isFunded = false;
+        try {
+            const status = (card.dataset.status || '').toLowerCase();
+            const fundedStr = (card.dataset.funded || '').toLowerCase();
+            const isFundedStatus = ['funded', 'rented', 'exited'].includes(status);
+            const pct = parseFloat(card.dataset.fundingPct) || 0;
+            isFunded = isFundedStatus || fundedStr === 'true' || pct >= 100;
+        } catch(e) { console.error("Filter error:", e); }
+        
         if (tab === 'available') {
-          card.style.display = isFunded ? 'none' : '';
+          card.style.setProperty('display', isFunded ? 'none' : 'flex', 'important');
         } else {
-          card.style.display = isFunded ? '' : 'none';
+          card.style.setProperty('display', isFunded ? 'flex' : 'none', 'important');
         }
       });
 

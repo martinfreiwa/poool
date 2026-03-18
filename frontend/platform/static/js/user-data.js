@@ -6,6 +6,36 @@
  *
  * Loaded on every authenticated page via <script src="/static/js/user-data.js">
  */
+
+/**
+ * getCsrfToken – reads the csrf_token cookie.
+ * Defined here (in user-data.js) so it is available on EVERY authenticated
+ * page without needing a separate csrf.js include in each HTML file.
+ * @returns {string} The CSRF token or an empty string.
+ */
+if (typeof window.getCsrfToken === "undefined") {
+  window.getCsrfToken = function getCsrfToken() {
+    var value = "; " + document.cookie;
+    var parts = value.split("; csrf_token=");
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return "";
+  };
+  // Legacy alias used in some older scripts
+  window.csrfToken = window.getCsrfToken;
+}
+
+/**
+ * Auto-load poool-confirm.js — custom confirmation modal.
+ * Replaces all native window.confirm() usage across the platform.
+ */
+(function () {
+  if (typeof window.pooolConfirm === "undefined" &&
+      !document.querySelector('script[src*="poool-confirm"]')) {
+    var s = document.createElement("script");
+    s.src = "/static/js/poool-confirm.js";
+    document.head.appendChild(s);
+  }
+})();
 (function () {
   "use strict";
 

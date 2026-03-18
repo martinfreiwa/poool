@@ -1,14 +1,11 @@
 /* Developer Dashboard Styles */
 
-/* Main Content Area */
+/* Main Content Area — width/padding handled by ds-main wrapper */
 .dashboard-main-content {
-  padding: 48px 40px 40px 24px;
-  background: #fafafa;
-  min-height: 100vh;
   width: 100%;
-  max-width: 1200px;
   margin: 0;
 }
+
 
 /* Dashboard Header */
 .dashboard-header {
@@ -445,7 +442,7 @@
 .assets-section {
   margin-left: 0px;
   margin-bottom: 32px;
-  width: 1096px;
+  width: 100%;
 }
 
 .assets-section-title {
@@ -460,7 +457,7 @@
 
 /* Assets Table Wrapper */
 .assets-table-wrapper {
-  width: 1096px;
+  width: 100%;
 }
 
 /* Assets Table Header (outside card) */
@@ -484,7 +481,7 @@
   align-items: flex-start;
   padding: 0px;
   isolation: isolate;
-  width: 1096px;
+  width: 100%;
   background: var(--card-bg, #ffffff);
   border: 1px solid var(--card-border-color, #e9eaeb);
   box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));

@@ -320,9 +320,12 @@ function renderOrders() {
 
 async function approveOrder(id, num) {
   if (
-    !confirm(
-      `Are you sure you want to APPROVE Order ${num}? This will confirm payment and activate the user's investments.`,
-    )
+    !await pooolConfirm({
+      title: `Approve Order ${num}`,
+      message: `This will confirm payment and activate the user's investments.`,
+      confirmText: 'Approve',
+      type: 'success',
+    })
   )
     return;
   try {
@@ -351,9 +354,12 @@ async function approveOrder(id, num) {
 
 async function rejectOrder(id, num) {
   if (
-    !confirm(
-      `Are you sure you want to REJECT Order ${num}? This will FAIL the order and return the reserved tokens to availability.`,
-    )
+    !await pooolConfirm({
+      title: `Reject Order ${num}`,
+      message: `This will FAIL the order and return the reserved tokens to availability.`,
+      confirmText: 'Reject',
+      type: 'danger',
+    })
   )
     return;
   try {

@@ -148,7 +148,7 @@ document.addEventListener("alpine:init", () => {
     },
 
     async cancelJob(jobId) {
-      if (!confirm("Cancel this job? This cannot be undone.")) return;
+      if (!await pooolConfirm({ title: 'Cancel job', message: 'This cannot be undone.', confirmText: 'Cancel Job', type: 'danger' })) return;
       try {
         const resp = await fetch(`/api/admin/system/jobs/${jobId}`, {
           method: "DELETE",
@@ -202,7 +202,7 @@ document.addEventListener("alpine:init", () => {
     },
 
     async replayWebhook(webhookId) {
-      if (!confirm("Replay this webhook? The payload will be re-processed."))
+      if (!await pooolConfirm({ title: 'Replay webhook', message: 'The payload will be re-processed by the system.', confirmText: 'Replay', type: 'warning' }))
         return;
       try {
         const resp = await fetch(
@@ -251,9 +251,7 @@ document.addEventListener("alpine:init", () => {
 
     async revokeSession(sessionId) {
       if (
-        !confirm(
-          "Revoke this session? The user will be logged out immediately.",
-        )
+        !await pooolConfirm({ title: 'Revoke session', message: 'The user will be logged out of this device immediately.', confirmText: 'Revoke', type: 'danger' })
       )
         return;
       try {
@@ -276,9 +274,12 @@ document.addEventListener("alpine:init", () => {
         (s) => s.ip_address && s.ip_address.startsWith(pattern),
       );
       if (
-        !confirm(
-          `Revoke all ${toRevoke.length} sessions from IP pattern "${pattern}*"?`,
-        )
+        !await pooolConfirm({
+          title: 'Bulk revoke sessions',
+          message: `Revoke all ${toRevoke.length} sessions from IP pattern "${pattern}*"?`,
+          confirmText: `Revoke ${toRevoke.length} Sessions`,
+          type: 'danger',
+        })
       )
         return;
       try {
@@ -348,11 +349,14 @@ document.addEventListener("alpine:init", () => {
       const currentlyEnabled = this.system?.maintenance_mode === true || this.system?.maintenance_mode === 'true';
       const newEnabled = !currentlyEnabled;
       if (
-        !confirm(
-          newEnabled
-            ? "Enable maintenance mode? All users will see a maintenance page."
-            : "Disable maintenance mode? The platform will be accessible again.",
-        )
+        !await pooolConfirm({
+          title: newEnabled ? 'Enable maintenance mode' : 'Disable maintenance mode',
+          message: newEnabled
+            ? 'All users will see a maintenance page until this is disabled.'
+            : 'The platform will be accessible to all users again.',
+          confirmText: newEnabled ? 'Enable' : 'Disable',
+          type: newEnabled ? 'danger' : 'success',
+        })
       )
         return;
       try {

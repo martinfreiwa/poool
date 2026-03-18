@@ -40,7 +40,7 @@ function previewAvatarEdit(input) {
 window.previewAvatarEdit = previewAvatarEdit;
 
 document.addEventListener("DOMContentLoaded", () => {
-    initScrollspy();
+    initTabs();
     initMorphForms();
     initLoadData();
     initSearchOverlay();
@@ -380,47 +380,39 @@ function populateConsent(consent) {
 }
 
 /**
- * Initializes the Interaction Observer for the Sticky Sidebar Menu
+ * Initializes Tab navigation for Settings view
  */
-function initScrollspy() {
+function initTabs() {
     const sections = document.querySelectorAll('.settings-section');
-    const navLinks = document.querySelectorAll('.settings-nav-link');
+    const tabLinks = document.querySelectorAll('.settings-tab-link');
 
-    if (sections.length === 0 || navLinks.length === 0) return;
+    if (sections.length === 0 || tabLinks.length === 0) return;
 
-    const observerOptions = {
-        root: null,
-        rootMargin: '-20% 0px -80% 0px', // Triggers when section is in top 20% of viewport
-        threshold: 0
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const id = entry.target.getAttribute('id');
-                // Remove active class from all
-                navLinks.forEach(link => link.classList.remove('active'));
-                // Add active class to corresponding link
-                const activeLink = document.querySelector(`.settings-nav-link[href="#${id}"]`);
-                if (activeLink) activeLink.classList.add('active');
-            }
-        });
-    }, observerOptions);
-
-    sections.forEach(section => observer.observe(section));
+    // Show initial section based on URL hash or default to first
+    let activeId = window.location.hash.substring(1) || 'section-identity';
     
-    // Smooth scroll for nav links
-    navLinks.forEach(link => {
+    function switchTab(targetId) {
+        tabLinks.forEach(l => l.classList.remove('active'));
+        sections.forEach(s => s.classList.remove('active'));
+
+        const targetTab = document.querySelector(`.settings-tab-link[href="#${targetId}"]`);
+        const targetSection = document.getElementById(targetId);
+
+        if (targetTab && targetSection) {
+            targetTab.classList.add('active');
+            targetSection.classList.add('active');
+            window.history.pushState(null, '', `#${targetId}`);
+        }
+    }
+
+    switchTab(activeId);
+
+    tabLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const targetId = link.getAttribute('href').substring(1);
-            const targetSection = document.getElementById(targetId);
-            if (targetSection) {
-                // Account for topbar offset
-                const yOffset = -96; 
-                const y = targetSection.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                window.scrollTo({top: y, behavior: 'smooth'});
-            }
+            switchTab(targetId);
+            window.scrollTo({top: 0, behavior: 'smooth'});
         });
     });
 }
@@ -637,7 +629,7 @@ function showModalError(modalId, message) {
 // ═══════════════════════════════════════════════════════════════
 
 async function revokeSession(sessionId, cardIndex) {
-    if (!confirm('Are you sure you want to revoke this session? The device will be logged out.')) return;
+    if (!await pooolConfirm({ title: 'Revoke session', message: 'This device will be immediately logged out.', confirmText: 'Revoke', type: 'danger' })) return;
     
     try {
         const res = await fetch('/api/settings/sessions/revoke', {
@@ -667,7 +659,7 @@ async function revokeSession(sessionId, cardIndex) {
 }
 
 async function disable2FA() {
-    if (!confirm('Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.')) return;
+    if (!await pooolConfirm({ title: 'Disable Two-Factor Authentication', message: 'This will make your account less secure. Are you sure?', confirmText: 'Disable 2FA', type: 'danger' })) return;
     
     try {
         const result = await SettingsDataService.disable2FA();
@@ -1176,7 +1168,7 @@ window.loadPaymentMethods = loadPaymentMethods;
  * Delete a payment method
  */
 async function deletePaymentMethod(id) {
-    if (!confirm('Are you sure you want to delete this payment method?')) return;
+    if (!await pooolConfirm({ title: 'Delete payment method', message: 'This payment method will be permanently removed from your account.', confirmText: 'Delete', type: 'danger' })) return;
     try {
         const resp = await fetch(`/api/payment-methods/${id}`, { method: 'DELETE', headers: { 'X-CSRF-Token': getSettingsCsrfToken() } });
         if (resp.ok) {

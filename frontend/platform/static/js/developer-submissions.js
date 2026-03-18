@@ -499,7 +499,7 @@ async function duplicateDraft(assetId) {
 }
 
 async function resubmitDraft(assetId, title) {
-  if (!confirm(`Resubmit "${title}" for review?`)) return;
+  if (!await pooolConfirm({ title: 'Resubmit for review', message: `Submit "${title}" for admin review? The team will be notified.`, confirmText: 'Resubmit', type: 'success' })) return;
   try {
     const res = await fetch(`/api/developer/draft/${assetId}/submit`, {
       method: "POST",

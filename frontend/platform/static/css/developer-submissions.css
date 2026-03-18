@@ -62,14 +62,8 @@
   justify-content: center;
   flex-shrink: 0;
   background: var(--btn-primary-bg);
-  color: #fff;
+  color: #03FF88;
 }
-
-.sub-stat__icon--draft     { background: #f0f0f5; color: #717680; }
-.sub-stat__icon--submitted { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
-.sub-stat__icon--in_review { background: rgba(245, 158, 11, 0.1); color: #d97706; }
-.sub-stat__icon--approved  { background: rgba(16, 185, 129, 0.1); color: #059669; }
-.sub-stat__icon--rejected  { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
 
 .sub-stat__content {
   display: flex;
@@ -171,6 +165,12 @@
 /* ── Full Width Overrides ──────────────────────────────── */
 .ds-main .cart-page-header {
     max-width: none !important;
+}
+
+/* HR line spans full width — same as the table */
+#developer-submissions-main .page-header-divider {
+    max-width: none !important;
+    width: 100% !important;
 }
 
 .submissions-table-container {

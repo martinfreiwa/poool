@@ -195,33 +195,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Handle featured card close button
-  const featuredCloseBtn = document.querySelector(
-    ".mobile-burger-menu__featured-close",
-  );
-  if (featuredCloseBtn) {
-    featuredCloseBtn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      const card = this.closest(".mobile-burger-menu__featured-card");
-      if (card) {
-        card.style.display = "none";
-      }
-    });
-  }
-
-  // Handle featured card dismiss button
-  const dismissBtn = document.querySelector(
-    ".mobile-burger-menu__featured-button--dismiss",
-  );
-  if (dismissBtn) {
-    dismissBtn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      const card = this.closest(".mobile-burger-menu__featured-card");
-      if (card) {
-        card.style.display = "none";
-      }
-    });
-  }
+  // NOTE: featured-card close / dismiss buttons are handled via event
+  // delegation in sidebar-community.js (works even for template-injected menus).
 
   // Prevent menu close when clicking inside the menu
   const burgerMenu = document.getElementById("mobile-burger-menu");
@@ -301,7 +276,7 @@ function closeMobileDropdownOnClickOutside(event) {
 // Handle mobile account switching
 document.addEventListener("DOMContentLoaded", function () {
   // Use event delegation for mobile account items
-  document.body.addEventListener("click", function (e) {
+  document.body.addEventListener("click", async function (e) {
     // Check for mobile account item clicks
     const accountItem = e.target.closest(
       ".mobile-profile-menu-item.account-item",
@@ -373,7 +348,7 @@ document.addEventListener("DOMContentLoaded", function () {
           window.open("/docs", "_blank");
           break;
         case "mobile-menu-item-sign-out":
-          if (confirm("Are you sure you want to sign out?")) {
+          if (await pooolConfirm({ title: 'Sign out', message: 'Are you sure you want to sign out?', confirmText: 'Sign out', type: 'warning' })) {
             window.location.href = "/logout";
           }
           break;

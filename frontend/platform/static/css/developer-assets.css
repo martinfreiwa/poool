@@ -7,12 +7,20 @@
    1. Status Tabs (Available / Funded)
    Override marketplace absolute positioning
    =========================== */
+
+/* HR divider sits flush below the tabs — provides spacing to the card grid */
+#developer-assets-main > .page-header-divider,
+.cart-page-main > .page-header-divider {
+  margin-top: 0 !important;
+  margin-bottom: 24px !important;
+}
+
 #developer-assets-main .status-tabs,
 .cart-page-main .status-tabs {
   position: static !important;
   display: flex !important;
   gap: 4px !important;
-  margin-bottom: 24px !important;
+  margin-bottom: 0 !important;
   border-radius: 30px !important;
   overflow: hidden !important;
   border: 1px solid #e9eaeb !important;

@@ -583,7 +583,7 @@ function _getAssetIdForImages() {
 }
 
 async function adminDeleteImage(imgId) {
-  if (!confirm("Delete this image? This cannot be undone.")) return;
+  if (!await pooolConfirm({ title: 'Delete image', message: 'This cannot be undone.', confirmText: 'Delete', type: 'danger' })) return;
   const assetId = _getAssetIdForImages();
   if (!assetId) { showToast("Could not determine asset ID", "error"); return; }
   try {
@@ -849,7 +849,7 @@ function renderMilestones(milestones) {
 // ─── Actions ──────────────────────────────────────────────────────────────────
 
 // For actions requiring a reason, show a modal; for others confirm directly
-function handleDecision(action) {
+async function handleDecision(action) {
   const needsReason = action === "reject" || action === "request_revision";
   if (needsReason) {
     openReasonModal(action);
@@ -858,7 +858,12 @@ function handleDecision(action) {
       approve: "approve and publish this project to the marketplace",
       in_review: "mark this project as in review",
     };
-    if (!confirm(`Are you sure you want to ${actionLabels[action] || action}? The developer will be notified immediately.`)) return;
+    if (!await pooolConfirm({
+      title: actionLabels[action] ? 'Confirm action' : action,
+      message: `Are you sure you want to ${actionLabels[action] || action}? The developer will be notified immediately.`,
+      confirmText: action === 'approve' ? 'Approve & Publish' : 'Confirm',
+      type: action === 'approve' ? 'success' : 'default',
+    })) return;
     submitDecision(action, "");
   }
 }

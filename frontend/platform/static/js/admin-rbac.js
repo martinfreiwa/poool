@@ -453,13 +453,12 @@ document.addEventListener("alpine:init", () => {
       );
       if (hardConflicts.length > 0) {
         if (
-          !confirm(
-            "⚠️ There are Segregation of Duties violations:\n\n" +
-            hardConflicts
-              .map((c) => "• " + c.role + ": " + c.message)
-              .join("\n") +
-            "\n\nSave anyway?",
-          )
+          !await pooolConfirm({
+            title: '⚠️ Segregation of Duties Violations',
+            message: hardConflicts.map(c => '• ' + c.role + ': ' + c.message).join('\n') + '\n\nSave anyway?',
+            confirmText: 'Save Anyway',
+            type: 'danger',
+          })
         ) {
           return;
         }
@@ -491,11 +490,14 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    resetMatrix() {
+    async resetMatrix() {
       if (
-        !confirm(
-          "Revert all unsaved permission changes to the last saved state?",
-        )
+        !await pooolConfirm({
+          title: 'Revert permission changes',
+          message: 'Revert all unsaved permission changes to the last saved state?',
+          confirmText: 'Revert',
+          type: 'warning',
+        })
       )
         return;
       this.roles = JSON.parse(JSON.stringify(this.originalRoles));

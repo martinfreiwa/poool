@@ -137,9 +137,12 @@ function renderPreview(data) {
 
 async function processBatch() {
   if (
-    !confirm(
-      `Are you sure you want to process this dividend batch?\nTotal: $${(currentTotalAmountCents / 100).toLocaleString()}\nNumber of Investors: ${currentSplits.length}`,
-    )
+    !await pooolConfirm({
+      title: 'Process dividend batch',
+      message: `Distribute $${(currentTotalAmountCents / 100).toLocaleString()} to ${currentSplits.length} investors? This will be queued for Four-Eyes approval.`,
+      confirmText: 'Process',
+      type: 'success',
+    })
   )
     return;
 

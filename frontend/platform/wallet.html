@@ -18,21 +18,26 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         <!-- Wallet Header -->
         <div id="wallet-header" class="ds-page-header wallet-header">
           <div class="ds-page-header__title-row wallet-header-left">
-            <div id="wallet-page-icon" class="ds-page-header__icon wallet-page-icon">
-              <img loading="lazy" src="/images/wallet-02.svg" alt="Wallet" width="32" height="32" />
-            </div>
+            <svg id="wallet-page-icon" class="ds-page-header__icon wallet-page-icon poool-icon-custom" width="32"
+              height="32" viewBox="0 0 20 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M13.3333 7.07155V4.15543C13.3333 3.46232 13.3333 3.11576 13.1873 2.90278C13.0598 2.7167 12.8622 2.5903 12.6398 2.55245C12.3852 2.50914 12.0706 2.65436 11.4413 2.94482L4.04918 6.35655C3.48792 6.61559 3.20729 6.74511 3.00175 6.94598C2.82005 7.12357 2.68135 7.34034 2.59625 7.57974C2.5 7.85054 2.5 8.15962 2.5 8.77777V12.9049M13.75 12.4882H13.7583M2.5 9.73822L2.5 15.2382C2.5 16.1716 2.5 16.6383 2.68166 16.9949C2.84144 17.3085 3.09641 17.5634 3.41002 17.7232C3.76654 17.9049 4.23325 17.9049 5.16667 17.9049H14.8333C15.7668 17.9049 16.2335 17.9049 16.59 17.7232C16.9036 17.5634 17.1586 17.3085 17.3183 16.9949C17.5 16.6383 17.5 16.1716 17.5 15.2382V9.73822C17.5 8.8048 17.5 8.33809 17.3183 7.98157C17.1586 7.66797 16.9036 7.413 16.59 7.25321C16.2335 7.07155 15.7668 7.07155 14.8333 7.07155L5.16667 7.07155C4.23325 7.07155 3.76654 7.07155 3.41002 7.25321C3.09641 7.413 2.84144 7.66796 2.68166 7.98157C2.5 8.33809 2.5 8.8048 2.5 9.73822ZM14.1667 12.4882C14.1667 12.7183 13.9801 12.9049 13.75 12.9049C13.5199 12.9049 13.3333 12.7183 13.3333 12.4882C13.3333 12.2581 13.5199 12.0716 13.75 12.0716C13.9801 12.0716 14.1667 12.2581 14.1667 12.4882Z"
+                stroke-width="2.004" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
             <h1 id="wallet-page-title" class="ds-page-header__title wallet-page-title">Wallet</h1>
           </div>
           <div id="wallet-header-actions" class="ds-page-header__actions wallet-header-actions">
             <button id="deposit-btn" class="ds-btn ds-btn--primary wallet-header-btn wallet-header-btn--primary">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="currentColor" stroke-width="1.66667"
+                  stroke-linecap="round" stroke-linejoin="round" />
               </svg>
               <span>Deposit</span>
             </button>
             <button id="withdraw-btn" class="ds-btn ds-btn--secondary wallet-header-btn wallet-header-btn--secondary">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="currentColor" stroke-width="1.66667"
+                  stroke-linecap="round" stroke-linejoin="round" />
               </svg>
               <span>Withdraw</span>
             </button>
@@ -122,42 +127,6 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </div>
         </div>
 
-        <!-- BLOCKCHAIN: Security Info Alert -->
-        <div id="blockchain-wallet-info" style="
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          padding: 16px 20px;
-          margin-bottom: 16px;
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(16, 185, 129, 0.04));
-          border: 1px solid rgba(99, 102, 241, 0.12);
-          border-radius: 12px;
-        ">
-          <div style="
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            background: rgba(99, 102, 241, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-          ">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-          </div>
-          <div>
-            <h4 style="font-size: 13px; font-weight: 700; color: #181D27; margin: 0 0 4px;">Your tokens are secured on-chain</h4>
-            <p style="font-size: 12px; color: #535862; margin: 0; line-height: 1.5;">
-              All your property tokens are stored on the Base blockchain as ERC-3643 security tokens.
-              Your ownership is immutable and independently verifiable — even if POOOL ceases operations,
-              your tokens remain safely on the blockchain and can be verified at any time via
-              <a href="https://basescan.org" target="_blank" style="color: #6366f1; text-decoration: none; font-weight: 600;">Basescan ↗</a>.
-            </p>
-          </div>
-        </div>
 
         <!-- Transactions Section (full width) -->
         <div class="wallet-transactions-full">
@@ -187,8 +156,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                   </div>
                   <div class="table__header-cell table__header-cell--wallet">
                     <div class="table__header-content">
-                      <img loading="lazy" src="/static/images/wallet-04.svg" alt="Wallet" width="16"
-                        height="16" /><span class="table__header-text">Wallet</span>
+                      <img loading="lazy" src="/static/images/wallet-04.svg" alt="Wallet" width="16" height="16" /><span
+                        class="table__header-text">Wallet</span>
                     </div>
                   </div>
                   <div class="table__header-cell table__header-cell--amount">
@@ -228,8 +197,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                             xmlns="http://www.w3.org/2000/svg">
                             <path
                               d="M2.5 10C2.5 10 5 7.5 10 7.5C15 7.5 17.5 10 17.5 10M2.5 10V15C2.5 16.3807 3.61929 17.5 5 17.5H15C16.3807 17.5 17.5 16.3807 17.5 15V10"
-                              stroke="#717680" stroke-width="1.66667" stroke-linecap="round"
-                              stroke-linejoin="round" />
+                              stroke="#717680" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
                             <circle cx="10" cy="5" r="2.5" stroke="#717680" stroke-width="1.66667" />
                           </svg>
                           {% else %}
@@ -237,8 +205,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                             xmlns="http://www.w3.org/2000/svg">
                             <path
                               d="M2.5 7.5L10 2.5L17.5 7.5V16.25C17.5 16.5815 17.3683 16.8995 17.1339 17.1339C16.8995 17.3683 16.5815 17.5 16.25 17.5H3.75C3.41848 17.5 3.10054 17.3683 2.86612 17.1339C2.6317 16.8995 2.5 16.5815 2.5 16.25V7.5Z"
-                              stroke="#717680" stroke-width="1.66667" stroke-linecap="round"
-                              stroke-linejoin="round" />
+                              stroke="#717680" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
                             <path d="M7.5 17.5V10H12.5V17.5" stroke="#717680" stroke-width="1.66667"
                               stroke-linecap="round" stroke-linejoin="round" />
                           </svg>
@@ -265,8 +232,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                     <div class="table__cell table__cell--actions">
                       <button class="wallet-transaction-action-btn">
                         View details
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-                          xmlns="http://www.w3.org/2000/svg">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M6 12L10 8L6 4" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
                             stroke-linejoin="round" />
                         </svg>
@@ -302,13 +268,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </div>
           <div id="wallet-pagination-container" class="wallet-pagination-container"></div>
           <div id="wallet-transactions-footer" class="wallet-transactions-footer">
-            <button id="wallet-transactions-see-all" class="wallet-transactions-see-all">
-              See all transactions
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 12L10 8L6 4" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round"
-                  stroke-linejoin="round"></path>
-              </svg>
-            </button>
+
           </div>
         </div>
         <!-- end wallet-transactions-full -->
@@ -331,7 +291,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                   <span class="wallet-payment-add-text">Add new card</span>
                   <span class="wallet-payment-add-spacer"></span>
                   <img src="/static/images/visa.webp" alt="Visa" height="18" class="wallet-accepted-card-icon" />
-                  <img src="/static/images/mastercard.svg" alt="Mastercard" height="18" class="wallet-accepted-card-icon" />
+                  <img src="/static/images/mastercard.svg" alt="Mastercard" height="18"
+                    class="wallet-accepted-card-icon" />
                 </button>
               </div>
             </div>
@@ -607,7 +568,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             <input type="number" name="amount" min="1" step="0.01" required class="form-input"
               style="width: 100%; height: 44px" placeholder="e.g. 500" />
           </div>
-          <button type="submit" id="withdraw-submit-btn" class="ds-btn ds-btn--primary ds-btn--full">Confirm Withdrawal</button>
+          <button type="submit" id="withdraw-submit-btn" class="ds-btn ds-btn--primary ds-btn--full">Confirm
+            Withdrawal</button>
         </form>
       </div>
     </div>
@@ -627,28 +589,34 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       </div>
       <div class="bank-modal-body">
         <p class="bank-modal-desc">Add your credit or debit card details.</p>
-        
+
         <!-- Warning alert if Stripe is missing -->
         {% if not stripe_publishable_key or stripe_publishable_key == "" %}
-        <div style="background: #FFF4ED; border: 1px solid #F9DBAF; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #B54708;">
-          <strong>Developer mode:</strong> Stripe publishable key is missing. Using manual card form instead of Stripe Elements.
+        <div
+          style="background: #FFF4ED; border: 1px solid #F9DBAF; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #B54708;">
+          <strong>Developer mode:</strong> Stripe publishable key is missing. Using manual card form instead of Stripe
+          Elements.
         </div>
         {% endif %}
 
         <form id="add-card-form" class="bank-modal-form">
           <div class="form-group">
             <label class="form-label">Cardholder Name <span style="color:#d92d20">*</span></label>
-            <input type="text" id="card-holder-name" name="holder_name" placeholder="John Doe" class="form-input" required />
+            <input type="text" id="card-holder-name" name="holder_name" placeholder="John Doe" class="form-input"
+              required />
           </div>
 
           <!-- Stripe Elements Container -->
           <div id="stripe-element-container" style="display: none;">
             <div class="form-group">
               <label class="form-label">Card Details <span style="color:#d92d20">*</span></label>
-              <div id="card-element" class="form-input" style="padding: 12px; height: 44px; border: 1px solid #D0D5DD; border-radius: 8px; background: #fff;"></div>
+              <div id="card-element" class="form-input"
+                style="padding: 12px; height: 44px; border: 1px solid #D0D5DD; border-radius: 8px; background: #fff;">
+              </div>
             </div>
-            
-            <div id="stripe-card-brand" style="display: flex; align-items: center; gap: 8px; margin-top: 8px; margin-bottom: 16px; min-height: 24px;">
+
+            <div id="stripe-card-brand"
+              style="display: flex; align-items: center; gap: 8px; margin-top: 8px; margin-bottom: 16px; min-height: 24px;">
               <span id="stripe-brand-text" style="font-size: 13px; color: #667085;">Recognizing card...</span>
             </div>
           </div>
@@ -658,28 +626,32 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             <div class="form-group">
               <label class="form-label">Card Number <span style="color:#d92d20">*</span></label>
               <div style="position: relative">
-                <input type="text" id="card-number" name="card_number" placeholder="4242 4242 4242 4242" class="form-input"
-                  maxlength="19" autocomplete="cc-number" inputmode="numeric" style="padding-right: 56px" />
-                <div id="card-brand-icon" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); height: 24px; display: flex; align-items: center; opacity: 0; transition: opacity 0.2s ease;">
-                  <img id="card-brand-img" src="" alt="" height="24" style="height: 24px; width: auto; border-radius: 3px;" />
+                <input type="text" id="card-number" name="card_number" placeholder="4242 4242 4242 4242"
+                  class="form-input" maxlength="19" autocomplete="cc-number" inputmode="numeric"
+                  style="padding-right: 56px" />
+                <div id="card-brand-icon"
+                  style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); height: 24px; display: flex; align-items: center; opacity: 0; transition: opacity 0.2s ease;">
+                  <img id="card-brand-img" src="" alt="" height="24"
+                    style="height: 24px; width: auto; border-radius: 3px;" />
                 </div>
               </div>
             </div>
             <div style="display: flex; gap: 16px">
               <div class="form-group" style="flex: 1">
                 <label class="form-label">Expiry Date <span style="color:#d92d20">*</span></label>
-                <input type="text" id="card-expiry" name="expiry" placeholder="MM / YY" class="form-input"
-                  maxlength="7" autocomplete="cc-exp" inputmode="numeric" />
+                <input type="text" id="card-expiry" name="expiry" placeholder="MM / YY" class="form-input" maxlength="7"
+                  autocomplete="cc-exp" inputmode="numeric" />
               </div>
               <div class="form-group" style="flex: 1">
                 <label class="form-label">CVV <span style="color:#d92d20">*</span></label>
-                <input type="password" id="card-cvv" name="cvv" placeholder="•••" class="form-input"
-                  maxlength="4" autocomplete="cc-csc" inputmode="numeric" />
+                <input type="password" id="card-cvv" name="cvv" placeholder="•••" class="form-input" maxlength="4"
+                  autocomplete="cc-csc" inputmode="numeric" />
               </div>
             </div>
           </div>
 
-          <div id="card-errors" role="alert" style="color: #F04438; font-size: 14px; margin-top: 4px; min-height: 20px"></div>
+          <div id="card-errors" role="alert" style="color: #F04438; font-size: 14px; margin-top: 4px; min-height: 20px">
+          </div>
           <div class="form-actions" style="margin-top: 24px">
             <button type="submit" id="submit-card-btn" class="ds-btn ds-btn--primary ds-btn--full">Save Card</button>
           </div>
@@ -690,14 +662,14 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           document.addEventListener("DOMContentLoaded", function () {
             var stripeKey = "{{ stripe_publishable_key | default('') }}";
             var useStripe = !!stripeKey;
-            
+
             var stripeElementContainer = document.getElementById("stripe-element-container");
             var manualCardContainer = document.getElementById("manual-card-container");
-            
+
             var manualCardNum = document.getElementById("card-number");
             var manualCardExp = document.getElementById("card-expiry");
             var manualCardCvv = document.getElementById("card-cvv");
-            
+
             var stripe, elements, cardElement;
             var detectedBrand = "";
 
@@ -718,16 +690,16 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 };
                 cardElement = elements.create('card', { style: style, hidePostalCode: true });
                 cardElement.mount('#card-element');
-                
+
                 // Real-time card brand and validation error display
-                cardElement.on('change', function(event) {
+                cardElement.on('change', function (event) {
                   var displayError = document.getElementById('card-errors');
                   if (event.error) {
                     displayError.textContent = event.error.message;
                   } else {
                     displayError.textContent = '';
                   }
-                  
+
                   // Update card brand UI
                   var brandText = document.getElementById('stripe-brand-text');
                   if (event.brand && event.brand !== "unknown") {
@@ -764,19 +736,19 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             }
 
             function makeManualFieldsRequired() {
-              if(manualCardNum) manualCardNum.required = true;
-              if(manualCardExp) manualCardExp.required = true;
-              if(manualCardCvv) manualCardCvv.required = true;
+              if (manualCardNum) manualCardNum.required = true;
+              if (manualCardExp) manualCardExp.required = true;
+              if (manualCardCvv) manualCardCvv.required = true;
             }
 
             // ----------------------------------------------------
             // Manual Card Logic (Formatting & Brand Detection)
             // ----------------------------------------------------
             var CARD_BRANDS = [
-              { name: "Visa",       pattern: /^4/,                         img: "/static/images/visa.webp" },
+              { name: "Visa", pattern: /^4/, img: "/static/images/visa.webp" },
               { name: "Mastercard", pattern: /^5[1-5]|^2(2[2-9]|[3-6]|7[01]|720)/, img: "/static/images/mastercard.svg" },
-              { name: "Amex",       pattern: /^3[47]/,                     img: "/static/images/card-default.svg" },
-              { name: "Discover",   pattern: /^6(?:011|5)/,                img: "/static/images/card-default.svg" },
+              { name: "Amex", pattern: /^3[47]/, img: "/static/images/card-default.svg" },
+              { name: "Discover", pattern: /^6(?:011|5)/, img: "/static/images/card-default.svg" },
             ];
 
             function detectManualCardBrand(num) {
@@ -795,7 +767,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 var v = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
                 var parts = v.match(/.{1,4}/g);
                 e.target.value = parts ? parts.join(" ") : "";
-                
+
                 var brand = detectManualCardBrand(v);
                 if (brand) {
                   brandImg.src = brand.img;
@@ -828,8 +800,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 var btn = document.getElementById("submit-card-btn");
                 var errEl = document.getElementById("card-errors");
                 var holderName = document.getElementById("card-holder-name").value;
-                
-                btn.disabled = true; 
+
+                btn.disabled = true;
                 btn.textContent = "Processing...";
                 errEl.textContent = "";
 
@@ -841,16 +813,16 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                       card: cardElement,
                       billing_details: { name: holderName }
                     });
-                    
+
                     if (error) {
                       errEl.textContent = error.message;
                       btn.disabled = false; btn.textContent = "Save Card";
                       return;
                     }
-                    
+
                     var brand = detectedBrand || (paymentMethod.card.brand ? paymentMethod.card.brand.charAt(0).toUpperCase() + paymentMethod.card.brand.slice(1) : "Card");
                     var last4 = paymentMethod.card.last4;
-                    
+
                     submitCardToBackend(paymentMethod.id, holderName, brand, last4, btn, errEl);
                   } catch (err) {
                     errEl.textContent = "Stripe integration error. Please try again.";
@@ -859,17 +831,17 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 } else {
                   // === MANUAL FALLBACK FLOW ===
                   var cardNumber = manualCardNum.value.replace(/\s/g, "");
-                  if (cardNumber.length < 13) { 
-                    errEl.textContent = "Please enter a valid card number."; 
-                    btn.disabled = false; btn.textContent = "Save Card"; 
-                    return; 
+                  if (cardNumber.length < 13) {
+                    errEl.textContent = "Please enter a valid card number.";
+                    btn.disabled = false; btn.textContent = "Save Card";
+                    return;
                   }
-                  
+
                   var brand = detectedBrand || "Card";
                   var last4 = cardNumber.slice(-4);
                   // Generate an obvious mock token
                   var stripeId = "manual_" + brand.toLowerCase() + "_" + last4 + "_" + Date.now();
-                  
+
                   submitCardToBackend(stripeId, holderName, brand, last4, btn, errEl);
                 }
               });
@@ -881,24 +853,24 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 + "&holder_name=" + encodeURIComponent(holderName)
                 + "&label=" + encodedLabel;
 
-              fetch("/api/payment-methods/card", { 
-                method: "POST", 
-                headers: { "Content-Type": "application/x-www-form-urlencoded" }, 
-                body: body 
+              fetch("/api/payment-methods/card", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: body
               })
-              .then(function (res) {
-                if (res.ok) { 
-                  closeCardModal(); 
-                  window.location.reload(); 
-                } else { 
-                  return res.text().then(function (t) { errEl.textContent = t || "Error saving card to server"; }); 
-                }
-                btn.disabled = false; btn.textContent = "Save Card";
-              })
-              .catch(function () { 
-                errEl.textContent = "A network error occurred. Please try again."; 
-                btn.disabled = false; btn.textContent = "Save Card"; 
-              });
+                .then(function (res) {
+                  if (res.ok) {
+                    closeCardModal();
+                    window.location.reload();
+                  } else {
+                    return res.text().then(function (t) { errEl.textContent = t || "Error saving card to server"; });
+                  }
+                  btn.disabled = false; btn.textContent = "Save Card";
+                })
+                .catch(function () {
+                  errEl.textContent = "A network error occurred. Please try again.";
+                  btn.disabled = false; btn.textContent = "Save Card";
+                });
             }
           });
         </script>
@@ -913,7 +885,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         <h2 class="bank-modal-title">Add Bank Account</h2>
         <button class="bank-modal-close" onclick="closeBankModal()">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18 6L6 18M6 6L18 18" stroke="#98A2B3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M18 6L6 18M6 6L18 18" stroke="#98A2B3" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
           </svg>
         </button>
       </div>
@@ -926,7 +899,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <!-- Account Holder -->
           <div class="form-group">
             <label class="form-label">Account Holder Name <span style="color:#d92d20">*</span></label>
-            <input type="text" name="account_holder_name" id="bank-holder-name" placeholder="Full legal name" class="form-input" required />
+            <input type="text" name="account_holder_name" id="bank-holder-name" placeholder="Full legal name"
+              class="form-input" required />
           </div>
 
           <!-- Country -->
@@ -987,7 +961,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <!-- Bank Name -->
           <div class="form-group">
             <label class="form-label">Bank Name <span style="color:#d92d20">*</span></label>
-            <input type="text" name="bank_name" id="bank-name-input" placeholder="e.g. Chase, Barclays, Wise" class="form-input" required />
+            <input type="text" name="bank_name" id="bank-name-input" placeholder="e.g. Chase, Barclays, Wise"
+              class="form-input" required />
           </div>
 
           <!-- Dynamic fields injected here -->
@@ -1001,7 +976,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
 
           <div id="bank-errors" role="alert" style="color:#F04438;font-size:14px;margin-top:4px;min-height:20px"></div>
           <div class="form-actions" style="margin-top:24px">
-            <button type="submit" id="submit-bank-btn" class="ds-btn ds-btn--primary ds-btn--full">Save Bank Account</button>
+            <button type="submit" id="submit-bank-btn" class="ds-btn ds-btn--primary ds-btn--full">Save Bank
+              Account</button>
           </div>
         </form>
 
@@ -1009,38 +985,50 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           // Banking system definitions per country code
           var BANK_SYSTEMS = {
             // US – ACH
-            US: { system: "ach", fields: [
-              { name: "routing_code", label: "Routing Number (ABA)", placeholder: "e.g. 021000021", help: "9-digit ABA routing number", maxlen: 9, pattern: /^\d{9}$/, patternMsg: "Must be exactly 9 digits" },
-              { name: "account_number", label: "Account Number", placeholder: "e.g. 1234567890", help: "Your checking or savings account number", maxlen: 17, pattern: /^\d{4,17}$/, patternMsg: "4–17 digits" }
-            ]},
+            US: {
+              system: "ach", fields: [
+                { name: "routing_code", label: "Routing Number (ABA)", placeholder: "e.g. 021000021", help: "9-digit ABA routing number", maxlen: 9, pattern: /^\d{9}$/, patternMsg: "Must be exactly 9 digits" },
+                { name: "account_number", label: "Account Number", placeholder: "e.g. 1234567890", help: "Your checking or savings account number", maxlen: 17, pattern: /^\d{4,17}$/, patternMsg: "4–17 digits" }
+              ]
+            },
             // UK – BACS / FPS
-            GB: { system: "bacs", fields: [
-              { name: "routing_code", label: "Sort Code", placeholder: "e.g. 20-00-00", help: "6-digit sort code (with or without dashes)", maxlen: 8, pattern: /^\d{2}-?\d{2}-?\d{2}$/, patternMsg: "Format: XX-XX-XX" },
-              { name: "account_number", label: "Account Number", placeholder: "e.g. 12345678", help: "8-digit UK account number", maxlen: 8, pattern: /^\d{8}$/, patternMsg: "Must be exactly 8 digits" }
-            ]},
+            GB: {
+              system: "bacs", fields: [
+                { name: "routing_code", label: "Sort Code", placeholder: "e.g. 20-00-00", help: "6-digit sort code (with or without dashes)", maxlen: 8, pattern: /^\d{2}-?\d{2}-?\d{2}$/, patternMsg: "Format: XX-XX-XX" },
+                { name: "account_number", label: "Account Number", placeholder: "e.g. 12345678", help: "8-digit UK account number", maxlen: 8, pattern: /^\d{8}$/, patternMsg: "Must be exactly 8 digits" }
+              ]
+            },
             // Australia – BSB
-            AU: { system: "bsb", fields: [
-              { name: "routing_code", label: "BSB Number", placeholder: "e.g. 062-000", help: "6-digit Bank-State-Branch code", maxlen: 7, pattern: /^\d{3}-?\d{3}$/, patternMsg: "Format: XXX-XXX" },
-              { name: "account_number", label: "Account Number", placeholder: "e.g. 12345678", help: "6–10 digit account number", maxlen: 10, pattern: /^\d{6,10}$/, patternMsg: "6–10 digits" }
-            ]},
+            AU: {
+              system: "bsb", fields: [
+                { name: "routing_code", label: "BSB Number", placeholder: "e.g. 062-000", help: "6-digit Bank-State-Branch code", maxlen: 7, pattern: /^\d{3}-?\d{3}$/, patternMsg: "Format: XXX-XXX" },
+                { name: "account_number", label: "Account Number", placeholder: "e.g. 12345678", help: "6–10 digit account number", maxlen: 10, pattern: /^\d{6,10}$/, patternMsg: "6–10 digits" }
+              ]
+            },
             // India – IFSC
-            IN: { system: "ifsc", fields: [
-              { name: "routing_code", label: "IFSC Code", placeholder: "e.g. HDFC0001234", help: "11-character Indian Financial System Code", maxlen: 11, pattern: /^[A-Z]{4}0[A-Z0-9]{6}$/, patternMsg: "Format: 4 letters + 0 + 6 alphanumeric" },
-              { name: "account_number", label: "Account Number", placeholder: "e.g. 1234567890", help: "9–18 digit account number", maxlen: 18, pattern: /^\d{9,18}$/, patternMsg: "9–18 digits" }
-            ]},
+            IN: {
+              system: "ifsc", fields: [
+                { name: "routing_code", label: "IFSC Code", placeholder: "e.g. HDFC0001234", help: "11-character Indian Financial System Code", maxlen: 11, pattern: /^[A-Z]{4}0[A-Z0-9]{6}$/, patternMsg: "Format: 4 letters + 0 + 6 alphanumeric" },
+                { name: "account_number", label: "Account Number", placeholder: "e.g. 1234567890", help: "9–18 digit account number", maxlen: 18, pattern: /^\d{9,18}$/, patternMsg: "9–18 digits" }
+              ]
+            },
             // SEPA countries – IBAN + optional BIC
-            SEPA: { system: "sepa", fields: [
-              { name: "account_number", label: "IBAN", placeholder: "e.g. DE89370400440532013000", help: "International Bank Account Number (up to 34 chars)", maxlen: 34, pattern: /^[A-Z]{2}\d{2}[A-Z0-9]{11,28}$/, patternMsg: "Starts with 2-letter country code then digits" },
-              { name: "routing_code", label: "BIC / SWIFT Code", placeholder: "e.g. DEUTDEDB", help: "8 or 11 character Bank Identifier Code (optional for SEPA)", maxlen: 11, pattern: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/, patternMsg: "8 or 11 characters", optional: true }
-            ]},
+            SEPA: {
+              system: "sepa", fields: [
+                { name: "account_number", label: "IBAN", placeholder: "e.g. DE89370400440532013000", help: "International Bank Account Number (up to 34 chars)", maxlen: 34, pattern: /^[A-Z]{2}\d{2}[A-Z0-9]{11,28}$/, patternMsg: "Starts with 2-letter country code then digits" },
+                { name: "routing_code", label: "BIC / SWIFT Code", placeholder: "e.g. DEUTDEDB", help: "8 or 11 character Bank Identifier Code (optional for SEPA)", maxlen: 11, pattern: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/, patternMsg: "8 or 11 characters", optional: true }
+              ]
+            },
             // Default – SWIFT international wire
-            SWIFT: { system: "swift", fields: [
-              { name: "routing_code", label: "SWIFT / BIC Code", placeholder: "e.g. CHASUS33", help: "8 or 11 character Bank Identifier Code", maxlen: 11, pattern: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/, patternMsg: "8 or 11 characters" },
-              { name: "account_number", label: "IBAN or Account Number", placeholder: "e.g. GB29NWBK60161331926819", help: "IBAN (if available) or local account number", maxlen: 34, pattern: /.{4,}/, patternMsg: "At least 4 characters" }
-            ]}
+            SWIFT: {
+              system: "swift", fields: [
+                { name: "routing_code", label: "SWIFT / BIC Code", placeholder: "e.g. CHASUS33", help: "8 or 11 character Bank Identifier Code", maxlen: 11, pattern: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/, patternMsg: "8 or 11 characters" },
+                { name: "account_number", label: "IBAN or Account Number", placeholder: "e.g. GB29NWBK60161331926819", help: "IBAN (if available) or local account number", maxlen: 34, pattern: /.{4,}/, patternMsg: "At least 4 characters" }
+              ]
+            }
           };
 
-          var SEPA_COUNTRIES = ["DE","FR","IT","ES","NL","BE","AT","PT","IE","FI","SE","DK","NO","CH","PL","CZ","HU","RO","GR","LU","SG","HK","JP","KR","NZ","CA","BR","MX","AE","SA","ZA","NG","KE"];
+          var SEPA_COUNTRIES = ["DE", "FR", "IT", "ES", "NL", "BE", "AT", "PT", "IE", "FI", "SE", "DK", "NO", "CH", "PL", "CZ", "HU", "RO", "GR", "LU", "SG", "HK", "JP", "KR", "NZ", "CA", "BR", "MX", "AE", "SA", "ZA", "NG", "KE"];
 
           function getBankConfig(countryCode) {
             if (BANK_SYSTEMS[countryCode]) return BANK_SYSTEMS[countryCode];
@@ -1053,7 +1041,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             document.getElementById("bank-system-field").value = config.system;
             var container = document.getElementById("bank-dynamic-fields");
             container.innerHTML = "";
-            config.fields.forEach(function(f) {
+            config.fields.forEach(function (f) {
               var grp = document.createElement("div");
               grp.className = "form-group";
               var labelEl = document.createElement("label");
@@ -1078,7 +1066,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             // Add system badge
             var badge = document.createElement("div");
             badge.style.cssText = "display:inline-flex;align-items:center;gap:6px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:6px;padding:4px 10px;font-size:12px;color:#0369A1;margin-bottom:8px;font-weight:500";
-            var systemLabel = { ach:"ACH Transfer", bacs:"BACS / Faster Payments", bsb:"BSB (Australia)", ifsc:"NEFT/RTGS (India)", sepa:"SEPA Transfer", swift:"SWIFT International Wire" };
+            var systemLabel = { ach: "ACH Transfer", bacs: "BACS / Faster Payments", bsb: "BSB (Australia)", ifsc: "NEFT/RTGS (India)", sepa: "SEPA Transfer", swift: "SWIFT International Wire" };
             badge.textContent = "🏦 " + (systemLabel[config.system] || config.system.toUpperCase());
             container.insertBefore(badge, container.firstChild);
           }
@@ -1086,11 +1074,11 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           document.addEventListener("DOMContentLoaded", function () {
             var countrySelect = document.getElementById("bank-country-select");
             if (countrySelect) {
-              countrySelect.addEventListener("change", function() { renderBankFields(this.value); });
+              countrySelect.addEventListener("change", function () { renderBankFields(this.value); });
               renderBankFields(countrySelect.value); // render initial
             }
 
-            document.getElementById("bank-modal-form").addEventListener("submit", async function(e) {
+            document.getElementById("bank-modal-form").addEventListener("submit", async function (e) {
               e.preventDefault();
               var btn = document.getElementById("submit-bank-btn");
               var errorDiv = document.getElementById("bank-errors");
@@ -1101,7 +1089,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               var countryCode = document.getElementById("bank-country-select").value;
               var config = getBankConfig(countryCode);
               var valid = true;
-              config.fields.forEach(function(f) {
+              config.fields.forEach(function (f) {
                 var input = document.querySelector("#bank-dynamic-fields input[name='" + f.name + "']");
                 if (!input) return;
                 var val = input.value.trim().replace(/\s/g, "").toUpperCase();
@@ -1113,10 +1101,10 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               var formData = new FormData(e.target);
               var encoded = new URLSearchParams(formData).toString();
               try {
-                var response = await fetch("/api/payment-methods/bank", { method: "POST", headers: {"Content-Type": "application/x-www-form-urlencoded"}, body: encoded });
+                var response = await fetch("/api/payment-methods/bank", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: encoded });
                 if (response.ok) { closeBankModal(); window.location.reload(); }
                 else { var t = await response.text(); errorDiv.textContent = t || "An error occurred"; }
-              } catch(err) { errorDiv.textContent = "An error occurred. Please try again."; }
+              } catch (err) { errorDiv.textContent = "An error occurred. Please try again."; }
               btn.disabled = false; btn.textContent = "Save Bank Account";
             });
           });
@@ -1125,81 +1113,81 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
     </div>
   </div>
 
-    <!-- Wallet Actions & Initialization -->
-    <script>
-      function openDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
-      function closeDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
-      function openWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
-      function closeWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
-      function openBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
-      function closeBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
-      function openCardModal() {
-        var m = document.getElementById("add-card-modal");
-        if (m) {
-          m.style.display = "flex";
-          document.body.style.overflow = "hidden";
-        }
+  <!-- Wallet Actions & Initialization -->
+  <script>
+    function openDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
+    function closeDepositModal() { var m = document.getElementById("deposit-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
+    function openWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
+    function closeWithdrawModal() { var m = document.getElementById("withdraw-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
+    function openBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.style.display = "flex"; document.body.style.overflow = "hidden"; } }
+    function closeBankModal() { var m = document.getElementById("add-bank-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
+    function openCardModal() {
+      var m = document.getElementById("add-card-modal");
+      if (m) {
+        m.style.display = "flex";
+        document.body.style.overflow = "hidden";
       }
-      function closeCardModal() { var m = document.getElementById("add-card-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
+    }
+    function closeCardModal() { var m = document.getElementById("add-card-modal"); if (m) { m.style.display = "none"; document.body.style.overflow = ""; } }
 
-      document.addEventListener("DOMContentLoaded", () => {
-        const depositBtn = document.getElementById("deposit-btn");
-        if (depositBtn) { depositBtn.addEventListener("click", openDepositModal); depositBtn.removeAttribute("disabled"); depositBtn.style.cursor = "pointer"; }
-        const emptyDepositBtn = document.getElementById("empty-deposit-btn");
-        if (emptyDepositBtn) { emptyDepositBtn.addEventListener("click", openDepositModal); }
-        const withdrawBtn = document.getElementById("withdraw-btn");
-        if (withdrawBtn) { withdrawBtn.addEventListener("click", openWithdrawModal); withdrawBtn.removeAttribute("disabled"); withdrawBtn.style.cursor = "pointer"; }
-        document.querySelectorAll(".mobile-cash-balance-card__button--primary").forEach(btn => btn.addEventListener("click", openDepositModal));
-        document.querySelectorAll(".mobile-cash-balance-card__button--secondary").forEach(btn => btn.addEventListener("click", openWithdrawModal));
-        document.querySelectorAll("#wallet-payment-banks-add-button, .mobile-add-bank-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openBankModal(); }); });
-        document.querySelectorAll("#wallet-transactions-see-all").forEach(btn => { btn.addEventListener("click", () => { window.location.href = "/transactions"; }); });
+    document.addEventListener("DOMContentLoaded", () => {
+      const depositBtn = document.getElementById("deposit-btn");
+      if (depositBtn) { depositBtn.addEventListener("click", openDepositModal); depositBtn.removeAttribute("disabled"); depositBtn.style.cursor = "pointer"; }
+      const emptyDepositBtn = document.getElementById("empty-deposit-btn");
+      if (emptyDepositBtn) { emptyDepositBtn.addEventListener("click", openDepositModal); }
+      const withdrawBtn = document.getElementById("withdraw-btn");
+      if (withdrawBtn) { withdrawBtn.addEventListener("click", openWithdrawModal); withdrawBtn.removeAttribute("disabled"); withdrawBtn.style.cursor = "pointer"; }
+      document.querySelectorAll(".mobile-cash-balance-card__button--primary").forEach(btn => btn.addEventListener("click", openDepositModal));
+      document.querySelectorAll(".mobile-cash-balance-card__button--secondary").forEach(btn => btn.addEventListener("click", openWithdrawModal));
+      document.querySelectorAll("#wallet-payment-banks-add-button, .mobile-add-bank-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openBankModal(); }); });
+      document.querySelectorAll("#wallet-transactions-see-all").forEach(btn => { btn.addEventListener("click", () => { window.location.href = "/transactions"; }); });
 
-        // "View details" on each transaction row → navigate to /transactions
-        document.body.addEventListener("click", function (e) {
-          var actionBtn = e.target.closest(".wallet-transaction-action-btn");
-          if (!actionBtn) return;
-          var row = actionBtn.closest("[id^='wallet-transactions-row-']");
-          var rowId = row && row.id ? row.id.replace("wallet-transactions-row-", "") : "";
-          window.location.href = rowId ? "/transactions#tx-" + rowId : "/transactions";
-        });
-
-        // Click-outside-to-close for all modals (replaces Alpine @click.away)
-        ["deposit-modal", "withdraw-modal", "add-card-modal", "add-bank-modal"].forEach(function(id) {
-          var overlay = document.getElementById(id);
-          if (overlay) {
-            overlay.addEventListener("click", function(e) {
-              if (e.target === overlay) {
-                overlay.style.display = "none";
-                document.body.style.overflow = "";
-              }
-            });
-          }
-        });
+      // "View details" on each transaction row → navigate to /transactions
+      document.body.addEventListener("click", function (e) {
+        var actionBtn = e.target.closest(".wallet-transaction-action-btn");
+        if (!actionBtn) return;
+        var row = actionBtn.closest("[id^='wallet-transactions-row-']");
+        var rowId = row && row.id ? row.id.replace("wallet-transactions-row-", "") : "";
+        window.location.href = rowId ? "/transactions#tx-" + rowId : "/transactions";
       });
-    </script>
 
-    <!-- Error Toast: handles ?error= query param from server -->
-    <script>
-      (function () {
-        var params = new URLSearchParams(window.location.search);
-        var error = params.get('error');
-        if (!error) return;
-        var messages = { 'insufficient_funds': 'Insufficient funds. Please deposit before withdrawing.', 'withdraw_failed': 'Withdrawal failed. Please try again or contact support.', 'deposit_failed': 'Deposit failed. Please try again.' };
-        var msg = messages[error] || 'An error occurred. Please try again.';
-        var toast = document.createElement('div');
-        toast.setAttribute('role', 'alert');
-        toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:99999;background:#F04438;color:#fff;padding:14px 20px;border-radius:10px;font-family:TT Norms Pro,sans-serif;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.18);max-width:360px;line-height:1.4;animation:slideIn 0.3s ease-out';
-        toast.textContent = msg;
-        document.body.appendChild(toast);
-        setTimeout(function () { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(function () { toast.remove(); }, 300); }, 5000);
-        history.replaceState({}, '', '/wallet');
-      })();
-    </script>
+      // Click-outside-to-close for all modals (replaces Alpine @click.away)
+      ["deposit-modal", "withdraw-modal", "add-card-modal", "add-bank-modal"].forEach(function (id) {
+        var overlay = document.getElementById(id);
+        if (overlay) {
+          overlay.addEventListener("click", function (e) {
+            if (e.target === overlay) {
+              overlay.style.display = "none";
+              document.body.style.overflow = "";
+            }
+          });
+        }
+      });
+    });
+  </script>
 
-    <!-- Wallet Data Service & UI Controller -->
-    <script src="/static/js/wallet-service.js"></script>
-    <script src="/static/js/wallet.js"></script>
-    <script src="/static/js/kyc-banner.js"></script>
+  <!-- Error Toast: handles ?error= query param from server -->
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var error = params.get('error');
+      if (!error) return;
+      var messages = { 'insufficient_funds': 'Insufficient funds. Please deposit before withdrawing.', 'withdraw_failed': 'Withdrawal failed. Please try again or contact support.', 'deposit_failed': 'Deposit failed. Please try again.' };
+      var msg = messages[error] || 'An error occurred. Please try again.';
+      var toast = document.createElement('div');
+      toast.setAttribute('role', 'alert');
+      toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:99999;background:#F04438;color:#fff;padding:14px 20px;border-radius:10px;font-family:TT Norms Pro,sans-serif;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.18);max-width:360px;line-height:1.4;animation:slideIn 0.3s ease-out';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(function () { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(function () { toast.remove(); }, 300); }, 5000);
+      history.replaceState({}, '', '/wallet');
+    })();
+  </script>
+
+  <!-- Wallet Data Service & UI Controller -->
+  <script src="/static/js/wallet-service.js"></script>
+  <script src="/static/js/wallet.js"></script>
+  <script src="/static/js/kyc-banner.js"></script>
 
 </body>
 

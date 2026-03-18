@@ -163,7 +163,7 @@ function setupProfileEventHandlers() {
   });
 
   // Non-account menu items (Documentation, Sign out, etc.)
-  document.body.addEventListener("click", function (e) {
+  document.body.addEventListener("click", async function (e) {
     const menuItem = e.target.closest(".profile-menu-item:not(.account-item)");
     if (!menuItem) return;
 
@@ -180,7 +180,7 @@ function setupProfileEventHandlers() {
         window.open("/docs", "_blank");
         break;
       case "menu-item-sign-out":
-        if (confirm("Are you sure you want to sign out?")) {
+        if (await pooolConfirm({ title: 'Sign out', message: 'Are you sure you want to sign out?', confirmText: 'Sign out', type: 'warning' })) {
           window.location.href = "/logout";
         }
         break;

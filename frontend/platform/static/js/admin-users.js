@@ -213,9 +213,14 @@ function renderTable() {
 async function toggleUserStatus(userId, currentStatus) {
   const newStatus = currentStatus === "suspended" ? "active" : "suspended";
   if (
-    !confirm(
-      `Are you sure you want to ${newStatus === "active" ? "activate" : "suspend"} this user ? `,
-    )
+    !await pooolConfirm({
+      title: newStatus === 'active' ? 'Activate user' : 'Suspend user',
+      message: newStatus === 'active'
+        ? 'This user will regain access to the platform.'
+        : 'This user will be immediately suspended and locked out.',
+      confirmText: newStatus === 'active' ? 'Activate' : 'Suspend',
+      type: newStatus === 'active' ? 'success' : 'danger',
+    })
   )
     return;
 
