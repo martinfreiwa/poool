@@ -18,12 +18,21 @@ pub struct LeaderboardEntry {
 pub struct MyRank {
     pub rank: Option<i32>,
     pub metric_value: i64,
-    pub delta_weekly: i32,
     pub metrics: LeaderboardMetrics,
 }
 
-/// Raw metrics for the user.
-#[derive(Debug, Serialize, Deserialize)]
+impl Default for MyRank {
+    fn default() -> Self {
+        Self {
+            rank: None,
+            metric_value: 0,
+            metrics: LeaderboardMetrics::default(),
+        }
+    }
+}
+
+/// Raw metrics for the user — all 6 core leaderboard dimensions.
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct LeaderboardMetrics {
     pub total_invested_cents: i64,
     pub asset_count: i32,
@@ -40,6 +49,7 @@ pub struct LeaderboardResponse {
     pub my_rank: MyRank,
     pub total_participants: i64,
     pub metric_type: String,
+    pub timeframe: String,
     pub last_updated: Option<String>,
     pub has_more: bool,
 }

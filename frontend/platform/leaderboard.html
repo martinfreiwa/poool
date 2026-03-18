@@ -61,17 +61,26 @@ include
         <!-- 4. CONTENT STATE -->
         <div id="lb-content-layer" class="lb-content-layer hidden">
 
-          <!-- Metric Toggle -->
-          <div class="lb-timeframe-bar" style="margin-bottom: 24px; display: flex; align-items: center; justify-content: flex-end; gap: 12px;">
-            <span style="font-weight: 500; color: #344054;">Ranking By:</span>
-            <select id="lb-metric-select" class="lb-select" onchange="switchMetric()" style="min-width: 250px;">
-              <option value="invested">Total Investment</option>
-              <option value="assets">Number of Assets</option>
-              <option value="roi">Portfolio ROI</option>
-              <option value="affiliates">Affiliates Count</option>
-              <option value="revenue">Affiliate Revenue</option>
-              <option value="highest_inv">Highest Single Investment</option>
-            </select>
+          <!-- Controls: Timeframe + Metric -->
+          <div class="lb-timeframe-bar" style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <!-- Timeframe toggle (left) -->
+            <div style="display: flex; gap: 0; background: #ffffff; border: 1px solid #eaecf0; border-radius: 10px; padding: 4px;">
+              <button class="lb-tf-btn active" data-timeframe="alltime" onclick="switchTimeframe('alltime', this)">All-Time</button>
+              <button class="lb-tf-btn" data-timeframe="weekly" onclick="switchTimeframe('weekly', this)">This Week</button>
+              <button class="lb-tf-btn" data-timeframe="monthly" onclick="switchTimeframe('monthly', this)">This Month</button>
+            </div>
+            <!-- Metric dropdown (right) -->
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-weight: 500; color: #344054; white-space: nowrap;">Ranking By:</span>
+              <select id="lb-metric-select" class="lb-select" onchange="switchMetric()" style="min-width: 250px;">
+                <option value="invested">Total Investment</option>
+                <option value="assets">Number of Assets</option>
+                <option value="roi">Portfolio ROI</option>
+                <option value="affiliates">Affiliates Count</option>
+                <option value="revenue">Affiliate Revenue</option>
+                <option value="highest_inv">Highest Single Investment</option>
+              </select>
+            </div>
           </div>
 
           <!-- Podium: Top 3 -->

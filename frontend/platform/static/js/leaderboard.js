@@ -15,6 +15,7 @@
   }
 
   let currentMetric = 'invested';
+  let currentTimeframe = 'alltime';
   let currentPage = 1;
   let currentSearch = '';
   let currentTier = '';
@@ -51,7 +52,7 @@
   async function init() {
     try {
       const [data, prefs] = await Promise.all([
-        fetchRankings(currentMetric, currentPage, currentSearch, currentTier),
+        fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier),
         fetchPreferences(),
       ]);
 
@@ -82,9 +83,10 @@
   }
 
   // ─── API Calls ─────────────────────────────────────────────────
-  async function fetchRankings(metric, page, search, tier) {
+  async function fetchRankings(metric, timeframe, page, search, tier) {
     page = page || 1;
-    let url = `/api/leaderboard?metric=${metric}&page=${page}`;
+    timeframe = timeframe || 'alltime';
+    let url = `/api/leaderboard?metric=${metric}&timeframe=${timeframe}&page=${page}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (tier) url += `&tier_id=${tier}`;
 
@@ -325,6 +327,16 @@
     await refetchAndRender();
   };
 
+  window.switchTimeframe = async function (tf, btn) {
+    currentTimeframe = tf;
+    currentPage = 1;
+    // Update active button styling
+    var buttons = document.querySelectorAll('.lb-tf-btn[data-timeframe]');
+    buttons.forEach(function (b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    await refetchAndRender();
+  };
+
   window.applyFilters = async function() {
     var tierSelect = document.getElementById('lb-tier-filter');
     currentTier = tierSelect ? tierSelect.value : '';
@@ -349,7 +361,7 @@
 
     currentPage++;
     try {
-      var data = await fetchRankings(currentMetric, currentPage, currentSearch, currentTier);
+      var data = await fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier);
       renderTable(data.rankings, true);
       renderLoadMore(data);
     } catch (e) {
@@ -375,7 +387,7 @@
     });
 
     try {
-      var data = await fetchRankings(currentMetric, currentPage, currentSearch, currentTier);
+      var data = await fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier);
 
       // Only go to full-page empty state when there are zero investors on the leaderboard at all (no filters active)
       if (!data || (data.total_participants === 0 && !hasFilters)) {

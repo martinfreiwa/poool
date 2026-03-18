@@ -46,6 +46,10 @@ pub async fn get_rankings(
         .get("metric")
         .cloned()
         .unwrap_or_else(|| "invested".to_string());
+    let timeframe = params
+        .get("timeframe")
+        .cloned()
+        .unwrap_or_else(|| "alltime".to_string());
     let page: i64 = params
         .get("page")
         .and_then(|p| p.parse().ok())
@@ -60,7 +64,7 @@ pub async fn get_rankings(
         .cloned();
 
     match service::get_rankings(
-        &state.db, user_id, &metric_type, page, per_page, tier_id, search,
+        &state.db, user_id, &metric_type, &timeframe, page, per_page, tier_id, search,
     )
     .await
     {
@@ -92,8 +96,12 @@ pub async fn get_my_rank(
         .get("metric")
         .cloned()
         .unwrap_or_else(|| "invested".to_string());
+    let timeframe = params
+        .get("timeframe")
+        .cloned()
+        .unwrap_or_else(|| "alltime".to_string());
 
-    match service::get_user_rank(&state.db, user_id, &metric_type).await {
+    match service::get_user_rank(&state.db, user_id, &metric_type, &timeframe).await {
         Ok(rank) => Json(rank).into_response(),
         Err(e) => {
             tracing::error!("Failed to get user rank for {}: {}", user_id, e);
