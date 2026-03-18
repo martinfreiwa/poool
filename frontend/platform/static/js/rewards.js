@@ -144,25 +144,10 @@
 
   // Konsistentes Styling für System Feedback
   function showToast(message, type) {
-    let container = document.getElementById("rewards-toast-container");
-    if (!container) {
-      container = document.createElement("div");
-      container.id = "rewards-toast-container";
-      container.style.cssText = "position:fixed;top:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;";
-      document.body.appendChild(container);
-    }
-    const toast = document.createElement("div");
-    // Bedingtes Rendering von Farben (Rot = Fehler, Grün = Success)
-    const bgColor = type === "success" ? "#12B76A" : "#F04438";
-    toast.style.cssText = `padding:12px 20px;border-radius:8px;color:#fff;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:opacity 0.3s;background:${bgColor};`;
-    toast.textContent = message;
-    container.appendChild(toast);
-
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, message, type);
   }
+}
 
   // Layer Manager
   function switchState(state) {

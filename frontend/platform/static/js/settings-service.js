@@ -166,6 +166,15 @@ const SettingsDataService = (function () {
     }
 
     /**
+     * Save leaderboard settings.
+     * @param {{ visible: boolean, show_avatar: boolean, display_name: string }} data
+     * @returns {Promise<ApiResponse|null>}
+     */
+    async function saveLeaderboard(data) {
+        return apiFetch("/api/settings/leaderboard", "POST", data);
+    }
+
+    /**
      * Change the user's email address.
      * Validates fields client-side before sending.
      * @param {string} newEmail
@@ -238,5 +247,6 @@ const SettingsDataService = (function () {
         changePhone,
         requestDataExport,
         disable2FA,
+        saveLeaderboard,
     };
 })();

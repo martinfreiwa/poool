@@ -333,17 +333,7 @@ function formatFileSize(bytes) {
 }
 
 function showToast(message) {
-  let toast = document.getElementById("upload-error-toast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "upload-error-toast";
-    toast.style.cssText =
-      "position:fixed;top:24px;right:24px;background:#f04438;color:#fff;padding:16px 24px;border-radius:8px;z-index:9999;font-size:0.95rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-width:400px;";
-    document.body.appendChild(toast);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, message, "info");
   }
-  toast.textContent = message;
-  toast.style.display = "block";
-  setTimeout(() => {
-    toast.style.display = "none";
-  }, 5000);
 }

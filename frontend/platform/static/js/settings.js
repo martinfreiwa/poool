@@ -19,32 +19,10 @@
   // ─── Toast Notification System ──────────────────────────────
 
   function showToast(message, type) {
-    const container = document.getElementById("settings-toast-container");
-    if (!container) return;
-
-    const toast = document.createElement("div");
-    toast.className = `settings-toast settings-toast--${type}`;
-
-    const msgSpan = document.createElement("span");
-    msgSpan.className = "settings-toast__message";
-    msgSpan.textContent = message;
-
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "settings-toast__close";
-    closeBtn.setAttribute("aria-label", "Close notification");
-    closeBtn.textContent = "×";
-    closeBtn.addEventListener("click", () => toast.remove());
-
-    toast.appendChild(msgSpan);
-    toast.appendChild(closeBtn);
-    container.appendChild(toast);
-
-    requestAnimationFrame(() => toast.classList.add("settings-toast--visible"));
-    setTimeout(() => {
-      toast.classList.remove("settings-toast--visible");
-      setTimeout(() => toast.remove(), 300);
-    }, 4000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, message, type);
   }
+}
 
   // ─── State Layer Switcher ────────────────────────────────────
 

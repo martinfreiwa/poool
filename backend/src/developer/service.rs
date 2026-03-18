@@ -62,13 +62,16 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
             .await
             .unwrap_or(0);
 
-    // ── 2. Total Sales (sum of investments for developer's assets) ──
+    // ── 2. Total Sales (sum of investments for developer's approved/live assets) ──
     let total_sales_cents: i64 = sqlx::query_scalar(
         r#"
         SELECT COALESCE(SUM(i.purchase_value_cents), 0)::bigint
         FROM investments i
         JOIN assets a ON a.id = i.asset_id
+        INNER JOIN developer_projects dp ON dp.asset_id = a.id
         WHERE a.developer_user_id = $1
+          AND dp.status IN ('approved', 'live')
+          AND a.deleted_at IS NULL
           AND i.status != 'exited'
         "#,
     )
@@ -77,13 +80,16 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     .await
     .unwrap_or(0);
 
-    // ── 3. Total Investors (distinct users who invested in developer's assets) ──
+    // ── 3. Total Investors (distinct users who invested in developer's approved/live assets) ──
     let total_investors: i64 = sqlx::query_scalar(
         r#"
         SELECT COUNT(DISTINCT i.user_id)::bigint
         FROM investments i
         JOIN assets a ON a.id = i.asset_id
+        INNER JOIN developer_projects dp ON dp.asset_id = a.id
         WHERE a.developer_user_id = $1
+          AND dp.status IN ('approved', 'live')
+          AND a.deleted_at IS NULL
           AND i.status != 'exited'
         "#,
     )
@@ -92,13 +98,16 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     .await
     .unwrap_or(0);
 
-    // ── 4. New Investors (invested in the last 30 days) ─────────────
+    // ── 4. New Investors (invested in the last 30 days, approved/live only) ─────────────
     let new_investors: i64 = sqlx::query_scalar(
         r#"
         SELECT COUNT(DISTINCT i.user_id)::bigint
         FROM investments i
         JOIN assets a ON a.id = i.asset_id
+        INNER JOIN developer_projects dp ON dp.asset_id = a.id
         WHERE a.developer_user_id = $1
+          AND dp.status IN ('approved', 'live')
+          AND a.deleted_at IS NULL
           AND i.purchased_at >= NOW() - INTERVAL '30 days'
         "#,
     )
@@ -107,8 +116,7 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     .await
     .unwrap_or(0);
 
-    // ── 5. Total Views (from asset_views if the table exists, else 0) ──
-    // We'll try the query; if the table doesn't exist yet, fallback to 0.
+    // ── 5. Total Views (from asset_views, approved/live assets only) ──
     let total_views: i64 = sqlx::query_scalar(
         r#"
         SELECT COALESCE(SUM(view_count), 0)::bigint
@@ -116,7 +124,10 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
             SELECT COUNT(*)::bigint AS view_count
             FROM asset_views av
             JOIN assets a ON a.id = av.asset_id
+            INNER JOIN developer_projects dp ON dp.asset_id = a.id
             WHERE a.developer_user_id = $1
+              AND dp.status IN ('approved', 'live')
+              AND a.deleted_at IS NULL
         ) sub
         "#,
     )
@@ -132,13 +143,16 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
         0.0
     };
 
-    // ── 7. Sold Out Ratio ───────────────────────────────────────────
+    // ── 7. Sold Out Ratio (approved/live assets only) ───────────────
     let funded_assets: i64 = sqlx::query_scalar(
         r#"
         SELECT COUNT(*)::bigint
-        FROM assets
-        WHERE developer_user_id = $1
-          AND tokens_available = 0
+        FROM assets a
+        INNER JOIN developer_projects dp ON dp.asset_id = a.id
+        WHERE a.developer_user_id = $1
+          AND dp.status IN ('approved', 'live')
+          AND a.deleted_at IS NULL
+          AND a.tokens_available = 0
         "#,
     )
     .bind(developer_id)
@@ -152,13 +166,16 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
         0.0
     };
 
-    // ── 8. Avg. Investment Amount ───────────────────────────────────
+    // ── 8. Avg. Investment Amount (approved/live assets only) ───────
     let avg_investment_cents: i64 = sqlx::query_scalar(
         r#"
         SELECT COALESCE(AVG(i.purchase_value_cents), 0)::bigint
         FROM investments i
         JOIN assets a ON a.id = i.asset_id
+        INNER JOIN developer_projects dp ON dp.asset_id = a.id
         WHERE a.developer_user_id = $1
+          AND dp.status IN ('approved', 'live')
+          AND a.deleted_at IS NULL
           AND i.status != 'exited'
         "#,
     )
@@ -167,7 +184,7 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     .await
     .unwrap_or(0);
 
-    // ── 8.5 Period-Over-Period calculations ──────────────────────────────
+    // ── 8.5 Period-Over-Period calculations (approved/live only) ──────
     let pop_row = sqlx::query!(
         r#"
         WITH current_period AS (
@@ -177,7 +194,10 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
                 COALESCE(AVG(i.purchase_value_cents), 0)::bigint AS avg_investment
             FROM investments i
             JOIN assets a ON a.id = i.asset_id
+            INNER JOIN developer_projects dp ON dp.asset_id = a.id
             WHERE a.developer_user_id = $1 AND i.status != 'exited'
+              AND dp.status IN ('approved', 'live')
+              AND a.deleted_at IS NULL
               AND i.purchased_at >= NOW() - INTERVAL '30 days'
         ),
         prev_period AS (
@@ -187,7 +207,10 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
                 COALESCE(AVG(i.purchase_value_cents), 0)::bigint AS avg_investment
             FROM investments i
             JOIN assets a ON a.id = i.asset_id
+            INNER JOIN developer_projects dp ON dp.asset_id = a.id
             WHERE a.developer_user_id = $1 AND i.status != 'exited'
+              AND dp.status IN ('approved', 'live')
+              AND a.deleted_at IS NULL
               AND i.purchased_at >= NOW() - INTERVAL '60 days'
               AND i.purchased_at < NOW() - INTERVAL '30 days'
         )

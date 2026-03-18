@@ -12,7 +12,7 @@
       <!-- Page Header -->
       <div id="developer-assets-page-header" class="ds-page-header">
         <div class="ds-page-header__title-row">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8"
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.8"
             stroke-linecap="round" stroke-linejoin="round" class="ds-page-header__icon poool-icon-custom">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
             <path d="M3 9h18"/>
@@ -150,6 +150,42 @@
             </div>
           </div>
           {% endfor %}
+
+          <!-- Tab empty-state ghost cards (hidden by default, shown by JS) -->
+          <div id="dev-tab-empty-state" class="dev-tab-empty-wrap" style="display:none;">
+            <p class="dev-tab-empty-msg" id="dev-tab-empty-title">No funded assets yet</p>
+            <p class="dev-tab-empty-sub" id="dev-tab-empty-cta">Once your properties reach 100% funding they will appear here</p>
+            <div class="dev-tab-empty-grid">
+              {% for _ in range(6) %}
+              <div class="ghost-card">
+                <div class="ghost-card__image">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D5D7DA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </div>
+                <div class="ghost-card__content">
+                  <div class="ghost-card__meta">
+                    <span class="skel-pill"></span>
+                    <span class="skel-pill skel-pill--wide"></span>
+                  </div>
+                  <span class="skel-line skel-line--title"></span>
+                  <div class="ghost-card__price-row">
+                    <span class="skel-line skel-line--price"></span>
+                    <span class="skel-line skel-line--pct"></span>
+                  </div>
+                  <div class="ghost-card__progress"><div class="ghost-card__progress-fill"></div></div>
+                  <div class="ghost-card__details">
+                    <div class="ghost-card__detail-row"><span class="skel-line skel-line--label"></span><span class="skel-line skel-line--val"></span></div>
+                    <div class="ghost-card__detail-row"><span class="skel-line skel-line--label"></span><span class="skel-line skel-line--val"></span></div>
+                    <div class="ghost-card__detail-row"><span class="skel-line skel-line--label"></span><span class="skel-line skel-line--val"></span></div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
         {% else %}
           <!-- Empty State — Full page -->
           <div class="dev-empty-state">
@@ -204,6 +240,7 @@
       document.getElementById('dev-tab-' + tab).classList.add('active');
 
       const cards = document.querySelectorAll('#dev-assets-grid .property-card');
+      let visibleCount = 0;
       cards.forEach(card => {
         let isFunded = false;
         try {
@@ -213,18 +250,30 @@
             const pct = parseFloat(card.dataset.fundingPct) || 0;
             isFunded = isFundedStatus || fundedStr === 'true' || pct >= 100;
         } catch(e) { console.error("Filter error:", e); }
-        
-        if (tab === 'available') {
-          card.style.setProperty('display', isFunded ? 'none' : 'flex', 'important');
-        } else {
-          card.style.setProperty('display', isFunded ? 'flex' : 'none', 'important');
-        }
+
+        const show = tab === 'available' ? !isFunded : isFunded;
+        card.style.setProperty('display', show ? 'flex' : 'none', 'important');
+        if (show) visibleCount++;
       });
 
-      // Show empty state if no cards visible
-      const visibleCards = document.querySelectorAll('#dev-assets-grid .property-card[style=""]');
-      const emptyState = document.querySelector('.developer-empty-state');
-      // Empty state only shows when there are no assets at all, tab filtering doesn't affect it
+      // Toggle tab-specific empty state placeholder
+      const placeholder = document.getElementById('dev-tab-empty-state');
+      if (placeholder) {
+        const titleEl = document.getElementById('dev-tab-empty-title');
+        const ctaEl   = document.getElementById('dev-tab-empty-cta');
+        if (visibleCount === 0) {
+          if (tab === 'funded') {
+            titleEl.textContent = 'No funded assets yet';
+            ctaEl.textContent   = 'Once your properties reach 100% funding they will appear here';
+          } else {
+            titleEl.textContent = 'No available assets';
+            ctaEl.textContent   = 'Add a new property to get started';
+          }
+          placeholder.style.setProperty('display', 'flex', 'important');
+        } else {
+          placeholder.style.setProperty('display', 'none', 'important');
+        }
+      }
     }
   </script>
 </body>

@@ -718,40 +718,9 @@ function dismissFormError() {
  * Show an inline toast notification (replaces alert() calls)
  */
 function showToast(message, type) {
-  type = type || 'error';
-  var colors = {
-    error:   { bg: '#FEF3F2', border: '#FEE4E2', text: '#B42318', icon: '#F04438' },
-    warning: { bg: '#FFFAEB', border: '#FEDF89', text: '#B54708', icon: '#F79009' },
-    success: { bg: '#ECFDF3', border: '#ABEFC6', text: '#027A48', icon: '#12B76A' },
-  };
-  var c = colors[type] || colors.error;
-
-  var existing = document.getElementById('file-toast');
-  if (existing) existing.remove();
-
-  var toast = document.createElement('div');
-  toast.id = 'file-toast';
-  toast.style.cssText =
-    'position:fixed;top:24px;right:24px;z-index:10000;' +
-    'display:flex;align-items:center;gap:10px;' +
-    'background:' + c.bg + ';border:1px solid ' + c.border + ';' +
-    'border-radius:12px;padding:12px 20px;' +
-    'box-shadow:0 4px 12px rgba(0,0,0,0.1);' +
-    'font-size:14px;font-weight:500;color:' + c.text + ';' +
-    'animation:slideDown 0.3s ease;max-width:400px;';
-  toast.innerHTML =
-    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + c.icon + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-      '<circle cx="12" cy="12" r="10"/>' +
-      '<line x1="12" y1="8" x2="12" y2="12"/>' +
-      '<line x1="12" y1="16" x2="12.01" y2="16"/>' +
-    '</svg>' +
-    '<span>' + escFormHtml(message) + '</span>';
-
-  document.body.appendChild(toast);
-  setTimeout(function () {
-    toast.style.animation = 'fadeOut 0.3s ease';
-    setTimeout(function () { if (toast.parentNode) toast.remove(); }, 300);
-  }, 4000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, message, type);
+  }
 }
 
 // ─── File Upload Handlers ───

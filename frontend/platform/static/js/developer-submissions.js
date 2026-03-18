@@ -565,9 +565,7 @@ function confirmDelete(assetId, title) {
 // ─── Toast ────────────────────────────────────────────────
 
 function showToast(type, msg) {
-  const t = document.createElement("div");
-  t.className = `sub-toast sub-toast--${type}`;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, msg, type);
+  }
 }

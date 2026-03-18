@@ -440,17 +440,9 @@ async function resolveDispute(disputeId) {
 }
 
 function showToast(msg, type = "success") {
-  const colors = {
-    success: "var(--admin-success)",
-    info: "var(--admin-info)",
-    warning: "var(--admin-warning)",
-    danger: "var(--admin-danger)",
-  };
-  const t = document.createElement("div");
-  t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;background:${colors[type] || colors.success};color:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.2);animation:admin-fadeIn 0.25s ease;`;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, msg, type);
+  }
 }
 
 // ─── Helpers ────────────────────────────────────────────────────

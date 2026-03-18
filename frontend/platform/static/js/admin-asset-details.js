@@ -484,10 +484,7 @@ function orderStatusBadge(status) {
 }
 
 function showToast(msg) {
-  const t = document.createElement("div");
-  t.style.cssText =
-    "position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;background:var(--admin-success);color:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.2);animation:admin-fadeIn 0.25s ease;";
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, msg, "info");
+  }
 }

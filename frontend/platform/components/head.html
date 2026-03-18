@@ -166,8 +166,9 @@
     {% endif %}
 
     <!-- CSS Bundle (design system + common styles, built by build-bundle.sh) -->
-    <link rel="stylesheet" href="/static/css/bundle.css?v=1.1.0" />
+    <link rel="stylesheet" href="/static/css/bundle.css?v={{ asset_version }}" />
     <link rel="stylesheet" href="/static/css/poool-dropdown.css?v={{ asset_version }}" />
+    <script src="/static/js/toast.js?v={{ asset_version }}"></script>
     <script src="/static/js/user-data.js?v={{ asset_version }}"></script>
     <script src="/static/js/poool-dropdown.js?v={{ asset_version }}"></script>
     <script src="/static/js/poool-dropdown-init.js?v={{ asset_version }}"></script>

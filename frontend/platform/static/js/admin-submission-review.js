@@ -1163,26 +1163,7 @@ function esc(str) {
 }
 
 function showToast(message, type = "info") {
-  const existing = document.getElementById("admin-toast");
-  if (existing) existing.remove();
-
-  const colors = {
-    info: "var(--admin-primary)",
-    error: "var(--admin-danger)",
-    success: "var(--admin-success)",
-  };
-  const toast = document.createElement("div");
-  toast.id = "admin-toast";
-  toast.style.cssText = `
-        position:fixed;bottom:24px;right:24px;z-index:9999;
-        background:var(--admin-bg-card);border:1px solid var(--admin-border);
-        border-left:4px solid ${colors[type] || colors.info};
-        border-radius:8px;padding:14px 20px;max-width:400px;
-        box-shadow:0 8px 24px rgba(0,0,0,.15);
-        font-size:13px;color:var(--admin-text-primary);
-        animation:admin-fadeIn .2s ease-out;
-    `;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 5000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, message, type);
+  }
 }

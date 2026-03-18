@@ -402,25 +402,10 @@
     }
 
     function showToast(title, message, type) {
-        const colors = {
-            info: { bg: "#EFF8FF", border: "#B2DDFF", text: "#1570EF" },
-            error: { bg: "#FEF3F2", border: "#FECDCA", text: "#B42318" },
-        };
-        const c = colors[type] || colors.info;
-        const toast = document.createElement("div");
-        toast.style.cssText = "position:fixed;top:24px;right:24px;z-index:99999;max-width:360px;background:" + c.bg + ";border:1px solid " + c.border + ";border-radius:12px;padding:16px 20px;box-shadow:0 8px 24px rgba(0,0,0,0.1);font-family:inherit;animation:slideIn 0.25s ease;";
-        // Use DOM construction instead of innerHTML to prevent XSS
-        var titleDiv = document.createElement("div");
-        titleDiv.style.cssText = "font-weight:600;font-size:14px;color:" + c.text + ";margin-bottom:4px;";
-        titleDiv.textContent = title;
-        var msgDiv = document.createElement("div");
-        msgDiv.style.cssText = "font-size:13px;color:#475467;";
-        msgDiv.textContent = message;
-        toast.appendChild(titleDiv);
-        toast.appendChild(msgDiv);
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 7000);
-    }
+  if(window.showPooolToast) {
+    window.showPooolToast(title, message, type);
+  }
+}
 
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", handleUrlParams);

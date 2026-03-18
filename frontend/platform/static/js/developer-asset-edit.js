@@ -414,13 +414,8 @@
   }
 
   function showToast(type, msg) {
-    // Remove existing toasts
-    document.querySelectorAll(".dev-toast").forEach((t) => t.remove());
-
-    const t = document.createElement("div");
-    t.className = `dev-toast ${type}`;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3200);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, msg, type);
   }
+}
 })();

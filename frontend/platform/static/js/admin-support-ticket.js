@@ -433,23 +433,9 @@ async function sendReply() {
 }
 
 function showToast(msg, type = "info") {
-  const container = document.getElementById("toast-container");
-  if (!container) return;
-  const toast = document.createElement("div");
-  const colors = {
-    success: "var(--admin-success)",
-    warning: "var(--admin-warning)",
-    danger: "var(--admin-danger)",
-    info: "var(--admin-info)",
-  };
-  toast.style.cssText = `background:var(--admin-bg-card);border-left:4px solid ${colors[type] || colors.info};color:var(--admin-text-primary);padding:14px 20px;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-size:13px;font-weight:500;display:flex;align-items:center;gap:12px;animation:admin-fadeIn 0.3s ease-out;`;
-  toast.innerHTML = `<div>${esc(msg)}</div>`;
-  container.appendChild(toast);
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transition = "opacity 0.3s";
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, msg, type);
+  }
 }
 
 function esc(s) {

@@ -338,3 +338,151 @@
     text-align: center;
   }
 }
+
+/* ── Tab-specific empty-state ghost cards ────────────────── */
+.dev-tab-empty-wrap {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.dev-tab-empty-msg {
+  font-size: 17px;
+  font-weight: 600;
+  color: #181D27;
+  margin: 0;
+  text-align: center;
+}
+
+.dev-tab-empty-sub {
+  font-size: 14px;
+  color: #717680;
+  margin: 0 0 16px;
+  text-align: center;
+}
+
+.dev-tab-empty-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+/* Individual ghost card — mirrors .property-card shape */
+.ghost-card {
+  border: 2px dashed #D5D7DA;
+  border-radius: 16px;
+  background: #FAFBFC;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  opacity: 0.7;
+}
+
+.ghost-card__image {
+  width: 100%;
+  height: 180px;
+  background: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 2px dashed #E4E7EC;
+}
+
+.ghost-card__content {
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Skeleton primitives */
+.skel-line {
+  display: block;
+  border-radius: 4px;
+  background: #E4E7EC;
+}
+
+.skel-pill {
+  display: inline-block;
+  height: 10px;
+  width: 36px;
+  border-radius: 4px;
+  background: #E4E7EC;
+}
+.skel-pill--wide { width: 64px; }
+
+.skel-line--title {
+  height: 14px;
+  width: 60%;
+}
+
+.skel-line--price {
+  height: 16px;
+  width: 45%;
+}
+.skel-line--pct {
+  height: 12px;
+  width: 22%;
+}
+
+.skel-line--label {
+  height: 10px;
+  width: 50%;
+}
+.skel-line--val {
+  height: 10px;
+  width: 20%;
+}
+
+/* Meta row */
+.ghost-card__meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Price row */
+.ghost-card__price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Progress bar */
+.ghost-card__progress {
+  height: 5px;
+  border-radius: 3px;
+  background: #E9EAEB;
+  width: 100%;
+}
+
+.ghost-card__progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: #C5C7CD;
+}
+
+/* Detail rows */
+.ghost-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #F0F0F0;
+}
+
+.ghost-card__detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .dev-tab-empty-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

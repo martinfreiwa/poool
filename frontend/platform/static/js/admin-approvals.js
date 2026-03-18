@@ -330,11 +330,8 @@
   }
 
   function showToast(msg, type) {
-    const colors = { success: "#22c55e", error: "#ef4444", info: "#6366f1" };
-    const t = document.createElement("div");
-    t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:14px 22px;border-radius:12px;font-size:14px;font-weight:500;background:${colors[type] || colors.info};color:#fff;box-shadow:0 8px 30px rgba(0,0,0,0.2);animation:fadeIn 0.25s ease;max-width:500px;`;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 5000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, msg, type);
   }
+}
 })();

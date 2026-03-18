@@ -520,23 +520,10 @@
   }
 
   function showToast(msg, type) {
-    const colors = { success: "#22c55e", error: "#ef4444", info: "#6366f1" };
-    const t = document.createElement("div");
-    t.className = "support-toast support-toast--" + (type || "info");
-    t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:14px 22px;border-radius:12px;font-size:14px;font-weight:500;background:${colors[type] || colors.info};color:#fff;box-shadow:0 8px 30px rgba(0,0,0,0.2);opacity:0;transform:translateY(10px);transition:opacity 0.25s ease,transform 0.25s ease;`;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    // Trigger animation
-    requestAnimationFrame(() => {
-      t.style.opacity = "1";
-      t.style.transform = "translateY(0)";
-    });
-    setTimeout(() => {
-      t.style.opacity = "0";
-      t.style.transform = "translateY(10px)";
-      setTimeout(() => t.remove(), 300);
-    }, 4000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, msg, type);
   }
+}
 
   function getCookie(name) {
     const value = `; ${document.cookie}`;

@@ -81,7 +81,7 @@ async function initLoadData() {
         loadPaymentMethods();
 
         // Load leaderboard preferences
-        loadLeaderboardPreferences();
+        loadLeaderboardPreferences(data);
 
         document.getElementById('settings-loading-skeleton').classList.add('hidden');
         document.getElementById('settings-content').classList.remove('hidden');
@@ -258,7 +258,8 @@ function populatePreferenceData(prefs) {
     document.getElementById('edit-timezone').value = prefs.timezone || 'America/Los_Angeles';
     document.getElementById('edit-currency').value = prefs.currency || 'USD';
     
-    document.getElementById('settings-notify-email').checked = prefs.notify_marketing_email || false;
+    document.getElementById('settings-notify-email').checked = prefs.email_notifications ?? true;
+    document.getElementById('settings-notify-push').checked = prefs.push_notifications ?? true;
 }
 
 function populateSessions(sessions) {
@@ -698,37 +699,9 @@ async function exportData() {
 // ═══════════════════════════════════════════════════════════════
 
 function showToast(message, type = 'info') {
-    const container = document.getElementById('settings-toast-container');
-    if (!container) return;
-    
-    const icons = {
-        success: '✓',
-        error: '✕',
-        info: 'ℹ'
-    };
-    
-    const toast = document.createElement('div');
-    toast.className = `settings-toast settings-toast--${type}`;
-    const safeMessage = escapeSearchHtml(message); // Reuse existing escape function
-    
-    toast.innerHTML = `
-        <span>${icons[type] || 'ℹ'}</span>
-        <span>${safeMessage}</span>
-        <button class="settings-toast__close" onclick="this.parentElement.remove()">×</button>
-    `;
-    
-    container.appendChild(toast);
-    
-    // Trigger animation
-    requestAnimationFrame(() => {
-        toast.classList.add('settings-toast--visible');
-    });
-    
-    // Auto-dismiss after 4 seconds
-    setTimeout(() => {
-        toast.classList.remove('settings-toast--visible');
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
+  if(window.showPooolToast) {
+    window.showPooolToast(null, message, type);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1027,20 +1000,13 @@ document.addEventListener('click', (e) => {
 /**
  * Load and save leaderboard preferences
  */
-async function loadLeaderboardPreferences() {
-    try {
-        const resp = await fetch('/api/leaderboard/preferences');
-        if (!resp.ok) return;
-        const data = await resp.json();
-        const vEl = document.getElementById('settings-lb-visible');
-        const aEl = document.getElementById('settings-lb-avatar');
-        const nEl = document.getElementById('settings-lb-display-name');
-        if (vEl) vEl.checked = data.visible || false;
-        if (aEl) aEl.checked = data.show_avatar || false;
-        if (nEl) nEl.value = data.display_name || '';
-    } catch (e) {
-        console.error('Failed to load leaderboard preferences:', e);
-    }
+function loadLeaderboardPreferences(data) {
+    const vEl = document.getElementById('settings-lb-visible');
+    const aEl = document.getElementById('settings-lb-avatar');
+    const nEl = document.getElementById('settings-lb-display-name');
+    if (vEl) vEl.checked = data.lb_visible || false;
+    if (aEl) aEl.checked = data.lb_avatar || false;
+    if (nEl) nEl.value = data.lb_display_name || '';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1055,21 +1021,52 @@ document.addEventListener('DOMContentLoaded', function() {
                     show_avatar: document.getElementById('settings-lb-avatar')?.checked || false,
                     display_name: document.getElementById('settings-lb-display-name')?.value || '',
                 };
-                const resp = await fetch('/api/leaderboard/preferences', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getSettingsCsrfToken() },
-                    body: JSON.stringify(body),
-                });
-                if (resp.ok) {
+                const result = await SettingsDataService.saveLeaderboard(body);
+                if (result && result.success !== false) {
                     showToast('Leaderboard settings saved', 'success');
                 } else {
-                    showToast('Failed to save leaderboard settings', 'error');
+                    showToast(result?.message || 'Failed to save leaderboard settings', 'error');
                 }
             } catch (e) {
                 showToast('Network error', 'error');
             }
             lbBtn.disabled = false;
             lbBtn.textContent = 'Save Leaderboard Settings';
+        });
+    }
+
+    const locBtn = document.getElementById('save-localization-btn');
+    if (locBtn) {
+        locBtn.addEventListener('click', async function() {
+            locBtn.disabled = true;
+            locBtn.textContent = 'Saving...';
+            try {
+                const prefsBody = {
+                    language: 'en',
+                    currency: document.getElementById('edit-currency')?.value || 'USD',
+                };
+                const notifsBody = {
+                    email_notifications: document.getElementById('settings-notify-email')?.checked || false,
+                    push_notifications: document.getElementById('settings-notify-push')?.checked || false,
+                };
+                const profileBody = {
+                    timezone: document.getElementById('edit-timezone')?.value || 'America/Los_Angeles'
+                };
+                
+                const r1 = await SettingsDataService.savePreferences(prefsBody);
+                const r2 = await SettingsDataService.saveNotifications(notifsBody);
+                const r3 = await SettingsDataService.saveProfile(profileBody); // timezone is in profile
+                
+                if (r1 && r1.success !== false && r2 && r2.success !== false && r3 && r3.success !== false) {
+                    showToast('Preferences updated successfully', 'success');
+                } else {
+                    showToast(r1?.message || r2?.message || r3?.message || 'Failed to save preferences', 'error');
+                }
+            } catch (e) {
+                showToast('Network error', 'error');
+            }
+            locBtn.disabled = false;
+            locBtn.textContent = 'Update Preferences';
         });
     }
 });
