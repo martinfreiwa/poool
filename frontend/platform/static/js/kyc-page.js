@@ -49,7 +49,12 @@ document.addEventListener("alpine:init", () => {
           const data = await statusResp.json();
           this.status = data.status || "not_started";
           if (data.provider) this.provider = data.provider;
+        } else if (statusResp.status === 401) {
+          // Not authenticated — redirect to login
+          window.location.href = "/auth/login";
+          return;
         } else {
+          console.warn("KYC status API returned:", statusResp.status);
           this.status = "not_started";
         }
 
@@ -63,7 +68,7 @@ document.addEventListener("alpine:init", () => {
       } catch (err) {
         console.error("KYC initialization failed:", err);
         if (typeof Sentry !== 'undefined') Sentry.captureException(err);
-        this.status = "not_started";
+        this.status = "error";
       }
     },
 

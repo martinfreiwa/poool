@@ -108,6 +108,35 @@ include "components/head.html" %}{% endwith %}
           <!-- Main Content Card -->
           <div class="kyc-card ds-card">
 
+          <!-- LOADING STATE -->
+            <template x-if="status === 'loading'">
+              <div class="kyc-center-state">
+                <div class="kyc-status-icon kyc-status-icon--start" style="animation: pulse 1.5s ease-in-out infinite;">
+                  <svg  width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                </div>
+                <h2 class="kyc-state-title">Loading...</h2>
+                <p class="kyc-state-desc">Checking your verification status</p>
+              </div>
+            </template>
+
+            <!-- ERROR STATE -->
+            <template x-if="status === 'error'">
+              <div class="kyc-center-state">
+                <div class="kyc-status-icon kyc-status-icon--rejected">
+                  <svg  width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b42318" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
+                <h2 class="kyc-state-title">Connection Error</h2>
+                <p class="kyc-state-desc">Unable to check your verification status. Please try refreshing the page.</p>
+                <button class="kyc-btn-primary full-width-btn" onclick="window.location.reload()">Refresh Page</button>
+              </div>
+            </template>
+
             <!-- NOT STARTED STATE -->
             <template x-if="canStartVerification()">
               <div>
