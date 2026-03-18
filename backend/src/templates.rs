@@ -43,7 +43,7 @@ pub fn create_engine() -> Templates {
         let len = chars.len();
         let mut result = String::new();
         for (i, ch) in chars.iter().enumerate() {
-            if i > 0 && (len - i) % 3 == 0 {
+            if i > 0 && (len - i).is_multiple_of(3) {
                 result.push(',');
             }
             result.push(*ch);

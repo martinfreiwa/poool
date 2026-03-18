@@ -150,9 +150,9 @@ pub async fn api_admin_approvals_create(
         }
         Err(e) => {
             tracing::error!("Failed to create approval request: {e}");
-            return Err(ApiError::Internal(
+            Err(ApiError::Internal(
                 "Failed to create approval request".to_string(),
-            ));
+            ))
         }
     }
 }
@@ -396,7 +396,6 @@ async fn execute_approved_action(
             payments::service::confirm_deposit(&state.db, &provider_ref)
                 .await
                 .map(|_| serde_json::json!({"deposit_id": eid.to_string(), "confirmed": true}))
-                .map_err(|e| e)
         }
         "deposit.cancel" => {
             let eid = entity_id.ok_or("entity_id required")?;

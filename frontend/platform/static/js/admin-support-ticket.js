@@ -252,12 +252,14 @@ async function renderTicket() {
         const timeStr = fmtDateTime(m.created_at);
 
         let content = m.content || "";
-        if (content.trim().startsWith("<")) {
-          content = content.replace(
-            /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-            "",
-          );
+        const isRich = (m.author_role === "agent" || m.author_role === "admin" || m.type === "internal_note");
+
+        if (isRich) {
+          // Content from Admins (Quill) is HTML. Backend sanitizes this via ammonia.
+          // We still strip scripts for defence-in-depth.
+          content = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
         } else {
+          // Content from Customers is ALWAYS treated as plain text and escaped.
           content = esc(content).replace(/\n/g, "<br>");
         }
 

@@ -153,7 +153,7 @@ pub async fn api_admin_emails_create(
         Ok(_) => Ok(Json(serde_json::json!({"status":"created"})).into_response()),
         Err(e) => {
             tracing::error!("Failed to create template: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -188,7 +188,7 @@ pub async fn api_admin_emails_update(
         Ok(_) => Ok(Json(serde_json::json!({"status":"updated"})).into_response()),
         Err(e) => {
             tracing::error!("Failed to update template: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -212,7 +212,7 @@ pub async fn api_admin_emails_campaign(
         return Err(ApiError::BadRequest("Template ID required".to_string()));
     }
 
-    let uid = ApiError::parse_uuid(&template_id)?;
+    let uid = ApiError::parse_uuid(template_id)?;
 
     let t_row = sqlx::query("SELECT subject FROM email_templates WHERE id = $1")
         .bind(uid)

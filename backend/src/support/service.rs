@@ -1,6 +1,7 @@
 use super::db;
 use super::models::SupportTicketWithReplies;
 use crate::AppState;
+use crate::common::sanitize;
 use anyhow::Result;
 use uuid::Uuid;
 
@@ -116,8 +117,11 @@ pub async fn submit_ticket(
     });
 
     // 2. Insert the Ticket (returns ticket_id AND reply_id)
+    let sanitized_subject = sanitize::sanitize_text(subject);
+    let sanitized_message = sanitize::sanitize_multiline(message);
+
     let (ticket_id, reply_id) = db::create_ticket_v2(
-        &state.db, user_id, subject, message, priority, category, &combined_context,
+        &state.db, user_id, &sanitized_subject, &sanitized_message, priority, category, &combined_context,
     )
     .await?;
 
@@ -171,7 +175,9 @@ pub async fn reply_to_ticket(
 
     let author_name = db::get_user_display_name(&state.db, user_id).await;
 
-    db::add_reply(&state.db, ticket_id, user_id, &author_name, message)
+    let sanitized_message = sanitize::sanitize_multiline(message);
+
+    db::add_reply(&state.db, ticket_id, user_id, &author_name, &sanitized_message)
         .await
         .map_err(|e| format!("Failed to add reply: {}", e))?;
 

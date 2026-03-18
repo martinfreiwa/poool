@@ -249,9 +249,9 @@ pub async fn api_admin_support_bulk(
         ),
         Err(e) => {
             tracing::error!("Failed bulk update for support tickets: {:?}", e);
-            return Err(ApiError::Internal(
+            Err(ApiError::Internal(
                 "Failed to execute bulk update".to_string(),
-            ));
+            ))
         }
     }
 }
@@ -322,10 +322,10 @@ pub async fn api_admin_support_update(
         Ok(r) if r.rows_affected() > 0 => {
             Ok(Json(serde_json::json!({"status":"updated"})).into_response())
         }
-        Ok(_) => return Err(ApiError::NotFound("Ticket not found".to_string())),
+        Ok(_) => Err(ApiError::NotFound("Ticket not found".to_string())),
         Err(e) => {
             tracing::error!("Failed to update ticket {ticket_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -535,10 +535,12 @@ pub async fn api_admin_support_ticket_reply(
         .unwrap_or("Admin")
         .to_string();
 
+    let sanitized_content = crate::common::sanitize::sanitize_html(content);
+
     let inserted = sqlx::query(
         "INSERT INTO support_ticket_replies (ticket_id, author_id, author_name, author_role, type, content) VALUES ($1, $2, $3, 'admin', $4, $5)"
     )
-    .bind(uid).bind(current_user.id).bind(&name).bind(mtype).bind(content)
+    .bind(uid).bind(current_user.id).bind(&name).bind(mtype).bind(sanitized_content)
     .execute(&state.db).await;
 
     match inserted {
@@ -551,7 +553,7 @@ pub async fn api_admin_support_ticket_reply(
         }
         Err(e) => {
             tracing::error!("Failed to append reply {ticket_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }

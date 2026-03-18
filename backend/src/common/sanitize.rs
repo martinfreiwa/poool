@@ -1,9 +1,9 @@
-/// HTML sanitization utilities for preventing stored XSS attacks.
-///
-/// All user-supplied text fields that will be rendered in HTML templates
-/// must be sanitized before storage. This module provides a `sanitize_html()`
-/// function that strips dangerous HTML tags and attributes while preserving
-/// safe content like plain text and basic formatting.
+//! HTML sanitization utilities for preventing stored XSS attacks.
+//!
+//! All user-supplied text fields that will be rendered in HTML templates
+//! must be sanitized before storage. This module provides a `sanitize_html()`
+//! function that strips dangerous HTML tags and attributes while preserving
+//! safe content like plain text and basic formatting.
 
 /// Strip HTML tags from a string, returning only the text content.
 /// This is the most conservative approach — no HTML is allowed.
@@ -76,6 +76,34 @@ pub fn sanitize_multiline(input: &str) -> String {
     }
 
     result.trim().to_string()
+}
+
+/// Sanitize a rich-text (HTML) field using the `ammonia` library.
+///
+/// This is used for Quill editor content (support replies, admin notes).
+/// - Allows: b, i, u, s, p, br, blockquote, code, ol, ul, li, div, h1, h2, h3, span
+/// - Attributes: style (limited), href, target
+/// - Strips all scripts, event handlers, and dangerous attributes.
+pub fn sanitize_html(input: &str) -> String {
+    let mut cleaner = ammonia::Builder::new();
+    
+    // Configure safe tags
+    cleaner.tags(maplit::hashset![
+        "b", "i", "u", "s", "p", "br", "blockquote", "code", "pre",
+        "ol", "ul", "li", "div", "h1", "h2", "h3", "span", "a", "strong", "em"
+    ]);
+
+    // Allowed attributes - only on specific tags
+    cleaner.tag_attributes(maplit::hashmap![
+        "a" => maplit::hashset!["href", "target", "rel"],
+        "span" => maplit::hashset!["style"],
+        "div" => maplit::hashset!["style"]
+    ]);
+
+    // Add safe rel to links
+    cleaner.link_rel(Some("noopener noreferrer"));
+
+    cleaner.clean(input).to_string()
 }
 
 /// Sanitize a URL field — only allow http/https/mailto schemes.

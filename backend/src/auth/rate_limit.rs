@@ -1,10 +1,10 @@
-/// Rate limiter for authentication endpoints.
-///
-/// Supports two backends:
-/// - **In-memory** (default): HashMap-based, resets on restart, not shared across instances.
-/// - **Redis** (when REDIS_URL is set): Shared across Cloud Run instances, survives restarts.
-///
-/// Both implement the same sliding-window algorithm: max N requests per key per window.
+//! Rate limiter for authentication endpoints.
+//!
+//! Supports two backends:
+//! - **In-memory** (default): HashMap-based, resets on restart, not shared across instances.
+//! - **Redis** (when REDIS_URL is set): Shared across Cloud Run instances, survives restarts.
+//!
+//! Both implement the same sliding-window algorithm: max N requests per key per window.
 
 use std::collections::HashMap;
 use std::sync::Arc;

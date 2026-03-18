@@ -242,7 +242,7 @@ pub async fn api_admin_rewards_balance_adjust(
         Err(e) => {
             let _ = tx.rollback().await;
             tracing::error!("Failed to adjust rewards balance {user_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -293,10 +293,10 @@ pub async fn api_admin_tier_update(
         Ok(r) if r.rows_affected() > 0 => {
             Ok(Json(serde_json::json!({"status":"updated"})).into_response())
         }
-        Ok(_) => return Err(ApiError::NotFound("Tier not found".to_string())),
+        Ok(_) => Err(ApiError::NotFound("Tier not found".to_string())),
         Err(e) => {
             tracing::error!("Failed to update tier {tier_name}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -344,7 +344,7 @@ pub async fn api_admin_tier_create(
         Ok(_) => Ok(Json(serde_json::json!({"status":"created"})).into_response()),
         Err(e) => {
             tracing::error!("Failed to create tier {}: {e}", payload.name);
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -481,10 +481,10 @@ pub async fn api_admin_referral_update(
 
             Ok(Json(serde_json::json!({"status":"updated"})).into_response())
         }
-        Ok(_) => return Err(ApiError::NotFound("Referral not found".to_string())),
+        Ok(_) => Err(ApiError::NotFound("Referral not found".to_string())),
         Err(e) => {
             tracing::error!("Failed to update referral {ref_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }

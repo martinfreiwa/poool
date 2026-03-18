@@ -172,7 +172,7 @@ pub async fn api_admin_dividends_calculate(
         return Err(ApiError::BadRequest("Invalid parameters".to_string()));
     }
 
-    let aid = ApiError::parse_uuid(&asset_id)?;
+    let aid = ApiError::parse_uuid(asset_id)?;
 
     // Get total tokens owned for this asset
     let total_tokens_owned_res: Result<Option<i32>, _> = sqlx::query_scalar(
@@ -233,7 +233,7 @@ pub async fn api_admin_dividends_process(
         return Err(ApiError::BadRequest("Invalid parameters".to_string()));
     }
 
-    let aid = ApiError::parse_uuid(&asset_id)?;
+    let aid = ApiError::parse_uuid(asset_id)?;
 
     let user = _admin.user.clone();
 
@@ -275,9 +275,9 @@ pub async fn api_admin_dividends_process(
         }
         Err(e) => {
             tracing::error!("Failed to create approval request: {}", e);
-            return Err(ApiError::Internal(
+            Err(ApiError::Internal(
                 "Failed to queue dividend process".to_string(),
-            ));
+            ))
         }
     }
 }

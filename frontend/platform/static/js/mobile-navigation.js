@@ -496,7 +496,7 @@ function initGlobalSearch() {
       title: "Support",
       type: "Page",
       url: "/support",
-      icon: "message-chat-circle grey.svg",
+      icon: "message-chat-circle-grey.svg",
     },
     { title: "Rewards", type: "Page", url: "/rewards", icon: "star-01.svg" },
     {

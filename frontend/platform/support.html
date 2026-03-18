@@ -116,18 +116,18 @@ extra_css=['support'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobi
               <!-- FAQ Suggestion Container -->
               <div id="faq-suggestion-container" class="faq-suggestion-container"></div>
 
-              <div class="support-form-row">
-                <div class="support-form-group support-form-group--no-margin">
-                  <label for="ticket-priority" class="priority-label">Priority <span id="expected-response-time" class="response-time-badge">Response: ~4 hours</span></label>
-                  <select id="ticket-priority" class="ds-select">
-                    <option value="low">Low — General question</option>
-                    <option value="normal" selected>Normal — Standard issue</option>
-                    <option value="high">High — Affecting my account</option>
-                    <option value="urgent">Urgent — Funds at risk</option>
-                  </select>
-                </div>
-                <button type="submit" class="ds-btn ds-btn--primary ds-btn--full support-submit-btn" id="submit-ticket-btn">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+              <div class="support-form-group">
+                <label for="ticket-priority" class="priority-label">Priority <span id="expected-response-time" class="response-time-badge">Response: ~4 hours</span></label>
+                <select id="ticket-priority" class="ds-select">
+                  <option value="low">Low — General question</option>
+                  <option value="normal" selected>Normal — Standard issue</option>
+                  <option value="high">High — Affecting my account</option>
+                  <option value="urgent">Urgent — Funds at risk</option>
+                </select>
+              </div>
+              <div class="support-form-footer">
+                <button type="submit" class="ds-btn ds-btn--primary support-submit-btn" id="submit-ticket-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                   </svg>
                   Submit Ticket

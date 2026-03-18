@@ -2,6 +2,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::models::*;
+use crate::common::sanitize;
 
 /// Ensure user's payment_methods exist, get them list.
 pub async fn list_user_payment_methods(
@@ -63,7 +64,10 @@ pub async fn attach_card(
 
     let label = form
         .label
+        .map(|l| sanitize::sanitize_text(&l))
         .unwrap_or_else(|| format!("{} ending in {}", extracted_brand, extracted_last4));
+
+    let holder_name = sanitize::sanitize_text(&form.holder_name);
 
     let res = sqlx::query_as::<_, PaymentMethod>(
         r#"
@@ -79,7 +83,7 @@ pub async fn attach_card(
     .bind(&form.stripe_payment_method_id)
     .bind(&extracted_brand)
     .bind(&extracted_last4)
-    .bind(form.holder_name)
+    .bind(holder_name)
     .bind(&label)
     .fetch_one(pool)
     .await?;
@@ -105,8 +109,10 @@ pub async fn add_bank(
         &form.account_number[..form.account_number.len().min(8)]
     );
 
-    let default_label = format!("{} ending in {}", form.bank_name, last_four);
-    let final_label = form.label.unwrap_or(default_label);
+    let bank_name = sanitize::sanitize_text(&form.bank_name);
+    let holder_name = sanitize::sanitize_text(&form.account_holder_name);
+    let default_label = format!("{} ending in {}", bank_name, last_four);
+    let final_label = form.label.map(|l| sanitize::sanitize_text(&l)).unwrap_or(default_label);
 
     let res = sqlx::query_as::<_, PaymentMethod>(
         r#"
@@ -121,9 +127,9 @@ pub async fn add_bank(
     )
     .bind(user_id)
     .bind(processor_token)
-    .bind(&form.bank_name)
+    .bind(&bank_name)
     .bind(&last_four)
-    .bind(form.account_holder_name)
+    .bind(holder_name)
     .bind(form.routing_code)
     .bind(form.bank_country)
     .bind(form.bank_system)

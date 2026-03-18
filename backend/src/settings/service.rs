@@ -18,6 +18,7 @@ use uuid::Uuid;
 use super::models::{
     SettingsResponse, UpdateNotificationsForm, UpdatePreferencesForm, UpdateProfileForm,
 };
+use crate::common::sanitize;
 use crate::error::AppError;
 
 // ─── Allowed values ────────────────────────────────────────────
@@ -221,19 +222,9 @@ pub async fn get_settings(
 
 // ─── UPDATE: Profile (My Details tab) ──────────────────────────
 
-/// Sanitize a string to prevent stored XSS by escaping HTML entities.
-fn sanitize_html(input: &str) -> String {
-    input
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&#x27;")
-}
-
-/// Sanitize an optional string field.
+/// Sanitize an optional string field using the common sanitizer.
 fn sanitize_opt(opt: &Option<String>) -> Option<String> {
-    opt.as_ref().map(|s| sanitize_html(s))
+    opt.as_ref().map(|s| sanitize::sanitize_text(s))
 }
 
 /// Update user profile fields (name, phone, country, timezone).

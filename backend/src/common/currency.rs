@@ -1,8 +1,8 @@
-/// Shared currency formatting utilities.
-///
-/// RULE: All monetary values are BIGINT cents — never floats.
-/// These functions format cents as human-readable strings using
-/// integer-only arithmetic.
+//! Shared currency formatting utilities.
+//!
+//! RULE: All monetary values are BIGINT cents — never floats.
+//! These functions format cents as human-readable strings using
+//! integer-only arithmetic.
 
 /// Format cents as USD string: "$1,234.56"
 #[allow(dead_code)]
@@ -21,7 +21,7 @@ pub fn format_usd(cents: i64) -> String {
 
     let bytes = dollar_str.as_bytes();
     for (i, &c) in bytes.iter().enumerate() {
-        if i > 0 && (bytes.len() - i) % 3 == 0 {
+        if i > 0 && (bytes.len() - i).is_multiple_of(3) {
             result.push(',');
         }
         result.push(c as char);
@@ -50,7 +50,7 @@ pub fn format_idr(cents: i64, rate: i64) -> String {
 
     let bytes = val.as_bytes();
     for (i, &c) in bytes.iter().enumerate() {
-        if i > 0 && (bytes.len() - i) % 3 == 0 {
+        if i > 0 && (bytes.len() - i).is_multiple_of(3) {
             result.push('.');
         }
         result.push(c as char);

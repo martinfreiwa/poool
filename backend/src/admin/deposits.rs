@@ -176,13 +176,13 @@ pub async fn api_admin_deposit_cancel(
             Ok(Json(serde_json::json!({"status": "cancelled"})).into_response())
         }
         Ok(_) => {
-            return Err(ApiError::NotFound(
+            Err(ApiError::NotFound(
                 "Not found or already processed".to_string(),
             ))
         }
         Err(e) => {
             tracing::error!("Failed to cancel deposit {tx_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -224,13 +224,13 @@ pub async fn api_admin_deposit_extend_expiry(
             )
         }
         Ok(_) => {
-            return Err(ApiError::NotFound(
+            Err(ApiError::NotFound(
                 "Deposit not found or not pending".to_string(),
             ))
         }
         Err(e) => {
             tracing::error!("Failed to extend deposit expiry {tx_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }

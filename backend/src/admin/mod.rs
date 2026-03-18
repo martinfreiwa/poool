@@ -15,6 +15,7 @@ pub mod audit;
 /// Covers:
 /// - HTML pages under `/admin/*`
 /// - All JSON API endpoints under `/api/admin/*`
+///
 /// Module
 pub mod dashboard;
 /// Module

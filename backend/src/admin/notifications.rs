@@ -86,7 +86,7 @@ pub async fn api_admin_notification_broadcast(
         .into_response()),
         Err(e) => {
             tracing::error!("Broadcast failed: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }

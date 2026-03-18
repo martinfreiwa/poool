@@ -1,4 +1,4 @@
-/// Application configuration loaded from environment variables.
+//! Application configuration loaded from environment variables.
 
 /// Default USD → IDR exchange rate (fallback when live API is unreachable).
 /// Used by: cart display, checkout FX conversion, invoice generation, currency formatting.

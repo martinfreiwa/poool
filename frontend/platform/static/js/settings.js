@@ -718,14 +718,79 @@
   window.submitChangePhone = submitChangePhone;
   window.closeModal = closeModal;
   window.handleProfilePhotoUpload = handleProfilePhotoUpload;
-  window.switchTab = switchTab;
-  window.exportData = exportData;
   window.disable2FA = disable2FA;
+
+  // ─── Event Listeners (CSP Compliant) ────────────────────────
+
+  function setupListeners() {
+    // Tabs
+    document.querySelectorAll('.settings-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.id.replace('tab-', '');
+        switchTab(tabId);
+      });
+    });
+
+    // Profile Save/Cancel
+    document.querySelectorAll('.btn-save-profile').forEach(btn => btn.addEventListener('click', saveProfile));
+    document.querySelectorAll('.btn-cancel-profile').forEach(btn => btn.addEventListener('click', cancelProfile));
+    
+    // Photo upload
+    const photoUploadBtn = document.getElementById('btn-photo-upload');
+    if (photoUploadBtn) {
+      photoUploadBtn.addEventListener('click', () => {
+        const input = document.getElementById('profile-photo-upload');
+        if (input) input.click();
+      });
+    }
+
+    const photoInput = document.getElementById('profile-photo-upload');
+    if (photoInput) {
+      photoInput.addEventListener('change', (e) => handleProfilePhotoUpload(e.target));
+    }
+
+    // Preferences
+    const savePref = document.getElementById('btn-save-preferences');
+    if (savePref) savePref.addEventListener('click', savePreferences);
+    const cancelPref = document.getElementById('btn-cancel-preferences');
+    if (cancelPref) cancelPref.addEventListener('click', cancelPreferences);
+
+    // Notifications
+    const saveNotify = document.getElementById('btn-save-notifications');
+    if (saveNotify) saveNotify.addEventListener('click', saveNotifications);
+    const cancelNotify = document.getElementById('btn-cancel-notifications');
+    if (cancelNotify) cancelNotify.addEventListener('click', cancelNotifications);
+
+    // Security Actions
+    const changeEmail = document.getElementById('btn-change-email');
+    if (changeEmail) changeEmail.addEventListener('click', openChangeEmailModal);
+    const changePass = document.getElementById('btn-change-password');
+    if (changePass) changePass.addEventListener('click', openChangePasswordModal);
+    const changePhone = document.getElementById('btn-change-phone');
+    if (changePhone) changePhone.addEventListener('click', openChangePhoneModal);
+    const exportBtn = document.getElementById('btn-export-data');
+    if (exportBtn) exportBtn.addEventListener('click', exportData);
+
+    // Modals
+    const emailSubmit = document.getElementById('modal-email-submit-btn');
+    if (emailSubmit) emailSubmit.addEventListener('click', submitChangeEmail);
+    
+    document.querySelectorAll('.btn-close-email-modal').forEach(btn => {
+      btn.addEventListener('click', () => closeModal('modal-change-email'));
+    });
+    
+    // Missing IDs for other modals' Save/Cancel buttons in HTML edit — adding listeners by selector
+    document.querySelector('[onclick="submitChangePassword()"]')?.addEventListener('click', submitChangePassword);
+    document.querySelector('[onclick="closeModal(\'modal-change-password\')"]')?.addEventListener('click', () => closeModal('modal-change-password'));
+    document.querySelector('[onclick="submitChangePhone()"]')?.addEventListener('click', submitChangePhone);
+    document.querySelector('[onclick="closeModal(\'modal-change-phone\')"]')?.addEventListener('click', () => closeModal('modal-change-phone'));
+  }
 
   // ─── Boot ────────────────────────────────────────────────────
 
   function boot() {
     initTabARIA();
+    setupListeners();
     loadSettings();
   }
 

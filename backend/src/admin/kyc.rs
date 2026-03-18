@@ -150,13 +150,13 @@ pub async fn api_admin_kyc_approve(
             Ok(Json(serde_json::json!({"status": "approved"})).into_response())
         }
         Ok(_) => {
-            return Err(ApiError::NotFound(
+            Err(ApiError::NotFound(
                 "KYC not found or already processed".to_string(),
             ))
         }
         Err(e) => {
             tracing::error!("Failed to approve KYC {kyc_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -189,13 +189,13 @@ pub async fn api_admin_kyc_reject(
             Ok(Json(serde_json::json!({"status": "rejected"})).into_response())
         }
         Ok(_) => {
-            return Err(ApiError::NotFound(
+            Err(ApiError::NotFound(
                 "KYC not found or already processed".to_string(),
             ))
         }
         Err(e) => {
             tracing::error!("Failed to reject KYC {kyc_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }

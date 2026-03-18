@@ -634,7 +634,7 @@ pub async fn api_wallet_transactions(
     };
 
     let page = pagination.page.unwrap_or(1).max(1);
-    let page_size = pagination.page_size.unwrap_or(10).max(1).min(100);
+    let page_size = pagination.page_size.unwrap_or(10).clamp(1, 100);
     let offset = (page - 1) * page_size;
 
     // Total count for pagination

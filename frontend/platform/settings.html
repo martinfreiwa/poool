@@ -63,11 +63,11 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 				<!-- Tabs -->
 				<div class="settings-tabs-wrapper">
 					<div class="settings-tabs-container" role="tablist" aria-label="Settings sections">
-						<button class="settings-tab active" id="tab-mydetails" onclick="switchTab('mydetails')" role="tab" aria-selected="true" aria-controls="panel-mydetails">My details</button>
-						<button class="settings-tab" id="tab-preferences" onclick="switchTab('preferences')" role="tab" aria-selected="false" aria-controls="panel-preferences">Preferences</button>
-						<button class="settings-tab" id="tab-notifications" onclick="switchTab('notifications')" role="tab" aria-selected="false" aria-controls="panel-notifications">Notifications</button>
-						<button class="settings-tab" id="tab-security" onclick="switchTab('security')" role="tab" aria-selected="false" aria-controls="panel-security">Security and privacy</button>
-						<button class="settings-tab" id="tab-more" onclick="switchTab('more')" role="tab" aria-selected="false" aria-controls="panel-more">More</button>
+						<button class="settings-tab active" id="tab-mydetails" role="tab" aria-selected="true" aria-controls="panel-mydetails">My details</button>
+						<button class="settings-tab" id="tab-preferences" role="tab" aria-selected="false" aria-controls="panel-preferences">Preferences</button>
+						<button class="settings-tab" id="tab-notifications" role="tab" aria-selected="false" aria-controls="panel-notifications">Notifications</button>
+						<button class="settings-tab" id="tab-security" role="tab" aria-selected="false" aria-controls="panel-security">Security and privacy</button>
+						<button class="settings-tab" id="tab-more" role="tab" aria-selected="false" aria-controls="panel-more">More</button>
 					</div>
 				</div>
 
@@ -79,9 +79,8 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 							<p>Update your photo and personal details here.</p>
 						</div>
 						<div class="settings-section-header__actions">
-							<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary"
-								onclick="cancelProfile()">Cancel</button>
-							<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" onclick="saveProfile()">Save</button>
+							<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary btn-cancel-profile">Cancel</button>
+							<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary btn-save-profile">Save</button>
 						</div>
 					</div>
 
@@ -119,12 +118,9 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 							</svg>
 							<div class="settings-photo-upload__text">
 								<input type="file" id="profile-photo-upload"
-									accept="image/jpeg, image/png, image/webp, image/svg+xml" style="display: none;"
-									onchange="handleProfilePhotoUpload(this)">
-								<span
-									style="cursor: pointer; color: var(--primary-color); font-weight: 500; text-decoration: underline;"
-									onclick="document.getElementById('profile-photo-upload').click();">Click
-									to upload</span> or drag and drop
+									accept="image/jpeg, image/png, image/webp, image/svg+xml" style="display: none;">
+								<span class="settings-photo-upload-hint"><span class="settings-photo-upload-link" id="btn-photo-upload">Click
+											to upload</span> or drag and drop</span>
 							</div>
 							<div class="settings-photo-upload__hint">SVG, PNG, JPG (max. 800×400px)</div>
 							<div class="settings-photo-upload__badge">
@@ -629,8 +625,8 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 
 					<!-- Footer actions -->
 					<div class="settings-footer-actions">
-						<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" onclick="cancelProfile()">Cancel</button>
-						<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" onclick="saveProfile()">Save</button>
+						<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" id="btn-cancel-profile">Cancel</button>
+						<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="btn-save-profile">Save</button>
 					</div>
 				</div>
 
@@ -715,9 +711,8 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 
 					<!-- Footer actions -->
 					<div class="settings-footer-actions">
-						<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary"
-							onclick="cancelPreferences()">Cancel</button>
-						<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" onclick="savePreferences()">Save</button>
+							<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" id="btn-cancel-preferences">Cancel</button>
+							<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="btn-save-preferences">Save</button>
 					</div>
 				</div>
 
@@ -729,9 +724,8 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 							<p>Manage how you receive alerts and updates.</p>
 						</div>
 						<div class="settings-section-header__actions">
-							<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary"
-								onclick="cancelNotifications()">Cancel</button>
-							<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" onclick="saveNotifications()">Save</button>
+							<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" id="btn-cancel-notifications">Cancel</button>
+							<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="btn-save-notifications">Save</button>
 						</div>
 					</div>
 					
@@ -855,9 +849,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 								<span id="settings-email-verified" class="settings-badge settings-badge--loading" style="white-space: nowrap;"></span>
 							</div>
 							<div class="settings-security-row__actions">
-								<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary"
-									onclick="openChangeEmailModal()">Change
-									Email</button>
+								<button class="settings-security-row__btn btn-change-email" id="btn-change-email">Change Email</button>
 							</div>
 						</div>
 					</div>
@@ -877,8 +869,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 							<input type="password" class="settings-input settings-input--password"
 								value="••••••••••••••••••••••" readonly style="background:#F9FAFB;">
 							<div class="settings-security-row__actions">
-								<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary"
-									onclick="openChangePasswordModal()">Change Password</button>
+									<button class="ds-btn ds-btn--secondary ds-btn--sm btn-change-password" id="btn-change-password">Change Password</button>
 							</div>
 						</div>
 					</div>
@@ -898,9 +889,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 							<input type="tel" class="settings-input" id="settings-security-phone" readonly
 								style="background:#F9FAFB;color:#535862;" placeholder="Loading...">
 							<div class="settings-security-row__actions">
-								<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary"
-									onclick="openChangePhoneModal()">Change
-									Phone number</button>
+								<button class="settings-security-row__btn btn-change-phone" id="btn-change-phone">Change Phone number</button>
 							</div>
 						</div>
 					</div>
@@ -1033,7 +1022,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 						</div>
 						<div class="settings-security-row__field">
 							<div style="display: flex; gap: 12px; flex-wrap: wrap;">
-								<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" onclick="exportData()">Export My Data</button>
+								<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" id="btn-export-data">Export My Data</button>
 								<a href="/account-deletion" class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" style="color: #D92D20; border-color: #FDA29B;">Delete Account</a>
 							</div>
 						</div>
@@ -1289,10 +1278,8 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 						placeholder="Enter your password">
 				</div>
 				<div class="settings-modal__actions">
-					<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary"
-						onclick="closeModal('modal-change-email')">Cancel</button>
-					<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="modal-email-submit"
-						onclick="submitChangeEmail()">Save</button>
+					<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary btn-close-email-modal">Cancel</button>
+					<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="modal-email-submit-btn">Save</button>
 				</div>
 			</div>
 		</div>

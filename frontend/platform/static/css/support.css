@@ -171,7 +171,7 @@
     margin: 0;
 }
 
-.support-form-group input,
+.support-form-group input:not([type="file"]),
 .support-form-group select,
 .support-form-group textarea {
     width: 100%;
@@ -186,7 +186,7 @@
     transition: border-color 0.2s;
 }
 
-.support-form-group input:focus,
+.support-form-group input:not([type="file"]):focus,
 .support-form-group select:focus,
 .support-form-group textarea:focus {
     outline: none;
@@ -210,10 +210,18 @@
     flex: 1;
 }
 
+/* ─── Form Footer (submit button row) ─────────── */
+.support-form-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
 /* ─── Priority Label ──────────────────────────── */
 .priority-label {
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 .response-time-badge {
@@ -224,17 +232,15 @@
 
 /* ─── Submit Button ────────────────────────────── */
 .support-submit-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 24px;
-    height: 40px;
+    gap: 6px;
+    padding: 10px 20px;
     cursor: pointer;
     transition: opacity 0.2s, background 0.2s, transform 0.15s;
     white-space: nowrap;
     flex-shrink: 0;
-    align-self: flex-end;
-    margin-bottom: 0;
 }
 
 .support-submit-btn:hover {
@@ -280,11 +286,7 @@
 }
 
 .drop-zone-input {
-    position: absolute;
-    width: 0;
-    height: 0;
-    opacity: 0;
-    pointer-events: none;
+    display: none;
 }
 
 .drop-zone-content {

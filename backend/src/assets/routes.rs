@@ -236,11 +236,11 @@ pub async fn page_property(
     // Convert similar assets to display-friendly data
     let similar_display: Vec<PropertyDisplayData> = similar_assets
         .iter()
-        .map(|a| PropertyDisplayData::from_asset(a))
+        .map(PropertyDisplayData::from_asset)
         .collect();
 
     // Convert to display-friendly data with pre-computed values
-    let display_data = asset.as_ref().map(|a| PropertyDisplayData::from_asset(a));
+    let display_data = asset.as_ref().map(PropertyDisplayData::from_asset);
 
     match state.templates.get_template("property.html") {
         Ok(template) => match template.render(context! { asset => display_data, similar_assets => similar_display }) {
@@ -801,7 +801,7 @@ fn format_usd(dollars: i64) -> String {
     let chars: Vec<char> = s.chars().collect();
     let len = chars.len();
     for (i, ch) in chars.iter().enumerate() {
-        if i > 0 && (len - i) % 3 == 0 {
+        if i > 0 && (len - i).is_multiple_of(3) {
             result.push(',');
         }
         result.push(*ch);

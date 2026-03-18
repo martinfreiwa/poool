@@ -73,10 +73,10 @@ pub async fn api_admin_toggle_featured(
         Ok(r) if r.rows_affected() > 0 => {
             Ok(Json(serde_json::json!({"status": "toggled"})).into_response())
         }
-        Ok(_) => return Err(ApiError::NotFound("Asset not found".to_string())),
+        Ok(_) => Err(ApiError::NotFound("Asset not found".to_string())),
         Err(e) => {
             tracing::error!("Failed to toggle featured {asset_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }

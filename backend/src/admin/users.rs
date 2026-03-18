@@ -1,5 +1,6 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
+use crate::common::sanitize;
 use axum::{
     extract::{Json, State},
     response::IntoResponse,
@@ -600,6 +601,20 @@ pub async fn api_admin_user_update_profile(
 
     let uid = ApiError::parse_uuid(&user_id)?;
 
+    let mut payload = payload;
+    if let Some(ref v) = payload.first_name { payload.first_name = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.last_name { payload.last_name = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.nationality { payload.nationality = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.phone_number { payload.phone_number = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.address_line_1 { payload.address_line_1 = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.address_line_2 { payload.address_line_2 = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.city { payload.city = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.state_province { payload.state_province = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.postal_code { payload.postal_code = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.country { payload.country = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.tax_id { payload.tax_id = Some(sanitize::sanitize_text(v)); }
+    if let Some(ref v) = payload.tier { payload.tier = Some(sanitize::sanitize_text(v)); }
+
     let parsed_dob = if let Some(d) = &payload.date_of_birth {
         if d.trim().is_empty() {
             None
@@ -1079,7 +1094,7 @@ pub async fn api_admin_user_force_password_reset(
         }
         Err(e) => {
             tracing::error!("Failed to force password reset: {}", e);
-            return Err(ApiError::Internal("Failed to update user".to_string()))
+            Err(ApiError::Internal("Failed to update user".to_string()))
         }
     }
 }

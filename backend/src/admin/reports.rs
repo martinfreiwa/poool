@@ -89,7 +89,7 @@ pub async fn api_admin_tax_reports_generate(
         ));
     }
 
-    let user_uuid = ApiError::parse_uuid(&user_id_str)?;
+    let user_uuid = ApiError::parse_uuid(user_id_str)?;
 
     // Filter investments by fiscal year
     let year_start = format!("{}-01-01", fiscal_year);

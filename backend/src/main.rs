@@ -378,11 +378,19 @@ async fn apply_security_headers(
     );
     headers.insert(
         axum::http::header::CONTENT_SECURITY_POLICY,
-        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com; worker-src 'self' blob:;"),
+        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com; worker-src 'self' blob:; base-uri 'self'; form-action 'self';"),
     );
     headers.insert(
         axum::http::header::REFERRER_POLICY,
         axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    headers.insert(
+        axum::http::header::HeaderName::from_static("x-permitted-cross-domain-policies"),
+        axum::http::HeaderValue::from_static("none"),
+    );
+    headers.insert(
+        axum::http::header::HeaderName::from_static("permissions-policy"),
+        axum::http::HeaderValue::from_static("accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"),
     );
 
     response

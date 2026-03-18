@@ -1,5 +1,6 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
+use crate::common::sanitize;
 use axum::{
     extract::{Json, State},
     response::IntoResponse,
@@ -123,7 +124,7 @@ pub async fn api_admin_update_settings(
             let (str_val, val_type) = match val {
                 serde_json::Value::Bool(b) => (b.to_string(), "boolean"),
                 serde_json::Value::Number(n) => (n.to_string(), "number"),
-                serde_json::Value::String(s) => (s.clone(), "string"),
+                serde_json::Value::String(s) => (sanitize::sanitize_text(s), "string"),
                 _ => (val.to_string(), "json"),
             };
 
@@ -199,7 +200,7 @@ pub async fn api_admin_add_admin(
         ),
         Err(e) => {
             tracing::error!("Failed to add admin: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -219,10 +220,10 @@ pub async fn api_admin_remove_admin(
         Ok(r) if r.rows_affected() > 0 => {
             Ok(Json(serde_json::json!({"status":"removed"})).into_response())
         }
-        Ok(_) => return Err(ApiError::NotFound("Admin role not found".to_string())),
+        Ok(_) => Err(ApiError::NotFound("Admin role not found".to_string())),
         Err(e) => {
             tracing::error!("Failed to remove admin {user_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -269,7 +270,7 @@ pub async fn api_admin_update_admin_role(
         Ok(_) => Ok(Json(serde_json::json!({"status":"updated"})).into_response()),
         Err(e) => {
             tracing::error!("Failed to update admin role: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }

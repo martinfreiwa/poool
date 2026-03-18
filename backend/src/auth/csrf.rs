@@ -105,7 +105,7 @@ pub async fn csrf_middleware(
                 |scope| {
                     scope.set_tag("security.event", "csrf_failure");
                     scope.set_tag("request.path", &path);
-                    scope.set_tag("request.method", &method.to_string());
+                    scope.set_tag("request.method", method.to_string());
                 },
                 || {
                     sentry::capture_message(

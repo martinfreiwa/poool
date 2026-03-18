@@ -1,0 +1,802 @@
+    Checking poool-backend v0.1.0 (/Users/martin/Projects/poool/backend)
+error: empty line after doc comment
+ --> src/auth/rate_limit.rs:7:1
+  |
+7 | / /// Both implement the same sliding-window algorithm: max N requests per key per window.
+8 | |
+  | |_^
+9 |   use std::collections::HashMap;
+  |   - the comment documents this `use` import
+  |
+  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#empty_line_after_doc_comments
+  = note: `-D clippy::empty-line-after-doc-comments` implied by `-D warnings`
+  = help: to override `-D warnings` add `#[allow(clippy::empty_line_after_doc_comments)]`
+  = help: if the empty line is unintentional, remove it
+help: if the comment should document the parent module use an inner doc comment
+  |
+1 ~ //! Rate limiter for authentication endpoints.
+2 ~ //!
+3 ~ //! Supports two backends:
+4 ~ //! - **In-memory** (default): HashMap-based, resets on restart, not shared across instances.
+5 ~ //! - **Redis** (when REDIS_URL is set): Shared across Cloud Run instances, survives restarts.
+6 ~ //!
+7 ~ //! Both implement the same sliding-window algorithm: max N requests per key per window.
+  |
+
+error: empty line after doc comment
+ --> src/common/currency.rs:5:1
+  |
+5 | / /// integer-only arithmetic.
+6 | |
+  | |_^
+...
+9 |   pub fn format_usd(cents: i64) -> String {
+  |   ----------------- the comment documents this function
+  |
+  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#empty_line_after_doc_comments
+  = help: if the empty line is unintentional, remove it
+help: if the comment should document the parent module use an inner doc comment
+  |
+1 ~ //! Shared currency formatting utilities.
+2 ~ //!
+3 ~ //! RULE: All monetary values are BIGINT cents — never floats.
+4 ~ //! These functions format cents as human-readable strings using
+5 ~ //! integer-only arithmetic.
+  |
+help: if the documentation should include the empty line include it in the comment
+  |
+6 | ///
+  |
+
+error: empty line after doc comment
+  --> src/common/sanitize.rs:6:1
+   |
+ 6 | / /// safe content like plain text and basic formatting.
+ 7 | |
+   | |_^
+...
+17 |   pub fn strip_tags(input: &str) -> String {
+   |   ----------------- the comment documents this function
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#empty_line_after_doc_comments
+   = help: if the empty line is unintentional, remove it
+help: if the comment should document the parent module use an inner doc comment
+   |
+ 1 ~ //! HTML sanitization utilities for preventing stored XSS attacks.
+ 2 ~ //!
+ 3 ~ //! All user-supplied text fields that will be rendered in HTML templates
+ 4 ~ //! must be sanitized before storage. This module provides a `sanitize_html()`
+ 5 ~ //! function that strips dangerous HTML tags and attributes while preserving
+ 6 ~ //! safe content like plain text and basic formatting.
+   |
+help: if the documentation should include the empty line include it in the comment
+   |
+ 7 | ///
+   |
+
+error: empty line after doc comment
+ --> src/config.rs:1:1
+  |
+1 | / /// Application configuration loaded from environment variables.
+2 | |
+  | |_^
+...
+6 |   pub const DEFAULT_USD_TO_IDR_RATE: f64 = 15_500.0;
+  |   --------------------------------- the comment documents this constant item
+  |
+  = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#empty_line_after_doc_comments
+  = help: if the empty line is unintentional, remove it
+help: if the comment should document the parent module use an inner doc comment
+  |
+1 - /// Application configuration loaded from environment variables.
+1 + //! Application configuration loaded from environment variables.
+  |
+help: if the documentation should include the empty line include it in the comment
+  |
+2 | ///
+  |
+
+error: unneeded `return` statement
+   --> src/admin/approvals.rs:153:13
+    |
+153 | /             return Err(ApiError::Internal(
+154 | |                 "Failed to create approval request".to_string(),
+155 | |             ));
+    | |______________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+    = note: `-D clippy::needless-return` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::needless_return)]`
+help: remove `return`
+    |
+153 ~             Err(ApiError::Internal(
+154 +                 "Failed to create approval request".to_string(),
+155 ~             ))
+    |
+
+error: unnecessary map of the identity function
+   --> src/admin/approvals.rs:398:96
+    |
+398 |                   .map(|_| serde_json::json!({"deposit_id": eid.to_string(), "confirmed": true}))
+    |  ________________________________________________________________________________________________^
+399 | |                 .map_err(|e| e)
+    | |_______________________________^ help: remove the call to `map_err`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#map_identity
+    = note: `-D clippy::map-identity` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::map_identity)]`
+
+error: unneeded `return` statement
+  --> src/admin/assets.rs:76:18
+   |
+76 |         Ok(_) => return Err(ApiError::NotFound("Asset not found".to_string())),
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+   |
+76 -         Ok(_) => return Err(ApiError::NotFound("Asset not found".to_string())),
+76 +         Ok(_) => Err(ApiError::NotFound("Asset not found".to_string())),
+   |
+
+error: unneeded `return` statement
+  --> src/admin/assets.rs:79:13
+   |
+79 |             return Err(ApiError::Internal("Database error".to_string()));
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+   |
+79 -             return Err(ApiError::Internal("Database error".to_string()));
+79 +             Err(ApiError::Internal("Database error".to_string()))
+   |
+
+error: doc list item without indentation
+  --> src/admin/mod.rs:18:5
+   |
+18 | /// Module
+   |     ^
+   |
+   = help: if this is supposed to be its own paragraph, add a blank line
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#doc_lazy_continuation
+   = note: `-D clippy::doc-lazy-continuation` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::doc_lazy_continuation)]`
+help: indent this line
+   |
+18 | ///   Module
+   |     ++
+
+error: unneeded `return` statement
+   --> src/admin/deposits.rs:179:13
+    |
+179 | /             return Err(ApiError::NotFound(
+180 | |                 "Not found or already processed".to_string(),
+181 | |             ))
+    | |______________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+179 ~             Err(ApiError::NotFound(
+180 +                 "Not found or already processed".to_string(),
+181 +             ))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/deposits.rs:185:13
+    |
+185 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+185 -             return Err(ApiError::Internal("Database error".to_string()));
+185 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/deposits.rs:227:13
+    |
+227 | /             return Err(ApiError::NotFound(
+228 | |                 "Deposit not found or not pending".to_string(),
+229 | |             ))
+    | |______________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+227 ~             Err(ApiError::NotFound(
+228 +                 "Deposit not found or not pending".to_string(),
+229 +             ))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/deposits.rs:233:13
+    |
+233 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+233 -             return Err(ApiError::Internal("Database error".to_string()));
+233 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/emails.rs:156:13
+    |
+156 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+156 -             return Err(ApiError::Internal("Database error".to_string()));
+156 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/emails.rs:191:13
+    |
+191 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+191 -             return Err(ApiError::Internal("Database error".to_string()));
+191 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> src/admin/emails.rs:215:36
+    |
+215 |     let uid = ApiError::parse_uuid(&template_id)?;
+    |                                    ^^^^^^^^^^^^ help: change this to: `template_id`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_borrow
+    = note: `-D clippy::needless-borrow` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::needless_borrow)]`
+
+error: unneeded `return` statement
+   --> src/admin/kyc.rs:153:13
+    |
+153 | /             return Err(ApiError::NotFound(
+154 | |                 "KYC not found or already processed".to_string(),
+155 | |             ))
+    | |______________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+153 ~             Err(ApiError::NotFound(
+154 +                 "KYC not found or already processed".to_string(),
+155 +             ))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/kyc.rs:159:13
+    |
+159 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+159 -             return Err(ApiError::Internal("Database error".to_string()));
+159 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/kyc.rs:192:13
+    |
+192 | /             return Err(ApiError::NotFound(
+193 | |                 "KYC not found or already processed".to_string(),
+194 | |             ))
+    | |______________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+192 ~             Err(ApiError::NotFound(
+193 +                 "KYC not found or already processed".to_string(),
+194 +             ))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/kyc.rs:198:13
+    |
+198 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+198 -             return Err(ApiError::Internal("Database error".to_string()));
+198 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+  --> src/admin/notifications.rs:89:13
+   |
+89 |             return Err(ApiError::Internal("Database error".to_string()));
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+   |
+89 -             return Err(ApiError::Internal("Database error".to_string()));
+89 +             Err(ApiError::Internal("Database error".to_string()))
+   |
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+  --> src/admin/reports.rs:92:42
+   |
+92 |     let user_uuid = ApiError::parse_uuid(&user_id_str)?;
+   |                                          ^^^^^^^^^^^^ help: change this to: `user_id_str`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_borrow
+
+error: unneeded `return` statement
+   --> src/admin/rewards.rs:245:13
+    |
+245 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+245 -             return Err(ApiError::Internal("Database error".to_string()));
+245 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/rewards.rs:296:18
+    |
+296 |         Ok(_) => return Err(ApiError::NotFound("Tier not found".to_string())),
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+296 -         Ok(_) => return Err(ApiError::NotFound("Tier not found".to_string())),
+296 +         Ok(_) => Err(ApiError::NotFound("Tier not found".to_string())),
+    |
+
+error: unneeded `return` statement
+   --> src/admin/rewards.rs:299:13
+    |
+299 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+299 -             return Err(ApiError::Internal("Database error".to_string()));
+299 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/rewards.rs:347:13
+    |
+347 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+347 -             return Err(ApiError::Internal("Database error".to_string()));
+347 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/rewards.rs:484:18
+    |
+484 |         Ok(_) => return Err(ApiError::NotFound("Referral not found".to_string())),
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+484 -         Ok(_) => return Err(ApiError::NotFound("Referral not found".to_string())),
+484 +         Ok(_) => Err(ApiError::NotFound("Referral not found".to_string())),
+    |
+
+error: unneeded `return` statement
+   --> src/admin/rewards.rs:487:13
+    |
+487 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+487 -             return Err(ApiError::Internal("Database error".to_string()));
+487 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/settings.rs:202:13
+    |
+202 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+202 -             return Err(ApiError::Internal("Database error".to_string()));
+202 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/settings.rs:222:18
+    |
+222 |         Ok(_) => return Err(ApiError::NotFound("Admin role not found".to_string())),
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+222 -         Ok(_) => return Err(ApiError::NotFound("Admin role not found".to_string())),
+222 +         Ok(_) => Err(ApiError::NotFound("Admin role not found".to_string())),
+    |
+
+error: unneeded `return` statement
+   --> src/admin/settings.rs:225:13
+    |
+225 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+225 -             return Err(ApiError::Internal("Database error".to_string()));
+225 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/settings.rs:272:13
+    |
+272 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+272 -             return Err(ApiError::Internal("Database error".to_string()));
+272 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/submissions.rs:104:18
+    |
+104 |         Ok(_) => return Err(ApiError::NotFound("Asset not found".to_string())),
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+104 -         Ok(_) => return Err(ApiError::NotFound("Asset not found".to_string())),
+104 +         Ok(_) => Err(ApiError::NotFound("Asset not found".to_string())),
+    |
+
+error: unneeded `return` statement
+   --> src/admin/submissions.rs:107:13
+    |
+107 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+107 -             return Err(ApiError::Internal("Database error".to_string()));
+107 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/submissions.rs:136:18
+    |
+136 |         Ok(_) => return Err(ApiError::NotFound("Asset not found".to_string())),
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+136 -         Ok(_) => return Err(ApiError::NotFound("Asset not found".to_string())),
+136 +         Ok(_) => Err(ApiError::NotFound("Asset not found".to_string())),
+    |
+
+error: unneeded `return` statement
+   --> src/admin/submissions.rs:139:13
+    |
+139 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+139 -             return Err(ApiError::Internal("Database error".to_string()));
+139 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/support.rs:252:13
+    |
+252 | /             return Err(ApiError::Internal(
+253 | |                 "Failed to execute bulk update".to_string(),
+254 | |             ));
+    | |______________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+252 ~             Err(ApiError::Internal(
+253 +                 "Failed to execute bulk update".to_string(),
+254 ~             ))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/support.rs:325:18
+    |
+325 |         Ok(_) => return Err(ApiError::NotFound("Ticket not found".to_string())),
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+325 -         Ok(_) => return Err(ApiError::NotFound("Ticket not found".to_string())),
+325 +         Ok(_) => Err(ApiError::NotFound("Ticket not found".to_string())),
+    |
+
+error: unneeded `return` statement
+   --> src/admin/support.rs:328:13
+    |
+328 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+328 -             return Err(ApiError::Internal("Database error".to_string()));
+328 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/support.rs:554:13
+    |
+554 |             return Err(ApiError::Internal("Database error".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+554 -             return Err(ApiError::Internal("Database error".to_string()));
+554 +             Err(ApiError::Internal("Database error".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/system.rs:164:17
+    |
+164 |                 return Err(ApiError::NotFound("Session not found".to_string()));
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+164 -                 return Err(ApiError::NotFound("Session not found".to_string()));
+164 +                 Err(ApiError::NotFound("Session not found".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/system.rs:169:13
+    |
+169 |             return Err(ApiError::Internal("Failed to revoke session".to_string()));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+169 -             return Err(ApiError::Internal("Failed to revoke session".to_string()));
+169 +             Err(ApiError::Internal("Failed to revoke session".to_string()))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/system.rs:201:13
+    |
+201 | /             return Err(ApiError::Internal(
+202 | |                 "Failed to bulk revoke sessions".to_string(),
+203 | |             ));
+    | |______________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+201 ~             Err(ApiError::Internal(
+202 +                 "Failed to bulk revoke sessions".to_string(),
+203 ~             ))
+    |
+
+error: unneeded `return` statement
+   --> src/admin/system.rs:256:19
+    |
+256 |         Err(_) => return Err(ApiError::Internal("Failed to cancel job".to_string())),
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+256 -         Err(_) => return Err(ApiError::Internal("Failed to cancel job".to_string())),
+256 +         Err(_) => Err(ApiError::Internal("Failed to cancel job".to_string())),
+    |
+
+error: unneeded `return` statement
+   --> src/admin/system.rs:273:19
+    |
+273 |         Err(_) => return Err(ApiError::Internal("Failed to retry job".to_string())),
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+273 -         Err(_) => return Err(ApiError::Internal("Failed to retry job".to_string())),
+273 +         Err(_) => Err(ApiError::Internal("Failed to retry job".to_string())),
+    |
+
+error: unneeded `return` statement
+   --> src/admin/system.rs:325:19
+    |
+325 |         Err(_) => return Err(ApiError::Internal("Failed to replay webhook".to_string())),
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+325 -         Err(_) => return Err(ApiError::Internal("Failed to replay webhook".to_string())),
+325 +         Err(_) => Err(ApiError::Internal("Failed to replay webhook".to_string())),
+    |
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> src/admin/treasury.rs:175:36
+    |
+175 |     let aid = ApiError::parse_uuid(&asset_id)?;
+    |                                    ^^^^^^^^^ help: change this to: `asset_id`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_borrow
+
+error: unneeded `return` statement
+   --> src/admin/treasury.rs:278:13
+    |
+278 | /             return Err(ApiError::Internal(
+279 | |                 "Failed to queue dividend process".to_string(),
+280 | |             ));
+    | |______________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+    |
+278 ~             Err(ApiError::Internal(
+279 +                 "Failed to queue dividend process".to_string(),
+280 ~             ))
+    |
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+   --> src/admin/treasury.rs:236:36
+    |
+236 |     let aid = ApiError::parse_uuid(&asset_id)?;
+    |                                    ^^^^^^^^^ help: change this to: `asset_id`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_borrow
+
+error: unneeded `return` statement
+    --> src/admin/users.rs:1082:13
+     |
+1082 |             return Err(ApiError::Internal("Failed to update user".to_string()))
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_return
+help: remove `return`
+     |
+1082 -             return Err(ApiError::Internal("Failed to update user".to_string()))
+1082 +             Err(ApiError::Internal("Failed to update user".to_string()))
+     |
+
+error: manual implementation of `.is_multiple_of()`
+   --> src/assets/models.rs:158:21
+    |
+158 |         if i > 0 && (len - i) % 3 == 0 {
+    |                     ^^^^^^^^^^^^^^^^^^ help: replace with: `(len - i).is_multiple_of(3)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#manual_is_multiple_of
+    = note: `-D clippy::manual-is-multiple-of` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::manual_is_multiple_of)]`
+
+error: redundant closure
+   --> src/assets/routes.rs:239:14
+    |
+239 |         .map(|a| PropertyDisplayData::from_asset(a))
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace the closure with the associated function itself: `PropertyDisplayData::from_asset`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#redundant_closure
+    = note: `-D clippy::redundant-closure` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::redundant_closure)]`
+
+error: redundant closure
+   --> src/assets/routes.rs:243:43
+    |
+243 |     let display_data = asset.as_ref().map(|a| PropertyDisplayData::from_asset(a));
+    |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace the closure with the associated function itself: `PropertyDisplayData::from_asset`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#redundant_closure
+
+error: manual implementation of `.is_multiple_of()`
+   --> src/assets/routes.rs:804:21
+    |
+804 |         if i > 0 && (len - i) % 3 == 0 {
+    |                     ^^^^^^^^^^^^^^^^^^ help: replace with: `(len - i).is_multiple_of(3)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#manual_is_multiple_of
+
+error: the borrowed expression implements the required traits
+   --> src/auth/csrf.rs:108:53
+    |
+108 |                     scope.set_tag("request.method", &method.to_string());
+    |                                                     ^^^^^^^^^^^^^^^^^^^ help: change this to: `method.to_string()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#needless_borrows_for_generic_args
+    = note: `-D clippy::needless-borrows-for-generic-args` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::needless_borrows_for_generic_args)]`
+
+error: manual implementation of `.is_multiple_of()`
+  --> src/common/currency.rs:24:21
+   |
+24 |         if i > 0 && (bytes.len() - i) % 3 == 0 {
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with: `(bytes.len() - i).is_multiple_of(3)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#manual_is_multiple_of
+
+error: manual implementation of `.is_multiple_of()`
+  --> src/common/currency.rs:53:21
+   |
+53 |         if i > 0 && (bytes.len() - i) % 3 == 0 {
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with: `(bytes.len() - i).is_multiple_of(3)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#manual_is_multiple_of
+
+error: this `map_or` can be simplified
+   --> src/developer/change_requests.rs:128:8
+    |
+128 |     if proposed_values.as_object().map_or(true, |o| o.is_empty()) {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#unnecessary_map_or
+    = note: `-D clippy::unnecessary-map-or` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::unnecessary_map_or)]`
+help: use is_none_or instead
+    |
+128 -     if proposed_values.as_object().map_or(true, |o| o.is_empty()) {
+128 +     if proposed_values.as_object().is_none_or(|o| o.is_empty()) {
+    |
+
+error: manual implementation of `.is_multiple_of()`
+  --> src/templates.rs:46:25
+   |
+46 |             if i > 0 && (len - i) % 3 == 0 {
+   |                         ^^^^^^^^^^^^^^^^^^ help: replace with: `(len - i).is_multiple_of(3)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#manual_is_multiple_of
+
+error: clamp-like pattern without using clamp function
+   --> src/wallet/routes.rs:637:21
+    |
+637 |     let page_size = pagination.page_size.unwrap_or(10).max(1).min(100);
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with clamp: `pagination.page_size.unwrap_or(10).clamp(1, 100)`
+    |
+    = note: clamp will panic if max < min
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.94.0/index.html#manual_clamp
+    = note: `-D clippy::manual-clamp` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::manual_clamp)]`
+
+error: could not compile `poool-backend` (bin "poool-backend") due to 60 previous errors

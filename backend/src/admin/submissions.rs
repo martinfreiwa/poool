@@ -101,10 +101,10 @@ pub async fn api_admin_submission_approve(
         Ok(r) if r.rows_affected() > 0 => {
             Ok(Json(serde_json::json!({"status":"approved"})).into_response())
         }
-        Ok(_) => return Err(ApiError::NotFound("Asset not found".to_string())),
+        Ok(_) => Err(ApiError::NotFound("Asset not found".to_string())),
         Err(e) => {
             tracing::error!("Failed to approve submission {asset_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }
@@ -133,10 +133,10 @@ pub async fn api_admin_submission_reject(
         Ok(r) if r.rows_affected() > 0 => {
             Ok(Json(serde_json::json!({"status":"rejected"})).into_response())
         }
-        Ok(_) => return Err(ApiError::NotFound("Asset not found".to_string())),
+        Ok(_) => Err(ApiError::NotFound("Asset not found".to_string())),
         Err(e) => {
             tracing::error!("Failed to reject submission {asset_id}: {e}");
-            return Err(ApiError::Internal("Database error".to_string()));
+            Err(ApiError::Internal("Database error".to_string()))
         }
     }
 }

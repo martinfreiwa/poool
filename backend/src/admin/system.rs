@@ -161,12 +161,12 @@ pub async fn api_admin_system_session_revoke(
                         .into_response(),
                 )
             } else {
-                return Err(ApiError::NotFound("Session not found".to_string()));
+                Err(ApiError::NotFound("Session not found".to_string()))
             }
         }
         Err(e) => {
             tracing::error!("Failed to revoke session: {e}");
-            return Err(ApiError::Internal("Failed to revoke session".to_string()));
+            Err(ApiError::Internal("Failed to revoke session".to_string()))
         }
     }
 }
@@ -198,9 +198,9 @@ pub async fn api_admin_system_sessions_bulk_revoke(
         ),
         Err(e) => {
             tracing::error!("Failed to bulk revoke sessions: {}", e);
-            return Err(ApiError::Internal(
+            Err(ApiError::Internal(
                 "Failed to bulk revoke sessions".to_string(),
-            ));
+            ))
         }
     }
 }
@@ -253,7 +253,7 @@ pub async fn api_admin_system_job_cancel(
 
     match result {
         Ok(_) => Ok(Json(serde_json::json!({"status":"success"})).into_response()),
-        Err(_) => return Err(ApiError::Internal("Failed to cancel job".to_string())),
+        Err(_) => Err(ApiError::Internal("Failed to cancel job".to_string())),
     }
 }
 
@@ -270,7 +270,7 @@ pub async fn api_admin_system_job_retry(
 
     match result {
         Ok(_) => Ok(Json(serde_json::json!({"status":"success"})).into_response()),
-        Err(_) => return Err(ApiError::Internal("Failed to retry job".to_string())),
+        Err(_) => Err(ApiError::Internal("Failed to retry job".to_string())),
     }
 }
 
@@ -322,7 +322,7 @@ pub async fn api_admin_system_webhook_replay(
 
     match result {
         Ok(_) => Ok(Json(serde_json::json!({"status":"success"})).into_response()),
-        Err(_) => return Err(ApiError::Internal("Failed to replay webhook".to_string())),
+        Err(_) => Err(ApiError::Internal("Failed to replay webhook".to_string())),
     }
 }
 
