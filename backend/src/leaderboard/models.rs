@@ -8,27 +8,29 @@ pub struct LeaderboardEntry {
     pub avatar_url: Option<String>,
     pub tier_name: String,
     pub tier_badge_color: String,
-    pub total_score: i32,
+    pub metric_value: i64,
     pub is_current_user: bool,
-    pub score_breakdown: ScoreBreakdown,
+    pub metrics: LeaderboardMetrics,
 }
 
 /// The logged-in user's own rank information.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MyRank {
     pub rank: Option<i32>,
-    pub total_score: i32,
+    pub metric_value: i64,
     pub delta_weekly: i32,
-    pub score_breakdown: ScoreBreakdown,
+    pub metrics: LeaderboardMetrics,
 }
 
-/// Score breakdown by component.
+/// Raw metrics for the user.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ScoreBreakdown {
-    pub invest_score: i32,
-    pub referral_score: i32,
-    pub tier_score: i32,
-    pub diversity_score: i32,
+pub struct LeaderboardMetrics {
+    pub total_invested_cents: i64,
+    pub asset_count: i32,
+    pub portfolio_roi_bps: i32,
+    pub affiliate_count: i32,
+    pub referral_revenue_cents: i64,
+    pub highest_investment_cents: i64,
 }
 
 /// Full response for the leaderboard API.
@@ -37,7 +39,7 @@ pub struct LeaderboardResponse {
     pub rankings: Vec<LeaderboardEntry>,
     pub my_rank: MyRank,
     pub total_participants: i64,
-    pub timeframe: String,
+    pub metric_type: String,
     pub last_updated: Option<String>,
     pub has_more: bool,
 }

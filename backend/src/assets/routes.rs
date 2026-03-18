@@ -42,7 +42,12 @@ pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> 
             a.annual_yield_bps,
             a.capital_appreciation_bps,
             a.funding_status,
-            ai.image_url AS "cover_image_url?",
+            ARRAY(
+                SELECT image_url 
+                FROM asset_images 
+                WHERE asset_id = a.id 
+                ORDER BY is_cover DESC, created_at ASC
+            ) AS "image_urls?",
             a.bedrooms,
             a.lease_type,
             a.term_months,
@@ -56,7 +61,7 @@ pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> 
                   AND o.status = 'completed'
             ) AS "investor_count?"
         FROM assets a
-        LEFT JOIN asset_images ai ON a.id = ai.asset_id AND ai.is_cover = true
+        
         WHERE a.published = true
           AND a.asset_type != 'commodity'
           AND a.funding_status IN ('funding_open', 'funding_in_progress')
@@ -123,7 +128,12 @@ pub async fn page_property(
                 a.annual_yield_bps,
                 a.capital_appreciation_bps,
                 a.funding_status,
-                ai.image_url AS "cover_image_url?",
+                ARRAY(
+                SELECT image_url 
+                FROM asset_images 
+                WHERE asset_id = a.id 
+                ORDER BY is_cover DESC, created_at ASC
+            ) AS "image_urls?",
                 a.bedrooms,
                 a.lease_type,
                 a.term_months,
@@ -137,7 +147,7 @@ pub async fn page_property(
                       AND o.status = 'completed'
                 ) AS "investor_count?"
             FROM assets a
-            LEFT JOIN asset_images ai ON a.id = ai.asset_id AND ai.is_cover = true
+            
             WHERE a.slug = $1 AND a.published = true
             "#,
             slug
@@ -201,7 +211,12 @@ pub async fn page_property(
                 a.annual_yield_bps,
                 a.capital_appreciation_bps,
                 a.funding_status,
-                ai.image_url AS "cover_image_url?",
+                ARRAY(
+                SELECT image_url 
+                FROM asset_images 
+                WHERE asset_id = a.id 
+                ORDER BY is_cover DESC, created_at ASC
+            ) AS "image_urls?",
                 a.bedrooms,
                 a.lease_type,
                 a.term_months,
@@ -215,7 +230,7 @@ pub async fn page_property(
                       AND o.status = 'completed'
                 ) AS "investor_count?"
             FROM assets a
-            LEFT JOIN asset_images ai ON a.id = ai.asset_id AND ai.is_cover = true
+            
             WHERE a.published = true
               AND a.asset_type != 'commodity'
               AND a.id != $1
@@ -292,7 +307,12 @@ pub async fn page_commodity(
                 a.annual_yield_bps,
                 a.capital_appreciation_bps,
                 a.funding_status,
-                ai.image_url AS "cover_image_url?",
+                ARRAY(
+                SELECT image_url 
+                FROM asset_images 
+                WHERE asset_id = a.id 
+                ORDER BY is_cover DESC, created_at ASC
+            ) AS "image_urls?",
                 a.bedrooms,
                 a.lease_type,
                 a.term_months,
@@ -306,7 +326,7 @@ pub async fn page_commodity(
                       AND o.status = 'completed'
                 ) AS "investor_count?"
             FROM assets a
-            LEFT JOIN asset_images ai ON a.id = ai.asset_id AND ai.is_cover = true
+            
             WHERE a.slug = $1 AND a.published = true
             "#,
             slug
@@ -358,7 +378,7 @@ pub async fn api_marketplace_tab(
     };
 
     let assets = sqlx::query(
-        r#"SELECT a.*, (SELECT image_url FROM asset_images WHERE asset_id = a.id AND is_cover = true LIMIT 1) as cover_image
+        r#"SELECT a.*, ARRAY(SELECT image_url FROM asset_images WHERE asset_id = a.id ORDER BY is_cover DESC, created_at ASC) as image_urls
            FROM assets a
            WHERE a.published = true AND a.funding_status = ANY($1) AND a.asset_type != 'commodity'
            ORDER BY a.featured DESC, a.created_at DESC"#
@@ -407,9 +427,11 @@ pub async fn api_marketplace_tab(
             0.0
         };
 
+        let image_urls: Vec<String> = asset.get("image_urls");
         let cover_image = html_escape(
-            &asset
-                .get::<Option<String>, _>("cover_image")
+            &image_urls
+                .first()
+                .cloned()
                 .unwrap_or_else(|| "/images/villa1.webp".to_string()),
         );
 
@@ -448,18 +470,36 @@ pub async fn api_marketplace_tab(
         let yield_pct = (yield_bps as f64) / 100.0;
         let appreciation_pct = (appreciation_bps as f64) / 100.0;
 
+        let mut images_html = String::new();
+        let mut dots_html = String::new();
+        let default_images = vec!["/images/villa1.webp".to_string()];
+        let urls = if image_urls.is_empty() {
+            &default_images
+        } else {
+            &image_urls
+        };
+
+        for (i, url) in urls.iter().enumerate() {
+            let active = if i == 0 { " active" } else { "" };
+            images_html.push_str(&format!(
+                r#"<div class="property-image{}" style="background-image: url('{}'); background-size: cover; background-position: center;"></div>"#,
+                active, html_escape(url)
+            ));
+            dots_html.push_str(&format!(r#"<div class="property-dot{}"></div>"#, active));
+        }
+
         html.push_str(&format!(
             r##"<div class="property-card" data-property-id="{slug}" onclick="window.location.href='/property/{slug}'">
                 <div class="property-gallery">
                     <div class="property-image-container">
-                        <div class="property-image active" style="background-image: url('{cover_image}'); background-size: cover; background-position: center;"></div>
+                        {images_html}
                         <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                         </button>
                         <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                         </button>
-                        <div class="property-dots"><div class="property-dot active"></div></div>
+                        <div class="property-dots">{dots_html}</div>
                     </div>
                     <div class="property-badge {badge_class}">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3538CD" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h.01M9 15h6M15 9h.01"/></svg>
@@ -508,7 +548,7 @@ pub async fn api_marketplace_tab(
                 </div>
             </div>"##,
             slug = slug,
-            cover_image = cover_image,
+            images_html = images_html, dots_html = dots_html,
             badge_class = badge_class,
             lease_label = lease_label,
             bedrooms_html = bedrooms_html,
@@ -556,7 +596,12 @@ pub async fn page_commodities_marketplace(
             a.annual_yield_bps,
             a.capital_appreciation_bps,
             a.funding_status,
-            ai.image_url AS "cover_image_url?",
+            ARRAY(
+                SELECT image_url 
+                FROM asset_images 
+                WHERE asset_id = a.id 
+                ORDER BY is_cover DESC, created_at ASC
+            ) AS "image_urls?",
             a.bedrooms,
             a.lease_type,
             a.term_months,
@@ -570,7 +615,7 @@ pub async fn page_commodities_marketplace(
                   AND o.status = 'completed'
             ) AS "investor_count?"
         FROM assets a
-        LEFT JOIN asset_images ai ON a.id = ai.asset_id AND ai.is_cover = true
+        
         WHERE a.published = true
           AND a.asset_type = 'commodity'
           AND a.funding_status IN ('funding_open', 'funding_in_progress')
@@ -621,7 +666,7 @@ pub async fn api_commodities_tab(
     };
 
     let assets = sqlx::query(
-        r#"SELECT a.*, (SELECT image_url FROM asset_images WHERE asset_id = a.id AND is_cover = true LIMIT 1) as cover_image
+        r#"SELECT a.*, ARRAY(SELECT image_url FROM asset_images WHERE asset_id = a.id ORDER BY is_cover DESC, created_at ASC) as image_urls
            FROM assets a
            WHERE a.published = true AND a.funding_status = ANY($1) AND a.asset_type = 'commodity'
            ORDER BY a.featured DESC, a.created_at DESC"#
@@ -669,10 +714,12 @@ pub async fn api_commodities_tab(
             0.0
         };
 
+        let image_urls: Vec<String> = asset.get("image_urls");
         let cover_image = html_escape(
-            &asset
-                .get::<Option<String>, _>("cover_image")
-                .unwrap_or_else(|| "/images/commodity1.jpg".to_string()),
+            &image_urls
+                .first()
+                .cloned()
+                .unwrap_or_else(|| "/images/villa1.webp".to_string()),
         );
 
         let status = asset.get::<String, _>("funding_status");
@@ -722,6 +769,24 @@ pub async fn api_commodities_tab(
         let yield_pct = (yield_bps as f64) / 100.0;
         let appreciation_pct = (appreciation_bps as f64) / 100.0;
 
+        let mut images_html = String::new();
+        let mut dots_html = String::new();
+        let default_images = vec!["/images/villa1.webp".to_string()];
+        let urls = if image_urls.is_empty() {
+            &default_images
+        } else {
+            &image_urls
+        };
+
+        for (i, url) in urls.iter().enumerate() {
+            let active = if i == 0 { " active" } else { "" };
+            images_html.push_str(&format!(
+                r#"<div class="property-image{}" style="background-image: url('{}'); background-size: cover; background-position: center;"></div>"#,
+                active, html_escape(url)
+            ));
+            dots_html.push_str(&format!(r#"<div class="property-dot{}"></div>"#, active));
+        }
+
         html.push_str(&format!(
             r##"<div class="property-card" data-property-id="{slug}"
                     data-location="{location_city}, {location_country}"
@@ -730,14 +795,14 @@ pub async fn api_commodities_tab(
                     onclick="window.location.href='/commodity/{slug}'">
                 <div class="property-gallery">
                     <div class="property-image-container">
-                        <div class="property-image active" style="background-image: url('{cover_image}'); background-size: cover; background-position: center;"></div>
+                        {images_html}
                         <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                         </button>
                         <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                         </button>
-                        <div class="property-dots"><div class="property-dot active"></div></div>
+                        <div class="property-dots">{dots_html}</div>
                     </div>
                     <div class="property-badge badge-commodity">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3538CD" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
@@ -786,7 +851,7 @@ pub async fn api_commodities_tab(
                 </div>
             </div>"##,
             slug = slug,
-            cover_image = cover_image,
+            images_html = images_html, dots_html = dots_html,
             hectares_html = hectares_html,
             location_city = location_city,
             location_country = location_country,

@@ -530,7 +530,7 @@ function initGlobalSearch() {
             (item) => `
                     <a href="${item.url}" class="search-result-item" style="display: flex; align-items: center; padding: 12px 16px; text-decoration: none; border-bottom: 1px solid #F2F4F7; transition: background-color 0.2s;">
                         <div style="width: 32px; height: 32px; border-radius: 6px; background: #F9FAFB; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                            <img src="/images/${item.icon}" onerror="this.src='/static/images/${item.icon}'" style="width: 16px; height: 16px; opacity: 0.7;">
+                            <img src="/static/images/${item.icon}" onerror="this.src='/static/images/${item.icon}'" style="width: 16px; height: 16px; opacity: 0.7;">
                         </div>
                         <div>
                             <div style="font-size: 14px; font-weight: 500; color: #101828;">${item.title}</div>

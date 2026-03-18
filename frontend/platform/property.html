@@ -49,22 +49,22 @@
                 <!-- 2. Categories Section -->
                 <div id="property-categories" class="categories-section">
                   <div class="category-badge">
-                    <img loading="lazy" src="/images/Bed.svg" alt="Beds" class="badge-icon" width="24" height="24" />
+                    <img  src="/static/images/Bed.svg" alt="Beds" class="badge-icon" width="24" height="24" />
                     <span class="badge-text">{{ asset.bedrooms | default(4) }}</span>
                   </div>
                   <div class="category-separator"></div>
                   <div class="category-badge">
-                    <img loading="lazy" src="/images/bookmark-check.svg" alt="Ready" class="badge-icon" width="16" height="16" />
+                    <img  src="/static/images/bookmark-check.svg" alt="Ready" class="badge-icon" width="16" height="16" />
                     <span class="badge-text">Ready</span>
                   </div>
                   <div class="category-separator"></div>
                   <div class="category-badge">
-                    <img loading="lazy" src="/images/prop-details/maximize-02.svg" alt="Area" class="badge-icon" width="16" height="16" />
+                    <img  src="/static/images/prop-details/maximize-02.svg" alt="Area" class="badge-icon" width="16" height="16" />
                     <span class="badge-text">1,376 Sq Ft</span>
                   </div>
                   <div class="category-separator"></div>
                   <div class="category-badge">
-                    <img loading="lazy" src="/images/prop-details/markerpin.svg" alt="Location" class="badge-icon" width="16" height="16" />
+                    <img  src="/static/images/prop-details/markerpin.svg" alt="Location" class="badge-icon" width="16" height="16" />
                     <span class="badge-text" id="property-location">{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</span>
                   </div>
                 </div>
@@ -73,7 +73,7 @@
                 <div id="property-info-div" class="info-div">
                   <div class="info-badge">
                     <div class="info-badge-icon">
-                      <img loading="lazy" src="/images/prop-details/ID.webp" alt="Indonesia" width="36" height="36" />
+                      <img  src="/static/images/prop-details/ID.webp" alt="Indonesia" width="36" height="36" />
                     </div>
                     <div class="info-badge-text">
                       <h4>{{ asset.location_country | default('Indonesia') }}, {{ asset.location_city | default('Bali') }}</h4>
@@ -82,7 +82,7 @@
                   </div>
                   <div class="info-badge">
                     <div class="info-badge-icon">
-                      <img loading="lazy" src="/images/prop-details/house.webp" alt="Rented" width="36" height="36" />
+                      <img loading="lazy" src="/static/images/prop-details/house.webp" alt="Rented" width="36" height="36" />
                     </div>
                     <div class="info-badge-text">
                       <h4>Rented</h4>
@@ -91,7 +91,7 @@
                   </div>
                   <div class="info-badge">
                     <div class="info-badge-icon">
-                      <img loading="lazy" src="/images/prop-details/coins-stacked-02.webp" alt="Rent" width="36" height="36" />
+                      <img loading="lazy" src="/static/images/prop-details/coins-stacked-02.webp" alt="Rent" width="36" height="36" />
                     </div>
                     <div class="info-badge-text">
                       <h4>Current rent is USD 5,479 per month</h4>
@@ -100,7 +100,7 @@
                   </div>
                   <div class="info-badge">
                     <div class="info-badge-icon">
-                      <img loading="lazy" src="/images/prop-details/line-chart-up-02.webp" alt="Yield" width="36" height="36" />
+                      <img loading="lazy" src="/static/images/prop-details/line-chart-up-02.webp" alt="Yield" width="36" height="36" />
                     </div>
                     <div class="info-badge-text">
                       <h4>7.45% annual gross yield</h4>
@@ -147,7 +147,7 @@
                 <!-- 9. Investment Calculator -->
                 <div id="calculator-section">
                   <div class="section-header">
-                    <img loading="lazy" src="/static/images/Portfolio asset details/settings-04.svg" alt="Investment Calculator" class="section-icon" width="24" height="24" />
+                    <img  src="/static/images/Portfolio%20asset%20details/settings-04.svg" alt="Investment Calculator" class="section-icon" width="24" height="24" />
                     <h2>Investment Calculator</h2>
                   </div>
                   <div class="calculator-div">
@@ -256,7 +256,7 @@
                 <!-- 10. Financials Section -->
                 <div class="financial-section">
                   <div class="financial-header">
-                    <img loading="lazy" src="/static/images/Portfolio asset details/coins-stacked-02.svg" alt="Financials" class="financial-icon" width="24" height="24" />
+                    <img  src="/static/images/Portfolio%20asset%20details/coins-stacked-02.svg" alt="Financials" class="financial-icon" width="24" height="24" />
                     <h2 class="financial-title">Financials</h2>
                   </div>
                   <div class="financial-content">
@@ -306,7 +306,7 @@
                 <!-- 11. Location Section -->
                 <div class="location-section">
                   <div class="location-header">
-                    <img loading="lazy" src="/static/images/Portfolio asset details/marker-pin-04.svg" alt="Location" class="location-icon" width="24" height="24" />
+                    <img  src="/static/images/Portfolio%20asset%20details/marker-pin-04.svg" alt="Location" class="location-icon" width="24" height="24" />
                     <h2 class="location-title">Location</h2>
                   </div>
                   <h3 class="location-subtitle">{{ asset.location_city | default('Uluwatu') }}, {{ asset.location_country | default('Bali, Indonesia') }}</h3>
@@ -323,12 +323,12 @@
                 <!-- 12. Property Developer -->
                 <div id="developer-section" class="developer-section">
                   <div class="developer-header">
-                    <img loading="lazy" src="/static/images/Portfolio asset details/building-03.svg" alt="Property Developer" class="developer-icon" width="24" height="24" />
+                    <img  src="/static/images/Portfolio%20asset%20details/building-03.svg" alt="Property Developer" class="developer-icon" width="24" height="24" />
                     <h3 class="developer-heading">Property developer</h3>
                   </div>
                   <div class="developer-card">
                     <div class="developer-logo-wrapper">
-                      <div class="developer-logo"><img src="/images/alexvillas.webp" alt="Alex Villas Logo" /></div>
+                      <div class="developer-logo"><img src="/static/images/alexvillas.webp" alt="Alex Villas Logo" /></div>
                     </div>
                     <div class="developer-text">
                       <h4 class="developer-name">ALEX VILLAS</h4>
@@ -360,7 +360,7 @@
                 <!-- 13. Documents Section -->
                 <div id="documents-section" class="documents-section">
                   <div class="documents-header">
-                    <img loading="lazy" src="/static/images/Portfolio%20asset%20details/Star%205.svg" alt="Documents" class="documents-icon" width="16" height="16" />
+                    <img  src="/static/images/Portfolio%20asset%20details/Star%205.svg" alt="Documents" class="documents-icon" width="16" height="16" />
                     <h3 class="documents-heading">Documents</h3>
                   </div>
                   <div class="documents-tabs">
@@ -371,24 +371,24 @@
                   <div class="documents-list">
                     <div class="document-item">
                       <div class="document-info">
-                        <div class="document-icon"><img loading="lazy" src="/static/images/Portfolio asset details/File type icon.svg" alt="Document" width="24" height="24" /></div>
+                        <div class="document-icon"><img  src="/static/images/Portfolio%20asset%20details/File%20type%20icon.svg" alt="Document" width="24" height="24" /></div>
                         <span class="document-name">Smart Contract</span>
                       </div>
-                      <button class="download-button"><img loading="lazy" src="/static/images/Portfolio asset details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
+                      <button class="download-button"><img  src="/static/images/Portfolio%20asset%20details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
                     </div>
                     <div class="document-item">
                       <div class="document-info">
-                        <div class="document-icon"><img loading="lazy" src="/static/images/Portfolio asset details/File type icon.svg" alt="Document" width="24" height="24" /></div>
+                        <div class="document-icon"><img  src="/static/images/Portfolio%20asset%20details/File%20type%20icon.svg" alt="Document" width="24" height="24" /></div>
                         <span class="document-name">Token Registration</span>
                       </div>
-                      <button class="download-button"><img loading="lazy" src="/static/images/Portfolio asset details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
+                      <button class="download-button"><img  src="/static/images/Portfolio%20asset%20details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
                     </div>
                     <div class="document-item">
                       <div class="document-info">
-                        <div class="document-icon"><img loading="lazy" src="/static/images/Portfolio asset details/File type icon.svg" alt="Document" width="24" height="24" /></div>
+                        <div class="document-icon"><img  src="/static/images/Portfolio%20asset%20details/File%20type%20icon.svg" alt="Document" width="24" height="24" /></div>
                         <span class="document-name">Articles_of_Organization_LLC.pdf</span>
                       </div>
-                      <button class="download-button"><img loading="lazy" src="/static/images/Portfolio asset details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
+                      <button class="download-button"><img  src="/static/images/Portfolio%20asset%20details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
                     </div>
                   </div>
                 </div>
@@ -414,7 +414,7 @@
                         <div class="price-card-icon">
                           <div class="icon-background"></div>
                           <div class="icon-glass">
-                            <img loading="lazy" src="/static/images/Portfolio asset details/bank-note-03.svg" alt="Property Price" width="20" height="20" />
+                            <img  src="/static/images/Portfolio%20asset%20details/bank-note-03.svg" alt="Property Price" width="20" height="20" />
                           </div>
                         </div>
                         <div class="price-card-supporting-text">Property price</div>
@@ -435,12 +435,12 @@
                     </div>
                     <div class="price-card-investors">
                       <div class="investors-left">
-                        <img loading="lazy" src="/static/images/Portfolio asset details/users-check.svg" alt="Investors" class="users-icon" width="20" height="20" />
+                        <img  src="/static/images/Portfolio%20asset%20details/users-check.svg" alt="Investors" class="users-icon" width="20" height="20" />
                         <span class="investors-number">{{ asset.investor_count }}</span>
                         <span class="investors-label">investors</span>
                       </div>
                       <div class="price-per-sqft-badge">
-                        <img loading="lazy" src="/static/images/Portfolio asset details/currency-dollar-circle.svg" alt="Dollar" class="dollar-icon" width="12" height="12" />
+                        <img  src="/static/images/Portfolio%20asset%20details/currency-dollar-circle.svg" alt="Dollar" class="dollar-icon" width="12" height="12" />
                         <span class="badge-text">USD {{ asset.price_per_sqft }}</span>
                         <span class="badge-suffix">/sqft</span>
                       </div>
@@ -494,7 +494,7 @@
                       <div class="property-card" onclick="window.location.href='/property/{{ sp.slug }}'">
                         <div class="property-gallery">
                           <div class="property-image-container">
-                            <div class="property-image active" style="background-image: url('{{ sp.cover_image_url | default('/images/villa1.webp') }}'); background-size: cover; background-position: center;"></div>
+                            <div class="property-image active" style="background-image: url('{{ sp.cover_image_url | default('/static/images/villa1.webp') }}'); background-size: cover; background-position: center;"></div>
                           </div>
                         </div>
                         <div class="property-content">
@@ -563,10 +563,10 @@
           </button>
           <div class="mobile-gallery-scroll" id="mobileGalleryScroll">
             <div class="mobile-gallery-slide" data-index="0">
-              <img src="{{ asset.cover_image_url | default('/images/villa8.webp') }}" alt="{{ asset.title }}" class="mobile-gallery-img gallery-clickable" loading="lazy" data-lightbox-index="0" />
+              <img src="{{ asset.cover_image_url | default('/static/images/villa8.webp') }}" alt="{{ asset.title }}" class="mobile-gallery-img gallery-clickable" loading="lazy" data-lightbox-index="0" />
             </div>
             <div class="mobile-gallery-slide" data-index="1">
-              <img src="/images/villa3_2.webp" alt="{{ asset.title }} interior" class="mobile-gallery-img gallery-clickable" loading="lazy" data-lightbox-index="1" />
+              <img src="/static/images/villa3_2.webp" alt="{{ asset.title }} interior" class="mobile-gallery-img gallery-clickable" loading="lazy" data-lightbox-index="1" />
             </div>
           </div>
           <div class="mobile-gallery-indicators" id="mobileGalleryIndicators">
@@ -578,12 +578,12 @@
       <div id="mobile-property-price-card" class="mobile-price-card">
         <div class="mobile-card-buttons">
           <button class="mobile-gallery-btn" onclick="openLightbox(0)">
-            <img loading="lazy" src="/images/prop-details/Iconimage.webp" alt="Photos" width="20" height="20" />
+            <img  src="/static/images/prop-details/Iconimage.webp" alt="Photos" width="20" height="20" />
             <span>12 photos</span>
           </button>
           <div class="mobile-btn-divider"></div>
           <button class="mobile-gallery-btn" onclick="openVirtualTour()">
-            <img loading="lazy" src="/images/prop-details/Iconcube.webp" alt="Virtual tour" width="20" height="20" />
+            <img  src="/static/images/prop-details/Iconcube.webp" alt="Virtual tour" width="20" height="20" />
             <span>Virtual tour</span>
           </button>
         </div>
@@ -594,7 +594,7 @@
                 <div class="mobile-card-icon">
                   <div class="icon-background"></div>
                   <div class="icon-glass">
-                    <img loading="lazy" src="/static/images/Portfolio asset details/bank-note-03.svg" alt="Property Price" width="20" height="20" />
+                    <img  src="/static/images/Portfolio%20asset%20details/bank-note-03.svg" alt="Property Price" width="20" height="20" />
                   </div>
                 </div>
                 <div class="mobile-supporting-text">Property price</div>
@@ -615,12 +615,12 @@
             </div>
             <div class="mobile-investors">
               <div class="investors-left">
-                <img loading="lazy" src="/static/images/Portfolio asset details/users-check.svg" alt="Investors" class="users-icon" width="20" height="20" />
+                <img  src="/static/images/Portfolio%20asset%20details/users-check.svg" alt="Investors" class="users-icon" width="20" height="20" />
                 <span class="investors-number">{{ asset.investor_count }}</span>
                 <span class="investors-label">investors</span>
               </div>
               <div class="price-per-sqft-badge">
-                <img loading="lazy" src="/static/images/Portfolio asset details/currency-dollar-circle.svg" alt="Dollar" class="dollar-icon" width="12" height="12" />
+                <img  src="/static/images/Portfolio%20asset%20details/currency-dollar-circle.svg" alt="Dollar" class="dollar-icon" width="12" height="12" />
                 <span class="badge-text">USD {{ asset.price_per_sqft }}</span>
                 <span class="badge-suffix">/sqft</span>
               </div>
@@ -653,13 +653,13 @@
           <h1 class="mobile-property-title">{{ asset.title | default('Villa Janoor, Uluwatu - Golf Estates residence, Bay area') }}</h1>
         </div>
         <div class="mobile-categories">
-          <div class="mobile-category-badge"><img loading="lazy" src="/images/Bed.svg" alt="Beds" width="24" height="24" /><span>{{ asset.bedrooms | default(4) }}</span></div>
+          <div class="mobile-category-badge"><img  src="/static/images/Bed.svg" alt="Beds" width="24" height="24" /><span>{{ asset.bedrooms | default(4) }}</span></div>
           <div class="mobile-category-divider"></div>
-          <div class="mobile-category-badge"><img loading="lazy" src="/images/bookmark-check.svg" alt="Ready" width="16" height="16" /><span>Ready</span></div>
+          <div class="mobile-category-badge"><img  src="/static/images/bookmark-check.svg" alt="Ready" width="16" height="16" /><span>Ready</span></div>
           <div class="mobile-category-divider"></div>
-          <div class="mobile-category-badge"><img loading="lazy" src="/images/prop-details/maximize-02.svg" alt="Area" width="16" height="16" /><span>1,376 Sq Ft</span></div>
+          <div class="mobile-category-badge"><img  src="/static/images/prop-details/maximize-02.svg" alt="Area" width="16" height="16" /><span>1,376 Sq Ft</span></div>
           <div class="mobile-category-divider"></div>
-          <div class="mobile-category-badge"><img loading="lazy" src="/images/prop-details/markerpin.svg" alt="Location" width="16" height="16" /><span>{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</span></div>
+          <div class="mobile-category-badge"><img  src="/static/images/prop-details/markerpin.svg" alt="Location" width="16" height="16" /><span>{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</span></div>
         </div>
       </div>
     </div>

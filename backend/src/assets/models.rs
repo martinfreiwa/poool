@@ -18,7 +18,7 @@ pub struct MarketplaceAsset {
     pub annual_yield_bps: Option<i32>,
     pub capital_appreciation_bps: Option<i32>,
     pub funding_status: String,
-    pub cover_image_url: Option<String>,
+    pub image_urls: Option<Vec<String>>,
     pub bedrooms: Option<i32>,
     pub lease_type: Option<String>,
     pub term_months: Option<i32>,
@@ -43,6 +43,7 @@ pub struct PropertyDisplayData {
     pub bedrooms: Option<i32>,
     pub lease_type: Option<String>,
     pub term_months: Option<i32>,
+    pub image_urls: Vec<String>,
     pub cover_image_url: Option<String>,
     pub funding_status: String,
 
@@ -121,7 +122,11 @@ impl PropertyDisplayData {
             bedrooms: asset.bedrooms,
             lease_type: asset.lease_type.clone(),
             term_months: asset.term_months,
-            cover_image_url: asset.cover_image_url.clone(),
+            image_urls: asset.image_urls.clone().unwrap_or_default(),
+            cover_image_url: asset
+                .image_urls
+                .as_ref()
+                .and_then(|urls| urls.first().cloned()),
             funding_status: asset.funding_status.clone(),
             total_value_usd: format_number(total_value_dollars),
             total_value_cents: asset.total_value_cents,

@@ -129,7 +129,7 @@ extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigatio
               {% if asset.city %}
               <div class="card-meta-divider"></div>
               <div class="card-meta-item">
-                <img src="/images/{{ asset.country | default('ID') }}.webp" onerror="this.style.display='none'"
+                <img src="/static/images/{{%20asset.country%20|%20default('ID')%20}}.webp" onerror="this.style.display='none'"
                   width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;"
                   alt="{{ asset.country | default('ID') }}">
                 <span>{{ asset.city }}{% if asset.country %}, {{ asset.country }}{% endif %}</span>

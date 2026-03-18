@@ -1,6 +1,6 @@
 /**
  * Leaderboard Page — Client-side logic
- * Fetches rankings, populates podium + table, handles timeframe toggle & visibility preferences.
+ * Fetches rankings, populates podium + table, handles metric toggle & visibility preferences.
  */
 
 (function () {
@@ -13,7 +13,8 @@
     d.appendChild(document.createTextNode(str));
     return d.innerHTML;
   }
-  let currentTimeframe = 'alltime';
+
+  let currentMetric = 'invested';
   let currentPage = 1;
   let currentSearch = '';
   let currentTier = '';
@@ -22,13 +23,35 @@
   let searchTimeout = null;
   let cachedPrefs = null;
 
+  function formatMetric(val, type) {
+    if (type === 'invested' || type === 'revenue' || type === 'highest_inv') {
+      return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(val / 100);
+    } else if (type === 'roi') {
+      return (val / 100).toFixed(2) + '%';
+    } else {
+      return val.toLocaleString();
+    }
+  }
+
+  function getMetricName(type) {
+    const map = {
+      'invested': 'Total Investment',
+      'assets': 'Number of Assets',
+      'roi': 'Portfolio ROI',
+      'affiliates': 'Affiliates Count',
+      'revenue': 'Affiliate Revenue',
+      'highest_inv': 'Highest Single Investment'
+    };
+    return map[type] || 'Score';
+  }
+
   // ─── Init ──────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', init);
 
   async function init() {
     try {
       const [data, prefs] = await Promise.all([
-        fetchRankings(currentTimeframe, currentPage, currentSearch, currentTier),
+        fetchRankings(currentMetric, currentPage, currentSearch, currentTier),
         fetchPreferences(),
       ]);
 
@@ -59,9 +82,9 @@
   }
 
   // ─── API Calls ─────────────────────────────────────────────────
-  async function fetchRankings(timeframe, page, search, tier) {
+  async function fetchRankings(metric, page, search, tier) {
     page = page || 1;
-    let url = `/api/leaderboard?timeframe=${timeframe}&page=${page}`;
+    let url = `/api/leaderboard?metric=${metric}&page=${page}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (tier) url += `&tier_id=${tier}`;
 
@@ -129,7 +152,7 @@
       var tierEl = document.getElementById('lb-podium-' + pos.slot + '-tier');
 
       if (nameEl) nameEl.textContent = entry.display_name;
-      if (scoreEl) scoreEl.textContent = entry.total_score;
+      if (scoreEl) scoreEl.textContent = formatMetric(entry.metric_value, currentMetric);
       if (avatarEl && entry.avatar_url) avatarEl.src = entry.avatar_url;
       if (tierEl) {
         tierEl.textContent = entry.tier_name;
@@ -142,41 +165,16 @@
   function renderMyRank(myRank) {
     var rankEl = document.getElementById('lb-my-rank');
     var scoreEl = document.getElementById('lb-my-score');
-    var deltaEl = document.getElementById('lb-my-delta');
+    var labelEl = document.getElementById('lb-my-metric-label');
 
     if (rankEl) {
       rankEl.textContent = myRank.rank ? '#' + myRank.rank : '#—';
     }
     if (scoreEl) {
-      scoreEl.textContent = myRank.total_score;
+      scoreEl.textContent = formatMetric(myRank.metric_value, currentMetric);
     }
-
-    if (deltaEl) {
-      var d = myRank.delta_weekly;
-      if (d > 0) {
-        deltaEl.textContent = '↑ ' + d;
-        deltaEl.className = 'lb-yr-delta positive';
-      } else if (d < 0) {
-        deltaEl.textContent = '↓ ' + Math.abs(d);
-        deltaEl.className = 'lb-yr-delta negative';
-      } else {
-        deltaEl.textContent = '— 0';
-        deltaEl.className = 'lb-yr-delta neutral';
-      }
-    }
-
-    // Score breakdown bars
-    var bd = myRank.score_breakdown;
-    setBar('lb-bar-invest', bd.invest_score);
-    setBar('lb-bar-referral', bd.referral_score);
-    setBar('lb-bar-tier', bd.tier_score);
-    setBar('lb-bar-diversity', bd.diversity_score);
-  }
-
-  function setBar(id, score) {
-    var el = document.getElementById(id);
-    if (el) {
-      el.style.width = (score / 10) + '%';
+    if (labelEl) {
+      labelEl.textContent = getMetricName(currentMetric);
     }
   }
 
@@ -190,6 +188,12 @@
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#667085;padding:24px;">No investors found matching your filters.</td></tr>';
         return;
       }
+    }
+
+    // Update table header to dynamic metric name
+    var headerEl = document.getElementById('lb-table-metric-header');
+    if (headerEl) {
+      headerEl.textContent = getMetricName(currentMetric);
     }
 
     rankings.forEach(function (entry) {
@@ -209,7 +213,7 @@
 
       var avatarImg = document.createElement('img');
       avatarImg.className = 'lb-row-avatar';
-      avatarImg.src = entry.avatar_url || '/images/Image.webp';
+      avatarImg.src = entry.avatar_url || '/static/images/Image.webp';
       avatarImg.alt = entry.display_name;
       investorDiv.appendChild(avatarImg);
 
@@ -228,34 +232,30 @@
       investorTd.appendChild(investorDiv);
       tr.appendChild(investorTd);
 
-      // Score cell with bar
+      // Score cell
       var scoreTd = document.createElement('td');
       var scoreDiv = document.createElement('div');
       scoreDiv.className = 'lb-score-bar-cell';
+      scoreDiv.style.flexDirection = 'row';
+      scoreDiv.style.alignItems = 'center';
 
       var scoreNum = document.createElement('span');
       scoreNum.className = 'score-number';
-      scoreNum.textContent = entry.total_score;
+      scoreNum.textContent = formatMetric(entry.metric_value, currentMetric);
       scoreDiv.appendChild(scoreNum);
 
-      var barOuter = document.createElement('div');
-      barOuter.className = 'score-bar ds-progress ds-progress--sm';
-      var barInner = document.createElement('div');
-      barInner.className = 'score-bar-fill ds-progress__fill';
-      barInner.style.width = (entry.total_score / 10) + '%';
-      barOuter.appendChild(barInner);
-      scoreDiv.appendChild(barOuter);
-
-      // --- Add hover tooltip for score breakdown ---
-      if (entry.score_breakdown) {
+      // --- Add hover tooltip for raw metrics ---
+      if (entry.metrics) {
         var tt = document.createElement('div');
         tt.className = 'lb-score-tooltip';
         tt.innerHTML =
-          '<div class="lb-tt-header">Score Breakdown</div>' +
-          '<div class="lb-tt-row"><span>Investment:</span> <span>' + escHtml(String(entry.score_breakdown.invest_score)) + '</span></div>' +
-          '<div class="lb-tt-row"><span>Referrals:</span> <span>' + escHtml(String(entry.score_breakdown.referral_score)) + '</span></div>' +
-          '<div class="lb-tt-row"><span>Tier:</span> <span>' + escHtml(String(entry.score_breakdown.tier_score)) + '</span></div>' +
-          '<div class="lb-tt-row"><span>Diversity:</span> <span>' + escHtml(String(entry.score_breakdown.diversity_score)) + '</span></div>';
+          '<div class="lb-tt-header">Investor Details</div>' +
+          '<div class="lb-tt-row"><span>Total Investment:</span> <span>' + escHtml(formatMetric(entry.metrics.total_invested_cents, 'invested')) + '</span></div>' +
+          '<div class="lb-tt-row"><span>Assets:</span> <span>' + escHtml(String(entry.metrics.asset_count)) + '</span></div>' +
+          '<div class="lb-tt-row"><span>Portfolio ROI:</span> <span>' + escHtml(formatMetric(entry.metrics.portfolio_roi_bps, 'roi')) + '</span></div>' +
+          '<div class="lb-tt-row"><span>Affiliates:</span> <span>' + escHtml(String(entry.metrics.affiliate_count)) + '</span></div>' +
+          '<div class="lb-tt-row"><span>Ref Revenue:</span> <span>' + escHtml(formatMetric(entry.metrics.referral_revenue_cents, 'revenue')) + '</span></div>' +
+          '<div class="lb-tt-row"><span>Highest Inv:</span> <span>' + escHtml(formatMetric(entry.metrics.highest_investment_cents, 'highest_inv')) + '</span></div>';
         scoreDiv.appendChild(tt);
       }
 
@@ -316,17 +316,11 @@
   }
 
   // ─── Global Handlers ──────────────────────────────────────────
-  window.switchTimeframe = async function (btn) {
-    // Update active button state
-    document.querySelectorAll('.lb-tf-btn').forEach(function (b) {
-      b.classList.remove('active', 'ds-btn--primary');
-      b.classList.add('ds-btn--secondary');
-    });
-    btn.classList.add('active', 'ds-btn--primary');
-    btn.classList.remove('ds-btn--secondary');
-
-    var tf = btn.dataset.tf;
-    currentTimeframe = tf;
+  window.switchMetric = async function () {
+    var select = document.getElementById('lb-metric-select');
+    if (!select) return;
+    
+    currentMetric = select.value;
     currentPage = 1;
     await refetchAndRender();
   };
@@ -355,7 +349,7 @@
 
     currentPage++;
     try {
-      var data = await fetchRankings(currentTimeframe, currentPage, currentSearch, currentTier);
+      var data = await fetchRankings(currentMetric, currentPage, currentSearch, currentTier);
       renderTable(data.rankings, true);
       renderLoadMore(data);
     } catch (e) {
@@ -381,7 +375,7 @@
     });
 
     try {
-      var data = await fetchRankings(currentTimeframe, currentPage, currentSearch, currentTier);
+      var data = await fetchRankings(currentMetric, currentPage, currentSearch, currentTier);
 
       // Only go to full-page empty state when there are zero investors on the leaderboard at all (no filters active)
       if (!data || (data.total_participants === 0 && !hasFilters)) {

@@ -168,11 +168,11 @@
     <!-- CSS Bundle (design system + common styles, built by build-bundle.sh) -->
     <link rel="stylesheet" href="/static/css/bundle.css?v={{ asset_version }}" />
     <link rel="stylesheet" href="/static/css/poool-dropdown.css?v={{ asset_version }}" />
-    <script src="/static/js/toast.js?v={{ asset_version }}"></script>
-    <script src="/static/js/user-data.js?v={{ asset_version }}"></script>
-    <script src="/static/js/poool-dropdown.js?v={{ asset_version }}"></script>
-    <script src="/static/js/poool-dropdown-init.js?v={{ asset_version }}"></script>
-    <script src="/static/js/sidebar-community.js?v={{ asset_version }}"></script>
+    <script src="/static/js/toast.js?v={{%20asset_version%20}}"></script>
+    <script src="/static/js/user-data.js?v={{%20asset_version%20}}"></script>
+    <script src="/static/js/poool-dropdown.js?v={{%20asset_version%20}}"></script>
+    <script src="/static/js/poool-dropdown-init.js?v={{%20asset_version%20}}"></script>
+    <script src="/static/js/sidebar-community.js?v={{%20asset_version%20}}"></script>
 
     <!-- Page Specific CSS and Scripts -->
     {% if extra_css %}
@@ -182,7 +182,7 @@
     {% endif %}
     {% if extra_js %}
     {% for js in extra_js %}
-    <script src="/static/js/{{ js }}.js?v={{ asset_version }}"></script>
+    <script src="/static/js/{{%20js%20}}.js?v={{%20asset_version%20}}"></script>
     {% endfor %}
     {% endif %}
 

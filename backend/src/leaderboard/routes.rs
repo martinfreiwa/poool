@@ -31,7 +31,7 @@ pub async fn page_leaderboard(jar: CookieJar, State(state): State<AppState>) -> 
 }
 
 /// GET /api/leaderboard — Get rankings.
-/// Query params: ?timeframe=weekly|monthly|alltime&page=1
+/// Query params: ?metric=invested|assets|roi|affiliates|revenue|highest_inv&page=1
 pub async fn get_rankings(
     jar: CookieJar,
     State(state): State<AppState>,
@@ -42,10 +42,10 @@ pub async fn get_rankings(
         Err(resp) => return resp,
     };
 
-    let timeframe = params
-        .get("timeframe")
+    let metric_type = params
+        .get("metric")
         .cloned()
-        .unwrap_or_else(|| "alltime".to_string());
+        .unwrap_or_else(|| "invested".to_string());
     let page: i64 = params
         .get("page")
         .and_then(|p| p.parse().ok())
@@ -60,7 +60,7 @@ pub async fn get_rankings(
         .cloned();
 
     match service::get_rankings(
-        &state.db, user_id, &timeframe, page, per_page, tier_id, search,
+        &state.db, user_id, &metric_type, page, per_page, tier_id, search,
     )
     .await
     {
@@ -77,7 +77,7 @@ pub async fn get_rankings(
 }
 
 /// GET /api/leaderboard/me — Get the current user's rank.
-/// Query params: ?timeframe=weekly|monthly|alltime
+/// Query params: ?metric=invested|assets|roi|affiliates|revenue|highest_inv
 pub async fn get_my_rank(
     jar: CookieJar,
     State(state): State<AppState>,
@@ -88,12 +88,12 @@ pub async fn get_my_rank(
         Err(resp) => return resp,
     };
 
-    let timeframe = params
-        .get("timeframe")
+    let metric_type = params
+        .get("metric")
         .cloned()
-        .unwrap_or_else(|| "alltime".to_string());
+        .unwrap_or_else(|| "invested".to_string());
 
-    match service::get_user_rank(&state.db, user_id, &timeframe).await {
+    match service::get_user_rank(&state.db, user_id, &metric_type).await {
         Ok(rank) => Json(rank).into_response(),
         Err(e) => {
             tracing::error!("Failed to get user rank for {}: {}", user_id, e);

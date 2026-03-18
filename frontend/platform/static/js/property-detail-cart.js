@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", function () {
       let propertyImage =
         galleryImg?.src ||
         galleryImg?.getAttribute("src") ||
-        "/images/villa1.webp";
+        "/static/images/villa1.webp";
 
       // If the src is a full URL, we might need to extract the path
       if (propertyImage.startsWith("http")) {

@@ -61,11 +61,17 @@ include
         <!-- 4. CONTENT STATE -->
         <div id="lb-content-layer" class="lb-content-layer hidden">
 
-          <!-- Timeframe Toggle -->
-          <div class="lb-timeframe-bar">
-            <button class="ds-btn ds-btn--primary lb-tf-btn active" data-tf="alltime" onclick="switchTimeframe(this)">All Time</button>
-            <button class="ds-btn ds-btn--secondary lb-tf-btn" data-tf="monthly" onclick="switchTimeframe(this)">This Month</button>
-            <button class="ds-btn ds-btn--secondary lb-tf-btn" data-tf="weekly" onclick="switchTimeframe(this)">This Week</button>
+          <!-- Metric Toggle -->
+          <div class="lb-timeframe-bar" style="margin-bottom: 24px; display: flex; align-items: center; justify-content: flex-end; gap: 12px;">
+            <span style="font-weight: 500; color: #344054;">Ranking By:</span>
+            <select id="lb-metric-select" class="lb-select" onchange="switchMetric()" style="min-width: 250px;">
+              <option value="invested">Total Investment</option>
+              <option value="assets">Number of Assets</option>
+              <option value="roi">Portfolio ROI</option>
+              <option value="affiliates">Affiliates Count</option>
+              <option value="revenue">Affiliate Revenue</option>
+              <option value="highest_inv">Highest Single Investment</option>
+            </select>
           </div>
 
           <!-- Podium: Top 3 -->
@@ -73,7 +79,7 @@ include
             <!-- #2 -->
             <div class="lb-podium-slot lb-podium-second" id="lb-podium-2">
               <div class="lb-podium-avatar-wrap silver">
-                <img id="lb-podium-2-avatar" src="/images/Image.webp" alt="2nd place" class="lb-podium-avatar" />
+                <img id="lb-podium-2-avatar" src="/static/images/Image.webp" alt="2nd place" class="lb-podium-avatar" />
                 <div class="lb-podium-medal">2</div>
               </div>
               <span id="lb-podium-2-name" class="lb-podium-name">—</span>
@@ -90,7 +96,7 @@ include
                 </svg>
               </div>
               <div class="lb-podium-avatar-wrap gold">
-                <img id="lb-podium-1-avatar" src="/images/Image.webp" alt="1st place" class="lb-podium-avatar" />
+                <img id="lb-podium-1-avatar" src="/static/images/Image.webp" alt="1st place" class="lb-podium-avatar" />
                 <div class="lb-podium-medal">1</div>
               </div>
               <span id="lb-podium-1-name" class="lb-podium-name">—</span>
@@ -100,7 +106,7 @@ include
             <!-- #3 -->
             <div class="lb-podium-slot lb-podium-third" id="lb-podium-3">
               <div class="lb-podium-avatar-wrap bronze">
-                <img id="lb-podium-3-avatar" src="/images/Image.webp" alt="3rd place" class="lb-podium-avatar" />
+                <img id="lb-podium-3-avatar" src="/static/images/Image.webp" alt="3rd place" class="lb-podium-avatar" />
                 <div class="lb-podium-medal">3</div>
               </div>
               <span id="lb-podium-3-name" class="lb-podium-name">—</span>
@@ -115,32 +121,11 @@ include
               <span class="lb-yr-label">Your Position</span>
               <div class="lb-yr-rank-row">
                 <span class="lb-yr-rank" id="lb-my-rank">#—</span>
-                <span class="lb-yr-delta" id="lb-my-delta"></span>
               </div>
             </div>
-            <div class="lb-yr-center">
-              <span class="lb-yr-score-label">Total Score</span>
+            <div class="lb-yr-center" style="flex: 1; text-align: center;">
+              <span class="lb-yr-score-label" id="lb-my-metric-label">Total Investment</span>
               <span class="lb-yr-score" id="lb-my-score">0</span>
-            </div>
-            <div class="lb-yr-right">
-              <div class="lb-yr-breakdown" id="lb-my-breakdown">
-                <div class="lb-yr-bar-item">
-                  <span class="lb-yr-bar-label">Investment</span>
-                  <div class="lb-yr-bar ds-progress ds-progress--sm"><div class="lb-yr-bar-fill ds-progress__fill invest" id="lb-bar-invest" style="width: 0%"></div></div>
-                </div>
-                <div class="lb-yr-bar-item">
-                  <span class="lb-yr-bar-label">Referrals</span>
-                  <div class="lb-yr-bar ds-progress ds-progress--sm"><div class="lb-yr-bar-fill ds-progress__fill referral" id="lb-bar-referral" style="width: 0%"></div></div>
-                </div>
-                <div class="lb-yr-bar-item">
-                  <span class="lb-yr-bar-label">Tier</span>
-                  <div class="lb-yr-bar ds-progress ds-progress--sm"><div class="lb-yr-bar-fill ds-progress__fill tier" id="lb-bar-tier" style="width: 0%"></div></div>
-                </div>
-                <div class="lb-yr-bar-item">
-                  <span class="lb-yr-bar-label">Diversity</span>
-                  <div class="lb-yr-bar ds-progress ds-progress--sm"><div class="lb-yr-bar-fill ds-progress__fill diversity" id="lb-bar-diversity" style="width: 0%"></div></div>
-                </div>
-              </div>
             </div>
             <div class="lb-yr-visibility">
               <label class="lb-toggle-label">
@@ -181,7 +166,7 @@ include
                 <tr>
                   <th>#</th>
                   <th>Investor</th>
-                  <th>Score</th>
+                  <th id="lb-table-metric-header">Total Investment</th>
                   <th>Tier</th>
                 </tr>
               </thead>

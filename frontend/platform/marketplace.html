@@ -54,7 +54,7 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
                 <label id="filter-bar-location-label" class="filter-label"><span
                     class="filter-label-text">Location</span></label>
                 <div id="filter-bar-location-dropdown" class="dropdown-wrapper">
-                  <img loading="lazy" id="filter-bar-location-icon" src="/images/ID.webp" alt=""
+                  <img  id="filter-bar-location-icon" src="/static/images/ID.webp" alt=""
                     class="dropdown-icon" />
                   <select id="filter-bar-location-select" class="dropdown-select">
                     <option value="any" selected>All locations</option>
@@ -84,7 +84,7 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
                     <path d="M8 8.67V5.33" stroke="#A4A7AE" stroke-width="1.33" stroke-linecap="round"></path>
                   </svg></label>
                 <div id="filter-bar-investment-dropdown" class="dropdown-wrapper">
-                  <img loading="lazy" id="filter-bar-investment-icon" src="/images/dollar.svg" alt=""
+                  <img  id="filter-bar-investment-icon" src="/static/images/dollar.svg" alt=""
                     class="dropdown-icon" />
                   <select id="filter-bar-investment-select" class="dropdown-select">
                     <option value="any">Any type</option>
@@ -110,7 +110,7 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
                     <path d="M8 8.67V5.33" stroke="#A4A7AE" stroke-width="1.33" stroke-linecap="round"></path>
                   </svg></label>
                 <div id="filter-bar-property-dropdown" class="dropdown-wrapper">
-                  <img loading="lazy" id="filter-bar-property-icon" src="/images/home-03.svg" alt=""
+                  <img  id="filter-bar-property-icon" src="/static/images/home-03.svg" alt=""
                     class="dropdown-icon" />
                   <select id="filter-bar-property-select" class="dropdown-select">
                     <option value="any">Any type</option>
@@ -186,16 +186,34 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
                 onclick="window.location.href = '/property/{{ asset.slug }}'">
                 <div class="property-gallery">
                   <div class="property-image-container">
-                    <div class="property-image active"
-                      style="background-image: url('{{ asset.cover_image_url | default('/images/villa1.webp') }}'); background-size: cover; background-position: center;"
-                      aria-label="{{ asset.title }}"></div>
+                    {% if asset.image_urls and asset.image_urls | length > 0 %}
+                      {% for img in asset.image_urls %}
+                      <div class="property-image {% if loop.index0 == 0 %}active{% endif %}"
+                        style="background-image: url('{{ img }}'); background-size: cover; background-position: center;"
+                        aria-label="{{ asset.title }}"></div>
+                      {% endfor %}
+                    {% else %}
+                      <div class="property-image active"
+                        style="background-image: url('{{ asset.cover_image_url | default('/static/images/villa1.webp') }}'); background-size: cover; background-position: center;"
+                        aria-label="{{ asset.title }}"></div>
+                    {% endif %}
+                    
                     <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">
                       <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                     </button>
                     <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image">
                       <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
-                    <div class="property-dots"><div class="property-dot active"></div></div>
+                    
+                    <div class="property-dots">
+                    {% if asset.image_urls and asset.image_urls | length > 0 %}
+                      {% for img in asset.image_urls %}
+                        <div class="property-dot {% if loop.index0 == 0 %}active{% endif %}"></div>
+                      {% endfor %}
+                    {% else %}
+                        <div class="property-dot active"></div>
+                    {% endif %}
+                    </div>
                   </div>
                   <div class="property-badge ds-badge ds-badge--overlay {{ badge_class }}">
                     <span class="badge-text">{{ lease_label }}</span>
@@ -216,7 +234,7 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
                     </div>
                     <div class="card-meta-divider"></div>
                     <div class="card-meta-item">
-                      <img src="/images/{{ asset.location_country }}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{{ asset.location_country }}">
+                      <img src="/static/images/{{%20asset.location_country%20}}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{{ asset.location_country }}">
                       <span>{{ asset.location_city }}, {{ asset.location_country }}</span>
                     </div>
                   </div>

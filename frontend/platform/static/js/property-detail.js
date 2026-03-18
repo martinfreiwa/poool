@@ -24,7 +24,7 @@ function getGalleryImages() {
 
   // Fallback to default if no images found
   if (images.length === 0) {
-    return [{ src: "/images/villa1.webp", caption: "Main property view" }];
+    return [{ src: "/static/images/villa1.webp", caption: "Main property view" }];
   }
 
   return images;

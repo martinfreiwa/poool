@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            a.id,\n            a.title,\n            a.slug,\n            a.short_description,\n            a.asset_type,\n            a.location_city,\n            a.location_country,\n            a.total_value_cents,\n            a.token_price_cents,\n            a.tokens_total,\n            a.tokens_available,\n            a.annual_yield_bps,\n            a.capital_appreciation_bps,\n            a.funding_status,\n            ai.image_url AS \"cover_image_url?\",\n            a.bedrooms,\n            a.lease_type,\n            a.term_months,\n            a.area,\n            a.land_size_sqm,\n            (\n                SELECT COUNT(DISTINCT o.user_id)\n                FROM order_items oi\n                JOIN orders o ON oi.order_id = o.id\n                WHERE oi.asset_id = a.id\n                  AND o.status = 'completed'\n            ) AS \"investor_count?\"\n        FROM assets a\n        LEFT JOIN asset_images ai ON a.id = ai.asset_id AND ai.is_cover = true\n        WHERE a.published = true\n          AND a.asset_type = 'commodity'\n          AND a.funding_status IN ('funding_open', 'funding_in_progress')\n        ORDER BY a.featured DESC, a.created_at DESC\n        ",
+  "query": "\n            SELECT\n                a.id,\n                a.title,\n                a.slug,\n                a.short_description,\n                a.asset_type,\n                a.location_city,\n                a.location_country,\n                a.total_value_cents,\n                a.token_price_cents,\n                a.tokens_total,\n                a.tokens_available,\n                a.annual_yield_bps,\n                a.capital_appreciation_bps,\n                a.funding_status,\n                ARRAY(\n                SELECT image_url \n                FROM asset_images \n                WHERE asset_id = a.id \n                ORDER BY is_cover DESC, created_at ASC\n            ) AS \"image_urls?\",\n                a.bedrooms,\n                a.lease_type,\n                a.term_months,\n                a.area,\n                a.land_size_sqm,\n                (\n                    SELECT COUNT(DISTINCT o.user_id)\n                    FROM order_items oi\n                    JOIN orders o ON oi.order_id = o.id\n                    WHERE oi.asset_id = a.id\n                      AND o.status = 'completed'\n                ) AS \"investor_count?\"\n            FROM assets a\n            \n            WHERE a.slug = $1 AND a.published = true\n            ",
   "describe": {
     "columns": [
       {
@@ -75,8 +75,8 @@
       },
       {
         "ordinal": 14,
-        "name": "cover_image_url?",
-        "type_info": "Varchar"
+        "name": "image_urls?",
+        "type_info": "VarcharArray"
       },
       {
         "ordinal": 15,
@@ -110,7 +110,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
       false,
@@ -127,7 +129,7 @@
       true,
       true,
       false,
-      false,
+      null,
       true,
       true,
       true,
@@ -136,5 +138,5 @@
       null
     ]
   },
-  "hash": "b3f1fcb6aec2a92cf6bd1455654cb9c4faadd4e98c4fdf055a8f2764977df42a"
+  "hash": "b7a20e5e98bf873d702f0950836efff400d5d208146585860e4639cff844e202"
 }

@@ -408,7 +408,7 @@ if (typeof window.getCsrfToken === "undefined") {
                             <div id="menu-item-account-developer" class="profile-menu-item account-item ${savedProfile === "developer" ? "selected" : ""}" data-profile-id="${escHtml(user.email)}-developer">
                                 <div class="profile-account-content">
                                     <div class="profile-avatar-group">
-                                        <div class="profile-avatar"><img src="/images/Featured icon.webp" alt="${escHtml(user.name)}">
+                                        <div class="profile-avatar"><img src="/static/images/Featured%20icon.webp" alt="${escHtml(user.name)}">
                                             <div class="profile-avatar-border"></div>
                                             <div class="profile-online-indicator"></div>
                                         </div>

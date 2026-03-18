@@ -176,6 +176,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
+    // Leaderboard: Refresh metrics and rankings periodically
+    let leaderboard_pool = pool.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(15 * 60)); // 15 mins
+        // Small initial delay to avoid slamming the DB on immediate startup
+        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+        loop {
+            if let Err(e) = crate::leaderboard::service::refresh_all_scores(&leaderboard_pool).await {
+                tracing::error!("Error refreshing leaderboard scores: {}", e);
+            }
+            interval.tick().await;
+        }
+    });
+
     // Housekeeping: Purge expired sessions and used password reset tokens
     let housekeeping_pool = pool.clone();
     tokio::spawn(async move {

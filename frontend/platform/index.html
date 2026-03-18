@@ -61,9 +61,9 @@
                     id="filter-bar-location-dropdown"
                     class="dropdown-wrapper"
                   >
-                    <img loading="lazy"
+                    <img 
                       id="filter-bar-location-icon"
-                      src="/images/ID.webp"
+                      src="/static/images/ID.webp"
                       alt=""
                       class="dropdown-icon"
                     />
@@ -130,9 +130,9 @@
                     id="filter-bar-investment-dropdown"
                     class="dropdown-wrapper"
                   >
-                    <img loading="lazy"
+                    <img 
                       id="filter-bar-investment-icon"
-                      src="/images/dollar.svg"
+                      src="/static/images/dollar.svg"
                       alt=""
                       class="dropdown-icon"
                     />
@@ -199,9 +199,9 @@
                     id="filter-bar-property-dropdown"
                     class="dropdown-wrapper"
                   >
-                    <img loading="lazy"
+                    <img 
                       id="filter-bar-property-icon"
-                      src="/images/home-03.svg"
+                      src="/static/images/home-03.svg"
                       alt=""
                       class="dropdown-icon"
                     />
@@ -316,7 +316,7 @@
         <div class="property-image-container">
           <div
             class="property-image active"
-            style="background-image: url('{{ asset.cover_image_url | default('/images/villa1.webp') }}'); background-size: cover; background-position: center;"
+            style="background-image: url('{{ asset.cover_image_url | default('/static/images/villa1.webp') }}'); background-size: cover; background-position: center;"
             aria-label="{{ asset.title }}"
           ></div>
         </div>
