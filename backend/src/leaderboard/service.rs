@@ -155,6 +155,7 @@ fn metric_columns(metric_type: &str) -> (&str, &str) {
 ///   - **Weekly/Monthly** (`timeframe == "weekly" | "monthly"`): computes
 ///     time-filtered metrics at query time by aggregating only investments
 ///     purchased within the timeframe window, then ranking inline with ROW_NUMBER.
+#[allow(clippy::too_many_arguments)]
 pub async fn get_rankings(
     pool: &PgPool,
     current_user_id: Uuid,
@@ -209,6 +210,7 @@ pub async fn get_rankings(
 }
 
 /// All-time rankings: read directly from precomputed `leaderboard_scores`.
+#[allow(clippy::too_many_arguments)]
 async fn get_rankings_alltime(
     pool: &PgPool,
     current_user_id: Uuid,
@@ -299,6 +301,7 @@ async fn get_rankings_alltime(
 /// Timeframe-filtered rankings: compute metrics at query time.
 /// This aggregates only investments purchased within the timeframe window,
 /// then ranks them inline with ROW_NUMBER.
+#[allow(clippy::too_many_arguments)]
 async fn get_rankings_timeframed(
     pool: &PgPool,
     current_user_id: Uuid,
