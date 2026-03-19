@@ -61,3 +61,6 @@ test.db
 
 # Generated CSS bundle (built by build-bundle.sh)
 frontend/platform/static/css/bundle.css
+
+# Test SQL build artifacts
+test_sql/

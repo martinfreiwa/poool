@@ -28,7 +28,7 @@ pub async fn page_developer_dashboard(
     ).fetch_one(&state.db).await.unwrap_or(Some(false)).unwrap_or(false);
 
     if !is_developer {
-        return Redirect::to("/marketplace").into_response();
+        return Redirect::to("/developer/application-form").into_response();
     }
 
     // Fetch all dashboard statistics for this developer
@@ -72,7 +72,7 @@ pub async fn page_developer_assets(
     ).fetch_one(&state.db).await.unwrap_or(Some(false)).unwrap_or(false);
 
     if !is_developer {
-        return Redirect::to("/marketplace").into_response();
+        return Redirect::to("/developer/application-form").into_response();
     }
 
     let assets = service::fetch_all_assets(&state.db, user.id).await;
@@ -224,15 +224,41 @@ pub async fn api_developer_create_draft(
         None => return Err(AppError::Unauthorized("Please log in".to_string())),
     };
 
+    // The application form is the entry point for any user to become a developer.
+    // If the user doesn't have the developer role yet, auto-assign it on first draft creation.
     let is_developer = sqlx::query_scalar!(
         "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin'))",
         user.id
     ).fetch_one(&state.db).await.unwrap_or(Some(false)).unwrap_or(false);
 
     if !is_developer {
-        return Err(AppError::Forbidden(
-            "Only developers can create assets".into(),
-        ));
+        // Auto-assign the developer role
+        let developer_role_id: Option<uuid::Uuid> = sqlx::query_scalar(
+            "SELECT id FROM roles WHERE name = 'developer'"
+        )
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None);
+
+        if let Some(role_id) = developer_role_id {
+            let _ = sqlx::query(
+                "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+            )
+            .bind(user.id)
+            .bind(role_id)
+            .execute(&state.db)
+            .await;
+
+            tracing::info!(
+                "Auto-assigned developer role to user {} via application form",
+                user.id
+            );
+        } else {
+            tracing::error!("Developer role not found in roles table — cannot auto-assign");
+            return Err(AppError::Internal(
+                "System configuration error: developer role missing".to_string(),
+            ));
+        }
     }
 
     // ── Enforce 100-draft limit ──

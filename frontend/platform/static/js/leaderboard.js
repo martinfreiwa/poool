@@ -58,11 +58,8 @@
 
       cachedPrefs = prefs;
 
-      // Initialize the custom Poool Dropdown
-      var tierSelect = document.getElementById('lb-tier-filter');
-      if (tierSelect && window.PooolDropdown) {
-        window.PooolDropdown.fromSelect(tierSelect);
-      }
+      // Tier filter uses native <select> — PooolDropdown is overkill here
+      // and causes clipping issues within the table card container.
 
       if (!data || data.total_participants === 0) {
         showLayer('empty');
@@ -146,18 +143,29 @@
 
     positions.forEach(function (pos) {
       var entry = rankings[pos.index];
-      if (!entry) return;
-
+      
       var nameEl = document.getElementById('lb-podium-' + pos.slot + '-name');
       var scoreEl = document.getElementById('lb-podium-' + pos.slot + '-score');
       var avatarEl = document.getElementById('lb-podium-' + pos.slot + '-avatar');
       var tierEl = document.getElementById('lb-podium-' + pos.slot + '-tier');
 
+      if (!entry) {
+        // Reset to empty state if nobody exists for this slot
+        if (nameEl) nameEl.textContent = '—';
+        if (scoreEl) scoreEl.textContent = '—';
+        if (avatarEl) avatarEl.src = '/static/images/Image.webp';
+        if (tierEl) {
+          tierEl.textContent = '';
+          tierEl.style.background = 'transparent';
+        }
+        return;
+      }
+
       if (nameEl) nameEl.textContent = entry.display_name;
       if (scoreEl) scoreEl.textContent = formatMetric(entry.metric_value, currentMetric);
       if (avatarEl && entry.avatar_url) avatarEl.src = entry.avatar_url;
       if (tierEl) {
-        tierEl.textContent = entry.tier_name;
+        tierEl.textContent = entry.tier_name || '';
         tierEl.style.background = entry.tier_badge_color || '#D0D5DD';
       }
     });

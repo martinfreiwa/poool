@@ -947,10 +947,13 @@ INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) V
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
     (v_asset8, '/images/villa2_1.jpg', 'Beachfront retreat', 0, TRUE);
 
--- Commodity images (rice)
+-- Commodity images (rice) – all 5 gallery images
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
-    (v_com1, '/static/images/commodities/rice/eduardo-prim-3u51-uLQICc-unsplash.jpg', 'Bali rice terraces', 0, TRUE),
-    (v_com1, '/static/images/commodities/rice/zhao-yangjun-dDAzpSUAbgI-unsplash.jpg', 'Rice harvest', 1, FALSE);
+    (v_com1, '/static/images/commodities/rice/eduardo-prim-3u51-uLQICc-unsplash.webp', 'Bali rice terraces', 0, TRUE),
+    (v_com1, '/static/images/commodities/rice/hoach-le-dinh-PeRt3uMmjYM-unsplash.webp', 'Paddy Rice plantation', 1, FALSE),
+    (v_com1, '/static/images/commodities/rice/vrlibs-studio-h0cvg3O-LN0-unsplash.webp', 'Rice farming', 2, FALSE),
+    (v_com1, '/static/images/commodities/rice/winston-chen-kXoEdaZ3SFw-unsplash.webp', 'Rice harvest', 3, FALSE),
+    (v_com1, '/static/images/commodities/rice/zhao-yangjun-dDAzpSUAbgI-unsplash.webp', 'Rice field landscape', 4, FALSE);
 
 INSERT INTO asset_images (asset_id, image_url, alt_text, sort_order, is_cover) VALUES
     (v_com2, '/static/images/commodities/rice/hoach-le-dinh-PeRt3uMmjYM-unsplash.jpg', 'Cacao beans', 0, TRUE);

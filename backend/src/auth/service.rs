@@ -781,6 +781,8 @@ pub struct UserProfile {
     pub email: String,
     pub initials: String,
     pub role: String,
+    /// All roles assigned to this user (e.g. ["investor", "developer", "admin"]).
+    pub roles: Vec<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub phone_number: Option<String>,
@@ -792,18 +794,19 @@ pub struct UserProfile {
 
 /// Get the user's display profile by their session token.
 ///
-/// Joins users, user_profiles, and roles to build a complete
-/// display profile. Used by the /api/me endpoint.
+/// Fetches user data from users + user_profiles, then fetches ALL roles
+/// separately to ensure multi-role users see all their roles.
+/// Used by the /api/me endpoint.
 pub async fn get_user_profile(
     pool: &PgPool,
     session_token: &str,
 ) -> Result<Option<UserProfile>, AppError> {
+    // 1. Fetch user + profile data (no role join — avoids LIMIT 1 hiding roles)
     let row = sqlx::query_as::<
         _,
         (
             Uuid,
             String,
-            Option<String>,
             Option<String>,
             Option<String>,
             Option<String>,
@@ -818,7 +821,6 @@ pub async fn get_user_profile(
                u.email,
                p.first_name,
                p.last_name,
-               r.name as role_name,
                p.phone_number,
                p.country,
                p.city,
@@ -827,8 +829,6 @@ pub async fn get_user_profile(
         FROM users u
         JOIN user_sessions s ON u.id = s.user_id
         LEFT JOIN user_profiles p ON u.id = p.user_id
-        LEFT JOIN user_roles ur ON u.id = ur.user_id
-        LEFT JOIN roles r ON ur.role_id = r.id
         WHERE s.session_token = $1
           AND s.expires_at > NOW()
           AND u.status = 'active'
@@ -839,64 +839,85 @@ pub async fn get_user_profile(
     .fetch_optional(pool)
     .await?;
 
-    Ok(row.map(
-        |(
-            user_id,
-            email,
-            first_name,
-            last_name,
-            role,
-            phone_number,
-            country,
-            city,
-            address_line_1,
-            postal_code,
-        )| {
-            let first = first_name.clone().unwrap_or_default();
-            let last = last_name.clone().unwrap_or_default();
+    let Some((
+        user_id,
+        email,
+        first_name,
+        last_name,
+        phone_number,
+        country,
+        city,
+        address_line_1,
+        postal_code,
+    )) = row
+    else {
+        return Ok(None);
+    };
 
-            // Build display name: "First Last", or email username if no name set
-            let name = if first.is_empty() && last.is_empty() {
-                email.split('@').next().unwrap_or("User").to_string()
-            } else {
-                format!("{} {}", first, last).trim().to_string()
-            };
+    // 2. Fetch ALL roles for this user
+    let roles: Vec<String> = sqlx::query_scalar(
+        "SELECT r.name FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = $1 ORDER BY r.name",
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
 
-            // Generate initials from name
-            let initials = name
-                .split_whitespace()
-                .filter_map(|word| word.chars().next())
-                .take(2)
-                .collect::<String>()
-                .to_uppercase();
+    // Primary role: pick the highest-privilege role for backwards compat
+    let role = if roles.iter().any(|r| r == "super_admin") {
+        "super_admin".to_string()
+    } else if roles.iter().any(|r| r == "admin") {
+        "admin".to_string()
+    } else if roles.iter().any(|r| r == "developer") {
+        "developer".to_string()
+    } else {
+        roles.first().cloned().unwrap_or_else(|| "investor".to_string())
+    };
 
-            let initials = if initials.is_empty() {
-                email
-                    .chars()
-                    .next()
-                    .unwrap_or('U')
-                    .to_uppercase()
-                    .to_string()
-            } else {
-                initials
-            };
+    let first = first_name.clone().unwrap_or_default();
+    let last = last_name.clone().unwrap_or_default();
 
-            UserProfile {
-                id: user_id.to_string(),
-                name,
-                email,
-                initials,
-                role: role.unwrap_or_else(|| "investor".to_string()),
-                first_name,
-                last_name,
-                phone_number,
-                country,
-                city,
-                address_line_1,
-                postal_code,
-            }
-        },
-    ))
+    // Build display name: "First Last", or email username if no name set
+    let name = if first.is_empty() && last.is_empty() {
+        email.split('@').next().unwrap_or("User").to_string()
+    } else {
+        format!("{} {}", first, last).trim().to_string()
+    };
+
+    // Generate initials from name
+    let initials = name
+        .split_whitespace()
+        .filter_map(|word| word.chars().next())
+        .take(2)
+        .collect::<String>()
+        .to_uppercase();
+
+    let initials = if initials.is_empty() {
+        email
+            .chars()
+            .next()
+            .unwrap_or('U')
+            .to_uppercase()
+            .to_string()
+    } else {
+        initials
+    };
+
+    Ok(Some(UserProfile {
+        id: user_id.to_string(),
+        name,
+        email,
+        initials,
+        role,
+        roles,
+        first_name,
+        last_name,
+        phone_number,
+        country,
+        city,
+        address_line_1,
+        postal_code,
+    }))
 }
 
 // ─── Private helpers ───────────────────────────────────────────

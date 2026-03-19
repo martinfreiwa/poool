@@ -437,7 +437,9 @@ document.addEventListener("DOMContentLoaded", function () {
               if (stripped && stripped.length < 300) errMessage = stripped;
             }
           } catch { /* body read failed */ }
-          if (resp.status === 403) errMessage = "Session expired — please refresh the page and try again.";
+          if (resp.status === 403 && errMessage === "Something went wrong. Please try again.") {
+            errMessage = "You don't have permission to perform this action. Please refresh the page and try again.";
+          }
           if (resp.status === 401) errMessage = "You are not logged in. Please log in and try again.";
           showFormError(errMessage);
           nextBtn.disabled = false;

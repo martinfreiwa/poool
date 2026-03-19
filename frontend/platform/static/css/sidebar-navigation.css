@@ -663,16 +663,17 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: center;
   padding: 0px;
-  width: auto;
   height: 40px;
-  flex: none;
+  flex: 1;
+  min-width: 0;
   order: 1;
-  flex-grow: 1;
+  overflow: hidden;
 }
 
 .account-name {
-  width: auto;
+  width: 100%;
   height: 20px;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
@@ -683,10 +684,13 @@
   flex: none;
   order: 0;
   flex-grow: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-email {
-  width: auto;
+  width: 100%;
   height: 20px;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
@@ -697,6 +701,9 @@
   flex: none;
   order: 1;
   flex-grow: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Account Menu Button */

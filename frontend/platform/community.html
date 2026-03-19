@@ -1,47 +1,59 @@
-{% with title="Community", meta_description="Connect with other POOOL investors. Share insights, celebrate milestones, and grow together.",
+{% with title="Community", meta_description="Connect with other POOOL investors. Share insights, celebrate milestones,
+and grow together.",
 extra_css=['community'], extra_js=['htmx-init', 'profile-dropdown'] %}{%
 include
 "components/head.html" %}{% endwith %}
 
 
-  
-  
-  <!-- Custom POOOL Icon Styles -->
-  <style>
-    .poool-icon-custom {
-      background-color: var(--btn-primary-bg, #0000FF) !important;
-      stroke: #03FF88 !important;
-      border-radius: 8px !important;
-      padding: 6px !important;
-      flex-shrink: 0;
-      width: 28px !important;
-      height: 28px !important;
-      box-sizing: border-box !important;
-    }
-    .poool-icon-custom path, .poool-icon-custom circle, .poool-icon-custom rect, .poool-icon-custom polyline, .poool-icon-custom line, .poool-icon-custom polygon {
-      stroke: #03FF88 !important;
-    }
-    
-    /* Make the page header icon slightly bigger */
-    .ds-page-header__icon.poool-icon-custom {
-      width: 44px !important;
-      height: 44px !important;
-      padding: 9px !important;
-      border-radius: 10px !important;
-    }
 
-    /* Keep small buttons small */
-    .ann-filter-btn .poool-icon-custom,
-    button .poool-icon-custom {
-      width: 18px !important;
-      height: 18px !important;
-      padding: 3px !important;
-      border-radius: 4px !important;
-    }
 
-    /* Hide the default background from original classes */
-    .ann-icon, .circle-stat-icon { background: transparent !important; border: none !important; box-shadow: none !important; }
-  </style>
+<!-- Custom POOOL Icon Styles -->
+<style>
+  .poool-icon-custom {
+    background-color: var(--btn-primary-bg, #0000FF) !important;
+    stroke: #03FF88 !important;
+    border-radius: 8px !important;
+    padding: 6px !important;
+    flex-shrink: 0;
+    width: 28px !important;
+    height: 28px !important;
+    box-sizing: border-box !important;
+  }
+
+  .poool-icon-custom path,
+  .poool-icon-custom circle,
+  .poool-icon-custom rect,
+  .poool-icon-custom polyline,
+  .poool-icon-custom line,
+  .poool-icon-custom polygon {
+    stroke: #03FF88 !important;
+  }
+
+  /* Make the page header icon slightly bigger */
+  .ds-page-header__icon.poool-icon-custom {
+    width: 44px !important;
+    height: 44px !important;
+    padding: 9px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Keep small buttons small */
+  .ann-filter-btn .poool-icon-custom,
+  button .poool-icon-custom {
+    width: 18px !important;
+    height: 18px !important;
+    padding: 3px !important;
+    border-radius: 4px !important;
+  }
+
+  /* Hide the default background from original classes */
+  .ann-icon,
+  .circle-stat-icon {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+</style>
 
 
 
@@ -57,18 +69,12 @@ include
         <!-- Page Header (ds-page-header pattern) -->
         <div class="ds-page-header community-page-header">
           <div class="ds-page-header__title-row community-title-wrapper">
-            <svg  width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.8"
-              stroke-linecap="round" stroke-linejoin="round" class="ds-page-header__icon poool-icon-custom">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <!---->
             <h1 class="ds-page-header__title community-title">Community</h1>
           </div>
           <div class="community-demo-badge">
-            <svg  class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
+            <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -80,27 +86,32 @@ include
         <!-- Tab Navigation (rewards-tab-nav pattern) -->
         <script>
           function switchCommunityTab(clickedBtn) {
-            document.querySelectorAll('.community-tab-btn').forEach(function(b) { b.classList.remove('active'); });
-            document.querySelectorAll('.community-tab-panel').forEach(function(p) { p.classList.add('hidden'); });
+            document.querySelectorAll('.community-tab-btn').forEach(function (b) { b.classList.remove('active'); });
+            document.querySelectorAll('.community-tab-panel').forEach(function (p) { p.classList.add('hidden'); });
             clickedBtn.classList.add('active');
             var panel = document.getElementById(clickedBtn.getAttribute('data-tab'));
             if (panel) panel.classList.remove('hidden');
           }
         </script>
         <div class="community-tab-nav">
-          <button type="button" class="community-tab-btn active" data-tab="community-feed-tab" onclick="switchCommunityTab(this)">
+          <button type="button" class="community-tab-btn active" data-tab="community-feed-tab"
+            onclick="switchCommunityTab(this)">
             Feed
           </button>
-          <button type="button" class="community-tab-btn" data-tab="community-announcements-tab" onclick="switchCommunityTab(this)">
+          <button type="button" class="community-tab-btn" data-tab="community-announcements-tab"
+            onclick="switchCommunityTab(this)">
             Announcements
           </button>
-          <button type="button" class="community-tab-btn" data-tab="community-circle-tab" onclick="switchCommunityTab(this)">
+          <button type="button" class="community-tab-btn" data-tab="community-circle-tab"
+            onclick="switchCommunityTab(this)">
             My Circle
           </button>
-          <button type="button" class="community-tab-btn" data-tab="community-ama-tab" onclick="switchCommunityTab(this)">
+          <button type="button" class="community-tab-btn" data-tab="community-ama-tab"
+            onclick="switchCommunityTab(this)">
             Expert AMAs
           </button>
-          <button type="button" class="community-tab-btn" data-tab="community-reviews-tab" onclick="switchCommunityTab(this)">
+          <button type="button" class="community-tab-btn" data-tab="community-reviews-tab"
+            onclick="switchCommunityTab(this)">
             Reviews
           </button>
         </div>
@@ -121,20 +132,28 @@ include
                   <div class="create-post-input">Share an insight, tip, or investment story...</div>
                   <div class="create-post-actions">
                     <button class="create-post-action-btn">
-                      <svg  class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                      <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
                       </svg>
                       Photo
                     </button>
                     <button class="create-post-action-btn">
-                      <svg  class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+                      <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10" />
+                        <line x1="12" y1="20" x2="12" y2="4" />
+                        <line x1="6" y1="20" x2="6" y2="14" />
                       </svg>
                       Market Insight
                     </button>
                     <button class="create-post-action-btn">
-                      <svg  class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon
+                          points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                       </svg>
                       Review
                     </button>
@@ -147,12 +166,15 @@ include
                 <div class="feed-post-header">
                   <div class="feed-post-author">
                     <div class="feed-post-avatar feed-post-avatar--announcement">
-                      <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                      <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
                       </svg>
                     </div>
                     <div class="feed-post-meta">
-                      <span class="feed-post-name">POOOL Team <span class="feed-post-verified-badge">Official</span></span>
+                      <span class="feed-post-name">POOOL Team <span
+                          class="feed-post-verified-badge">Official</span></span>
                       <span class="feed-post-time">2 hours ago</span>
                     </div>
                   </div>
@@ -160,11 +182,16 @@ include
                 </div>
                 <div class="feed-post-body">
                   <div class="feed-post-title">
-                    <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+                    <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                      stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+                    </svg>
                     New Commodity Alert: Sustainable Timber Plantation in Kalimantan
                   </div>
                   We're excited to announce our newest investment opportunity — a 12-month sustainable timber plantation
-                  in Kalimantan, Indonesia. With an expected ROI of 28% and a proven operator with 10+ years of experience,
+                  in Kalimantan, Indonesia. With an expected ROI of 28% and a proven operator with 10+ years of
+                  experience,
                   this is one you won't want to miss.<br><br>
                   Funding opens <strong>March 20, 2026</strong>. Set your reminders!
                 </div>
@@ -185,7 +212,10 @@ include
                     <button class="feed-reaction-btn active">🔥 <span>47</span></button>
                     <button class="feed-reaction-btn">💡 <span>23</span></button>
                     <button class="feed-reaction-btn">
-                      <svg  class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                      <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
                       <span>12</span>
                     </button>
                   </div>
@@ -197,9 +227,11 @@ include
               <div class="feed-post">
                 <div class="feed-post-header">
                   <div class="feed-post-author">
-                    <div class="feed-post-avatar-circle" style="background:linear-gradient(135deg,#C8E6C9,#A5D6A7);color:#2E7D32;">SF</div>
+                    <div class="feed-post-avatar-circle"
+                      style="background:linear-gradient(135deg,#C8E6C9,#A5D6A7);color:#2E7D32;">SF</div>
                     <div class="feed-post-meta">
-                      <span class="feed-post-name">Sarah F. <span class="feed-post-verified-badge">Verified</span></span>
+                      <span class="feed-post-name">Sarah F. <span
+                          class="feed-post-verified-badge">Verified</span></span>
                       <span class="feed-post-time">5 hours ago</span>
                     </div>
                   </div>
@@ -211,8 +243,10 @@ include
                   <div class="feed-milestone-sub">🌍 Diversified Investor badge unlocked</div>
                 </div>
                 <div class="feed-post-body">
-                  So excited to hit my 5th commodity investment! Started with cocoa 8 months ago and now I'm diversified across
-                  cocoa, vanilla, timber, and two coffee funds. The monthly updates from farmers keep me engaged and confident.
+                  So excited to hit my 5th commodity investment! Started with cocoa 8 months ago and now I'm diversified
+                  across
+                  cocoa, vanilla, timber, and two coffee funds. The monthly updates from farmers keep me engaged and
+                  confident.
                   Here's to sustainable investing! 🌱
                 </div>
                 <div class="feed-post-engagement">
@@ -220,7 +254,10 @@ include
                     <button class="feed-reaction-btn active">👏 <span>31</span></button>
                     <button class="feed-reaction-btn">🌱 <span>18</span></button>
                     <button class="feed-reaction-btn">
-                      <svg  class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                      <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
                       <span>8</span>
                     </button>
                   </div>
@@ -232,7 +269,8 @@ include
               <div class="feed-post">
                 <div class="feed-post-header">
                   <div class="feed-post-author">
-                    <div class="feed-post-avatar-circle" style="background:linear-gradient(135deg,#BBDEFB,#90CAF9);color:#1565C0;">AK</div>
+                    <div class="feed-post-avatar-circle"
+                      style="background:linear-gradient(135deg,#BBDEFB,#90CAF9);color:#1565C0;">AK</div>
                     <div class="feed-post-meta">
                       <span class="feed-post-name">Alex K. <span class="feed-post-verified-badge">Verified</span></span>
                       <span class="feed-post-time">Yesterday</span>
@@ -242,14 +280,23 @@ include
                 </div>
                 <div class="feed-post-body">
                   <div class="feed-post-title">
-                    <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+                    <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                      stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path
+                        d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5" />
+                      <path d="M9 18h6" />
+                      <path d="M10 22h4" />
+                    </svg>
                     3 things I learned after 1 year of commodity investing on POOOL:
                   </div>
-                  1️⃣ <strong>Diversify across harvest cycles.</strong> Cocoa and vanilla harvest in different months — this means
+                  1️⃣ <strong>Diversify across harvest cycles.</strong> Cocoa and vanilla harvest in different months —
+                  this means
                   staggered returns instead of waiting for one big payout.<br><br>
-                  2️⃣ <strong>Read the operator reports.</strong> The monthly updates aren't just formalities — they've helped me
+                  2️⃣ <strong>Read the operator reports.</strong> The monthly updates aren't just formalities — they've
+                  helped me
                   understand which farms have the best management practices.<br><br>
-                  3️⃣ <strong>Don't check your portfolio daily.</strong> These are 12-month investments. Set it, read the updates,
+                  3️⃣ <strong>Don't check your portfolio daily.</strong> These are 12-month investments. Set it, read
+                  the updates,
                   and let the farmers do their thing. 🌾
                 </div>
                 <div class="feed-post-engagement">
@@ -258,11 +305,17 @@ include
                     <button class="feed-reaction-btn">🌱 <span>22</span></button>
                     <button class="feed-reaction-btn">🔥 <span>15</span></button>
                     <button class="feed-reaction-btn">
-                      <svg  class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                      <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
                       <span>19</span>
                     </button>
                     <button class="feed-reaction-btn">
-                      <svg  class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+                      <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                      </svg>
                       Save
                     </button>
                   </div>
@@ -274,9 +327,11 @@ include
               <div class="feed-post">
                 <div class="feed-post-header">
                   <div class="feed-post-author">
-                    <div class="feed-post-avatar-circle" style="background:linear-gradient(135deg,#F5E6D3,#E8D5B8);color:#6D4C41;font-size:11px;">NEO</div>
+                    <div class="feed-post-avatar-circle"
+                      style="background:linear-gradient(135deg,#F5E6D3,#E8D5B8);color:#6D4C41;font-size:11px;">NEO</div>
                     <div class="feed-post-meta">
-                      <span class="feed-post-name">PT. Neo Agro Solutions <span class="feed-post-verified-badge">Official</span></span>
+                      <span class="feed-post-name">PT. Neo Agro Solutions <span
+                          class="feed-post-verified-badge">Official</span></span>
                       <span class="feed-post-time">2 days ago</span>
                     </div>
                   </div>
@@ -284,11 +339,20 @@ include
                 </div>
                 <div class="feed-post-body">
                   <div class="feed-post-title">
-                    <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                      stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
                     Month 6 Harvest Report — Bali Premium Cocoa Fund
                   </div>
-                  Great news from the plantation! We've completed the mid-season harvest with 3.2 tons of premium dried cocoa
-                  beans processed. The quality grade exceeds expectations — we're hitting Grade A across 89% of the batch.<br><br>
+                  Great news from the plantation! We've completed the mid-season harvest with 3.2 tons of premium dried
+                  cocoa
+                  beans processed. The quality grade exceeds expectations — we're hitting Grade A across 89% of the
+                  batch.<br><br>
                   Key highlights:<br>
                   • 3.2 tons dried cocoa processed (target: 3.0 tons) ✅<br>
                   • Grade A quality: 89% (target: 80%) ✅<br>
@@ -301,7 +365,10 @@ include
                     <button class="feed-reaction-btn">💡 <span>34</span></button>
                     <button class="feed-reaction-btn">👏 <span>45</span></button>
                     <button class="feed-reaction-btn">
-                      <svg  class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                      <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
                       <span>27</span>
                     </button>
                   </div>
@@ -323,9 +390,12 @@ include
                   </div>
                 </div>
                 <div class="profile-card-stats">
-                  <div class="profile-stat"><span class="profile-stat-value">12</span><span class="profile-stat-label">Posts</span></div>
-                  <div class="profile-stat"><span class="profile-stat-value">148</span><span class="profile-stat-label">Followers</span></div>
-                  <div class="profile-stat"><span class="profile-stat-value">52</span><span class="profile-stat-label">Following</span></div>
+                  <div class="profile-stat"><span class="profile-stat-value">12</span><span
+                      class="profile-stat-label">Posts</span></div>
+                  <div class="profile-stat"><span class="profile-stat-value">148</span><span
+                      class="profile-stat-label">Followers</span></div>
+                  <div class="profile-stat"><span class="profile-stat-value">52</span><span
+                      class="profile-stat-label">Following</span></div>
                 </div>
                 <div class="profile-card-badges">
                   <span class="profile-badge profile-badge--gold">🏆 Gold Tier</span>
@@ -339,27 +409,63 @@ include
               <!-- Trending Commodities -->
               <div class="community-trending-card">
                 <div class="trending-card-title">
-                  <svg  class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
+                  <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                    <polyline points="16 7 22 7 22 13" />
                   </svg>
                   Trending This Week
                 </div>
-                <div class="trending-item"><div class="trending-item-icon trending-item-icon--cocoa">🍫</div><div class="trending-item-info"><div class="trending-item-name">Bali Premium Cocoa</div><div class="trending-item-investors">42 investors this week</div></div><span class="trending-item-change">+18%</span></div>
-                <div class="trending-item"><div class="trending-item-icon trending-item-icon--timber">🌲</div><div class="trending-item-info"><div class="trending-item-name">Kalimantan Timber</div><div class="trending-item-investors">28 investors this week</div></div><span class="trending-item-change">+35%</span></div>
-                <div class="trending-item"><div class="trending-item-icon trending-item-icon--vanilla">🌿</div><div class="trending-item-info"><div class="trending-item-name">Madagascar Vanilla</div><div class="trending-item-investors">19 investors this week</div></div><span class="trending-item-change">+12%</span></div>
-                <div class="trending-item"><div class="trending-item-icon trending-item-icon--coffee">☕</div><div class="trending-item-info"><div class="trending-item-name">Sumatra Coffee Fund</div><div class="trending-item-investors">15 investors this week</div></div><span class="trending-item-change">+8%</span></div>
+                <div class="trending-item">
+                  <div class="trending-item-icon trending-item-icon--cocoa">🍫</div>
+                  <div class="trending-item-info">
+                    <div class="trending-item-name">Bali Premium Cocoa</div>
+                    <div class="trending-item-investors">42 investors this week</div>
+                  </div><span class="trending-item-change">+18%</span>
+                </div>
+                <div class="trending-item">
+                  <div class="trending-item-icon trending-item-icon--timber">🌲</div>
+                  <div class="trending-item-info">
+                    <div class="trending-item-name">Kalimantan Timber</div>
+                    <div class="trending-item-investors">28 investors this week</div>
+                  </div><span class="trending-item-change">+35%</span>
+                </div>
+                <div class="trending-item">
+                  <div class="trending-item-icon trending-item-icon--vanilla">🌿</div>
+                  <div class="trending-item-info">
+                    <div class="trending-item-name">Madagascar Vanilla</div>
+                    <div class="trending-item-investors">19 investors this week</div>
+                  </div><span class="trending-item-change">+12%</span>
+                </div>
+                <div class="trending-item">
+                  <div class="trending-item-icon trending-item-icon--coffee">☕</div>
+                  <div class="trending-item-info">
+                    <div class="trending-item-name">Sumatra Coffee Fund</div>
+                    <div class="trending-item-investors">15 investors this week</div>
+                  </div><span class="trending-item-change">+8%</span>
+                </div>
               </div>
 
               <!-- Upcoming AMA -->
               <div class="community-ama-card">
                 <div class="ama-card-label">
-                  <svg  class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+                  <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                  </svg>
                   Upcoming AMA
                 </div>
                 <div class="ama-card-title">Understanding Cocoa Supply Chains</div>
                 <div class="ama-card-expert">with Dr. Ana Suarez — Agricultural Economist</div>
                 <div class="ama-card-datetime">
-                  <svg  class="poool-icon-custom" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                  <svg class="poool-icon-custom" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
                   March 20, 2026 — 7:00 PM CET
                 </div>
                 <div class="ama-card-actions">
@@ -371,9 +477,23 @@ include
               <!-- Who to Follow -->
               <div class="community-follow-card">
                 <div class="follow-card-title">Suggested Investors</div>
-                <div class="follow-item"><div class="follow-item-avatar">EW</div><div class="follow-item-info"><span class="follow-item-name">Emma W.</span><span class="follow-item-tag">🌱 Sustainable Investor</span></div><button class="follow-btn">Follow</button></div>
-                <div class="follow-item"><div class="follow-item-avatar">JR</div><div class="follow-item-info"><span class="follow-item-name">James R.</span><span class="follow-item-tag">📈 Growth Seeker • Premium</span></div><button class="follow-btn">Follow</button></div>
-                <div class="follow-item"><div class="follow-item-avatar">LM</div><div class="follow-item-info"><span class="follow-item-name">Lisa M.</span><span class="follow-item-tag">🔬 Research-driven</span></div><button class="follow-btn">Follow</button></div>
+                <div class="follow-item">
+                  <div class="follow-item-avatar">EW</div>
+                  <div class="follow-item-info"><span class="follow-item-name">Emma W.</span><span
+                      class="follow-item-tag">🌱 Sustainable Investor</span></div><button
+                    class="follow-btn">Follow</button>
+                </div>
+                <div class="follow-item">
+                  <div class="follow-item-avatar">JR</div>
+                  <div class="follow-item-info"><span class="follow-item-name">James R.</span><span
+                      class="follow-item-tag">📈 Growth Seeker • Premium</span></div><button
+                    class="follow-btn">Follow</button>
+                </div>
+                <div class="follow-item">
+                  <div class="follow-item-avatar">LM</div>
+                  <div class="follow-item-info"><span class="follow-item-name">Lisa M.</span><span
+                      class="follow-item-tag">🔬 Research-driven</span></div><button class="follow-btn">Follow</button>
+                </div>
               </div>
             </div>
           </div>
@@ -395,12 +515,20 @@ include
             <!-- Pinned Announcement -->
             <div class="ann-card ann-card--pinned">
               <div class="ann-card-pin">
-                <svg  class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" /></svg>
+                <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="17" x2="12" y2="22" />
+                  <path
+                    d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" />
+                </svg>
                 Pinned
               </div>
               <div class="ann-card-header">
                 <div class="ann-icon ann-icon--commodity">
-                  <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
                 </div>
                 <div class="ann-meta">
                   <span class="ann-category">New Commodity</span>
@@ -408,10 +536,11 @@ include
                 </div>
               </div>
               <h3 class="ann-title">🌲 New: Kalimantan Sustainable Timber Plantation</h3>
-              <p class="ann-body">A new 12-month sustainable timber opportunity is now available for pre-funding. Expected ROI of 28% with a proven operator. Funding opens March 20.</p>
+              <p class="ann-body">A new 12-month sustainable timber opportunity is now available for pre-funding.
+                Expected ROI of 28% with a proven operator. Funding opens March 20.</p>
               <div class="ann-footer">
                 <a href="#" class="ann-read-more">Read full announcement →</a>
-                <span class="ann-reactions" >🔥 47 · 💬 12</span>
+                <span class="ann-reactions">🔥 47 · 💬 12</span>
               </div>
             </div>
 
@@ -419,7 +548,11 @@ include
             <div class="ann-card">
               <div class="ann-card-header">
                 <div class="ann-icon ann-icon--dividend">
-                  <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
                 </div>
                 <div class="ann-meta">
                   <span class="ann-category">Dividend Payout</span>
@@ -427,10 +560,11 @@ include
                 </div>
               </div>
               <h3 class="ann-title">💰 Bali Premium Cocoa — Q1 Dividend Distributed</h3>
-              <p class="ann-body">Q1 2026 dividends have been distributed to all Bali Premium Cocoa investors. Average return: 7.2% for the quarter. Check your wallet for details.</p>
+              <p class="ann-body">Q1 2026 dividends have been distributed to all Bali Premium Cocoa investors. Average
+                return: 7.2% for the quarter. Check your wallet for details.</p>
               <div class="ann-footer">
                 <a href="#" class="ann-read-more">View details →</a>
-                <span class="ann-reactions" >👏 89 · 💬 34</span>
+                <span class="ann-reactions">👏 89 · 💬 34</span>
               </div>
             </div>
 
@@ -438,7 +572,12 @@ include
             <div class="ann-card">
               <div class="ann-card-header">
                 <div class="ann-icon ann-icon--platform">
-                  <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
                 </div>
                 <div class="ann-meta">
                   <span class="ann-category">Platform Update</span>
@@ -446,10 +585,11 @@ include
                 </div>
               </div>
               <h3 class="ann-title">🚀 Community Feature Demo is Live!</h3>
-              <p class="ann-body">We're previewing the community feature! Browse posts, check profiles, and explore upcoming AMAs. Full launch coming Q2 2026.</p>
+              <p class="ann-body">We're previewing the community feature! Browse posts, check profiles, and explore
+                upcoming AMAs. Full launch coming Q2 2026.</p>
               <div class="ann-footer">
                 <a href="#" class="ann-read-more">Learn more →</a>
-                <span class="ann-reactions" >🔥 124 · 💬 45</span>
+                <span class="ann-reactions">🔥 124 · 💬 45</span>
               </div>
             </div>
 
@@ -457,7 +597,11 @@ include
             <div class="ann-card">
               <div class="ann-card-header">
                 <div class="ann-icon ann-icon--market">
-                  <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>
+                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                    <polyline points="16 7 22 7 22 13" />
+                  </svg>
                 </div>
                 <div class="ann-meta">
                   <span class="ann-category">Market News</span>
@@ -465,10 +609,11 @@ include
                 </div>
               </div>
               <h3 class="ann-title">📊 Global Cocoa Prices Reach 5-Year High</h3>
-              <p class="ann-body">Cocoa prices have reached $3,450/ton, the highest in 5 years. This is excellent news for all cocoa commodity investors on POOOL. Our farmers are positioned to benefit.</p>
+              <p class="ann-body">Cocoa prices have reached $3,450/ton, the highest in 5 years. This is excellent news
+                for all cocoa commodity investors on POOOL. Our farmers are positioned to benefit.</p>
               <div class="ann-footer">
                 <a href="#" class="ann-read-more">Read analysis →</a>
-                <span class="ann-reactions" >📊 67 · 💬 23</span>
+                <span class="ann-reactions">📊 67 · 💬 23</span>
               </div>
             </div>
           </div>
@@ -483,7 +628,13 @@ include
             <div class="circle-stats-row">
               <div class="circle-stat-card">
                 <div class="circle-stat-icon" style="background:#EEF4FF;">
-                  <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
                 </div>
                 <div class="circle-stat-info">
                   <span class="circle-stat-value">7</span>
@@ -492,7 +643,11 @@ include
               </div>
               <div class="circle-stat-card">
                 <div class="circle-stat-icon" style="background:#ECFDF3;">
-                  <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
                 </div>
                 <div class="circle-stat-info">
                   <span class="circle-stat-value">$12,450</span>
@@ -501,7 +656,11 @@ include
               </div>
               <div class="circle-stat-card">
                 <div class="circle-stat-icon" style="background:#FFFAEB;">
-                  <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
                 </div>
                 <div class="circle-stat-info">
                   <span class="circle-stat-value">#12</span>
@@ -510,7 +669,11 @@ include
               </div>
               <div class="circle-stat-card">
                 <div class="circle-stat-icon" style="background:#FEF3F2;">
-                  <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                      d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
                 </div>
                 <div class="circle-stat-info">
                   <span class="circle-stat-value">$340</span>
@@ -527,23 +690,52 @@ include
                   <button class="ds-btn ds-btn--primary ds-btn--sm">Invite Friends</button>
                 </div>
                 <div class="circle-member-list">
-                  <div class="circle-member"><div class="circle-member-avatar">AK</div><div class="circle-member-info"><span class="circle-member-name">Alex K.</span><span class="circle-member-detail">Joined 6 months ago · 3 investments</span></div><span class="circle-member-status circle-member-status--active">Active</span></div>
-                  <div class="circle-member"><div class="circle-member-avatar" style="background:#F5E6D3;color:#6D4C41;">SF</div><div class="circle-member-info"><span class="circle-member-name">Sarah F.</span><span class="circle-member-detail">Joined 8 months ago · 5 investments</span></div><span class="circle-member-status circle-member-status--active">Active</span></div>
-                  <div class="circle-member"><div class="circle-member-avatar" style="background:#E8F5E9;color:#2E7D32;">RJ</div><div class="circle-member-info"><span class="circle-member-name">Ryan J.</span><span class="circle-member-detail">Joined 3 months ago · 1 investment</span></div><span class="circle-member-status circle-member-status--active">Active</span></div>
-                  <div class="circle-member"><div class="circle-member-avatar" style="background:#FCE4EC;color:#C62828;">MP</div><div class="circle-member-info"><span class="circle-member-name">Maria P.</span><span class="circle-member-detail">Joined 2 months ago · 2 investments</span></div><span class="circle-member-status circle-member-status--active">Active</span></div>
-                  <div class="circle-member"><div class="circle-member-avatar" style="background:#E0F2F1;color:#00695C;">DL</div><div class="circle-member-info"><span class="circle-member-name">David L.</span><span class="circle-member-detail">Invited · Pending signup</span></div><span class="circle-member-status circle-member-status--pending">Pending</span></div>
+                  <div class="circle-member">
+                    <div class="circle-member-avatar">AK</div>
+                    <div class="circle-member-info"><span class="circle-member-name">Alex K.</span><span
+                        class="circle-member-detail">Joined 6 months ago · 3 investments</span></div><span
+                      class="circle-member-status circle-member-status--active">Active</span>
+                  </div>
+                  <div class="circle-member">
+                    <div class="circle-member-avatar" style="background:#F5E6D3;color:#6D4C41;">SF</div>
+                    <div class="circle-member-info"><span class="circle-member-name">Sarah F.</span><span
+                        class="circle-member-detail">Joined 8 months ago · 5 investments</span></div><span
+                      class="circle-member-status circle-member-status--active">Active</span>
+                  </div>
+                  <div class="circle-member">
+                    <div class="circle-member-avatar" style="background:#E8F5E9;color:#2E7D32;">RJ</div>
+                    <div class="circle-member-info"><span class="circle-member-name">Ryan J.</span><span
+                        class="circle-member-detail">Joined 3 months ago · 1 investment</span></div><span
+                      class="circle-member-status circle-member-status--active">Active</span>
+                  </div>
+                  <div class="circle-member">
+                    <div class="circle-member-avatar" style="background:#FCE4EC;color:#C62828;">MP</div>
+                    <div class="circle-member-info"><span class="circle-member-name">Maria P.</span><span
+                        class="circle-member-detail">Joined 2 months ago · 2 investments</span></div><span
+                      class="circle-member-status circle-member-status--active">Active</span>
+                  </div>
+                  <div class="circle-member">
+                    <div class="circle-member-avatar" style="background:#E0F2F1;color:#00695C;">DL</div>
+                    <div class="circle-member-info"><span class="circle-member-name">David L.</span><span
+                        class="circle-member-detail">Invited · Pending signup</span></div><span
+                      class="circle-member-status circle-member-status--pending">Pending</span>
+                  </div>
                 </div>
               </div>
 
               <!-- Circle Challenge -->
               <div class="circle-challenge-card">
                 <div class="circle-challenge-header">
-                  <svg  class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
                   <h3 class="section-title-std" style="margin-bottom:0;">Active Challenge</h3>
                 </div>
                 <div class="circle-challenge-body">
                   <div class="circle-challenge-name">March Growth Sprint</div>
-                  <p class="circle-challenge-desc">Get 3 new circle members to invest by March 31 and your whole circle earns a 2% bonus cashback.</p>
+                  <p class="circle-challenge-desc">Get 3 new circle members to invest by March 31 and your whole circle
+                    earns a 2% bonus cashback.</p>
                   <div class="circle-challenge-progress">
                     <div class="circle-challenge-progress-bar">
                       <div class="circle-challenge-progress-fill" style="width:66%;"></div>
@@ -551,15 +743,24 @@ include
                     <span class="circle-challenge-progress-text">2 of 3 completed</span>
                   </div>
                   <div class="circle-challenge-deadline">
-                    <svg  class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+                    <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 6v6l4 2" />
+                    </svg>
                     19 days remaining
                   </div>
                 </div>
                 <div class="circle-leaderboard">
                   <div class="circle-lb-title">Circle Leaderboard</div>
-                  <div class="circle-lb-item"><span class="circle-lb-rank">🥇</span><span class="circle-lb-name">Martin's Circle</span><span class="circle-lb-score">1,240 pts</span></div>
-                  <div class="circle-lb-item circle-lb-item--you"><span class="circle-lb-rank">🥈</span><span class="circle-lb-name">The Green Fund <span style="font-size:10px;background:#0000FF;color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span></span><span class="circle-lb-score">1,120 pts</span></div>
-                  <div class="circle-lb-item"><span class="circle-lb-rank">🥉</span><span class="circle-lb-name">CommodityClub</span><span class="circle-lb-score">980 pts</span></div>
+                  <div class="circle-lb-item"><span class="circle-lb-rank">🥇</span><span
+                      class="circle-lb-name">Martin's Circle</span><span class="circle-lb-score">1,240 pts</span></div>
+                  <div class="circle-lb-item circle-lb-item--you"><span class="circle-lb-rank">🥈</span><span
+                      class="circle-lb-name">The Green Fund <span
+                        style="font-size:10px;background:#0000FF;color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span></span><span
+                      class="circle-lb-score">1,120 pts</span></div>
+                  <div class="circle-lb-item"><span class="circle-lb-rank">🥉</span><span
+                      class="circle-lb-name">CommodityClub</span><span class="circle-lb-score">980 pts</span></div>
                 </div>
               </div>
             </div>
@@ -575,10 +776,17 @@ include
             <div class="ama-hero-card">
               <div class="ama-hero-badge">LIVE SOON</div>
               <h2 class="ama-hero-title">Understanding Cocoa Supply Chains & Investment Opportunities</h2>
-              <p class="ama-hero-expert">with <strong>Dr. Ana Suarez</strong> — Agricultural Economist, University of São Paulo</p>
+              <p class="ama-hero-expert">with <strong>Dr. Ana Suarez</strong> — Agricultural Economist, University of
+                São Paulo</p>
               <div class="ama-hero-meta">
                 <span class="ama-hero-date">
-                  <svg  class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                  <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
                   March 20, 2026 — 7:00 PM CET
                 </span>
                 <span class="ama-hero-questions">23 questions submitted</span>
@@ -595,19 +803,22 @@ include
               <div class="ama-archive-card">
                 <div class="ama-archive-topic">The Future of Sustainable Timber Investing</div>
                 <div class="ama-archive-expert">with Pak Bambang — Head of Operations, PT. Neo Agro Solutions</div>
-                <div class="ama-archive-stats"><span>Feb 15, 2026</span><span>·</span><span>38 questions</span><span>·</span><span>142 participants</span></div>
+                <div class="ama-archive-stats"><span>Feb 15, 2026</span><span>·</span><span>38
+                    questions</span><span>·</span><span>142 participants</span></div>
                 <a href="#" class="ama-archive-link">Read transcript →</a>
               </div>
               <div class="ama-archive-card">
                 <div class="ama-archive-topic">Commodity Tokenization: What It Means for Retail Investors</div>
                 <div class="ama-archive-expert">with POOOL CTO — Tech deep dive</div>
-                <div class="ama-archive-stats"><span>Jan 28, 2026</span><span>·</span><span>52 questions</span><span>·</span><span>198 participants</span></div>
+                <div class="ama-archive-stats"><span>Jan 28, 2026</span><span>·</span><span>52
+                    questions</span><span>·</span><span>198 participants</span></div>
                 <a href="#" class="ama-archive-link">Read transcript →</a>
               </div>
               <div class="ama-archive-card">
                 <div class="ama-archive-topic">How Vanilla Prices Are Set & Why They Fluctuate</div>
                 <div class="ama-archive-expert">with Marie Razafy — Vanilla Exporter, Madagascar</div>
-                <div class="ama-archive-stats"><span>Jan 10, 2026</span><span>·</span><span>29 questions</span><span>·</span><span>97 participants</span></div>
+                <div class="ama-archive-stats"><span>Jan 10, 2026</span><span>·</span><span>29
+                    questions</span><span>·</span><span>97 participants</span></div>
                 <a href="#" class="ama-archive-link">Read transcript →</a>
               </div>
             </div>
@@ -627,11 +838,31 @@ include
                 <div class="reviews-overall-count">Based on 234 reviews</div>
               </div>
               <div class="reviews-breakdown-card">
-                <div class="reviews-bar-row"><span class="reviews-bar-label">5 stars</span><div class="reviews-bar-track"><div class="reviews-bar-fill" style="width:68%;"></div></div><span class="reviews-bar-count">159</span></div>
-                <div class="reviews-bar-row"><span class="reviews-bar-label">4 stars</span><div class="reviews-bar-track"><div class="reviews-bar-fill" style="width:20%;"></div></div><span class="reviews-bar-count">47</span></div>
-                <div class="reviews-bar-row"><span class="reviews-bar-label">3 stars</span><div class="reviews-bar-track"><div class="reviews-bar-fill" style="width:8%;"></div></div><span class="reviews-bar-count">19</span></div>
-                <div class="reviews-bar-row"><span class="reviews-bar-label">2 stars</span><div class="reviews-bar-track"><div class="reviews-bar-fill" style="width:3%;"></div></div><span class="reviews-bar-count">6</span></div>
-                <div class="reviews-bar-row"><span class="reviews-bar-label">1 star</span><div class="reviews-bar-track"><div class="reviews-bar-fill" style="width:1%;"></div></div><span class="reviews-bar-count">3</span></div>
+                <div class="reviews-bar-row"><span class="reviews-bar-label">5 stars</span>
+                  <div class="reviews-bar-track">
+                    <div class="reviews-bar-fill" style="width:68%;"></div>
+                  </div><span class="reviews-bar-count">159</span>
+                </div>
+                <div class="reviews-bar-row"><span class="reviews-bar-label">4 stars</span>
+                  <div class="reviews-bar-track">
+                    <div class="reviews-bar-fill" style="width:20%;"></div>
+                  </div><span class="reviews-bar-count">47</span>
+                </div>
+                <div class="reviews-bar-row"><span class="reviews-bar-label">3 stars</span>
+                  <div class="reviews-bar-track">
+                    <div class="reviews-bar-fill" style="width:8%;"></div>
+                  </div><span class="reviews-bar-count">19</span>
+                </div>
+                <div class="reviews-bar-row"><span class="reviews-bar-label">2 stars</span>
+                  <div class="reviews-bar-track">
+                    <div class="reviews-bar-fill" style="width:3%;"></div>
+                  </div><span class="reviews-bar-count">6</span>
+                </div>
+                <div class="reviews-bar-row"><span class="reviews-bar-label">1 star</span>
+                  <div class="reviews-bar-track">
+                    <div class="reviews-bar-fill" style="width:1%;"></div>
+                  </div><span class="reviews-bar-count">3</span>
+                </div>
               </div>
             </div>
 
@@ -648,32 +879,53 @@ include
             <div class="reviews-list">
               <div class="review-card">
                 <div class="review-header">
-                  <div class="review-author"><div class="feed-post-avatar-circle" style="background:#C8E6C9;color:#2E7D32;">SF</div><div class="review-author-info"><span class="review-author-name">Sarah F.</span><span class="review-author-badge">✅ Verified Investor · Received Dividend</span></div></div>
+                  <div class="review-author">
+                    <div class="feed-post-avatar-circle" style="background:#C8E6C9;color:#2E7D32;">SF</div>
+                    <div class="review-author-info"><span class="review-author-name">Sarah F.</span><span
+                        class="review-author-badge">✅ Verified Investor · Received Dividend</span></div>
+                  </div>
                   <div class="review-stars">★★★★★</div>
                 </div>
                 <div class="review-commodity">🍫 Bali Premium Cocoa Fund</div>
-                <p class="review-body">Excellent investment experience! The quarterly updates were detailed and transparent. Received my first dividend on time — 7.2% for Q1. The farm operator really knows their stuff. Would invest again in a heartbeat.</p>
-                <div class="review-footer"><span class="review-date">March 10, 2026</span><span class="review-helpful">💡 24 found this helpful</span></div>
+                <p class="review-body">Excellent investment experience! The quarterly updates were detailed and
+                  transparent. Received my first dividend on time — 7.2% for Q1. The farm operator really knows their
+                  stuff. Would invest again in a heartbeat.</p>
+                <div class="review-footer"><span class="review-date">March 10, 2026</span><span
+                    class="review-helpful">💡 24 found this helpful</span></div>
               </div>
 
               <div class="review-card">
                 <div class="review-header">
-                  <div class="review-author"><div class="feed-post-avatar-circle" style="background:#BBDEFB;color:#1565C0;">AK</div><div class="review-author-info"><span class="review-author-name">Alex K.</span><span class="review-author-badge">✅ Verified Investor</span></div></div>
+                  <div class="review-author">
+                    <div class="feed-post-avatar-circle" style="background:#BBDEFB;color:#1565C0;">AK</div>
+                    <div class="review-author-info"><span class="review-author-name">Alex K.</span><span
+                        class="review-author-badge">✅ Verified Investor</span></div>
+                  </div>
                   <div class="review-stars">★★★★☆</div>
                 </div>
                 <div class="review-commodity">🌲 Kalimantan Sustainable Timber</div>
-                <p class="review-body">Solid fundamentals and I like the sustainability angle. The monthly reports could be more detailed — I'd love to see more photos from the plantation. Overall a good addition to a diversified portfolio.</p>
-                <div class="review-footer"><span class="review-date">March 6, 2026</span><span class="review-helpful">💡 18 found this helpful</span></div>
+                <p class="review-body">Solid fundamentals and I like the sustainability angle. The monthly reports could
+                  be more detailed — I'd love to see more photos from the plantation. Overall a good addition to a
+                  diversified portfolio.</p>
+                <div class="review-footer"><span class="review-date">March 6, 2026</span><span class="review-helpful">💡
+                    18 found this helpful</span></div>
               </div>
 
               <div class="review-card">
                 <div class="review-header">
-                  <div class="review-author"><div class="feed-post-avatar-circle" style="background:#FFF9C4;color:#F57F17;">EW</div><div class="review-author-info"><span class="review-author-name">Emma W.</span><span class="review-author-badge">✅ Verified Investor · Received Dividend</span></div></div>
+                  <div class="review-author">
+                    <div class="feed-post-avatar-circle" style="background:#FFF9C4;color:#F57F17;">EW</div>
+                    <div class="review-author-info"><span class="review-author-name">Emma W.</span><span
+                        class="review-author-badge">✅ Verified Investor · Received Dividend</span></div>
+                  </div>
                   <div class="review-stars">★★★★★</div>
                 </div>
                 <div class="review-commodity">🌿 Madagascar Vanilla</div>
-                <p class="review-body">"My Why" story: I invested in vanilla because I wanted to support smallholder farmers in Madagascar while earning sustainable returns. POOOL makes it so easy. The process from KYC to first investment took less than 48 hours.</p>
-                <div class="review-footer"><span class="review-date">Feb 28, 2026</span><span class="review-helpful">💡 31 found this helpful</span></div>
+                <p class="review-body">"My Why" story: I invested in vanilla because I wanted to support smallholder
+                  farmers in Madagascar while earning sustainable returns. POOOL makes it so easy. The process from KYC
+                  to first investment took less than 48 hours.</p>
+                <div class="review-footer"><span class="review-date">Feb 28, 2026</span><span class="review-helpful">💡
+                    31 found this helpful</span></div>
               </div>
             </div>
 

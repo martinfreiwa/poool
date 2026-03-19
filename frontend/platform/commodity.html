@@ -77,88 +77,28 @@
               </nav>
               <!-- 2. Top Action Button --><button id="property-action-button">
                 <span>Share Property</span></button
-              ><!-- 3. Image Gallery Section --><!-- Main Large Image -->
+              ><!-- 3. Image Gallery Section -->
+              {% set gallery_ids = ['gallery-main-image', 'gallery-image-top-left', 'gallery-image-top-right', 'gallery-image-bottom-left', 'gallery-image-bottom-right'] %}
+              {% for img_url in asset.image_urls %}
+              {% if loop.index0 < 5 %}
               <div
-                id="gallery-main-image"
+                id="{{ gallery_ids[loop.index0] }}"
                 class="gallery-image"
-                onclick="openLightbox(0)"
+                onclick="openLightbox({{ loop.index0 }})"
               >
                 <img
-                  src="/static/images/commodities/rice/eduardo-prim-3u51-uLQICc-unsplash.webp"
-                  alt="Paddy Rice Fields"
+                  src="{{ img_url }}"
+                  alt="{{ asset.title }}"
                   class="gallery-img"
-                  loading="lazy"
+                  loading="{% if loop.index0 == 0 %}eager{% else %}lazy{% endif %}"
                   onload="
                     this.classList.add('loaded');
                     this.parentElement.classList.add('image-loaded');
                   "
                 />
               </div>
-              <!-- Small Images Grid -->
-              <div
-                id="gallery-image-top-left"
-                class="gallery-image"
-                onclick="openLightbox(1)"
-              >
-                <img
-                  src="/static/images/commodities/rice/hoach-le-dinh-PeRt3uMmjYM-unsplash.webp"
-                  alt="Paddy Rice plantation"
-                  class="gallery-img"
-                  loading="lazy"
-                  onload="
-                    this.classList.add('loaded');
-                    this.parentElement.classList.add('image-loaded');
-                  "
-                />
-              </div>
-              <div
-                id="gallery-image-top-right"
-                class="gallery-image"
-                onclick="openLightbox(2)"
-              >
-                <img
-                  src="/static/images/commodities/rice/vrlibs-studio-h0cvg3O-LN0-unsplash.webp"
-                  alt="Rice farming"
-                  class="gallery-img"
-                  loading="lazy"
-                  onload="
-                    this.classList.add('loaded');
-                    this.parentElement.classList.add('image-loaded');
-                  "
-                />
-              </div>
-              <div
-                id="gallery-image-bottom-left"
-                class="gallery-image"
-                onclick="openLightbox(3)"
-              >
-                <img
-                  src="/static/images/commodities/rice/winston-chen-kXoEdaZ3SFw-unsplash.webp"
-                  alt="Rice harvest"
-                  class="gallery-img"
-                  loading="lazy"
-                  onload="
-                    this.classList.add('loaded');
-                    this.parentElement.classList.add('image-loaded');
-                  "
-                />
-              </div>
-              <div
-                id="gallery-image-bottom-right"
-                class="gallery-image"
-                onclick="openLightbox(4)"
-              >
-                <img
-                  src="/static/images/commodities/rice/zhao-yangjun-dDAzpSUAbgI-unsplash.webp"
-                  alt="Rice field landscape"
-                  class="gallery-img"
-                  loading="lazy"
-                  onload="
-                    this.classList.add('loaded');
-                    this.parentElement.classList.add('image-loaded');
-                  "
-                />
-              </div>
+              {% endif %}
+              {% endfor %}
               <!-- Gallery View All Button --><button
                 id="gallery-view-all-button"
                 onclick="openLightbox(0)"
@@ -172,7 +112,7 @@
                       width="20"
                       height="20"
                     />
-                    <span class="gallery-btn-text">12 photos</span>
+                    <span class="gallery-btn-text">{{ asset.image_urls | length }} photos</span>
                   </div>
                   <div class="gallery-btn-divider"></div>
                   <div class="gallery-btn-group">
@@ -3835,74 +3775,26 @@
             </svg></button
           ><!-- Images container -->
           <div class="mobile-gallery-scroll" id="mobileGalleryScroll">
-            <div class="mobile-gallery-slide" data-index="0">
+            {% for img_url in asset.image_urls %}
+            <div class="mobile-gallery-slide" data-index="{{ loop.index0 }}">
               <img
-                src="/static/images/commodities/rice/eduardo-prim-3u51-uLQICc-unsplash.webp"
-                alt="Paddy Rice Fields"
+                src="{{ img_url }}"
+                alt="{{ asset.title }}"
                 class="mobile-gallery-img gallery-clickable"
-                loading="lazy"
-                data-lightbox-index="0"
+                loading="{% if loop.index0 == 0 %}eager{% else %}lazy{% endif %}"
+                data-lightbox-index="{{ loop.index0 }}"
               />
             </div>
-            <div class="mobile-gallery-slide" data-index="1">
-              <img
-                src="/static/images/commodities/rice/hoach-le-dinh-PeRt3uMmjYM-unsplash.webp"
-                alt="Paddy Rice plantation"
-                class="mobile-gallery-img gallery-clickable"
-                loading="lazy"
-                data-lightbox-index="1"
-              />
-            </div>
-            <div class="mobile-gallery-slide" data-index="2">
-              <img
-                src="/static/images/commodities/rice/vrlibs-studio-h0cvg3O-LN0-unsplash.webp"
-                alt="Rice farming"
-                class="mobile-gallery-img gallery-clickable"
-                loading="lazy"
-                data-lightbox-index="2"
-              />
-            </div>
-            <div class="mobile-gallery-slide" data-index="3">
-              <img
-                src="/static/images/commodities/rice/winston-chen-kXoEdaZ3SFw-unsplash.webp"
-                alt="Rice harvest"
-                class="mobile-gallery-img gallery-clickable"
-                loading="lazy"
-                data-lightbox-index="3"
-              />
-            </div>
-            <div class="mobile-gallery-slide" data-index="4">
-              <img
-                src="/static/images/commodities/rice/zhao-yangjun-dDAzpSUAbgI-unsplash.webp"
-                alt="Rice field landscape"
-                class="mobile-gallery-img gallery-clickable"
-                loading="lazy"
-                data-lightbox-index="4"
-              />
-            </div>
+            {% endfor %}
           </div>
           <!-- Gallery indicators -->
           <div class="mobile-gallery-indicators" id="mobileGalleryIndicators">
+            {% for img_url in asset.image_urls %}
             <span
-              class="mobile-gallery-dot gallery-dot-clickable active"
-              data-slide-index="0"
-            ></span
-            ><span
-              class="mobile-gallery-dot gallery-dot-clickable"
-              data-slide-index="1"
-            ></span
-            ><span
-              class="mobile-gallery-dot gallery-dot-clickable"
-              data-slide-index="2"
-            ></span
-            ><span
-              class="mobile-gallery-dot gallery-dot-clickable"
-              data-slide-index="3"
-            ></span
-            ><span
-              class="mobile-gallery-dot gallery-dot-clickable"
-              data-slide-index="4"
+              class="mobile-gallery-dot gallery-dot-clickable{% if loop.index0 == 0 %} active{% endif %}"
+              data-slide-index="{{ loop.index0 }}"
             ></span>
+            {% endfor %}
           </div>
         </div>
       </div>
@@ -3916,7 +3808,7 @@
               width="20"
               height="20"
             />
-            <span>5 photos</span>
+            <span>{{ asset.image_urls | length }} photos</span>
           </button>
           <div class="mobile-btn-divider"></div>
           <button class="mobile-gallery-btn" onclick="openVirtualTour()">
