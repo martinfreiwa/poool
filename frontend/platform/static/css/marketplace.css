@@ -1035,7 +1035,7 @@
 
 /* Funding In Progress badge */
 .funding-progress {
-  background: rgba(3, 255, 136, 0.15);
+  background: #eafee9;
   border: 1px solid rgba(3, 255, 136, 0.4);
 }
 

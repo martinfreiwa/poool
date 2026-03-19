@@ -840,7 +840,7 @@
     justify-content: center;
     align-items: center;
     padding: 4px 12px;
-    background: rgba(3, 255, 136, 0.15);
+    background: #eafee9;
     border: 1px solid #6ef96c;
     border-radius: 16px;
     font-family: 'TT Norms Pro', sans-serif;
@@ -1291,7 +1291,7 @@
   /* Strategy Card */
   .mobile-strategy-card {
     width: 311px;
-    background: rgba(3, 255, 136, 0.1);
+    background: #eafee9;
     border-radius: 16px;
     padding: 16px;
     display: flex;

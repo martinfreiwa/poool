@@ -1831,7 +1831,7 @@ body.lightbox-open {
   gap: 4px;
   width: 117.33px;
   height: 28px;
-  background: rgba(3, 255, 136, 0.15);
+  background: #eafee9;
   border: 1px solid #6ef96c;
   border-radius: 16px;
   font-family: 'TT Norms Pro', sans-serif;
@@ -2404,7 +2404,7 @@ body.youtube-modal-active {
   gap: 20px;
   width: 616px;
   height: 357px;
-  background: rgba(3, 255, 136, 0.1);
+  background: #eafee9;
   /* Brand Green Accent/25 */
   border-radius: 16px;
   box-sizing: border-box;

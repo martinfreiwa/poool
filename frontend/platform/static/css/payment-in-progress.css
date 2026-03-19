@@ -73,7 +73,7 @@
 }
 
 .pip-status-badge--paid {
-    background: rgba(3, 255, 136, 0.10);
+    background: #eafee9;
     color: #027A48;
     border: 1px solid rgba(3, 255, 136, 0.25);
 }
@@ -356,7 +356,7 @@
 }
 
 .pip-progress-step--done .pip-progress-step__icon {
-    background: rgba(3, 255, 136, 0.15);
+    background: #eafee9;
     color: #027A48;
 }
 
@@ -404,7 +404,7 @@
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background: rgba(3, 255, 136, 0.15);
+    background: #eafee9;
     display: flex;
     align-items: center;
     justify-content: center;
