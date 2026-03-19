@@ -1,0 +1,164 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            a.id,\n            a.title,\n            a.slug,\n            a.short_description,\n            a.description,\n            a.asset_type,\n            a.location_city,\n            a.location_country,\n            a.total_value_cents,\n            a.token_price_cents,\n            a.tokens_total,\n            a.tokens_available,\n            a.annual_yield_bps,\n            a.capital_appreciation_bps,\n            a.funding_status,\n            ARRAY(\n                SELECT image_url \n                FROM asset_images \n                WHERE asset_id = a.id \n                ORDER BY is_cover DESC, created_at ASC\n            ) AS \"image_urls?\",\n            a.bedrooms,\n            a.lease_type,\n            a.term_months,\n            a.area,\n            a.land_size_sqm,\n            (\n                SELECT COUNT(DISTINCT o.user_id)\n                FROM order_items oi\n                JOIN orders o ON oi.order_id = o.id\n                WHERE oi.asset_id = a.id\n                  AND o.status = 'completed'\n            ) AS \"investor_count?\",\n            a.video_url,\n            a.google_maps_url,\n            a.location_description\n        FROM assets a\n        \n        WHERE a.published = true\n          AND a.asset_type = 'commodity'\n          AND a.funding_status IN ('funding_open', 'funding_in_progress')\n        ORDER BY a.featured DESC, a.created_at DESC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "short_description",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "asset_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "location_city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "location_country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "total_value_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "token_price_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "tokens_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "tokens_available",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "annual_yield_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "capital_appreciation_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "funding_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "image_urls?",
+        "type_info": "VarcharArray"
+      },
+      {
+        "ordinal": 16,
+        "name": "bedrooms",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 17,
+        "name": "lease_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
+        "name": "term_months",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 19,
+        "name": "area",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 20,
+        "name": "land_size_sqm",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 21,
+        "name": "investor_count?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 22,
+        "name": "video_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 23,
+        "name": "google_maps_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 24,
+        "name": "location_description",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      null,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "dd3b1f2a612b1bdc18a3c4f1bdd2e83669f0163499a5b53a31340187294ca33b"
+}

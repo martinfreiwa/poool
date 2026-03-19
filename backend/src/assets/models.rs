@@ -8,6 +8,7 @@ pub struct MarketplaceAsset {
     pub title: String,
     pub slug: String,
     pub short_description: Option<String>,
+    pub description: Option<String>,
     pub asset_type: String,
     pub location_city: Option<String>,
     pub location_country: Option<String>,
@@ -26,6 +27,9 @@ pub struct MarketplaceAsset {
     pub land_size_sqm: Option<rust_decimal::Decimal>,
     /// Number of unique investors who completed orders for this asset
     pub investor_count: Option<i64>,
+    pub video_url: Option<String>,
+    pub google_maps_url: Option<String>,
+    pub location_description: Option<String>,
 }
 
 /// Template-friendly representation with pre-computed display values.
@@ -37,6 +41,7 @@ pub struct PropertyDisplayData {
     pub title: String,
     pub slug: String,
     pub short_description: Option<String>,
+    pub description: Option<String>,
     pub asset_type: String,
     pub location_city: Option<String>,
     pub location_country: Option<String>,
@@ -46,6 +51,14 @@ pub struct PropertyDisplayData {
     pub image_urls: Vec<String>,
     pub cover_image_url: Option<String>,
     pub funding_status: String,
+    pub google_maps_url: Option<String>,
+    pub video_url: Option<String>,
+    /// Extracted YouTube video ID (e.g. "dQw4w9WgXcQ")
+    pub youtube_video_id: Option<String>,
+    /// The full description rendered as HTML paragraphs
+    pub long_description: Option<String>,
+    /// Location-specific description text
+    pub location_description: Option<String>,
 
     // Pre-computed display values
     pub total_value_usd: String, // e.g. "1,150,000"
@@ -64,6 +77,8 @@ pub struct PropertyDisplayData {
     pub five_year_total_return_percent: String, // approx
     pub annualised_net_return_percent: String,
     pub land_size_sqm: Option<String>,
+    pub platform_fee_usd: String,          // 5% of total_value
+    pub total_investment_cost_usd: String,  // total_value + 5% fee
 }
 
 impl PropertyDisplayData {
@@ -109,11 +124,32 @@ impl PropertyDisplayData {
             0
         };
 
+        // Extract YouTube video ID from video_url if present
+        let youtube_video_id = extract_youtube_id(asset.video_url.as_deref());
+
+        // Build long_description as HTML paragraphs from the description field
+        let long_description = asset.description.as_ref().and_then(|desc| {
+            let trimmed = desc.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                // Split on double newlines for paragraphs
+                let paragraphs: Vec<&str> = trimmed.split("\n\n").collect();
+                let html: String = paragraphs
+                    .iter()
+                    .map(|p| format!("<p>{}</p>", p.trim()))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                Some(html)
+            }
+        });
+
         PropertyDisplayData {
             id: asset.id.to_string(),
             title: asset.title.clone(),
             slug: asset.slug.clone(),
             short_description: asset.short_description.clone(),
+            description: asset.description.clone(),
             asset_type: asset.asset_type.clone(),
             location_city: asset.location_city.clone(),
             location_country: asset.location_country.clone(),
@@ -126,6 +162,11 @@ impl PropertyDisplayData {
                 .as_ref()
                 .and_then(|urls| urls.first().cloned()),
             funding_status: asset.funding_status.clone(),
+            google_maps_url: asset.google_maps_url.clone(),
+            video_url: asset.video_url.clone(),
+            youtube_video_id,
+            long_description,
+            location_description: asset.location_description.clone(),
             total_value_usd: format_number(total_value_dollars),
             total_value_cents: asset.total_value_cents,
             tokens_total: asset.tokens_total,
@@ -142,6 +183,8 @@ impl PropertyDisplayData {
             five_year_total_return_percent: format!("{:.2}", five_year_return),
             annualised_net_return_percent: format!("{:.2}", annualised_net),
             land_size_sqm: asset.land_size_sqm.map(|d| format!("{}", d)),
+            platform_fee_usd: format_number(total_value_dollars * 5 / 100),
+            total_investment_cost_usd: format_number(total_value_dollars * 105 / 100),
         }
     }
 }
@@ -159,6 +202,36 @@ pub(crate) fn format_number(n: i64) -> String {
         result.push(b as char);
     }
     result
+}
+
+/// Extract YouTube video ID from a URL string.
+/// Handles formats: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID
+fn extract_youtube_id(url: Option<&str>) -> Option<String> {
+    let url = url?.trim();
+    if url.is_empty() {
+        return None;
+    }
+    // youtu.be/VIDEO_ID
+    if let Some(rest) = url.strip_prefix("https://youtu.be/").or_else(|| url.strip_prefix("http://youtu.be/")) {
+        return Some(rest.split(['?', '&', '#']).next().unwrap_or(rest).to_string());
+    }
+    // youtube.com/embed/VIDEO_ID
+    if let Some(idx) = url.find("/embed/") {
+        let after = &url[idx + 7..];
+        return Some(after.split(['?', '&', '#', '/']).next().unwrap_or(after).to_string());
+    }
+    // youtube.com/watch?v=VIDEO_ID
+    if url.contains("youtube.com") {
+        if let Some(v_idx) = url.find("v=") {
+            let after = &url[v_idx + 2..];
+            return Some(after.split(['&', '#']).next().unwrap_or(after).to_string());
+        }
+    }
+    // Bare video ID (11 chars, alphanumeric + _ + -)
+    if url.len() == 11 && url.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+        return Some(url.to_string());
+    }
+    None
 }
 
 // ─── Commodity-specific structs ────────────────────────────────────────────

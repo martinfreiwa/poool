@@ -32,6 +32,7 @@ pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> 
             a.title,
             a.slug,
             a.short_description,
+            a.description,
             a.asset_type,
             a.location_city,
             a.location_country,
@@ -59,7 +60,10 @@ pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> 
                 JOIN orders o ON oi.order_id = o.id
                 WHERE oi.asset_id = a.id
                   AND o.status = 'completed'
-            ) AS "investor_count?"
+            ) AS "investor_count?",
+            a.video_url,
+            a.google_maps_url,
+            a.location_description
         FROM assets a
         
         WHERE a.published = true
@@ -118,6 +122,7 @@ pub async fn page_property(
                 a.title,
                 a.slug,
                 a.short_description,
+                a.description,
                 a.asset_type,
                 a.location_city,
                 a.location_country,
@@ -145,7 +150,10 @@ pub async fn page_property(
                     JOIN orders o ON oi.order_id = o.id
                     WHERE oi.asset_id = a.id
                       AND o.status = 'completed'
-                ) AS "investor_count?"
+                ) AS "investor_count?",
+                a.video_url,
+                a.google_maps_url,
+                a.location_description
             FROM assets a
             
             WHERE a.slug = $1 AND a.published = true
@@ -201,6 +209,7 @@ pub async fn page_property(
                 a.title,
                 a.slug,
                 a.short_description,
+                a.description,
                 a.asset_type,
                 a.location_city,
                 a.location_country,
@@ -228,7 +237,10 @@ pub async fn page_property(
                     JOIN orders o ON oi.order_id = o.id
                     WHERE oi.asset_id = a.id
                       AND o.status = 'completed'
-                ) AS "investor_count?"
+                ) AS "investor_count?",
+                a.video_url,
+                a.google_maps_url,
+                a.location_description
             FROM assets a
             
             WHERE a.published = true
@@ -393,6 +405,7 @@ pub async fn page_commodity(
                 a.title,
                 a.slug,
                 a.short_description,
+                a.description,
                 a.asset_type,
                 a.location_city,
                 a.location_country,
@@ -420,7 +433,10 @@ pub async fn page_commodity(
                     JOIN orders o ON oi.order_id = o.id
                     WHERE oi.asset_id = a.id
                       AND o.status = 'completed'
-                ) AS "investor_count?"
+                ) AS "investor_count?",
+                a.video_url,
+                a.google_maps_url,
+                a.location_description
             FROM assets a
             WHERE a.published = true
               AND a.asset_type = 'commodity'
@@ -694,6 +710,7 @@ pub async fn page_commodities_marketplace(
             a.title,
             a.slug,
             a.short_description,
+            a.description,
             a.asset_type,
             a.location_city,
             a.location_country,
@@ -721,7 +738,10 @@ pub async fn page_commodities_marketplace(
                 JOIN orders o ON oi.order_id = o.id
                 WHERE oi.asset_id = a.id
                   AND o.status = 'completed'
-            ) AS "investor_count?"
+            ) AS "investor_count?",
+            a.video_url,
+            a.google_maps_url,
+            a.location_description
         FROM assets a
         
         WHERE a.published = true

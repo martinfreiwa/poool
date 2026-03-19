@@ -6,7 +6,7 @@
   </div>
   <div class="funding-divider"></div>
   <div class="progress-steps">
-    <div class="funding-step-base completed">
+    <div class="funding-step-base {% if asset.funding_status == 'completed' or asset.funded_percentage >= 100 %}completed{% endif %}">
       <div class="funding-connector-wrap">
         <div class="funding-step-icon-base">
           <div class="funding-step-content"><div class="funding-step-dot"></div></div>
@@ -17,11 +17,11 @@
         <div class="funding-text-icon-row">
           <h4 class="funding-step-heading">Property funded</h4>
         </div>
-        <p class="funding-step-date">30 January 2025</p>
-        <p class="funding-step-description">This is a conservative estimate for the closing date of the property funding.</p>
+        <p class="funding-step-date">{% if asset.funded_percentage >= 100 %}Completed{% else %}In progress — {{ asset.funded_percentage_display }}% funded{% endif %}</p>
+        <p class="funding-step-description">{% if asset.funded_percentage >= 100 %}This property has been fully funded by investors.{% else %}This is the target closing date for the property funding.{% endif %}</p>
       </div>
     </div>
-    <div class="funding-step-base">
+    <div class="funding-step-base {% if asset.funded_percentage >= 100 %}completed{% endif %}">
       <div class="funding-connector-wrap">
         <div class="funding-step-icon-base">
           <div class="funding-step-content"><div class="funding-step-dot"></div></div>
@@ -32,11 +32,11 @@
         <div class="funding-text-icon-row">
           <h4 class="funding-step-heading">Property Share Certificates</h4>
         </div>
-        <p class="funding-step-date">14 February 2025</p>
+        <p class="funding-step-date">{% if asset.funded_percentage >= 100 %}Issued{% else %}2 weeks after fully funded{% endif %}</p>
         <p class="funding-step-description">Your Property Share Certificates will be issued 2 weeks after the property is funded.</p>
       </div>
     </div>
-    <div class="funding-step-base last">
+    <div class="funding-step-base last {% if asset.funded_percentage >= 100 %}completed{% endif %}">
       <div class="funding-connector-wrap">
         <div class="funding-step-icon-base">
           <div class="funding-step-content"><div class="funding-step-dot"></div></div>
@@ -46,15 +46,15 @@
         <div class="funding-text-icon-row">
           <h4 class="funding-step-heading">First rent payment</h4>
         </div>
-        <p class="funding-step-date">28 February 2025</p>
+        <p class="funding-step-date">{% if asset.funded_percentage >= 100 %}Active{% else %}~4 weeks after fully funded{% endif %}</p>
         <div class="payment-badge">
           <svg class="dollar-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
             <circle cx="6" cy="6" r="5" stroke="#ffffff" stroke-width="1"></circle>
             <path d="M6 3V9M4 5H8M4 7H8" stroke="#ffffff" stroke-width="1"></path>
           </svg>
-          <span>First income distribution</span>
+          <span>{% if asset.funded_percentage >= 100 %}Income distributions active{% else %}First income distribution{% endif %}</span>
         </div>
-        <p class="funding-step-description">We project that the first rental payment will be paid by 28 February 2025, with a guaranteed payment date no later than 31 March 2025.</p>
+        <p class="funding-step-description">{% if asset.funded_percentage >= 100 %}Rental income is being distributed to investors on a monthly basis.{% else %}We project that the first rental payment will be paid approximately 4 weeks after the property is fully funded.{% endif %}</p>
       </div>
     </div>
   </div>

@@ -94,7 +94,7 @@
                       <img loading="lazy" src="/static/images/prop-details/coins-stacked-02.webp" alt="Rent" width="36" height="36" />
                     </div>
                     <div class="info-badge-text">
-                      <h4>Current rent is USD 5,479 per month</h4>
+                      <h4>{{ asset.annual_yield_percent }}% annual rental yield</h4>
                       <p>Distributed monthly among all investors after standard charges and fees</p>
                     </div>
                   </div>
@@ -103,8 +103,8 @@
                       <img loading="lazy" src="/static/images/prop-details/line-chart-up-02.webp" alt="Yield" width="36" height="36" />
                     </div>
                     <div class="info-badge-text">
-                      <h4>7.45% annual gross yield</h4>
-                      <p>With a net yield of {{ asset.capital_appreciation_percent }}% and a price per m² of USD {{ asset.price_per_sqm }}</p>
+                      <h4>{{ asset.annual_yield_percent }}% annual gross yield</h4>
+                      <p>With a net yield of {{ asset.annualised_net_return_percent }}% and a price per m² of USD {{ asset.price_per_sqm }}</p>
                     </div>
                   </div>
                 </div>
@@ -117,9 +117,10 @@
                 <!-- 5. Property Overview Section -->
                 <div id="property-overview-section">
                   <h2 id="property-heading">Property Overview</h2>
+                  {% if asset.youtube_video_id %}
                   <div id="property-video">
                     <div class="video-container" id="video-play-button">
-                      <img class="video-thumbnail" src="https://img.youtube.com/vi/GTSeeou3Wg8/hqdefault.jpg" alt="Property video" loading="lazy" />
+                      <img class="video-thumbnail" src="https://img.youtube.com/vi/{{ asset.youtube_video_id }}/hqdefault.jpg" alt="{{ asset.title }} video" loading="lazy" />
                       <div class="play-button">
                         <svg  class="play-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
                           <path d="M4 2L18 10L4 18V2Z" fill="white"></path>
@@ -127,11 +128,12 @@
                       </div>
                     </div>
                   </div>
+                  {% endif %}
                   <div id="property-description" class="property-about-description">
                     <p>{{ asset.short_description | default('Contemporary villa steps from Echo Beach, Canggu\'s most popular surf break.') }}</p>
-                    <p>Check out Villa Janoor, a stylish 3-bedroom villa in the popular Batu Belig area. It's the perfect spot for a modern and luxurious getaway in one of Bali's liveliest neighborhoods.</p>
-                    <p>Just a short walk to Batu Belig Beach and a quick drive to the area's buzzing restaurants and nightlife, Villa Janoor offers the best of both worlds—convenience and peace.</p>
-                    <p>This lovely villa sits on a 300-square-meter lot with 220 square meters of living space. It features three roomy bedrooms, three and a half bathrooms, a cozy lounge, and a private swimming pool. The open living area flows right into the dining space and fully equipped kitchen, making it a great place to chill or host friends.</p>
+                    {% if asset.long_description %}
+                    {{ asset.long_description | safe }}
+                    {% endif %}
                   </div>
                 </div>
 
@@ -204,8 +206,8 @@
                     <!-- Sliders -->
                     <div class="calc-slider-section slider-1">
                       <div class="calc-slider-labels"><span>Amount of Investment</span><span class="calc-slider-value" id="calc-slider-value-1">USD 100,000</span></div>
-                      <input type="range" class="calc-slider" id="calc-slider-1" min="500" max="590000" value="100000" />
-                      <div class="calc-slider-limits"><span>$500</span><span>$590,000</span></div>
+                      <input type="range" class="calc-slider" id="calc-slider-1" min="500" max="{{ asset.total_value_cents // 100 }}" value="100000" />
+                      <div class="calc-slider-limits"><span>$500</span><span>${{ asset.total_value_usd }}</span></div>
                     </div>
                     <div class="calc-slider-section slider-2">
                       <div class="calc-slider-labels">
@@ -267,16 +269,16 @@
                     <div class="financial-info" id="property-cost-content">
                       <div class="financial-row">
                         <span class="financial-label">Property price</span>
-                        <div class="financial-value-group"><span class="financial-value">USD 895,000</span></div>
+                        <div class="financial-value-group"><span class="financial-value">USD {{ asset.total_value_usd }}</span></div>
                       </div>
                       <div class="financial-row">
-                        <span class="financial-label">Transaction costs</span>
-                        <div class="financial-value-group"><span class="financial-value">+ USD 212,146</span></div>
+                        <span class="financial-label">POOOL platform fee (5%)</span>
+                        <div class="financial-value-group"><span class="financial-value">+ USD {{ asset.platform_fee_usd }}</span></div>
                       </div>
                       <div class="financial-divider"></div>
                       <div class="financial-row">
-                        <span class="financial-label">Investment cost</span>
-                        <div class="financial-value-group"><span class="financial-value total">= USD 1,062,146</span></div>
+                        <span class="financial-label">Total investment cost</span>
+                        <div class="financial-value-group"><span class="financial-value total">= USD {{ asset.total_investment_cost_usd }}</span></div>
                       </div>
                       <div class="financial-info-bar">
                         <span class="info-bar-text">Includes POOOL's 5% Fee</span>
@@ -284,20 +286,20 @@
                     </div>
                     <div class="financial-info" id="rental-income-content" style="display: none">
                       <div class="financial-row">
-                        <span class="financial-label">Monthly rental income</span>
-                        <div class="financial-value-group"><span class="financial-value">USD 4,100</span></div>
+                        <span class="financial-label">Annual gross yield</span>
+                        <div class="financial-value-group"><span class="financial-value">{{ asset.annual_yield_percent }}%</span></div>
                       </div>
                       <div class="financial-row">
-                        <span class="financial-label">Management fees</span>
-                        <div class="financial-value-group"><span class="financial-value">- USD 410</span></div>
+                        <span class="financial-label">Projected annual return</span>
+                        <div class="financial-value-group"><span class="financial-value">{{ asset.projected_return_percent }}%</span></div>
                       </div>
                       <div class="financial-divider"></div>
                       <div class="financial-row">
-                        <span class="financial-label">Net rental income (Year 1)</span>
-                        <div class="financial-value-group"><span class="financial-value total">= USD 44,280</span></div>
+                        <span class="financial-label">Annualised net return</span>
+                        <div class="financial-value-group"><span class="financial-value total">{{ asset.annualised_net_return_percent }}%</span></div>
                       </div>
                       <div class="financial-info-bar">
-                        <span class="info-bar-text">Based on 5.5% annual rental yield</span>
+                        <span class="info-bar-text">Based on {{ asset.annual_yield_percent }}% annual rental yield</span>
                       </div>
                     </div>
                   </div>
@@ -309,15 +311,21 @@
                     <img  src="/static/images/portfolio_asset_details/marker-pin-04.svg" alt="Location" class="location-icon" width="24" height="24" />
                     <h2 class="location-title">Location</h2>
                   </div>
-                  <h3 class="location-subtitle">{{ asset.location_city | default('Uluwatu') }}, {{ asset.location_country | default('Bali, Indonesia') }}</h3>
+                  <h3 class="location-subtitle">{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</h3>
                   <div class="location-map">
                     <iframe src="{{ asset.google_maps_url if asset.google_maps_url else 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1010296.8845780512!2d114.39853926615555!3d-8.455246740624838!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd141d3e8100fa1%3A0x24910fb14b24e690!2sBali%2C%20Indonesia!5e0!3m2!1sen!2sid!4v1711234567890!5m2!1sen!2sid' }}"
                       width="100%" height="400" style="border: 0; border-radius: 12px" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-                      title="Property Location - {{ asset.location_city | default('Uluwatu') }}, {{ asset.location_country | default('Bali, Indonesia') }}"></iframe>
+                      title="Property Location - {{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}"></iframe>
                   </div>
+                  {% if asset.location_description %}
                   <p class="location-description">
-                    Uluwatu is one of Bali's most prestigious and sought-after areas, perched on dramatic clifftops overlooking the Indian Ocean. This exclusive enclave in the southern peninsula of Bali is renowned for its world-class surf breaks, pristine beaches, and luxury resorts. The area offers a perfect blend of natural beauty and modern amenities, with stunning ocean views, tropical landscapes, and proximity to Bali's finest beach clubs and restaurants.
+                    {{ asset.location_description }}
                   </p>
+                  {% else %}
+                  <p class="location-description">
+                    {{ asset.location_city | default('Bali') }} is one of the most sought-after areas in {{ asset.location_country | default('Indonesia') }}, known for its excellent amenities, vibrant community, and high return on investment. The area offers a perfect blend of natural beauty and modern conveniences.
+                  </p>
+                  {% endif %}
                 </div>
 
                 <!-- 12. Property Developer -->
@@ -650,7 +658,7 @@
       </div>
       <div class="mobile-property-details">
         <div class="mobile-details-header">
-          <h1 class="mobile-property-title">{{ asset.title | default('Villa Janoor, Uluwatu - Golf Estates residence, Bay area') }}</h1>
+          <h1 class="mobile-property-title">{{ asset.title | default('Property Details') }}</h1>
         </div>
         <div class="mobile-categories">
           <div class="mobile-category-badge"><img  src="/static/images/Bed.svg" alt="Beds" width="24" height="24" /><span>{{ asset.bedrooms | default(4) }}</span></div>

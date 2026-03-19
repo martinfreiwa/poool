@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", function () {
       // Get property data from the page
       const propertyTitle =
         document.getElementById("property-title")?.textContent ||
-        "Villa Janoor, Uluwatu - Golf Estates residence, Bay area";
+        "Property Details";
       // Get property ID from query param or URL path
       let propertyId = new URLSearchParams(window.location.search).get("id");
       if (!propertyId) {
@@ -74,8 +74,16 @@ document.addEventListener("DOMContentLoaded", function () {
       // Get the property location
       const propertyLocation =
         document.getElementById("property-location")?.textContent.trim() ||
-        "Bali, Uluwatu";
+        "Bali, Indonesia";
 
+      // Extract dynamic values from the page
+      const priceEl = document.querySelector(".price-amount");
+      const unitPrice = priceEl ? priceEl.textContent.replace(/[^0-9]/g, "") + "00" : "0"; // cents
+      const fundedEl = document.querySelector(".funded-text");
+      const fundedPct = fundedEl ? fundedEl.textContent.replace(/[^0-9]/g, "") : "0";
+      const returnRows = document.querySelectorAll(".returns-row .returns-value");
+      const projectedReturn = returnRows[1]?.textContent.trim() || "0%";
+      const annualizedReturn = returnRows[2]?.textContent.trim() || "0%";
 
       // Prepare form data
       const formData = new URLSearchParams();
@@ -84,13 +92,11 @@ document.addEventListener("DOMContentLoaded", function () {
       formData.append("property_title", propertyTitle);
       formData.append("property_image", propertyImage);
       formData.append("location", propertyLocation);
-      formData.append("unit_price", "1334000");
-      formData.append("monthly_rent", "$5,479");
-      formData.append("appreciation", "15%");
-      formData.append("funded_percentage", "78");
+      formData.append("unit_price", unitPrice);
+      formData.append("funded_percentage", fundedPct);
       formData.append("duration", "5 years");
-      formData.append("projected_return", "51.13%");
-      formData.append("annualized_return", "11.91%");
+      formData.append("projected_return", projectedReturn);
+      formData.append("annualized_return", annualizedReturn);
 
       // Send AJAX request to add to cart
       // fetch() follows 302 redirects automatically. We check response.url

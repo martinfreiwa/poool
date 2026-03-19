@@ -149,7 +149,7 @@ function initializeAddToCart() {
       // Get property title from mobile element
       const propertyTitle =
         document.querySelector(".mobile-property-title")?.textContent ||
-        "Villa Janoor, Uluwatu - Golf Estates residence, Bay area";
+        "Property Details";
 
       // Get first image from gallery
       const galleryImg = document.querySelector(".mobile-gallery-img");
@@ -165,6 +165,15 @@ function initializeAddToCart() {
       const propertyLocation =
         locationBadge?.querySelector("span")?.textContent || "Bali, Indonesia";
 
+      // Extract dynamic values from the page
+      const priceEl = document.querySelector(".price-amount") || document.querySelector(".mobile-price-amount");
+      const unitPrice = priceEl ? priceEl.textContent.replace(/[^0-9]/g, "") + "00" : "0";
+      const fundedEl = document.querySelector(".funded-text") || document.querySelector(".mobile-funded-text");
+      const fundedPct = fundedEl ? fundedEl.textContent.replace(/[^0-9]/g, "") : "0";
+      const returnRows = document.querySelectorAll(".returns-row .returns-value, .mobile-returns-value");
+      const projectedReturn = returnRows[1]?.textContent.trim() || "0%";
+      const annualizedReturn = returnRows[2]?.textContent.trim() || "0%";
+
       // Send EXACT same data as desktop
       const formData = new URLSearchParams();
       formData.append("investment_amount", amount);
@@ -172,13 +181,11 @@ function initializeAddToCart() {
       formData.append("property_title", propertyTitle);
       formData.append("property_image", propertyImage);
       formData.append("location", propertyLocation);
-      formData.append("unit_price", "1334000");
-      formData.append("monthly_rent", "$5,479");
-      formData.append("appreciation", "15%");
-      formData.append("funded_percentage", "78");
+      formData.append("unit_price", unitPrice);
+      formData.append("funded_percentage", fundedPct);
       formData.append("duration", "5 years");
-      formData.append("projected_return", "51.13%");
-      formData.append("annualized_return", "11.91%");
+      formData.append("projected_return", projectedReturn);
+      formData.append("annualized_return", annualizedReturn);
 
       fetch("/cart/add", {
         method: "POST",
@@ -393,9 +400,14 @@ function playPropertyVideo() {
   const youtubeModalOverlay = document.getElementById("youtube-modal-overlay");
   const youtubeIframe = document.getElementById("youtube-iframe");
 
-  // Use the same video ID as desktop
-  const youtubeVideoId = "GTSeeou3Wg8";
-  const youtubeEmbedUrl = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
+  // Extract YouTube video ID from the desktop video thumbnail
+  const videoThumbnail = document.querySelector('#video-play-button .video-thumbnail');
+  let youtubeVideoId = '';
+  if (videoThumbnail && videoThumbnail.src) {
+    const match = videoThumbnail.src.match(/\/vi\/([^\/]+)\//);
+    if (match) youtubeVideoId = match[1];
+  }
+  const youtubeEmbedUrl = youtubeVideoId ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0` : '';
 
   if (youtubeModalOverlay && youtubeIframe) {
     // Set the iframe source

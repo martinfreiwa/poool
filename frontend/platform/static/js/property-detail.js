@@ -649,9 +649,14 @@ document.addEventListener("DOMContentLoaded", function () {
   const videoPlayButton = document.getElementById("video-play-button");
   const youtubeIframe = document.getElementById("youtube-iframe");
 
-  // YouTube video ID extracted from the URL
-  const youtubeVideoId = "GTSeeou3Wg8";
-  const youtubeEmbedUrl = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0`;
+  // Extract YouTube video ID from the thumbnail image src
+  const videoThumbnail = videoPlayButton ? videoPlayButton.querySelector('.video-thumbnail') : null;
+  let youtubeVideoId = '';
+  if (videoThumbnail && videoThumbnail.src) {
+    const match = videoThumbnail.src.match(/\/vi\/([^\/]+)\//);
+    if (match) youtubeVideoId = match[1];
+  }
+  const youtubeEmbedUrl = youtubeVideoId ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0` : '';
 
   // Function to show YouTube modal
   function showYoutubeModal() {
