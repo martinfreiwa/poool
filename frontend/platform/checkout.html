@@ -353,7 +353,7 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
           var pricePerToken = Math.round(item.token_price_cents / 100);
           var totalPrice = ((item.total_cents || item.token_price_cents * item.tokens_quantity) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
           var yieldPct = item.annual_yield_bps ? (item.annual_yield_bps / 100).toFixed(1) : null;
-          var imgSrc = item.cover_image_url || "/static/images/Portfolio asset details/Property image.webp";
+          var imgSrc = item.cover_image_url || "/static/images/portfolio_asset_details/Property image.webp";
 
           // Location chip
           var locationHtml = "";
@@ -420,7 +420,7 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
 
           html += '<div class="cart-item-card" id="checkout-item-' + idx + '">'
             + '<div class="cart-item-card__image-wrapper">'
-            + '<img class="cart-item-card__image" src="' + esc(imgSrc) + '" alt="' + esc(item.title || "Asset") + '" onerror="this.src=\'/static/images/Portfolio asset details/Property image.webp\'">'
+            + '<img class="cart-item-card__image" src="' + esc(imgSrc) + '" alt="' + esc(item.title || "Asset") + '" onerror="this.src=\'/static/images/portfolio_asset_details/Property image.webp\'">'
             + '</div>'
             + '<div class="cart-item-card__body">'
             + '<div class="cart-item-card__header-row">'
