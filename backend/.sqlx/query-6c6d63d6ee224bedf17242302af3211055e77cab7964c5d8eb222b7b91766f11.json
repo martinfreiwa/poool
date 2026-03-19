@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT rb.user_id::text, u.email, COALESCE(up.first_name, '') as fn, COALESCE(up.last_name, '') as ln,\n                  rb.cashback, rb.referrals as referrals_amt, rb.promotions\n           FROM rewards_balances rb\n           JOIN users u ON u.id = rb.user_id\n           LEFT JOIN user_profiles up ON up.user_id = u.id\n           ORDER BY (rb.cashback + rb.referrals + rb.promotions) DESC LIMIT 1000",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "fn",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "ln",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "cashback",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "referrals_amt",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "promotions",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      false,
+      null,
+      null,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6c6d63d6ee224bedf17242302af3211055e77cab7964c5d8eb222b7b91766f11"
+}

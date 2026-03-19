@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT \n            (SELECT COUNT(*) FROM support_tickets WHERE status = 'open') as open_count,\n            (SELECT COUNT(*) FROM support_tickets WHERE status = 'in_progress') as progress_count,\n            (SELECT COUNT(*) FROM support_tickets WHERE status IN ('resolved', 'closed')) as resolved_count,\n            (SELECT COUNT(*) FROM support_tickets WHERE priority = 'urgent') as urgent_count",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "open_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "progress_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "resolved_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "urgent_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "a3a0e91975782353f29301d69ee65b843fac8560de074994ef2628111bd1c057"
+}

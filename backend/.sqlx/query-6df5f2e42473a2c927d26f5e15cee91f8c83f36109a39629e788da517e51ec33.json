@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT rc.user_id, referral_bonus \n               FROM referral_codes rc\n               JOIN user_tiers ut ON ut.user_id = rc.user_id\n               JOIN tiers t ON t.id = ut.tier_id\n               WHERE rc.code = $1 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "referral_bonus",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "6df5f2e42473a2c927d26f5e15cee91f8c83f36109a39629e788da517e51ec33"
+}

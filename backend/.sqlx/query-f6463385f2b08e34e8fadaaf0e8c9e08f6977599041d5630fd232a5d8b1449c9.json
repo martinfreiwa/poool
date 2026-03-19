@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT annual_limit_cents, invested_12m_cents, available_cents, limit_year\n        FROM investment_limits\n        WHERE user_id = $1 AND limit_year = EXTRACT(YEAR FROM NOW())::INTEGER\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "annual_limit_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "invested_12m_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "available_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "limit_year",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "f6463385f2b08e34e8fadaaf0e8c9e08f6977599041d5630fd232a5d8b1449c9"
+}
