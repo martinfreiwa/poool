@@ -311,7 +311,7 @@
                   </div>
                   <h3 class="location-subtitle">{{ asset.location_city | default('Uluwatu') }}, {{ asset.location_country | default('Bali, Indonesia') }}</h3>
                   <div class="location-map">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d31543.27726847932!2d115.08739467431641!3d-8.809396989999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd24ffc20cb8191%3A0xcb98d1ba7db0495!2sUluwatu%2C%20South%20Kuta%2C%20Badung%20Regency%2C%20Bali%2C%20Indonesia!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid"
+                    <iframe src="{{ asset.google_maps_url if asset.google_maps_url else 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1010296.8845780512!2d114.39853926615555!3d-8.455246740624838!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd141d3e8100fa1%3A0x24910fb14b24e690!2sBali%2C%20Indonesia!5e0!3m2!1sen!2sid!4v1711234567890!5m2!1sen!2sid' }}"
                       width="100%" height="400" style="border: 0; border-radius: 12px" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
                       title="Property Location - {{ asset.location_city | default('Uluwatu') }}, {{ asset.location_country | default('Bali, Indonesia') }}"></iframe>
                   </div>

@@ -138,12 +138,12 @@ pub async fn refresh_all_scores(pool: &PgPool) -> Result<(), AppError> {
 /// Resolve (rank_column, value_column) pair from metric key string.
 fn metric_columns(metric_type: &str) -> (&str, &str) {
     match metric_type {
-        "assets"      => ("rank_assets",      "asset_count"),
-        "roi"         => ("rank_roi",         "portfolio_roi_bps"),
-        "affiliates"  => ("rank_affiliates",  "affiliate_count"),
-        "revenue"     => ("rank_ref_revenue", "referral_revenue_cents"),
+        "assets" => ("rank_assets", "asset_count"),
+        "roi" => ("rank_roi", "portfolio_roi_bps"),
+        "affiliates" => ("rank_affiliates", "affiliate_count"),
+        "revenue" => ("rank_ref_revenue", "referral_revenue_cents"),
         "highest_inv" => ("rank_highest_inv", "highest_investment_cents"),
-        _             => ("rank_invested",    "total_invested_cents"), // default: "invested"
+        _ => ("rank_invested", "total_invested_cents"), // default: "invested"
     }
 }
 
@@ -171,15 +171,28 @@ pub async fn get_rankings(
         if let Some(cutoff) = timeframe_cutoff_sql(timeframe) {
             // ── Timeframe-filtered: compute metrics at query time ──
             get_rankings_timeframed(
-                pool, current_user_id, metric_type, cutoff,
-                per_page, offset, tier_id, search.as_deref(),
-            ).await?
+                pool,
+                current_user_id,
+                metric_type,
+                cutoff,
+                per_page,
+                offset,
+                tier_id,
+                search.as_deref(),
+            )
+            .await?
         } else {
             // ── All-time: read from precomputed table ──
             get_rankings_alltime(
-                pool, current_user_id, metric_type,
-                per_page, offset, tier_id, search.as_deref(),
-            ).await?
+                pool,
+                current_user_id,
+                metric_type,
+                per_page,
+                offset,
+                tier_id,
+                search.as_deref(),
+            )
+            .await?
         };
 
     let has_more = rankings.len() as i64 == per_page;
@@ -212,7 +225,7 @@ async fn get_rankings_alltime(
         WITH raw_data AS (
             SELECT
                 ls.{rank_col}                           AS rank,
-                ls.{val_col}                            AS metric_value,
+                ls.{val_col}::BIGINT                    AS metric_value,
                 ls.total_invested_cents,
                 ls.asset_count,
                 ls.portfolio_roi_bps,
@@ -290,7 +303,7 @@ async fn get_rankings_timeframed(
     pool: &PgPool,
     current_user_id: Uuid,
     metric_type: &str,
-    cutoff_sql: &str,       // e.g. "NOW() - INTERVAL '7 days'"
+    cutoff_sql: &str, // e.g. "NOW() - INTERVAL '7 days'"
     limit: i64,
     offset: i64,
     tier_id: Option<i32>,
@@ -298,12 +311,15 @@ async fn get_rankings_timeframed(
 ) -> Result<(Vec<LeaderboardEntry>, MyRank, i64, Option<String>), AppError> {
     // Map metric_type to the ORDER BY expression used for ranking.
     let (order_expr, val_expr) = match metric_type {
-        "assets"      => ("unique_assets DESC, total_invested DESC", "unique_assets"),
-        "roi"         => ("weighted_roi_bps DESC, total_invested DESC", "weighted_roi_bps"),
-        "affiliates"  => ("aff_count DESC, network_value DESC", "aff_count"),
-        "revenue"     => ("network_value DESC, aff_count DESC", "network_value"),
+        "assets" => ("unique_assets DESC, total_invested DESC", "unique_assets"),
+        "roi" => (
+            "weighted_roi_bps DESC, total_invested DESC",
+            "weighted_roi_bps",
+        ),
+        "affiliates" => ("aff_count DESC, network_value DESC", "aff_count"),
+        "revenue" => ("network_value DESC, aff_count DESC", "network_value"),
         "highest_inv" => ("highest_inv DESC", "highest_inv"),
-        _             => ("total_invested DESC", "total_invested"), // default "invested"
+        _ => ("total_invested DESC", "total_invested"), // default "invested"
     };
 
     // Build the main query. We compute metrics from the raw source tables,
@@ -313,7 +329,7 @@ async fn get_rankings_timeframed(
         WITH inv_agg AS (
             SELECT
                 i.user_id,
-                SUM(i.purchase_value_cents)              AS total_invested,
+                SUM(i.purchase_value_cents)::BIGINT              AS total_invested,
                 COUNT(DISTINCT i.asset_id)               AS unique_assets,
                 MAX(i.purchase_value_cents)               AS highest_inv,
                 COALESCE(
@@ -331,7 +347,7 @@ async fn get_rankings_timeframed(
             SELECT
                 rt.referrer_id,
                 COUNT(DISTINCT rt.referred_id)            AS aff_count,
-                COALESCE(SUM(inv.purchase_value_cents), 0) AS network_value
+                COALESCE(SUM(inv.purchase_value_cents)::BIGINT, 0::BIGINT) AS network_value
             FROM referral_tracking rt
             LEFT JOIN investments inv ON inv.user_id = rt.referred_id
                 AND inv.status = 'active'
@@ -356,7 +372,7 @@ async fn get_rankings_timeframed(
             SELECT
                 m.*,
                 ROW_NUMBER() OVER (ORDER BY {order_expr})::INT  AS rank,
-                {val_expr}                                 AS metric_value
+                {val_expr}::BIGINT                         AS metric_value
             FROM merged m
         ),
         enriched AS (
@@ -459,12 +475,18 @@ fn rows_to_entries(rows: &[sqlx::postgres::PgRow], current_user_id: Uuid) -> Vec
                 metric_value: r.get::<Option<i64>, _>("metric_value").unwrap_or(0),
                 is_current_user: is_current,
                 metrics: LeaderboardMetrics {
-                    total_invested_cents: r.get::<Option<i64>, _>("total_invested_cents").unwrap_or(0),
+                    total_invested_cents: r
+                        .get::<Option<i64>, _>("total_invested_cents")
+                        .unwrap_or(0),
                     asset_count: r.get::<Option<i32>, _>("asset_count").unwrap_or(0),
                     portfolio_roi_bps: r.get::<Option<i32>, _>("portfolio_roi_bps").unwrap_or(0),
                     affiliate_count: r.get::<Option<i32>, _>("affiliate_count").unwrap_or(0),
-                    referral_revenue_cents: r.get::<Option<i64>, _>("referral_revenue_cents").unwrap_or(0),
-                    highest_investment_cents: r.get::<Option<i64>, _>("highest_investment_cents").unwrap_or(0),
+                    referral_revenue_cents: r
+                        .get::<Option<i64>, _>("referral_revenue_cents")
+                        .unwrap_or(0),
+                    highest_investment_cents: r
+                        .get::<Option<i64>, _>("highest_investment_cents")
+                        .unwrap_or(0),
                 },
             }
         })
@@ -481,7 +503,7 @@ async fn get_my_rank_alltime(
     val_col: &str,
 ) -> Result<MyRank, AppError> {
     let query = format!(
-        "SELECT {rank_col} AS rank, {val_col} AS metric_value,
+        "SELECT {rank_col} AS rank, {val_col}::BIGINT AS metric_value,
          total_invested_cents, asset_count, portfolio_roi_bps,
          affiliate_count, referral_revenue_cents, highest_investment_cents
          FROM leaderboard_scores WHERE user_id = $1",
@@ -504,8 +526,12 @@ async fn get_my_rank_alltime(
                 asset_count: r.get::<Option<i32>, _>("asset_count").unwrap_or(0),
                 portfolio_roi_bps: r.get::<Option<i32>, _>("portfolio_roi_bps").unwrap_or(0),
                 affiliate_count: r.get::<Option<i32>, _>("affiliate_count").unwrap_or(0),
-                referral_revenue_cents: r.get::<Option<i64>, _>("referral_revenue_cents").unwrap_or(0),
-                highest_investment_cents: r.get::<Option<i64>, _>("highest_investment_cents").unwrap_or(0),
+                referral_revenue_cents: r
+                    .get::<Option<i64>, _>("referral_revenue_cents")
+                    .unwrap_or(0),
+                highest_investment_cents: r
+                    .get::<Option<i64>, _>("highest_investment_cents")
+                    .unwrap_or(0),
             },
         }),
         None => Ok(MyRank::default()),
@@ -520,19 +546,22 @@ async fn get_my_rank_timeframed(
     cutoff_sql: &str,
 ) -> Result<MyRank, AppError> {
     let (order_expr, val_expr) = match metric_type {
-        "assets"      => ("unique_assets DESC, total_invested DESC", "unique_assets"),
-        "roi"         => ("weighted_roi_bps DESC, total_invested DESC", "weighted_roi_bps"),
-        "affiliates"  => ("aff_count DESC, network_value DESC", "aff_count"),
-        "revenue"     => ("network_value DESC, aff_count DESC", "network_value"),
+        "assets" => ("unique_assets DESC, total_invested DESC", "unique_assets"),
+        "roi" => (
+            "weighted_roi_bps DESC, total_invested DESC",
+            "weighted_roi_bps",
+        ),
+        "affiliates" => ("aff_count DESC, network_value DESC", "aff_count"),
+        "revenue" => ("network_value DESC, aff_count DESC", "network_value"),
         "highest_inv" => ("highest_inv DESC", "highest_inv"),
-        _             => ("total_invested DESC", "total_invested"),
+        _ => ("total_invested DESC", "total_invested"),
     };
 
     let query = format!(
         r#"
         WITH inv_agg AS (
             SELECT i.user_id,
-                SUM(i.purchase_value_cents)              AS total_invested,
+                SUM(i.purchase_value_cents)::BIGINT              AS total_invested,
                 COUNT(DISTINCT i.asset_id)               AS unique_assets,
                 MAX(i.purchase_value_cents)               AS highest_inv,
                 COALESCE(
@@ -547,7 +576,7 @@ async fn get_my_rank_timeframed(
         ref_agg AS (
             SELECT rt.referrer_id,
                 COUNT(DISTINCT rt.referred_id)            AS aff_count,
-                COALESCE(SUM(inv.purchase_value_cents), 0) AS network_value
+                COALESCE(SUM(inv.purchase_value_cents)::BIGINT, 0::BIGINT) AS network_value
             FROM referral_tracking rt
             LEFT JOIN investments inv ON inv.user_id = rt.referred_id
                 AND inv.status = 'active' AND inv.purchased_at >= {cutoff}
@@ -570,7 +599,7 @@ async fn get_my_rank_timeframed(
         ranked AS (
             SELECT m.*,
                 ROW_NUMBER() OVER (ORDER BY {order_expr})::INT AS rank,
-                {val_expr} AS metric_value
+                {val_expr}::BIGINT AS metric_value
             FROM merged m
         )
         SELECT rank, metric_value,
@@ -602,8 +631,12 @@ async fn get_my_rank_timeframed(
                 asset_count: r.get::<Option<i32>, _>("asset_count").unwrap_or(0),
                 portfolio_roi_bps: r.get::<Option<i32>, _>("portfolio_roi_bps").unwrap_or(0),
                 affiliate_count: r.get::<Option<i32>, _>("affiliate_count").unwrap_or(0),
-                referral_revenue_cents: r.get::<Option<i64>, _>("referral_revenue_cents").unwrap_or(0),
-                highest_investment_cents: r.get::<Option<i64>, _>("highest_investment_cents").unwrap_or(0),
+                referral_revenue_cents: r
+                    .get::<Option<i64>, _>("referral_revenue_cents")
+                    .unwrap_or(0),
+                highest_investment_cents: r
+                    .get::<Option<i64>, _>("highest_investment_cents")
+                    .unwrap_or(0),
             },
         }),
         None => Ok(MyRank::default()),

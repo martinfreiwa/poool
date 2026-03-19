@@ -75,21 +75,22 @@
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 600;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: 14px;
+  line-height: 20px;
   color: #414651;
 }
 
 /* Active Tab */
 .mobile-documents-tab.active {
-  background: var(--accent-color);
-  box-shadow:
-    0px 1px 3px rgba(10, 13, 18, 0.1),
-    0px 1px 2px -1px rgba(10, 13, 18, 0.1);
+  background: #98FB96 !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 24px;
 }
 
 .mobile-documents-tab.active .tab-text {
-  color: var(--primary-color);
+  color: #0000FF !important;
+  font-weight: 700;
 }
 
 /* Documents List */

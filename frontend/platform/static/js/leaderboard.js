@@ -23,6 +23,69 @@
   let isFetching = false;
   let searchTimeout = null;
   let cachedPrefs = null;
+  let usingDemoData = false;
+
+  // ─── Sample / Demo Data ─────────────────────────────────────────
+  // Shown when the leaderboard has 0 real participants. Replaced
+  // automatically once real investors appear.
+  var DEMO_RANKINGS = [
+    { rank: 1, display_name: 'Alexander K.',  avatar_url: null, tier_name: 'Premium', tier_badge_color: '#7F56D9', metric_value: 4825000, is_current_user: false, metrics: { total_invested_cents: 4825000, asset_count: 12, portfolio_roi_bps: 1450, affiliate_count: 8,  referral_revenue_cents: 920000, highest_investment_cents: 1500000 }},
+    { rank: 2, display_name: 'Sophia M.',     avatar_url: null, tier_name: 'Elite',   tier_badge_color: '#2E90FA', metric_value: 3690000, is_current_user: false, metrics: { total_invested_cents: 3690000, asset_count: 9,  portfolio_roi_bps: 1280, affiliate_count: 5,  referral_revenue_cents: 410000, highest_investment_cents: 1200000 }},
+    { rank: 3, display_name: 'Maximilian R.', avatar_url: null, tier_name: 'Elite',   tier_badge_color: '#2E90FA', metric_value: 2850000, is_current_user: false, metrics: { total_invested_cents: 2850000, asset_count: 7,  portfolio_roi_bps: 1120, affiliate_count: 3,  referral_revenue_cents: 180000, highest_investment_cents: 950000 }},
+    { rank: 4, display_name: 'Emma L.',       avatar_url: null, tier_name: 'Pro',     tier_badge_color: '#12B76A', metric_value: 2150000, is_current_user: false, metrics: { total_invested_cents: 2150000, asset_count: 6,  portfolio_roi_bps: 980,  affiliate_count: 11, referral_revenue_cents: 750000, highest_investment_cents: 800000 }},
+    { rank: 5, display_name: 'Lukas W.',      avatar_url: null, tier_name: 'Pro',     tier_badge_color: '#12B76A', metric_value: 1780000, is_current_user: false, metrics: { total_invested_cents: 1780000, asset_count: 5,  portfolio_roi_bps: 1340, affiliate_count: 2,  referral_revenue_cents: 95000,  highest_investment_cents: 750000 }},
+    { rank: 6, display_name: 'Hannah B.',     avatar_url: null, tier_name: 'Pro',     tier_badge_color: '#12B76A', metric_value: 1320000, is_current_user: false, metrics: { total_invested_cents: 1320000, asset_count: 4,  portfolio_roi_bps: 870,  affiliate_count: 6,  referral_revenue_cents: 320000, highest_investment_cents: 600000 }},
+    { rank: 7, display_name: 'Noah S.',       avatar_url: null, tier_name: 'Plus',    tier_badge_color: '#F79009', metric_value: 980000,  is_current_user: false, metrics: { total_invested_cents: 980000,  asset_count: 3,  portfolio_roi_bps: 760,  affiliate_count: 1,  referral_revenue_cents: 45000,  highest_investment_cents: 500000 }},
+    { rank: 8, display_name: 'Mia F.',        avatar_url: null, tier_name: 'Plus',    tier_badge_color: '#F79009', metric_value: 750000,  is_current_user: false, metrics: { total_invested_cents: 750000,  asset_count: 3,  portfolio_roi_bps: 920,  affiliate_count: 4,  referral_revenue_cents: 210000, highest_investment_cents: 350000 }},
+    { rank: 9, display_name: 'Julian D.',     avatar_url: null, tier_name: 'Plus',    tier_badge_color: '#F79009', metric_value: 520000,  is_current_user: false, metrics: { total_invested_cents: 520000,  asset_count: 2,  portfolio_roi_bps: 650,  affiliate_count: 0,  referral_revenue_cents: 0,      highest_investment_cents: 300000 }},
+    { rank: 10, display_name: 'Lena V.',      avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 350000,  is_current_user: false, metrics: { total_invested_cents: 350000,  asset_count: 1,  portfolio_roi_bps: 480,  affiliate_count: 0,  referral_revenue_cents: 0,      highest_investment_cents: 350000 }},
+  ];
+
+  function getDemoData(realData) {
+    // Re-rank demo data based on the currently selected metric
+    var metricKey = {
+      'invested':    'total_invested_cents',
+      'assets':      'asset_count',
+      'roi':         'portfolio_roi_bps',
+      'affiliates':  'affiliate_count',
+      'revenue':     'referral_revenue_cents',
+      'highest_inv': 'highest_investment_cents',
+    }[currentMetric] || 'total_invested_cents';
+
+    var timeframeMultiplier = currentTimeframe === 'weekly' ? 0.05 : (currentTimeframe === 'monthly' ? 0.2 : 1);
+
+    var copied = JSON.parse(JSON.stringify(DEMO_RANKINGS));
+
+    var sorted = copied.sort(function (a, b) {
+      return b.metrics[metricKey] - a.metrics[metricKey];
+    });
+
+    sorted.forEach(function (entry, i) {
+      entry.rank = i + 1;
+      // Apply timeframe multiplier to value
+      if (metricKey !== 'asset_count' && metricKey !== 'affiliate_count' && metricKey !== 'portfolio_roi_bps') {
+         entry.metrics[metricKey] = Math.round(entry.metrics[metricKey] * timeframeMultiplier);
+      }
+      entry.metric_value = entry.metrics[metricKey];
+    });
+
+    return {
+      rankings: sorted,
+      my_rank: realData && realData.my_rank ? realData.my_rank : { rank: null, metric_value: 0, metrics: { total_invested_cents: 0, asset_count: 0, portfolio_roi_bps: 0, affiliate_count: 0, referral_revenue_cents: 0, highest_investment_cents: 0 }},
+      total_participants: 10,
+      metric_type: currentMetric,
+      timeframe: currentTimeframe,
+      last_updated: new Date().toISOString(),
+      has_more: false,
+    };
+  }
+
+  function showDemoBadge(show) {
+    var badge = document.getElementById('lb-demo-badge');
+    if (badge) {
+      badge.style.display = show ? 'inline-flex' : 'none';
+    }
+  }
 
   function formatMetric(val, type) {
     if (type === 'invested' || type === 'revenue' || type === 'highest_inv') {
@@ -58,14 +121,23 @@
 
       cachedPrefs = prefs;
 
-      // Tier filter uses native <select> — PooolDropdown is overkill here
-      // and causes clipping issues within the table card container.
-
       if (!data || data.total_participants === 0) {
-        showLayer('empty');
+        // Use demo data instead of empty state
+        usingDemoData = true;
+        var demo = getDemoData(data);
+        renderPodium(demo.rankings);
+        renderMyRank(demo.my_rank);
+        renderTable(demo.rankings);
+        renderMeta(demo);
+        renderLoadMore(demo);
+        applyPrefs(prefs);
+        showDemoBadge(true);
+        showLayer('content');
         return;
       }
 
+      usingDemoData = false;
+      showDemoBadge(false);
       renderPodium(data.rankings);
       renderMyRank(data.my_rank);
       renderTable(data.rankings);
@@ -397,12 +469,22 @@
     try {
       var data = await fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier);
 
-      // Only go to full-page empty state when there are zero investors on the leaderboard at all (no filters active)
+      // If no real data and no filters, use demo data
       if (!data || (data.total_participants === 0 && !hasFilters)) {
-        showLayer('empty');
+        usingDemoData = true;
+        var demo = getDemoData(data);
+        showLayer('content');
+        renderPodium(demo.rankings);
+        renderMyRank(demo.my_rank);
+        renderTable(demo.rankings, false);
+        renderMeta(demo);
+        renderLoadMore(demo);
+        showDemoBadge(true);
         return;
       }
 
+      usingDemoData = false;
+      showDemoBadge(false);
       showLayer('content');
 
       // Re-render podium only when there's no active filter (so podium always shows real global top 3)

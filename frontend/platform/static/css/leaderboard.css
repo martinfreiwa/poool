@@ -66,6 +66,21 @@
   font-weight: 500;
 }
 
+/* --- Demo Data Badge --- */
+.lb-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #fffaeb;
+  border: 1px solid #fedf89;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #b54708;
+  margin-bottom: 8px;
+}
+
 /* --- Timeframe Toggle --- */
 .lb-timeframe-bar {
   display: flex;

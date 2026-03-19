@@ -871,7 +871,10 @@ pub async fn get_user_profile(
     } else if roles.iter().any(|r| r == "developer") {
         "developer".to_string()
     } else {
-        roles.first().cloned().unwrap_or_else(|| "investor".to_string())
+        roles
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "investor".to_string())
     };
 
     let first = first_name.clone().unwrap_or_default();

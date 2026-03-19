@@ -226,11 +226,16 @@
                   <!-- Info Cards -->
                   <div id="property-info-cards">
                     <div class="info-card">
-                      <img 
-                        class="card-image"
-                        src="/static/images/1%20(1).webp"
-                        alt="Step 1"
-                      />
+                      <div class="card-image hiw-icon-wrapper">
+                        <svg width="100%" height="100%" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect width="60" height="60" rx="12" fill="#0000FF"/>
+                          <path d="M20 42V22L30 16L40 22V42" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M26 42V34H34V42" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M26 28H28" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round"/>
+                          <path d="M32 28H34" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round"/>
+                          <path d="M14 42H46" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                      </div>
                       <div class="card-step">Step 1</div>
                       <div class="card-title">
                         Buy a fraction<br />of premium<br />property
@@ -263,11 +268,15 @@
                       </div>
                     </div>
                     <div class="info-card">
-                      <img 
-                        class="card-image"
-                        src="/static/images/2%20(2).webp"
-                        alt="Step 2"
-                      />
+                      <div class="card-image hiw-icon-wrapper">
+                        <svg width="100%" height="100%" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect width="60" height="60" rx="12" fill="#0000FF"/>
+                          <ellipse cx="26" cy="24" rx="8" ry="4" stroke="#03FF88" stroke-width="2.5"/>
+                          <path d="M18 24V30C18 32.2091 21.5817 34 26 34C30.4183 34 34 32.2091 34 30V24" stroke="#03FF88" stroke-width="2.5"/>
+                          <path d="M26 30V36C26 38.2091 29.5817 40 34 40C38.4183 40 42 38.2091 42 36V30" stroke="#03FF88" stroke-width="2.5"/>
+                          <ellipse cx="34" cy="30" rx="8" ry="4" stroke="#03FF88" stroke-width="2.5"/>
+                        </svg>
+                      </div>
                       <div class="card-step">Step 2</div>
                       <div class="card-title">
                         Receive steady<br />monthly<br />payouts
@@ -300,11 +309,17 @@
                       </div>
                     </div>
                     <div class="info-card">
-                      <img 
-                        class="card-image"
-                        src="/static/images/3.webp"
-                        alt="Step 3"
-                      />
+                      <div class="card-image hiw-icon-wrapper">
+                        <svg width="100%" height="100%" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect width="60" height="60" rx="12" fill="#0000FF"/>
+                          <path d="M18 40L26 30L32 34L42 20" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M36 20H42V26" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                          <rect x="18" y="34" width="4" height="8" rx="1" fill="#03FF88" opacity="0.5"/>
+                          <rect x="24" y="30" width="4" height="12" rx="1" fill="#03FF88" opacity="0.6"/>
+                          <rect x="30" y="28" width="4" height="14" rx="1" fill="#03FF88" opacity="0.7"/>
+                          <rect x="36" y="24" width="4" height="18" rx="1" fill="#03FF88" opacity="0.8"/>
+                        </svg>
+                      </div>
                       <div class="card-step">Step 3</div>
                       <div class="card-title">
                         Grow your<br />wealth as<br />property value rises
@@ -1210,7 +1225,7 @@
                   <h3 class="location-subtitle">Cabai Rawit Plantation</h3>
                   <div class="location-map">
                     <iframe
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d253134.85!2d106.0!3d-6.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e421f0!2sLebak%20Regency%2C%20Banten%2C%20Indonesia!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid"
+                      src="{{ asset.google_maps_url if asset.google_maps_url else 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d253134.85!2d106.0!3d-6.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e421f0!2sLebak%20Regency%2C%20Banten%2C%20Indonesia!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid' }}"
                       width="100%"
                       height="400"
                       style="border: 0; border-radius: 12px"
@@ -4054,11 +4069,16 @@
                     ></path></svg
                 ></a>
               </div>
-              <img 
-                src="/static/images/1%20(1).webp"
-                alt=""
-                class="hiw-card-icon"
-              />
+              <div class="hiw-card-icon hiw-icon-wrapper">
+                <svg width="100%" height="100%" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="60" height="60" rx="12" fill="#0000FF"/>
+                  <path d="M20 42V22L30 16L40 22V42" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M26 42V34H34V42" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M26 28H28" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round"/>
+                  <path d="M32 28H34" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round"/>
+                  <path d="M14 42H46" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+              </div>
             </div>
             <!-- Step 2 Card -->
             <div class="mobile-hiw-card">
@@ -4075,11 +4095,15 @@
                   <span>We handle all operations & tenants</span>
                 </div>
               </div>
-              <img 
-                src="/static/images/2%20(2).webp"
-                alt=""
-                class="hiw-card-icon"
-              />
+              <div class="hiw-card-icon hiw-icon-wrapper">
+                <svg width="100%" height="100%" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="60" height="60" rx="12" fill="#0000FF"/>
+                  <ellipse cx="26" cy="24" rx="8" ry="4" stroke="#03FF88" stroke-width="2.5"/>
+                  <path d="M18 24V30C18 32.2091 21.5817 34 26 34C30.4183 34 34 32.2091 34 30V24" stroke="#03FF88" stroke-width="2.5"/>
+                  <path d="M26 30V36C26 38.2091 29.5817 40 34 40C38.4183 40 42 38.2091 42 36V30" stroke="#03FF88" stroke-width="2.5"/>
+                  <ellipse cx="34" cy="30" rx="8" ry="4" stroke="#03FF88" stroke-width="2.5"/>
+                </svg>
+              </div>
             </div>
             <!-- Step 3 Card -->
             <div class="mobile-hiw-card">
@@ -4098,7 +4122,17 @@
                   <span>Earn from rent and value appreciation</span>
                 </div>
               </div>
-              <img  src="/static/images/3.webp" alt="" class="hiw-card-icon" />
+              <div class="hiw-card-icon hiw-icon-wrapper">
+                <svg width="100%" height="100%" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="60" height="60" rx="12" fill="#0000FF"/>
+                  <path d="M18 40L26 30L32 34L42 20" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M36 20H42V26" stroke="#03FF88" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <rect x="18" y="34" width="4" height="8" rx="1" fill="#03FF88" opacity="0.5"/>
+                  <rect x="24" y="30" width="4" height="12" rx="1" fill="#03FF88" opacity="0.6"/>
+                  <rect x="30" y="28" width="4" height="14" rx="1" fill="#03FF88" opacity="0.7"/>
+                  <rect x="36" y="24" width="4" height="18" rx="1" fill="#03FF88" opacity="0.8"/>
+                </svg>
+              </div>
             </div>
           </div>
         </div>
@@ -4902,7 +4936,7 @@
           <!-- Map -->
           <div class="mobile-location-map">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d253134.85!2d106.0!3d-6.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e421f0!2sLebak%20Regency%2C%20Banten%2C%20Indonesia!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid"
+              src="{{ asset.google_maps_url if asset.google_maps_url else 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d253134.85!2d106.0!3d-6.65!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e421f0!2sLebak%20Regency%2C%20Banten%2C%20Indonesia!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid' }}"
               width="100%"
               height="162"
               allowfullscreen=""

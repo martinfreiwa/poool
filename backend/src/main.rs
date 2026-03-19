@@ -180,10 +180,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let leaderboard_pool = pool.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(15 * 60)); // 15 mins
-        // Small initial delay to avoid slamming the DB on immediate startup
+                                                                                           // Small initial delay to avoid slamming the DB on immediate startup
         tokio::time::sleep(std::time::Duration::from_secs(10)).await;
         loop {
-            if let Err(e) = crate::leaderboard::service::refresh_all_scores(&leaderboard_pool).await {
+            if let Err(e) = crate::leaderboard::service::refresh_all_scores(&leaderboard_pool).await
+            {
                 tracing::error!("Error refreshing leaderboard scores: {}", e);
             }
             interval.tick().await;
@@ -453,7 +454,7 @@ async fn apply_security_headers(
     );
     headers.insert(
         axum::http::header::CONTENT_SECURITY_POLICY,
-        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com; worker-src 'self' blob:; base-uri 'self'; form-action 'self';"),
+        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com; worker-src 'self' blob:; base-uri 'self'; form-action 'self';"),
     );
     headers.insert(
         axum::http::header::REFERRER_POLICY,

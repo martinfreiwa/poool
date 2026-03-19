@@ -233,16 +233,15 @@ pub async fn api_developer_create_draft(
 
     if !is_developer {
         // Auto-assign the developer role
-        let developer_role_id: Option<uuid::Uuid> = sqlx::query_scalar(
-            "SELECT id FROM roles WHERE name = 'developer'"
-        )
-        .fetch_optional(&state.db)
-        .await
-        .unwrap_or(None);
+        let developer_role_id: Option<uuid::Uuid> =
+            sqlx::query_scalar("SELECT id FROM roles WHERE name = 'developer'")
+                .fetch_optional(&state.db)
+                .await
+                .unwrap_or(None);
 
         if let Some(role_id) = developer_role_id {
             let _ = sqlx::query(
-                "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+                "INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
             )
             .bind(user.id)
             .bind(role_id)

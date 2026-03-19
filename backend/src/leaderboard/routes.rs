@@ -64,7 +64,14 @@ pub async fn get_rankings(
         .cloned();
 
     match service::get_rankings(
-        &state.db, user_id, &metric_type, &timeframe, page, per_page, tier_id, search,
+        &state.db,
+        user_id,
+        &metric_type,
+        &timeframe,
+        page,
+        per_page,
+        tier_id,
+        search,
     )
     .await
     {
