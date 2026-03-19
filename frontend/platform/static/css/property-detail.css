@@ -2385,6 +2385,26 @@ body.youtube-modal-active {
   height: 24px;
 }
 
+.section-header > img,
+.financial-header > img,
+.location-header > img,
+.developer-header > img,
+.documents-header > img,
+.strategy-header > img,
+.funding-header > img,
+.operator-profile-header > img,
+.leasing-header > img,
+.mobile-section-header > img,
+.mobile-financial-header > img,
+.mobile-location-header > img,
+.mobile-developer-header > img,
+.mobile-documents-header > img,
+.mobile-leasing-header > img,
+.mobile-investment-header > img,
+.mobile-funding-header > img {
+  filter: brightness(0) invert(8%) sepia(21%) saturate(984%) hue-rotate(174deg) brightness(89%) contrast(90%);
+}
+
 .section-header h2 {
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
