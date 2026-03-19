@@ -60,7 +60,7 @@
                   <div class="category-separator"></div>
                   <div class="category-badge">
                     <img  src="/static/images/prop-details/maximize-02.svg" alt="Area" class="badge-icon" width="16" height="16" />
-                    <span class="badge-text">1,376 Sq Ft</span>
+                    <span class="badge-text">{% if asset.land_size_sqm %}{{ asset.land_size_sqm }} m²{% else %}128 m²{% endif %}</span>
                   </div>
                   <div class="category-separator"></div>
                   <div class="category-badge">
@@ -104,7 +104,7 @@
                     </div>
                     <div class="info-badge-text">
                       <h4>7.45% annual gross yield</h4>
-                      <p>With a net yield of 5.49 and a price per square foot of USD 1,344</p>
+                      <p>With a net yield of {{ asset.capital_appreciation_percent }}% and a price per m² of USD {{ asset.price_per_sqm }}</p>
                     </div>
                   </div>
                 </div>
@@ -439,10 +439,10 @@
                         <span class="investors-number">{{ asset.investor_count }}</span>
                         <span class="investors-label">investors</span>
                       </div>
-                      <div class="price-per-sqft-badge">
+                      <div class="price-per-sqm-badge">
                         <img  src="/static/images/Portfolio%20asset%20details/currency-dollar-circle.svg" alt="Dollar" class="dollar-icon" width="12" height="12" />
-                        <span class="badge-text">USD {{ asset.price_per_sqft }}</span>
-                        <span class="badge-suffix">/sqft</span>
+                        <span class="badge-text">USD {{ asset.price_per_sqm }}</span>
+                        <span class="badge-suffix">/m²</span>
                       </div>
                     </div>
                     <div class="price-card-returns">
@@ -619,10 +619,10 @@
                 <span class="investors-number">{{ asset.investor_count }}</span>
                 <span class="investors-label">investors</span>
               </div>
-              <div class="price-per-sqft-badge">
+              <div class="price-per-sqm-badge">
                 <img  src="/static/images/Portfolio%20asset%20details/currency-dollar-circle.svg" alt="Dollar" class="dollar-icon" width="12" height="12" />
-                <span class="badge-text">USD {{ asset.price_per_sqft }}</span>
-                <span class="badge-suffix">/sqft</span>
+                <span class="badge-text">USD {{ asset.price_per_sqm }}</span>
+                <span class="badge-suffix">/m²</span>
               </div>
             </div>
             <div class="mobile-returns">
@@ -657,7 +657,7 @@
           <div class="mobile-category-divider"></div>
           <div class="mobile-category-badge"><img  src="/static/images/bookmark-check.svg" alt="Ready" width="16" height="16" /><span>Ready</span></div>
           <div class="mobile-category-divider"></div>
-          <div class="mobile-category-badge"><img  src="/static/images/prop-details/maximize-02.svg" alt="Area" width="16" height="16" /><span>1,376 Sq Ft</span></div>
+          <div class="mobile-category-badge"><img  src="/static/images/prop-details/maximize-02.svg" alt="Area" width="16" height="16" /><span>{% if asset.land_size_sqm %}{{ asset.land_size_sqm }} m²{% else %}128 m²{% endif %}</span></div>
           <div class="mobile-category-divider"></div>
           <div class="mobile-category-badge"><img  src="/static/images/prop-details/markerpin.svg" alt="Location" width="16" height="16" /><span>{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</span></div>
         </div>

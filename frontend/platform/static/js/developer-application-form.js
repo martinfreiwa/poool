@@ -487,33 +487,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // ─── Area conversion (m² ↔ sqft) ───
-  const totalAreaInput = document.getElementById("total-area");
-  const totalAreaSqftInput = document.getElementById("total-area-sqft");
-  const buildingAreaInput = document.getElementById("building-area");
-  const buildingAreaSqftInput = document.getElementById("building-area-sqft");
-
-  if (totalAreaInput && totalAreaSqftInput) {
-    totalAreaInput.addEventListener("input", function () {
-      const m2 = parseFloat(this.value) || 0;
-      totalAreaSqftInput.value = Math.round(m2 * 10.764).toString().padStart(3, "0");
-    });
-    totalAreaSqftInput.addEventListener("input", function () {
-      const sqft = parseFloat(this.value) || 0;
-      totalAreaInput.value = Math.round(sqft / 10.764);
-    });
-  }
-
-  if (buildingAreaInput && buildingAreaSqftInput) {
-    buildingAreaInput.addEventListener("input", function () {
-      const m2 = parseFloat(this.value) || 0;
-      buildingAreaSqftInput.value = Math.round(m2 * 10.764).toString().padStart(3, "0");
-    });
-    buildingAreaSqftInput.addEventListener("input", function () {
-      const sqft = parseFloat(this.value) || 0;
-      buildingAreaInput.value = Math.round(sqft / 10.764);
-    });
-  }
+  // ─── Area fields are m² only (no sqft conversion needed) ───
 
   // ─── Clear field errors on input ───
   document.querySelectorAll('input, select, textarea').forEach(function (el) {

@@ -663,7 +663,7 @@
     color: #535862;
   }
 
-  .mobile-investors .price-per-sqft-badge {
+  .mobile-investors .price-per-sqm-badge {
     box-sizing: border-box;
     display: flex;
     flex-direction: row;
@@ -676,9 +676,11 @@
   }
 
   .mobile-investors .dollar-icon {
-    width: 12px;
-    height: 12px;
-    filter: invert(13%) sepia(97%) saturate(6321%) hue-rotate(241deg) brightness(98%) contrast(106%);
+    font-family: 'TT Norms Pro', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 18px;
+    color: #0000FF;
   }
 
   .mobile-investors .badge-text {

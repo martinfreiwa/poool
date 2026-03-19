@@ -9,21 +9,26 @@ let touchStartY = 0;
 let touchDeltaX = 0;
 let isSwiping = false;
 
-// Load ALL images from server-rendered JSON (not just the 5 visible)
+// Load ALL images from server-rendered hidden elements (not just the 5 visible)
 function getGalleryImages() {
-  const jsonEl = document.getElementById("gallery-all-images");
-  if (jsonEl) {
-    try {
-      const parsed = JSON.parse(jsonEl.textContent);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    } catch (e) {
-      console.warn("Failed to parse gallery JSON, falling back to DOM images");
+  var container = document.getElementById("gallery-all-images");
+  if (container) {
+    var hiddenImgs = container.querySelectorAll("img[data-src]");
+    if (hiddenImgs.length > 0) {
+      var images = [];
+      hiddenImgs.forEach(function (el) {
+        images.push({
+          src: el.getAttribute("data-src"),
+          caption: el.getAttribute("data-caption") || "Property view",
+        });
+      });
+      return images;
     }
   }
 
   // Fallback: scrape visible gallery DOM elements
-  const images = [];
-  const selectors = [
+  var fallbackImages = [];
+  var selectors = [
     "#gallery-main-image img",
     "#gallery-image-top-left img",
     "#gallery-image-top-right img",
@@ -33,12 +38,12 @@ function getGalleryImages() {
   selectors.forEach(function (sel) {
     var img = document.querySelector(sel);
     if (img && img.src) {
-      images.push({ src: img.src, caption: img.alt || "Property view" });
+      fallbackImages.push({ src: img.src, caption: img.alt || "Property view" });
     }
   });
 
-  return images.length > 0
-    ? images
+  return fallbackImages.length > 0
+    ? fallbackImages
     : [{ src: "/static/images/villa1.webp", caption: "Main property view" }];
 }
 

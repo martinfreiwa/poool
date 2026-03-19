@@ -833,7 +833,7 @@ body.lightbox-open {
   flex-grow: 0;
 }
 
-/* Badge 3 - Square Feet */
+/* Badge 3 - Square Meters */
 .category-badge:nth-child(5) {
   /* Auto layout */
   display: flex;
@@ -1547,7 +1547,7 @@ body.lightbox-open {
 }
 
 /* Badge */
-.price-per-sqft-badge {
+.price-per-sqm-badge {
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
@@ -1566,16 +1566,18 @@ body.lightbox-open {
 }
 
 .dollar-icon {
-  width: 12px;
-  height: 12px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 20px;
+  color: #0000FF;
   flex: none;
   order: 0;
   flex-grow: 0;
-  filter: invert(13%) sepia(97%) saturate(6321%) hue-rotate(241deg) brightness(98%) contrast(106%);
 }
 
-/* Badge text inside price-per-sqft - Blue text on green bg */
-.price-per-sqft-badge .badge-text {
+/* Badge text inside price-per-sqm - Blue text on green bg */
+.price-per-sqm-badge .badge-text {
   height: 20px;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
@@ -1589,7 +1591,7 @@ body.lightbox-open {
   flex-grow: 0;
 }
 
-.price-per-sqft-badge .badge-suffix {
+.price-per-sqm-badge .badge-suffix {
   width: auto;
   height: 18px;
   font-family: 'TT Norms Pro', sans-serif;

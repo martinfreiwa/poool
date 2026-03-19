@@ -291,6 +291,11 @@
   background: rgba(3, 255, 136, 0.08);
 }
 
+/* Icon turns blue on hover (matching active state) */
+.sidebar__nav-item-content:hover .nav-icon {
+  filter: brightness(0) saturate(100%) invert(11%) sepia(97%) saturate(7484%) hue-rotate(247deg) brightness(94%) contrast(148%);
+}
+
 /* Prevent hover effect on disabled items */
 .sidebar__nav-item-content--disabled:hover {
   background: #ffffff;

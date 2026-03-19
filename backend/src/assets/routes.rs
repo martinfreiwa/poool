@@ -288,8 +288,104 @@ pub async fn page_commodity(
         .map(|Path(s)| s)
         .or_else(|| params.get("id").cloned());
 
-    let asset = if let Some(slug) = slug {
+    let asset = if let Some(ref slug) = slug {
         sqlx::query_as!(
+            super::models::CommodityAsset,
+            r#"
+            SELECT
+                a.id,
+                a.title,
+                a.slug,
+                a.short_description,
+                a.description,
+                a.asset_type,
+                a.location_city,
+                a.location_country,
+                a.total_value_cents,
+                a.token_price_cents,
+                a.tokens_total,
+                a.tokens_available,
+                a.annual_yield_bps,
+                a.capital_appreciation_bps,
+                a.funding_status,
+                ARRAY(
+                    SELECT image_url
+                    FROM asset_images
+                    WHERE asset_id = a.id
+                    ORDER BY is_cover DESC, created_at ASC
+                ) AS "image_urls?",
+                a.term_months,
+                a.area,
+                a.land_size_sqm,
+                a.google_maps_url,
+                a.video_url,
+                (
+                    SELECT COUNT(DISTINCT o.user_id)
+                    FROM order_items oi
+                    JOIN orders o ON oi.order_id = o.id
+                    WHERE oi.asset_id = a.id
+                      AND o.status = 'completed'
+                ) AS "investor_count?",
+                a.operator_name,
+                a.fixed_roi_bps,
+                a.revenue_min_cents,
+                a.revenue_max_cents,
+                a.expenses_cents,
+                a.net_profit_min_cents,
+                a.net_profit_max_cents,
+                a.investor_payout_cents,
+                a.operator_split_pct,
+                a.poool_split_pct,
+                a.location_description
+            FROM assets a
+            WHERE a.slug = $1 AND a.published = true
+            "#,
+            slug
+        )
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or_default()
+    } else {
+        None
+    };
+
+    // Convert to display data
+    let display_data = asset.as_ref().map(super::models::CommodityDisplayData::from_asset);
+
+    // Query milestones/roadmap for this asset
+    let milestones = if let Some(ref a) = asset {
+        sqlx::query!(
+            r#"
+            SELECT title, description, month_index, is_completed
+            FROM asset_milestones
+            WHERE asset_id = $1
+            ORDER BY COALESCE(month_index, 0), created_at ASC
+            "#,
+            a.id
+        )
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default()
+    } else {
+        vec![]
+    };
+
+    // Build milestones context
+    let milestones_ctx: Vec<minijinja::Value> = milestones
+        .iter()
+        .map(|m| {
+            context! {
+                title => m.title,
+                description => m.description,
+                month_index => m.month_index,
+                is_completed => m.is_completed,
+            }
+        })
+        .collect();
+
+    // Query similar commodities (same asset_type, excluding current)
+    let similar_assets = if let Some(ref a) = asset {
+        let similar = sqlx::query_as!(
             MarketplaceAsset,
             r#"
             SELECT
@@ -308,11 +404,11 @@ pub async fn page_commodity(
                 a.capital_appreciation_bps,
                 a.funding_status,
                 ARRAY(
-                SELECT image_url 
-                FROM asset_images 
-                WHERE asset_id = a.id 
-                ORDER BY is_cover DESC, created_at ASC
-            ) AS "image_urls?",
+                    SELECT image_url
+                    FROM asset_images
+                    WHERE asset_id = a.id
+                    ORDER BY is_cover DESC, created_at ASC
+                ) AS "image_urls?",
                 a.bedrooms,
                 a.lease_type,
                 a.term_months,
@@ -326,20 +422,32 @@ pub async fn page_commodity(
                       AND o.status = 'completed'
                 ) AS "investor_count?"
             FROM assets a
-            
-            WHERE a.slug = $1 AND a.published = true
+            WHERE a.published = true
+              AND a.asset_type = 'commodity'
+              AND a.id != $1
+            ORDER BY a.featured DESC, a.created_at DESC
+            LIMIT 4
             "#,
-            slug
+            a.id
         )
-        .fetch_optional(&state.db)
+        .fetch_all(&state.db)
         .await
-        .unwrap_or_default()
+        .unwrap_or_default();
+
+        similar
+            .iter()
+            .map(PropertyDisplayData::from_asset)
+            .collect::<Vec<_>>()
     } else {
-        None
+        vec![]
     };
 
     match state.templates.get_template("commodity.html") {
-        Ok(template) => match template.render(context! { asset => asset }) {
+        Ok(template) => match template.render(context! {
+            asset => display_data,
+            milestones => milestones_ctx,
+            similar_assets => similar_assets,
+        }) {
             Ok(html) => Html(html).into_response(),
             Err(e) => {
                 tracing::error!("Template rendering error: {}", e);

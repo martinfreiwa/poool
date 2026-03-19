@@ -70,13 +70,12 @@
                 ><!-- Current page breadcrumb (order 8) -->
                 <div class="breadcrumb-button-base current">
                   <span class="breadcrumb-text-current"
-                    >Villa Janoor, Uluwatu - Golf Estates residence, Bay
-                    area</span
+                    >{{ asset.title }}</span
                   >
                 </div>
               </nav>
               <!-- 2. Top Action Button --><button id="property-action-button">
-                <span>Share Property</span></button
+                <span>Share Asset</span></button
               ><!-- 3. Image Gallery Section -->
               {% set gallery_ids = ['gallery-main-image', 'gallery-image-top-left', 'gallery-image-top-right', 'gallery-image-bottom-left', 'gallery-image-bottom-right'] %}
               {% for img_url in asset.image_urls %}
@@ -131,15 +130,15 @@
                 <!-- 1. Heading and Icon Section -->
                 <div id="property-heading-section" class="heading-and-icon">
                   <h1 id="property-title">
-                    Agro Investment: Paddy Rice Fields
+                    {{ asset.title }}
                   </h1>
                 </div>
                 <!-- 2. Commodity Description -->
                 <div id="commodity-description">
                   <p class="commodity-description-text">
-                    Invest in Indonesia's most consumed commodity with fixed 35%
-                    ROI in 12 months, powered by
-                    <span class="poool-highlight">POOOL</span> tokenization
+                    {% if asset.short_description %}{{ asset.short_description }}{% else %}Invest with fixed {{ asset.fixed_roi_percent }}%
+                    ROI in {{ asset.term_months }} months, powered by
+                    <span class="poool-highlight">POOOL</span> tokenization{% endif %}
                   </p>
                 </div>
                 <!-- 3. Commodity Info Section -->
@@ -152,21 +151,21 @@
                       <span class="commodity-info-label"
                         >Minimum Investment</span
                       >
-                      <span class="commodity-info-value">$1,000</span>
+                      <span class="commodity-info-value">${{ asset.min_investment_usd }}</span>
                     </div>
                     <!-- Card 2: Projected ROI -->
                     <div class="commodity-info-card">
                       <div class="card-blur-vector-1"></div>
                       <div class="card-blur-vector-2"></div>
                       <span class="commodity-info-label">Projected ROI</span>
-                      <span class="commodity-info-value">35% (fixed)</span>
+                      <span class="commodity-info-value">{{ asset.fixed_roi_percent }}% (fixed)</span>
                     </div>
                     <!-- Card 3: Term -->
                     <div class="commodity-info-card">
                       <div class="card-blur-vector-1"></div>
                       <div class="card-blur-vector-2"></div>
                       <span class="commodity-info-label">Term</span>
-                      <span class="commodity-info-value">12 months</span>
+                      <span class="commodity-info-value">{{ asset.term_months }} months</span>
                     </div>
                     <!-- Card 4: Underlying Asset -->
                     <div class="commodity-info-card">
@@ -174,7 +173,7 @@
                       <div class="card-blur-vector-2"></div>
                       <span class="commodity-info-label">Underlying Asset</span>
                       <span class="commodity-info-value"
-                        >60 ha chili plantation</span
+                        >{% if asset.land_size_hectares %}{{ asset.land_size_hectares }} ha{% endif %}</span
                       >
                     </div>
                     <!-- Card 5: Deal Size -->
@@ -182,7 +181,7 @@
                       <div class="card-blur-vector-1"></div>
                       <div class="card-blur-vector-2"></div>
                       <span class="commodity-info-label">Deal Size</span>
-                      <span class="commodity-info-value">$450,000</span>
+                      <span class="commodity-info-value">${{ asset.total_value_usd }}</span>
                     </div>
                     <!-- Card 6: Operator -->
                     <div class="commodity-info-card">
@@ -190,7 +189,7 @@
                       <div class="card-blur-vector-2"></div>
                       <span class="commodity-info-label">Operator</span>
                       <span class="commodity-info-value"
-                        >PT. NEO AGRO SOLUTIONS</span
+                        >{{ asset.operator_name }}</span
                       >
                     </div>
                   </div>
@@ -199,28 +198,6 @@
                 <div id="how-it-works-section">
                   <!-- Heading with Help Icon -->
                   <div id="how-it-works-heading">
-                    <svg 
-                      class="help-icon"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="#01011C"
-                        stroke-width="2"
-                      ></circle>
-                      <path
-                        d="M9 9C9 7.34315 10.3431 6 12 6C13.6569 6 15 7.34315 15 9C15 10.6569 13.6569 12 12 12V14"
-                        stroke="#01011C"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                      ></path>
-                      <circle cx="12" cy="17" r="0.5" fill="#01011C"></circle>
-                    </svg>
                     <h2>How it works</h2>
                   </div>
                   <!-- Info Cards -->
@@ -238,7 +215,7 @@
                       </div>
                       <div class="card-step">Step 1</div>
                       <div class="card-title">
-                        Buy a fraction<br />of premium<br />property
+                        Buy a fraction<br />of a premium<br />commodity
                       </div>
                       <div class="card-action">
                         <img loading="lazy"
@@ -322,7 +299,7 @@
                       </div>
                       <div class="card-step">Step 3</div>
                       <div class="card-title">
-                        Grow your<br />wealth as<br />property value rises
+                        Grow your<br />wealth as<br />commodity yields increase
                       </div>
                       <div class="card-action">
                         <img 
@@ -378,10 +355,7 @@
                   </div>
                   <!-- Property Description -->
                   <p id="property-description">
-                    Cabai rawit is Indonesia's most consumed chili. Market size
-                    exceeds 1.5M tons annually with exports to Singapore, Japan,
-                    and Korea. Supported by Nexybio bio-fertilizers (+50% yield)
-                    and POOOL tokenization.
+                    {% if asset.description %}{{ asset.description }}{% else %}{{ asset.short_description }}{% endif %}
                   </p>
                 </div>
                 <!-- 6. Investment Type Section -->
@@ -424,7 +398,7 @@
                     <div class="strategy-content">
                       <!-- First Item -->
                       <div class="strategy-item">
-                        <h4>Fixed ROI (35%)</h4>
+                        <h4>Fixed ROI ({{ asset.fixed_roi_percent }}%)</h4>
                         <p>
                           Ensured through pre-contracted buyers and price
                           insurance.
@@ -475,10 +449,10 @@
                             <div class="card-blur-vector-1"></div>
                             <div class="card-blur-vector-2"></div>
                             <span class="financials-card-label"
-                              >Revenue (60 ha)</span
+                              >Revenue{% if asset.land_size_hectares %} ({{ asset.land_size_hectares }} ha){% endif %}</span
                             >
                             <span class="financials-card-value"
-                              >$5.4M – $9M</span
+                              >{% if asset.revenue_display %}{{ asset.revenue_display }}{% else %}—{% endif %}</span
                             >
                           </div>
                           <!-- Card 2: Expenses -->
@@ -486,7 +460,7 @@
                             <div class="card-blur-vector-1"></div>
                             <div class="card-blur-vector-2"></div>
                             <span class="financials-card-label">Expenses</span>
-                            <span class="financials-card-value">$450K</span>
+                            <span class="financials-card-value">{% if asset.expenses_usd %}${{ asset.expenses_usd }}{% else %}—{% endif %}</span>
                           </div>
                           <!-- Card 3: Net Profit -->
                           <div class="financials-card">
@@ -496,7 +470,7 @@
                               >Net Profit</span
                             >
                             <span class="financials-card-value"
-                              >$4.95M – $8.55M</span
+                              >{% if asset.net_profit_display %}{{ asset.net_profit_display }}{% else %}—{% endif %}</span
                             >
                           </div>
                           <!-- Card 4: Investor Payout -->
@@ -504,9 +478,9 @@
                             <div class="card-blur-vector-1"></div>
                             <div class="card-blur-vector-2"></div>
                             <span class="financials-card-label"
-                              >Investor Payout (35% ROI)</span
+                              >Investor Payout ({{ asset.fixed_roi_percent }}% ROI)</span
                             >
-                            <span class="financials-card-value">$607,500</span>
+                            <span class="financials-card-value">{% if asset.investor_payout_usd %}${{ asset.investor_payout_usd }}{% else %}—{% endif %}</span>
                           </div>
                         </div>
                         <!-- Legend Card -->
@@ -515,9 +489,9 @@
                           <div class="legend-item">
                             <div class="legend-series">
                               <div class="color-dot neo-agro"></div>
-                              <span class="legend-label">NEO AGRO</span>
+                              <span class="legend-label">{{ asset.operator_name }}</span>
                             </div>
-                            <span class="legend-percentage">55%</span>
+                            <span class="legend-percentage">{{ asset.operator_split_pct }}%</span>
                           </div>
                           <!-- Vertical Divider -->
                           <div class="legend-divider"></div>
@@ -527,7 +501,7 @@
                               <div class="color-dot poool-agro"></div>
                               <span class="legend-label">POOOL AGRO</span>
                             </div>
-                            <span class="legend-percentage">45%</span>
+                            <span class="legend-percentage">{{ asset.poool_split_pct }}%</span>
                           </div>
                         </div>
                       </div>
@@ -969,7 +943,7 @@
                         class="financial-tab active"
                         data-tab="property-cost"
                       >
-                        <span class="tab-text">Property cost</span>
+                        <span class="tab-text">Commodity cost</span>
                       </button>
                       <button class="financial-tab" data-tab="rental-income">
                         <span class="tab-text"
@@ -981,7 +955,7 @@
                       <div class="financial-row">
                         <span class="financial-label">1 ha cost</span>
                         <div class="financial-value-group">
-                          <span class="financial-value">USD 7,500</span>
+                          <span class="financial-value">USD {{ asset.per_hectare_cost_usd }}</span>
                           <svg 
                             class="help-icon"
                             width="16"
@@ -1015,7 +989,7 @@
                       <div class="financial-row">
                         <span class="financial-label">Total ha</span>
                         <div class="financial-value-group">
-                          <span class="financial-value">60 ha</span>
+                          <span class="financial-value">{{ asset.land_size_hectares }} ha</span>
                           <svg 
                             class="help-icon"
                             width="16"
@@ -1051,7 +1025,7 @@
                         <span class="financial-label">Investment cost</span>
                         <div class="financial-value-group">
                           <span class="financial-value total"
-                            >= USD 450,000</span
+                            >= USD {{ asset.total_value_usd }}</span
                           >
                         </div>
                       </div>
@@ -1096,10 +1070,10 @@
                     >
                       <div class="financial-row">
                         <span class="financial-label"
-                          >Estimated annual revenue (60 ha)</span
+                          >Estimated annual revenue{% if asset.land_size_hectares %} ({{ asset.land_size_hectares }} ha){% endif %}</span
                         >
                         <div class="financial-value-group">
-                          <span class="financial-value">USD 5.4M – $9M</span>
+                          <span class="financial-value">{% if asset.revenue_display %}{{ asset.revenue_display }}{% else %}—{% endif %}</span>
                           <svg 
                             class="help-icon"
                             width="16"
@@ -1133,7 +1107,7 @@
                       <div class="financial-row">
                         <span class="financial-label">Operating expenses</span>
                         <div class="financial-value-group">
-                          <span class="financial-value">USD 450,000</span>
+                          <span class="financial-value">{% if asset.expenses_usd %}USD {{ asset.expenses_usd }}{% else %}—{% endif %}</span>
                           <svg 
                             class="help-icon"
                             width="16"
@@ -1167,11 +1141,11 @@
                       <div class="financial-divider"></div>
                       <div class="financial-row">
                         <span class="financial-label"
-                          >Projected investor payout (35% ROI)</span
+                          >Projected investor payout ({{ asset.fixed_roi_percent }}% ROI)</span
                         >
                         <div class="financial-value-group">
                           <span class="financial-value total"
-                            >= USD 607,500</span
+                            >{% if asset.investor_payout_usd %}= USD {{ asset.investor_payout_usd }}{% else %}—{% endif %}</span
                           >
                         </div>
                       </div>
@@ -1507,9 +1481,9 @@
                     <!-- Content Box -->
                     <div class="strategy-content">
                       <div class="strategy-item">
-                        <h4>Developer Issues:</h4>
+                        <h4>Operator Issues:</h4>
                         <p>
-                          Unforeseen problems with developers can arise,
+                          Unforeseen problems with the operator can arise,
                           potentially impacting project timelines and outcomes.
                         </p>
                       </div>
@@ -1517,8 +1491,8 @@
                       <div class="strategy-item">
                         <h4>Natural Events:</h4>
                         <p>
-                          Events such as extreme weather or natural disasters
-                          can affect construction progress.
+                          Events such as extreme weather, pests, or natural
+                          disasters can affect crop yields and harvest.
                         </p>
                       </div>
                       <div class="strategy-divider"></div>
@@ -1526,7 +1500,7 @@
                         <h4>Investment Duration:</h4>
                         <p>
                           Please note that investments cannot be withdrawn until
-                          the construction is complete and sold.
+                          the harvest cycle is complete and proceeds distributed.
                         </p>
                       </div>
                     </div>
@@ -1627,7 +1601,7 @@
                           <div class="faq-item-content">
                             <div class="faq-text-wrapper">
                               <span class="faq-text"
-                                >How are rental payments distributed?</span
+                                >How are harvest returns distributed?</span
                               >
                             </div>
                             <div class="faq-icon-wrapper">
@@ -1656,10 +1630,10 @@
                           </div>
                           <div class="faq-answer">
                             <p>
-                              Rental income is distributed monthly to all
-                              investors proportionally based on their ownership
-                              percentage. Payments are typically processed
-                              within the first week of each month.
+                              Harvest returns are distributed to all investors
+                              proportionally based on their ownership percentage.
+                              Payments are processed after each harvest cycle
+                              and sales settlement.
                             </p>
                           </div>
                         </div>
@@ -1706,8 +1680,8 @@
                           <div class="faq-item-content">
                             <div class="faq-text-wrapper">
                               <span class="faq-text"
-                                >What happens if the property value
-                                decreases?</span
+                                >What happens if commodity prices
+                                decrease?</span
                               >
                             </div>
                             <div class="faq-icon-wrapper">
@@ -1736,11 +1710,11 @@
                           </div>
                           <div class="faq-answer">
                             <p>
-                              Real estate investments carry market risk. While
-                              we carefully select properties in stable markets,
-                              property values can fluctuate. However, you'll
-                              continue to receive rental income regardless of
-                              short-term value changes.
+                              Agricultural commodity investments carry market
+                              risk. While we work with pre-contracted buyers to
+                              secure pricing, commodity prices can fluctuate.
+                              Crop insurance helps mitigate weather and pest
+                              risks to protect your investment.
                             </p>
                           </div>
                         </div>
@@ -1760,12 +1734,12 @@
                   <div class="contact-info">
                     <div class="contact-title-wrapper">
                       <h3 class="contact-heading">
-                        Have more questions about this property?
+                        Have more questions about this commodity?
                       </h3>
                     </div>
                     <div class="contact-bottom">
                       <p class="contact-subtitle">
-                        Contact our real estate experts
+                        Contact our investment experts
                       </p>
                       <div class="contact-buttons">
                         <button class="contact-button chat-button">
@@ -1813,7 +1787,6 @@
                   </div>
                 </div>
               </div>
-              End of property-main-card
               <div class="similar-properties-wrapper">
                 <h3 class="similar-heading">Similar Assets</h3>
                 <div class="section-divider"></div>
@@ -3573,18 +3546,18 @@
                         </div>
                         <div class="price-card-price-text">
                           <span class="price-currency">USD</span>
-                          <span class="price-amount">450,000</span>
+                          <span class="price-amount">{{ asset.total_value_usd }}</span>
                         </div>
                       </div>
                       <div class="price-card-loading-bar">
                         <div class="loading-container">
-                          <div class="loading-fill" style="width: 76%"></div>
+                          <div class="loading-fill" style="width: {{ asset.funded_percentage }}%"></div>
                         </div>
                         <div class="loading-text">
-                          <div class="funded-text">76% funded</div>
+                          <div class="funded-text">{{ asset.funded_percentage }}% funded</div>
                           <div class="available-text-wrapper">
                             <span class="available-text"
-                              >USD 106,000 available</span
+                              >USD {{ asset.available_usd }} available</span
                             >
                             <svg 
                               class="help-icon"
@@ -3620,19 +3593,19 @@
                     <div class="price-card-returns">
                       <div class="returns-row">
                         <span class="returns-label">Minimum Investment:</span>
-                        <span class="returns-value">$7,500</span>
+                        <span class="returns-value">${{ asset.min_investment_usd }}</span>
                       </div>
                       <div class="returns-row">
                         <span class="returns-label">Projected ROI:</span>
-                        <span class="returns-value">35%</span>
+                        <span class="returns-value">{{ asset.fixed_roi_percent }}%</span>
                       </div>
                       <div class="returns-row">
                         <span class="returns-label">Projected Term:</span>
-                        <span class="returns-value">12 month</span>
+                        <span class="returns-value">{{ asset.term_months }} months</span>
                       </div>
                       <div class="returns-row">
                         <span class="returns-label">Investors Joined:</span>
-                        <span class="returns-value">352</span>
+                        <span class="returns-value">{{ asset.investor_count }}</span>
                       </div>
                     </div>
                   </div>
@@ -4021,28 +3994,6 @@
       </div>
       <div class="mobile-how-it-works">
         <div class="mobile-hiw-header">
-          <svg 
-            class="hiw-help-icon"
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-          >
-            <circle
-              cx="10"
-              cy="10"
-              r="8.33"
-              stroke="#01011C"
-              stroke-width="2"
-            ></circle>
-            <path
-              d="M7.5 7.5A2.5 2.5 0 0110 5a2.5 2.5 0 012.5 2.5c0 1.25-2.5 1.875-2.5 1.875"
-              stroke="#01011C"
-              stroke-width="2"
-              stroke-linecap="round"
-            ></path>
-            <circle cx="10" cy="13.75" r="0.625" fill="#01011C"></circle>
-          </svg>
           <h2 class="mobile-hiw-title">How it works</h2>
         </div>
         <div class="mobile-hiw-cards-wrapper">
@@ -7169,14 +7120,12 @@
         </div>
       </div>
     </div>
-    <!-- All image URLs for lightbox (server-rendered) -->
-    <script id="gallery-all-images" type="application/json">
-      [
-        {% for img_url in asset.image_urls %}
-        { "src": "{{ img_url }}", "caption": "{{ asset.title }} — Photo {{ loop.index }}" }{% if not loop.last %},{% endif %}
-        {% endfor %}
-      ]
-    </script>
+    <!-- All image URLs for lightbox (server-rendered as hidden elements to avoid HTML escaping) -->
+    <div id="gallery-all-images" style="display:none">
+      {% for img_url in asset.image_urls %}
+      <img data-src="{{ img_url }}" data-caption="{{ asset.title }} — Photo {{ loop.index }}" />
+      {% endfor %}
+    </div>
     <!-- Lightbox Modal - Moved outside app-wrapper to avoid stacking context issues -->
     <div id="lightbox-modal" class="lightbox-modal" style="display: none">
       <!-- Top bar: counter + close -->
