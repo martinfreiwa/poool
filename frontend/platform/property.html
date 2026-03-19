@@ -448,7 +448,7 @@
                         <span class="investors-label">investors</span>
                       </div>
                       <div class="price-per-sqm-badge">
-                        <span class="dollar-icon">$</span>
+
                         <span class="badge-text">USD {{ asset.price_per_sqm }}</span>
                         <span class="badge-suffix">/m²</span>
                       </div>
@@ -509,7 +509,7 @@
                           <div class="card-meta-row">
                             {% if sp.bedrooms %}
                             <div class="card-meta-item">
-                              <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#535862" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
+                              <img src="/static/images/Bed.svg" alt="Beds" width="16" height="16">
                               <span>{{ sp.bedrooms }}</span>
                             </div>
                             <div class="card-meta-divider"></div>
@@ -570,14 +570,14 @@
             <svg  width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
           </button>
           <div class="mobile-gallery-scroll" id="mobileGalleryScroll">
-            {% for img_url in asset.image_urls %}
+            {% for img_url in asset.image_urls | default([]) %}
             <div class="mobile-gallery-slide" data-index="{{ loop.index0 }}">
               <img src="{{ img_url }}" alt="{{ asset.title }}" class="mobile-gallery-img gallery-clickable" loading="{% if loop.index0 == 0 %}eager{% else %}lazy{% endif %}" data-lightbox-index="{{ loop.index0 }}" />
             </div>
             {% endfor %}
           </div>
           <div class="mobile-gallery-indicators" id="mobileGalleryIndicators">
-            {% for img_url in asset.image_urls %}
+            {% for img_url in asset.image_urls | default([]) %}
             <span class="mobile-gallery-dot gallery-dot-clickable {% if loop.index0 == 0 %}active{% endif %}" data-slide-index="{{ loop.index0 }}"></span>
             {% endfor %}
           </div>
@@ -628,7 +628,7 @@
                 <span class="investors-label">investors</span>
               </div>
               <div class="price-per-sqm-badge">
-                <span class="dollar-icon">$</span>
+
                 <span class="badge-text">USD {{ asset.price_per_sqm }}</span>
                 <span class="badge-suffix">/m²</span>
               </div>

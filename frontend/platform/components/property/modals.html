@@ -1,6 +1,6 @@
 <!-- All image URLs for lightbox (server-rendered as hidden elements to avoid HTML escaping) -->
 <div id="gallery-all-images" style="display:none">
-  {% for img_url in asset.image_urls %}
+  {% for img_url in asset.image_urls | default([]) %}
   <img data-src="{{ img_url }}" data-caption="{{ asset.title }} — Photo {{ loop.index }}" />
   {% endfor %}
 </div>

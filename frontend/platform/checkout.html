@@ -376,7 +376,7 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
           var chipsHtml = '<div class="cart-item-card__property-details">';
           if (item.bedrooms) {
             chipsHtml += '<span class="cart-item-card__detail-chip">'
-              + '<svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>'
+              + '<img src="/static/images/Bed.svg" alt="Beds" width="14" height="14">'
               + ' ' + item.bedrooms + ' ' + (item.bedrooms === 1 ? 'Bed' : 'Beds') + '</span>';
           }
           if (item.bathrooms) {

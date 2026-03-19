@@ -1,6 +1,7 @@
 {% with title="Rewards", meta_description="View your POOOL rewards tier, affiliate dashboard, and cashback earnings.",
 extra_css=['marketplace', 'wallet', 'portfolio', 'cart', 'portfolio-assets-table',
-'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards', 'settings', 'poool-dropdown'], extra_js=['htmx-init', 'profile-dropdown',
+'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards', 'settings', 'poool-dropdown'],
+extra_js=['htmx-init', 'profile-dropdown',
 'marketplace-search', 'tier-page'] %}{%
 include
 "components/head.html" %}{% endwith %}
@@ -32,7 +33,7 @@ include
 
         <!-- 2. ERROR STATE -->
         <div id="rewards-error-layer" class="rewards-error-layer">
-          <svg  class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -45,7 +46,7 @@ include
 
         <!-- 3. EMPTY STATE -->
         <div id="rewards-empty-layer" class="rewards-empty-layer">
-          <svg  class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
             <line x1="8" y1="21" x2="16" y2="21"></line>
             <line x1="12" y1="17" x2="12" y2="21"></line>
@@ -79,7 +80,7 @@ include
 
           <!-- Tab 1: Rewards -->
           <div id="rewards-tab" class="rewards-tab-panel">
-            
+
             <!-- Rewards Hero Summary (Tier & Balance) -->
             <div class="rewards-hero-grid">
               <!-- Current Tier Card -->
@@ -102,7 +103,8 @@ include
                   <div class="tp-hint">
                     <template x-if="data.tier_target">
                       <span>
-                        Invest <strong class="text-blue" x-text="'USD ' + (data.tier_target_amount || 0).toLocaleString()"></strong>
+                        Invest <strong class="text-blue"
+                          x-text="'USD ' + (data.tier_target_amount || 0).toLocaleString()"></strong>
                         to reach <span x-text="data.tier_target"></span>
                       </span>
                     </template>
@@ -135,8 +137,9 @@ include
                 </div>
                 <a href="/wallet" class="summary-link">
                   View wallet
-                  <svg  width="14" height="14" viewBox="0 0 16 16" fill="none">
-                    <path d="M6 12l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 12l4-4-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                      stroke-linejoin="round" />
                   </svg>
                 </a>
               </div>
@@ -144,27 +147,36 @@ include
             <div id="rewards-refer-card" class="refer-earn-card">
               <div class="refer-card-header">
                 <div class="refer-title-wrap">
-                  <svg  width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#0000FF" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="8" width="14" height="9" rx="1" />
-                    <path d="M10 8v9M7.5 8c-1.5 0-2.5-1-2.5-2.5C5 4 7.5 4 7.5 4s1.5 1.5 2.5 4c1-2.5 2.5-4 2.5-4s2.5 0 2.5 1.5C15 7 14 8 12.5 8 11.5 8 10 8 10 8z" />
+                    <path
+                      d="M10 8v9M7.5 8c-1.5 0-2.5-1-2.5-2.5C5 4 7.5 4 7.5 4s1.5 1.5 2.5 4c1-2.5 2.5-4 2.5-4s2.5 0 2.5 1.5C15 7 14 8 12.5 8 11.5 8 10 8 10 8z" />
                   </svg>
                   <h3>Refer and earn</h3>
                 </div>
               </div>
-              <p class="refer-text">Invite your friends and you'll both receive a rewards balance to invest in our properties!</p>
+              <p class="refer-text">Invite your friends and you'll both receive a rewards balance to invest in our
+                properties!</p>
               <div class="refer-separator"></div>
               <ul class="refer-checklist">
                 <li>
-                  <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" class="badge-check-icon">
-                    <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="m9 12 2 2 4-4" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="badge-check-icon">
+                    <path
+                      d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
+                      stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="m9 12 2 2 4-4" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round"
+                      stroke-linejoin="round" />
                   </svg>
                   Friends get USD 30 upon signing up
                 </li>
                 <li>
-                  <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" class="badge-check-icon">
-                    <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="m9 12 2 2 4-4" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="badge-check-icon">
+                    <path
+                      d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
+                      stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="m9 12 2 2 4-4" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round"
+                      stroke-linejoin="round" />
                   </svg>
                   You get USD 30 after they invest USD 1,000
                 </li>
@@ -175,7 +187,8 @@ include
                   <div class="refer-input-wrapper">
                     <input id="rewards-referral-input" type="text" value="https://app.poool.com/rewards/..." readonly />
                     <button class="copy-icon-btn">
-                      <svg  width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#0000FF" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <rect x="5.33" y="5.33" width="8" height="8" rx="1.33" />
                         <path d="M4 10.66H2.66A1.33 1.33 0 011.33 9.33V2.66h6.66A1.33 1.33 0 019.33 4" />
                       </svg>
@@ -191,132 +204,133 @@ include
 
           <!-- Tab 3: Tier -->
           <div id="tier-tab" class="rewards-tab-panel hidden">
-            <div class="tier-right-column" style="background: white; border: 1px solid #eaecf0; border-radius: 12px; max-width: 800px; margin: 0 auto; width: 100%;">
-                <div class="tier-stepper">
-                  <!-- INTRO -->
-                  <div class="stepper-item" :class="getStepperState('Intro')">
-                    <div class="stepper-line"></div>
-                    <div class="stepper-icon" :class="getStepperIconState('Intro')">
-                      <div class="stepper-icon-inner"></div>
+            <div class="tier-right-column"
+              style="background: white; border: 1px solid #eaecf0; border-radius: 12px; max-width: 800px; margin: 0 auto; width: 100%;">
+              <div class="tier-stepper">
+                <!-- INTRO -->
+                <div class="stepper-item" :class="getStepperState('Intro')">
+                  <div class="stepper-line"></div>
+                  <div class="stepper-icon" :class="getStepperIconState('Intro')">
+                    <div class="stepper-icon-inner"></div>
+                  </div>
+                  <div class="stepper-content">
+                    <div class="stepper-header">
+                      <span class="badge badge-intro-filled">INTRO</span>
                     </div>
-                    <div class="stepper-content">
-                      <div class="stepper-header">
-                        <span class="badge badge-intro-filled">INTRO</span>
-                      </div>
-                      <div class="stepper-body">
-                        <h4 class="text-black">USD 5 for every qualified referral</h4>
-                        <p class="text-gray mt-2">No payment processing fees</p>
-                      </div>
+                    <div class="stepper-body">
+                      <h4 class="text-black">USD 5 for every qualified referral</h4>
+                      <p class="text-gray mt-2">No payment processing fees</p>
                     </div>
                   </div>
+                </div>
 
-                  <!-- PLUS -->
-                  <div class="stepper-item" :class="getStepperState('Plus')">
-                    <div class="stepper-line"></div>
-                    <div class="stepper-icon" :class="getStepperIconState('Plus')"></div>
-                    <div class="stepper-content border-top-none">
-                      <div class="stepper-header space-between">
-                        <span class="badge badge-plus-filled">PLUS</span>
-                        <div class="stepper-lock">
-                          <svg  width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A4A7AE"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="6" width="8" height="6" rx="1.5" />
-                            <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
-                          </svg>
-                          USD 4,000 to unlock
-                        </div>
-                      </div>
-                      <div class="stepper-body border-top">
-                        <h4 class="text-black">USD 50 for every qualified referral</h4>
-                        <p class="text-black mt-2">Access RentReinvest which allows you to automatically reinvest your
-                          rental income on USD investments</p>
-                        <p class="text-gray mt-2">All the benefits you've unlocked so far</p>
+                <!-- PLUS -->
+                <div class="stepper-item" :class="getStepperState('Plus')">
+                  <div class="stepper-line"></div>
+                  <div class="stepper-icon" :class="getStepperIconState('Plus')"></div>
+                  <div class="stepper-content border-top-none">
+                    <div class="stepper-header space-between">
+                      <span class="badge badge-plus-filled">PLUS</span>
+                      <div class="stepper-lock">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A4A7AE" stroke-width="1.5"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="6" width="8" height="6" rx="1.5" />
+                          <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
+                        </svg>
+                        USD 4,000 to unlock
                       </div>
                     </div>
+                    <div class="stepper-body border-top">
+                      <h4 class="text-black">USD 50 for every qualified referral</h4>
+                      <p class="text-black mt-2">Access RentReinvest which allows you to automatically reinvest your
+                        rental income on USD investments</p>
+                      <p class="text-gray mt-2">All the benefits you've unlocked so far</p>
+                    </div>
                   </div>
+                </div>
 
-                  <!-- PRO -->
-                  <div class="stepper-item" :class="getStepperState('Pro')">
-                    <div class="stepper-line"></div>
-                    <div class="stepper-icon" :class="getStepperIconState('Pro')"></div>
-                    <div class="stepper-content border-top-none">
-                      <div class="stepper-header space-between">
-                        <span class="badge badge-pro-filled">PRO</span>
-                        <div class="stepper-lock">
-                          <svg  width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A4A7AE"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="6" width="8" height="6" rx="1.5" />
-                            <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
-                          </svg>
-                          USD 10,000 to unlock
-                        </div>
-                      </div>
-                      <div class="stepper-body border-top">
-                        <h4 class="text-black">USD 100 for every qualified referral</h4>
-                        <p class="text-black mt-2">1% cashback on every investment for all USD investments</p>
-                        <p class="text-black mt-2">0.5% cashback on every investment for all KSA investments</p>
-                        <p class="text-gray mt-2">All the benefits you've unlocked so far</p>
+                <!-- PRO -->
+                <div class="stepper-item" :class="getStepperState('Pro')">
+                  <div class="stepper-line"></div>
+                  <div class="stepper-icon" :class="getStepperIconState('Pro')"></div>
+                  <div class="stepper-content border-top-none">
+                    <div class="stepper-header space-between">
+                      <span class="badge badge-pro-filled">PRO</span>
+                      <div class="stepper-lock">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A4A7AE" stroke-width="1.5"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="6" width="8" height="6" rx="1.5" />
+                          <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
+                        </svg>
+                        USD 10,000 to unlock
                       </div>
                     </div>
+                    <div class="stepper-body border-top">
+                      <h4 class="text-black">USD 100 for every qualified referral</h4>
+                      <p class="text-black mt-2">1% cashback on every investment for all USD investments</p>
+                      <p class="text-black mt-2">0.5% cashback on every investment for all KSA investments</p>
+                      <p class="text-gray mt-2">All the benefits you've unlocked so far</p>
+                    </div>
                   </div>
+                </div>
 
-                  <!-- ELITE -->
-                  <div class="stepper-item" :class="getStepperState('Elite')">
-                    <div class="stepper-line"></div>
-                    <div class="stepper-icon" :class="getStepperIconState('Elite')"></div>
-                    <div class="stepper-content border-top-none">
-                      <div class="stepper-header space-between">
-                        <span class="badge badge-elite-filled">ELITE</span>
-                        <div class="stepper-lock">
-                          <svg  width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A4A7AE"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="6" width="8" height="6" rx="1.5" />
-                            <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
-                          </svg>
-                          USD 30,000 to unlock
-                        </div>
-                      </div>
-                      <div class="stepper-body border-top">
-                        <h4 class="text-black">USD 150 for every qualified referral</h4>
-                        <p class="text-black mt-2">2% cashback on every investment for all Indonesian investments</p>
-                        <p class="text-black mt-2">0.75% cashback on every investment for all KSA investments</p>
-                        <p class="text-black mt-2">Gain exclusive early access to invest in funds in Indonesia before
-                          they go live to the general public</p>
-                        <p class="text-gray mt-2">All the benefits you've unlocked so far</p>
+                <!-- ELITE -->
+                <div class="stepper-item" :class="getStepperState('Elite')">
+                  <div class="stepper-line"></div>
+                  <div class="stepper-icon" :class="getStepperIconState('Elite')"></div>
+                  <div class="stepper-content border-top-none">
+                    <div class="stepper-header space-between">
+                      <span class="badge badge-elite-filled">ELITE</span>
+                      <div class="stepper-lock">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A4A7AE" stroke-width="1.5"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="6" width="8" height="6" rx="1.5" />
+                          <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
+                        </svg>
+                        USD 30,000 to unlock
                       </div>
                     </div>
+                    <div class="stepper-body border-top">
+                      <h4 class="text-black">USD 150 for every qualified referral</h4>
+                      <p class="text-black mt-2">2% cashback on every investment for all Indonesian investments</p>
+                      <p class="text-black mt-2">0.75% cashback on every investment for all KSA investments</p>
+                      <p class="text-black mt-2">Gain exclusive early access to invest in funds in Indonesia before
+                        they go live to the general public</p>
+                      <p class="text-gray mt-2">All the benefits you've unlocked so far</p>
+                    </div>
                   </div>
+                </div>
 
-                  <!-- PREMIUM -->
-                  <div class="stepper-item" :class="getStepperState('Premium')">
-                    <div class="stepper-icon" :class="getStepperIconState('Premium')"></div>
-                    <div class="stepper-content border-top-none">
-                      <div class="stepper-header space-between">
-                        <span class="badge badge-premium-filled">PREMIUM</span>
-                        <div class="stepper-lock">
-                          <svg  width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A4A7AE"
-                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="6" width="8" height="6" rx="1.5" />
-                            <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
-                          </svg>
-                          USD 100,000 to unlock
-                        </div>
-                      </div>
-                      <div class="stepper-body border-top">
-                        <h4 class="text-black">USD 200 for every qualified referral</h4>
-                        <p class="text-black mt-2">3% cashback on every investment for all Indonesian investments</p>
-                        <p class="text-black mt-2">1% cashback on every investment for all referral investments</p>
-                        <p class="text-black mt-2">A dedicated account representative to help guide you through your
-                          investments.</p>
-                        <p class="text-black mt-2">Free Bloomberg subscription</p>
-                        <p class="text-black mt-2">Invitations to exclusive private investor dinners</p>
-                        <p class="text-gray mt-2">All the benefits you've unlocked so far</p>
+                <!-- PREMIUM -->
+                <div class="stepper-item" :class="getStepperState('Premium')">
+                  <div class="stepper-icon" :class="getStepperIconState('Premium')"></div>
+                  <div class="stepper-content border-top-none">
+                    <div class="stepper-header space-between">
+                      <span class="badge badge-premium-filled">PREMIUM</span>
+                      <div class="stepper-lock">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A4A7AE" stroke-width="1.5"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="6" width="8" height="6" rx="1.5" />
+                          <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
+                        </svg>
+                        USD 100,000 to unlock
                       </div>
                     </div>
+                    <div class="stepper-body border-top">
+                      <h4 class="text-black">USD 200 for every qualified referral</h4>
+                      <p class="text-black mt-2">3% cashback on every investment for all Indonesian investments</p>
+                      <p class="text-black mt-2">1% cashback on every investment for all referral investments</p>
+                      <p class="text-black mt-2">A dedicated account representative to help guide you through your
+                        investments.</p>
+                      <p class="text-black mt-2">Free Bloomberg subscription</p>
+                      <p class="text-black mt-2">Invitations to exclusive private investor dinners</p>
+                      <p class="text-gray mt-2">All the benefits you've unlocked so far</p>
+                    </div>
                   </div>
-                </div> <!-- end tier-stepper -->
-              </div> <!-- end right column -->
-            </div> <!-- end tier-tab panel -->
+                </div>
+              </div> <!-- end tier-stepper -->
+            </div> <!-- end right column -->
+          </div> <!-- end tier-tab panel -->
 
           <!-- Tab 2: Affiliate Dashboard -->
           <div id="affiliate-tab" class="rewards-tab-panel hidden">
@@ -326,7 +340,7 @@ include
               <div class="metric-card">
                 <div class="metric-card-header">
                   <span class="metric-card-title">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 3l-7.07 16.97-2.51-7.39-7.39-2.51L21 3z"></path>
                       <path d="M11 13l-6 6"></path>
@@ -336,7 +350,7 @@ include
                 </div>
                 <div class="metric-card-value">1,248</div>
                 <div class="metric-card-trend positive">
-                  <svg  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
                     <polyline points="16 7 22 7 22 13" />
@@ -348,7 +362,7 @@ include
               <div class="metric-card">
                 <div class="metric-card-header">
                   <span class="metric-card-title">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                       <circle cx="9" cy="7" r="4" />
@@ -360,7 +374,7 @@ include
                 </div>
                 <div class="metric-card-value">84</div>
                 <div class="metric-card-trend neutral">
-                  <svg  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="12" x2="2" y2="12" />
                     <polyline points="15 5 22 12 15 19" />
@@ -372,7 +386,7 @@ include
               <div class="metric-card">
                 <div class="metric-card-header">
                   <span class="metric-card-title">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
                       <path d="M12 2v20" />
                       <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -382,7 +396,7 @@ include
                 </div>
                 <div class="metric-card-value">12</div>
                 <div class="metric-card-trend positive">
-                  <svg  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
                     <polyline points="16 7 22 7 22 13" />
@@ -394,7 +408,7 @@ include
               <div class="metric-card">
                 <div class="metric-card-header">
                   <span class="metric-card-title">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
                       <polygon
                         points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
@@ -414,7 +428,8 @@ include
             <div class="campaign-breakdown-card">
               <div class="campaign-card-header">
                 <div class="campaign-title-wrap">
-                  <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="20" x2="18" y2="10"></line>
                     <line x1="12" y1="20" x2="12" y2="4"></line>
                     <line x1="6" y1="20" x2="6" y2="14"></line>
@@ -428,7 +443,8 @@ include
                   <button class="chart-filter-btn" data-range="365" onclick="switchChartRange(this)">1Y</button>
                   <div class="chart-custom-date-wrapper">
                     <button class="chart-filter-btn" id="chart-custom-btn" onclick="toggleCustomDatePicker(this)">
-                      <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                         <line x1="16" y1="2" x2="16" y2="6"></line>
                         <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -461,7 +477,7 @@ include
             <div class="campaign-link-generator-card">
               <div class="campaign-card-header">
                 <div class="campaign-title-wrap">
-                  <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
@@ -482,7 +498,8 @@ include
                         <input id="campaign-generated-link" type="text" readonly value="Loading..." />
                       </div>
                       <button id="campaign-copy-btn" class="copy-link-btn">
-                        <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
@@ -497,28 +514,28 @@ include
                   <span class="social-share-label">Share instantly:</span>
                   <div class="social-share-buttons">
                     <button class="social-share-pill" onclick="shareSocial('whatsapp')">
-                      <svg  width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path
                           d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
                       </svg>
                       WhatsApp
                     </button>
                     <button class="social-share-pill" onclick="shareSocial('twitter')">
-                      <svg  width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path
                           d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                       </svg>
                       X (Twitter)
                     </button>
                     <button class="social-share-pill" onclick="shareSocial('linkedin')">
-                      <svg  width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                         <path
                           d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                       </svg>
                       LinkedIn
                     </button>
                     <button class="social-share-pill" onclick="shareSocial('email')">
-                      <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
                         <path d="M2 4l10 8 10-8"></path>
@@ -535,7 +552,7 @@ include
               <div class="campaign-card-header">
                 <div class="campaign-header-info">
                   <div class="campaign-title-wrap">
-                    <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
                       stroke-linecap="round" stroke-linejoin="round">
                       <rect x="3" y="3" width="7" height="7" />
                       <rect x="14" y="3" width="7" height="7" />
@@ -546,17 +563,20 @@ include
                   </div>
                   <span class="campaign-subtitle">Track metrics using <code>?subid=your_campaign</code></span>
                 </div>
-                
+
                 <div class="campaign-table-actions">
                   <div class="search-input-wrapper">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98a2b3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98a2b3" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"
+                      style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%);">
                       <circle cx="11" cy="11" r="8"></circle>
                       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input type="text" id="campaign-search-input" placeholder="Search campaigns..."/>
+                    <input type="text" id="campaign-search-input" placeholder="Search campaigns..." />
                   </div>
                   <button id="campaign-export-btn">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                       <polyline points="7 10 12 15 17 10"></polyline>
                       <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -569,12 +589,18 @@ include
                 <table class="campaign-table" id="campaign-table">
                   <thead>
                     <tr>
-                      <th data-sort="subid" style="cursor: pointer;" class="sortable">Campaign <span class="sort-icon"></span></th>
-                      <th data-sort="clicks" style="cursor: pointer;" class="sortable">Clicks <span class="sort-icon">↓</span></th>
-                      <th data-sort="signups" style="cursor: pointer;" class="sortable">Signups <span class="sort-icon"></span></th>
-                      <th data-sort="cvr" style="cursor: pointer;" class="sortable">CVR <span class="sort-icon"></span></th>
-                      <th data-sort="qualified" style="cursor: pointer;" class="sortable">Qualified <span class="sort-icon"></span></th>
-                      <th data-sort="revenue" style="cursor: pointer;" class="sortable">Revenue <span class="sort-icon"></span></th>
+                      <th data-sort="subid" style="cursor: pointer;" class="sortable">Campaign <span
+                          class="sort-icon"></span></th>
+                      <th data-sort="clicks" style="cursor: pointer;" class="sortable">Clicks <span
+                          class="sort-icon">↓</span></th>
+                      <th data-sort="signups" style="cursor: pointer;" class="sortable">Signups <span
+                          class="sort-icon"></span></th>
+                      <th data-sort="cvr" style="cursor: pointer;" class="sortable">CVR <span class="sort-icon"></span>
+                      </th>
+                      <th data-sort="qualified" style="cursor: pointer;" class="sortable">Qualified <span
+                          class="sort-icon"></span></th>
+                      <th data-sort="revenue" style="cursor: pointer;" class="sortable">Revenue <span
+                          class="sort-icon"></span></th>
                     </tr>
                   </thead>
                   <tbody id="campaign-table-body">
@@ -597,14 +623,16 @@ include
             <!-- Brand Assets -->
             <div class="marketing-section">
               <div class="marketing-section-header">
-                <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                  <path d="M2 17l10 5 10-5"/>
-                  <path d="M2 12l10 5 10-5"/>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
                 </svg>
                 <h3>Brand Assets</h3>
               </div>
-              <p class="marketing-section-desc">Download official POOOL logos and brand guidelines to ensure your promotions look professional and on-brand.</p>
+              <p class="marketing-section-desc">Download official POOOL logos and brand guidelines to ensure your
+                promotions look professional and on-brand.</p>
               <div class="marketing-brand-row">
                 <div class="marketing-asset-card">
                   <div class="marketing-asset-preview">
@@ -615,17 +643,19 @@ include
                     <span class="marketing-asset-meta">Vector • Scalable</span>
                   </div>
                   <a href="/static/images/Logo Pool.svg" download class="marketing-download-btn">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
                 </div>
                 <div class="marketing-asset-card">
                   <div class="marketing-asset-preview">
-                    <img src="/static/images/poool-icon.svg" alt="POOOL Icon" style="height:40px;" onerror="this.style.display='none'">
+                    <img src="/static/images/poool-icon.svg" alt="POOOL Icon" style="height:40px;"
+                      onerror="this.style.display='none'">
                     <span class="marketing-asset-placeholder" style="font-weight:600;color:#0000FF;">P</span>
                   </div>
                   <div class="marketing-asset-info">
@@ -633,10 +663,11 @@ include
                     <span class="marketing-asset-meta">App icon • Square</span>
                   </div>
                   <a href="/static/images/poool-icon.svg" download class="marketing-download-btn">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
@@ -674,77 +705,91 @@ include
             <!-- Social Media Templates -->
             <div class="marketing-section">
               <div class="marketing-section-header">
-                <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
                 </svg>
                 <h3>Social Media Templates</h3>
               </div>
-              <p class="marketing-section-desc">Ready-to-post graphics optimized for each platform. Add your referral link and share!</p>
+              <p class="marketing-section-desc">Ready-to-post graphics optimized for each platform. Add your referral
+                link and share!</p>
               <div class="marketing-assets-grid">
                 <div class="marketing-asset-card">
-                  <div class="marketing-asset-preview template-preview" style="background: linear-gradient(135deg, #0000FF 0%, #03FF88 100%);">
+                  <div class="marketing-asset-preview template-preview"
+                    style="background: linear-gradient(135deg, #0000FF 0%, #03FF88 100%);">
                     <span class="template-label">Instagram Story</span>
                   </div>
                   <div class="marketing-asset-info">
                     <span class="marketing-asset-name">Story — "Invest Smart"</span>
                     <span class="marketing-asset-meta">1080 × 1920px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn" onclick="event.preventDefault(); showMarketingToast('Instagram Story template will be available soon')">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                  <a href="#" class="marketing-download-btn"
+                    onclick="event.preventDefault(); showMarketingToast('Instagram Story template will be available soon')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
                 </div>
                 <div class="marketing-asset-card">
-                  <div class="marketing-asset-preview template-preview" style="background: linear-gradient(135deg, #181D27 0%, #0000FF 100%);">
+                  <div class="marketing-asset-preview template-preview"
+                    style="background: linear-gradient(135deg, #181D27 0%, #0000FF 100%);">
                     <span class="template-label">Facebook Post</span>
                   </div>
                   <div class="marketing-asset-info">
                     <span class="marketing-asset-name">Post — "Property Returns"</span>
                     <span class="marketing-asset-meta">1200 × 630px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn" onclick="event.preventDefault(); showMarketingToast('Facebook Post template will be available soon')">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                  <a href="#" class="marketing-download-btn"
+                    onclick="event.preventDefault(); showMarketingToast('Facebook Post template will be available soon')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
                 </div>
                 <div class="marketing-asset-card">
-                  <div class="marketing-asset-preview template-preview" style="background: linear-gradient(135deg, #03FF88 0%, #0000FF 100%);">
+                  <div class="marketing-asset-preview template-preview"
+                    style="background: linear-gradient(135deg, #03FF88 0%, #0000FF 100%);">
                     <span class="template-label">X / Twitter</span>
                   </div>
                   <div class="marketing-asset-info">
                     <span class="marketing-asset-name">Post — "Join POOOL"</span>
                     <span class="marketing-asset-meta">1600 × 900px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn" onclick="event.preventDefault(); showMarketingToast('X/Twitter template will be available soon')">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                  <a href="#" class="marketing-download-btn"
+                    onclick="event.preventDefault(); showMarketingToast('X/Twitter template will be available soon')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
                 </div>
                 <div class="marketing-asset-card">
-                  <div class="marketing-asset-preview template-preview" style="background: linear-gradient(135deg, #0000FF 0%, #181D27 100%);">
+                  <div class="marketing-asset-preview template-preview"
+                    style="background: linear-gradient(135deg, #0000FF 0%, #181D27 100%);">
                     <span class="template-label">LinkedIn</span>
                   </div>
                   <div class="marketing-asset-info">
                     <span class="marketing-asset-name">Post — "Earn Passive Income"</span>
                     <span class="marketing-asset-meta">1200 × 627px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn" onclick="event.preventDefault(); showMarketingToast('LinkedIn template will be available soon')">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                  <a href="#" class="marketing-download-btn"
+                    onclick="event.preventDefault(); showMarketingToast('LinkedIn template will be available soon')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
@@ -755,68 +800,82 @@ include
             <!-- Banner Ads -->
             <div class="marketing-section">
               <div class="marketing-section-header">
-                <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                  <line x1="8" y1="21" x2="16" y2="21"/>
-                  <line x1="12" y1="17" x2="12" y2="21"/>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
                 </svg>
                 <h3>Banner Ads</h3>
               </div>
-              <p class="marketing-section-desc">Web-ready banner ads in standard IAB sizes. Embed on your website or blog to drive sign-ups.</p>
+              <p class="marketing-section-desc">Web-ready banner ads in standard IAB sizes. Embed on your website or
+                blog to drive sign-ups.</p>
               <div class="marketing-assets-grid">
                 <div class="marketing-asset-card">
                   <div class="marketing-asset-preview banner-preview banner-leaderboard">
-                    <div class="banner-mockup" style="background:linear-gradient(90deg,#0000FF,#03FF88);width:100%;height:40px;border-radius:4px;display:flex;align-items:center;justify-content:center;">
-                      <span style="color:#fff;font-weight:600;font-size:11px;letter-spacing:0.5px;">LEADERBOARD 728 × 90</span>
+                    <div class="banner-mockup"
+                      style="background:linear-gradient(90deg,#0000FF,#03FF88);width:100%;height:40px;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                      <span style="color:#fff;font-weight:600;font-size:11px;letter-spacing:0.5px;">LEADERBOARD 728 ×
+                        90</span>
                     </div>
                   </div>
                   <div class="marketing-asset-info">
                     <span class="marketing-asset-name">Leaderboard Banner</span>
                     <span class="marketing-asset-meta">728 × 90px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn" onclick="event.preventDefault(); showMarketingToast('Leaderboard banner will be available soon')">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                  <a href="#" class="marketing-download-btn"
+                    onclick="event.preventDefault(); showMarketingToast('Leaderboard banner will be available soon')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
                 </div>
                 <div class="marketing-asset-card">
                   <div class="marketing-asset-preview banner-preview">
-                    <div class="banner-mockup" style="background:linear-gradient(135deg,#181D27,#0000FF);width:100%;height:90px;border-radius:4px;display:flex;align-items:center;justify-content:center;">
-                      <span style="color:#fff;font-weight:600;font-size:11px;letter-spacing:0.5px;">RECTANGLE 300 × 250</span>
+                    <div class="banner-mockup"
+                      style="background:linear-gradient(135deg,#181D27,#0000FF);width:100%;height:90px;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                      <span style="color:#fff;font-weight:600;font-size:11px;letter-spacing:0.5px;">RECTANGLE 300 ×
+                        250</span>
                     </div>
                   </div>
                   <div class="marketing-asset-info">
                     <span class="marketing-asset-name">Medium Rectangle</span>
                     <span class="marketing-asset-meta">300 × 250px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn" onclick="event.preventDefault(); showMarketingToast('Medium Rectangle banner will be available soon')">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                  <a href="#" class="marketing-download-btn"
+                    onclick="event.preventDefault(); showMarketingToast('Medium Rectangle banner will be available soon')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
                 </div>
                 <div class="marketing-asset-card">
                   <div class="marketing-asset-preview banner-preview">
-                    <div class="banner-mockup" style="background:linear-gradient(180deg,#03FF88,#0000FF);width:60px;height:100px;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;">
-                      <span style="color:#fff;font-weight:600;font-size:8px;letter-spacing:0.3px;writing-mode:vertical-rl;text-orientation:mixed;">SKYSCRAPER</span>
+                    <div class="banner-mockup"
+                      style="background:linear-gradient(180deg,#03FF88,#0000FF);width:60px;height:100px;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;">
+                      <span
+                        style="color:#fff;font-weight:600;font-size:8px;letter-spacing:0.3px;writing-mode:vertical-rl;text-orientation:mixed;">SKYSCRAPER</span>
                     </div>
                   </div>
                   <div class="marketing-asset-info">
                     <span class="marketing-asset-name">Skyscraper</span>
                     <span class="marketing-asset-meta">160 × 600px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn" onclick="event.preventDefault(); showMarketingToast('Skyscraper banner will be available soon')">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                  <a href="#" class="marketing-download-btn"
+                    onclick="event.preventDefault(); showMarketingToast('Skyscraper banner will be available soon')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
@@ -827,79 +886,90 @@ include
             <!-- Email Templates -->
             <div class="marketing-section">
               <div class="marketing-section-header">
-                <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
-                  <path d="M2 4l10 8 10-8"/>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+                  <path d="M2 4l10 8 10-8" />
                 </svg>
                 <h3>Email Templates</h3>
               </div>
-              <p class="marketing-section-desc">Copy-and-paste email templates to invite your friends and network. Personalise the text and add your referral link.</p>
+              <p class="marketing-section-desc">Copy-and-paste email templates to invite your friends and network.
+                Personalise the text and add your referral link.</p>
 
               <div class="marketing-email-list">
                 <div class="marketing-email-block">
                   <div class="email-block-header">
                     <span class="email-block-label">Casual Invite</span>
                     <button class="marketing-copy-btn" onclick="copyEmailTemplate('email-template-1')">
-                      <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                       </svg>
                       Copy Text
                     </button>
                   </div>
                   <div class="email-block-body" id="email-template-1">Hey! 👋
 
-I've been investing in real estate through POOOL — it's a platform where you can invest in global properties starting from just USD 50.
+                    I've been investing in real estate through POOOL — it's a platform where you can invest in global
+                    properties starting from just USD 50.
 
-I thought you'd be interested! Here's my invite link — you'll get USD 30 as a welcome bonus when you sign up:
+                    I thought you'd be interested! Here's my invite link — you'll get USD 30 as a welcome bonus when you
+                    sign up:
 
-[Your referral link here]
+                    [Your referral link here]
 
-Let me know if you have questions!</div>
+                    Let me know if you have questions!</div>
                 </div>
 
                 <div class="marketing-email-block">
                   <div class="email-block-header">
                     <span class="email-block-label">Professional / Newsletter</span>
                     <button class="marketing-copy-btn" onclick="copyEmailTemplate('email-template-2')">
-                      <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                       </svg>
                       Copy Text
                     </button>
                   </div>
-                  <div class="email-block-body" id="email-template-2">Subject: Earn passive income with global real estate — here's how
+                  <div class="email-block-body" id="email-template-2">Subject: Earn passive income with global real
+                    estate — here's how
 
-Hi there,
+                    Hi there,
 
-I wanted to share a platform I've been using called POOOL. It offers fractional property investment across Indonesia, Saudi Arabia, and more — with rental yields distributed monthly.
+                    I wanted to share a platform I've been using called POOOL. It offers fractional property investment
+                    across Indonesia, Saudi Arabia, and more — with rental yields distributed monthly.
 
-Key highlights:
-• Start investing from USD 50
-• Earn monthly rental income
-• Fully managed properties — no landlord duties
-• Cashback rewards on every investment
+                    Key highlights:
+                    • Start investing from USD 50
+                    • Earn monthly rental income
+                    • Fully managed properties — no landlord duties
+                    • Cashback rewards on every investment
 
-You can sign up using my referral link below and receive a USD 30 welcome bonus:
+                    You can sign up using my referral link below and receive a USD 30 welcome bonus:
 
-[Your referral link here]
+                    [Your referral link here]
 
-Best regards</div>
+                    Best regards</div>
                 </div>
 
                 <div class="marketing-email-block">
                   <div class="email-block-header">
                     <span class="email-block-label">WhatsApp / SMS</span>
                     <button class="marketing-copy-btn" onclick="copyEmailTemplate('email-template-3')">
-                      <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                       </svg>
                       Copy Text
                     </button>
                   </div>
-                  <div class="email-block-body" id="email-template-3">Hey! I've been earning passive income by investing in real estate on POOOL 🏠💰 You can start from just USD 50 and get USD 30 free when you sign up with my link: [Your referral link here]</div>
+                  <div class="email-block-body" id="email-template-3">Hey! I've been earning passive income by investing
+                    in real estate on POOOL 🏠💰 You can start from just USD 50 and get USD 30 free when you sign up
+                    with my link: [Your referral link here]</div>
                 </div>
               </div>
             </div>
@@ -907,18 +977,21 @@ Best regards</div>
             <!-- Video Content -->
             <div class="marketing-section">
               <div class="marketing-section-header">
-                <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="23 7 16 12 23 17 23 7"/>
-                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="23 7 16 12 23 17 23 7" />
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                 </svg>
                 <h3>Video Content</h3>
               </div>
-              <p class="marketing-section-desc">Short promotional videos you can share on social media or embed on your blog.</p>
+              <p class="marketing-section-desc">Short promotional videos you can share on social media or embed on your
+                blog.</p>
               <div class="marketing-assets-grid">
                 <div class="marketing-asset-card">
-                  <div class="marketing-asset-preview template-preview video-preview" style="background:linear-gradient(135deg,#181D27 0%,#0000FF 100%);">
-                    <svg  width="40" height="40" viewBox="0 0 24 24" fill="white" opacity="0.9">
-                      <polygon points="5 3 19 12 5 21 5 3"/>
+                  <div class="marketing-asset-preview template-preview video-preview"
+                    style="background:linear-gradient(135deg,#181D27 0%,#0000FF 100%);">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="white" opacity="0.9">
+                      <polygon points="5 3 19 12 5 21 5 3" />
                     </svg>
                     <span class="template-label">15s Reel</span>
                   </div>
@@ -926,19 +999,22 @@ Best regards</div>
                     <span class="marketing-asset-name">"Why POOOL?" — 15s Reel</span>
                     <span class="marketing-asset-meta">1080 × 1920px • MP4</span>
                   </div>
-                  <a href="#" class="marketing-download-btn" onclick="event.preventDefault(); showMarketingToast('Video content will be available soon')">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                  <a href="#" class="marketing-download-btn"
+                    onclick="event.preventDefault(); showMarketingToast('Video content will be available soon')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
                 </div>
                 <div class="marketing-asset-card">
-                  <div class="marketing-asset-preview template-preview video-preview" style="background:linear-gradient(135deg,#0000FF 0%,#03FF88 100%);">
-                    <svg  width="40" height="40" viewBox="0 0 24 24" fill="white" opacity="0.9">
-                      <polygon points="5 3 19 12 5 21 5 3"/>
+                  <div class="marketing-asset-preview template-preview video-preview"
+                    style="background:linear-gradient(135deg,#0000FF 0%,#03FF88 100%);">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="white" opacity="0.9">
+                      <polygon points="5 3 19 12 5 21 5 3" />
                     </svg>
                     <span class="template-label">30s Explainer</span>
                   </div>
@@ -946,19 +1022,22 @@ Best regards</div>
                     <span class="marketing-asset-name">"How It Works" — 30s</span>
                     <span class="marketing-asset-meta">1920 × 1080px • MP4</span>
                   </div>
-                  <a href="#" class="marketing-download-btn" onclick="event.preventDefault(); showMarketingToast('Video content will be available soon')">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                  <a href="#" class="marketing-download-btn"
+                    onclick="event.preventDefault(); showMarketingToast('Video content will be available soon')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
                 </div>
                 <div class="marketing-asset-card">
-                  <div class="marketing-asset-preview template-preview video-preview" style="background:linear-gradient(135deg,#03FF88 0%,#181D27 100%);">
-                    <svg  width="40" height="40" viewBox="0 0 24 24" fill="white" opacity="0.9">
-                      <polygon points="5 3 19 12 5 21 5 3"/>
+                  <div class="marketing-asset-preview template-preview video-preview"
+                    style="background:linear-gradient(135deg,#03FF88 0%,#181D27 100%);">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="white" opacity="0.9">
+                      <polygon points="5 3 19 12 5 21 5 3" />
                     </svg>
                     <span class="template-label">60s Promo</span>
                   </div>
@@ -966,11 +1045,13 @@ Best regards</div>
                     <span class="marketing-asset-name">"Investor Testimonial" — 60s</span>
                     <span class="marketing-asset-meta">1920 × 1080px • MP4</span>
                   </div>
-                  <a href="#" class="marketing-download-btn" onclick="event.preventDefault(); showMarketingToast('Video content will be available soon')">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
+                  <a href="#" class="marketing-download-btn"
+                    onclick="event.preventDefault(); showMarketingToast('Video content will be available soon')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
                     Download
                   </a>
@@ -986,7 +1067,8 @@ Best regards</div>
             <!-- Payout Method Card -->
             <div class="commissions-card">
               <div class="commissions-card-header">
-                <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
                   <line x1="1" y1="10" x2="23" y2="10"></line>
                 </svg>
@@ -996,14 +1078,17 @@ Best regards</div>
               <form id="payout-settings-form" class="commissions-form" onsubmit="savePayoutSettings(event)">
                 <div class="commissions-form-row">
                   <div class="commissions-form-field">
-                    <label for="payout-payment-method" class="settings-form-row__label" style="padding:0; margin-bottom: 2px;">Payment method</label>
+                    <label for="payout-payment-method" class="settings-form-row__label"
+                      style="padding:0; margin-bottom: 2px;">Payment method</label>
                     <div class="settings-select-wrapper" style="width: 100%;">
                       <select id="payout-payment-method" class="settings-select">
                         <option value="paypal">PayPal</option>
                         <option value="bank_transfer" selected>Bank Transfer</option>
                       </select>
-                      <svg  class="settings-select-wrapper__icon-right" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round" />
+                      <svg class="settings-select-wrapper__icon-right" width="16" height="16" viewBox="0 0 16 16"
+                        fill="none">
+                        <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.33" stroke-linecap="round"
+                          stroke-linejoin="round" />
                       </svg>
                     </div>
                   </div>
@@ -1011,23 +1096,28 @@ Best regards</div>
 
                 <div class="commissions-form-row commissions-form-row--2col">
                   <div class="commissions-form-field">
-                    <label for="payout-account-email" class="settings-form-row__label" style="padding:0; margin-bottom: 2px;">Account</label>
-                    <input type="text" id="payout-account-email" class="settings-input" placeholder="e.g. your@email.com" />
+                    <label for="payout-account-email" class="settings-form-row__label"
+                      style="padding:0; margin-bottom: 2px;">Account</label>
+                    <input type="text" id="payout-account-email" class="settings-input"
+                      placeholder="e.g. your@email.com" />
                   </div>
                   <div class="commissions-form-field">
-                    <label for="payout-full-name" class="settings-form-row__label" style="padding:0; margin-bottom: 2px;">Full name / Company name</label>
+                    <label for="payout-full-name" class="settings-form-row__label"
+                      style="padding:0; margin-bottom: 2px;">Full name / Company name</label>
                     <input type="text" id="payout-full-name" class="settings-input" placeholder="Full name" />
                   </div>
                 </div>
 
                 <div class="commissions-form-row">
                   <div class="commissions-form-field">
-                    <label for="payout-vat" class="settings-form-row__label" style="padding:0; margin-bottom: 2px;">VAT No (optional)</label>
+                    <label for="payout-vat" class="settings-form-row__label" style="padding:0; margin-bottom: 2px;">VAT
+                      No (optional)</label>
                     <input type="text" id="payout-vat" class="settings-input" placeholder="e.g. U12345678" />
                   </div>
                 </div>
 
-                <button type="submit" class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="payout-save-btn" style="margin-top: 8px;">SAVE</button>
+                <button type="submit" class="ds-btn ds-btn--primary settings-btn settings-btn--primary"
+                  id="payout-save-btn" style="margin-top: 8px;">SAVE</button>
               </form>
             </div>
 
@@ -1035,7 +1125,8 @@ Best regards</div>
             <div class="commissions-card" style="margin-top: 32px;">
               <div class="commissions-card-header">
                 <div class="commissions-list-title">
-                  <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                     <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -1045,7 +1136,8 @@ Best regards</div>
                   <h3>Commissions list</h3>
                 </div>
                 <div class="commissions-date-picker">
-                  <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                     <line x1="16" y1="2" x2="16" y2="6"></line>
                     <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -1070,7 +1162,8 @@ Best regards</div>
                   </thead>
                   <tbody id="commissions-table-body">
                     <tr>
-                      <td colspan="5" style="text-align:center; padding:32px 0; color:#98a2b3;">Loading commissions…</td>
+                      <td colspan="5" style="text-align:center; padding:32px 0; color:#98a2b3;">Loading commissions…
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -1083,7 +1176,7 @@ Best regards</div>
       </div>
     </main>
   </div>
-            <div id="rewards-toast-container" style="
+  <div id="rewards-toast-container" style="
                   position: fixed;
                   top: 24px;
                   right: 24px;
@@ -1092,11 +1185,11 @@ Best regards</div>
                   flex-direction: column;
                   gap: 8px;
                 "></div>
-            
-            <!-- Scripts inside the body -->
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-            <script src="/static/js/rewards-service.js"></script>
-            <script src="/static/js/rewards.js"></script>
+
+  <!-- Scripts inside the body -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/static/js/rewards-service.js"></script>
+  <script src="/static/js/rewards.js"></script>
 
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>
