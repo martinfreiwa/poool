@@ -428,7 +428,7 @@ pub async fn api_marketplace_tab(
         };
 
         let image_urls: Vec<String> = asset.get("image_urls");
-        let cover_image = html_escape(
+        let _cover_image = html_escape(
             &image_urls
                 .first()
                 .cloned()
@@ -715,7 +715,7 @@ pub async fn api_commodities_tab(
         };
 
         let image_urls: Vec<String> = asset.get("image_urls");
-        let cover_image = html_escape(
+        let _cover_image = html_escape(
             &image_urls
                 .first()
                 .cloned()

@@ -14,21 +14,11 @@ pub struct LeaderboardEntry {
 }
 
 /// The logged-in user's own rank information.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct MyRank {
     pub rank: Option<i32>,
     pub metric_value: i64,
     pub metrics: LeaderboardMetrics,
-}
-
-impl Default for MyRank {
-    fn default() -> Self {
-        Self {
-            rank: None,
-            metric_value: 0,
-            metrics: LeaderboardMetrics::default(),
-        }
-    }
 }
 
 /// Raw metrics for the user — all 6 core leaderboard dimensions.
