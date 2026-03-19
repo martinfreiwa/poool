@@ -206,7 +206,7 @@
                     <!-- Sliders -->
                     <div class="calc-slider-section slider-1">
                       <div class="calc-slider-labels"><span>Amount of Investment</span><span class="calc-slider-value" id="calc-slider-value-1">USD 100,000</span></div>
-                      <input type="range" class="calc-slider" id="calc-slider-1" min="500" max="{{ asset.total_value_cents // 100 }}" value="100000" />
+                      <input type="range" class="calc-slider" id="calc-slider-1" min="500" max="100000" value="100000" />
                       <div class="calc-slider-limits"><span>$500</span><span>${{ asset.total_value_usd }}</span></div>
                     </div>
                     <div class="calc-slider-section slider-2">
@@ -570,16 +570,16 @@
             <svg  width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
           </button>
           <div class="mobile-gallery-scroll" id="mobileGalleryScroll">
-            <div class="mobile-gallery-slide" data-index="0">
-              <img src="{{ asset.cover_image_url | default('/static/images/villa8.webp') }}" alt="{{ asset.title }}" class="mobile-gallery-img gallery-clickable" loading="lazy" data-lightbox-index="0" />
+            {% for img_url in asset.image_urls %}
+            <div class="mobile-gallery-slide" data-index="{{ loop.index0 }}">
+              <img src="{{ img_url }}" alt="{{ asset.title }}" class="mobile-gallery-img gallery-clickable" loading="{% if loop.index0 == 0 %}eager{% else %}lazy{% endif %}" data-lightbox-index="{{ loop.index0 }}" />
             </div>
-            <div class="mobile-gallery-slide" data-index="1">
-              <img src="/static/images/villa3_2.webp" alt="{{ asset.title }} interior" class="mobile-gallery-img gallery-clickable" loading="lazy" data-lightbox-index="1" />
-            </div>
+            {% endfor %}
           </div>
           <div class="mobile-gallery-indicators" id="mobileGalleryIndicators">
-            <span class="mobile-gallery-dot gallery-dot-clickable active" data-slide-index="0"></span>
-            <span class="mobile-gallery-dot gallery-dot-clickable" data-slide-index="1"></span>
+            {% for img_url in asset.image_urls %}
+            <span class="mobile-gallery-dot gallery-dot-clickable {% if loop.index0 == 0 %}active{% endif %}" data-slide-index="{{ loop.index0 }}"></span>
+            {% endfor %}
           </div>
         </div>
       </div>
@@ -587,7 +587,7 @@
         <div class="mobile-card-buttons">
           <button class="mobile-gallery-btn" onclick="openLightbox(0)">
             <img  src="/static/images/prop-details/Iconimage.webp" alt="Photos" width="20" height="20" />
-            <span>12 photos</span>
+            <span>{{ (asset.image_urls | default([])) | length }} photos</span>
           </button>
           <div class="mobile-btn-divider"></div>
           <button class="mobile-gallery-btn" onclick="openVirtualTour()">

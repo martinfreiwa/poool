@@ -1,31 +1,19 @@
 <!-- Image Gallery Section -->
-<div id="gallery-main-image" class="gallery-image" onclick="openLightbox(0)">
-  <img src="{{ asset.cover_image_url | default('/static/images/villa8.webp') }}" alt="{{ asset.title }}" class="gallery-img" loading="lazy"
+{% set gallery_ids = ['gallery-main-image', 'gallery-image-top-left', 'gallery-image-top-right', 'gallery-image-bottom-left', 'gallery-image-bottom-right'] %}
+{% for img_url in asset.image_urls %}
+{% if loop.index0 < 5 %}
+<div id="{{ gallery_ids[loop.index0] }}" class="gallery-image" onclick="openLightbox({{ loop.index0 }})">
+  <img src="{{ img_url }}" alt="{{ asset.title }}" class="gallery-img" loading="{% if loop.index0 == 0 %}eager{% else %}lazy{% endif %}"
     onload="this.classList.add('loaded'); this.parentElement.classList.add('image-loaded');" />
 </div>
-<!-- Small Images Grid (placeholder thumbnails) -->
-<div id="gallery-image-top-left" class="gallery-image" onclick="openLightbox(1)">
-  <img src="/static/images/villa1_2.webp" alt="{{ asset.title }} view 2" class="gallery-img" loading="lazy"
-    onload="this.classList.add('loaded'); this.parentElement.classList.add('image-loaded');" />
-</div>
-<div id="gallery-image-top-right" class="gallery-image" onclick="openLightbox(2)">
-  <img src="/static/images/villa1_3.webp" alt="{{ asset.title }} view 3" class="gallery-img" 
-    onload="this.classList.add('loaded'); this.parentElement.classList.add('image-loaded');" />
-</div>
-<div id="gallery-image-bottom-left" class="gallery-image" onclick="openLightbox(3)">
-  <img src="/static/images/villa1_4.webp" alt="{{ asset.title }} view 4" class="gallery-img" loading="lazy"
-    onload="this.classList.add('loaded'); this.parentElement.classList.add('image-loaded');" />
-</div>
-<div id="gallery-image-bottom-right" class="gallery-image" onclick="openLightbox(4)">
-  <img src="/static/images/villa2_1.webp" alt="{{ asset.title }} view 5" class="gallery-img" loading="lazy"
-    onload="this.classList.add('loaded'); this.parentElement.classList.add('image-loaded');" />
-</div>
+{% endif %}
+{% endfor %}
 <!-- Gallery View All Button -->
 <button id="gallery-view-all-button" onclick="openLightbox(0)">
   <div class="gallery-btn-content">
     <div class="gallery-btn-group">
       <img  src="/static/images/prop-details/Iconimage.webp" alt="Photos" class="gallery-btn-icon" width="20" height="20" />
-      <span class="gallery-btn-text">12 photos</span>
+      <span class="gallery-btn-text">{{ (asset.image_urls | default([])) | length }} photos</span>
     </div>
     <div class="gallery-btn-divider"></div>
     <div class="gallery-btn-group">

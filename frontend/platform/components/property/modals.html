@@ -1,22 +1,37 @@
-<!-- Lightbox Modal -->
-<div class="lightbox-overlay" id="lightbox-overlay" onclick="closeLightbox(event)">
-  <button class="lightbox-close" onclick="closeLightbox(event)">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-    </svg>
-  </button>
-  <img loading="lazy" class="lightbox-content" id="lightbox-img" />
-  <div class="lightbox-caption" id="lightbox-caption"></div>
-  <button class="lightbox-prev" onclick="changeImage(-1)">
+<!-- All image URLs for lightbox (server-rendered as hidden elements to avoid HTML escaping) -->
+<div id="gallery-all-images" style="display:none">
+  {% for img_url in asset.image_urls %}
+  <img data-src="{{ img_url }}" data-caption="{{ asset.title }} — Photo {{ loop.index }}" />
+  {% endfor %}
+</div>
+<!-- Lightbox Modal - Moved outside app-wrapper to avoid stacking context issues -->
+<div id="lightbox-modal" class="lightbox-modal" style="display: none">
+  <!-- Top bar: counter + close -->
+  <div class="lightbox-top-bar">
+    <span class="lightbox-counter" id="lightbox-counter">1 / 1</span>
+    <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close gallery">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    </button>
+  </div>
+  <!-- Main image area -->
+  <div class="lightbox-image-wrapper" id="lightbox-image-wrapper">
+    <img class="lightbox-content" id="lightbox-img" />
+  </div>
+  <!-- Navigation arrows -->
+  <button class="lightbox-prev" onclick="changeImage(-1)" aria-label="Previous image">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
     </svg>
   </button>
-  <button class="lightbox-next" onclick="changeImage(1)">
+  <button class="lightbox-next" onclick="changeImage(1)" aria-label="Next image">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
     </svg>
   </button>
+  <!-- Thumbnail strip -->
+  <div class="lightbox-thumbnails" id="lightbox-thumbnails"></div>
 </div>
 <!-- YouTube Video Modal -->
 <div id="youtube-modal-overlay" class="youtube-modal-overlay">

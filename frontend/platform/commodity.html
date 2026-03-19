@@ -111,7 +111,7 @@
                       width="20"
                       height="20"
                     />
-                    <span class="gallery-btn-text">{{ asset.image_urls | length }} photos</span>
+                    <span class="gallery-btn-text">{{ (asset.image_urls | default([])) | length }} photos</span>
                   </div>
                   <div class="gallery-btn-divider"></div>
                   <div class="gallery-btn-group">
@@ -3796,7 +3796,7 @@
               width="20"
               height="20"
             />
-            <span>{{ asset.image_urls | length }} photos</span>
+            <span>{{ (asset.image_urls | default([])) | length }} photos</span>
           </button>
           <div class="mobile-btn-divider"></div>
           <button class="mobile-gallery-btn" onclick="openVirtualTour()">
