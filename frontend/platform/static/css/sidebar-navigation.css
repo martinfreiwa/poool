@@ -597,6 +597,7 @@
   align-self: stretch;
   flex-grow: 0;
   position: relative;
+  overflow: hidden;
 }
 
 /* Avatar label group */
@@ -606,11 +607,11 @@
   align-items: center;
   padding: 0px;
   gap: 8px;
-  width: 200px;
+  max-width: calc(100% - 28px);
   height: 40px;
-  flex: none;
+  flex: 1;
+  min-width: 0;
   order: 0;
-  flex-grow: 1;
   z-index: 0;
 }
 
