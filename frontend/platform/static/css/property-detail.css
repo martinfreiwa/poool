@@ -72,7 +72,7 @@
   width: auto;
   height: 20px;
   left: 24px;
-  top: 120px;
+  top: 24px;
   white-space: nowrap;
 }
 
@@ -171,7 +171,7 @@
   width: 152px;
   height: 36px;
   left: 968px;
-  top: 112px;
+  top: 16px;
   border: 1px solid #a4a7ae;
   filter: drop-shadow(0px 1px 2px rgba(10, 13, 18, 0.05));
   border-radius: 8px;
@@ -188,7 +188,7 @@
   width: 544px;
   height: 420px;
   left: 24px;
-  top: 164px;
+  top: 68px;
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
@@ -215,7 +215,7 @@
   width: 268px;
   height: 206px;
   left: 576px;
-  top: 164px;
+  top: 68px;
   border-radius: 12px;
   overflow: hidden;
   background: #f3f4f6;
@@ -241,7 +241,7 @@
   width: 268px;
   height: 206px;
   left: 852px;
-  top: 164px;
+  top: 68px;
   border-radius: 12px;
   overflow: hidden;
   background: #f3f4f6;
@@ -267,7 +267,7 @@
   width: 268px;
   height: 206px;
   left: 576px;
-  top: 378px;
+  top: 282px;
   border-radius: 12px;
   overflow: hidden;
   background: #f3f4f6;
@@ -293,7 +293,7 @@
   width: 268px;
   height: 206px;
   left: 852px;
-  top: 378px;
+  top: 282px;
   border-radius: 12px;
   overflow: hidden;
   background: #f3f4f6;
@@ -327,7 +327,7 @@
   height: 44px;
   left: 778px;
   /* 1120px (right edge of gallery) - 269px (button width) - 73px (spacing) = 778px */
-  top: 562px;
+  top: 466px;
   /* Positioned to stick out 22px from bottom of gallery (584-22) */
   background: #ffffff;
   border: 2px solid #e9eaeb;
@@ -1051,7 +1051,7 @@ body.lightbox-open {
   width: 664px;
   height: 468px;
   left: 0px;
-  top: 654px;
+  top: 558px;
   /* 70px below gallery end (584px) */
 }
 
@@ -1065,7 +1065,7 @@ body.lightbox-open {
   min-height: 6700px;
   height: auto;
   left: 24px;
-  top: 620px;
+  top: 524px;
   /* Just below gallery area */
   background: #ffffff;
   border: 1px solid #f8f9fc;
@@ -1199,7 +1199,7 @@ body.lightbox-open {
   width: 416px;
   height: auto;
   left: 704px;
-  top: 620px;
+  top: 524px;
   /* Aligned with main card */
   background: #ffffff;
   border: 1px solid #e9eaeb;
