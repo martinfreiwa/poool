@@ -1,6 +1,6 @@
 {% with title="Wallet", meta_description="Access your POOOL wallet to manage deposits, withdrawals, and view your
 transaction history securely.", no_index=True, extra_css=['wallet', 'bem/table', 'bem/table-wallet', 'htmx-fixes',
-'mobile-wallet', 'kyc-banner'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation'],
+'mobile-wallet'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation'],
 external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="wallet-body" class="fouc-guard">
@@ -12,7 +12,6 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
     </div>
 
     <main class="ds-main wallet-main">
-      {% include 'components/kyc-banner.html' %}
 
       <div class="wallet-container">
         <!-- Wallet Header -->
@@ -1181,7 +1180,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
   <!-- Wallet Data Service & UI Controller -->
   <script src="/static/js/wallet-service.js"></script>
   <script src="/static/js/wallet.js"></script>
-  <script src="/static/js/kyc-banner.js"></script>
+
 
 </body>
 

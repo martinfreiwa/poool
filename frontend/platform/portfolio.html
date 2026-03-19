@@ -1,7 +1,7 @@
 {% with title="Portfolio", meta_description="View your comprehensive POOOL investment portfolio, tracking asset
 performance, total value, and returns over time.", extra_css=['marketplace', 'wallet', 'portfolio', 'cart',
 'portfolio-assets-table',
-'portfolio-value-card', 'portfolio-chart', 'htmx-fixes', 'mobile-portfolio', 'portfolio-enhancements', 'unified-styles', 'kyc-banner'],
+'portfolio-value-card', 'portfolio-chart', 'htmx-fixes', 'mobile-portfolio', 'portfolio-enhancements', 'unified-styles'],
 extra_js=['htmx-init',
 'profile-dropdown', 'marketplace-search'] %}{% include
 "components/head.html" %}{% endwith %}
@@ -16,7 +16,6 @@ extra_js=['htmx-init',
 
     <main id="portfolio-main" class="ds-main portfolio-main">
 
-      {% include 'components/kyc-banner.html' %}
 
       <div class="portfolio-container">
         <!-- Phase 4: State Layers -->
@@ -1064,7 +1063,7 @@ extra_js=['htmx-init',
   <script type="application/json" id="server-portfolio-json">{{ portfolio_json | safe }}</script>
 
   <!-- Mobile Navigation JavaScript -->
-  <script src="/static/js/kyc-banner.js"></script>
+
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>
   <script src="/static/js/pie-chart.js"></script>

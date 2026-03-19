@@ -1,7 +1,7 @@
 {% with title="Marketplace", meta_description="Browse available properties for fractional investment on the POOOL
 marketplace. High-yield real estate opportunities worldwide.", extra_css=['marketplace', 'wallet', 'portfolio', 'cart',
 'assets-table-populated',
-'htmx-fixes', 'kyc-banner'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation',
+'htmx-fixes'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation',
 'marketplace-search'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="marketplace-body" class="fouc-guard">
@@ -14,7 +14,6 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
     </div>
     <!-- Main Content Area -->
     <main id="marketplace-main" class="ds-main marketplace-main">
-      {% include 'components/kyc-banner.html' %}
       <!-- Get all page data --><!-- KYC Notification Bar -->
       <!-- Marketplace Content with Padding -->
       <div class="marketplace-content-wrapper">
@@ -280,7 +279,7 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
       </div>
     </main>
   </div>
-  <script src="/static/js/kyc-banner.js"></script>
+
 </body>
 
 </html>

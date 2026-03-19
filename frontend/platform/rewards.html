@@ -1,6 +1,6 @@
 {% with title="Rewards", meta_description="View your POOOL rewards tier, affiliate dashboard, and cashback earnings.",
 extra_css=['marketplace', 'wallet', 'portfolio', 'cart', 'portfolio-assets-table',
-'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards', 'settings', 'poool-dropdown', 'kyc-banner'], extra_js=['htmx-init', 'profile-dropdown',
+'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards', 'settings', 'poool-dropdown'], extra_js=['htmx-init', 'profile-dropdown',
 'marketplace-search', 'tier-page'] %}{%
 include
 "components/head.html" %}{% endwith %}
@@ -14,7 +14,6 @@ include
     </div>
 
     <main class="ds-main rewards-main">
-      {% include 'components/kyc-banner.html' %}
       <div class="rewards-container">
         <div class="ds-page-header rewards-page-header">
           <div class="ds-page-header__title-row rewards-title-wrapper">
@@ -1098,7 +1097,7 @@ Best regards</div>
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <script src="/static/js/rewards-service.js"></script>
             <script src="/static/js/rewards.js"></script>
-  <script src="/static/js/kyc-banner.js"></script>
+
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>
   <script src="/static/js/tier-page.js"></script>
