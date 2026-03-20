@@ -299,18 +299,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let unexplained_difference = total_wallets - expected_wallets;
 
                     if unexplained_difference > 0 {
-                        // We have MORE money in the wallets than expected! High risk.
+                        // We have MORE money in the wallets than expected!
                         let msg = format!(
-                            "CRITICAL RECONCILIATION FAILURE: Unexplained excess of {} cents in system cash wallets. (Wallets: {}, Expected: {})",
+                            "RECONCILIATION MISMATCH: Unexplained excess of {} cents in system cash wallets. (Wallets: {}, Expected: {})",
                             unexplained_difference, total_wallets, expected_wallets
                         );
-                        tracing::error!("{}", msg);
+                        tracing::warn!("{}", msg);
                         sentry::with_scope(
                             |scope| {
-                                scope.set_tag("security.event", "reconciliation_failure");
+                                scope.set_tag("security.event", "reconciliation_mismatch");
                             },
                             || {
-                                sentry::capture_message(&msg, sentry::Level::Fatal);
+                                sentry::capture_message(&msg, sentry::Level::Warning);
                             },
                         );
                     } else if unexplained_difference < 0 {

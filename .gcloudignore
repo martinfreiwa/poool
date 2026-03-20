@@ -7,10 +7,8 @@ frontend/node_modules/
 *.swp
 *.log
 *.pdf
-TTNormsPro/
 01_POOOL brand book (2).pdf
 *.tar.gz
-*.sql
 .sentryclirc
 __pycache__/
 *.pyc
