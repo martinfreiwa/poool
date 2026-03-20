@@ -47,7 +47,7 @@
                         <p class="tv2-hero-desc" id="tv2-description">Loading property description...</p>
                         <div class="tv2-hero-stats">
                             <div class="tv2-stat">
-                                <span class="tv2-stat-label">Token Price</span>
+                                <span class="tv2-stat-label">Share Price</span>
                                 <span class="tv2-stat-value" id="tv2-token-price">$0.00</span>
                             </div>
                             <div class="tv2-stat">
@@ -59,7 +59,7 @@
                                 <span class="tv2-stat-value" id="tv2-occupancy">0%</span>
                             </div>
                             <div class="tv2-stat">
-                                <span class="tv2-stat-label">Total Tokens</span>
+                                <span class="tv2-stat-label">Total Shares</span>
                                 <span class="tv2-stat-value" id="tv2-total-supply">0</span>
                             </div>
                         </div>
@@ -94,8 +94,8 @@
                                 <thead>
                                     <tr>
                                         <th>Seller</th>
-                                        <th>Tokens</th>
-                                        <th>Price/Token</th>
+                                        <th>Shares</th>
+                                        <th>Price/Share</th>
                                         <th>Total</th>
                                         <th></th>
                                     </tr>
@@ -117,8 +117,8 @@
                                 <thead>
                                     <tr>
                                         <th>Buyer</th>
-                                        <th>Tokens</th>
-                                        <th>Price/Token</th>
+                                        <th>Shares</th>
+                                        <th>Price/Share</th>
                                         <th>Total</th>
                                         <th></th>
                                     </tr>
@@ -149,11 +149,11 @@
                         </div>
                         <form class="tv2-order-form" id="tv2-order-form" onsubmit="return false;">
                             <div class="tv2-field">
-                                <label class="tv2-field-label">Number of Tokens</label>
+                                <label class="tv2-field-label">Number of Shares</label>
                                 <input type="number" class="tv2-field-input" id="tv2-qty" min="1" value="1" placeholder="e.g. 10" />
                             </div>
                             <div class="tv2-field">
-                                <label class="tv2-field-label">Price per Token (USD)</label>
+                                <label class="tv2-field-label">Price per Share (USD)</label>
                                 <input type="number" class="tv2-field-input" id="tv2-price" step="0.01" min="0.01" placeholder="e.g. 105.00" />
                             </div>
                             <div class="tv2-order-summary">
