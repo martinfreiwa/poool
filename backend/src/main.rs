@@ -407,6 +407,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // ── Marketplace (demo) ─────────────────────────────────────────
         .route("/marketplace-trading", get(page_marketplace_trading))
         .route("/marketplace-trading-v2", get(page_marketplace_trading_v2))
+        .route("/marketplace-trading-v3", get(page_marketplace_trading_v3))
         .route("/marketplace-secondary", get(page_marketplace_secondary))
         .route("/my-trading", get(page_my_trading))
         // ── Static file serving & fallbacks ───────────────────────────
@@ -1616,6 +1617,11 @@ async fn page_marketplace_trading_v2(jar: CookieJar, State(state): State<AppStat
 /// GET /marketplace-secondary — Secondary market overview page (protected).
 async fn page_marketplace_secondary(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "marketplace-secondary.html").await
+}
+
+/// GET /marketplace-trading-v3 — V3 Marketplace trading page with full property content (protected).
+async fn page_marketplace_trading_v3(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "marketplace-trading-v3.html").await
 }
 
 /// GET /my-trading — Investor's personal trading dashboard (orders, trades, buy interests, tax export).

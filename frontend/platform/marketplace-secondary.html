@@ -26,9 +26,9 @@
                 <div class="mp-sec__header-right">
                     <!-- Search -->
                     <div class="mp-sec__search-wrap">
-                        <svg class="mp-sec__search-icon" width="18" height="18" viewBox="0 0 20 20" fill="none">
-                            <circle cx="9" cy="9" r="6" stroke="#9ca3af" stroke-width="1.67"/>
-                            <path d="M13 13L17 17" stroke="#9ca3af" stroke-width="1.67" stroke-linecap="round"/>
+                        <svg class="mp-sec__search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.67"/>
+                            <path d="M13 13L17 17" stroke="#717680" stroke-width="1.67" stroke-linecap="round"/>
                         </svg>
                         <input id="mp-search" type="search" class="mp-sec__search" placeholder="Search assets…" autocomplete="off">
                     </div>
@@ -45,19 +45,17 @@
                 </div>
             </div>
 
-            <!-- Filter Tabs (NEW — Stakeholder Decision E4) -->
+            <!-- Filter Tabs (Pill bar matching marketplace status-tabs) -->
             <div class="mp-sec__filters">
                 <button class="mp-sec__filter-btn active" data-filter="all">
                     All Assets
                     <span id="filter-count-all" class="mp-sec__filter-count">0</span>
                 </button>
                 <button class="mp-sec__filter-btn" data-filter="offers">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
                     With Offers
                     <span id="filter-count-offers" class="mp-sec__filter-count">0</span>
                 </button>
                 <button class="mp-sec__filter-btn" data-filter="interest">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14l-7 7-7-7"/><path d="M12 3v18"/></svg>
                     Buy Interest
                     <span id="filter-count-interest" class="mp-sec__filter-count">0</span>
                 </button>
@@ -91,7 +89,7 @@
         </main>
     </div>
 
-    <!-- Buy Interest Modal (NEW — Stakeholder Decision E3) -->
+    <!-- Buy Interest Modal -->
     <div id="buy-interest-modal" class="mkt-modal-overlay" style="display:none;">
         <div class="mp-sec__interest-modal">
             <button class="mp-sec__modal-close" id="interest-modal-close" aria-label="Close">&times;</button>

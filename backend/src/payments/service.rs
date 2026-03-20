@@ -798,7 +798,7 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
         }
 
         // 3. Mark order as failed (expired)
-        sqlx::query("UPDATE orders SET status = 'failed', updated_at = NOW() WHERE id = $1")
+        sqlx::query("UPDATE orders SET status = 'failed' WHERE id = $1")
             .bind(order_id)
             .execute(&mut *tx)
             .await
