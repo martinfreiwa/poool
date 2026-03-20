@@ -27,6 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (searchInput) searchInput.value = searchId;
   }
 
+  // Sync state from URL
+  parseUrlState();
+
   loadData();
 
   // Search with debounce
@@ -65,6 +68,7 @@ function setupTabSystem() {
       panels.forEach((p) => {
         p.style.display = p.id === `tab-${target}` ? "block" : "none";
       });
+      updateUrlState();
     });
   });
 }
@@ -72,32 +76,34 @@ function setupTabSystem() {
 function setupSorting() {
   // Orders sorting
   const orderTable = document.querySelector("#tab-orders .admin-table");
-  orderTable?.querySelectorAll("th[data-sort]").forEach((th) => {
-    th.style.cursor = "pointer";
-    th.addEventListener("click", () => {
-      const field = th.dataset.sort;
+  orderTable?.querySelectorAll("button[data-sort]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const field = btn.dataset.sort;
       if (orderSortField === field) {
         orderSortOrder = orderSortOrder === "asc" ? "desc" : "asc";
       } else {
         orderSortField = field;
         orderSortOrder = "asc";
       }
+      orderTable.querySelectorAll("th").forEach(th => th.setAttribute("aria-sort", "none"));
+      btn.closest("th").setAttribute("aria-sort", orderSortOrder === "asc" ? "ascending" : "descending");
       applyOrderFilters();
     });
   });
 
   // Investments sorting
   const invTable = document.querySelector("#tab-investments .admin-table");
-  invTable?.querySelectorAll("th[data-sort]").forEach((th) => {
-    th.style.cursor = "pointer";
-    th.addEventListener("click", () => {
-      const field = th.dataset.sort;
+  invTable?.querySelectorAll("button[data-sort]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const field = btn.dataset.sort;
       if (invSortField === field) {
         invSortOrder = invSortOrder === "asc" ? "desc" : "asc";
       } else {
         invSortField = field;
         invSortOrder = "asc";
       }
+      invTable.querySelectorAll("th").forEach(th => th.setAttribute("aria-sort", "none"));
+      btn.closest("th").setAttribute("aria-sort", invSortOrder === "asc" ? "ascending" : "descending");
       applyInvFilters();
     });
   });
@@ -108,6 +114,7 @@ function setupPagination() {
   document.getElementById("order-prev-page")?.addEventListener("click", () => {
     if (orderPage > 1) {
       orderPage--;
+      updateUrlState();
       renderOrders();
     }
   });
@@ -115,6 +122,7 @@ function setupPagination() {
     const maxPage = Math.ceil(filteredOrders.length / PAGE_SIZE);
     if (orderPage < maxPage) {
       orderPage++;
+      updateUrlState();
       renderOrders();
     }
   });
@@ -123,6 +131,7 @@ function setupPagination() {
   document.getElementById("inv-prev-page")?.addEventListener("click", () => {
     if (invPage > 1) {
       invPage--;
+      updateUrlState();
       renderInvestments();
     }
   });
@@ -130,6 +139,7 @@ function setupPagination() {
     const maxPage = Math.ceil(filteredInvestments.length / PAGE_SIZE);
     if (invPage < maxPage) {
       invPage++;
+      updateUrlState();
       renderInvestments();
     }
   });
@@ -143,14 +153,27 @@ async function loadData() {
     if (orderResp.ok) {
       const data = await orderResp.json();
       allOrders = Array.isArray(data) ? data : data.orders || [];
+    } else {
+      throw new Error(`Orders API returned ${orderResp.status}`);
     }
     if (invResp.ok) {
       const data = await invResp.json();
       allInvestments = Array.isArray(data) ? data : data.investments || [];
+    } else {
+      throw new Error(`Investments API returned ${invResp.status}`);
     }
   } catch (e) {
     console.error('Failed to load orders/investments:', e);
     if (window.Sentry) Sentry.captureException(e);
+    
+    // Fallback UI State
+    const orderBody = document.getElementById("orders-table-body");
+    if (orderBody) orderBody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--admin-danger);">Failed to load data. <button class="admin-btn admin-btn--secondary" style="margin-top:12px" onclick="loadData()">Retry</button></td></tr>`;
+    
+    const invBody = document.getElementById("investments-table-body");
+    if (invBody) invBody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--admin-danger);">Failed to load data. <button class="admin-btn admin-btn--secondary" style="margin-top:12px" onclick="loadData()">Retry</button></td></tr>`;
+    
+    return; // Halt execution
   }
 
   applyOrderFilters(false);
@@ -194,6 +217,8 @@ function applyOrderFilters(resetPage = true) {
   const orderCountEl = document.getElementById("order-count-label");
   if (orderCountEl)
     orderCountEl.textContent = `${filteredOrders.length} orders`;
+  
+  if (resetPage !== false) updateUrlState();
   renderOrders();
 }
 
@@ -233,6 +258,8 @@ function applyInvFilters(resetPage = true) {
   const invCountEl = document.getElementById("inv-count-label");
   if (invCountEl)
     invCountEl.textContent = `${filteredInvestments.length} investments`;
+  
+  if (resetPage !== false) updateUrlState();
   renderInvestments();
 }
 
@@ -305,8 +332,8 @@ function renderOrders() {
                     <a href="/admin/user-details?id=${esc(o.user_id)}" class="admin-btn admin-btn--secondary admin-btn--sm" title="View User Account">User</a>
                     ${o.status === "pending"
           ? `
-                        <button onclick="approveOrder('${o.id}', '${esc(o.order_number)}')" class="admin-btn admin-btn--success admin-btn--sm" style="background:#12B76A;border-color:#12B76A;color:white;">Approve</button>
-                        <button onclick="rejectOrder('${o.id}', '${esc(o.order_number)}')" class="admin-btn admin-btn--danger admin-btn--sm" style="background:#F04438;border-color:#F04438;color:white;">Reject</button>
+                        <button data-action="approve" data-id="${esc(o.id)}" data-num="${esc(o.order_number)}" class="admin-btn admin-btn--success admin-btn--sm" style="background:#12B76A;border-color:#12B76A;color:white;">Approve</button>
+                        <button data-action="reject" data-id="${esc(o.id)}" data-num="${esc(o.order_number)}" class="admin-btn admin-btn--danger admin-btn--sm" style="background:#F04438;border-color:#F04438;color:white;">Reject</button>
                     `
           : ""
         }
@@ -318,7 +345,28 @@ function renderOrders() {
     .join("");
 }
 
-async function approveOrder(id, num) {
+// Event delegation for approve/reject
+document.addEventListener('DOMContentLoaded', () => {
+    const tableBody = document.getElementById("orders-table-body");
+    if (tableBody) {
+        tableBody.addEventListener("click", async (e) => {
+            const btn = e.target.closest("button[data-action]");
+            if (!btn || btn.disabled) return;
+            
+            const action = btn.dataset.action;
+            const id = btn.dataset.id;
+            const num = btn.dataset.num;
+            
+            if (action === "approve") {
+                await approveOrder(id, num, btn);
+            } else if (action === "reject") {
+                await rejectOrder(id, num, btn);
+            }
+        });
+    }
+});
+
+async function approveOrder(id, num, btnElement) {
   if (
     !await pooolConfirm({
       title: `Approve Order ${num}`,
@@ -328,11 +376,29 @@ async function approveOrder(id, num) {
     })
   )
     return;
+  
+  if (btnElement) {
+      btnElement.disabled = true;
+      btnElement.textContent = "Processing...";
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
   try {
     const res = await fetch(`/api/admin/orders/${id}/approve`, {
       method: "POST",
+      signal: controller.signal
     });
-    const data = await res.json();
+    clearTimeout(timeoutId);
+    
+    // Check Content-Type, because sometimes API might fail and return HTML or not JSON
+    const contentType = res.headers.get("content-type");
+    let data = {};
+    if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+    }
+    
     if (res.ok) {
       showNotification(
         "Order Approved",
@@ -343,16 +409,28 @@ async function approveOrder(id, num) {
     } else {
       showNotification(
         "Approval Failed",
-        data.error || "Unknown error",
+        data.error || `Server error: ${res.status}`,
         "error",
       );
+      if (btnElement) {
+          btnElement.disabled = false;
+          btnElement.textContent = "Approve";
+      }
     }
   } catch (e) {
-    showNotification("Network Error", "Failed to reach server.", "error");
+    if (e.name === 'AbortError') {
+         showNotification("Network Error", "Request timed out.", "error");
+    } else {
+         showNotification("Network Error", "Failed to reach server.", "error");
+    }
+    if (btnElement) {
+        btnElement.disabled = false;
+        btnElement.textContent = "Approve";
+    }
   }
 }
 
-async function rejectOrder(id, num) {
+async function rejectOrder(id, num, btnElement) {
   if (
     !await pooolConfirm({
       title: `Reject Order ${num}`,
@@ -362,11 +440,28 @@ async function rejectOrder(id, num) {
     })
   )
     return;
+    
+  if (btnElement) {
+      btnElement.disabled = true;
+      btnElement.textContent = "Processing...";
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
   try {
     const res = await fetch(`/api/admin/orders/${id}/reject`, {
       method: "POST",
+      signal: controller.signal
     });
-    const data = await res.json();
+    clearTimeout(timeoutId);
+    
+    const contentType = res.headers.get("content-type");
+    let data = {};
+    if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+    }
+    
     if (res.ok) {
       showNotification(
         "Order Rejected",
@@ -377,12 +472,24 @@ async function rejectOrder(id, num) {
     } else {
       showNotification(
         "Rejection Failed",
-        data.error || "Unknown error",
+        data.error || `Server error: ${res.status}`,
         "error",
       );
+      if (btnElement) {
+          btnElement.disabled = false;
+          btnElement.textContent = "Reject";
+      }
     }
   } catch (e) {
-    showNotification("Network Error", "Failed to reach server.", "error");
+    if (e.name === 'AbortError') {
+         showNotification("Network Error", "Request timed out.", "error");
+    } else {
+         showNotification("Network Error", "Failed to reach server.", "error");
+    }
+    if (btnElement) {
+        btnElement.disabled = false;
+        btnElement.textContent = "Reject";
+    }
   }
 }
 
@@ -532,4 +639,62 @@ function debounce(fn, ms) {
     clearTimeout(t);
     t = setTimeout(() => fn.apply(this, args), ms);
   };
+}
+
+// ─── URL State Management ────────────────────────────────────────
+
+function parseUrlState() {
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab') || 'orders';
+  const queryOrder = params.get('order_search') || '';
+  const statusOrder = params.get('order_status') || '';
+  const pageOrder = parseInt(params.get('order_page')) || 1;
+  const queryInv = params.get('inv_search') || '';
+  const statusInv = params.get('inv_status') || '';
+  const pageInv = parseInt(params.get('inv_page')) || 1;
+
+  if (document.getElementById('order-search')) {
+      const el = document.getElementById('order-search');
+      if (!el.value) el.value = queryOrder; // allow the global search ID to override
+  }
+  if (document.getElementById('order-filter-status') && statusOrder) document.getElementById('order-filter-status').value = statusOrder;
+  if (document.getElementById('inv-search')) document.getElementById('inv-search').value = queryInv;
+  if (document.getElementById('inv-filter-status') && statusInv) document.getElementById('inv-filter-status').value = statusInv;
+  
+  orderPage = pageOrder;
+  invPage = pageInv;
+  
+  // Set active tab
+  const tabBtn = document.querySelector(`.admin-tab[data-tab="${tab}"]`);
+  if (tabBtn) tabBtn.click();
+}
+
+function updateUrlState() {
+  const url = new URL(window.location);
+  const activeTab = document.querySelector('.admin-tab.active')?.dataset.tab || 'orders';
+  url.searchParams.set('tab', activeTab);
+  
+  const orderSearch = document.getElementById('order-search')?.value;
+  if (orderSearch) url.searchParams.set('order_search', orderSearch);
+  else url.searchParams.delete('order_search');
+  
+  const orderStatus = document.getElementById('order-filter-status')?.value;
+  if (orderStatus) url.searchParams.set('order_status', orderStatus);
+  else url.searchParams.delete('order_status');
+  
+  if (orderPage > 1) url.searchParams.set('order_page', orderPage);
+  else url.searchParams.delete('order_page');
+
+  const invSearch = document.getElementById('inv-search')?.value;
+  if (invSearch) url.searchParams.set('inv_search', invSearch);
+  else url.searchParams.delete('inv_search');
+
+  const invStatus = document.getElementById('inv-filter-status')?.value;
+  if (invStatus) url.searchParams.set('inv_status', invStatus);
+  else url.searchParams.delete('inv_status');
+  
+  if (invPage > 1) url.searchParams.set('inv_page', invPage);
+  else url.searchParams.delete('inv_page');
+
+  window.history.replaceState({}, '', url);
 }

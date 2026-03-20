@@ -86,7 +86,7 @@ pub async fn login_page(
 ) -> impl IntoResponse {
     // If already logged in, skip login page and go to marketplace
     if middleware::is_authenticated(&jar, &state.db).await {
-        return Redirect::to("/marketplace").into_response();
+        return Redirect::to("https://platform.poool.app/marketplace").into_response();
     }
 
     let error = params.get("error").cloned();
@@ -176,7 +176,7 @@ pub async fn login_submit(
     let (is_2fa_verified, redirect_to) = if settings.totp_enabled {
         (false, "/auth/2fa")
     } else {
-        (true, "/marketplace")
+        (true, "https://platform.poool.app/marketplace")
     };
 
     // Extract client info for session
@@ -296,7 +296,7 @@ pub async fn totp_verify_submit(
     service::verify_session_2fa(&state.db, session_token).await?;
 
     let mut response_headers = HeaderMap::new();
-    response_headers.insert("HX-Redirect", "/marketplace".parse().unwrap());
+    response_headers.insert("HX-Redirect", "https://platform.poool.app/marketplace".parse().unwrap());
 
     Ok((response_headers, Html("")).into_response())
 }
@@ -363,7 +363,7 @@ pub async fn totp_setup_submit(
     service::verify_session_2fa(&state.db, session_token).await?;
 
     let mut response_headers = HeaderMap::new();
-    response_headers.insert("HX-Redirect", "/marketplace".parse().unwrap());
+    response_headers.insert("HX-Redirect", "https://platform.poool.app/marketplace".parse().unwrap());
 
     Ok((response_headers, Html("")).into_response())
 }
@@ -530,7 +530,7 @@ pub async fn signup_submit(
         .add(cookie);
 
     let mut response_headers = HeaderMap::new();
-    response_headers.insert("HX-Redirect", "/marketplace".parse().unwrap());
+    response_headers.insert("HX-Redirect", "https://platform.poool.app/marketplace".parse().unwrap());
 
     Ok((jar, response_headers, Html("")).into_response())
 }
@@ -650,7 +650,7 @@ pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoR
 pub async fn google_redirect(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
     // If already logged in, no need to do OAuth
     if middleware::is_authenticated(&jar, &state.db).await {
-        return Redirect::to("/marketplace").into_response();
+        return Redirect::to("https://platform.poool.app/marketplace").into_response();
     }
 
     if !state.config.google_oauth_enabled() {
@@ -760,7 +760,7 @@ pub async fn google_callback(
 
     let jar = jar.add(cookie);
 
-    Ok((jar, Redirect::to("/marketplace")).into_response())
+    Ok((jar, Redirect::to("https://platform.poool.app/marketplace")).into_response())
 }
 
 // ─── Template helpers ──────────────────────────────────────────

@@ -186,13 +186,6 @@ include
                 <div class="refer-input-group">
                   <div class="refer-input-wrapper">
                     <input id="rewards-referral-input" type="text" value="https://app.poool.com/rewards/..." readonly />
-                    <button class="copy-icon-btn">
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#0000FF" stroke-width="1.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="5.33" y="5.33" width="8" height="8" rx="1.33" />
-                        <path d="M4 10.66H2.66A1.33 1.33 0 011.33 9.33V2.66h6.66A1.33 1.33 0 019.33 4" />
-                      </svg>
-                    </button>
                   </div>
                   <button id="rewards-copy-btn" class="ds-btn ds-btn--primary copy-link-btn">
                     Copy link
@@ -237,7 +230,7 @@ include
                           <rect x="3" y="6" width="8" height="6" rx="1.5" />
                           <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
                         </svg>
-                        USD 4,000 to unlock
+                        USD 10,000 to unlock
                       </div>
                     </div>
                     <div class="stepper-body border-top">
@@ -262,7 +255,7 @@ include
                           <rect x="3" y="6" width="8" height="6" rx="1.5" />
                           <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
                         </svg>
-                        USD 10,000 to unlock
+                        USD 50,000 to unlock
                       </div>
                     </div>
                     <div class="stepper-body border-top">
@@ -287,7 +280,7 @@ include
                           <rect x="3" y="6" width="8" height="6" rx="1.5" />
                           <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
                         </svg>
-                        USD 30,000 to unlock
+                        USD 100,000 to unlock
                       </div>
                     </div>
                     <div class="stepper-body border-top">
@@ -313,7 +306,7 @@ include
                           <rect x="3" y="6" width="8" height="6" rx="1.5" />
                           <path d="M4.5 6V4a2.5 2.5 0 115 0v2" />
                         </svg>
-                        USD 100,000 to unlock
+                        USD 250,000 to unlock
                       </div>
                     </div>
                     <div class="stepper-body border-top">
@@ -605,9 +598,16 @@ include
                   </thead>
                   <tbody id="campaign-table-body">
                     <tr class="campaign-empty-row">
-                      <td colspan="6" style="text-align:center; padding:32px 0; color:#98a2b3;">
-                        No campaign data yet. Add <code>?subid=newsletter</code> to your referral link to start
-                        tracking.
+                      <td colspan="6">
+                        <div class="campaign-empty-visual">
+                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d0d5dd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                          </svg>
+                          <p>No campaign data yet.<br>Add <code>?subid=newsletter</code> to your referral link to start tracking.</p>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -723,15 +723,9 @@ include
                     <span class="marketing-asset-name">Story — "Invest Smart"</span>
                     <span class="marketing-asset-meta">1080 × 1920px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn"
+                  <a href="#" class="marketing-download-btn coming-soon"
                     onclick="event.preventDefault(); showMarketingToast('Instagram Story template will be available soon')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
+                    <span class="coming-soon-badge">Coming Soon</span>
                   </a>
                 </div>
                 <div class="marketing-asset-card">
@@ -743,15 +737,9 @@ include
                     <span class="marketing-asset-name">Post — "Property Returns"</span>
                     <span class="marketing-asset-meta">1200 × 630px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn"
+                  <a href="#" class="marketing-download-btn coming-soon"
                     onclick="event.preventDefault(); showMarketingToast('Facebook Post template will be available soon')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
+                    <span class="coming-soon-badge">Coming Soon</span>
                   </a>
                 </div>
                 <div class="marketing-asset-card">
@@ -763,15 +751,9 @@ include
                     <span class="marketing-asset-name">Post — "Join POOOL"</span>
                     <span class="marketing-asset-meta">1600 × 900px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn"
+                  <a href="#" class="marketing-download-btn coming-soon"
                     onclick="event.preventDefault(); showMarketingToast('X/Twitter template will be available soon')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
+                    <span class="coming-soon-badge">Coming Soon</span>
                   </a>
                 </div>
                 <div class="marketing-asset-card">
@@ -783,15 +765,9 @@ include
                     <span class="marketing-asset-name">Post — "Earn Passive Income"</span>
                     <span class="marketing-asset-meta">1200 × 627px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn"
+                  <a href="#" class="marketing-download-btn coming-soon"
                     onclick="event.preventDefault(); showMarketingToast('LinkedIn template will be available soon')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
+                    <span class="coming-soon-badge">Coming Soon</span>
                   </a>
                 </div>
               </div>
@@ -823,15 +799,9 @@ include
                     <span class="marketing-asset-name">Leaderboard Banner</span>
                     <span class="marketing-asset-meta">728 × 90px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn"
+                  <a href="#" class="marketing-download-btn coming-soon"
                     onclick="event.preventDefault(); showMarketingToast('Leaderboard banner will be available soon')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
+                    <span class="coming-soon-badge">Coming Soon</span>
                   </a>
                 </div>
                 <div class="marketing-asset-card">
@@ -846,15 +816,9 @@ include
                     <span class="marketing-asset-name">Medium Rectangle</span>
                     <span class="marketing-asset-meta">300 × 250px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn"
+                  <a href="#" class="marketing-download-btn coming-soon"
                     onclick="event.preventDefault(); showMarketingToast('Medium Rectangle banner will be available soon')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
+                    <span class="coming-soon-badge">Coming Soon</span>
                   </a>
                 </div>
                 <div class="marketing-asset-card">
@@ -869,15 +833,9 @@ include
                     <span class="marketing-asset-name">Skyscraper</span>
                     <span class="marketing-asset-meta">160 × 600px • PNG</span>
                   </div>
-                  <a href="#" class="marketing-download-btn"
+                  <a href="#" class="marketing-download-btn coming-soon"
                     onclick="event.preventDefault(); showMarketingToast('Skyscraper banner will be available soon')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
+                    <span class="coming-soon-badge">Coming Soon</span>
                   </a>
                 </div>
               </div>
@@ -999,15 +957,9 @@ include
                     <span class="marketing-asset-name">"Why POOOL?" — 15s Reel</span>
                     <span class="marketing-asset-meta">1080 × 1920px • MP4</span>
                   </div>
-                  <a href="#" class="marketing-download-btn"
+                  <a href="#" class="marketing-download-btn coming-soon"
                     onclick="event.preventDefault(); showMarketingToast('Video content will be available soon')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
+                    <span class="coming-soon-badge">Coming Soon</span>
                   </a>
                 </div>
                 <div class="marketing-asset-card">
@@ -1022,15 +974,9 @@ include
                     <span class="marketing-asset-name">"How It Works" — 30s</span>
                     <span class="marketing-asset-meta">1920 × 1080px • MP4</span>
                   </div>
-                  <a href="#" class="marketing-download-btn"
+                  <a href="#" class="marketing-download-btn coming-soon"
                     onclick="event.preventDefault(); showMarketingToast('Video content will be available soon')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
+                    <span class="coming-soon-badge">Coming Soon</span>
                   </a>
                 </div>
                 <div class="marketing-asset-card">
@@ -1045,15 +991,9 @@ include
                     <span class="marketing-asset-name">"Investor Testimonial" — 60s</span>
                     <span class="marketing-asset-meta">1920 × 1080px • MP4</span>
                   </div>
-                  <a href="#" class="marketing-download-btn"
+                  <a href="#" class="marketing-download-btn coming-soon"
                     onclick="event.preventDefault(); showMarketingToast('Video content will be available soon')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download
+                    <span class="coming-soon-badge">Coming Soon</span>
                   </a>
                 </div>
               </div>

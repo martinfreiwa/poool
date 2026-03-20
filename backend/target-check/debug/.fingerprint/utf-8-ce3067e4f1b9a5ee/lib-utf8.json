@@ -1,0 +1,1 @@
+{"rustc":10088478398040096810,"features":"[]","declared_features":"[]","target":10206970129552530490,"profile":9871742314594611736,"path":1481450129653940958,"deps":[],"local":[{"CheckDepInfo":{"dep_info":"debug/.fingerprint/utf-8-ce3067e4f1b9a5ee/dep-lib-utf8","checksum":false}}],"rustflags":["-C","link-arg=-fuse-ld=/usr/bin/ld"],"config":8247474407144887393,"compile_kind":0}

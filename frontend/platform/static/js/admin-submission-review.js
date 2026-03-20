@@ -6,6 +6,22 @@
 
 let projectId = null;
 let projectData = null;
+let _unsavedChanges = false;
+
+// ─── Unsaved Changes Protection ──────────────────────────────────────────────
+window.addEventListener("beforeunload", (e) => {
+  if (!_unsavedChanges) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
+
+function _trackTextareaChanges() {
+  document.querySelectorAll("#new-admin-note, #reason-modal-text").forEach((el) => {
+    el.addEventListener("input", () => {
+      _unsavedChanges = el.value.trim().length > 0;
+    });
+  });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -26,6 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
     chk.addEventListener("change", updateApproveButtonState);
   });
 
+  _trackTextareaChanges();
+  _initLightbox();
   loadSubmission(projectId);
 });
 
@@ -90,7 +108,7 @@ function renderSubmission(data) {
 
   // Update breadcrumb title
   const mainTitle = project.project_name || asset.title || "Untitled";
-  document.getElementById("sub-title").innerHTML = `${esc(mainTitle)} <code style="font-family:monospace;font-size:12px;padding:2px 8px;background:var(--admin-border);border-radius:4px;color:var(--admin-text-secondary);font-weight:500;margin-left:8px;vertical-align:middle;">#APP-${(asset.id || project.id || '').substring(0, 6).toUpperCase()}</code>`;
+  document.getElementById("sub-title").innerHTML = `${esc(mainTitle)} <code style="font-family:monospace;font-size:12px;padding:2px 8px;background:var(--admin-border);border-radius:4px;color:var(--admin-text-secondary);font-weight:500;margin-left:8px;vertical-align:middle;">#APP-${esc((asset.id || project.id || '').substring(0, 6).toUpperCase())}</code>`;
   document.title = `Review: ${mainTitle} — POOOL Admin`;
 
   // Status badge in header
@@ -150,6 +168,9 @@ function renderSubmission(data) {
   if (inReviewBtn) {
     inReviewBtn.onclick = () => handleDecision("in_review");
   }
+
+  // RBAC: hide action buttons if user lacks submissions.review permission
+  _applyRbacGuard();
 }
 
 // ─── Developer Card ──────────────────────────────────────────────────────────
@@ -389,23 +410,26 @@ function renderDocuments(docs) {
   const renderedTypes = new Set();
   const catCounts = {};
 
-  const renderDocItem = (d) => `
+  const renderDocItem = (d) => {
+    const docUrl = sanitizeUrl(d.file_url || `/api/documents/${d.id}/download`);
+    return `
     <div class="document-item">
         <div class="document-info">
-            <span class="document-type">${(d.document_type || "").replace(/_/g, " ").toUpperCase()}</span>
+            <span class="document-type">${esc((d.document_type || "").replace(/_/g, " ").toUpperCase())}</span>
             <span class="document-meta">${esc(d.title || "")}${d.file_size_bytes ? " · " + formatFileSize(d.file_size_bytes) : ""}</span>
         </div>
         <div style="display:flex;gap:6px;">
-            <a href="${esc(d.file_url || `/api/documents/${d.id}/download`)}" target="_blank" rel="noopener"
+            <a href="${esc(docUrl)}" target="_blank" rel="noopener"
                class="admin-btn admin-btn--secondary admin-btn--sm">
                📄 View
             </a>
-            <a href="${esc(d.file_url || `/api/documents/${d.id}/download`)}" download
+            <a href="${esc(docUrl)}" download
                class="admin-btn admin-btn--secondary admin-btn--sm">
                ↓
             </a>
         </div>
     </div>`;
+  };
 
   const categorySections = Object.entries(DOC_CATEGORIES)
     .map(([catName, types]) => {
@@ -499,13 +523,15 @@ function _renderImageGrid() {
 
   container.innerHTML = _adminImages.map((img, index) => {
     // normalise the URL — API may use image_url, url, or file_url
-    const url = img.image_url || img.url || img.file_url || "";
+    const url = sanitizeUrl(img.image_url || img.url || img.file_url || "");
+    const escapedId = esc(String(img.id));
     
     // Cover badge
     const coverControls = _adminImageEditMode ? `
         <button
-          onclick="adminSetCover('${esc(img.id)}')"
+          onclick="adminSetCover('${escapedId}')"
           title="${img.is_cover ? 'Current Cover' : 'Set as cover'}"
+          aria-label="${img.is_cover ? 'Current cover image' : 'Set as cover image'}"
           style="position:absolute;top:6px;left:6px;background:${img.is_cover ? 'var(--admin-primary)' : 'rgba(0,0,0,.70)'};border:none;border-radius:6px;padding:3px 7px;cursor:pointer;color:#fff;font-size:10px;font-weight:700;white-space:nowrap;z-index:4;">
           ★ COVER
         </button>
@@ -513,7 +539,7 @@ function _renderImageGrid() {
 
     // The order number
     const orderBadge = `
-        <div style="position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.70);border-radius:4px;padding:2px 6px;color:#fff;font-size:11px;font-weight:700;z-index:3;pointer-events:none;">
+        <div style="position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.70);border-radius:4px;padding:2px 6px;color:#fff;font-size:11px;font-weight:700;z-index:3;pointer-events:none;" aria-hidden="true">
           ${index + 1}
         </div>
     `;
@@ -521,17 +547,18 @@ function _renderImageGrid() {
     // Delete button
     const editControls = _adminImageEditMode ? `
         <button
-          onclick="adminDeleteImage('${esc(img.id)}')"
+          onclick="adminDeleteImage('${escapedId}')"
           title="Delete"
+          aria-label="Delete image ${index + 1}"
           style="position:absolute;top:6px;right:6px;z-index:3;background:rgba(200,30,30,.85);border:none;border-radius:6px;padding:4px 6px;cursor:pointer;display:flex;align-items:center;">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>` : "";
 
     return `
-      <div class="image-item" title="${esc(img.alt_text || "")}" style="position:relative;background:#f1f5f9;${_adminImageEditMode ? 'cursor:grab;' : ''}"
-           ${_adminImageEditMode ? `draggable="true" ondragstart="adminImageDragStart(event, '${img.id}')" ondragover="adminImageDragOver(event)" ondrop="adminImageDrop(event, '${img.id}')" ondragenter="adminImageDragEnter(event)" ondragleave="adminImageDragLeave(event)"` : ''}>
+      <div class="image-item" title="${esc(img.alt_text || '')}" style="position:relative;background:#f1f5f9;${_adminImageEditMode ? 'cursor:grab;' : ''}" role="img" aria-label="Property image ${index + 1}${img.is_cover ? ' (cover)' : ''}"
+           ${_adminImageEditMode ? `draggable="true" ondragstart="adminImageDragStart(event, '${escapedId}')" ondragover="adminImageDragOver(event)" ondrop="adminImageDrop(event, '${escapedId}')" ondragenter="adminImageDragEnter(event)" ondragleave="adminImageDragLeave(event)"` : ''}>
           ${url
-            ? `<img src="${esc(url)}" alt="Property Image"
+            ? `<img src="${esc(url)}" alt="Property Image ${index + 1}" loading="lazy"
                style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';this.onerror=null;" />
                <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:#94a3b8;pointer-events:none;">
@@ -546,12 +573,12 @@ function _renderImageGrid() {
           ${coverControls}
           ${orderBadge}
           ${editControls}
-          ${url && !_adminImageEditMode ? `<a href="${esc(url)}" target="_blank" rel="noopener"
+          ${url && !_adminImageEditMode ? `<div
              style="position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:flex-start;
-                    padding:6px;background:linear-gradient(transparent,rgba(0,0,0,.4));opacity:0;transition:.2s;"
-             class="img-overlay-link">
-             <span style="font-size:10px;color:white;">Open ↗</span>
-          </a>` : ""}
+                    padding:6px;background:linear-gradient(transparent,rgba(0,0,0,.4));opacity:0;transition:.2s;cursor:pointer;"
+             class="img-overlay-link" onclick="openLightbox(${index})" role="button" tabindex="0" aria-label="View full image ${index + 1}">
+             <span style="font-size:10px;color:white;">View Full ↗</span>
+          </div>` : ""}
       </div>`;
   }).join("");
 
@@ -559,6 +586,12 @@ function _renderImageGrid() {
     const link = el.querySelector(".img-overlay-link");
     el.addEventListener("mouseenter", () => { if (link) link.style.opacity = "1"; });
     el.addEventListener("mouseleave", () => { if (link) link.style.opacity = "0"; });
+    // Keyboard support for lightbox
+    if (link) {
+      link.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); link.click(); }
+      });
+    }
   });
 }
 
@@ -789,38 +822,26 @@ async function _adminHandleFiles(files) {
 }
 
 // ─── Milestones ───────────────────────────────────────────────────────────────
-const SAMPLE_MILESTONES = [
-  { month_index: 1, title: "Property Acquisition Complete", description: "Legal transfer of title deed and ownership confirmed.", milestone_date: null, is_completed: true },
-  { month_index: 2, title: "SPV & Legal Structure Established", description: "Special Purpose Vehicle registered, ownership structure confirmed.", milestone_date: null, is_completed: true },
-  { month_index: 3, title: "Token Offering Launch", description: "Tokens listed on POOOL marketplace, funding round opens to investors.", milestone_date: null, is_completed: false },
-  { month_index: 6, title: "Funding Target Reached", description: "100% of tokens sold, funding round closed.", milestone_date: null, is_completed: false },
-  { month_index: 9, title: "First Rental Distribution", description: "First quarterly dividend distributed to all token holders.", milestone_date: null, is_completed: false },
-  { month_index: 24, title: "Performance Review & Revaluation", description: "Independent appraisal conducted, token value updated.", milestone_date: null, is_completed: false },
-];
-
 function renderMilestones(milestones) {
   const container = document.getElementById("milestones-container");
   if (!container) return;
 
-  const rows = (milestones && milestones.length > 0) ? milestones : SAMPLE_MILESTONES;
-  const isSample = !milestones || milestones.length === 0;
-
-  if (isSample) {
-    // Add a note above the table via a sibling element
-    const card = container.closest(".review-card");
-    const existingNote = card?.querySelector(".sample-milestone-note");
-    if (card && !existingNote) {
-      const note = document.createElement("div");
-      note.className = "sample-milestone-note";
-      note.style.cssText = "padding:10px 28px;background:rgba(245,158,11,.07);border-bottom:1px solid rgba(245,158,11,.2);font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px;";
-      note.innerHTML = `<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='10'/><path d='M12 8v4M12 16h.01'/></svg>
-        No milestones submitted yet — showing a sample roadmap template.`;
-      const header = card.querySelector(".review-card-header");
-      if (header) header.insertAdjacentElement("afterend", note);
-    }
+  if (!milestones || milestones.length === 0) {
+    container.innerHTML = `<tr><td colspan="4" style="padding:32px;text-align:center;">
+      <div style="color:var(--admin-text-muted);font-size:13px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+             style="display:block;margin:0 auto 8px;opacity:.5;">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        No milestones submitted by the developer yet.
+      </div>
+    </td></tr>`;
+    return;
   }
 
-  container.innerHTML = rows
+  container.innerHTML = milestones
     .map(
       (m) => `
         <tr>
@@ -882,14 +903,17 @@ function openReasonModal(action) {
   document.getElementById("reason-modal-title").textContent = titles[action] || action;
   document.getElementById("reason-modal-subtitle").textContent = subtitles[action] || "";
   document.getElementById("reason-modal-text").value = "";
-  document.getElementById("reason-modal").style.display = "flex";
+  const modal = document.getElementById("reason-modal");
+  if (modal.showModal) modal.showModal(); else modal.style.display = "flex";
   setTimeout(() => document.getElementById("reason-modal-text").focus(), 50);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const reasonModal = document.getElementById("reason-modal");
   document.getElementById("reason-modal-cancel")?.addEventListener("click", () => {
-    document.getElementById("reason-modal").style.display = "none";
+    if (reasonModal?.close) reasonModal.close(); else reasonModal.style.display = "none";
     _pendingAction = null;
+    _unsavedChanges = false;
   });
   document.getElementById("reason-modal-confirm")?.addEventListener("click", () => {
     const reason = document.getElementById("reason-modal-text").value.trim();
@@ -898,9 +922,17 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("reason-modal-text").focus();
       return;
     }
-    document.getElementById("reason-modal").style.display = "none";
+    if (reasonModal?.close) reasonModal.close(); else reasonModal.style.display = "none";
+    _unsavedChanges = false;
     submitDecision(_pendingAction, reason);
     _pendingAction = null;
+  });
+  // Allow Escape key to close modal
+  reasonModal?.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      document.getElementById("reason-modal-cancel")?.click();
+    }
   });
   document.getElementById("btn-add-note")?.addEventListener("click", addNote);
 });
@@ -938,6 +970,7 @@ async function submitDecision(action, notes) {
         in_review: "✓ Project marked as In Review. Developer has been notified.",
       };
       showToast(msgs[action] || "Action completed.", "success");
+      _unsavedChanges = false;
       setTimeout(() => { window.location.href = "/admin/developer-submissions"; }, 1500);
     } else {
       let errorMessage = "Unknown server error";
@@ -1098,6 +1131,7 @@ async function addNote() {
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Failed");
     if (textarea) { textarea.value = ""; textarea.style.borderColor = ""; }
+    _unsavedChanges = false;
     showToast("Note added.", "success");
     await loadNotes();
   } catch (e) {
@@ -1119,7 +1153,7 @@ function getProjectStatusBadge(status) {
     rejected: ["admin-badge--danger", "Rejected"],
     live: ["admin-badge--success", "Live"],
   };
-  const [cls, label] = map[status] || ["admin-badge--neutral", status];
+  const [cls, label] = map[status] || ["admin-badge--neutral", esc(status)];
   return `<span class="admin-badge ${cls}">${label}</span>`;
 }
 
@@ -1155,15 +1189,159 @@ function formatLabel(str) {
   return str.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/**
+ * Escape HTML for safe insertion.
+ * Properly handles both element content AND attribute contexts.
+ */
 function esc(str) {
-  if (typeof str !== "string") return str || "";
-  const d = document.createElement("div");
-  d.textContent = str;
-  return d.innerHTML;
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Sanitize a URL — only allow http:, https:, and relative paths.
+ * Prevents javascript: and data: URI injection.
+ */
+function sanitizeUrl(url) {
+  if (!url || typeof url !== "string") return "";
+  const trimmed = url.trim();
+  // Relative URLs are safe
+  if (trimmed.startsWith("/")) return trimmed;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return trimmed;
+  } catch (_) { /* invalid URL */ }
+  return "";
 }
 
 function showToast(message, type = "info") {
   if(window.showPooolToast) {
     window.showPooolToast(null, message, type);
   }
+}
+
+// ─── RBAC Guard for Action Buttons ────────────────────────────────────────────
+function _applyRbacGuard() {
+  function _doGuard() {
+    const perms = window.adminPermissions;
+    if (!perms || !perms.loaded) return;
+
+    const canReview = perms.has("submissions.review");
+    const actionBtns = ["btn-approve", "btn-reject", "btn-revise", "btn-in-review"];
+
+    if (!canReview) {
+      actionBtns.forEach((id) => {
+        const btn = document.getElementById(id);
+        if (btn) {
+          btn.disabled = true;
+          btn.style.opacity = "0.4";
+          btn.style.cursor = "not-allowed";
+          btn.title = "You do not have the 'submissions.review' permission to perform this action.";
+          btn.onclick = (e) => { e.preventDefault(); showToast("Insufficient permissions", "error"); };
+        }
+      });
+      // Add a visible note
+      const decisionCard = document.querySelector(".decision-card");
+      if (decisionCard && !decisionCard.querySelector(".rbac-notice")) {
+        const notice = document.createElement("div");
+        notice.className = "rbac-notice";
+        notice.style.cssText = "margin-bottom:12px;padding:10px 14px;border-radius:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);font-size:12px;color:var(--admin-text-primary);display:flex;align-items:center;gap:8px;";
+        notice.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Read-only access. Contact a super_admin to request review permissions.</span>`;
+        decisionCard.prepend(notice);
+      }
+    }
+  }
+
+  if (window.adminPermissions?.loaded) {
+    _doGuard();
+  } else {
+    document.addEventListener("admin:permissions-loaded", _doGuard, { once: true });
+  }
+}
+
+// ─── Full-Screen Image Lightbox ───────────────────────────────────────────────
+let _lightboxIndex = 0;
+
+function _initLightbox() {
+  // Inject lightbox element if not present
+  if (document.getElementById("img-lightbox")) return;
+  const lb = document.createElement("div");
+  lb.id = "img-lightbox";
+  lb.setAttribute("role", "dialog");
+  lb.setAttribute("aria-label", "Image gallery viewer");
+  lb.style.cssText = `
+    display:none;position:fixed;inset:0;z-index:3000;
+    background:rgba(0,0,0,.92);backdrop-filter:blur(8px);
+    align-items:center;justify-content:center;flex-direction:column;
+  `;
+  lb.innerHTML = `
+    <button id="lb-close" aria-label="Close lightbox" style="position:absolute;top:16px;right:16px;z-index:3001;
+      background:rgba(255,255,255,.15);border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;transition:background .2s;" onmouseenter="this.style.background='rgba(255,255,255,.3)'" onmouseleave="this.style.background='rgba(255,255,255,.15)'">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <button id="lb-prev" aria-label="Previous image" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);z-index:3001;
+      background:rgba(255,255,255,.15);border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;transition:background .2s;" onmouseenter="this.style.background='rgba(255,255,255,.3)'" onmouseleave="this.style.background='rgba(255,255,255,.15)'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button id="lb-next" aria-label="Next image" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);z-index:3001;
+      background:rgba(255,255,255,.15);border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;transition:background .2s;" onmouseenter="this.style.background='rgba(255,255,255,.3)'" onmouseleave="this.style.background='rgba(255,255,255,.15)'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <img id="lb-img" src="" alt="Full-size property image" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5);" />
+    <div id="lb-counter" style="margin-top:12px;font-size:13px;color:rgba(255,255,255,.6);" aria-live="polite"></div>
+  `;
+  document.body.appendChild(lb);
+
+  document.getElementById("lb-close").addEventListener("click", closeLightbox);
+  document.getElementById("lb-prev").addEventListener("click", () => navigateLightbox(-1));
+  document.getElementById("lb-next").addEventListener("click", () => navigateLightbox(1));
+  lb.addEventListener("click", (e) => { if (e.target === lb) closeLightbox(); });
+  lb.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeLightbox();
+    if (e.key === "ArrowLeft") navigateLightbox(-1);
+    if (e.key === "ArrowRight") navigateLightbox(1);
+  });
+}
+
+function openLightbox(index) {
+  _lightboxIndex = index;
+  const lb = document.getElementById("img-lightbox");
+  if (!lb) return;
+  lb.style.display = "flex";
+  lb.focus();
+  lb.setAttribute("tabindex", "-1");
+  lb.focus();
+  _updateLightboxImage();
+  document.body.style.overflow = "hidden";
+}
+
+function closeLightbox() {
+  const lb = document.getElementById("img-lightbox");
+  if (lb) lb.style.display = "none";
+  document.body.style.overflow = "";
+}
+
+function navigateLightbox(dir) {
+  if (!_adminImages.length) return;
+  _lightboxIndex = (_lightboxIndex + dir + _adminImages.length) % _adminImages.length;
+  _updateLightboxImage();
+}
+
+function _updateLightboxImage() {
+  const img = _adminImages[_lightboxIndex];
+  if (!img) return;
+  const url = sanitizeUrl(img.image_url || img.url || img.file_url || "");
+  const imgEl = document.getElementById("lb-img");
+  const counter = document.getElementById("lb-counter");
+  if (imgEl) imgEl.src = url;
+  if (counter) counter.textContent = `${_lightboxIndex + 1} / ${_adminImages.length}`;
 }

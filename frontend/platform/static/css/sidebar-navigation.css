@@ -218,19 +218,27 @@
   gap: 8px;
   width: 224px;
   height: 36px;
-  background: #ffffff;
+  background: rgba(3, 255, 136, 0);
   border-radius: 6px;
   flex: none;
   order: 0;
   flex-grow: 1;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease, filter 0.15s ease;
   text-decoration: none;
   position: relative;
 }
 
 .nav-item-content:hover {
-  background: #f5f5f6;
+  background: rgba(3, 255, 136, 0.15);
+}
+
+.nav-item:hover .nav-icon {
+  filter: brightness(0) saturate(100%) invert(11%) sepia(97%) saturate(7484%) hue-rotate(247deg) brightness(94%) contrast(148%);
+}
+
+.nav-item:hover .nav-text {
+  color: var(--brand-dark-blue);
 }
 
 /* Active State */

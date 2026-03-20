@@ -1,7 +1,9 @@
 /**
  * Admin Dashboard JS — Loads KPI data from the API and populates the dashboard.
- * Uses HTMX polling pattern for real-time updates.
+ * Uses Page Visibility API to avoid polling in background tabs.
  */
+
+let _statsTimer, _healthTimer;
 
 document.addEventListener("DOMContentLoaded", () => {
   // Set current date
@@ -33,12 +35,29 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Refresh every 30 seconds
-  setInterval(loadDashboardStats, 30000);
-
-  // Refresh system health every 60 seconds
-  setInterval(loadSystemHealth, 60000);
+  // Start polling with Visibility API — stop when tab is hidden
+  startDashboardPolling();
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stopDashboardPolling();
+    } else {
+      loadDashboardStats();
+      loadSystemHealth();
+      startDashboardPolling();
+    }
+  });
 });
+
+function startDashboardPolling() {
+  stopDashboardPolling();
+  _statsTimer = setInterval(loadDashboardStats, 30000);
+  _healthTimer = setInterval(loadSystemHealth, 60000);
+}
+
+function stopDashboardPolling() {
+  clearInterval(_statsTimer);
+  clearInterval(_healthTimer);
+}
 
 /**
  * Fetch dashboard stats from backend and populate KPI cards.
@@ -50,17 +69,15 @@ async function loadDashboardStats() {
     if (resp.ok) {
       const data = await resp.json();
       populateKPIs(data);
-    } else {
-      console.error('Dashboard stats API error:', resp.status);
     }
   } catch (e) {
-    console.error('Dashboard stats fetch failed:', e);
     if (window.Sentry) Sentry.captureException(e);
   }
 }
 
 /**
  * Populate KPI card elements with data.
+ * All user-controlled values are escaped via escapeHtml() to prevent XSS.
  */
 function populateKPIs(data) {
   const label = data.range_label || "last 30 days";
@@ -84,7 +101,7 @@ function populateKPIs(data) {
   setTextById("badge-deposits", String(data.pending_deposits));
   setTextById("badge-support", String(data.open_tickets));
 
-  // Render Recent Activity
+  // Render Recent Activity (escape all user-controlled fields)
   const activityFeed = document.getElementById("activity-feed");
   if (activityFeed && data.recent_activity) {
     if (data.recent_activity.length === 0) {
@@ -95,10 +112,10 @@ function populateKPIs(data) {
         .map(
           (act) => `
                 <div class="admin-activity-item">
-                    <div class="admin-activity-dot admin-activity-dot--${getActivityType(act.action)}"></div>
+                    <div class="admin-activity-dot admin-activity-dot--${escapeHtml(getActivityType(act.action))}"></div>
                     <div class="admin-activity-content">
-                        <div class="admin-activity-text"><strong>${formatAction(act.action)}</strong> — ${act.entity_type} ID: ${act.entity_id || "N/A"}</div>
-                        <div class="admin-activity-time">${fmtRelativeTime(act.created_at)}</div>
+                        <div class="admin-activity-text"><strong>${escapeHtml(formatAction(act.action))}</strong> — ${escapeHtml(act.entity_type)} ID: ${escapeHtml(act.entity_id || "N/A")}</div>
+                        <div class="admin-activity-time">${escapeHtml(fmtRelativeTime(act.created_at))}</div>
                     </div>
                 </div>
             `,
@@ -107,7 +124,7 @@ function populateKPIs(data) {
     }
   }
 
-  // Render Recent Orders
+  // Render Recent Orders (escape all user-controlled fields)
   const ordersTable = document.getElementById("recent-orders-table");
   if (ordersTable && data.recent_orders) {
     if (data.recent_orders.length === 0) {
@@ -118,10 +135,10 @@ function populateKPIs(data) {
         .map(
           (o) => `
                 <tr>
-                    <td><a href="/admin/orders.html?id=${o.order_number}" class="admin-link">${o.order_number}</a></td>
-                    <td><div class="admin-user-inline"><span class="admin-user-inline-name">${o.user_email}</span></div></td>
-                    <td>${formatUSD(o.total_cents)}</td>
-                    <td><span class="admin-badge admin-badge--${getStatusClass(o.status)}"><span class="admin-badge-dot"></span>${o.status}</span></td>
+                    <td><a href="/admin/orders.html?id=${encodeURIComponent(o.order_number)}" class="admin-link">${escapeHtml(o.order_number)}</a></td>
+                    <td><div class="admin-user-inline"><span class="admin-user-inline-name">${escapeHtml(o.user_email)}</span></div></td>
+                    <td>${escapeHtml(formatUSD(o.total_cents))}</td>
+                    <td><span class="admin-badge admin-badge--${getStatusClass(o.status)}"><span class="admin-badge-dot"></span>${escapeHtml(o.status)}</span></td>
                 </tr>
             `,
         )
@@ -129,7 +146,7 @@ function populateKPIs(data) {
     }
   }
 
-  // Render Pending Deposits
+  // Render Pending Deposits (escape all user-controlled fields)
   const depositsTable = document.getElementById("pending-deposits-table");
   if (depositsTable && data.pending_deposits_list) {
     if (data.pending_deposits_list.length === 0) {
@@ -140,9 +157,9 @@ function populateKPIs(data) {
         .map(
           (d) => `
                 <tr>
-                    <td><div class="admin-user-inline"><span class="admin-user-inline-name">${d.user_email}</span></div></td>
-                    <td>${formatUSD(d.amount_cents)}</td>
-                    <td><span class="admin-badge admin-badge--neutral">${d.provider}</span></td>
+                    <td><div class="admin-user-inline"><span class="admin-user-inline-name">${escapeHtml(d.user_email)}</span></div></td>
+                    <td>${escapeHtml(formatUSD(d.amount_cents))}</td>
+                    <td><span class="admin-badge admin-badge--neutral">${escapeHtml(d.provider)}</span></td>
                     <td><a href="/admin/deposits.html" class="admin-btn admin-btn--primary admin-btn--sm">Review</a></td>
                 </tr>
             `,
@@ -208,11 +225,11 @@ function formatAction(action) {
 }
 
 function getStatusClass(status) {
-  status = status.toLowerCase();
-  if (status === "completed" || status === "paid" || status === "success")
-    return "success";
-  if (status === "pending" || status === "processing") return "warning";
-  if (status === "failed" || status === "cancelled") return "danger";
+  // Only allow known CSS class suffixes — never inject raw user data
+  const s = String(status).toLowerCase();
+  if (s === "completed" || s === "paid" || s === "success") return "success";
+  if (s === "pending" || s === "processing") return "warning";
+  if (s === "failed" || s === "cancelled") return "danger";
   return "neutral";
 }
 
@@ -224,34 +241,6 @@ function fmtRelativeTime(iso) {
   if (secs < 3600) return Math.floor(secs / 60) + "m ago";
   if (secs < 86400) return Math.floor(secs / 3600) + "h ago";
   return d.toLocaleDateString();
-}
-
-/**
- * Format cents to USD display string (e.g. 485000000 → "$4.85M")
- */
-function formatUSD(cents) {
-  const dollars = cents / 100;
-  if (dollars >= 1000000) {
-    return `$${(dollars / 1000000).toFixed(2)}M`;
-  } else if (dollars >= 1000) {
-    return `$${(dollars / 1000).toFixed(1)}K`;
-  }
-  return `$${dollars.toFixed(2)}`;
-}
-
-/**
- * Format numbers with comma separators
- */
-function formatNumber(num) {
-  return num.toLocaleString("en-US");
-}
-
-/**
- * Safe text setter
- */
-function setTextById(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
 }
 
 /**

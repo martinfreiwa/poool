@@ -5,6 +5,8 @@
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>@view-transition { navigation: auto; }</style>
+    <script src="/static/js/view-transitions.js" defer></script>
     <title>Review Change Request — Admin | POOOL</title>
     <link rel="stylesheet" href="/static/css/admin.css">
     <link rel="stylesheet" href="/static/css/fonts.css">
@@ -43,6 +45,22 @@
         .request-info-item { font-size: 13px; }
         .request-info-label { color: var(--admin-text-muted, #888); margin-bottom: 4px; }
         .request-info-value { font-weight: 600; color: var(--admin-text, #111); }
+
+        /* Skeleton loader to prevent CLS */
+        .review-skeleton { animation: review-skeleton-pulse 1.5s ease-in-out infinite; }
+        @keyframes review-skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .skeleton-bar { background: var(--admin-border, #e5e7eb); border-radius: 6px; }
+        .skeleton-bar--sm { height: 14px; width: 60%; }
+        .skeleton-bar--md { height: 18px; width: 80%; }
+        .skeleton-bar--lg { height: 24px; width: 45%; }
+        .skeleton-bar--full { height: 14px; width: 100%; }
+        .skeleton-row { display: flex; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--admin-border, #e5e7eb); }
+        .skeleton-row > div { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+        /* Keyboard shortcut hints */
+        .kbd-hint { font-size: 11px; color: var(--admin-text-muted, #888); margin-top: 12px; text-align: center; }
+        .kbd-hint kbd { background: var(--admin-border, #e5e7eb); border-radius: 4px; padding: 2px 6px;
+            font-size: 11px; font-family: inherit; border: 1px solid #d1d5db; }
     </style>
 </head>
 <body class="admin-body dom-ready">
@@ -53,12 +71,12 @@
             <!-- Header -->
             <header class="admin-topbar">
                 <div class="admin-topbar-left">
-                    <nav class="admin-breadcrumbs">
+                    <nav class="admin-breadcrumbs" aria-label="Breadcrumb">
                         <a href="/admin/">Admin</a>
-                        <span class="separator">›</span>
+                        <span class="separator" aria-hidden="true">›</span>
                         <a href="/admin/asset-change-requests.html">Asset Change Requests</a>
-                        <span class="separator">›</span>
-                        <span class="current">Review</span>
+                        <span class="separator" aria-hidden="true">›</span>
+                        <span class="current" aria-current="page">Review</span>
                     </nav>
                 </div>
             </header>
@@ -71,8 +89,52 @@
                     </div>
                 </div>
 
-                <!-- Loading -->
-                <div id="loading-state" style="text-align:center; padding:60px; color: var(--admin-text-muted, #888);">Loading...</div>
+                <!-- Loading skeleton (accessible) -->
+                <div id="loading-state" role="status" aria-live="polite" aria-label="Loading change request data">
+                    <div class="review-skeleton">
+                        <!-- Info skeleton -->
+                        <div class="admin-card" style="margin-bottom: 24px;">
+                            <div class="admin-card-body">
+                                <div class="request-info">
+                                    <div class="request-info-item"><div class="skeleton-bar skeleton-bar--sm" style="margin-bottom:8px;"></div><div class="skeleton-bar skeleton-bar--md"></div></div>
+                                    <div class="request-info-item"><div class="skeleton-bar skeleton-bar--sm" style="margin-bottom:8px;"></div><div class="skeleton-bar skeleton-bar--md"></div></div>
+                                    <div class="request-info-item"><div class="skeleton-bar skeleton-bar--sm" style="margin-bottom:8px;"></div><div class="skeleton-bar skeleton-bar--md"></div></div>
+                                    <div class="request-info-item"><div class="skeleton-bar skeleton-bar--sm" style="margin-bottom:8px;"></div><div class="skeleton-bar skeleton-bar--md"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Diff skeleton -->
+                        <div class="review-layout">
+                            <div class="admin-card" style="padding: 0; overflow: hidden;">
+                                <div style="padding: 16px 24px; border-bottom: 1px solid var(--admin-border, #e5e7eb);">
+                                    <div class="skeleton-bar skeleton-bar--lg" style="margin-bottom:8px;"></div>
+                                    <div class="skeleton-bar skeleton-bar--sm"></div>
+                                </div>
+                                <div class="skeleton-row"><div><div class="skeleton-bar skeleton-bar--sm"></div></div><div><div class="skeleton-bar skeleton-bar--full"></div></div><div><div class="skeleton-bar skeleton-bar--full"></div></div></div>
+                                <div class="skeleton-row"><div><div class="skeleton-bar skeleton-bar--sm"></div></div><div><div class="skeleton-bar skeleton-bar--full"></div></div><div><div class="skeleton-bar skeleton-bar--full"></div></div></div>
+                                <div class="skeleton-row"><div><div class="skeleton-bar skeleton-bar--sm"></div></div><div><div class="skeleton-bar skeleton-bar--full"></div></div><div><div class="skeleton-bar skeleton-bar--full"></div></div></div>
+                                <div class="skeleton-row"><div><div class="skeleton-bar skeleton-bar--sm"></div></div><div><div class="skeleton-bar skeleton-bar--full"></div></div><div><div class="skeleton-bar skeleton-bar--full"></div></div></div>
+                            </div>
+                            <div class="review-sidebar">
+                                <div class="decision-card">
+                                    <div class="skeleton-bar skeleton-bar--lg" style="margin-bottom:16px;"></div>
+                                    <div class="skeleton-bar" style="height:100px; width:100%; margin-bottom:16px;"></div>
+                                    <div style="display:flex;gap:12px;">
+                                        <div class="skeleton-bar" style="height:40px; flex:1;"></div>
+                                        <div class="skeleton-bar" style="height:40px; flex:1;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="sr-only">Loading change request data, please wait…</span>
+                </div>
+
+                <!-- Error state (hidden until error) -->
+                <div id="error-state" style="display:none; text-align:center; padding:60px;" role="alert" aria-live="assertive">
+                    <div id="error-message" style="color: var(--admin-danger, #ef4444); font-weight: 600; margin-bottom: 12px;"></div>
+                    <a href="/admin/asset-change-requests.html" style="color: var(--admin-primary, #3b82f6);">← Back to list</a>
+                </div>
 
                 <!-- Content (hidden until loaded) -->
                 <div id="review-content" style="display:none;">
@@ -92,12 +154,12 @@
                                     Side-by-side comparison of current and proposed values
                                 </p>
                             </div>
-                            <table class="diff-table" id="diff-table">
+                            <table class="diff-table" id="diff-table" aria-label="Asset changes comparison">
                                 <thead>
                                     <tr>
-                                        <th style="width:25%;">Field</th>
-                                        <th style="width:37.5%;">Current Value</th>
-                                        <th style="width:37.5%;">Proposed Value</th>
+                                        <th scope="col" style="width:25%;">Field</th>
+                                        <th scope="col" style="width:37.5%;">Current Value</th>
+                                        <th scope="col" style="width:37.5%;">Proposed Value</th>
                                     </tr>
                                 </thead>
                                 <tbody id="diff-body"></tbody>
@@ -107,18 +169,21 @@
                         <!-- Right: Decision Sidebar -->
                         <div class="review-sidebar" id="decision-sidebar">
                             <div class="decision-card">
-                                <h3>Review Decision</h3>
-                                <label style="display:block; font-size:13px; color: var(--admin-text-secondary, #6b7280); margin-bottom:8px;">
+                                <h3 id="decision-heading">Review Decision</h3>
+                                <label for="admin-notes" style="display:block; font-size:13px; color: var(--admin-text-secondary, #6b7280); margin-bottom:8px;">
                                     Internal Notes (optional)
                                 </label>
-                                <textarea class="decision-textarea" id="admin-notes" placeholder="Add notes about your decision..."></textarea>
+                                <textarea class="decision-textarea" id="admin-notes" placeholder="Add notes about your decision..." aria-describedby="decision-heading"></textarea>
                                 <div class="decision-actions" id="decision-actions">
-                                    <button class="admin-btn admin-btn--success" id="btn-approve" onclick="approveRequest()">
-                                        ✓ Approve & Apply
+                                    <button class="admin-btn admin-btn--success" id="btn-approve" type="button">
+                                        ✓ Approve &amp; Apply
                                     </button>
-                                    <button class="admin-btn admin-btn--danger" id="btn-reject" onclick="rejectRequest()">
+                                    <button class="admin-btn admin-btn--danger" id="btn-reject" type="button">
                                         ✕ Reject
                                     </button>
+                                </div>
+                                <div class="kbd-hint" id="kbd-hint">
+                                    <kbd>⌘</kbd> + <kbd>Enter</kbd> approve · <kbd>⌘</kbd> + <kbd>⌫</kbd> reject
                                 </div>
                             </div>
                         </div>
@@ -129,6 +194,8 @@
     </div>
 
     <script src="/static/js/csrf.js"></script>
+    <script src="/static/js/toast.js"></script>
+    <script src="/static/js/poool-confirm.js"></script>
     <script src="/static/js/admin-sidebar-loader.js"></script>
     <script src="/static/js/admin-change-review.js"></script>
 </body>

@@ -6,18 +6,22 @@
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <style>@view-transition { navigation: auto; }</style>
+    <script defer src="/static/js/view-transitions.js"></script>
   <title>Treasury Overview | Admin | POOOL</title>
   <meta name="description" content="POOOL Admin — Platform treasury, wallet aggregates, and financial overview." />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
-  <script src="/static/js/user-data.js"></script>
+  <script defer src="/static/js/vendor/htmx-1.9.10.min.js"></script>
+  <script defer src="/static/js/vendor/alpine-3.14.9.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.2" />
+  <script defer src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
-  <script src="/static/js/poool-dropdown.js"></script>
-  <script src="/static/js/poool-dropdown-init.js"></script>
-  <script src="/static/js/admin-theme.js"></script>
-  <script src="/static/js/admin-permission-guard.js"></script>
-  <script src="/static/js/admin-global-search.js"></script>
+  <script defer src="/static/js/poool-dropdown.js"></script>
+  <script defer src="/static/js/poool-dropdown-init.js"></script>
+  <script defer src="/static/js/admin-theme.js"></script>
+  <script defer src="/static/js/admin-permission-guard.js"></script>
+  <script defer src="/static/js/admin-global-search.js"></script>
+  <script defer src="/static/js/admin-utils.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
 </head>
@@ -43,8 +47,8 @@
               <circle cx="11" cy="11" r="6" />
               <path d="M21 21l-4.35-4.35" />
             </svg>
-            <input type="text" placeholder="Global search (users, assets, orders)…" id="admin-global-search"
-              aria-label="Global Search" />
+            <input type="text" placeholder="Search transactions locally..." id="treasury-local-search"
+              aria-label="Local Search" />
           </div>
         </div>
       </header>
@@ -62,11 +66,13 @@
               Treasury &amp; Financial Overview
             </h1>
             <p class="admin-page-subtitle">
-              Platform-wide wallet balances, transaction volumes, and
-              financial health metrics
+              Platform-wide wallet balances, transaction volumes, and financial health metrics
             </p>
           </div>
-          <div>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <input type="date" id="tx-start-date" class="admin-input admin-input--sm" placeholder="Start Date" aria-label="Start Date" />
+            <span style="color: var(--admin-text-muted)">to</span>
+            <input type="date" id="tx-end-date" class="admin-input admin-input--sm" placeholder="End Date" aria-label="End Date" />
             <button class="admin-btn admin-btn--secondary" onclick="exportTreasuryCSV()">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
                 <path d="M8 2v9M4 8l4 4 4-4" />
@@ -98,7 +104,7 @@
           </div>
           <div class="admin-kpi-card" style="padding: 18px">
             <div class="admin-kpi-header" style="margin-bottom: 6px">
-              <span class="admin-kpi-label">Total Deposits</span>
+              <span class="admin-kpi-label">Filtered Deposits</span>
               <div class="admin-kpi-icon">
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
@@ -114,7 +120,7 @@
           </div>
           <div class="admin-kpi-card" style="padding: 18px">
             <div class="admin-kpi-header" style="margin-bottom: 6px">
-              <span class="admin-kpi-label">Total Withdrawals</span>
+              <span class="admin-kpi-label">Filtered Withdrawals</span>
               <div class="admin-kpi-icon">
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
@@ -130,7 +136,7 @@
           </div>
           <div class="admin-kpi-card" style="padding: 18px">
             <div class="admin-kpi-header" style="margin-bottom: 6px">
-              <span class="admin-kpi-label">Net Revenue</span>
+              <span class="admin-kpi-label">Filtered Net Revenue</span>
               <div class="admin-kpi-icon">
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
@@ -220,12 +226,22 @@
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th data-sort="user_name">User</th>
-                  <th data-sort="type">Type</th>
-                  <th data-sort="amount_cents">Amount</th>
-                  <th data-sort="status">Status</th>
+                  <th aria-sort="none">
+                    <button type="button" class="admin-sort-btn" data-sort="user_name" style="background: none; border: none; font: inherit; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0;">User</button>
+                  </th>
+                  <th aria-sort="none">
+                    <button type="button" class="admin-sort-btn" data-sort="type" style="background: none; border: none; font: inherit; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0;">Type</button>
+                  </th>
+                  <th aria-sort="none">
+                    <button type="button" class="admin-sort-btn" data-sort="amount_cents" style="background: none; border: none; font: inherit; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0;">Amount</button>
+                  </th>
+                  <th aria-sort="none">
+                    <button type="button" class="admin-sort-btn" data-sort="status" style="background: none; border: none; font: inherit; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0;">Status</button>
+                  </th>
                   <th>Description</th>
-                  <th data-sort="created_at">Date</th>
+                  <th aria-sort="descending" id="date-sort-th">
+                    <button type="button" class="admin-sort-btn" data-sort="created_at" style="background: none; border: none; font: inherit; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0;">Date</button>
+                  </th>
                 </tr>
               </thead>
               <tbody id="tx-table-body">
@@ -258,12 +274,12 @@
                 margin-top: 16px;
                 padding: 16px 20px;
               ">
-            <span style="font-size: 13px; color: var(--admin-text-muted)" id="pagination-info">Page 1 of 1</span>
+            <span style="font-size: 13px; color: var(--admin-text-muted)" id="pagination-info" aria-live="polite">Page 1 of 1</span>
             <div style="display: flex; gap: 6px">
-              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="prev-page" disabled>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="prev-page" disabled aria-label="Previous Page">
                 ← Previous
               </button>
-              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="next-page">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="next-page" aria-label="Next Page">
                 Next →
               </button>
             </div>
@@ -272,6 +288,8 @@
       </div>
     </main>
   </div>
+
+  <div id="admin-toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
   <script src="/static/js/admin-treasury.js"></script>
 </body>

@@ -1,0 +1,1 @@
+{"rustc":10088478398040096810,"features":"[]","declared_features":"[]","target":14715273618483865717,"profile":9871742314594611736,"path":2317324006236202469,"deps":[],"local":[{"CheckDepInfo":{"dep_info":"debug/.fingerprint/maplit-d47cbd938a05a325/dep-lib-maplit","checksum":false}}],"rustflags":["-C","link-arg=-fuse-ld=/usr/bin/ld"],"config":8247474407144887393,"compile_kind":0}

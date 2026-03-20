@@ -6,17 +6,22 @@
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <style>@view-transition { navigation: auto; }</style>
+    <script src="/static/js/view-transitions.js" defer></script>
   <title>Rewards & Referrals | Admin | POOOL</title>
   <meta name="description" content="POOOL Admin — Manage reward tiers, user balances, and referral programme." />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
-  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/vendor/htmx-1.9.10.min.js" defer></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.2" />
+  <script src="/static/js/user-data.js" defer></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
-  <script src="/static/js/poool-dropdown.js"></script>
-  <script src="/static/js/poool-dropdown-init.js"></script>
-  <script src="/static/js/admin-theme.js"></script>
-  <script src="/static/js/admin-permission-guard.js"></script>
-  <script src="/static/js/admin-global-search.js"></script>
+  <script src="/static/js/poool-dropdown.js" defer></script>
+  <script src="/static/js/poool-dropdown-init.js" defer></script>
+  <script src="/static/js/admin-theme.js" defer></script>
+  <script src="/static/js/admin-permission-guard.js" defer></script>
+  <script src="/static/js/admin-global-search.js" defer></script>
+  <script src="/static/js/toast.js" defer></script>
+  <script src="/static/js/admin-utils.js" defer></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
 </head>
@@ -93,21 +98,21 @@
               margin-bottom: 20px;
               display: flex;
               gap: 0;
-            ">
-          <button class="admin-tab active" id="tab-tiers" onclick="switchTab('tiers')">
+            " role="tablist">
+          <button class="admin-tab active" id="tab-tiers" onclick="switchTab('tiers')" role="tab" aria-selected="true" aria-controls="panel-tiers">
             <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
               <path d="M10 2l2.4 4.8L18 7.6l-4 3.9.9 5.5L10 14.6 5.1 17l.9-5.5-4-3.9 5.6-.8L10 2z" />
             </svg>
             Tier Configuration
           </button>
-          <button class="admin-tab" id="tab-user-tiers" onclick="switchTab('user-tiers')">
+          <button class="admin-tab" id="tab-user-tiers" onclick="switchTab('user-tiers')" role="tab" aria-selected="false" aria-controls="panel-user-tiers">
             <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
               <path d="M14 17v-1.5A3.5 3.5 0 0010.5 12h-4A3.5 3.5 0 003 15.5V17" />
               <circle cx="8.5" cy="6.5" r="3.5" />
             </svg>
             User Tiers
           </button>
-          <button class="admin-tab" id="tab-balances" onclick="switchTab('balances')">
+          <button class="admin-tab" id="tab-balances" onclick="switchTab('balances')" role="tab" aria-selected="false" aria-controls="panel-balances">
             <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
               <rect x="2" y="5" width="16" height="12" rx="2" />
               <path d="M14 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -115,7 +120,7 @@
             </svg>
             Reward Balances
           </button>
-          <button class="admin-tab" id="tab-referrals" onclick="switchTab('referrals')">
+          <button class="admin-tab" id="tab-referrals" onclick="switchTab('referrals')" role="tab" aria-selected="false" aria-controls="panel-referrals">
             <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
               <path d="M17 11a5 5 0 00-10 0" />
               <path d="M3 11a5 5 0 0010 0" />
@@ -378,6 +383,7 @@
                     font-size: 12px;
                     color: var(--admin-text-muted);
                   " id="bal-count">0 users</span>
+               <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="exportBalances()" style="margin-left: 12px;">Export CSV</button>
             </div>
           </div>
           <div class="admin-card">
@@ -522,6 +528,7 @@
                     font-size: 12px;
                     color: var(--admin-text-muted);
                   " id="ref-count">0 referrals</span>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="exportReferrals()" style="margin-left: 12px;">Export CSV</button>
             </div>
           </div>
           <div class="admin-card">
@@ -643,7 +650,7 @@
   </div>
 
   <!-- Adjust Balance Modal -->
-  <div id="adjust-modal" style="
+  <div id="adjust-modal" role="dialog" aria-modal="true" aria-labelledby="adjust-modal-title" style="
         display: none;
         position: fixed;
         inset: 0;
@@ -750,7 +757,7 @@
   </div>
 
   <!-- Override Tier Modal -->
-  <div id="tier-override-modal" style="
+  <div id="tier-override-modal" role="dialog" aria-modal="true" aria-labelledby="override-modal-title" style="
         display: none;
         position: fixed;
         inset: 0;

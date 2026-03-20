@@ -34,7 +34,8 @@
         pagination: "wallet-pagination-container",
     };
 
-    let currentPage = 1;
+    let urlParams = new URLSearchParams(window.location.search);
+    let currentPage = parseInt(urlParams.get("page") || "1", 10);
     const pageSize = 10;
 
     // ─── Helpers ─────────────────────────────────────────────────
@@ -135,37 +136,46 @@
     /**
      * Build a single transaction row HTML string from a tx object.
      * @param {object} tx
+     * @param {boolean} isMobile - applies horizontal scroll widths
      * @returns {string}
      */
-    function buildTxRowHtml(tx) {
+    function buildTxRowHtml(tx, isMobile) {
         const icon = ICON_SVGS[tx.iconKey] || ICON_SVGS.purchase;
         // Escape all API-sourced values to prevent XSS
         const safeStatusCss = escHtml(tx.statusCss);
         const safeAmountCss = escHtml(tx.amountCss);
+        
+        const wType = isMobile ? 'style="width: 182px"' : '';
+        const wStatus = isMobile ? 'style="width: 163px"' : '';
+        const wDate = isMobile ? 'style="width: 200px"' : '';
+        const wWallet = isMobile ? 'style="width: 180px"' : '';
+        const wAmount = isMobile ? 'style="width: 183px"' : '';
+        const wActions = isMobile ? 'style="width: 188px"' : '';
+
         return `
       <div class="table__row">
-        <div class="table__cell table__cell--type" style="width:182px">
+        <div class="table__cell table__cell--type" ${wType}>
           <div class="wallet-transaction-type-icon">
             <div class="featured-icon">${icon}</div>
           </div>
           <span class="wallet-transaction-type-text">${escHtml(tx.typeLabel)}</span>
         </div>
-        <div class="table__cell table__cell--status" style="width:163px">
+        <div class="table__cell table__cell--status" ${wStatus}>
           <div class="wallet-transaction-status-badge ${safeStatusCss}">
             <div class="wallet-transaction-status-dot"></div>
             <span class="wallet-transaction-status-text">${escHtml(tx.statusLabel)}</span>
           </div>
         </div>
-        <div class="table__cell table__cell--date" style="width:200px">
+        <div class="table__cell table__cell--date" ${wDate}>
           <span class="table__cell-text-value">${escHtml(tx.dateDisplay)}</span>
         </div>
-        <div class="table__cell table__cell--wallet" style="width:180px">
+        <div class="table__cell table__cell--wallet" ${wWallet}>
           <span class="table__cell-text-value">${escHtml(tx.walletLabel)}</span>
         </div>
-        <div class="table__cell table__cell--amount" style="width:183px">
+        <div class="table__cell table__cell--amount" ${wAmount}>
           <span class="${safeAmountCss}">${escHtml(tx.amountPrefix)} ${escHtml(tx.amountDisplay)}</span>
         </div>
-        <div class="table__cell table__cell--actions" style="width:188px">
+        <div class="table__cell table__cell--actions" ${wActions}>
           <button class="wallet-transaction-action-btn">
             View details
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -174,6 +184,15 @@
           </button>
         </div>
       </div>`;
+    }
+
+    /**
+     * Set URL param silently.
+     */
+    function setUrlParam(key, value) {
+        const url = new URL(window.location);
+        url.searchParams.set(key, value);
+        window.history.pushState({}, '', url);
     }
 
     /**
@@ -207,6 +226,7 @@
             prevBtn.addEventListener("click", () => {
                 if (currentPage > 1) {
                     currentPage--;
+                    setUrlParam("page", currentPage);
                     loadTransactionsPage();
                 }
             });
@@ -216,6 +236,7 @@
             nextBtn.addEventListener("click", () => {
                 if (currentPage < totalPages) {
                     currentPage++;
+                    setUrlParam("page", currentPage);
                     loadTransactionsPage();
                 }
             });
@@ -235,20 +256,59 @@
     }
 
     /**
+     * Handle browser back button for pagination
+     */
+    window.addEventListener("popstate", () => {
+        const newParams = new URLSearchParams(window.location.search);
+        const newPage = parseInt(newParams.get("page") || "1", 10);
+        if (newPage !== currentPage) {
+            currentPage = newPage;
+            loadTransactionsPage();
+        }
+    });
+
+    /**
      * Refresh the transaction table body with the latest API data.
      * @param {object} txSummary – result from WalletDataService.getTransactions()
      */
     function refreshTransactionsTable(txSummary) {
-        const body = document.getElementById("wallet-transactions-body");
-        if (!body) return;
+        const desktopBody = document.getElementById("wallet-transactions-body");
+        const mobileBody = document.getElementById("mobile-wallet-transactions-body");
 
         if (!txSummary.hasData) {
+            const emptyDesktopStr = `
+            <div class="table__row" style="justify-content: center; padding: 64px 24px; border-bottom: none; width: 100%;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 12px; text-align: center;">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: #F2F4F7; border: 8px solid #F9FAFB; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </div>
+                    <span style="color: #101828; font-size: 16px; font-weight: 600;">No transactions yet</span>
+                    <span style="color: #667085; font-size: 14px; max-width: 250px;">Your transactions will appear here once you make a deposit or withdraw.</span>
+                </div>
+            </div>`;
+            const emptyMobileStr = `
+            <div class="table__row" style="justify-content: center; padding: 48px 16px; border-bottom: none;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    <span style="color: #101828; font-size: 14px; font-weight: 600;">No transactions yet</span>
+                </div>
+            </div>`;
+
+            if (desktopBody) desktopBody.innerHTML = emptyDesktopStr;
+            if (mobileBody) mobileBody.innerHTML = emptyMobileStr;
+            renderPagination(txSummary);
             return;
         }
 
-        body.innerHTML = txSummary.transactions
-            .map(buildTxRowHtml)
-            .join("");
+        if (desktopBody) desktopBody.innerHTML = txSummary.transactions.map(tx => buildTxRowHtml(tx, false)).join("");
+        if (mobileBody) mobileBody.innerHTML = txSummary.transactions.map(tx => buildTxRowHtml(tx, true)).join("");
         
         renderPagination(txSummary);
     }

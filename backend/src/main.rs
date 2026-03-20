@@ -1427,7 +1427,7 @@ async fn handle_health() -> impl IntoResponse {
 /// Root `/` redirect (platform only). If authenticated, go to marketplace; otherwise go to login.
 async fn handle_root(jar: CookieJar, State(state): State<AppState>) -> Redirect {
     if crate::auth::middleware::is_authenticated(&jar, &state.db).await {
-        Redirect::to("/marketplace")
+        Redirect::to("https://platform.poool.app/marketplace")
     } else {
         Redirect::to("/auth/login")
     }

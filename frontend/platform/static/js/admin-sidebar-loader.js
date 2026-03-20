@@ -257,14 +257,70 @@
         }
     }
 
+    /**
+     * Setup mobile sidebar toggle behaviour.
+     * Inserts a hamburger button into the top-bar and creates an overlay.
+     */
+    function setupMobileSidebar() {
+        const sidebar = document.getElementById("main-admin-sidebar");
+        if (!sidebar) return;
+
+        // Create overlay
+        const overlay = document.createElement("div");
+        overlay.className = "admin-sidebar-overlay";
+        overlay.id = "admin-sidebar-overlay";
+        document.body.appendChild(overlay);
+
+        // Insert hamburger toggle into the top-bar (before breadcrumbs)
+        const topbarLeft = document.querySelector(".admin-topbar-left");
+        if (topbarLeft) {
+            const toggleBtn = document.createElement("button");
+            toggleBtn.className = "admin-sidebar-toggle";
+            toggleBtn.id = "admin-sidebar-toggle";
+            toggleBtn.setAttribute("aria-label", "Toggle sidebar navigation");
+            toggleBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`;
+            topbarLeft.insertBefore(toggleBtn, topbarLeft.firstChild);
+
+            toggleBtn.addEventListener("click", () => toggleSidebar(true));
+        }
+
+        // Close on overlay click
+        overlay.addEventListener("click", () => toggleSidebar(false));
+
+        // Close sidebar when a nav link is clicked (mobile)
+        sidebar.querySelectorAll(".admin-nav-item").forEach(link => {
+            link.addEventListener("click", () => {
+                if (window.innerWidth <= 1024) {
+                    toggleSidebar(false);
+                }
+            });
+        });
+    }
+
+    function toggleSidebar(open) {
+        const sidebar = document.getElementById("main-admin-sidebar");
+        const overlay = document.getElementById("admin-sidebar-overlay");
+        if (!sidebar || !overlay) return;
+
+        if (open) {
+            sidebar.classList.add("open");
+            overlay.classList.add("active");
+        } else {
+            sidebar.classList.remove("open");
+            overlay.classList.remove("active");
+        }
+    }
+
     // Run on script load if placeholder exists, or on DOMContentLoaded
     if (document.getElementById("admin-sidebar-placeholder")) {
         loadSidebar();
+        setupMobileSidebar();
         // Update badges after sidebar is loaded (slight delay to ensure DOM ready)
         setTimeout(updateNotificationBadges, 500);
     } else {
         document.addEventListener("DOMContentLoaded", () => {
             loadSidebar();
+            setupMobileSidebar();
             setTimeout(updateNotificationBadges, 500);
         });
     }

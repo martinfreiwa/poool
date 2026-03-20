@@ -10,49 +10,142 @@ use sqlx::Row;
 //  Admin Assets API (Live/Published)
 //
 
+/// Query parameters for admin assets
+#[derive(serde::Deserialize)]
+pub struct AdminAssetQuery {
+    /// Search term
+    pub search: Option<String>,
+    /// Asset type filter
+    pub r#type: Option<String>,
+    /// Funding status filter
+    pub status: Option<String>,
+    /// Featured filter
+    pub featured: Option<bool>,
+    /// Sort column
+    pub sort: Option<String>,
+    /// Sort order
+    pub order: Option<String>,
+    /// Page number
+    pub page: Option<i64>,
+    /// Items per page
+    pub limit: Option<i64>,
+}
+
 /// GET /api/admin/assets  List published assets with funding progress
 pub async fn api_admin_assets(
     _admin: AdminUser,
     State(state): State<AppState>,
+    axum::extract::Query(q): axum::extract::Query<AdminAssetQuery>,
 ) -> Result<axum::response::Response, ApiError> {
-    let rows = sqlx::query(
-        r#"SELECT a.id::text, a.title, a.slug, a.asset_type,
-                  a.location_city, a.total_value_cents, a.token_price_cents,
-                  a.tokens_total, a.tokens_available, a.annual_yield_bps,
-                  a.funding_status, a.featured, a.published,
-                  a.created_at::text
-           FROM assets a
-           WHERE a.published = TRUE
-           ORDER BY a.featured DESC, a.created_at DESC
-           LIMIT 200"#,
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let mut qb = sqlx::QueryBuilder::new(
+        r#"
+        WITH filtered_assets AS (
+            SELECT a.id::text, a.title, a.slug, a.asset_type,
+                   a.location_city, a.total_value_cents, a.token_price_cents,
+                   a.tokens_total, a.tokens_available, a.annual_yield_bps,
+                   a.funding_status, a.featured, a.published,
+                   a.created_at::text,
+                   (CASE WHEN a.tokens_total > 0 THEN (a.tokens_total - a.tokens_available)::float / a.tokens_total::float ELSE 0 END) as funding_progress
+            FROM assets a
+            WHERE a.published = TRUE 
+        "#,
+    );
 
-    let assets: Vec<serde_json::Value> = rows
-        .iter()
-        .map(|r| {
-            serde_json::json!({
-                "id": r.get::<String, _>("id"),
-                "title": r.get::<String, _>("title"),
-                "slug": r.get::<String, _>("slug"),
-                "asset_type": r.get::<String, _>("asset_type"),
-                "location_city": r.get::<Option<String>, _>("location_city"),
-                "total_value_cents": r.get::<i64, _>("total_value_cents"),
-                "token_price_cents": r.get::<i64, _>("token_price_cents"),
-                "tokens_total": r.get::<i32, _>("tokens_total"),
-                "tokens_available": r.get::<i32, _>("tokens_available"),
-                "annual_yield_bps": r.get::<Option<i32>, _>("annual_yield_bps"),
-                "funding_status": r.get::<String, _>("funding_status"),
-                "featured": r.get::<bool, _>("featured"),
-                "published": r.get::<bool, _>("published"),
-                "created_at": r.get::<String, _>("created_at")
-            })
-        })
-        .collect();
+    if let Some(s) = &q.search {
+        if !s.trim().is_empty() {
+            let term = format!("%{}%", s.trim());
+            qb.push(" AND (a.title ILIKE ");
+            qb.push_bind(term.clone());
+            qb.push(" OR a.slug ILIKE ");
+            qb.push_bind(term.clone());
+            qb.push(" OR a.location_city ILIKE ");
+            qb.push_bind(term);
+            qb.push(") ");
+        }
+    }
 
-    Ok(Json(serde_json::json!({ "assets": assets })).into_response())
+    if let Some(t) = &q.r#type {
+        if !t.is_empty() {
+            qb.push(" AND a.asset_type = ");
+            qb.push_bind(t);
+        }
+    }
+
+    if let Some(st) = &q.status {
+        if !st.is_empty() {
+            qb.push(" AND a.funding_status = ");
+            qb.push_bind(st);
+        }
+    }
+
+    if let Some(true) = q.featured {
+        qb.push(" AND a.featured = TRUE ");
+    }
+
+    let sort_col = match q.sort.as_deref() {
+        Some("title") => "title",
+        Some("asset_type") => "asset_type",
+        Some("total_value_cents") => "total_value_cents",
+        Some("annual_yield_bps") => "annual_yield_bps",
+        Some("location_city") => "location_city",
+        Some("funding_status") => "funding_status",
+        Some("featured") => "featured",
+        Some("funding_progress") => "funding_progress",
+        _ => "created_at",
+    };
+
+    let order = match q.order.as_deref() {
+        Some("asc") => "ASC",
+        _ => "DESC",
+    };
+
+    let page = q.page.unwrap_or(1).max(1);
+    let limit = q.limit.unwrap_or(10).max(1).min(100);
+    let offset = (page - 1) * limit;
+
+    qb.push(format!(
+        r#"
+        ),
+        stats AS (
+            SELECT 
+                COUNT(*)::bigint as stat_total,
+                COUNT(*) FILTER (WHERE funding_status IN ('funding_open', 'funding_in_progress'))::bigint as stat_funding,
+                COUNT(*) FILTER (WHERE funding_status IN ('funded', 'rented', 'exited'))::bigint as stat_funded,
+                COALESCE(SUM(total_value_cents), 0)::bigint as stat_aum,
+                COALESCE(SUM(tokens_total - tokens_available), 0)::bigint as stat_tokens_sold
+            FROM filtered_assets
+        )
+        SELECT 
+            (SELECT row_to_json(s) FROM stats s) as stats,
+            COALESCE(
+                (
+                    SELECT json_agg(row_to_json(d)) 
+                    FROM (
+                        SELECT * FROM filtered_assets
+                        ORDER BY {sort_col} {order}
+                        LIMIT {limit} OFFSET {offset}
+                    ) d
+                ), 
+            '[]'::json) as assets
+        "#
+    ));
+
+    let row = qb
+        .build()
+        .fetch_one(&state.db)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Database error: {}", e)))?;
+
+    let stats: serde_json::Value = row.get("stats");
+    let assets: serde_json::Value = row.get("assets");
+
+    Ok(Json(serde_json::json!({
+        "assets": assets,
+        "stats": stats,
+        "page": page,
+        "limit": limit
+    }))
+    .into_response())
 }
 
 /// POST /api/admin/assets/:asset_id/toggle-featured

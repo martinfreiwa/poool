@@ -1,10 +1,26 @@
 /**
  * Admin — Asset Change Request Review (Diff + Approve/Reject)
  * Fetches from GET /api/admin/change-requests/:id
+ *
+ * Production hardened:
+ * - Regex-based HTML escaping (no DOM allocation in loops)
+ * - AbortController timeout on all fetches
+ * - Toast notifications instead of alert()
+ * - Focus management after approve/reject
+ * - Keyboard shortcuts (Cmd+Enter = approve, Cmd+Backspace = reject)
+ * - Graceful 403 handling for RBAC
  */
 
 let requestData = null;
 let requestId = null;
+
+const FETCH_TIMEOUT_MS = 15000; // 15 seconds
+
+const ESC_MAP = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+function esc(str) {
+  if (!str) return "";
+  return String(str).replace(/[&<>"']/g, (m) => ESC_MAP[m]);
+}
 
 const FIELD_LABELS = {
   title: "Title",
@@ -31,6 +47,26 @@ const FIELD_LABELS = {
   year_built: "Year Built",
 };
 
+/**
+ * Fetch with an AbortController timeout.
+ * If the request exceeds FETCH_TIMEOUT_MS, it is aborted.
+ */
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const resp = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    return resp;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      throw new Error("Request timed out. Please check your connection and try again.");
+    }
+    throw err;
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(window.location.search);
   requestId = params.get("id");
@@ -40,13 +76,66 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  // Validate UUID format to prevent injection
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(requestId)) {
+    showError("Invalid change request ID format.");
+    return;
+  }
+
   loadRequest();
+  setupKeyboardShortcuts();
+  setupButtonHandlers();
 });
+
+/**
+ * Attach click handlers to buttons (replaces inline onclick)
+ */
+function setupButtonHandlers() {
+  const approveBtn = document.getElementById("btn-approve");
+  const rejectBtn = document.getElementById("btn-reject");
+  if (approveBtn) approveBtn.addEventListener("click", approveRequest);
+  if (rejectBtn) rejectBtn.addEventListener("click", rejectRequest);
+}
+
+/**
+ * Keyboard shortcuts for power users.
+ * Cmd/Ctrl + Enter = Approve
+ * Cmd/Ctrl + Backspace = Reject
+ */
+function setupKeyboardShortcuts() {
+  document.addEventListener("keydown", (e) => {
+    // Only act if request is pending and buttons are visible
+    if (!requestData || requestData.status !== "pending") return;
+    // Don't intercept if a modal/dialog is open
+    if (document.querySelector(".pc-overlay")) return;
+
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      approveRequest();
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === "Backspace") {
+      e.preventDefault();
+      rejectRequest();
+    }
+  });
+}
 
 async function loadRequest() {
   try {
-    const resp = await fetch(`/api/admin/change-requests/${requestId}`);
+    const resp = await fetchWithTimeout(`/api/admin/change-requests/${requestId}`);
+
+    // Graceful RBAC handling
+    if (resp.status === 403) {
+      showError("You do not have permission to review asset change requests. Contact your administrator.");
+      return;
+    }
+    if (resp.status === 404) {
+      showError("Change request not found. It may have been deleted.");
+      return;
+    }
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
     requestData = await resp.json();
 
     document.getElementById("loading-state").style.display = "none";
@@ -57,12 +146,17 @@ async function loadRequest() {
 
     // Hide actions if already reviewed
     if (requestData.status !== "pending") {
-      document.getElementById("decision-actions").innerHTML = `
-        <div style="text-align:center; padding: 12px; color: var(--admin-text-muted, #888); font-size: 14px;">
-          This request has been <strong>${esc(requestData.status)}</strong>
-          ${requestData.admin_notes ? `<br><br><em>"${esc(requestData.admin_notes)}"</em>` : ""}
-        </div>
-      `;
+      const actionsEl = document.getElementById("decision-actions");
+      const hintEl = document.getElementById("kbd-hint");
+      if (actionsEl) {
+        actionsEl.innerHTML = `
+          <div style="text-align:center; padding: 12px; color: var(--admin-text-muted, #888); font-size: 14px;" role="status">
+            This request has been <strong>${esc(requestData.status)}</strong>
+            ${requestData.admin_notes ? `<br><br><em>"${esc(requestData.admin_notes)}"</em>` : ""}
+          </div>
+        `;
+      }
+      if (hintEl) hintEl.style.display = "none";
     }
   } catch (err) {
     showError(`Failed to load: ${err.message}`);
@@ -70,10 +164,14 @@ async function loadRequest() {
 }
 
 function showError(msg) {
-  document.getElementById("loading-state").innerHTML = `
-    <div style="color: var(--admin-danger, #ef4444); font-weight: 600; margin-bottom: 12px;">${esc(msg)}</div>
-    <a href="/admin/asset-change-requests.html" style="color: var(--admin-primary, #3b82f6);">← Back to list</a>
-  `;
+  document.getElementById("loading-state").style.display = "none";
+  const errorState = document.getElementById("error-state");
+  const errorMessage = document.getElementById("error-message");
+  if (errorState && errorMessage) {
+    errorMessage.textContent = msg;
+    errorState.style.display = "block";
+    errorState.focus();
+  }
 }
 
 function renderInfo(data) {
@@ -114,7 +212,7 @@ function renderInfo(data) {
     </div>
     <div class="request-info-item">
       <div class="request-info-label">Submitted</div>
-      <div class="request-info-value">${dateStr}</div>
+      <div class="request-info-value">${esc(dateStr)}</div>
     </div>
   `;
 }
@@ -148,14 +246,18 @@ function renderDiff(data) {
 function formatValue(key, val) {
   if (val === null || val === undefined) return '<span style="color: var(--admin-text-muted, #888);">—</span>';
 
-  // BPS fields → percentage
+  // BPS fields → percentage (always escape after formatting)
   if (key.endsWith("_bps")) {
-    return `${(val / 100).toFixed(2)}%`;
+    const num = Number(val);
+    if (isNaN(num)) return esc(String(val));
+    return esc(`${(num / 100).toFixed(2)}%`);
   }
 
-  // Size fields
+  // Size fields (always escape after formatting)
   if (key === "land_size_sqm" || key === "building_size_sqm") {
-    return `${Number(val).toLocaleString()} sqm`;
+    const num = Number(val);
+    if (isNaN(num)) return esc(String(val));
+    return esc(`${num.toLocaleString()} sqm`);
   }
 
   // Truncate long text
@@ -172,11 +274,13 @@ async function approveRequest() {
 
   const notes = document.getElementById("admin-notes")?.value || "";
   const btn = document.getElementById("btn-approve");
+  const rejectBtn = document.getElementById("btn-reject");
   btn.disabled = true;
+  if (rejectBtn) rejectBtn.disabled = true;
   btn.textContent = "Applying...";
 
   try {
-    const resp = await fetch(`/api/admin/change-requests/${requestId}/approve`, {
+    const resp = await fetchWithTimeout(`/api/admin/change-requests/${requestId}/approve`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -186,20 +290,35 @@ async function approveRequest() {
     });
 
     const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || "Failed");
+    if (!resp.ok) throw new Error(data.error || "Failed to approve");
 
-    // Show success
-    document.getElementById("decision-actions").innerHTML = `
-      <div style="text-align:center; padding: 16px; background: rgba(16,185,129,0.1); border-radius: 8px; color: #059669; font-weight: 600;">
-        ✓ Changes approved and applied successfully
-      </div>
-    `;
+    // Show inline success
+    const actionsEl = document.getElementById("decision-actions");
+    if (actionsEl) {
+      actionsEl.innerHTML = `
+        <div style="text-align:center; padding: 16px; background: rgba(16,185,129,0.1); border-radius: 8px; color: #059669; font-weight: 600;" role="status" tabindex="-1" id="decision-result">
+          ✓ Changes approved and applied successfully
+        </div>
+      `;
+      // Move focus to the result for keyboard/screen reader users
+      document.getElementById("decision-result")?.focus();
+    }
+    const hintEl = document.getElementById("kbd-hint");
+    if (hintEl) hintEl.style.display = "none";
+
+    // Toast notification
+    if (typeof showPooolToast === "function") {
+      showPooolToast("Approved", "Changes have been applied to the live asset.", "success");
+    }
 
     // Reload to reflect status
-    setTimeout(() => loadRequest(), 1000);
+    setTimeout(() => loadRequest(), 1500);
   } catch (err) {
-    alert("Error: " + err.message);
+    if (typeof showPooolToast === "function") {
+      showPooolToast("Error", err.message, "error");
+    }
     btn.disabled = false;
+    if (rejectBtn) rejectBtn.disabled = false;
     btn.textContent = "✓ Approve & Apply";
   }
 }
@@ -207,7 +326,9 @@ async function approveRequest() {
 async function rejectRequest() {
   const notes = document.getElementById("admin-notes")?.value || "";
   if (!notes.trim()) {
-    alert("Please provide a reason for rejection.");
+    if (typeof showPooolToast === "function") {
+      showPooolToast("Notes Required", "Please provide a reason for rejection.", "warning");
+    }
     document.getElementById("admin-notes")?.focus();
     return;
   }
@@ -215,11 +336,13 @@ async function rejectRequest() {
   if (!await pooolConfirm({ title: 'Reject changes', message: 'The developer will be notified with the reason you provided.', confirmText: 'Reject', type: 'danger' })) return;
 
   const btn = document.getElementById("btn-reject");
+  const approveBtn = document.getElementById("btn-approve");
   btn.disabled = true;
+  if (approveBtn) approveBtn.disabled = true;
   btn.textContent = "Rejecting...";
 
   try {
-    const resp = await fetch(`/api/admin/change-requests/${requestId}/reject`, {
+    const resp = await fetchWithTimeout(`/api/admin/change-requests/${requestId}/reject`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -229,25 +352,31 @@ async function rejectRequest() {
     });
 
     const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || "Failed");
+    if (!resp.ok) throw new Error(data.error || "Failed to reject");
 
-    document.getElementById("decision-actions").innerHTML = `
-      <div style="text-align:center; padding: 16px; background: rgba(239,68,68,0.1); border-radius: 8px; color: #dc2626; font-weight: 600;">
-        ✕ Change request rejected
-      </div>
-    `;
+    const actionsEl = document.getElementById("decision-actions");
+    if (actionsEl) {
+      actionsEl.innerHTML = `
+        <div style="text-align:center; padding: 16px; background: rgba(239,68,68,0.1); border-radius: 8px; color: #dc2626; font-weight: 600;" role="status" tabindex="-1" id="decision-result">
+          ✕ Change request rejected
+        </div>
+      `;
+      document.getElementById("decision-result")?.focus();
+    }
+    const hintEl = document.getElementById("kbd-hint");
+    if (hintEl) hintEl.style.display = "none";
 
-    setTimeout(() => loadRequest(), 1000);
+    if (typeof showPooolToast === "function") {
+      showPooolToast("Rejected", "The developer will be notified.", "error");
+    }
+
+    setTimeout(() => loadRequest(), 1500);
   } catch (err) {
-    alert("Error: " + err.message);
+    if (typeof showPooolToast === "function") {
+      showPooolToast("Error", err.message, "error");
+    }
     btn.disabled = false;
+    if (approveBtn) approveBtn.disabled = false;
     btn.textContent = "✕ Reject";
   }
-}
-
-function esc(str) {
-  if (!str) return "";
-  const d = document.createElement("div");
-  d.textContent = String(str);
-  return d.innerHTML;
 }

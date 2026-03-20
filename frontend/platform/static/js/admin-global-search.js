@@ -1,6 +1,7 @@
 /**
- * Admin Global Search — Unified search across Users, Assets, Orders, Transactions, Deposits.
- * Searches all relevant admin APIs and displays results in a dropdown overlay.
+ * Admin Global Search — Unified search via server-side /api/admin/search endpoint.
+ * Searches all relevant entities (Users, Assets, Orders, Deposits, Tickets) in a single
+ * indexed DB query instead of downloading all data from 4 endpoints per keystroke.
  * Loaded on every admin page via the #admin-global-search input.
  */
 (function () {
@@ -9,6 +10,7 @@
   let searchTimeout = null;
   let resultsEl = null;
   let isOpen = false;
+  let currentRequest = null; // AbortController for in-flight requests
 
   document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById("admin-global-search");
@@ -69,87 +71,32 @@
 
   async function runSearch(query) {
     showLoading();
-    const q = query.toLowerCase();
 
-    // Parallel fetch from multiple endpoints
-    const [users, assets, orders, deposits] = await Promise.allSettled([
-      fetchSafe("/api/admin/users"),
-      fetchSafe("/api/admin/assets"),
-      fetchSafe("/api/admin/orders"),
-      fetchSafe("/api/admin/deposits"),
-    ]);
+    // Cancel any in-flight request
+    if (currentRequest) currentRequest.abort();
+    currentRequest = new AbortController();
 
-    const results = [];
+    try {
+      const resp = await fetch(
+        `/api/admin/search?q=${encodeURIComponent(query)}&limit=15`,
+        { signal: currentRequest.signal }
+      );
 
-    // Search Users (by email, name, UUID)
-    const userList = extractArray(users);
-    userList.forEach((u) => {
-      const hay =
-        `${u.email || ""} ${u.first_name || ""} ${u.last_name || ""} ${u.display_name || ""} ${u.id || ""}`.toLowerCase();
-      if (hay.includes(q)) {
-        results.push({
-          type: "user",
-          icon: "👤",
-          title: u.display_name || u.first_name || u.email,
-          subtitle: u.email,
-          url: `/admin/user-details.html?id=${u.id}`,
-          badge: u.kyc_status || "unknown",
-        });
+      if (!resp.ok) {
+        renderError("Search failed — server error");
+        return;
       }
-    });
 
-    // Search Assets (by title, slug)
-    const assetList = extractArray(assets);
-    assetList.forEach((a) => {
-      const hay =
-        `${a.title || ""} ${a.slug || ""} ${a.id || ""} ${a.asset_type || ""}`.toLowerCase();
-      if (hay.includes(q)) {
-        results.push({
-          type: "asset",
-          icon: "🏠",
-          title: a.title,
-          subtitle: `${a.asset_type || "asset"} · ${a.funding_status || ""}`,
-          url: `/admin/asset-details.html?id=${a.id}`,
-          badge: a.funding_status || "",
-        });
-      }
-    });
-
-    // Search Orders (by order_number)
-    const orderList = extractArray(orders);
-    orderList.forEach((o) => {
-      const hay =
-        `${o.order_number || ""} ${o.user_email || ""} ${o.id || ""}`.toLowerCase();
-      if (hay.includes(q)) {
-        results.push({
-          type: "order",
-          icon: "📋",
-          title: o.order_number || `Order ${(o.id || "").substring(0, 8)}`,
-          subtitle: `${o.user_email || ""} · ${formatCents(o.total_cents)}`,
-          url: `/admin/orders.html?id=${o.id}`,
-          badge: o.status || "",
-        });
-      }
-    });
-
-    // Search Deposits (by provider_reference, user)
-    const depositList = extractArray(deposits);
-    depositList.forEach((d) => {
-      const hay =
-        `${d.external_ref_id || ""} ${d.provider_reference || ""} ${d.user_email || ""} ${d.user_name || ""}`.toLowerCase();
-      if (hay.includes(q)) {
-        results.push({
-          type: "deposit",
-          icon: "💰",
-          title: `Deposit ${d.external_ref_id || (d.id || "").substring(0, 8)}`,
-          subtitle: `${d.user_email || d.user_name || ""} · ${formatCents(d.amount_cents)} ${d.currency || "USD"}`,
-          url: `/admin/deposits.html`,
-          badge: d.status || "",
-        });
-      }
-    });
-
-    renderResults(results.slice(0, 15), query);
+      const data = await resp.json();
+      const results = data.results || [];
+      renderResults(results, query);
+    } catch (e) {
+      // Don't show error for aborted requests (user typed again)
+      if (e.name === "AbortError") return;
+      renderError("Search unavailable");
+    } finally {
+      currentRequest = null;
+    }
   }
 
   function renderResults(results, query) {
@@ -174,6 +121,7 @@
       asset: "Assets",
       order: "Orders",
       deposit: "Deposits",
+      ticket: "Support Tickets",
     };
 
     let html = "";
@@ -181,7 +129,7 @@
       html += `<div style="padding:6px 16px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--admin-text-muted);">${typeLabels[type] || type}</div>`;
       items.forEach((item) => {
         html += `
-                    <a href="${item.url}" class="admin-search-result-item" tabindex="0"
+                    <a href="${esc(item.url)}" class="admin-search-result-item" tabindex="0"
                        style="display:flex;align-items:center;gap:10px;padding:10px 16px;text-decoration:none;color:var(--admin-text-primary);transition:background 0.15s;"
                        onmouseover="this.style.background='var(--admin-bg-hover)'" onmouseout="this.style.background='transparent'"
                        onfocus="this.style.background='var(--admin-bg-hover)'" onblur="this.style.background='transparent'">
@@ -225,6 +173,15 @@
     openResults();
   }
 
+  function renderError(message) {
+    resultsEl.innerHTML = `
+            <div style="padding:24px;text-align:center;color:var(--admin-text-muted);font-size:13px;">
+                <div style="font-size:20px;margin-bottom:8px;">⚠️</div>
+                ${esc(message)}
+            </div>`;
+    openResults();
+  }
+
   function showLoading() {
     resultsEl.innerHTML = `
             <div style="padding:24px;text-align:center;color:var(--admin-text-muted);font-size:13px;">
@@ -243,51 +200,13 @@
     isOpen = false;
   }
 
-  async function fetchSafe(url) {
-    try {
-      const r = await fetch(url);
-      if (!r.ok) return [];
-      return await r.json();
-    } catch {
-      return [];
-    }
-  }
-
-  function extractArray(settled) {
-    const val = settled.status === "fulfilled" ? settled.value : [];
-    if (Array.isArray(val)) return val;
-    // Try common wrapper keys
-    for (const k of [
-      "users",
-      "assets",
-      "orders",
-      "deposits",
-      "data",
-      "items",
-    ]) {
-      if (Array.isArray(val[k])) return val[k];
-    }
-    return [];
-  }
-
-  function formatCents(c) {
-    if (typeof c !== "number") return "$0";
-    return (
-      "$" +
-      (Math.abs(c) / 100).toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-    );
-  }
-
   function badgeClass(status) {
     const s = (status || "").toLowerCase();
-    if (["approved", "completed", "paid", "active", "funding_open"].includes(s))
+    if (["approved", "completed", "paid", "active", "funding_open", "resolved"].includes(s))
       return "success";
-    if (["pending", "processing", "in_review", "submitted"].includes(s))
+    if (["pending", "processing", "in_review", "submitted", "in_progress", "open"].includes(s))
       return "warning";
-    if (["rejected", "failed", "cancelled", "expired", "suspended"].includes(s))
+    if (["rejected", "failed", "cancelled", "expired", "suspended", "closed"].includes(s))
       return "danger";
     return "neutral";
   }

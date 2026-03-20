@@ -49,7 +49,7 @@ fn render_admin_template(state: &AppState, file: &str) -> axum::response::Respon
                 tracing::error!("Template rendering error for admin {}: {}", file, e);
                 (
                     axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    Html(format!("<h1>Internal Server Error: {}</h1>", e)),
+                    Html("<h1>Something went wrong</h1><p>Please try again later or contact support.</p>".to_string()),
                 )
                     .into_response()
             }

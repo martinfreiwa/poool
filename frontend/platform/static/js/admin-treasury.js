@@ -1,58 +1,142 @@
 // State
 let treasuryData = {};
-let allTx = [];
-let filteredTx = [];
+let allTx = []; // Holds the current page rows
+let totalCount = 0;
 let currentPage = 1;
 const PAGE_SIZE = 15;
 let sortField = "created_at";
 let sortOrder = "desc";
+let localSearchTimer = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   loadTreasury();
-  document
-    .getElementById("tx-type-filter")
-    ?.addEventListener("change", applyFilters);
-  document
-    .getElementById("tx-status-filter")
-    ?.addEventListener("change", applyFilters);
+  document.getElementById("tx-type-filter")?.addEventListener("change", () => {
+    currentPage = 1;
+    loadTreasury();
+  });
+  document.getElementById("tx-status-filter")?.addEventListener("change", () => {
+    currentPage = 1;
+    loadTreasury();
+  });
+  document.getElementById("tx-start-date")?.addEventListener("change", () => {
+    currentPage = 1;
+    loadTreasury();
+  });
+  document.getElementById("tx-end-date")?.addEventListener("change", () => {
+    currentPage = 1;
+    loadTreasury();
+  });
+  document.getElementById("treasury-local-search")?.addEventListener("input", (e) => {
+    clearTimeout(localSearchTimer);
+    localSearchTimer = setTimeout(() => {
+      currentPage = 1;
+      loadTreasury();
+    }, 400); // 400ms debounce
+  });
 
   setupSorting();
   setupPagination();
 });
 
 async function loadTreasury() {
+  const tbody = document.getElementById("tx-table-body");
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+      <div style="margin: 0 auto 12px; width: 24px; height: 24px; border: 2px solid var(--admin-border); border-top-color: var(--admin-accent); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+      Loading…
+    </td></tr>`;
+  }
+
   try {
-    const resp = await fetch("/api/admin/treasury");
+    const typeFilter = document.getElementById("tx-type-filter")?.value || "";
+    const statusFilter = document.getElementById("tx-status-filter")?.value || "";
+    const startDate = document.getElementById("tx-start-date")?.value || "";
+    const endDate = document.getElementById("tx-end-date")?.value || "";
+    const search = document.getElementById("treasury-local-search")?.value || "";
+
+    const params = new URLSearchParams({
+      page: currentPage,
+      limit: PAGE_SIZE,
+      sort_by: sortField,
+      sort_order: sortOrder,
+    });
+    
+    if (typeFilter) params.append("tx_type", typeFilter);
+    if (statusFilter) params.append("status", statusFilter);
+    if (startDate) params.append("start_date", startDate);
+    if (endDate) params.append("end_date", endDate);
+    if (search) params.append("search", search);
+
+    const resp = await fetch(`/api/admin/treasury?${params.toString()}`);
     if (resp.ok) {
       treasuryData = await resp.json();
       allTx = treasuryData.recent_transactions || [];
-      applyFilters();
+      totalCount = treasuryData.total_count || 0;
+      
       renderKPIs();
       renderTypeBreakdown();
       renderDividends();
+      renderTransactions();
     } else {
       console.error('Treasury API error:', resp.status);
+      showErrorState();
     }
   } catch (e) {
     console.error('Treasury fetch failed:', e);
     if (window.Sentry) Sentry.captureException(e);
+    showErrorState();
   }
+}
+
+function showErrorState() {
+  const tbody = document.getElementById("tx-table-body");
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-danger);">
+        Failed to load treasury data. 
+        <button class="admin-btn admin-btn--sm" style="margin-top: 10px;" onclick="loadTreasury()">Try Again</button>
+      </td></tr>`;
+  }
+}
+
+function showToast(msg, type = "info") {
+  const container = document.getElementById("admin-toast-container");
+  if (!container) return;
+  const tn = document.createElement("div");
+  tn.style.padding = "10px 16px";
+  tn.style.borderRadius = "4px";
+  tn.style.color = "white";
+  tn.style.fontSize = "14px";
+  tn.style.background = type === "error" ? "var(--admin-danger)" : type === "success" ? "var(--admin-success)" : "var(--admin-info)";
+  tn.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+  tn.style.transition = "opacity 0.3s";
+  tn.textContent = msg;
+  container.appendChild(tn);
+  setTimeout(() => {
+    tn.style.opacity = "0";
+    setTimeout(() => tn.remove(), 300);
+  }, 3000);
 }
 
 function setupSorting() {
   const table = document.querySelector(".admin-table");
   if (!table) return;
-  table.querySelectorAll("th[data-sort]").forEach((th) => {
-    th.style.cursor = "pointer";
-    th.addEventListener("click", () => {
-      const field = th.dataset.sort;
+  table.querySelectorAll(".admin-sort-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const field = btn.dataset.sort;
       if (sortField === field) {
         sortOrder = sortOrder === "asc" ? "desc" : "asc";
       } else {
         sortField = field;
         sortOrder = "asc";
       }
-      applyFilters();
+      
+      // Update ARIA attributes
+      table.querySelectorAll("th[aria-sort]").forEach(th => th.setAttribute("aria-sort", "none"));
+      btn.closest("th").setAttribute("aria-sort", sortOrder === "asc" ? "ascending" : "descending");
+
+      currentPage = 1;
+      loadTreasury();
     });
   });
 }
@@ -61,77 +145,44 @@ function setupPagination() {
   document.getElementById("prev-page")?.addEventListener("click", () => {
     if (currentPage > 1) {
       currentPage--;
-      renderTransactions();
+      loadTreasury();
     }
   });
   document.getElementById("next-page")?.addEventListener("click", () => {
-    const totalPages = Math.ceil(filteredTx.length / PAGE_SIZE);
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
     if (currentPage < totalPages) {
       currentPage++;
-      renderTransactions();
+      loadTreasury();
     }
   });
-}
-
-function applyFilters() {
-  const typeFilter = document.getElementById("tx-type-filter")?.value || "";
-  const statusFilter = document.getElementById("tx-status-filter")?.value || "";
-  let result = allTx;
-  if (typeFilter) result = result.filter((t) => t.type === typeFilter);
-  if (statusFilter) result = result.filter((t) => t.status === statusFilter);
-
-  // Sort
-  result.sort((a, b) => {
-    let valA = a[sortField];
-    let valB = b[sortField];
-    if (sortField === "created_at") {
-      valA = new Date(valA || 0).getTime();
-      valB = new Date(valB || 0).getTime();
-    }
-    if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-    if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  filteredTx = result;
-  currentPage = 1;
-  renderTransactions();
 }
 
 function renderKPIs() {
   const s = treasuryData.stats || {};
   const el = (id) => document.getElementById(id);
-  if (el("stat-total-balance"))
-    el("stat-total-balance").textContent = formatUSD(
-      s.total_balance_cents || 0,
-    );
-  if (el("stat-wallet-count"))
-    el("stat-wallet-count").textContent =
-      `across ${s.wallet_count || 0} wallets`;
-  if (el("stat-total-deposits"))
-    el("stat-total-deposits").textContent = formatUSD(
-      s.total_deposits_cents || 0,
-    );
-  if (el("stat-deposit-count"))
-    el("stat-deposit-count").textContent =
-      `${s.deposit_count || 0} transactions`;
-  if (el("stat-total-withdrawals"))
-    el("stat-total-withdrawals").textContent = formatUSD(
-      s.total_withdrawals_cents || 0,
-    );
-  if (el("stat-withdraw-count"))
-    el("stat-withdraw-count").textContent =
-      `${s.withdrawal_count || 0} transactions`;
-  if (el("stat-net-revenue"))
-    el("stat-net-revenue").textContent = formatUSD(s.net_revenue_cents || 0);
+  if (el("stat-total-balance")) el("stat-total-balance").textContent = formatUSD(s.total_balance_cents || 0);
+  if (el("stat-wallet-count")) el("stat-wallet-count").textContent = `across ${s.wallet_count || 0} wallets`;
+  
+  // Calculate filtered totals dynamically based on visible type breakdown
+  const breakdown = treasuryData.type_breakdown || [];
+  const dt = breakdown.find(b => b.type === 'deposit') || {total_cents: 0, count: 0};
+  const wt = breakdown.find(b => b.type === 'withdrawal') || {total_cents: 0, count: 0};
+  const ft = breakdown.find(b => b.type === 'fee') || {total_cents: 0, count: 0};
+
+  if (el("stat-total-deposits")) el("stat-total-deposits").textContent = formatUSD(dt.total_cents);
+  if (el("stat-deposit-count")) el("stat-deposit-count").textContent = `${dt.count} transactions`;
+  
+  if (el("stat-total-withdrawals")) el("stat-total-withdrawals").textContent = formatUSD(wt.total_cents);
+  if (el("stat-withdraw-count")) el("stat-withdraw-count").textContent = `${wt.count} transactions`;
+  
+  if (el("stat-net-revenue")) el("stat-net-revenue").textContent = formatUSD(ft.total_cents);
 }
 
 function renderTypeBreakdown() {
   const breakdown = treasuryData.type_breakdown || [];
   const container = document.getElementById("tx-type-breakdown");
   if (!breakdown.length) {
-    container.innerHTML =
-      '<div style="font-size:13px;color:var(--admin-text-muted);padding:12px 0;">No transaction data yet.</div>';
+    container.innerHTML = '<div style="font-size:13px;color:var(--admin-text-muted);padding:12px 0;">No transaction data yet.</div>';
     return;
   }
 
@@ -139,8 +190,7 @@ function renderTypeBreakdown() {
 
   container.innerHTML = breakdown
     .map((b) => {
-      const pct =
-        maxVal > 0 ? Math.round((Math.abs(b.total_cents) / maxVal) * 100) : 0;
+      const pct = maxVal > 0 ? Math.round((Math.abs(b.total_cents) / maxVal) * 100) : 0;
       const color =
         b.type === "deposit"
           ? "var(--admin-success)"
@@ -161,8 +211,7 @@ function renderTypeBreakdown() {
                 <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.4s;"></div>
             </div>
         </div>`;
-    })
-    .join("");
+    }).join("");
 }
 
 function renderDividends() {
@@ -199,30 +248,13 @@ function renderTransactions() {
   const tbody = document.getElementById("tx-table-body");
   if (!tbody) return;
 
-  const totalPages = Math.max(1, Math.ceil(filteredTx.length / PAGE_SIZE));
-  currentPage = Math.min(currentPage, totalPages);
-  const start = (currentPage - 1) * PAGE_SIZE;
-  const slice = filteredTx.slice(start, start + PAGE_SIZE);
-
-  if (!slice.length) {
-    tbody.innerHTML =
-      '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No transactions found.</td></tr>';
-    return;
-  }
-
-  // Pagination UI
-  const info = document.getElementById("pagination-info");
-  if (info)
-    info.textContent = `Page ${currentPage} of ${totalPages} (${filteredTx.length} total)`;
-  const prevBtn = document.getElementById("prev-page");
-  const nextBtn = document.getElementById("next-page");
-  if (prevBtn) prevBtn.disabled = currentPage <= 1;
-  if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
-
-  tbody.innerHTML = slice
-    .map((tx) => {
-      const amountColor =
-        tx.amount_cents >= 0 ? "var(--admin-success)" : "var(--admin-danger)";
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  
+  if (!allTx.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No transactions found.</td></tr>';
+  } else {
+    tbody.innerHTML = allTx.map((tx) => {
+      const amountColor = tx.amount_cents >= 0 ? "var(--admin-success)" : "var(--admin-danger)";
       const sign = tx.amount_cents >= 0 ? "+" : "-";
       return `
         <tr>
@@ -240,42 +272,47 @@ function renderTransactions() {
             <td style="font-size:12px;color:var(--admin-text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(tx.description || "—")}</td>
             <td style="font-size:12px;color:var(--admin-text-muted);white-space:nowrap;">${formatDate(tx.created_at)}</td>
         </tr>`;
-    })
-    .join("");
+    }).join("");
+  }
+
+  // Pagination UI
+  const info = document.getElementById("pagination-info");
+  if (info) info.textContent = `Page ${currentPage} of ${totalPages} (${totalCount} total)`;
+  
+  const prevBtn = document.getElementById("prev-page");
+  const nextBtn = document.getElementById("next-page");
+  if (prevBtn) prevBtn.disabled = currentPage <= 1;
+  if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
 }
 
 // ─── Export ─────────────────────────────────────────────────────
 
 function exportTreasuryCSV() {
-  if (!allTx || !allTx.length) {
-    alert("No data to export.");
+  if (totalCount === 0) {
+    showToast("No data to export.", "error");
     return;
   }
-  const headers = [
-    "id",
-    "type",
-    "amount_cents",
-    "status",
-    "description",
-    "user_name",
-    "user_email",
-    "created_at",
-  ];
-  const csvRows = [
-    headers.join(","),
-    ...allTx.map((tx) =>
-      headers
-        .map((h) => `"${String(tx[h] ?? "").replace(/"/g, '""')}"`)
-        .join(","),
-    ),
-  ];
-  const csv = csvRows.join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
+  
+  showToast("Generating CSV Export...", "info");
+  
+  const typeFilter = document.getElementById("tx-type-filter")?.value || "";
+  const statusFilter = document.getElementById("tx-status-filter")?.value || "";
+  const startDate = document.getElementById("tx-start-date")?.value || "";
+  const endDate = document.getElementById("tx-end-date")?.value || "";
+
+  const params = new URLSearchParams();
+  if (typeFilter) params.append("tx_type", typeFilter);
+  if (statusFilter) params.append("status", statusFilter);
+  if (startDate) params.append("start_date", startDate);
+  if (endDate) params.append("end_date", endDate);
+
+  const downloadUrl = `/api/admin/treasury/export?${params.toString()}`;
+  
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  const date = new Date().toISOString().split("T")[0];
-  a.download = `poool_treasury_export_${date}.csv`;
+  a.href = downloadUrl;
   a.click();
+  
+  setTimeout(() => showToast("Export Downloaded", "success"), 1000);
 }
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -286,22 +323,14 @@ function esc(s) {
   d.textContent = s;
   return d.innerHTML;
 }
+
 function formatUSD(c) {
-  return (
-    "$" +
-    (Math.abs(c || 0) / 100).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  );
+  return "$" + (Math.abs(c || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
 function formatDate(iso) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function typeBadge(t) {

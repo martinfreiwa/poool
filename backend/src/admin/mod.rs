@@ -3,6 +3,8 @@ use crate::auth::routes::AppState;
 /// RBAC and invitation management for admin users.
 pub mod access;
 pub mod extractors;
+/// Unified search across entities
+pub mod search;
 
 /// Module
 pub mod approvals;
@@ -69,6 +71,7 @@ pub use orders::*;
 pub use pages::*;
 pub use reports::*;
 pub use rewards::*;
+pub use search::*;
 pub use settings::*;
 pub use storage::*;
 pub use submissions::*;
@@ -137,6 +140,7 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/approvals.html", get(page_admin_generic))
         .route("/admin/approvals", get(page_admin_generic))
         // ── JSON API ─────────────────────────────────────────────
+        .route("/api/admin/search", get(api_admin_search))
         .route("/api/admin/stats/overview", get(api_admin_stats_overview))
         // Access / RBAC
         .route("/api/admin/admins", get(access::api_admin_list))
@@ -267,6 +271,7 @@ pub fn router() -> axum::Router<AppState> {
         )
         // Treasury & Rewards
         .route("/api/admin/treasury", get(api_admin_treasury))
+        .route("/api/admin/treasury/export", get(api_admin_treasury_export))
         .route("/api/admin/rewards", get(api_admin_rewards))
         .route(
             "/api/admin/rewards/balances/:user_id/adjust",
@@ -329,7 +334,9 @@ pub fn router() -> axum::Router<AppState> {
         )
         // Emails
         .route("/api/admin/emails", get(api_admin_emails))
-        .route("/api/admin/emails/templates", post(api_admin_emails_create))
+        .route("/api/admin/emails/logs", get(api_admin_emails_logs))
+        .route("/api/admin/emails/templates", get(api_admin_emails_templates).post(api_admin_emails_create))
+        .route("/api/admin/emails/templates/all", get(api_admin_emails_templates_all))
         .route(
             "/api/admin/emails/templates/:id",
             put(api_admin_emails_update),
@@ -337,6 +344,10 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/emails/campaigns",
             post(api_admin_emails_campaign),
+        )
+        .route(
+            "/api/admin/emails/test",
+            post(api_admin_emails_test),
         )
         // Settings
         .route(

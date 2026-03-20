@@ -2,14 +2,19 @@ document.addEventListener("alpine:init", () => {
   Alpine.data("emailApp", () => ({
     activeTab: "overview",
     templateSearch: "",
+    isLoading: false,
+    errorState: false,
 
     // Data
     templates: [],
+    templatesAll: [], // Used for campaign dropdown
     logs: [],
     templatePage: 1,
     templatePageSize: 10,
+    templateTotal: 0,
     logPage: 1,
     logPageSize: 15,
+    logTotal: 0,
     stats: {
       deliveryRate: "--",
       deliveryTrend: 0,
@@ -21,6 +26,7 @@ document.addEventListener("alpine:init", () => {
     },
 
     // Editor State
+    editorInstance: null,
     editingTemplate: false,
     currentTemplate: {
       id: null,
@@ -44,50 +50,129 @@ document.addEventListener("alpine:init", () => {
       type: "success",
     },
 
+    // Debounce
+    _searchTimeout: null,
+
     async init() {
-      await this.loadData();
+      // Setup debounced search watcher
+      this.$watch('templateSearch', () => {
+        clearTimeout(this._searchTimeout);
+        this._searchTimeout = setTimeout(() => {
+          this.templatePage = 1;
+          this.loadTemplates();
+        }, 300);
+      });
+      // Setup tab watcher to load data if needed
+      this.$watch('activeTab', (tabs) => {
+        if (tabs === 'templates' && this.templates.length === 0) {
+           this.loadTemplates();
+        }
+        if (tabs === 'logs' && this.logs.length === 0) {
+           this.loadLogs();
+        }
+        if (tabs === 'campaigns' && this.templatesAll.length === 0) {
+           this.loadAllTemplates();
+        }
+      });
+      
+      await this.loadStats();
+      await this.loadLogs();
     },
 
-    async loadData() {
+    async loadStats() {
+      this.isLoading = true;
+      this.errorState = false;
       try {
         const resp = await fetch("/api/admin/emails");
-        if (!resp.ok) throw new Error("Failed to load email data");
+        if (!resp.ok) throw new Error("Failed to load email stats");
         const data = await resp.json();
-
-        this.templates = data.templates || [];
-        // Update stats block with server data if available
         if (data.stats) {
           this.stats = { ...this.stats, ...data.stats };
         }
-        if (data.logs) {
-          this.logs = data.logs;
-        }
       } catch (err) {
+        this.errorState = true;
         this.showToast("Failed to connect to email server.", "error");
+      } finally {
+        this.isLoading = false;
       }
     },
 
-    get filteredTemplates() {
-      let res = this.templates;
-      if (this.templateSearch) {
-        const s = this.templateSearch.toLowerCase();
-        res = res.filter(
-          (t) =>
-            (t.name && t.name.toLowerCase().includes(s)) ||
-            (t.subject && t.subject.toLowerCase().includes(s)),
-        );
+    async loadLogs() {
+      this.isLoading = true;
+      try {
+        const resp = await fetch(`/api/admin/emails/logs?page=${this.logPage}&limit=${this.logPageSize}`);
+        if (!resp.ok) throw new Error("Failed to load generic logs");
+        const data = await resp.json();
+        this.logs = data.items || [];
+        this.logTotal = data.total || 0;
+      } catch (err) {
+        this.showToast("Failed to load logs.", "error");
+      } finally {
+        this.isLoading = false;
       }
-      return res;
+    },
+
+    async loadTemplates() {
+      this.isLoading = true;
+      try {
+        const q = this.templateSearch ? `&search=${encodeURIComponent(this.templateSearch)}` : '';
+        const resp = await fetch(`/api/admin/emails/templates?page=${this.templatePage}&limit=${this.templatePageSize}${q}`);
+        if (!resp.ok) throw new Error("Failed to load templates");
+        const data = await resp.json();
+        this.templates = data.items || [];
+        this.templateTotal = data.total || 0;
+      } catch (err) {
+        this.showToast("Failed to load templates.", "error");
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async loadAllTemplates() {
+      try {
+        const resp = await fetch(`/api/admin/emails/templates/all`);
+        if (!resp.ok) throw new Error("Failed to load templates for campaigns");
+        const data = await resp.json();
+        this.templatesAll = data.items || [];
+      } catch (err) {
+        this.showToast("Failed to load all templates.", "error");
+      }
     },
 
     get paginatedTemplates() {
-      const start = (this.templatePage - 1) * this.templatePageSize;
-      return this.filteredTemplates.slice(start, start + this.templatePageSize);
+      return this.templates;
     },
 
     get paginatedLogs() {
-      const start = (this.logPage - 1) * this.logPageSize;
-      return this.logs.slice(start, start + this.logPageSize);
+      return this.logs;
+    },
+    
+    prevTemplatePage() {
+      if (this.templatePage > 1) {
+         this.templatePage--;
+         this.loadTemplates();
+      }
+    },
+    
+    nextTemplatePage() {
+      if (this.templatePage * this.templatePageSize < this.templateTotal) {
+         this.templatePage++;
+         this.loadTemplates();
+      }
+    },
+
+    prevLogPage() {
+      if (this.logPage > 1) {
+         this.logPage--;
+         this.loadLogs();
+      }
+    },
+    
+    nextLogPage() {
+      if (this.logPage * this.logPageSize < this.logTotal) {
+         this.logPage++;
+         this.loadLogs();
+      }
     },
 
     startNewTemplate() {
@@ -96,10 +181,10 @@ document.addEventListener("alpine:init", () => {
         name: "",
         subject: "",
         description: "",
-        html_template:
-          "<h1>Welcome {{first_name}}</h1>\n<p>Start editing here...</p>",
+        html_template: "<h1>Welcome {{first_name}}</h1>\n<p>Start editing here...</p>",
       };
       this.editingTemplate = true;
+      this.initEditor();
     },
 
     editTemplate(t) {
@@ -108,14 +193,41 @@ document.addEventListener("alpine:init", () => {
         name: t.name,
         subject: t.subject,
         description: t.description || "",
-        // we won't have the html_template from the overview endpoint, we should probably fetch it deep
-        // but for now let's just use what's returned. We should make sure the GET /api/admin/emails includes HTML.
         html_template: t.html_template || "<h1>" + t.subject + "</h1>",
       };
       this.editingTemplate = true;
+      this.initEditor();
+    },
+
+    initEditor() {
+      // Delay initialization so DOM completes Alpine state transition
+      setTimeout(() => {
+        const el = document.getElementById('html_editor');
+        if (!el) return;
+        // Clean previous CodeMirror wrapper
+        const nextSilbling = el.nextSibling;
+        if (nextSilbling && nextSilbling.classList && nextSilbling.classList.contains("CodeMirror")) {
+            nextSilbling.remove();
+        }
+        
+        if (window.CodeMirror) {
+            this.editorInstance = window.CodeMirror.fromTextArea(el, {
+              mode: "htmlmixed",
+              lineNumbers: true,
+              theme: "default"
+            });
+            this.editorInstance.on("change", () => {
+              this.currentTemplate.html_template = this.editorInstance.getValue();
+            });
+        }
+      }, 50);
     },
 
     cancelEdit() {
+      if (this.editorInstance) {
+          this.editorInstance.toTextArea();
+          this.editorInstance = null;
+      }
       this.editingTemplate = false;
     },
 
@@ -135,15 +247,17 @@ document.addEventListener("alpine:init", () => {
       try {
         const isNew = !this.currentTemplate.id;
         const method = isNew ? "POST" : "PUT";
-        // If it's new, we post to /api/admin/emails/templates
-        // If it's updating, we put to /api/admin/emails/templates/:id
         const url = isNew
           ? "/api/admin/emails/templates"
           : `/api/admin/emails/templates/${this.currentTemplate.id}`;
 
+        const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const headers = { "Content-Type": "application/json" };
+        if (csrfTokenMeta) headers["X-CSRF-Token"] = csrfTokenMeta.getAttribute("content");
+
         const resp = await fetch(url, {
           method,
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(this.currentTemplate),
         });
 
@@ -152,7 +266,11 @@ document.addEventListener("alpine:init", () => {
           throw new Error(err.error || "Failed to save template");
         }
 
-        await this.loadData();
+        await this.loadTemplates();
+        if (this.editorInstance) {
+            this.editorInstance.toTextArea();
+            this.editorInstance = null;
+        }
         this.editingTemplate = false;
         this.showToast("Template saved successfully!");
       } catch (err) {
@@ -160,13 +278,43 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
+    async sendTestTemplate() {
+      if (!this.currentTemplate.id) {
+          this.showToast("Save the template first before sending a test.", "error");
+          return;
+      }
+      try {
+        const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const headers = { "Content-Type": "application/json" };
+        if (csrfTokenMeta) headers["X-CSRF-Token"] = csrfTokenMeta.getAttribute("content");
+
+        const resp = await fetch("/api/admin/emails/test", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ templateId: this.currentTemplate.id }),
+        });
+        if (!resp.ok) throw new Error("Failed to send test email");
+        this.showToast("Test email queued successfully!");
+      } catch (err) {
+        this.showToast(err.message, "error");
+      }
+    },
+
     async sendCampaign() {
       if (!this.campaign.templateId) return;
+
+      const confirmed = confirm("WARNING: You are about to send an email campaign to a large number of users. Are you absolutely SURE you want to proceed?");
+      if (!confirmed) return;
+
       this.sending = true;
       try {
+        const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+        const headers = { "Content-Type": "application/json" };
+        if (csrfTokenMeta) headers["X-CSRF-Token"] = csrfTokenMeta.getAttribute("content");
+
         const resp = await fetch("/api/admin/emails/campaigns", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(this.campaign),
         });
         if (!resp.ok) {
@@ -178,13 +326,14 @@ document.addEventListener("alpine:init", () => {
         // Switch to logs to watch sending
         this.activeTab = "logs";
         this.campaign.templateId = "";
+        this.logPage = 1;
 
         // Reload data shortly to show logs
-        setTimeout(() => this.loadData(), 2000);
+        setTimeout(() => this.loadLogs(), 2000);
       } catch (err) {
         this.showToast(err.message, "error");
       } finally {
-        this.sending = false;
+        this.sending = true; // Stay functionally true until tab switches
       }
     },
 

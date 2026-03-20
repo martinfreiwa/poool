@@ -101,8 +101,15 @@
         ? ((data.metrics.totalSignups / data.metrics.totalClicks) * 100).toFixed(1) + '% CVR'
         : '0.0% CVR';
 
+      // Data-driven trend rendering — hide trends when data is 0
       const trendValues = document.querySelectorAll(".partner-metrics-grid .metric-card-trend");
-      if (trendValues.length >= 2) {
+      if (trendValues.length >= 4) {
+        // Trend 0: Total Clicks trend
+        if (data.metrics.totalClicks === 0) {
+          trendValues[0].innerHTML = '<span style="color:#98a2b3">No data yet</span>';
+          trendValues[0].className = 'metric-card-trend neutral';
+        }
+        // Trend 1: CVR
         trendValues[1].innerHTML = `
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="22" y1="12" x2="2" y2="12"></line>
@@ -110,6 +117,16 @@
                 </svg>
                 ${cvr}
             `;
+        // Trend 2: Qualified investors
+        if (data.metrics.qualifiedInvestors === 0) {
+          trendValues[2].innerHTML = '<span style="color:#98a2b3">No data yet</span>';
+          trendValues[2].className = 'metric-card-trend neutral';
+        }
+        // Trend 3: Network Total In
+        if (data.metrics.networkTotalIn === 0) {
+          trendValues[3].innerHTML = '<span style="color:#98a2b3">Share your link to get started</span>';
+          trendValues[3].className = 'metric-card-trend neutral';
+        }
       }
     }
   }
@@ -125,7 +142,7 @@
     // Fallback and modern clipboard API (UX Best Practice)
     if (navigator.clipboard) {
       navigator.clipboard.writeText(input.value)
-        .then(() => showToast("Referral link copied!", "success"))
+        .then(() => { showToast("Referral link copied!", "success"); showCopiedFeedback(); })
         .catch(() => execCopyCmd(input));
     } else {
       execCopyCmd(input);
@@ -137,9 +154,21 @@
     try {
       document.execCommand("copy");
       showToast("Referral link copied!", "success");
+      showCopiedFeedback();
     } catch (err) {
       showToast("Failed to copy link", "error");
     }
+  }
+
+  // Visual "Copied ✓" feedback on copy buttons
+  function showCopiedFeedback() {
+    const btns = document.querySelectorAll('.copy-link-btn');
+    btns.forEach(btn => {
+      const original = btn.innerHTML;
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!`;
+      btn.classList.add('copied-state');
+      setTimeout(() => { btn.innerHTML = original; btn.classList.remove('copied-state'); }, 2000);
+    });
   }
 
   // Konsistentes Styling für System Feedback
@@ -410,6 +439,8 @@
     const canvas = document.getElementById('campaignChart');
     if (!canvas) return;
 
+    const chartBody = canvas.closest('.campaign-chart-body');
+
     const days = chartRangeDays;
     const labels = generateDateLabels(days);
 
@@ -421,6 +452,31 @@
         totalClicks += c.clicks || 0;
         totalSignups += c.signups || 0;
       });
+    }
+
+    // Show empty state when no data exists
+    let emptyOverlay = chartBody ? chartBody.querySelector('.chart-empty-state') : null;
+    if (totalClicks === 0 && totalSignups === 0) {
+      if (!emptyOverlay && chartBody) {
+        emptyOverlay = document.createElement('div');
+        emptyOverlay.className = 'chart-empty-state';
+        emptyOverlay.innerHTML = `
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d0d5dd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          <p class="chart-empty-title">No activity yet</p>
+          <p class="chart-empty-desc">Share your referral link to start tracking clicks and signups</p>
+        `;
+        chartBody.appendChild(emptyOverlay);
+      }
+      if (emptyOverlay) emptyOverlay.style.display = 'flex';
+      canvas.style.display = 'none';
+      return;
+    } else {
+      if (emptyOverlay) emptyOverlay.style.display = 'none';
+      canvas.style.display = 'block';
     }
 
     const clicksData = generateDailyData(totalClicks, days);
@@ -774,8 +830,37 @@
       setVal('payout-account-email', ps.account_email);
       setVal('payout-full-name', ps.full_name);
       setVal('payout-vat', ps.vat_number);
+
+      // Toggle conditional form fields
+      togglePayoutFields(ps.payment_method || 'bank_transfer');
     } catch (e) {
       console.warn('Failed to load payout settings:', e);
+    }
+
+    // Bind payment method change handler
+    const methodSelect = document.getElementById('payout-payment-method');
+    if (methodSelect) {
+      methodSelect.addEventListener('change', function() {
+        togglePayoutFields(this.value);
+      });
+    }
+  }
+
+  // Conditional payout form fields
+  function togglePayoutFields(method) {
+    const accountField = document.getElementById('payout-account-email');
+    const accountLabel = accountField ? accountField.closest('.commissions-form-field')?.querySelector('label') : null;
+    
+    if (accountField && accountLabel) {
+      if (method === 'paypal') {
+        accountLabel.textContent = 'PayPal Email';
+        accountField.placeholder = 'your@email.com';
+        accountField.type = 'email';
+      } else {
+        accountLabel.textContent = 'Account / IBAN';
+        accountField.placeholder = 'e.g. GB29 NWBK 6016 1331 9268 19';
+        accountField.type = 'text';
+      }
     }
   }
 

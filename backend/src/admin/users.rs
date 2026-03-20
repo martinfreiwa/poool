@@ -2,18 +2,117 @@ use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
 use crate::common::sanitize;
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Query, State},
     response::IntoResponse,
 };
 
-/// GET /api/admin/users - List all users with roles, KYC, and balances.
+/// Query parameters for the paginated user list.
+#[derive(serde::Deserialize, Default)]
+pub struct AdminUsersQuery {
+    /// Page number (1-indexed), default 1
+    pub page: Option<i64>,
+    /// Items per page, default 20, max 100
+    pub limit: Option<i64>,
+    /// Search term (matches email, first_name, last_name)
+    pub search: Option<String>,
+    /// Filter by role name (e.g. "investor", "developer", "admin")
+    pub role: Option<String>,
+    /// Filter by KYC status (e.g. "approved", "pending", "rejected")
+    pub kyc_status: Option<String>,
+    /// Filter by account status (e.g. "active", "suspended")
+    pub status: Option<String>,
+    /// Sort column (email, created_at, status, balance_cents). Default: created_at
+    pub sort_by: Option<String>,
+    /// Sort direction ("asc" or "desc"). Default: desc
+    pub sort_dir: Option<String>,
+}
+
+/// GET /api/admin/users - List users with server-side pagination, search, and filters.
+///
+/// Returns: `{ total_count, page, limit, total_pages, data: [...] }`
 pub async fn api_admin_users(
     _admin: AdminUser,
     State(state): State<AppState>,
+    Query(params): Query<AdminUsersQuery>,
 ) -> Result<axum::response::Response, ApiError> {
-    // Verify the user has admin privileges
-    // Fetch users with profiles, roles, KYC, and balance in a single query
-    // to avoid N+1 problem (previously 3 extra queries per user)
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(20).clamp(1, 100);
+    let offset = (page - 1) * limit;
+
+    let search = params
+        .search
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| format!("%{}%", s.trim().to_lowercase()));
+
+    let role_filter = params
+        .role
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.trim().to_string());
+
+    let kyc_filter = params
+        .kyc_status
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.trim().to_string());
+
+    let status_filter = params
+        .status
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.trim().to_string());
+
+    // Whitelist sort columns to prevent injection
+    let sort_col = match params.sort_by.as_deref() {
+        Some("email") => "u.email",
+        Some("status") => "u.status",
+        Some("balance_cents") => "balance_cents",
+        _ => "u.created_at",
+    };
+    let sort_dir = match params.sort_dir.as_deref() {
+        Some("asc") => "ASC",
+        _ => "DESC",
+    };
+
+    // Build the ORDER BY clause safely (values are whitelisted above)
+    let order_clause = format!("{} {}", sort_col, sort_dir);
+
+    // Count query
+    let count: i64 = sqlx::query_scalar(&format!(
+        r#"
+        SELECT COUNT(*)::bigint
+        FROM users u
+        LEFT JOIN user_profiles p ON p.user_id = u.id
+        WHERE ($1::text IS NULL OR (
+            LOWER(u.email) LIKE $1
+            OR LOWER(COALESCE(p.first_name, '')) LIKE $1
+            OR LOWER(COALESCE(p.last_name, '')) LIKE $1
+        ))
+        AND ($2::text IS NULL OR u.status = $2)
+        AND ($3::text IS NULL OR EXISTS (
+            SELECT 1 FROM user_roles ur2
+            JOIN roles r2 ON r2.id = ur2.role_id
+            WHERE ur2.user_id = u.id AND r2.name = $3
+        ))
+        AND ($4::text IS NULL OR (
+            SELECT kr2.status FROM kyc_records kr2
+            WHERE kr2.user_id = u.id ORDER BY kr2.created_at DESC LIMIT 1
+        ) = $4)
+        "#
+    ))
+    .bind(&search)
+    .bind(&status_filter)
+    .bind(&role_filter)
+    .bind(&kyc_filter)
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to count admin users: {e}");
+        ApiError::Internal("Failed to count users".to_string())
+    })?;
+
+    // Data query with pagination
     let rows = sqlx::query_as::<
         _,
         (
@@ -27,7 +126,7 @@ pub async fn api_admin_users(
             Option<String>, // kyc_status
             i64,            // balance_cents
         ),
-    >(
+    >(&format!(
         r#"
         SELECT
             u.id::text,
@@ -56,10 +155,32 @@ pub async fn api_admin_users(
             ), 0)::bigint AS balance_cents
         FROM users u
         LEFT JOIN user_profiles p ON p.user_id = u.id
-        ORDER BY u.created_at DESC
-        LIMIT 200
+        WHERE ($1::text IS NULL OR (
+            LOWER(u.email) LIKE $1
+            OR LOWER(COALESCE(p.first_name, '')) LIKE $1
+            OR LOWER(COALESCE(p.last_name, '')) LIKE $1
+        ))
+        AND ($2::text IS NULL OR u.status = $2)
+        AND ($3::text IS NULL OR EXISTS (
+            SELECT 1 FROM user_roles ur2
+            JOIN roles r2 ON r2.id = ur2.role_id
+            WHERE ur2.user_id = u.id AND r2.name = $3
+        ))
+        AND ($4::text IS NULL OR (
+            SELECT kr2.status FROM kyc_records kr2
+            WHERE kr2.user_id = u.id ORDER BY kr2.created_at DESC LIMIT 1
+        ) = $4)
+        ORDER BY {}
+        LIMIT $5 OFFSET $6
         "#,
-    )
+        order_clause
+    ))
+    .bind(&search)
+    .bind(&status_filter)
+    .bind(&role_filter)
+    .bind(&kyc_filter)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(&state.db)
     .await;
 
@@ -105,7 +226,16 @@ pub async fn api_admin_users(
         )
         .collect();
 
-    Ok(Json(users_json).into_response())
+    let total_pages = (count + limit - 1) / limit;
+
+    Ok(Json(serde_json::json!({
+        "total_count": count,
+        "page": page,
+        "limit": limit,
+        "total_pages": total_pages,
+        "data": users_json
+    }))
+    .into_response())
 }
 
 /// GET /api/admin/users/:user_id - Full user detail with all related data.

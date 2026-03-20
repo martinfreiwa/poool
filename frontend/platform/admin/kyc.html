@@ -3,21 +3,83 @@
 
 <head>
   <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
-    <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    @view-transition { navigation: auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* KYC Page Specific Styles (extracted from inline styles) */
+    .kyc-kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 20px; }
+    .kyc-kpi-card { padding: 16px; }
+    .kyc-kpi-header { margin-bottom: 8px; }
+    .kyc-kpi-value { font-size: 28px; font-weight: 500; }
+    
+    .kyc-text-warning { color: var(--admin-warning); }
+    .kyc-text-success { color: var(--admin-success); }
+    .kyc-text-danger { color: var(--admin-danger); }
+    .kyc-text-muted { font-size: 12px; color: var(--admin-text-muted); }
+    
+    .kyc-tabs { margin-bottom: 20px; flex-wrap: wrap; }
+    .kyc-col-actions { width: 180px; }
+    
+    .kyc-empty-cell { text-align: center; padding: 40px; color: var(--admin-text-muted); }
+    .kyc-error-cell { text-align: center; padding: 40px; color: var(--admin-danger); }
+    
+    .kyc-spinner {
+      margin: 0 auto 12px;
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--admin-border);
+      border-top-color: var(--admin-accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    .kyc-pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+    .kyc-pagination-info { font-size: 13px; color: var(--admin-text-muted); }
+    .kyc-pagination-actions { display: flex; gap: 6px; }
+    
+    .kyc-filter-banner { padding: 10px 20px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--admin-text-secondary); }
+    .kyc-filter-container { margin-bottom: 16px; }
+    .kyc-filter-inner { padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .kyc-search { width: 220px; }
+    .kyc-count-label { margin-left: auto; font-size: 12px; color: var(--admin-text-muted); }
+    
+    /* Document Viewer */
+    .kyc-doc-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+    .kyc-doc-viewer-close { position: absolute; top: 20px; right: 20px; color: white; cursor: pointer; font-size: 30px; background: none; border: none; padding: 8px; line-height: 1; }
+    .kyc-doc-content-box { max-width: 90%; max-height: 80%; overflow: auto; background: white; padding: 10px; border-radius: 8px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,0.2); }
+    .kyc-doc-footer { margin-top: 20px; color: white; text-align: center; font-size: 14px; }
+    .kyc-doc-img { max-width: 100%; display: block; margin: 0 auto; }
+    .kyc-doc-sep { margin: 20px 0; border: none; border-top: 1px solid #e5e7eb; }
+    
+    /* Action Badges & Buttons */
+    .kyc-action-group { display: flex; gap: 4px; }
+    .kyc-action-full { margin-top: 4px; width: 100%; }
+    .kyc-retry-btn { background: none; border: none; cursor: pointer; text-decoration: underline; color: var(--admin-accent); font-size: 12px; padding: 0; margin-left: 4px; }
+    .kyc-date { font-size: 12px; color: var(--admin-text-muted); white-space: nowrap; }
+    .kyc-date-danger { font-size: 12px; color: var(--admin-danger); white-space: nowrap; }
+    .kyc-id-badge { font-family: monospace; font-size: 11px; background: var(--admin-bg-subtle); padding: 2px 6px; border-radius: 4px; }
+    
+    /* Modal */
+    .kyc-modal-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; }
+    .kyc-modal-content { background: var(--admin-bg-card); border: 1px solid var(--admin-border); border-radius: var(--admin-radius-xl); padding: 28px; max-width: 460px; width: 90%; animation: admin-fadeIn 0.2s ease-out; }
+    .kyc-modal-title { font-size: 18px; font-weight: 700; color: var(--admin-text-primary); margin: 0 0 8px; }
+    .kyc-modal-desc { font-size: 13px; color: var(--admin-text-secondary); margin: 0 0 20px; line-height: 1.5; }
+    .kyc-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; }
+    
+    /* Toast */
+    .kyc-toast { position: fixed; bottom: 24px; right: 24px; z-index: 2000; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: admin-fadeIn 0.2s ease-out; }
+  </style>
+  <script src="/static/js/admin-theme.js"></script>
   <title>KYC &amp; AML | Admin | POOOL</title>
   <meta name="description" content="POOOL Admin — KYC review queue, compliance desk, and AML operations." />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
-  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.2" />
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
-  <script src="/static/js/poool-dropdown.js"></script>
-  <script src="/static/js/poool-dropdown-init.js"></script>
-  <script src="/static/js/admin-theme.js"></script>
-  <script src="/static/js/admin-permission-guard.js"></script>
-  <script src="/static/js/admin-global-search.js"></script>
+  <script src="/static/js/admin-utils.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
 </head>
@@ -54,7 +116,7 @@
               <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9z" fill="currentColor" fill-opacity="0.1" />
               <path d="M13.73 21a2 2 0 01-3.46 0" />
             </svg>
-            <span class="admin-notification-badge" style="display:none"></span>
+            <span class="admin-notification-badge" style="display: none;"></span>
           </button>
         </div>
       </header>
@@ -70,102 +132,87 @@
         </div>
 
         <!-- KPI Cards -->
-        <div class="admin-kpi-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 20px">
-          <div class="admin-kpi-card" style="padding: 16px">
-            <div class="admin-kpi-header" style="margin-bottom: 8px">
+        <div class="admin-kpi-grid kyc-kpi-grid">
+          <div class="admin-kpi-card kyc-kpi-card">
+            <div class="admin-kpi-header kyc-kpi-header">
               <span class="admin-kpi-label">Pending Review</span>
               <div class="admin-kpi-icon">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 7v5l3 3" />
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-warning)" id="kyc-pending">
-              —
-            </div>
+            <div class="admin-kpi-value kyc-kpi-value kyc-text-warning" id="kyc-pending">—</div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
-            <div class="admin-kpi-header" style="margin-bottom: 8px">
+          <div class="admin-kpi-card kyc-kpi-card">
+            <div class="admin-kpi-header kyc-kpi-header">
               <span class="admin-kpi-label">Approved</span>
               <div class="admin-kpi-icon">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
                   <path d="M8 12.5l3 3 5-6" />
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-success)" id="kyc-approved">
-              —
-            </div>
+            <div class="admin-kpi-value kyc-kpi-value kyc-text-success" id="kyc-approved">—</div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
-            <div class="admin-kpi-header" style="margin-bottom: 8px">
+          <div class="admin-kpi-card kyc-kpi-card">
+            <div class="admin-kpi-header kyc-kpi-header">
               <span class="admin-kpi-label">Rejected</span>
               <div class="admin-kpi-icon">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="4" />
                   <path d="M9 9l6 6M15 9l-6 6" />
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-danger)" id="kyc-rejected">
-              —
-            </div>
+            <div class="admin-kpi-value kyc-kpi-value kyc-text-danger" id="kyc-rejected">—</div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
-            <div class="admin-kpi-header" style="margin-bottom: 8px">
+          <div class="admin-kpi-card kyc-kpi-card">
+            <div class="admin-kpi-header kyc-kpi-header">
               <span class="admin-kpi-label">PEP Flags</span>
               <div class="admin-kpi-icon">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="4" />
                   <path d="M9 9l6 6M15 9l-6 6" />
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-danger)" id="kyc-pep">
-              —
-            </div>
+            <div class="admin-kpi-value kyc-kpi-value kyc-text-danger" id="kyc-pep">—</div>
           </div>
-          <div class="admin-kpi-card" style="padding: 16px">
-            <div class="admin-kpi-header" style="margin-bottom: 8px">
+          <div class="admin-kpi-card kyc-kpi-card">
+            <div class="admin-kpi-header kyc-kpi-header">
               <span class="admin-kpi-label">Expiring Soon</span>
               <div class="admin-kpi-icon">
-                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 7v5l3 3" />
                 </svg>
               </div>
             </div>
-            <div class="admin-kpi-value" style="font-size: 28px; color: var(--admin-warning)" id="kyc-expiring">
-              —
-            </div>
+            <div class="admin-kpi-value kyc-kpi-value kyc-text-warning" id="kyc-expiring">—</div>
           </div>
         </div>
 
         <!-- Tabs: Queue / All Records -->
-        <div class="admin-tabs" style="margin-bottom: 20px; flex-wrap: wrap">
-          <button class="admin-tab active" data-tab="queue">
+        <div class="admin-tabs kyc-tabs" role="tablist">
+          <button class="admin-tab active" data-tab="queue" role="tab" aria-selected="true" aria-controls="tab-queue" id="tab-btn-queue">
             Review Queue
           </button>
-          <button class="admin-tab" data-tab="approved">Approved</button>
-          <button class="admin-tab" data-tab="rejected">Rejected</button>
-          <button class="admin-tab" data-tab="pep">PEP Flags</button>
-          <button class="admin-tab" data-tab="expiring">Expiring Soon</button>
-          <button class="admin-tab" data-tab="all">All Records</button>
+          <button class="admin-tab" data-tab="approved" role="tab" aria-selected="false" aria-controls="tab-filtered" id="tab-btn-approved">Approved</button>
+          <button class="admin-tab" data-tab="rejected" role="tab" aria-selected="false" aria-controls="tab-filtered" id="tab-btn-rejected">Rejected</button>
+          <button class="admin-tab" data-tab="pep" role="tab" aria-selected="false" aria-controls="tab-filtered" id="tab-btn-pep">PEP Flags</button>
+          <button class="admin-tab" data-tab="expiring" role="tab" aria-selected="false" aria-controls="tab-filtered" id="tab-btn-expiring">Expiring Soon</button>
+          <button class="admin-tab" data-tab="all" role="tab" aria-selected="false" aria-controls="tab-filtered" id="tab-btn-all">All Records</button>
         </div>
 
         <!-- Tab: Review Queue -->
-        <div class="admin-tab-panel active" id="tab-queue">
+        <div class="admin-tab-panel active" id="tab-queue" role="tabpanel" aria-labelledby="tab-btn-queue">
           <div class="admin-card">
             <div class="admin-card-header">
               <h3 class="admin-card-title">Pending Verification</h3>
-              <span style="font-size: 12px; color: var(--admin-text-muted)" id="queue-count">0 pending</span>
+              <span class="kyc-text-muted" id="queue-count">0 pending</span>
             </div>
             <div class="admin-card-body admin-card-body--flush">
               <table class="admin-table">
@@ -177,25 +224,13 @@
                     <th data-sort="pep_check">PEP Check</th>
                     <th data-sort="sanctions_check">Sanctions</th>
                     <th data-sort="submitted_at">Submitted</th>
-                    <th style="width: 180px">Actions</th>
+                    <th class="kyc-col-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="kyc-queue-body">
                   <tr>
-                    <td colspan="7" style="
-                          text-align: center;
-                          padding: 40px;
-                          color: var(--admin-text-muted);
-                        ">
-                      <div style="
-                            margin: 0 auto 12px;
-                            width: 24px;
-                            height: 24px;
-                            border: 2px solid var(--admin-border);
-                            border-top-color: var(--admin-accent);
-                            border-radius: 50%;
-                            animation: spin 0.8s linear infinite;
-                          "></div>
+                    <td colspan="7" class="kyc-empty-cell">
+                      <div class="kyc-spinner"></div>
                       Loading KYC queue…
                     </td>
                   </tr>
@@ -203,27 +238,36 @@
               </table>
             </div>
           </div>
+          <!-- Queue Pagination -->
+          <div class="kyc-pagination">
+            <span class="kyc-pagination-info" id="queue-pagination-info">Page 1 of 1</span>
+            <div class="kyc-pagination-actions">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="queue-prev-page" disabled>← Previous</button>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="queue-next-page">Next →</button>
+            </div>
+          </div>
         </div>
 
-        <!-- Tab: All Records -->
-        <div class="admin-tab-panel" id="tab-all" style="display: none">
-          <!-- Filters -->
-          <div class="admin-card" style="margin-bottom: 16px">
-            <div style="
-                  padding: 14px 20px;
-                  display: flex;
-                  align-items: center;
-                  gap: 12px;
-                  flex-wrap: wrap;
-                ">
-              <div class="admin-search" style="width: 220px">
-                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Tab: Filtered Records -->
+        <div class="admin-tab-panel" id="tab-filtered" style="display: none;" role="tabpanel">
+          
+          <div id="kyc-filter-banner" class="admin-card kyc-filter-container" style="display: none;">
+            <div class="kyc-filter-banner">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              </svg>
+              <span>Filtered view: <strong id="kyc-filter-banner-label">—</strong></span>
+            </div>
+          </div>
+
+          <div class="admin-card kyc-filter-container">
+            <div class="kyc-filter-inner">
+              <div class="admin-search kyc-search">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="11" cy="11" r="6" />
                   <path d="M21 21l-4.35-4.35" />
                 </svg>
-                <input type="text" placeholder="Search by user email…" id="kyc-search"
-                  aria-label="Search KYC records" />
+                <input type="text" placeholder="Search by user email…" id="kyc-search" aria-label="Search KYC records" />
               </div>
               <select id="kyc-filter-status" class="admin-select" aria-label="Filter by KYC status">
                 <option value="">All Status</option>
@@ -233,13 +277,10 @@
                 <option value="rejected">Rejected</option>
                 <option value="expired">Expired</option>
               </select>
-              <span style="
-                    margin-left: auto;
-                    font-size: 12px;
-                    color: var(--admin-text-muted);
-                  " id="kyc-count-label">Showing 0 records</span>
+              <span class="kyc-count-label" id="kyc-count-label">Showing 0 records</span>
             </div>
           </div>
+
           <div class="admin-card">
             <div class="admin-card-body admin-card-body--flush">
               <table class="admin-table">
@@ -258,11 +299,7 @@
                 </thead>
                 <tbody id="kyc-all-body">
                   <tr>
-                    <td colspan="9" style="
-                          text-align: center;
-                          padding: 24px;
-                          color: var(--admin-text-muted);
-                        ">
+                    <td colspan="9" class="kyc-empty-cell">
                       Loading…
                     </td>
                   </tr>
@@ -270,21 +307,12 @@
               </table>
             </div>
           </div>
-          <!-- Pagination for All Records -->
-          <div style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-top: 16px;
-              ">
-            <span style="font-size: 13px; color: var(--admin-text-muted)" id="all-pagination-info">Page 1 of 1</span>
-            <div style="display: flex; gap: 6px">
-              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="all-prev-page" disabled>
-                ← Previous
-              </button>
-              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="all-next-page">
-                Next →
-              </button>
+          <!-- Pagination -->
+          <div class="kyc-pagination">
+            <span class="kyc-pagination-info" id="all-pagination-info">Page 1 of 1</span>
+            <div class="kyc-pagination-actions">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="all-prev-page" disabled>← Previous</button>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="all-next-page">Next →</button>
             </div>
           </div>
         </div>
@@ -293,68 +321,40 @@
   </div>
 
   <!-- KYC Action Modal -->
-  <div id="kyc-modal" style="
-        display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 1000;
-        background: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(4px);
-        align-items: center;
-        justify-content: center;
-      ">
-    <div style="
-          background: var(--admin-bg-card);
-          border: 1px solid var(--admin-border);
-          border-radius: var(--admin-radius-xl);
-          padding: 28px;
-          max-width: 460px;
-          width: 90%;
-          animation: admin-fadeIn 0.2s ease-out;
-        ">
-      <h3 style="
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--admin-text-primary);
-            margin: 0 0 8px;
-          " id="kyc-modal-title">
-        Review KYC
-      </h3>
-      <p style="
-            font-size: 13px;
-            color: var(--admin-text-secondary);
-            margin: 0 0 20px;
-          " id="kyc-modal-text">
-        —
-      </p>
+  <div id="kyc-modal" role="dialog" aria-modal="true" aria-labelledby="kyc-modal-title" class="kyc-modal-overlay" style="display: none;">
+    <div class="kyc-modal-content">
+      <h3 class="kyc-modal-title" id="kyc-modal-title">Review KYC</h3>
+      <p class="kyc-modal-desc" id="kyc-modal-text">—</p>
+      
       <div class="admin-form-group">
         <label class="admin-form-label" for="kyc-rejection-reason">Rejection Reason (required if rejecting)</label>
-        <textarea class="admin-textarea" id="kyc-rejection-reason" placeholder="Reason for rejection…"
-          rows="2"></textarea>
+        <textarea class="admin-textarea" id="kyc-rejection-reason" placeholder="Reason for rejection…" rows="2"></textarea>
       </div>
-      <div style="display: flex; gap: 8px; justify-content: flex-end">
-        <button class="admin-btn admin-btn--secondary" id="kyc-modal-cancel">
-          Cancel
-        </button>
+      
+      <div class="kyc-modal-actions">
+        <button class="admin-btn admin-btn--secondary" id="kyc-modal-cancel">Cancel</button>
         <button class="admin-btn admin-btn--danger" id="kyc-modal-reject">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round">
-            <path d="M4 4l8 8M12 4l-8 8" />
-          </svg>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
           Reject
         </button>
         <button class="admin-btn admin-btn--primary" id="kyc-modal-approve">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round">
-            <path d="M3 8l3.5 3.5L13 4" />
-          </svg>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8l3.5 3.5L13 4" /></svg>
           Approve
         </button>
       </div>
     </div>
   </div>
 
-  <script src="/static/js/admin-kyc.js"></script>
+  <!-- KYC Toast Notification -->
+  <div id="kyc-toast" class="kyc-toast" style="display: none;" role="alert" aria-live="polite"></div>
+
+  <script defer src="/static/js/view-transitions.js"></script>
+  <script defer src="/static/js/user-data.js"></script>
+  <script defer src="/static/js/poool-dropdown.js"></script>
+  <script defer src="/static/js/poool-dropdown-init.js"></script>
+  <script defer src="/static/js/admin-permission-guard.js"></script>
+  <script defer src="/static/js/admin-global-search.js"></script>
+  <script defer src="/static/js/admin-kyc.js"></script>
 </body>
 
 </html>

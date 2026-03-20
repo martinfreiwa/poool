@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadSubmissions();
   setupEventListeners();
   setupSorting();
+  setupKeyboardHandlers();
 });
 
 // ─── Sorting ─────────────────────────────────────────────────────────────────
@@ -69,6 +70,21 @@ function setupEventListeners() {
   document.getElementById("review-modal")?.addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeModal();
   });
+
+  // Export CSV
+  document.getElementById("btn-export-csv")?.addEventListener("click", exportSubmissionsCsv);
+}
+
+// ─── Keyboard Handlers ──────────────────────────────────────────────────────
+function setupKeyboardHandlers() {
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const modal = document.getElementById("review-modal");
+      if (modal && modal.style.display !== "none") {
+        closeModal();
+      }
+    }
+  });
 }
 
 // ─── Data Loading ─────────────────────────────────────────────────────────────
@@ -80,12 +96,31 @@ async function loadSubmissions() {
       allSubmissions = data.projects || [];
     } else {
       allSubmissions = [];
+      showLoadError();
+      return;
     }
   } catch (e) {
     allSubmissions = [];
+    showLoadError();
+    return;
   }
   applyFilters();
   updateStats();
+}
+
+function showLoadError() {
+  const tbody = document.getElementById("submissions-table-body");
+  if (!tbody) return;
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="10" style="text-align:center;padding:40px;">
+        <div style="color:var(--admin-danger);margin-bottom:12px;">Failed to load submissions.</div>
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="loadSubmissions()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Retry
+        </button>
+      </td>
+    </tr>`;
 }
 
 // ─── KPI Stats ────────────────────────────────────────────────────────────────
@@ -249,8 +284,11 @@ function openQuickModal(id, name) {
   reviewingId = id;
   reviewingName = name;
 
-  document.getElementById("review-modal-title").textContent =
-    `Quick Review: ${name}`;
+  // Safe DOM assignment — prevents XSS via project name
+  const titleEl = document.getElementById("review-modal-title");
+  titleEl.textContent = "";
+  titleEl.appendChild(document.createTextNode("Quick Review: " + name));
+
   document.getElementById("review-modal-details").innerHTML = `
         <div style="font-size:13px;color:var(--admin-text-secondary);margin-bottom:16px;">
             For full document data room, financials, and KYC status, please use the 
@@ -270,6 +308,8 @@ function openQuickModal(id, name) {
     inReviewBtn.onclick = () => handleQuickAction("in_review");
   }
   document.getElementById("review-modal").style.display = "flex";
+  // Focus the modal for keyboard accessibility
+  document.getElementById("review-notes").focus();
 }
 
 function closeModal() {
@@ -285,8 +325,15 @@ async function handleQuickAction(action) {
     document.getElementById("review-notes").style.borderColor =
       "var(--admin-danger)";
     document.getElementById("review-notes").focus();
+    showAdminToast("warning", "Please provide a rejection reason.");
     return;
   }
+
+  // Disable buttons during request
+  const approveBtn = document.getElementById("review-modal-approve");
+  const rejectBtn = document.getElementById("review-modal-reject");
+  const inReviewBtn = document.getElementById("review-modal-in-review");
+  [approveBtn, rejectBtn, inReviewBtn].forEach(b => { if (b) b.disabled = true; });
 
   try {
     const resp = await fetch(
@@ -302,13 +349,23 @@ async function handleQuickAction(action) {
     );
     if (resp.ok) {
       closeModal();
-      loadSubmissions();
+      showAdminToast("success", `Submission ${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'marked in review'} successfully.`);
+      // Optimistic UI: update the item in allSubmissions, re-render without full reload
+      const newStatus = action === "approve" ? "approved" : action === "reject" ? "rejected" : "in_review";
+      const idx = allSubmissions.findIndex(s => s.id === reviewingId);
+      if (idx !== -1) {
+        allSubmissions[idx].status = newStatus;
+      }
+      applyFilters();
+      updateStats();
     } else {
-      const err = await resp.json();
-      alert("Error: " + (err.error || "Failed to process action"));
+      const err = await resp.json().catch(() => ({}));
+      showAdminToast("error", err.error || "Failed to process action.");
     }
   } catch (e) {
-    alert("Network error. Please try again.");
+    showAdminToast("error", "Network error. Please try again.");
+  } finally {
+    [approveBtn, rejectBtn, inReviewBtn].forEach(b => { if (b) b.disabled = false; });
   }
 }
 
@@ -378,4 +435,59 @@ function debounce(fn, ms) {
     clearTimeout(t);
     t = setTimeout(() => fn.apply(this, args), ms);
   };
+}
+
+// ─── Toast Notification ──────────────────────────────────────────────────────
+function showAdminToast(type, message) {
+  if (window.showPooolToast) {
+    window.showPooolToast(null, message, type);
+    return;
+  }
+  // Fallback: create inline toast
+  let container = document.getElementById("admin-toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "admin-toast-container";
+    container.className = "admin-toast-container";
+    container.setAttribute("aria-live", "polite");
+    document.body.appendChild(container);
+  }
+  const colors = { success: "#059669", error: "#dc2626", warning: "#d97706", info: "#2563eb" };
+  const toast = document.createElement("div");
+  toast.style.cssText = `padding:12px 20px;border-radius:8px;background:${colors[type] || colors.info};color:#fff;font-size:13px;font-weight:600;margin-bottom:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:admin-fadeIn 0.2s ease;`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = "0"; toast.style.transition = "opacity 0.3s"; }, 3500);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// ─── CSV Export ──────────────────────────────────────────────────────────────
+function exportSubmissionsCsv() {
+  if (filteredSubs.length === 0) {
+    showAdminToast("warning", "No submissions to export.");
+    return;
+  }
+  const headers = ["ID", "Project Name", "Title", "Type", "Developer", "Email", "Status", "Total Raised (USD)", "Investors", "Progress %", "Created"];
+  const rows = filteredSubs.map(s => [
+    s.id || "",
+    (s.project_name || "").replace(/"/g, '""'),
+    (s.title || "").replace(/"/g, '""'),
+    s.asset_type || "",
+    (s.developer_name || "").replace(/"/g, '""'),
+    s.developer_email || "",
+    s.status || "",
+    ((s.total_raised_cents || 0) / 100).toFixed(2),
+    s.investors_count || 0,
+    ((s.funding_progress_bps || 0) / 100).toFixed(1),
+    s.created_at || ""
+  ]);
+  const csvContent = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `developer-submissions-${new Date().toISOString().split("T")[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showAdminToast("success", `Exported ${filteredSubs.length} submissions.`);
 }

@@ -6,11 +6,14 @@
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <style>@view-transition { navigation: auto; }</style>
+    <script src="/static/js/view-transitions.js"></script>
   <title id="page-title">Review Submission | Admin | POOOL</title>
   <meta name="description"
     content="Admin review of developer project submission with document data room, compliance checklist, and approval workflow." />
-  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.2" />
+  <script src="/static/js/vendor/htmx-1.9.10.min.js" defer></script>
   <script src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
   <script src="/static/js/poool-dropdown.js"></script>
@@ -280,7 +283,14 @@
         transform: translateY(0);
       }
     }
+
+    /* Dialog backdrop for reason modal */
+    #reason-modal::backdrop {
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(4px);
+    }
   </style>
+  <script src="/static/js/admin-utils.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
 </head>
@@ -758,7 +768,7 @@
                           color: var(--admin-text-muted);
                         ">Token Price × Total Tokens = Total Value</span>
                   </label>
-                  <div id="chk-math-result"></div>
+                  <div id="chk-math-result" aria-live="polite" role="status"></div>
                 </div>
 
                 <div class="checklist-item">
@@ -854,23 +864,22 @@
 
 
   <!-- Reason Modal (for reject / request revision) -->
-  <div id="reason-modal" style="display:none;position:fixed;inset:0;z-index:2000;
-       background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
-       align-items:center;justify-content:center;">
+  <dialog id="reason-modal" style="border:none;background:transparent;padding:0;max-width:480px;width:92%;
+       position:fixed;z-index:2000;">
     <div style="background:var(--admin-bg-card);border:1px solid var(--admin-border);
-         border-radius:var(--admin-radius-xl);padding:28px;max-width:480px;width:92%;
+         border-radius:var(--admin-radius-xl);padding:28px;
          animation:admin-fadeIn .2s ease-out;">
       <h3 id="reason-modal-title" style="font-size:16px;font-weight:700;margin:0 0 4px;"></h3>
       <p id="reason-modal-subtitle" style="font-size:13px;color:var(--admin-text-muted);margin:0 0 16px;"></p>
       <textarea id="reason-modal-text" class="admin-input" rows="4"
         style="width:100%;font-size:13px;resize:vertical;margin-bottom:16px;"
-        placeholder="Enter reason…"></textarea>
+        placeholder="Enter reason…" aria-label="Reason for action"></textarea>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button id="reason-modal-cancel" class="admin-btn admin-btn--secondary">Cancel</button>
         <button id="reason-modal-confirm" class="admin-btn admin-btn--primary">Confirm</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <script src="/static/js/admin-submission-review.js"></script>
 </body>

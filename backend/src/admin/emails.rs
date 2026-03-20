@@ -1,39 +1,31 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
 use axum::{
-    extract::{Json, State},
+    extract::{Json, State, Query},
     response::IntoResponse,
 };
 use sqlx::Row;
+
+/// Standard pagination and search parameters for list endpoints
+#[derive(serde::Deserialize)]
+pub struct ListParams {
+    /// Optional page index
+    page: Option<i64>,
+    /// Optional limit per page
+    limit: Option<i64>,
+    /// Optional search term
+    search: Option<String>,
+}
 
 //
 //  Admin Email Marketing API
 //
 
-/// GET /api/admin/emails  List templates, overview stats, and recent logs
+/// GET /api/admin/emails  List overview stats
 pub async fn api_admin_emails(
     _admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    // 1. Templates
-    let t_rows = sqlx::query(
-        "SELECT id::text, name, subject, html_template, version, description, updated_at::text, 'transactional' as type FROM email_templates ORDER BY name ASC" // Include html_template
-    ).fetch_all(&state.db).await.unwrap_or_default();
-
-    let templates: Vec<serde_json::Value> = t_rows
-        .iter()
-        .map(|r| {
-            serde_json::json!({
-                "id": r.get::<String, _>("id"), "name": r.get::<String, _>("name"),
-                "subject": r.get::<String, _>("subject"), "version": r.get::<i32, _>("version"),
-                "description": r.get::<Option<String>, _>("description"),
-                "html_template": r.get::<String, _>("html_template"),
-                "updated_at": r.get::<String, _>("updated_at"),
-                "type": r.get::<String, _>("type")
-            })
-        })
-        .collect();
-
     // 2. Real Aggregation
     let stats_row = sqlx::query!(
         r#"
@@ -96,31 +88,156 @@ pub async fn api_admin_emails(
         "totalSent": total_sent
     });
 
-    // 3. Logs
-    let log_rows = sqlx::query(
-        r#"SELECT e.id::text, e.subject, e.recipient_email, e.status, e.sent_at::text
-           FROM email_logs e
-           ORDER BY e.sent_at DESC LIMIT 50"#,
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
-
-    let logs: Vec<serde_json::Value> = log_rows
-        .iter()
-        .map(|r| {
-            serde_json::json!({
-                "id": r.get::<String, _>("id"), "subject": r.get::<String, _>("subject"),
-                "recipient_email": r.get::<String, _>("recipient_email"),
-                "status": r.get::<String, _>("status"), "sent_at": r.get::<String, _>("sent_at"),
-            })
-        })
-        .collect();
-
     Ok(
-        Json(serde_json::json!({ "templates": templates, "stats": stats, "logs": logs }))
-            .into_response(),
+        Json(serde_json::json!({ "stats": stats })).into_response(),
     )
+}
+
+/// GET /api/admin/emails/logs  List paginated email logs
+pub async fn api_admin_emails_logs(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    Query(params): Query<ListParams>,
+) -> Result<axum::response::Response, ApiError> {
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(15).clamp(1, 100);
+    let offset = (page - 1) * limit;
+    let search = params.search.unwrap_or_default();
+    
+    let logs_query = if search.is_empty() {
+        sqlx::query(
+            "SELECT e.id::text, e.subject, e.recipient_email, e.status, e.sent_at::text, t.name as template_name
+             FROM email_logs e
+             LEFT JOIN email_templates t ON e.template_id = t.id
+             ORDER BY e.sent_at DESC LIMIT $1 OFFSET $2"
+        ).bind(limit).bind(offset)
+    } else {
+        let s = format!("%{}%", search);
+        sqlx::query(
+            "SELECT e.id::text, e.subject, e.recipient_email, e.status, e.sent_at::text, t.name as template_name
+             FROM email_logs e
+             LEFT JOIN email_templates t ON e.template_id = t.id
+             WHERE e.recipient_email ILIKE $1 OR e.subject ILIKE $1
+             ORDER BY e.sent_at DESC LIMIT $2 OFFSET $3"
+        ).bind(s).bind(limit).bind(offset)
+    };
+
+    let log_rows = logs_query.fetch_all(&state.db).await.unwrap_or_default();
+    
+    let total_query = if search.is_empty() {
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM email_logs").fetch_one(&state.db).await.unwrap_or(0i64)
+    } else {
+        let s = format!("%{}%", search);
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM email_logs WHERE recipient_email ILIKE $1 OR subject ILIKE $1")
+            .bind(s).fetch_one(&state.db).await.unwrap_or(0i64)
+    };
+
+    let logs: Vec<serde_json::Value> = log_rows.iter().map(|r| {
+        serde_json::json!({
+            "id": r.get::<String, _>("id"), "subject": r.get::<String, _>("subject"),
+            "recipient_email": r.get::<String, _>("recipient_email"),
+            "status": r.get::<String, _>("status"), "sent_at": r.get::<String, _>("sent_at"),
+            "template_name": r.get::<Option<String>, _>("template_name")
+        })
+    }).collect();
+
+    Ok(Json(serde_json::json!({ "items": logs, "total": total_query })).into_response())
+}
+
+/// GET /api/admin/emails/templates  List paginated email templates
+pub async fn api_admin_emails_templates(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    Query(params): Query<ListParams>,
+) -> Result<axum::response::Response, ApiError> {
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(10).clamp(1, 100);
+    let offset = (page - 1) * limit;
+    let search = params.search.unwrap_or_default();
+    
+    let t_query = if search.is_empty() {
+        sqlx::query(
+            "SELECT id::text, name, subject, html_template, version, description, updated_at::text, 'transactional' as type FROM email_templates ORDER BY name ASC LIMIT $1 OFFSET $2"
+        ).bind(limit).bind(offset)
+    } else {
+        let s = format!("%{}%", search);
+        sqlx::query(
+            "SELECT id::text, name, subject, html_template, version, description, updated_at::text, 'transactional' as type FROM email_templates WHERE name ILIKE $1 OR subject ILIKE $1 ORDER BY name ASC LIMIT $2 OFFSET $3"
+        ).bind(s).bind(limit).bind(offset)
+    };
+
+    let t_rows = t_query.fetch_all(&state.db).await.unwrap_or_default();
+    
+    let total_query = if search.is_empty() {
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM email_templates").fetch_one(&state.db).await.unwrap_or(0i64)
+    } else {
+        let s = format!("%{}%", search);
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM email_templates WHERE name ILIKE $1 OR subject ILIKE $1")
+            .bind(s).fetch_one(&state.db).await.unwrap_or(0i64)
+    };
+
+    let templates: Vec<serde_json::Value> = t_rows.iter().map(|r| {
+        serde_json::json!({
+            "id": r.get::<String, _>("id"), "name": r.get::<String, _>("name"),
+            "subject": r.get::<String, _>("subject"), "version": r.get::<i32, _>("version"),
+            "description": r.get::<Option<String>, _>("description"),
+            "html_template": r.get::<String, _>("html_template"),
+            "updated_at": r.get::<String, _>("updated_at"),
+            "type": r.get::<String, _>("type")
+        })
+    }).collect();
+
+    Ok(Json(serde_json::json!({ "items": templates, "total": total_query })).into_response())
+}
+
+/// GET /api/admin/emails/templates_all  Fetch all templates without pagination
+pub async fn api_admin_emails_templates_all(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<axum::response::Response, ApiError> {
+    let t_query = sqlx::query("SELECT id::text, name, subject FROM email_templates ORDER BY name ASC");
+    let t_rows = t_query.fetch_all(&state.db).await.unwrap_or_default();
+    
+    let templates: Vec<serde_json::Value> = t_rows.iter().map(|r| {
+        serde_json::json!({
+            "id": r.get::<String, _>("id"), "name": r.get::<String, _>("name"),
+            "subject": r.get::<String, _>("subject")
+        })
+    }).collect();
+
+    Ok(Json(serde_json::json!({ "items": templates })).into_response())
+}
+
+/// POST /api/admin/emails/test  Test send an email template
+pub async fn api_admin_emails_test(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<axum::response::Response, ApiError> {
+    let template_id = body.get("templateId").and_then(|v| v.as_str()).unwrap_or("");
+    if template_id.is_empty() {
+        return Err(ApiError::BadRequest("Template ID required".to_string()));
+    }
+    
+    let uid = ApiError::parse_uuid(template_id)?;
+    
+    let t_row = sqlx::query("SELECT subject FROM email_templates WHERE id = $1")
+        .bind(uid)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None);
+    let subject: String = match t_row {
+        Some(r) => sqlx::Row::get(&r, "subject"),
+        None => return Err(ApiError::NotFound("Template not found".to_string())),
+    };
+
+    let admin_email = admin.user.email.clone();
+    
+    let _ = sqlx::query(
+        "INSERT INTO email_logs (user_id, template_id, subject, recipient_email, status, sent_at) VALUES ($1, $2, $3, $4, 'delivered', NOW())"
+    ).bind(admin.user.id).bind(uid).bind(&subject).bind(&admin_email).execute(&state.db).await;
+
+    Ok(Json(serde_json::json!({"status":"test_queued", "recipient": admin_email})).into_response())
 }
 
 /// POST /api/admin/emails/templates

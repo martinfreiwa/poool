@@ -30,45 +30,36 @@ let utFiltered = [],
   codeFiltered = [];
 
 document.addEventListener("DOMContentLoaded", () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tab = urlParams.get('tab') || 'tiers';
+  switchTab(tab, false);
+
   loadAll();
-  document.getElementById("ut-search")?.addEventListener(
-    "input",
-    debounce(() => {
-      utPage = 1;
-      renderUserTiers();
-    }, 250),
-  );
+  
+  const bindSearch = (id, callback) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", debounce((e) => {
+        el.style.opacity = '0.5';
+        callback();
+        setTimeout(() => el.style.opacity = '1', 200);
+    }, 250));
+  };
+
+  bindSearch("ut-search", () => { utPage = 1; renderUserTiers(); });
   document.getElementById("ut-filter-tier")?.addEventListener("change", () => {
     utPage = 1;
     renderUserTiers();
   });
-  document.getElementById("bal-search")?.addEventListener(
-    "input",
-    debounce(() => {
-      balPage = 1;
-      renderBalances();
-    }, 250),
-  );
-  document.getElementById("ref-search")?.addEventListener(
-    "input",
-    debounce(() => {
-      refPage = 1;
-      renderReferrals();
-    }, 250),
-  );
+  bindSearch("bal-search", () => { balPage = 1; renderBalances(); });
+  bindSearch("ref-search", () => { refPage = 1; renderReferrals(); });
   document
     .getElementById("ref-filter-status")
     ?.addEventListener("change", () => {
       refPage = 1;
       renderReferrals();
     });
-  document.getElementById("code-search")?.addEventListener(
-    "input",
-    debounce(() => {
-      codePage = 1;
-      renderCodes();
-    }, 250),
-  );
+  bindSearch("code-search", () => { codePage = 1; renderCodes(); });
 
   // Pagination Listeners
   document.getElementById("ut-prev-page")?.addEventListener("click", () => {
@@ -156,6 +147,10 @@ function setupSorting() {
     if (!panel) return;
     panel.querySelectorAll("th[data-sort]").forEach((th) => {
       th.style.cursor = "pointer";
+      th.tabIndex = 0;
+      th.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); th.click(); }
+      });
       th.addEventListener("click", () => {
         const field = th.dataset.sort;
         if (tab === "user-tiers") {
@@ -200,13 +195,18 @@ function setupSorting() {
 
 // ═══════════════ Tab Switching ═══════════════
 
-window.switchTab = function (tab) {
+window.switchTab = function (tab, updateUrl = true) {
   ["tiers", "user-tiers", "balances", "referrals"].forEach((t) => {
     const panel = document.getElementById("panel-" + t);
     const btn = document.getElementById("tab-" + t);
     if (panel) panel.style.display = t === tab ? "" : "none";
     if (btn) btn.classList.toggle("active", t === tab);
   });
+  if (updateUrl) {
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tab);
+    window.history.pushState({}, '', url);
+  }
 };
 
 // ═══════════════ Data Loading ═══════════════
@@ -222,10 +222,19 @@ async function loadAll() {
       referrals = d.referrals || [];
       referralCodes = d.referral_codes || [];
     } else {
+      throw new Error(`Failed to load data: HTTP ${r.status}`);
     }
   } catch (e) {
     console.error("Error loading rewards data", e);
     if (typeof Sentry !== 'undefined') Sentry.captureException(e);
+    if (window.showPooolToast) window.showPooolToast("Error", "Failed to load rewards data.", "error");
+    const errorMsg = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--admin-danger);">Failed to load data. <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="loadAll()" style="margin-left:8px;">Retry</button></td></tr>';
+    const ids = ["tiers-table-body", "user-tiers-body", "balances-body", "referrals-body", "codes-body"];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = errorMsg;
+    });
+    return;
   }
   updateKPIs();
   renderTiers();
@@ -264,21 +273,28 @@ function renderTiers() {
   tbody.innerHTML = tiers
     .map(
       (t) => `
-        <tr style="cursor:pointer;" onclick="editTier('${t.name}')">
+        <tr style="cursor:pointer;" class="tier-clickable-row" data-name="${escapeHtml(t.name)}">
             <td><span style="display:inline-flex;align-items:center;gap:6px;">
-                <span style="width:10px;height:10px;border-radius:50%;background:${t.badge_color || "#6366f1"};"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:${escapeHtml(t.badge_color) || "#6366f1"};"></span>
                 <strong>${esc(t.name)}</strong>
             </span></td>
             <td>${t.min_invest > 0 ? formatUSD(t.min_invest) : "Free"}</td>
             <td>${(t.cashback_pct || 0).toFixed(1)}%</td>
             <td>${formatUSD(t.referral_bonus || 0)}</td>
-            <td><button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="event.stopPropagation();editTier('${t.name}')">
+            <td><button class="admin-btn admin-btn--secondary admin-btn--sm">
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M11 2l3 3-9 9H2v-3l9-9z"/></svg>
             </button></td>
         </tr>
     `,
     )
     .join("");
+
+  tbody.onclick = (e) => {
+    const row = e.target.closest('.tier-clickable-row');
+    if (row && row.dataset.name) {
+        editTier(row.dataset.name);
+    }
+  };
 }
 
 window.editTier = function (name) {
@@ -399,15 +415,15 @@ window.saveTier = async function (isCreate) {
       body: JSON.stringify(payload),
     });
     if (r.ok) {
-      alert(`Tier "${tierName}" saved successfully.`);
+      if (window.showPooolToast) window.showPooolToast("Success", `Tier "${tierName}" saved successfully.`, "success");
       loadAll();
       cancelEdit();
     } else {
       const err = await r.json();
-      alert("Failed to save tier: " + (err.error || "Unknown error"));
+      if (window.showPooolToast) window.showPooolToast("Failed", "Failed to save tier: " + (err.error || "Unknown error"), "error");
     }
   } catch (e) {
-    alert("Network error: " + e.message);
+    if (window.showPooolToast) window.showPooolToast("Error", "Network error: " + e.message, "error");
   }
 };
 
@@ -492,19 +508,23 @@ function renderUserTiers() {
       return `<tr>
             <td><div class="admin-user-inline"><div><div class="admin-user-inline-name">${esc(u.name)}</div><div class="admin-user-inline-email">${esc(u.email)}</div></div></div></td>
             <td><span style="display:inline-flex;align-items:center;gap:5px;">
-                <span style="width:8px;height:8px;border-radius:50%;background:${tier?.badge_color || "#888"};"></span>
+                <span style="width:8px;height:8px;border-radius:50%;background:${escapeHtml(tier?.badge_color) || "#888"};"></span>
                 ${esc(u.tier)}</span></td>
             <td style="font-variant-numeric:tabular-nums;">${formatUSD(u.invested_12m)}</td>
             <td><div style="display:flex;align-items:center;gap:8px;">
                 <div style="flex:1;max-width:100px;height:6px;background:var(--admin-border);border-radius:3px;overflow:hidden;">
-                    <div style="width:${progress}%;height:100%;background:${tier?.badge_color || "var(--admin-accent)"};border-radius:3px;"></div>
+                    <div style="width:${progress}%;height:100%;background:${escapeHtml(tier?.badge_color) || "var(--admin-accent)"};border-radius:3px;"></div>
                 </div>
-                <span style="font-size:11px;color:var(--admin-text-muted);">${nextTier ? progress + "% → " + nextTier.name : "✓ Max"}</span>
+                <span style="font-size:11px;color:var(--admin-text-muted);">${nextTier ? progress + "% → " + escapeHtml(nextTier.name) : "✓ Max"}</span>
             </div></td>
-            <td><button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="openTierOverride('${u.user_id}','${esc(u.name)}','${esc(u.email)}','${esc(u.tier)}')">Override</button></td>
+            <td><button class="admin-btn admin-btn--secondary admin-btn--sm override-btn" data-uid="${escapeHtml(u.user_id)}" data-name="${escapeHtml(u.name)}" data-email="${escapeHtml(u.email)}" data-tier="${escapeHtml(u.tier)}">Override</button></td>
         </tr>`;
     })
     .join("");
+
+  tbody.querySelectorAll('.override-btn').forEach(btn => {
+      btn.onclick = () => openTierOverride(btn.dataset.uid, btn.dataset.name, btn.dataset.email, btn.dataset.tier);
+  });
 }
 
 // ═══════════════ Tab 3: Reward Balances ═══════════════
@@ -573,10 +593,14 @@ function renderBalances() {
         <td style="font-variant-numeric:tabular-nums;">${fmt(b.referrals_amt)}</td>
         <td style="font-variant-numeric:tabular-nums;">${fmt(b.promotions)}</td>
         <td style="font-variant-numeric:tabular-nums;font-weight:700;">${fmt((b.cashback || 0) + (b.referrals_amt || 0) + (b.promotions || 0))}</td>
-        <td><button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="openAdjustModal('${b.user_id}','${esc(b.name)}','${esc(b.email)}')">Adjust</button></td>
+        <td><button class="admin-btn admin-btn--secondary admin-btn--sm adjust-btn" data-uid="${escapeHtml(b.user_id)}" data-name="${escapeHtml(b.name)}" data-email="${escapeHtml(b.email)}">Adjust</button></td>
     </tr>`,
     )
     .join("");
+
+  tbody.querySelectorAll('.adjust-btn').forEach(btn => {
+      btn.onclick = () => openAdjustModal(btn.dataset.uid, btn.dataset.name, btn.dataset.email);
+  });
 }
 
 // ═══════════════ Tab 4: Referral Programme ═══════════════
@@ -649,13 +673,23 @@ function renderReferrals() {
         <td style="font-variant-numeric:tabular-nums;">${fmt(r.referred_reward)}</td>
         <td style="font-size:12px;color:var(--admin-text-muted);">${fmtDate(r.created_at)}</td>
         <td><div style="display:flex;gap:4px;">
-            ${r.status === "pending" ? `<button class="admin-btn admin-btn--primary admin-btn--sm" onclick="qualifyRef('${r.id}')">Qualify</button>` : ""}
-            ${r.status === "pending" ? `<button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="flagRef('${r.id}')" title="Flag as fraud">⚑</button>` : ""}
-            ${r.status === "qualified" ? `<button class="admin-btn admin-btn--primary admin-btn--sm" onclick="payRef('${r.id}')">Mark Paid</button>` : ""}
+            ${r.status === "pending" ? `<button class="admin-btn admin-btn--primary admin-btn--sm action-btn" data-action="qualify" data-id="${escapeHtml(r.id)}">Qualify</button>` : ""}
+            ${r.status === "pending" ? `<button class="admin-btn admin-btn--secondary admin-btn--sm action-btn" data-action="flag" data-id="${escapeHtml(r.id)}" title="Flag as fraud">⚑</button>` : ""}
+            ${r.status === "qualified" ? `<button class="admin-btn admin-btn--primary admin-btn--sm action-btn" data-action="pay" data-id="${escapeHtml(r.id)}">Mark Paid</button>` : ""}
         </div></td>
     </tr>`,
     )
     .join("");
+
+  tbody.querySelectorAll('.action-btn').forEach(btn => {
+      btn.onclick = (e) => {
+          const action = btn.dataset.action;
+          const id = btn.dataset.id;
+          if (action === 'qualify') qualifyRef(id, e.target);
+          if (action === 'flag') flagRef(id, e.target);
+          if (action === 'pay') payRef(id, e.target);
+      };
+  });
 }
 
 function renderCodes() {
@@ -711,7 +745,13 @@ function renderCodes() {
     .join("");
 }
 
-async function updateRefStatus(id, status) {
+async function updateRefStatus(id, status, btnElement) {
+  let origText = "";
+  if (btnElement) {
+    btnElement.disabled = true;
+    origText = btnElement.textContent;
+    btnElement.textContent = 'Processing...';
+  }
   try {
     const r = await fetch(`/api/admin/rewards/referrals/${id}`, {
       method: "PATCH",
@@ -719,25 +759,28 @@ async function updateRefStatus(id, status) {
       body: JSON.stringify({ status }),
     });
     if (r.ok) {
+      if (window.showPooolToast) window.showPooolToast("Success", "Referral status updated.", "success");
       loadAll();
     } else {
       const err = await r.json();
-      alert("Failed: " + (err.error || "Unknown error"));
+      if (window.showPooolToast) window.showPooolToast("Failed", err.error || "Unknown error", "error");
+      if (btnElement) { btnElement.disabled = false; btnElement.textContent = origText; }
     }
   } catch (e) {
-    alert("Err: " + e.message);
+    if (window.showPooolToast) window.showPooolToast("Error", "Err: " + e.message, "error");
+    if (btnElement) { btnElement.disabled = false; btnElement.textContent = origText; }
   }
 }
 
-window.qualifyRef = function (id) {
-  updateRefStatus(id, "qualified");
+window.qualifyRef = function (id, btn) {
+  updateRefStatus(id, "qualified", btn);
 };
-window.flagRef = async function (id) {
-  if (await pooolConfirm({ title: 'Flag as fraud', message: 'Flag this referral as fraud?', confirmText: 'Flag', type: 'danger' })) updateRefStatus(id, 'flagged');
+window.flagRef = async function (id, btn) {
+  if (await pooolConfirm({ title: 'Flag as fraud', message: 'Flag this referral as fraud?', confirmText: 'Flag', type: 'danger' })) updateRefStatus(id, 'flagged', btn);
 };
-window.payRef = async function (id) {
+window.payRef = async function (id, btn) {
   if (await pooolConfirm({ title: 'Mark referral as paid', message: 'Rewards will be credited to both users.', confirmText: 'Mark Paid', type: 'success' }))
-    updateRefStatus(id, 'paid');
+    updateRefStatus(id, 'paid', btn);
 };
 
 // ═══════════════ Modals ═══════════════
@@ -765,7 +808,7 @@ async function applyAdjustment() {
   const reason = document.getElementById("adjust-reason")?.value?.trim();
 
   if (!amountVal || !reason) {
-    alert("Amount and reason are required.");
+    if (window.showPooolToast) window.showPooolToast("Required", "Amount and reason are required.", "warning");
     return;
   }
 
@@ -779,6 +822,13 @@ async function applyAdjustment() {
     reason,
   };
 
+  const btnElement = document.getElementById("adjust-confirm");
+  let origText = btnElement ? btnElement.textContent : "";
+  if (btnElement) {
+      btnElement.disabled = true;
+      btnElement.textContent = "Processing...";
+  }
+
   try {
     const r = await fetch(
       `/api/admin/rewards/balances/${adjustTarget.user_id}/adjust`,
@@ -789,15 +839,20 @@ async function applyAdjustment() {
       },
     );
     if (r.ok) {
-      alert(`Adjustment successful for ${adjustTarget.name}.`);
+      if (window.showPooolToast) window.showPooolToast("Success", `Adjustment successful for ${adjustTarget.name}.`, "success");
       toggleModal("adjust-modal", false);
       loadAll();
     } else {
       const err = await r.json();
-      alert("Failed: " + (err.error || "Unknown error"));
+      if (window.showPooolToast) window.showPooolToast("Failed", err.error || "Unknown error", "error");
     }
   } catch (e) {
-    alert("Err: " + e.message);
+    if (window.showPooolToast) window.showPooolToast("Error", "Err: " + e.message, "error");
+  } finally {
+      if (btnElement) {
+          btnElement.disabled = false;
+          btnElement.textContent = origText;
+      }
   }
 }
 
@@ -811,6 +866,12 @@ window.openTierOverride = function (user_id, name, email, currentTier) {
 
 async function applyTierOverride() {
   const newTier = document.getElementById("tier-override-select").value;
+  const btnElement = document.getElementById("tier-override-confirm");
+  let origText = btnElement ? btnElement.textContent : "";
+  if (btnElement) {
+      btnElement.disabled = true;
+      btnElement.textContent = "Processing...";
+  }
 
   try {
     const r = await fetch(
@@ -822,15 +883,52 @@ async function applyTierOverride() {
       },
     );
     if (r.ok) {
-      alert(`Tier overridden for ${overrideTarget.name}.`);
+      if (window.showPooolToast) window.showPooolToast("Success", `Tier overridden for ${overrideTarget.name}.`, "success");
       toggleModal("tier-override-modal", false);
       loadAll();
     } else {
-      alert("Failed to override tier. Role permissions might be restricted.");
+      if (window.showPooolToast) window.showPooolToast("Failed", "Failed to override tier. Role permissions might be restricted.", "error");
     }
   } catch (e) {
-    alert("Err: " + e.message);
+    if (window.showPooolToast) window.showPooolToast("Error", "Err: " + e.message, "error");
+  } finally {
+      if (btnElement) {
+          btnElement.disabled = false;
+          btnElement.textContent = origText;
+      }
   }
+}
+
+window.exportBalances = function() {
+    exportToCSV(balances, 'rewards-balances.csv', ['user_id', 'name', 'email', 'cashback', 'referrals_amt', 'promotions']);
+};
+window.exportReferrals = function() {
+    exportToCSV(referrals, 'referrals.csv', ['id', 'status', 'referrer_name', 'referrer_email', 'referred_name', 'referred_email', 'referrer_reward', 'referred_reward', 'created_at']);
+};
+
+function exportToCSV(data, filename, keys) {
+    if (!data || !data.length) {
+        if (window.showPooolToast) window.showPooolToast("Error", "No data to export", "error");
+        return;
+    }
+    const csvRows = [];
+    csvRows.push(keys.join(','));
+    for (const row of data) {
+        const values = keys.map(k => {
+            const val = row[k] === null || row[k] === undefined ? '' : String(row[k]);
+            return `"${val.replace(/"/g, '""')}"`;
+        });
+        csvRows.push(values.join(','));
+    }
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', filename);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 // ═══════════════ Helpers ═══════════════

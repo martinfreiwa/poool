@@ -276,19 +276,19 @@
   gap: 8px;
   width: 224px;
   height: 36px;
-  background: #ffffff;
+  background: rgba(3, 255, 136, 0);
   border-radius: 6px;
   flex: none;
   order: 0;
   flex-grow: 1;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease, filter 0.15s ease;
   text-decoration: none;
 }
 
 /* From: .nav-item-content:hover (sidebar-navigation.css:235-237) */
 .sidebar__nav-item-content:hover {
-  background: rgba(3, 255, 136, 0.08);
+  background: rgba(3, 255, 136, 0.15);
 }
 
 /* Icon turns blue on hover (matching active state) */
@@ -296,9 +296,13 @@
   filter: brightness(0) saturate(100%) invert(11%) sepia(97%) saturate(7484%) hue-rotate(247deg) brightness(94%) contrast(148%);
 }
 
+.sidebar__nav-item-content:hover .sidebar__nav-text {
+  color: var(--brand-dark-blue);
+}
+
 /* Prevent hover effect on disabled items */
 .sidebar__nav-item-content--disabled:hover {
-  background: #ffffff;
+  background: rgba(3, 255, 136, 0);
 }
 
 /* Active State

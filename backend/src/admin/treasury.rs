@@ -1,7 +1,7 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Query, State},
     response::IntoResponse,
 };
 
@@ -9,10 +9,34 @@ use axum::{
 //  Admin Treasury API
 //
 
+/// Query parameters for the treasury endpoint
+#[derive(serde::Deserialize, Debug, Default)]
+pub struct TreasuryQuery {
+    /// Search term
+    pub search: Option<String>,
+    /// Start date filter
+    pub start_date: Option<String>,
+    /// End date filter
+    pub end_date: Option<String>,
+    /// Page number
+    pub page: Option<i64>,
+    /// Page limit/size
+    pub limit: Option<i64>,
+    /// Filter by transaction status
+    pub status: Option<String>,
+    /// Filter by transaction type
+    pub tx_type: Option<String>,
+    /// Sort column
+    pub sort_by: Option<String>,
+    /// Sort order (asc/desc)
+    pub sort_order: Option<String>,
+}
+
 /// GET /api/admin/treasury  Aggregated financial overview
 pub async fn api_admin_treasury(
     _admin: AdminUser,
     State(state): State<AppState>,
+    Query(qs): Query<TreasuryQuery>,
 ) -> Result<axum::response::Response, ApiError> {
     // 1. Wallet aggregates
     let wallet_row = sqlx::query_as::<_, (i64, i64)>(
@@ -86,45 +110,79 @@ pub async fn api_admin_treasury(
         "SELECT COALESCE(SUM(amount_cents), 0)::bigint, COUNT(*)::bigint FROM dividend_payouts WHERE status = 'failed'"
     ).fetch_one(&state.db).await.unwrap_or((0, 0));
 
-    // 4. Recent transactions (last 100)
-    let tx_rows = sqlx::query_as::<
-        _,
-        (
-            String,
-            String,
-            String,
-            i64,
-            Option<String>,
-            String,
-            String,
-            Option<String>,
-            Option<String>,
-        ),
-    >(
-        r#"SELECT wt.id::text, wt.type, wt.status, wt.amount_cents, wt.description,
+    // 4. Recent transactions (last 100) -> Now Paginated
+    let page = qs.page.unwrap_or(1).max(1);
+    let limit = qs.limit.unwrap_or(15).max(1).min(100);
+    let offset = (page - 1) * limit;
+
+    let sort_col = match qs.sort_by.as_deref() {
+        Some("amount_cents") => "wt.amount_cents",
+        Some("type") => "wt.type",
+        Some("status") => "wt.status",
+        Some("user_name") => "u.email",
+        _ => "wt.created_at",
+    };
+
+    let sort_dir = if qs.sort_order.as_deref() == Some("asc") {
+        "ASC"
+    } else {
+        "DESC"
+    };
+
+    let mut q_str = r#"SELECT wt.id::text, wt.type, wt.status, wt.amount_cents, wt.description,
                   wt.created_at::text, COALESCE(u.email, ''),
                   COALESCE(up.first_name, ''), COALESCE(up.last_name, '')
            FROM wallet_transactions wt
            JOIN wallets w ON w.id = wt.wallet_id
            JOIN users u ON u.id = w.user_id
            LEFT JOIN user_profiles up ON up.user_id = u.id
-           ORDER BY wt.created_at DESC
-           LIMIT 500"#,
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+           WHERE 1=1 "#.to_string();
+
+    if let Some(s) = &qs.status {
+        if !s.is_empty() {
+            q_str.push_str(&format!(" AND wt.status = '{}'", s.replace("'", "''")));
+        }
+    }
+    if let Some(t) = &qs.tx_type {
+        if !t.is_empty() {
+            q_str.push_str(&format!(" AND wt.type = '{}'", t.replace("'", "''")));
+        }
+    }
+    if let Some(search) = &qs.search {
+        if !search.is_empty() {
+            let escaped = search.replace("'", "''");
+            q_str.push_str(&format!(" AND (u.email ILIKE '%{}%' OR wt.id::text ILIKE '%{}%')", escaped, escaped));
+        }
+    }
+    if let Some(start) = &qs.start_date {
+        if !start.is_empty() {
+            q_str.push_str(&format!(" AND wt.created_at >= '{} 00:00:00'", start.replace("'", "''")));
+        }
+    }
+    if let Some(end) = &qs.end_date {
+        if !end.is_empty() {
+            q_str.push_str(&format!(" AND wt.created_at <= '{} 23:59:59'", end.replace("'", "''")));
+        }
+    }
+
+    let count_query = q_str.replace(
+        "wt.id::text, wt.type, wt.status, wt.amount_cents, wt.description,\n                  wt.created_at::text, COALESCE(u.email, ''),\n                  COALESCE(up.first_name, ''), COALESCE(up.last_name, '')",
+        "COUNT(*)"
+    );
+
+    let total_count: i64 = sqlx::query_scalar(&count_query).fetch_one(&state.db).await.unwrap_or(0);
+
+    q_str.push_str(&format!(" ORDER BY {} {} LIMIT {} OFFSET {}", sort_col, sort_dir, limit, offset));
+
+    let tx_rows = sqlx::query_as::<_, (String, String, String, i64, Option<String>, String, String, String, String)>(&q_str)
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default();
 
     let recent: Vec<serde_json::Value> = tx_rows
         .iter()
         .map(|r| {
-            let name = format!(
-                "{} {}",
-                r.7.clone().unwrap_or_default(),
-                r.8.clone().unwrap_or_default()
-            )
-            .trim()
-            .to_string();
+            let name = format!("{} {}", r.7.trim(), r.8.trim()).trim().to_string();
             serde_json::json!({
                 "id": r.0, "type": r.1, "status": r.2, "amount_cents": r.3,
                 "description": r.4, "created_at": r.5,
@@ -151,9 +209,88 @@ pub async fn api_admin_treasury(
             "processing_cents": div_processing.0, "processing_count": div_processing.1,
             "failed_cents": div_failed.0, "failed_count": div_failed.1
         },
-        "recent_transactions": recent
+        "recent_transactions": recent,
+        "total_count": total_count,
+        "page": page,
+        "limit": limit
     }))
     .into_response())
+}
+
+/// GET /api/admin/treasury/export
+pub async fn api_admin_treasury_export(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    Query(qs): Query<TreasuryQuery>,
+) -> Result<axum::response::Response, ApiError> {
+    let mut q_str = r#"SELECT wt.id::text, wt.type, wt.status, wt.amount_cents, wt.description,
+                  wt.created_at::text, COALESCE(u.email, ''),
+                  COALESCE(up.first_name, ''), COALESCE(up.last_name, '')
+           FROM wallet_transactions wt
+           JOIN wallets w ON w.id = wt.wallet_id
+           JOIN users u ON u.id = w.user_id
+           LEFT JOIN user_profiles up ON up.user_id = u.id
+           WHERE 1=1 "#.to_string();
+
+    if let Some(s) = &qs.status {
+        if !s.is_empty() {
+            q_str.push_str(&format!(" AND wt.status = '{}'", s.replace("'", "''")));
+        }
+    }
+    if let Some(t) = &qs.tx_type {
+        if !t.is_empty() {
+            q_str.push_str(&format!(" AND wt.type = '{}'", t.replace("'", "''")));
+        }
+    }
+    if let Some(start) = &qs.start_date {
+        if !start.is_empty() {
+            q_str.push_str(&format!(" AND wt.created_at >= '{} 00:00:00'", start.replace("'", "''")));
+        }
+    }
+    if let Some(end) = &qs.end_date {
+        if !end.is_empty() {
+            q_str.push_str(&format!(" AND wt.created_at <= '{} 23:59:59'", end.replace("'", "''")));
+        }
+    }
+
+    q_str.push_str(" ORDER BY wt.created_at DESC LIMIT 100000"); // Safe upper bound for memory
+
+    let tx_rows = sqlx::query_as::<_, (String, String, String, i64, Option<String>, String, String, String, String)>(&q_str)
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default();
+
+    let mut csv = String::new();
+    csv.push_str("id,type,amount_cents,status,description,user_name,user_email,created_at\n");
+
+    for r in tx_rows {
+        let name = format!("{} {}", r.7.trim(), r.8.trim()).trim().to_string();
+        let mut final_name = if name.is_empty() { r.6.clone() } else { name };
+        
+        let mut desc = r.4.unwrap_or_default();
+        
+        // Prevent CSV injection 
+        if desc.starts_with('=') || desc.starts_with('+') || desc.starts_with('-') || desc.starts_with('@') {
+            desc.insert(0, '\'');
+        }
+        if final_name.starts_with('=') || final_name.starts_with('+') || final_name.starts_with('-') || final_name.starts_with('@') {
+            final_name.insert(0, '\'');
+        }
+
+        let l = format!(
+            "\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"\n",
+            r.0, r.1, r.3, r.2, desc.replace("\"", "\"\""), final_name.replace("\"", "\"\""), r.6, r.5
+        );
+        csv.push_str(&l);
+    }
+
+    Ok((
+        [
+            (axum::http::header::CONTENT_TYPE, "text/csv"),
+            (axum::http::header::CONTENT_DISPOSITION, "attachment; filename=\"poool_treasury_export.csv\""),
+        ],
+        csv,
+    ).into_response())
 }
 
 /// POST /api/admin/dividends/calculate

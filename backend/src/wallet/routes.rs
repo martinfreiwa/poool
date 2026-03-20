@@ -199,7 +199,7 @@ fn build_payment_method_html(
     }
 
     for pm in pms {
-        let label = pm.label.clone().unwrap_or_else(|| {
+        let raw_label = pm.label.clone().unwrap_or_else(|| {
             if pm.method_type == "bank" {
                 pm.brand
                     .clone()
@@ -212,9 +212,10 @@ fn build_payment_method_html(
                 )
             }
         });
+        let label = ammonia::clean_text(&raw_label);
 
         let sub_label = if let Some(l4) = &pm.last_four {
-            format!("ending in {}", l4)
+            ammonia::clean_text(&format!("ending in {}", l4))
         } else {
             String::new()
         };

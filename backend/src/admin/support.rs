@@ -130,10 +130,18 @@ pub async fn api_admin_support_tickets(
     let _ = args.add(limit);
     let _ = args.add(offset);
 
-    let rows = sqlx::query_with(&query, args)
+    let rows = match sqlx::query_with(&query, args)
         .fetch_all(&state.db)
         .await
-        .unwrap_or_default();
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            tracing::error!("Failed to fetch support tickets: {:?}", e);
+            return Err(ApiError::Internal(
+                "Failed to query support tickets".to_string(),
+            ));
+        }
+    };
 
     let total_count: i64 = rows.first().map(|r| r.get("total_count")).unwrap_or(0);
 

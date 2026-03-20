@@ -198,6 +198,7 @@ function updateSortIndicators() {
 function renderTable(items) {
   const tbody = document.getElementById("submissions-tbody");
   tbody.innerHTML = "";
+  const fragment = document.createDocumentFragment();
 
   if (items.length === 0) {
     tbody.innerHTML = `
@@ -245,7 +246,7 @@ function renderTable(items) {
     const resumeUrl = STEP_URLS[step] || "/developer/add-asset";
 
     const coverHtml = item.cover_image_url
-      ? `<img class="submission-cover-thumb" src="${item.cover_image_url}" alt="" />`
+      ? `<img class="submission-cover-thumb" src="${escapeHtml(item.cover_image_url)}" alt="" />`
       : `<div class="submission-cover-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4A7AE" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>`;
 
     const isSelected = selectedIds.has(item.id);
@@ -329,7 +330,7 @@ function renderTable(items) {
         </div>
       </td>
     `;
-    tbody.appendChild(tr);
+    fragment.appendChild(tr);
 
     // If revision_requested, add a notes banner row below
     if (status === "revision_requested" && item.revision_notes) {
@@ -349,9 +350,11 @@ function renderTable(items) {
           </div>
         </td>
       `;
-      tbody.appendChild(notesTr);
+      fragment.appendChild(notesTr);
     }
   });
+
+  tbody.appendChild(fragment);
 }
 
 // ─── Relative Time ────────────────────────────────────────
@@ -610,11 +613,16 @@ function confirmBulkDelete() {
     overlay.remove();
     if (failed === 0) {
       showToast("success", `${count} draft${count > 1 ? 's' : ''} deleted`);
+      // Optimistic UI update
+      allItems = allItems.filter(item => !ids.has(item.id));
+      updateStats(allItems);
+      applyFiltersAndSort();
     } else {
       showToast("error", `${failed} deletion${failed > 1 ? 's' : ''} failed`);
+      // Make sure we refresh if partial success
+      setTimeout(() => window.location.reload(), 800);
     }
     selectedIds.clear();
-    setTimeout(() => window.location.reload(), 800);
   };
 }
 
@@ -661,7 +669,11 @@ async function resubmitDraft(assetId, title) {
       throw new Error(data.message || "Resubmit failed");
     }
     showToast("success", "Submission sent for review");
-    setTimeout(() => window.location.reload(), 800);
+    // Optimistic UI
+    const match = allItems.find(i => i.id === assetId);
+    if (match) match.project_status = "in_review";
+    updateStats(allItems);
+    applyFiltersAndSort();
   } catch (err) {
     console.error("Resubmit error:", err);
     showToast("error", err.message || "Failed to resubmit. Please try again.");
@@ -704,7 +716,10 @@ function confirmDelete(assetId, title) {
       if (!res.ok) throw new Error("Delete failed");
       overlay.remove();
       showToast("success", "Draft deleted");
-      setTimeout(() => window.location.reload(), 800);
+      // Optimistic UI
+      allItems = allItems.filter(i => i.id !== assetId);
+      updateStats(allItems);
+      applyFiltersAndSort();
     } catch (err) {
       console.error("Delete error:", err);
       overlay.remove();

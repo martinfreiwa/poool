@@ -6,18 +6,22 @@
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <style>@view-transition { navigation: auto; }</style>
+    <script src="/static/js/view-transitions.js"></script>
   <title>Live Assets | Admin | POOOL</title>
   <meta name="description" content="POOOL Admin — Manage live assets, funding progress, and marketplace listings." />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
-  <script src="/static/js/user-data.js"></script>
+  <script defer src="/static/js/vendor/htmx-1.9.10.min.js"></script>
+  <script defer src="/static/js/vendor/alpine-3.14.9.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.2" />
+  <script defer src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
-  <script src="/static/js/poool-dropdown.js"></script>
-  <script src="/static/js/poool-dropdown-init.js"></script>
-  <script src="/static/js/admin-theme.js"></script>
-  <script src="/static/js/admin-permission-guard.js"></script>
-  <script src="/static/js/admin-global-search.js"></script>
+  <script defer src="/static/js/poool-dropdown.js"></script>
+  <script defer src="/static/js/poool-dropdown-init.js"></script>
+  <script defer src="/static/js/admin-theme.js"></script>
+  <script defer src="/static/js/admin-permission-guard.js"></script>
+  <script defer src="/static/js/admin-global-search.js"></script>
+  <script defer src="/static/js/admin-utils.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
 </head>
@@ -153,7 +157,7 @@
               </svg>
               <input type="text" placeholder="Search assets…" id="asset-search" aria-label="Search assets" />
             </div>
-            <select id="filter-type" class="admin-select">
+            <select id="filter-type" class="admin-select" aria-label="Filter by asset type">
               <option value="">All Types</option>
               <option value="real_estate">Real Estate</option>
               <option value="commercial_property">Commercial</option>
@@ -162,7 +166,7 @@
               <option value="startup">Startup</option>
               <option value="land_plot">Land</option>
             </select>
-            <select id="filter-status" class="admin-select">
+            <select id="filter-status" class="admin-select" aria-label="Filter by funding status">
               <option value="">All Status</option>
               <option value="upcoming">Upcoming</option>
               <option value="funding_open">Funding Open</option>
@@ -236,7 +240,7 @@
               align-items: center;
               margin-top: 16px;
             ">
-          <span style="font-size: 13px; color: var(--admin-text-muted)" id="pagination-info">Page 1 of 1</span>
+          <span style="font-size: 13px; color: var(--admin-text-muted)" id="pagination-info" aria-live="polite">Page 1 of 1</span>
           <div style="display: flex; gap: 6px">
             <button class="admin-btn admin-btn--secondary admin-btn--sm" id="prev-page" disabled>
               ← Previous
@@ -250,7 +254,7 @@
     </main>
   </div>
 
-  <script src="/static/js/admin-assets.js"></script>
+  <script defer src="/static/js/admin-assets.js"></script>
 </body>
 
 </html>

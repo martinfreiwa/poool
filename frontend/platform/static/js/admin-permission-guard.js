@@ -152,23 +152,6 @@
     } catch (e) {
       window.adminPermissions.loaded = true;
     } finally {
-      // Allow local UI development to bypass Zero Trust if there are no permissions
-      const isLocal =
-        window.location.protocol === "file:" ||
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1" ||
-        window.location.hostname === ""; // sometimes empty in certain test runners
-
-      if (
-        isLocal &&
-        (!window.adminPermissions.permissions ||
-          window.adminPermissions.permissions.length === 0)
-      ) {
-        window.adminPermissions.permissions = ["all"];
-        window.adminPermissions.roles = ["super_admin"];
-        window.adminPermissions.hasPiiAccess = true;
-      }
-
       // Apply visibility now (sidebar may or may not be injected yet)
       applySidebarVisibility();
 

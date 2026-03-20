@@ -6,14 +6,20 @@
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <style>@view-transition { navigation: auto; }</style>
+    <script src="/static/js/view-transitions.js"></script>
   <title>Dashboard | Admin | POOOL</title>
   <meta name="description" content="POOOL Admin Dashboard — Platform overview, KPIs, and operational control center." />
   <!-- HTMX -->
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <!-- Alpine.js -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="/static/js/vendor/htmx-1.9.10.min.js"></script>
+  <!-- Alpine.js (pinned version) -->
+  <script defer src="/static/js/vendor/alpine-3.14.9.min.js"></script>
+  <!-- Font preload -->
+  <link rel="preload" href="/static/fonts/TTNormsPro-Regular.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/static/fonts/TTNormsPro-Medium.woff2" as="font" type="font/woff2" crossorigin />
   <!-- Admin CSS -->
-  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.2" />
   <!-- User data -->
   <script src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
@@ -22,6 +28,7 @@
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
   <script src="/static/js/admin-global-search.js"></script>
+  <script src="/static/js/admin-utils.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
 </head>
