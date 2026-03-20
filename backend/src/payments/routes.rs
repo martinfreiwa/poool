@@ -385,6 +385,64 @@ pub async fn handle_checkout(
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
 
+    // --- Masterplan Priority 1: Checkout Idempotency ---
+    let idempotency_key = parts
+        .headers
+        .get("Idempotency-Key")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+
+    if let Some(key) = &idempotency_key {
+        let insert_res = sqlx::query(
+            "INSERT INTO idempotency_keys (key, user_id, request_path, request_method) VALUES ($1, $2, '/checkout', 'POST') ON CONFLICT (key) DO NOTHING"
+        )
+        .bind(&key)
+        .bind(user.id)
+        .execute(&state.db)
+        .await;
+
+        match insert_res {
+            Ok(res) if res.rows_affected() == 0 => {
+                let existing = sqlx::query_as::<_, (Option<i32>, Option<serde_json::Value>)>(
+                    "SELECT response_status, response_body FROM idempotency_keys WHERE key = $1 AND user_id = $2"
+                )
+                .bind(&key)
+                .bind(user.id)
+                .fetch_optional(&state.db)
+                .await
+                .ok()
+                .flatten();
+
+                if let Some((response_status, response_body)) = existing {
+                    tracing::info!(user_id = %user.id, key = %key, "Idempotency key hit, returning cached response");
+                    if let Some(body) = response_body {
+                        let mut headers = HeaderMap::new();
+                        headers.insert(
+                            axum::http::header::CONTENT_TYPE,
+                            "application/json".parse().unwrap(),
+                        );
+                        if let Some(redirect) = body.get("redirect_url").and_then(|v| v.as_str()) {
+                            if let Ok(hx_redir) = redirect.parse() {
+                                headers.insert("HX-Redirect", hx_redir);
+                            }
+                        }
+                        return (
+                            axum::http::StatusCode::from_u16(response_status.unwrap_or(200) as u16).unwrap_or(axum::http::StatusCode::OK),
+                            headers,
+                            Json(body),
+                        ).into_response();
+                    } else {
+                        return (
+                            axum::http::StatusCode::CONFLICT,
+                            Html(r#"<div style="color:#B42318;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:12px;padding:16px;margin-top:16px;">This checkout is already processing. Please wait and refresh the page.</div>"#.to_string()),
+                        ).into_response();
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
     let mut payment_currency_opt: Option<String> = None;
     let mut payment_method_opt: Option<String> = None;
     let mut proof_url: Option<String> = None;
@@ -524,13 +582,26 @@ pub async fn handle_checkout(
                 "application/json".parse().unwrap(),
             );
 
+            let json_body = serde_json::json!({
+                "success": true,
+                "redirect_url": redirect_url,
+                "order_number": result.order_number,
+            });
+
+            // Masterplan Priority 1: Save idempotency result
+            if let Some(key) = &idempotency_key {
+                let _ = sqlx::query(
+                    "UPDATE idempotency_keys SET response_status = 200, response_body = $1 WHERE key = $2"
+                )
+                .bind(&json_body)
+                .bind(key)
+                .execute(&state.db)
+                .await;
+            }
+
             (
                 headers,
-                Json(serde_json::json!({
-                    "success": true,
-                    "redirect_url": redirect_url,
-                    "order_number": result.order_number,
-                })),
+                Json(json_body),
             )
                 .into_response()
         }
@@ -596,6 +667,14 @@ pub async fn handle_checkout(
                 </div>",
                 error_message
             );
+
+            // On failure, delete the idempotency key so the user can easily retry
+            if let Some(key) = &idempotency_key {
+                let _ = sqlx::query("DELETE FROM idempotency_keys WHERE key = $1")
+                    .bind(key)
+                    .execute(&state.db)
+                    .await;
+            }
 
             (axum::http::StatusCode::BAD_REQUEST, Html(error_html)).into_response()
         }

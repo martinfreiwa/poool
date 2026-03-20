@@ -1,0 +1,133 @@
+/* ===========================
+   Orderbook Page — Specific Styles
+   =========================== */
+
+/* Spread bar */
+.mp-ob-spread-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+}
+
+.mp-ob-spread-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.mp-ob-spread-label {
+  color: var(--admin-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.mp-ob-spread-value {
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-ob-spread-value--bid {
+  color: var(--admin-success);
+}
+
+.mp-ob-spread-value--ask {
+  color: var(--admin-danger);
+}
+
+/* Orderbook depth rows */
+.mp-orderbook-side--bids .admin-table td {
+  position: relative;
+}
+
+.mp-orderbook-side--asks .admin-table td {
+  position: relative;
+}
+
+#bids-body tr td:nth-child(3),
+#bids-body tr td:nth-child(2) {
+  color: var(--admin-success) !important;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+#asks-body tr td:nth-child(1),
+#asks-body tr td:nth-child(2) {
+  color: var(--admin-danger) !important;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* User ID code tags in orderbook */
+.mp-ob-uid {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--admin-code-bg);
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  color: var(--admin-text-muted);
+}
+
+/* Stats bar top right */
+.mp-ob-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.mp-ob-stat {
+  text-align: right;
+}
+
+.mp-ob-stat-label {
+  font-size: 11px;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.mp-ob-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Orderbook divider */
+.mp-orderbook-grid {
+  border-top: none;
+}
+
+.mp-orderbook-side--bids {
+  border-right: 1px solid var(--admin-border);
+}
+
+/* Row depth background */
+.mp-ob-depth {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  transition: width 0.4s ease;
+}
+
+.mp-ob-depth--bid {
+  right: 0;
+  background: var(--admin-success);
+}
+
+.mp-ob-depth--ask {
+  left: 0;
+  background: var(--admin-danger);
+}

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reconciliation | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Balance reconciliation between wallets and on-chain state." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <script src="/static/js/admin-theme.js"></script>
+</head>
+
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/marketplace/">Marketplace</a>
+            <span class="separator">›</span>
+            <span class="current">Reconciliation</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <button class="admin-btn admin-btn--primary" id="btn-run-recon" style="gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Run Reconciliation
+          </button>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Balance Reconciliation</h1>
+          <p class="admin-page-subtitle">Verify wallet balances match internal ledger and on-chain state</p>
+        </div>
+
+        <!-- Recon Summary -->
+        <div class="admin-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom:20px;">
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header"><span class="admin-kpi-label">Last Run</span></div>
+            <div class="admin-kpi-value" style="font-size:16px;">Today 04:00 UTC</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header"><span class="admin-kpi-label">Wallets Checked</span></div>
+            <div class="admin-kpi-value">1,247</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header"><span class="admin-kpi-label">Mismatches Found</span></div>
+            <div class="admin-kpi-value" style="color:var(--admin-danger);">3</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header"><span class="admin-kpi-label">Status</span></div>
+            <div class="admin-kpi-value" style="color:var(--admin-warning);">Needs Review</div>
+          </div>
+        </div>
+
+        <!-- Mismatches Table -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">Detected Mismatches</h3>
+          </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Asset</th>
+                  <th style="text-align:right">Wallet Balance</th>
+                  <th style="text-align:right">Ledger Balance</th>
+                  <th style="text-align:right">Difference</th>
+                  <th>Likely Cause</th>
+                  <th style="text-align:center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="recon-body">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- History -->
+        <div class="admin-card" style="margin-top:16px;">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">Reconciliation History</h3>
+          </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Run Time</th>
+                  <th>Wallets Checked</th>
+                  <th>Mismatches</th>
+                  <th>Duration</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="recon-history-body">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/mp-toast.js"></script>
+  <script src="/static/js/mp-reconciliation.js"></script>
+</body>
+
+</html>

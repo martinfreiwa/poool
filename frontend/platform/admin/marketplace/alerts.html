@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alerts & Watchlist | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Marketplace alerts, wash trading detection, and balance anomalies." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <script src="/static/js/admin-theme.js"></script>
+</head>
+
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/marketplace/">Marketplace</a>
+            <span class="separator">›</span>
+            <span class="current">Alerts</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right"></div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Alerts & Watchlist</h1>
+          <p class="admin-page-subtitle">Automated trading alerts, anomaly detection, and compliance flags</p>
+        </div>
+
+        <!-- Summary KPIs -->
+        <div class="admin-kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom:20px;">
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header"><span class="admin-kpi-label">Total Alerts</span></div>
+            <div class="admin-kpi-value" id="kpi-total-alerts">—</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header"><span class="admin-kpi-label">Critical</span></div>
+            <div class="admin-kpi-value" id="kpi-critical" style="color:var(--admin-danger);">—</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header"><span class="admin-kpi-label">Unresolved</span></div>
+            <div class="admin-kpi-value" id="kpi-unresolved" style="color:var(--admin-warning);">—</div>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table" id="alerts-table">
+              <thead>
+                <tr>
+                  <th>Alert ID</th>
+                  <th>Severity</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Related Users</th>
+                  <th>Detected</th>
+                  <th>Status</th>
+                  <th style="text-align:center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="alerts-body">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/mp-toast.js"></script>
+  <script src="/static/js/mp-alerts.js"></script>
+</body>
+
+</html>

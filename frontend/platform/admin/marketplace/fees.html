@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fee Management | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Manage marketplace trading fees, asset-specific overrides, and promotions." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <script src="/static/js/admin-theme.js"></script>
+</head>
+
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/marketplace/">Marketplace</a>
+            <span class="separator">›</span>
+            <span class="current">Fee Management</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right"></div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Fee Management</h1>
+          <p class="admin-page-subtitle">Configure platform fees, asset overrides, and promotional rates</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="admin-tabs" style="margin-bottom:20px;">
+          <button class="admin-tab active" data-tab="defaults">Platform Defaults</button>
+          <button class="admin-tab" data-tab="tier-discounts">Tier Discounts</button>
+          <button class="admin-tab" data-tab="asset-specific">Asset-Specific</button>
+          <button class="admin-tab" data-tab="promotions">Promotions</button>
+        </div>
+
+        <!-- Tab 1: Platform Defaults -->
+        <div class="mp-tab-content active" id="tab-defaults">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Platform Default Fees</h3>
+            </div>
+            <div class="admin-card-body">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:600px;">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Taker Fee (%)</label>
+                  <input type="number" class="admin-input" id="fee-taker" value="5.00" step="0.01" min="0" max="20">
+                  <div style="font-size:11px; color:var(--admin-text-muted); margin-top:4px;">Applied to market orders and aggressive limit orders (Stakeholder Decision E2: 5.0%)</div>
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Maker Fee (%)</label>
+                  <input type="number" class="admin-input" id="fee-maker" value="0.00" step="0.01" min="0" max="10">
+                  <div style="font-size:11px; color:var(--admin-text-muted); margin-top:4px;">Applied to passive limit orders that add liquidity</div>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:600px; margin-top:16px;">
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Settlement Fee (%)</label>
+                  <input type="number" class="admin-input" id="fee-settlement" value="0.10" step="0.01" min="0" max="10">
+                  <div style="font-size:11px; color:var(--admin-text-muted); margin-top:4px;">On-chain settlement gas abstraction fee</div>
+                </div>
+                <div class="admin-form-group">
+                  <label class="admin-form-label">Min Fee (USD)</label>
+                  <input type="number" class="admin-input" id="fee-min" value="0.01" step="0.01" min="0">
+                  <div style="font-size:11px; color:var(--admin-text-muted); margin-top:4px;">Minimum fee per trade regardless of %</div>
+                </div>
+              </div>
+              <button class="admin-btn admin-btn--primary" id="btn-save-defaults" style="margin-top:20px;">Save Default Fees</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Tier Discounts (NEW — Stakeholder Decision E2) -->
+        <div class="mp-tab-content" id="tab-tier-discounts">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Tier-Based Fee Discounts</h3>
+              <span style="font-size:12px; color:var(--admin-text-muted);">Users with higher tiers pay reduced trading fees</span>
+            </div>
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Tier</th>
+                    <th>Min. Investment</th>
+                    <th>Fee Discount</th>
+                    <th>Effective Taker Fee</th>
+                    <th style="text-align:center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#9ca3af;display:inline-block;"></span> Standard</span></td>
+                    <td>$0</td>
+                    <td>0.0%</td>
+                    <td><strong>5.00%</strong></td>
+                    <td style="text-align:center"><span class="admin-badge admin-badge--active">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#94a3b8;display:inline-block;"></span> Silver</span></td>
+                    <td><input type="text" class="admin-input admin-input--sm" value="$5,000" style="width:100px;"></td>
+                    <td><input type="number" class="admin-input admin-input--sm" value="0.50" step="0.1" min="0" max="5" style="width:80px;"> %</td>
+                    <td><strong>4.50%</strong></td>
+                    <td style="text-align:center"><span class="admin-badge admin-badge--active">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#fbbf24;display:inline-block;"></span> Gold</span></td>
+                    <td><input type="text" class="admin-input admin-input--sm" value="$25,000" style="width:100px;"></td>
+                    <td><input type="number" class="admin-input admin-input--sm" value="1.00" step="0.1" min="0" max="5" style="width:80px;"> %</td>
+                    <td><strong>4.00%</strong></td>
+                    <td style="text-align:center"><span class="admin-badge admin-badge--active">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#a78bfa;display:inline-block;"></span> Platinum</span></td>
+                    <td><input type="text" class="admin-input admin-input--sm" value="$100,000" style="width:100px;"></td>
+                    <td><input type="number" class="admin-input admin-input--sm" value="1.50" step="0.1" min="0" max="5" style="width:80px;"> %</td>
+                    <td><strong>3.50%</strong></td>
+                    <td style="text-align:center"><span class="admin-badge admin-badge--active">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#38bdf8;display:inline-block;"></span> Diamond</span></td>
+                    <td><input type="text" class="admin-input admin-input--sm" value="$500,000" style="width:100px;"></td>
+                    <td><input type="number" class="admin-input admin-input--sm" value="2.00" step="0.1" min="0" max="5" style="width:80px;"> %</td>
+                    <td><strong>3.00%</strong></td>
+                    <td style="text-align:center"><span class="admin-badge admin-badge--active">Active</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div style="margin-top:16px;">
+            <button class="admin-btn admin-btn--primary" id="btn-save-tiers">Save Tier Configuration</button>
+          </div>
+        </div>
+
+        <!-- Tab 3: Asset-Specific -->
+        <div class="mp-tab-content" id="tab-asset-specific">
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Asset-Specific Fee Overrides</h3>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-add-override">+ Add Override</button>
+            </div>
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Taker Fee</th>
+                    <th>Maker Fee</th>
+                    <th>Settlement Fee</th>
+                    <th>Reason</th>
+                    <th style="text-align:center">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="asset-fees-body">
+                  <!-- Filled by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Promotions -->
+        <div class="mp-tab-content" id="tab-promotions">
+          <div class="admin-card" style="margin-bottom:20px;">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Active Promotions</h3>
+            </div>
+            <div class="admin-card-body">
+              <div class="mp-promo-grid" id="promos-grid">
+                <!-- Filled by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/mp-toast.js"></script>
+  <script src="/static/js/mp-fees.js"></script>
+</body>
+
+</html>

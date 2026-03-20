@@ -1,0 +1,282 @@
+{% set title="Asset Trading" %}
+{% set extra_css=['marketplace-trading-v2'] %}
+{% set extra_js=['marketplace-trading-v2'] %}
+{% set body_class="tv2-body fouc-guard" %}
+
+{% extends "components/layout.html" %}
+
+{% block content %}
+<div class="tv2-page">
+    <!-- Breadcrumbs -->
+    <nav class="tv2-breadcrumbs">
+        <a href="/marketplace-secondary" class="tv2-breadcrumb-link">Trading</a>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 12L10 8L6 4" stroke="#D5D7DA" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="tv2-breadcrumb-current" id="tv2-breadcrumb-name">Asset Details</span>
+    </nav>
+
+    <!-- ═══════════════════════════════════════
+         1. HERO: Property Images + Key Info
+         ═══════════════════════════════════════ -->
+    <section class="tv2-hero">
+        <div class="tv2-gallery" id="tv2-gallery">
+            <div class="tv2-gallery-main" id="tv2-gallery-main">
+                <img id="tv2-main-img" src="" alt="Property Image" />
+            </div>
+            <div class="tv2-gallery-thumbs" id="tv2-gallery-thumbs"></div>
+        </div>
+        <div class="tv2-hero-info">
+            <div class="tv2-hero-badges">
+                <span class="tv2-badge tv2-badge--type" id="tv2-type-badge">Villa</span>
+                <span class="tv2-badge tv2-badge--status" id="tv2-status-badge">Active</span>
+            </div>
+            <h1 class="tv2-hero-title" id="tv2-title">Loading...</h1>
+            <p class="tv2-hero-location" id="tv2-location">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span id="tv2-location-text">Loading...</span>
+            </p>
+            <p class="tv2-hero-desc" id="tv2-description">Loading property description...</p>
+            <div class="tv2-hero-stats">
+                <div class="tv2-stat">
+                    <span class="tv2-stat-label">Token Price</span>
+                    <span class="tv2-stat-value" id="tv2-token-price">$0.00</span>
+                </div>
+                <div class="tv2-stat">
+                    <span class="tv2-stat-label">Annual Yield</span>
+                    <span class="tv2-stat-value tv2-stat-value--green" id="tv2-yield">0%</span>
+                </div>
+                <div class="tv2-stat">
+                    <span class="tv2-stat-label">Occupancy</span>
+                    <span class="tv2-stat-value" id="tv2-occupancy">0%</span>
+                </div>
+                <div class="tv2-stat">
+                    <span class="tv2-stat-label">Total Tokens</span>
+                    <span class="tv2-stat-value" id="tv2-total-supply">0</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         2. ORDER BOOK + ORDER FORM
+         ═══════════════════════════════════════ -->
+    <section class="tv2-trading-section">
+        <!-- Left: Order Book -->
+        <div class="tv2-orderbook-panel">
+            <div class="tv2-panel-header">
+                <h2 class="tv2-panel-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                    Order Book
+                </h2>
+                <div class="tv2-panel-tabs">
+                    <button class="tv2-tab active" data-tab="all">All</button>
+                    <button class="tv2-tab" data-tab="sell">Sell Offers</button>
+                    <button class="tv2-tab" data-tab="buy">Buy Bids</button>
+                </div>
+            </div>
+
+            <!-- Sell Offers -->
+            <div class="tv2-ob-section" id="tv2-sell-section">
+                <div class="tv2-ob-section-header tv2-ob-section-header--sell">
+                    <span>Sell Offers</span>
+                    <span class="tv2-ob-count" id="tv2-sell-count">0</span>
+                </div>
+                <table class="tv2-ob-table">
+                    <thead>
+                        <tr>
+                            <th>Seller</th>
+                            <th>Tokens</th>
+                            <th>Price/Token</th>
+                            <th>Total</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tv2-sell-rows"></tbody>
+                </table>
+                <div class="tv2-ob-empty" id="tv2-sell-empty" style="display:none">
+                    <p>No sell offers currently available</p>
+                </div>
+            </div>
+
+            <!-- Buy Bids -->
+            <div class="tv2-ob-section" id="tv2-buy-section">
+                <div class="tv2-ob-section-header tv2-ob-section-header--buy">
+                    <span>Buy Bids</span>
+                    <span class="tv2-ob-count" id="tv2-buy-count">0</span>
+                </div>
+                <table class="tv2-ob-table">
+                    <thead>
+                        <tr>
+                            <th>Buyer</th>
+                            <th>Tokens</th>
+                            <th>Price/Token</th>
+                            <th>Total</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tv2-buy-rows"></tbody>
+                </table>
+                <div class="tv2-ob-empty" id="tv2-buy-empty" style="display:none">
+                    <p>No buy bids currently placed</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Order Form -->
+        <div class="tv2-order-panel">
+            <h2 class="tv2-panel-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                Place Order
+            </h2>
+            <div class="tv2-order-toggle">
+                <button class="tv2-order-toggle-btn active" data-side="buy" id="tv2-toggle-buy">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+                    Buy
+                </button>
+                <button class="tv2-order-toggle-btn" data-side="sell" id="tv2-toggle-sell">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+                    Sell
+                </button>
+            </div>
+            <form class="tv2-order-form" id="tv2-order-form" onsubmit="return false;">
+                <div class="tv2-field">
+                    <label class="tv2-field-label">Number of Tokens</label>
+                    <input type="number" class="tv2-field-input" id="tv2-qty" min="1" value="1" placeholder="e.g. 10" />
+                </div>
+                <div class="tv2-field">
+                    <label class="tv2-field-label">Price per Token (USD)</label>
+                    <input type="number" class="tv2-field-input" id="tv2-price" step="0.01" min="0.01" placeholder="e.g. 105.00" />
+                </div>
+                <div class="tv2-order-summary">
+                    <div class="tv2-summary-row">
+                        <span>Subtotal</span>
+                        <span id="tv2-subtotal">$0.00</span>
+                    </div>
+                    <div class="tv2-summary-row">
+                        <span>Platform Fee (5%)</span>
+                        <span id="tv2-fee">$0.00</span>
+                    </div>
+                    <div class="tv2-summary-row tv2-summary-row--total">
+                        <span>Total</span>
+                        <span id="tv2-total">$0.00</span>
+                    </div>
+                </div>
+                <button type="submit" class="tv2-submit-btn tv2-submit-btn--buy" id="tv2-submit-btn">
+                    Place Buy Order
+                </button>
+                <p class="tv2-disclaimer">You won't be charged until a seller accepts your offer.</p>
+            </form>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         3. PROPERTY DETAILS (like property.html)
+         ═══════════════════════════════════════ -->
+    <section class="tv2-details-section">
+        <!-- Key Metrics -->
+        <div class="tv2-detail-card">
+            <div class="tv2-detail-card-header">
+                <img src="/static/images/prop-details/line-chart-up-02.webp" alt="Financials" width="24" height="24" />
+                <h3>Key Financials</h3>
+            </div>
+            <div class="tv2-detail-grid" id="tv2-financials-grid">
+                <div class="tv2-detail-item">
+                    <span class="tv2-detail-label">Property Value</span>
+                    <span class="tv2-detail-value" id="tv2-prop-value">—</span>
+                </div>
+                <div class="tv2-detail-item">
+                    <span class="tv2-detail-label">Annual Gross Yield</span>
+                    <span class="tv2-detail-value" id="tv2-gross-yield">—</span>
+                </div>
+                <div class="tv2-detail-item">
+                    <span class="tv2-detail-label">Net Return</span>
+                    <span class="tv2-detail-value" id="tv2-net-return">—</span>
+                </div>
+                <div class="tv2-detail-item">
+                    <span class="tv2-detail-label">Price per m²</span>
+                    <span class="tv2-detail-value" id="tv2-price-sqm">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Property Info -->
+        <div class="tv2-detail-card">
+            <div class="tv2-detail-card-header">
+                <img src="/static/images/building-07.svg" alt="Property" width="24" height="24" />
+                <h3>Property Information</h3>
+            </div>
+            <div class="tv2-detail-grid" id="tv2-property-grid">
+                <div class="tv2-detail-item">
+                    <span class="tv2-detail-label">Property Type</span>
+                    <span class="tv2-detail-value" id="tv2-prop-type">—</span>
+                </div>
+                <div class="tv2-detail-item">
+                    <span class="tv2-detail-label">Land Size</span>
+                    <span class="tv2-detail-value" id="tv2-land-size">—</span>
+                </div>
+                <div class="tv2-detail-item">
+                    <span class="tv2-detail-label">Bedrooms</span>
+                    <span class="tv2-detail-value" id="tv2-bedrooms">—</span>
+                </div>
+                <div class="tv2-detail-item">
+                    <span class="tv2-detail-label">Status</span>
+                    <span class="tv2-detail-value" id="tv2-rent-status">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Developer -->
+        <div class="tv2-detail-card">
+            <div class="tv2-detail-card-header">
+                <img src="/static/images/portfolio_asset_details/building-03.svg" alt="Developer" width="24" height="24" />
+                <h3>Property Developer</h3>
+            </div>
+            <div class="tv2-developer" id="tv2-developer">
+                <div class="tv2-developer-logo">
+                    <img id="tv2-dev-logo" src="/static/images/alexvillas.webp" alt="Developer" />
+                </div>
+                <div class="tv2-developer-info">
+                    <h4 id="tv2-dev-name">ALEX VILLAS</h4>
+                    <p id="tv2-dev-desc">At Alex Villas, we believe in complete control over the quality of our projects. That's why we've established our own production facilities.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="tv2-detail-card">
+            <div class="tv2-detail-card-header">
+                <img src="/static/images/portfolio_asset_details/Star%205.svg" alt="Documents" width="24" height="24" />
+                <h3>Documents</h3>
+            </div>
+            <div class="tv2-documents" id="tv2-documents">
+                <div class="tv2-doc-item">
+                    <div class="tv2-doc-info">
+                        <img src="/static/images/portfolio_asset_details/File%20type%20icon.svg" alt="PDF" width="20" height="20" />
+                        <span>Smart Contract</span>
+                    </div>
+                    <button class="tv2-doc-download">
+                        <img src="/static/images/portfolio_asset_details/download-cloud-02.svg" alt="Download" width="18" height="18" />
+                    </button>
+                </div>
+                <div class="tv2-doc-item">
+                    <div class="tv2-doc-info">
+                        <img src="/static/images/portfolio_asset_details/File%20type%20icon.svg" alt="PDF" width="20" height="20" />
+                        <span>Due Diligence Report</span>
+                    </div>
+                    <button class="tv2-doc-download">
+                        <img src="/static/images/portfolio_asset_details/download-cloud-02.svg" alt="Download" width="18" height="18" />
+                    </button>
+                </div>
+                <div class="tv2-doc-item">
+                    <div class="tv2-doc-info">
+                        <img src="/static/images/portfolio_asset_details/File%20type%20icon.svg" alt="PDF" width="20" height="20" />
+                        <span>Property Certificate</span>
+                    </div>
+                    <button class="tv2-doc-download">
+                        <img src="/static/images/portfolio_asset_details/download-cloud-02.svg" alt="Download" width="18" height="18" />
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

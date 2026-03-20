@@ -1,0 +1,755 @@
+/* ===========================
+   POOOL Admin Marketplace
+   Shared styles for all 12 marketplace admin pages
+   Extends admin.css design tokens
+   =========================== */
+
+/* ===========================
+   Toast Notifications
+   =========================== */
+.mp-toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.mp-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  box-shadow: var(--admin-shadow-md);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--admin-text-primary);
+  pointer-events: auto;
+  animation: mp-toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  max-width: 380px;
+  backdrop-filter: blur(12px);
+}
+
+.mp-toast--success {
+  border-left: 3px solid var(--admin-success);
+}
+
+.mp-toast--error {
+  border-left: 3px solid var(--admin-danger);
+}
+
+.mp-toast--warning {
+  border-left: 3px solid var(--admin-warning);
+}
+
+.mp-toast--info {
+  border-left: 3px solid var(--admin-accent);
+}
+
+.mp-toast.mp-toast-out {
+  animation: mp-toast-out 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes mp-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes mp-toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(40px) scale(0.96);
+  }
+}
+
+.mp-toast-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.mp-toast-message {
+  flex: 1;
+}
+
+/* ===========================
+   Button Loading / Spinner
+   =========================== */
+.mp-btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.mp-btn-loading .mp-btn-text {
+  visibility: hidden;
+}
+
+.mp-btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ===========================
+   Glass Modal
+   =========================== */
+.mp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: mp-modal-bg-in 0.25s ease both;
+}
+
+.mp-modal-overlay.closing {
+  animation: mp-modal-bg-out 0.2s ease both;
+}
+
+@keyframes mp-modal-bg-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mp-modal-bg-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.mp-modal {
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xl);
+  padding: 28px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: mp-modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mp-modal-overlay.closing .mp-modal {
+  animation: mp-modal-out 0.2s ease both;
+}
+
+@keyframes mp-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes mp-modal-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+}
+
+.mp-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  margin: 0 0 6px;
+}
+
+.mp-modal-subtitle {
+  font-size: 13px;
+  color: var(--admin-text-secondary);
+  margin: 0 0 20px;
+}
+
+.mp-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* ===========================
+   Live Pulse Indicator
+   =========================== */
+.mp-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--admin-success);
+  position: relative;
+  margin-right: 6px;
+}
+
+.mp-live-dot::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: var(--admin-success);
+  opacity: 0.3;
+  animation: mp-pulse 2s ease-in-out infinite;
+}
+
+@keyframes mp-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.4); opacity: 0; }
+}
+
+/* ===========================
+   System Health Bar
+   =========================== */
+.mp-health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.mp-health-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--admin-hover-overlay);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border);
+}
+
+.mp-health-label {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.mp-health-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  margin-left: auto;
+}
+
+.mp-health-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mp-health-dot--ok {
+  background: var(--admin-success);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.4);
+}
+
+.mp-health-dot--warn {
+  background: var(--admin-warning);
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
+}
+
+.mp-health-dot--error {
+  background: var(--admin-danger);
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.4);
+}
+
+/* ===========================
+   Filter Bar
+   =========================== */
+.mp-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.mp-filter-bar .admin-select,
+.mp-filter-bar .admin-input {
+  min-width: 160px;
+}
+
+.mp-filter-bar .admin-input[type="date"] {
+  min-width: 140px;
+}
+
+/* ===========================
+   Pagination
+   =========================== */
+.mp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 0;
+}
+
+.mp-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--admin-radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'TT Norms Pro', sans-serif;
+  cursor: pointer;
+  transition: all var(--admin-transition);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg-card);
+  color: var(--admin-text-secondary);
+}
+
+.mp-pagination-btn:hover:not(:disabled) {
+  background: var(--admin-bg-card-hover);
+  border-color: var(--admin-border-hover);
+  color: var(--admin-text-primary);
+}
+
+.mp-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mp-pagination-info {
+  font-size: 13px;
+  color: var(--admin-text-muted);
+  padding: 0 12px;
+}
+
+/* ===========================
+   Orderbook Specific
+   =========================== */
+.mp-orderbook-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.mp-orderbook-side {
+  padding: 0;
+}
+
+.mp-orderbook-side--bids .admin-table td:nth-child(2),
+.mp-orderbook-side--bids .admin-table td:nth-child(3) {
+  color: var(--admin-success);
+}
+
+.mp-orderbook-side--asks .admin-table td:nth-child(2),
+.mp-orderbook-side--asks .admin-table td:nth-child(3) {
+  color: var(--admin-danger);
+}
+
+/* Depth bar background */
+.mp-depth-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  opacity: 0.08;
+  transition: width 0.3s ease;
+  pointer-events: none;
+}
+
+.mp-depth-bar--bid {
+  right: 0;
+  background: var(--admin-success);
+}
+
+.mp-depth-bar--ask {
+  left: 0;
+  background: var(--admin-danger);
+}
+
+/* ===========================
+   Approval Cards
+   =========================== */
+.mp-approval-card {
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: 20px;
+  transition: all var(--admin-transition);
+  animation: admin-fadeIn 0.3s ease-out both;
+}
+
+.mp-approval-card:hover {
+  border-color: var(--admin-border-hover);
+}
+
+.mp-approval-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--admin-danger-bg);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-danger);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 12px 0;
+}
+
+/* ===========================
+   Fee Tabs
+   =========================== */
+.mp-tab-content {
+  display: none;
+}
+
+.mp-tab-content.active {
+  display: block;
+  animation: admin-fadeIn 0.25s ease both;
+}
+
+/* ===========================
+   Kill Switch
+   =========================== */
+.mp-kill-switch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xl);
+  margin-bottom: 28px;
+}
+
+.mp-kill-btn {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 6px solid var(--admin-danger);
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  font-family: 'TT Norms Pro', sans-serif;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.3;
+  box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
+}
+
+.mp-kill-btn:hover {
+  background: var(--admin-danger);
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 0 40px rgba(248, 113, 113, 0.3);
+}
+
+.mp-kill-btn.active {
+  background: var(--admin-danger);
+  color: #fff;
+  animation: mp-kill-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mp-kill-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.5); }
+  50% { box-shadow: 0 0 30px 10px rgba(248, 113, 113, 0.2); }
+}
+
+.mp-kill-label {
+  font-size: 13px;
+  color: var(--admin-text-muted);
+  margin-top: 16px;
+  font-weight: 500;
+}
+
+.mp-kill-status {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.mp-kill-status--active {
+  color: var(--admin-success);
+}
+
+.mp-kill-status--halted {
+  color: var(--admin-danger);
+}
+
+/* ===========================
+   Reconciliation Diff
+   =========================== */
+.mp-recon-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.mp-recon-diff {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.mp-recon-diff--ok {
+  color: var(--admin-success);
+}
+
+.mp-recon-diff--alert {
+  color: var(--admin-danger);
+}
+
+.mp-recon-check {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.mp-recon-label {
+  font-size: 14px;
+  color: var(--admin-text-muted);
+  margin-top: 8px;
+}
+
+/* ===========================
+   Iframe Container
+   =========================== */
+.mp-iframe-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  background: var(--admin-bg-card);
+  border: 2px dashed var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  color: var(--admin-text-muted);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  padding: 40px;
+}
+
+/* ===========================
+   Promotion Cards
+   =========================== */
+.mp-promo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.mp-promo-card {
+  background: var(--admin-bg-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: 20px;
+  transition: all var(--admin-transition);
+}
+
+.mp-promo-card:hover {
+  border-color: var(--admin-border-hover);
+}
+
+.mp-promo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--admin-success-bg);
+  color: var(--admin-success);
+  margin-bottom: 10px;
+}
+
+/* ===========================
+   P2P Warning
+   =========================== */
+.mp-price-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ===========================
+   Success Button
+   =========================== */
+.admin-btn--success {
+  background: var(--admin-success-bg);
+  color: var(--admin-success);
+  border: 1px solid transparent;
+}
+
+.admin-btn--success:hover {
+  background: var(--admin-success);
+  color: #fff;
+}
+
+/* ===========================
+   Responsive for Marketplace
+   =========================== */
+@media (max-width: 768px) {
+  .mp-orderbook-grid {
+    grid-template-columns: 1fr;
+  }
+  .mp-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ===========================
+   Toggle Switch
+   =========================== */
+.mp-toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.mp-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.mp-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--admin-border);
+  border-radius: 24px;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mp-toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.mp-toggle input:checked + .mp-toggle-slider {
+  background: var(--admin-success);
+}
+
+.mp-toggle input:checked + .mp-toggle-slider::before {
+  transform: translateX(20px);
+}
+
+/* ===========================
+   Textarea
+   =========================== */
+.admin-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px 14px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-bg-secondary);
+  color: var(--admin-text-primary);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color var(--admin-transition);
+}
+
+.admin-textarea:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.admin-textarea::placeholder {
+  color: var(--admin-text-muted);
+}
+
+/* ===========================
+   Empty State
+   =========================== */
+.admin-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.admin-empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.admin-empty-state-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  margin-bottom: 6px;
+}
+
+.admin-empty-state-text {
+  font-size: 13px;
+  color: var(--admin-text-muted);
+}
+
+/* BUY/SELL colors */
+.mp-side-buy {
+  color: var(--admin-success);
+  font-weight: 600;
+}
+
+.mp-side-sell {
+  color: var(--admin-danger);
+  font-weight: 600;
+}
+

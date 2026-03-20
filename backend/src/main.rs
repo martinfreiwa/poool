@@ -257,6 +257,80 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
+    // Masterplan Priority 2: Daily Financial Reconciliation
+    // "Daily Reconciliation Job (🔴 Kritisch)"
+    // Runs every 24 hours to verify: SUM(Wallets) == SUM(Deposits) - SUM(Withdrawals) - SUM(Purchases)
+    let recon_pool = pool.clone();
+    tokio::spawn(async move {
+        // Initial delay to not slam the DB on startup
+        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+        
+        // Check once initially, then every 24h
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(24 * 60 * 60));
+        loop {
+            interval.tick().await;
+
+            // Compute the totals
+            // For deposits: include 'approved' or 'completed'
+            // For withdrawals: include 'completed' or 'approved' (deducted from wallet)
+            // For purchases: checkout deducts from wallet immediately for 'completed' orders.
+            let totals = sqlx::query!(
+                r#"
+                SELECT 
+                    (SELECT COALESCE(SUM(balance_cents), 0)::bigint FROM wallets WHERE wallet_type = 'cash' AND currency = 'USD') as total_wallets,
+                    (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM deposit_requests WHERE status IN ('approved', 'completed') AND currency = 'USD') as total_deposits,
+                    (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM withdrawal_requests WHERE status != 'rejected' AND currency = 'USD') as total_withdrawals,
+                    (SELECT COALESCE(SUM(total_cents), 0)::bigint FROM orders WHERE status IN ('completed', 'pending_kyc')) as total_purchases
+                "#
+            )
+            .fetch_one(&recon_pool)
+            .await;
+
+            match totals {
+                Ok(t) => {
+                    let total_wallets = t.total_wallets.unwrap_or(0);
+                    let total_deposits = t.total_deposits.unwrap_or(0);
+                    let total_withdrawals = t.total_withdrawals.unwrap_or(0);
+                    let total_purchases = t.total_purchases.unwrap_or(0);
+
+                    // Note: If users sell assets, they GAIN cash. Since secondary market is not live, this should match.
+                    // Also referral rewards or admin adjustments might break this formula slightly, but for now we strictly alert.
+                    let expected_wallets = total_deposits - total_withdrawals - total_purchases;
+                    let unexplained_difference = total_wallets - expected_wallets;
+
+                    if unexplained_difference > 0 {
+                        // We have MORE money in the wallets than expected! High risk.
+                        let msg = format!(
+                            "CRITICAL RECONCILIATION FAILURE: Unexplained excess of {} cents in system cash wallets. (Wallets: {}, Expected: {})",
+                            unexplained_difference, total_wallets, expected_wallets
+                        );
+                        tracing::error!("{}", msg);
+                        sentry::with_scope(
+                            |scope| {
+                                scope.set_tag("security.event", "reconciliation_failure");
+                            },
+                            || {
+                                sentry::capture_message(&msg, sentry::Level::Fatal);
+                            },
+                        );
+                    } else if unexplained_difference < 0 {
+                         // We have LESS money than expected. (Can happen if missing deposits or manual errors).
+                         let msg = format!(
+                            "WARNING RECONCILIATION: Wallets have {} cents less than expected. (Wallets: {}, Expected: {})",
+                            -unexplained_difference, total_wallets, expected_wallets
+                        );
+                        tracing::warn!("{}", msg);
+                    } else {
+                        tracing::info!("Daily reconciliation successful: wallets perfectly match deposits/withdrawals/purchases.");
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("Failed to run daily financial reconciliation query: {}", e);
+                }
+            }
+        }
+    });
+
     //  3. Router configuration
     //
     // Two routers for host-based routing:
@@ -330,6 +404,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/payment-in-progress", get(page_payment_in_progress))
         // ── Community (demo) ──────────────────────────────────────────
         .route("/community", get(page_community))
+        // ── Marketplace (demo) ─────────────────────────────────────────
+        .route("/marketplace-trading", get(page_marketplace_trading))
+        .route("/marketplace-trading-v2", get(page_marketplace_trading_v2))
+        .route("/marketplace-secondary", get(page_marketplace_secondary))
+        .route("/my-trading", get(page_my_trading))
         // ── Static file serving & fallbacks ───────────────────────────
         .route("/", get(handle_root))
         .nest_service("/en", ServeDir::new("../frontend/www/en"))
@@ -1522,6 +1601,21 @@ async fn page_payment_success(jar: CookieJar, State(state): State<AppState>) -> 
 /// GET /community — Community demo page (protected).
 async fn page_community(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "community.html").await
+}
+
+/// GET /marketplace-trading — Marketplace trading demo page (protected).
+async fn page_marketplace_trading(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "marketplace-trading.html").await
+}
+
+/// GET /marketplace-trading-v2 — V2 Marketplace trading page without charts (protected).
+async fn page_marketplace_trading_v2(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "marketplace-trading-v2.html").await
+}
+
+/// GET /marketplace-secondary — Secondary market overview page (protected).
+async fn page_marketplace_secondary(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "marketplace-secondary.html").await
 }
 
 /// GET /payment-in-progress  Payment in progress page (protected).

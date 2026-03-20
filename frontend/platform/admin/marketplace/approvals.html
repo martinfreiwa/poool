@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pending Approvals | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Review and approve large marketplace orders." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <script src="/static/js/admin-theme.js"></script>
+</head>
+
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/marketplace/">Marketplace</a>
+            <span class="separator">›</span>
+            <span class="current">Pending Approvals</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-health-indicators" title="System Health">
+            <span class="admin-health-dot admin-health-dot--ok"></span>
+            <span class="admin-health-dot admin-health-dot--ok"></span>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Pending Approvals</h1>
+          <p class="admin-page-subtitle">Large orders requiring admin review before execution</p>
+        </div>
+
+        <!-- Approval Cards Grid -->
+        <div id="approvals-grid" style="display:grid; grid-template-columns:1fr; gap:16px;">
+          <!-- Filled by JS -->
+        </div>
+
+        <!-- Empty state (shown when all approved/rejected) -->
+        <div id="approvals-empty" style="display:none;">
+          <div class="admin-empty-state">
+            <div class="admin-empty-state-icon">✅</div>
+            <div class="admin-empty-state-title">All Clear</div>
+            <div class="admin-empty-state-text">No pending approvals at this time.</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/mp-toast.js"></script>
+  <script src="/static/js/mp-approvals.js"></script>
+</body>
+
+</html>

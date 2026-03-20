@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compliance | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Marketplace compliance rules, trading limits, and KYC requirements matrix." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <script src="/static/js/admin-theme.js"></script>
+</head>
+
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/marketplace/">Marketplace</a>
+            <span class="separator">›</span>
+            <span class="current">Compliance</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right"></div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Compliance & Trading Rules</h1>
+          <p class="admin-page-subtitle">Configure trading limits, KYC tier requirements, and compliance rules</p>
+        </div>
+
+        <!-- Trading Limits -->
+        <div class="admin-card" style="margin-bottom:20px;">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">Trading Limits by KYC Tier</h3>
+          </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table" id="limits-table">
+              <thead>
+                <tr>
+                  <th>KYC Tier</th>
+                  <th style="text-align:right">Daily Buy Limit</th>
+                  <th style="text-align:right">Daily Sell Limit</th>
+                  <th style="text-align:right">Max Order Size</th>
+                  <th style="text-align:right">Max Single Holding %</th>
+                  <th>Can Trade P2P</th>
+                  <th style="text-align:center">Edit</th>
+                </tr>
+              </thead>
+              <tbody id="limits-body">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Global Rules -->
+        <div class="admin-card" style="margin-bottom:20px;">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">Global Compliance Rules</h3>
+          </div>
+          <div class="admin-card-body" id="rules-body">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <!-- Kill Switch -->
+        <div class="admin-card" style="border-color: var(--admin-danger);">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title" style="color:var(--admin-danger);">⚠️ Emergency Controls</h3>
+          </div>
+          <div class="admin-card-body">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;">
+              <div>
+                <div style="font-size:15px; font-weight:700; color:var(--admin-text-primary);">Kill Switch — Halt All Trading</div>
+                <div style="font-size:13px; color:var(--admin-text-muted); margin-top:4px;">Immediately stops order matching, cancels all pending orders, and notifies all connected users.</div>
+              </div>
+              <button class="admin-btn admin-btn--danger" id="btn-kill-switch" style="padding:12px 32px; font-size:15px; font-weight:700;">
+                🛑 HALT TRADING
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/mp-toast.js"></script>
+  <script src="/static/js/mp-compliance.js"></script>
+</body>
+
+</html>

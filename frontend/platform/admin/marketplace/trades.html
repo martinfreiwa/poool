@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trade History | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Complete trade history with filters and export." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <script src="/static/js/admin-theme.js"></script>
+</head>
+
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/marketplace/">Marketplace</a>
+            <span class="separator">›</span>
+            <span class="current">Trade History</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-health-indicators" title="System Health">
+            <span class="admin-health-dot admin-health-dot--ok" title="Matching Engine"></span>
+            <span class="admin-health-dot admin-health-dot--ok" title="Database"></span>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Trade History</h1>
+          <p class="admin-page-subtitle">All executed marketplace trades</p>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="mp-filter-bar">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label style="font-size:12px; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">From</label>
+            <input type="date" class="admin-input" id="filter-start" value="2026-03-01" style="width:auto;">
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label style="font-size:12px; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">To</label>
+            <input type="date" class="admin-input" id="filter-end" value="2026-03-20" style="width:auto;">
+          </div>
+          <select class="admin-select" id="filter-asset">
+            <option value="">All Assets</option>
+            <option value="BVRT">Bali Villa Resort (BVRT)</option>
+            <option value="JOTX">Jakarta Office Tower (JOTX)</option>
+            <option value="SWHS">Surabaya Warehouse (SWHS)</option>
+            <option value="BTHB">Bandung Tech Hub (BTHB)</option>
+            <option value="YHHT">Yogya Heritage Hotel (YHHT)</option>
+          </select>
+          <select class="admin-select" id="filter-status">
+            <option value="">All Status</option>
+            <option value="settled">Settled</option>
+            <option value="pending">Pending Settlement</option>
+            <option value="failed">Failed</option>
+          </select>
+          <button class="admin-btn admin-btn--primary" id="btn-apply-filter" style="margin-left:auto;">Apply Filters</button>
+          <button class="admin-btn admin-btn--secondary" id="btn-export-csv" style="gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSV
+          </button>
+          <button class="admin-btn admin-btn--secondary" id="btn-export-pdf" style="gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+          </button>
+        </div>
+
+        <!-- Trades Table -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table" id="trades-table">
+              <thead>
+                <tr>
+                  <th>Trade ID</th>
+                  <th>Date/Time</th>
+                  <th>Asset</th>
+                  <th>Side</th>
+                  <th>Buyer ID</th>
+                  <th>Seller ID</th>
+                  <th style="text-align:right">Qty</th>
+                  <th style="text-align:right">Price</th>
+                  <th style="text-align:right">Fee</th>
+                  <th style="text-align:right">Total</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="trades-body">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="mp-pagination" id="pagination">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/mp-toast.js"></script>
+  <script src="/static/js/mp-trades.js"></script>
+</body>
+
+</html>

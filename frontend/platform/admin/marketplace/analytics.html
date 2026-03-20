@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trading Analytics | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Marketplace analytics and Metabase reports." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <script src="/static/js/admin-theme.js"></script>
+</head>
+
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/marketplace/">Marketplace</a>
+            <span class="separator">›</span>
+            <span class="current">Analytics</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right"></div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Trading Analytics</h1>
+          <p class="admin-page-subtitle">Marketplace trading analytics powered by Metabase OSS — connected to live POOOL database</p>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">📊 POOOL Marketplace Analytics</h3>
+            <div class="admin-card-actions">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-open-metabase">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                <span>Open in Metabase</span>
+              </button>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="document.getElementById('metabase-frame').src = document.getElementById('metabase-frame').src">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+          <div class="admin-card-body" style="padding:0;">
+            <iframe
+              id="metabase-frame"
+              src="http://localhost:3000/public/dashboard/b0eea388-2a56-4419-82d4-909a9177adaf#theme=transparent&titled=false&bordered=false"
+              frameborder="0"
+              width="100%"
+              height="800"
+              style="border:none; border-radius: 0 0 14px 14px; background: var(--admin-bg);"
+              allowtransparency="true"
+            ></iframe>
+          </div>
+        </div>
+
+        <!-- Quick Links to individual charts -->
+        <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <a href="http://localhost:3000/question/40" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">👥 Total Users</a>
+          <a href="http://localhost:3000/question/41" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">📈 User Signups</a>
+          <a href="http://localhost:3000/question/42" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">💰 Investment Volume</a>
+          <a href="http://localhost:3000/question/43" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">📦 Orders</a>
+          <a href="http://localhost:3000/question/44" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">📋 Recent Orders</a>
+          <a href="http://localhost:3000/question/45" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">💳 Wallet Balances</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/mp-toast.js"></script>
+  <script>
+    // Metabase URL config — change for production
+    const METABASE_URL = 'http://localhost:3000';
+    const DASHBOARD_ID = 2;
+
+    document.getElementById('btn-open-metabase').addEventListener('click', () => {
+      window.open(`${METABASE_URL}/dashboard/${DASHBOARD_ID}`, '_blank');
+    });
+  </script>
+</body>
+
+</html>
+

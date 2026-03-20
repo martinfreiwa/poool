@@ -101,6 +101,59 @@
                         </a>
                     </div>
 
+                    <!-- Marketplace -->
+                    <div class="admin-nav-section">
+                        <span class="admin-nav-section-label">Marketplace</span>
+                        <a href="/admin/marketplace/" class="admin-nav-item ${isPathActive(["/admin/marketplace/", "/admin/marketplace/index.html"]) ? "active" : ""}" id="nav-mp-overview">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                            <span>MP Overview</span>
+                        </a>
+                        <a href="/admin/marketplace/orderbook.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/orderbook.html"]) ? "active" : ""}" id="nav-mp-orderbook">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18v-4M8 18v-8M12 18V6M16 18V2M4 18h16"/></svg>
+                            <span>Orderbook</span>
+                        </a>
+                        <a href="/admin/marketplace/trades.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/trades.html"]) ? "active" : ""}" id="nav-mp-trades">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17L17 7"/></svg>
+                            <span>Trades</span>
+                        </a>
+                        <a href="/admin/marketplace/orders.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/orders.html"]) ? "active" : ""}" id="nav-mp-orders">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h4l2.5 12h11.5a2 2 0 001.9-1.3L23 5H5.5"/><circle cx="9" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
+                            <span>Open Orders</span>
+                        </a>
+                        <a href="/admin/marketplace/approvals.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/approvals.html"]) ? "active" : ""}" id="nav-mp-approvals">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                            <span>MP Approvals</span>
+                        </a>
+                        <a href="/admin/marketplace/fees.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/fees.html"]) ? "active" : ""}" id="nav-mp-fees">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+                            <span>Fees</span>
+                        </a>
+                        <a href="/admin/marketplace/alerts.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/alerts.html"]) ? "active" : ""}" id="nav-mp-alerts">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>
+                            <span>Alerts</span>
+                        </a>
+                        <a href="/admin/marketplace/p2p.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/p2p.html"]) ? "active" : ""}" id="nav-mp-p2p">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                            <span>P2P Offers</span>
+                        </a>
+                        <a href="/admin/marketplace/reconciliation.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/reconciliation.html"]) ? "active" : ""}" id="nav-mp-recon">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v3a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h2m0 0h6a2 2 0 012 2v6"/><path d="M9 12l2 2 4-4"/></svg>
+                            <span>Reconciliation</span>
+                        </a>
+                        <a href="/admin/marketplace/compliance.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/compliance.html"]) ? "active" : ""}" id="nav-mp-compliance">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <span>Compliance</span>
+                        </a>
+                        <a href="/admin/marketplace/analytics.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/analytics.html"]) ? "active" : ""}" id="nav-mp-analytics">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+                            <span>Analytics</span>
+                        </a>
+                        <a href="/admin/marketplace/settings.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/settings.html"]) ? "active" : ""}" id="nav-mp-settings">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                            <span>MP Settings</span>
+                        </a>
+                    </div>
+
                     <!-- Security & Access -->
                     <div class="admin-nav-section">
                         <span class="admin-nav-section-label">Security & Access</span>
@@ -260,12 +313,46 @@
     // Run on script load if placeholder exists, or on DOMContentLoaded
     if (document.getElementById("admin-sidebar-placeholder")) {
         loadSidebar();
-        // Update badges after sidebar is loaded (slight delay to ensure DOM ready)
         setTimeout(updateNotificationBadges, 500);
     } else {
         document.addEventListener("DOMContentLoaded", () => {
             loadSidebar();
             setTimeout(updateNotificationBadges, 500);
         });
+    }
+
+    // ==== Sidebar Scroll Persistence ====
+    // Save sidebar scroll position before navigating away
+    // Restore it on the next page load so the sidebar doesn't jump to top
+    const SCROLL_KEY = "admin-sidebar-scroll";
+
+    function restoreSidebarScroll() {
+        const sidebar = document.querySelector(".admin-sidebar-nav");
+        if (!sidebar) return;
+
+        const saved = sessionStorage.getItem(SCROLL_KEY);
+        if (saved !== null) {
+            sidebar.scrollTop = parseInt(saved, 10);
+        } else {
+            // No saved position — scroll the active item into view
+            const activeItem = sidebar.querySelector(".admin-nav-item.active");
+            if (activeItem) {
+                activeItem.scrollIntoView({ block: "center", behavior: "instant" });
+            }
+        }
+
+        // Intercept all sidebar link clicks to save scroll position BEFORE navigation
+        sidebar.querySelectorAll("a.admin-nav-item").forEach(link => {
+            link.addEventListener("click", () => {
+                sessionStorage.setItem(SCROLL_KEY, sidebar.scrollTop);
+            });
+        });
+    }
+
+    // Restore after a tiny delay to ensure sidebar is fully rendered
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => setTimeout(restoreSidebarScroll, 50));
+    } else {
+        setTimeout(restoreSidebarScroll, 50);
     }
 })();

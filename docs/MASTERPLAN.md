@@ -39,6 +39,59 @@ Dieses Dokument analysiert die bestehende Systemarchitektur, deckt Limitationen 
 
 ---
 
+## 0. Stakeholder-Entscheidungen (2026-03-20)
+
+> **Kontext:** Diese Sektion hält die Entscheidungen fest, die zwischen den Gründern (Martin + Jonas) am 20.03.2026 getroffen wurden.
+
+### E1. Transaktionsmodell: Instant Settlement (Bestätigt)
+
+**Entscheidung:** Der Marketplace nutzt **Instant Settlement** via Wallet-Balance — KEIN Escrow-Modell mit manuellem Zahlungsnachweis.
+
+**Begründung:**
+- User zahlt Geld auf sein POOOL-Wallet ein (Deposit → bestehender Flow)
+- Beim Kauf/Verkauf wird sofort Geld gegen Tokens getauscht (< 1 Sekunde)
+- Auszahlung vom POOOL-Wallet auf Bankkonto (Withdrawal → bestehender Flow)
+- Das ERC-3643 NFT-System läuft **asynchron im Hintergrund** als Eigentumsnachweis
+
+### E2. Gebühren: 5% Plattformgebühr + Tier-Rabatte
+
+**Entscheidung:** Standard-Fee auf dem Sekundärmarkt ist **5.0% (500 BPS)** — anpassbar via Admin-Dashboard.
+
+**Tier-Rabatt-System (NEU):**
+
+| Tier | Basis-Fee | Rabatt | Effektive Fee |
+|---|---|---|---|
+| Standard (kein Tier) | 5.0% | 0% | 5.0% |
+| Silver | 5.0% | -0.5% | 4.5% |
+| Gold | 5.0% | -1.0% | 4.0% |
+| Platinum | 5.0% | -1.5% | 3.5% |
+| Diamond | 5.0% | -2.0% | 3.0% |
+
+Die Fee-Kaskade wird um Ebene 5 (Tier-Rabatt) erweitert. Details in Sektion 2.6.
+
+### E3. Kaufgesuche für nicht gelistete Assets (NEU)
+
+**Entscheidung:** Investoren können Kaufinteresse an Assets platzieren, die aktuell KEINE aktiven Sell-Orders haben.
+
+**Mechanismus:**
+1. Ein Bid-Order wird im Orderbook platziert, auch wenn kein Ask existiert
+2. Alle Holder des Assets werden benachrichtigt (In-App + optional E-Mail)
+3. Jeder Holder kann dann entscheiden, ob er verkauft
+4. Die Marketplace-Übersichtsseite zeigt ALLE Assets der Plattform (inkl. ohne aktive Orders)
+
+### E4. Sichtbarkeit aller Assets (NEU)
+
+**Entscheidung:** Auf dem Sekundärmarkt sind ALLE Assets sichtbar, die jemals auf POOOL verkauft wurden — nicht nur solche mit aktiven Listings.
+
+**Badges auf Asset-Cards:**
+- 🟢 "X Angebote" — wenn Sell-Orders existieren
+- 🔵 "X Kaufgesuche" — wenn Bid-Orders existieren
+- ⚪ "Keine Angebote" — Asset trotzdem sichtbar
+
+**Filter-Optionen:** Alle Assets / Nur mit Angeboten / Nur mit Kaufgesuchen / Asset-Typ / Standort / ROI
+
+---
+
 ## 1. Analyse der aktuellen Systemstruktur (Ist-Zustand & Auslastung)
 
 Aktuell ist POOOL als reiner **Primärmarkt** (Over-The-Counter / B2C) konzipiert. Die bestehende Infrastruktur ist für diesen statischen Anwendungsfall hochoptimiert, stößt aber bei einem dynamischen Live-Markt an klare Grenzen. Im Folgenden wird das aktuelle System mit präzisen technischen Details inventarisiert.
@@ -2121,17 +2174,21 @@ async fn settle_trade(
 
 #### A. Standard-Fees (Defaults)
 
+> **⚡ Stakeholder-Entscheidung E2:** Die Standard-Fee beträgt 5.0% (500 BPS), anpassbar via Admin-Dashboard. Tier-Rabatte reduzieren die Fee für Premium-Nutzer.
+
 | Fee-Typ | Beschreibung | Default-Betrag | Wer zahlt |
 |---|---|---|---|
-| **Taker Fee** | Nutzer, der eine bestehende Order annimmt (Market Order) | 0.5% | Käufer |
+| **Taker Fee** | Nutzer, der eine bestehende Order annimmt (Market Order) | **5.0%** (500 BPS) | Käufer |
 | **Maker Fee** | Nutzer, der eine neue Order ins Buch stellt (Limit Order) | 0.0% (kostenlos) | – |
 | **Listing Fee** | Erstmaliges Listen einer Sell-Order | $0 | – |
 | **Withdrawal Fee** | Auszahlung auf Bankkonto | $2.50 flat | Seller |
-| **P2P Trade Fee** | Direkte Angebote zwischen Nutzern | 0.5% | Käufer |
+| **P2P Trade Fee** | Direkte Angebote zwischen Nutzern | **5.0%** (500 BPS) | Käufer |
 
 **Maker-Fee = 0%** ist Industrie-Standard bei neuen Börsen (Coinbase Zero, Robinhood) – es incentiviert Nutzer, Orders ins Buch zu stellen, was Liquidität schafft.
 
-#### B. Dynamische Fee-Hierarchie (4 Ebenen)
+> **Hinweis:** Die 5.0%-Fee wird durch Tier-Rabatte reduziert (siehe Sektion 0, Entscheidung E2). Alle Fee-Werte sind über das Admin-Dashboard jederzeit anpassbar.
+
+#### B. Dynamische Fee-Hierarchie (5 Ebenen – erweitert um Tier-Rabatt)
 
 Fees sind NICHT statisch. POOOL braucht die Flexibilität, Gebühren je nach Situation anzupassen. Die Fees folgen einer **Kaskade** (höchste Priorität gewinnt):
 
@@ -2147,20 +2204,28 @@ Fees sind NICHT statisch. POOOL braucht die Flexibilität, Gebühren je nach Sit
 │     (Individueller Deal mit einem Developer/Anbieter)       │
 │         │ Falls kein Developer-Deal:                        │
 │         ▼                                                   │
-│  3. 🏠 Asset-spezifische Fee    → z.B. "Asset Y: 0.8%"     │
+│  3. 🏠 Asset-spezifische Fee    → z.B. "Asset Y: 3.0%"     │
 │     (Premium-Assets, Sonder-Listings)                       │
 │         │ Falls keine Asset-Fee:                            │
 │         ▼                                                   │
-│  4. 🌐 Platform Default         → 0.5% Taker, 0% Maker     │
+│  4. ⭐ Tier-Rabatt (NEU)         → z.B. "Gold: -1.0%"      │
+│     (Basierend auf dem Tier-Level des Users)                │
+│     Wird auf die Basis-Fee angewendet (subtraktiv)          │
+│         │ Falls kein Tier-Rabatt:                           │
+│         ▼                                                   │
+│  5. 🌐 Platform Default         → 5.0% Taker, 0% Maker     │
 │     (Standard, gilt wenn nichts anderes konfiguriert)       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
+> **Wichtig zur Tier-Rabatt-Logik:** Der Tier-Rabatt wird NACH der Basis-Fee-Ermittlung angewendet. Wenn eine Promotion (Level 1) die Fee auf 0% setzt, greift kein Tier-Rabatt. Wenn die Platform-Default 5% gilt und der User Gold-Tier hat, zahlt er 5% - 1% = 4%.
+
 **Beispiele:**
-- **Launch-Promotion:** "Erste 30 Tage: 0% Fee auf ALLE Trades" → Level 1
-- **Developer-Deal:** "Developer TrafficCreator bekommt 0% Fee für alle seine Assets" → Level 2
-- **Premium-Asset:** "Luxury Villa Dubai: 1.0% Fee (Premium-Listing)" → Level 3
-- **Normal:** Alles andere → 0.5% Default (Level 4)
+- **Launch-Promotion:** "Erste 30 Tage: 0% Fee auf ALLE Trades" → Level 1 (Tier-Rabatt irrelevant)
+- **Developer-Deal:** "Developer TrafficCreator bekommt 2% Fee für alle seine Assets" → Level 2
+- **Premium-Asset:** "Luxury Villa Dubai: 3.0% Fee (Premium-Listing)" → Level 3
+- **Gold-Tier User, kein Deal:** 5.0% Default - 1.0% Tier-Rabatt = **4.0%** → Level 4+5
+- **Standard User, kein Deal:** 5.0% Default (Level 5)
 
 #### C. Datenbank-Schema für dynamische Fees
 
@@ -6955,177 +7020,49 @@ class MarketplaceWebSocket {
 
 ---
 
-#### 3.4.4. Candlestick-Chart Integration (Lightweight Charts)
+#### 3.4.4. Candlestick-Chart Integration (ApexCharts)
 
-**Warum Lightweight Charts?** Die `lightweight-charts` Library von TradingView ist ~45KB (gzip), pure JavaScript, kein Framework nötig, und rendert professionelle Finanz-Charts, die identisch aussehen wie bei Coinbase oder Binance. Sie ist die leichteste Production-Grade Chart-Library auf dem Markt.
+**Warum ApexCharts?** Für tokenisierte Immobilien (RWA) benötigen wir keine hochkomplexen Day-Trading-Werkzeuge (Fibonacci etc.), sondern eine moderne, extrem fließende und vertrauenswürdige Visualisierung. Wir verwenden **ApexCharts**, da es:
+1. **100% White-Label** ist (kein Wasserzeichen wie bei TradingView).
+2. Atemberaubende und flüssige Kerzen-Animationen bei Live-Updates (WebSockets) liefert.
+3. Sich optisch perfekt in ein "Neobank"-Design (Trade Republic / Robinhood Vibe) integrieren lässt.
+
+**Frontend-Initialisierung (Architektur-Konzept):**
 
 ```javascript
 // marketplace-charts.js
-// Candlestick-Chart mit Lightweight Charts (TradingView)
-
-class MarketplaceChart {
-    constructor(containerId, assetId) {
-        this.container = document.getElementById(containerId);
-        this.assetId = assetId;
-        this.chart = null;
-        this.candleSeries = null;
-        this.volumeSeries = null;
-        this.currentInterval = '1h';     // Default: 1-Stunden-Kerzen
-    }
-
-    async init() {
-        // 1. Chart-Container erstellen
-        this.chart = LightweightCharts.createChart(this.container, {
-            width: this.container.clientWidth,
+function initApexChart(containerId, initialCandles) {
+    var options = {
+        series: [{ data: initialCandles }],
+        chart: {
+            type: 'candlestick',
             height: 400,
-            layout: {
-                background: { type: 'solid', color: '#0a0a0f' },   // Dunkler Hintergrund
-                textColor: '#9ca3af',
-                fontSize: 12,
-                fontFamily: "'TT Norms Pro', sans-serif",
+            background: '#0a0a0f',   // POOOL Dark Mode
+            animations: {
+                enabled: true,
+                easing: 'easeinout',
+                speed: 300
             },
-            grid: {
-                vertLines: { color: 'rgba(255,255,255,0.03)' },
-                horzLines: { color: 'rgba(255,255,255,0.03)' },
-            },
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-                vertLine: { color: 'rgba(255,255,255,0.1)' },
-                horzLine: { color: 'rgba(255,255,255,0.1)' },
-            },
-            rightPriceScale: {
-                borderColor: 'rgba(255,255,255,0.1)',
-                scaleMargins: { top: 0.1, bottom: 0.25 },
-            },
-            timeScale: {
-                borderColor: 'rgba(255,255,255,0.1)',
-                timeVisible: true,
-                secondsVisible: false,
-            },
-        });
+            fontFamily: "'TT Norms Pro', sans-serif",
+            toolbar: { show: false } // Cleanes Neobank-Design
+        },
+        plotOptions: {
+            candlestick: {
+                colors: { upward: '#22c55e', downward: '#ef4444' }
+            }
+        },
+        xaxis: { type: 'datetime' },
+        yaxis: { tooltip: { enabled: true } }
+    };
 
-        // 2. Candlestick-Series hinzufügen
-        this.candleSeries = this.chart.addCandlestickSeries({
-            upColor: '#22c55e',           // Grün für Kursanstieg
-            downColor: '#ef4444',         // Rot für Kursabfall
-            borderUpColor: '#22c55e',
-            borderDownColor: '#ef4444',
-            wickUpColor: '#22c55e',
-            wickDownColor: '#ef4444',
-        });
+    var chart = new ApexCharts(document.querySelector("#" + containerId), options);
+    chart.render();
 
-        // 3. Volume-Histogram (unten im Chart)
-        this.volumeSeries = this.chart.addHistogramSeries({
-            priceFormat: { type: 'volume' },
-            priceScaleId: 'volume',
-            scaleMargins: { top: 0.8, bottom: 0 },
-        });
-
-        // 4. Historische Daten laden
-        await this.loadCandles(this.currentInterval);
-
-        // 5. Live-Updates via Event-Bus
-        window.marketBus.on('trade:executed', (trade) => {
-            this._handleLiveTrade(trade);
-        });
-
-        // 6. Responsive: Chart-Größe bei Window-Resize anpassen
-        const resizeObserver = new ResizeObserver(() => {
-            this.chart.applyOptions({ width: this.container.clientWidth });
-        });
-        resizeObserver.observe(this.container);
-    }
-
-    async loadCandles(interval) {
-        this.currentInterval = interval;
-
-        // Lade Candlestick-Daten vom Backend
-        try {
-            const res = await fetch(
-                `/api/marketplace/${this.assetId}/candles?interval=${interval}`
-            );
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-            const candles = await res.json();
-
-            // Format für Lightweight Charts: { time, open, high, low, close }
-            const chartData = candles.map(c => ({
-                time: Math.floor(new Date(c.bucket).getTime() / 1000),
-                open:  c.open / 100,      // Cents → Dollar
-                high:  c.high / 100,
-                low:   c.low / 100,
-                close: c.close / 100,
-            }));
-
-            const volumeData = candles.map(c => ({
-                time: Math.floor(new Date(c.bucket).getTime() / 1000),
-                value: c.volume,
-                color: c.close >= c.open 
-                    ? 'rgba(34,197,94,0.3)'    // Grün (Anstieg)
-                    : 'rgba(239,68,68,0.3)',   // Rot (Abfall)
-            }));
-
-            this.candleSeries.setData(chartData);
-            this.volumeSeries.setData(volumeData);
-            this.chart.timeScale().fitContent();
-
-        } catch (err) {
-            console.error('[Chart] Failed to load candles:', err);
-            window.marketBus.emit('error:api', { 
-                endpoint: 'candles', message: 'Chart-Daten konnten nicht geladen werden' 
-            });
-        }
-    }
-
-    _handleLiveTrade(trade) {
-        // Aktualisiert den letzten Candlestick mit dem neuen Trade-Preis
-        const price = trade.price / 100;
-        const time = Math.floor(new Date(trade.timestamp).getTime() / 1000);
-
-        this.candleSeries.update({
-            time: time,
-            open: price,    // Wird von der Library korrekt gemerged
-            high: price,
-            low: price,
-            close: price,
-        });
-
-        this.volumeSeries.update({
-            time: time,
-            value: trade.quantity,
-            color: 'rgba(34,197,94,0.3)',
-        });
-    }
-
-    // Interval-Switcher (1m, 1h, 1d, 1w)
-    switchInterval(interval) {
-        // Aktiven Button visuell markieren
-        document.querySelectorAll('.chart-interval-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.interval === interval);
-        });
-        this.loadCandles(interval);
-    }
+    // Realtime Updates via Event-Bus
+    window.marketBus.on('trade:executed', (trade) => {
+        // ... (Update logic: Kerze aktualisieren oder neu anhängen)
+    });
 }
-```
-
-**HTML für den Interval-Switcher:**
-
-```html
-<!-- In marketplace-trading.html -->
-<div class="chart-controls">
-    <div class="chart-interval-group" role="group" aria-label="Chart-Intervall">
-        <button class="chart-interval-btn" data-interval="1m" 
-                onclick="window.marketChart.switchInterval('1m')">1M</button>
-        <button class="chart-interval-btn active" data-interval="1h"
-                onclick="window.marketChart.switchInterval('1h')">1H</button>
-        <button class="chart-interval-btn" data-interval="1d"
-                onclick="window.marketChart.switchInterval('1d')">1D</button>
-        <button class="chart-interval-btn" data-interval="1w"
-                onclick="window.marketChart.switchInterval('1w')">1W</button>
-    </div>
-    <span id="ws-status" class="ws-status status--disconnected">🟡 Verbinde...</span>
-</div>
-<div id="chart-container" class="chart-container"></div>
 ```
 
 ---
@@ -8271,42 +8208,26 @@ GET /api/admin/marketplace/p2p
 
 ---
 
-#### 3.5.11. Seite 8: Analytics & Charts (`/admin/marketplace/analytics`)
+#### 3.5.11. Seite 8: Analytics & Charts (Embedded Metabase OSS)
 
 **Priorität: 🟡 Week 3**
 
-Tiefere Marktanalysen für strategische Entscheidungen. Geht über das Overview-Dashboard hinaus.
+Anstatt komplexe HTML-Seiten für Analytics, Fee-Management und Berichte selbst in Vanilla JS und Chart.js zu programmieren, binden wir **Metabase OSS (Open Source)** direkt in das Admin-Panel ein. Das spart massive Entwicklungszeit und liefert extrem professionelle Reportings.
 
-**Charts und Visualisierungen:**
+**Vorteile der Metabase Integration:**
+* **100% Kostenlos:** Metabase OSS ist AGPL-lizenziert und dauerhaft kostenfrei, ohne Limits für Tabellen oder Dashboards. 
+* **Self-Hosted:** Da das Backend auf Google Cloud Run läuft, stellen wir einfach einen zweiten Container daneben und verbinden ihn (read-only) mit der PostgreSQL Replica.
+* **Kein Frontend-Code nötig:** Das gesamte Layout, Volumens-Charts, Tabellen und Heatmaps werden in Metabase per Drag & Drop erstellt.
+* **Einbettung per Embed/Iframe:** Im POOOL-Admin-Dashboard gibt es nur einen `/admin/marketplace/analytics` Tab, der per Embed-URL sicher auf das Metabase-Dashboard verweist.
 
-| Chart | Beschreibung | Datenquelle | Bibliothek |
-|---|---|---|---|
-| **Volume Over Time** | Balkendiagramm: Tägliches/wöchentliches Handelsvolumen | `candles_1d` | Chart.js (bereits im Admin) |
-| **Asset-Vergleich** | Multi-Line-Chart: Preisentwicklung der Top-10 Assets | `candles_1d` | Chart.js |
-| **Top-Trader-Ranking** | Tabelle: Top-20 Nutzer nach Handelsvolumen | `trade_history` GROUP BY user_id | Tabelle |
-| **Fee-Revenue** | Line-Chart: Eingenommene Fees pro Tag/Woche | `trade_history.fee_cents` | Chart.js |
-| **Bid/Ask-Ratio** | Gauge: Verhältnis Kauf- zu Verkaufsorders (Marktstimmung) | Redis Orderbook | Custom SVG |
-| **Nutzer-Aktivität** | Heatmap: Wann wird am meisten gehandelt (Stunde × Wochentag) | `trade_history.executed_at` | Custom CSS Grid |
+**Ersetzte Metriken / Charts (alle in Metabase visualisiert):**
+* Volume Over Time (Tägliches Handelsvolumen)
+* Fee-Revenue (Eingenommene Gebühren pro Woche)
+* Top-Trader-Ranking
+* Bid-Ask-Ratio und Anomalien-Auswertungen
+* OJK Compliance und AML Reports lassen sich als CSV via Metabase auf Knopfdruck exportieren
 
-**Key-Metriken (KPI-Tabelle):**
-
-| Metrik | Berechnung | Erwarteter Wert |
-|---|---|---|
-| **Total Volume (All-Time)** | `SUM(total_cents) FROM trade_history` | Wächst monoton |
-| **Total Fees Earned** | `SUM(fee_cents) FROM trade_history` | Wächst monoton |
-| **Average Trade Size** | `AVG(total_cents) FROM trade_history` | $500-$5.000 |
-| **Unique Traders (30d)** | `COUNT(DISTINCT user_id)` aus Buyers + Sellers | 10-100 |
-| **Most Traded Asset** | Asset mit höchstem Volume in 30 Tagen | Variabel |
-| **Average Spread** | Durchschnittlicher Spread über alle Assets | <5% des Preises |
-
-**API-Endpoints:**
-
-```
-GET /api/admin/marketplace/analytics/volume?period=30d&granularity=daily
-GET /api/admin/marketplace/analytics/top-traders?period=30d&limit=20
-GET /api/admin/marketplace/analytics/fee-revenue?period=30d&granularity=daily
-GET /api/admin/marketplace/analytics/activity-heatmap?period=90d
-```
+Das führt zu einer **Zeitersparnis von ca. 2 Wochen Frontend-Entwicklung**!
 
 ---
 

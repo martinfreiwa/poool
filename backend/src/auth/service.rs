@@ -705,27 +705,10 @@ pub async fn get_user_settings(pool: &PgPool, user_id: Uuid) -> Result<UserSetti
 
 /// Start TOTP enrollment by generating a new secret.
 /// Returns the private secret (base32), the otpauth URL, and the QR code as a base64 data URI.
-pub fn generate_totp_secret(email: &str) -> (String, String, String) {
-    let totp = TOTP::new(
-        Algorithm::SHA1,
-        6,
-        1,
-        30,
-        Secret::generate_secret().to_bytes().unwrap(),
-        Some("POOOL".to_string()),
-        email.to_string(),
-    )
-    .unwrap();
-
-    let qr_code_base64 = totp.get_qr_base64().unwrap_or_default();
-    (totp.get_secret_base32(), totp.get_url(), qr_code_base64)
-}
-
-/// Verify a TOTP code against a secret.
-pub fn verify_totp_code(secret_b32: &str, code: &str) -> bool {
-    let Ok(secret_bytes) = Secret::Encoded(secret_b32.to_string()).to_bytes() else {
-        return false;
-    };
+pub fn generate_totp_secret(email: &str) -> Result<(String, String, String), AppError> {
+    let secret_bytes = Secret::generate_secret()
+        .to_bytes()
+        .map_err(|e| AppError::Internal(format!("Failed to generate TOTP secret: {}", e)))?;
 
     let totp = TOTP::new(
         Algorithm::SHA1,
@@ -734,9 +717,32 @@ pub fn verify_totp_code(secret_b32: &str, code: &str) -> bool {
         30,
         secret_bytes,
         Some("POOOL".to_string()),
-        "".to_string(), // account name not needed for verification
+        email.to_string(),
     )
-    .unwrap();
+    .map_err(|e| AppError::Internal(format!("Failed to configure TOTP: {}", e)))?;
+
+    let qr_code_base64 = totp.get_qr_base64().unwrap_or_default();
+    Ok((totp.get_secret_base32(), totp.get_url(), qr_code_base64))
+}
+
+/// Verify a TOTP code against a secret.
+pub fn verify_totp_code(secret_b32: &str, code: &str) -> bool {
+    let Ok(secret_bytes) = Secret::Encoded(secret_b32.to_string()).to_bytes() else {
+        return false;
+    };
+
+    let totp = match TOTP::new(
+        Algorithm::SHA1,
+        6,
+        1,
+        30,
+        secret_bytes,
+        Some("POOOL".to_string()),
+        "".to_string(), // account name not needed for verification
+    ) {
+        Ok(t) => t,
+        Err(_) => return false,
+    };
 
     totp.check_current(code).unwrap_or(false)
 }

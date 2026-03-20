@@ -1,0 +1,695 @@
+/* ============================================================
+   POOOL Marketplace Trading V2 – Property-Focused Light UI
+   No charts, no exchange look. Simple & trustworthy.
+   ============================================================ */
+
+/* === Design Tokens === */
+:root {
+    --tv2-bg: #f5f6f8;
+    --tv2-surface: #ffffff;
+    --tv2-surface-el: #f9fafb;
+    --tv2-text: #1a1d27;
+    --tv2-text-sec: #6b7280;
+    --tv2-text-muted: #9ca3af;
+    --tv2-border: rgba(0,0,0,0.08);
+    --tv2-border-strong: rgba(0,0,0,0.12);
+    --tv2-hover: rgba(0,0,0,0.03);
+    --tv2-green: #16a34a;
+    --tv2-green-bg: rgba(22,163,74,0.08);
+    --tv2-green-border: rgba(22,163,74,0.2);
+    --tv2-red: #dc2626;
+    --tv2-red-bg: rgba(220,38,38,0.08);
+    --tv2-red-border: rgba(220,38,38,0.2);
+    --tv2-blue: #0000FF;
+    --tv2-blue-bg: rgba(0,0,255,0.05);
+    --tv2-blue-border: rgba(0,0,255,0.15);
+    --tv2-radius: 12px;
+    --tv2-radius-sm: 8px;
+    --tv2-font: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+    --tv2-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --tv2-shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+/* === Body === */
+body.tv2-body {
+    background: var(--tv2-bg);
+    color: var(--tv2-text);
+    font-family: var(--tv2-font);
+}
+
+/* === Page Layout === */
+.tv2-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 32px 64px;
+}
+
+/* === Breadcrumbs === */
+.tv2-breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.tv2-breadcrumb-link {
+    color: var(--tv2-text-sec);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.tv2-breadcrumb-link:hover {
+    color: var(--tv2-blue);
+}
+
+.tv2-breadcrumb-current {
+    color: var(--tv2-blue);
+    font-weight: 600;
+}
+
+/* ═══════════════════════════════════════
+   1. HERO SECTION
+   ═══════════════════════════════════════ */
+.tv2-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+    background: var(--tv2-surface);
+    border-radius: var(--tv2-radius);
+    border: 1px solid var(--tv2-border);
+    box-shadow: var(--tv2-shadow);
+    padding: 24px;
+}
+
+/* Gallery */
+.tv2-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tv2-gallery-main {
+    width: 100%;
+    height: 320px;
+    border-radius: var(--tv2-radius);
+    overflow: hidden;
+    background: #f3f4f6;
+}
+
+.tv2-gallery-main img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s;
+}
+
+.tv2-gallery-thumbs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+}
+
+.tv2-gallery-thumbs::-webkit-scrollbar { display: none; }
+
+.tv2-thumb {
+    width: 72px;
+    height: 52px;
+    border-radius: var(--tv2-radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: all 0.2s;
+}
+
+.tv2-thumb:hover { opacity: 0.85; }
+.tv2-thumb.active { opacity: 1; border-color: var(--tv2-blue); }
+
+.tv2-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Hero Info */
+.tv2-hero-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.tv2-hero-badges {
+    display: flex;
+    gap: 8px;
+}
+
+.tv2-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.tv2-badge--type {
+    background: var(--tv2-blue-bg);
+    color: var(--tv2-blue);
+    border: 1px solid var(--tv2-blue-border);
+}
+
+.tv2-badge--status {
+    background: var(--tv2-green-bg);
+    color: var(--tv2-green);
+    border: 1px solid var(--tv2-green-border);
+}
+
+.tv2-hero-title {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--tv2-text);
+    margin: 0;
+}
+
+.tv2-hero-location {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--tv2-text-sec);
+    font-size: 14px;
+    margin: 0;
+}
+
+.tv2-hero-desc {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--tv2-text-sec);
+    margin: 0;
+}
+
+.tv2-hero-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: auto;
+}
+
+.tv2-stat {
+    background: var(--tv2-surface-el);
+    border: 1px solid var(--tv2-border);
+    border-radius: var(--tv2-radius-sm);
+    padding: 14px 16px;
+}
+
+.tv2-stat-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--tv2-text-muted);
+    margin-bottom: 4px;
+}
+
+.tv2-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--tv2-text);
+}
+
+.tv2-stat-value--green { color: var(--tv2-green); }
+
+/* ═══════════════════════════════════════
+   2. TRADING SECTION
+   ═══════════════════════════════════════ */
+.tv2-trading-section {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+/* Panels */
+.tv2-orderbook-panel,
+.tv2-order-panel {
+    background: var(--tv2-surface);
+    border-radius: var(--tv2-radius);
+    border: 1px solid var(--tv2-border);
+    box-shadow: var(--tv2-shadow);
+    padding: 24px;
+}
+
+.tv2-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.tv2-panel-title {
+    font-size: 17px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--tv2-text);
+}
+
+/* Tabs */
+.tv2-panel-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--tv2-surface-el);
+    border-radius: 8px;
+    padding: 3px;
+}
+
+.tv2-tab {
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--tv2-font);
+    color: var(--tv2-text-sec);
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tv2-tab:hover { color: var(--tv2-text); }
+.tv2-tab.active {
+    color: var(--tv2-text);
+    background: var(--tv2-surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* Order Book Sections */
+.tv2-ob-section { margin-bottom: 20px; }
+.tv2-ob-section:last-child { margin-bottom: 0; }
+
+.tv2-ob-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: var(--tv2-radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.tv2-ob-section-header--sell {
+    background: var(--tv2-red-bg);
+    color: var(--tv2-red);
+}
+
+.tv2-ob-section-header--buy {
+    background: var(--tv2-green-bg);
+    color: var(--tv2-green);
+}
+
+.tv2-ob-count {
+    background: rgba(0,0,0,0.06);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+/* Order Book Table */
+.tv2-ob-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.tv2-ob-table thead th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--tv2-text-muted);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--tv2-border);
+}
+
+.tv2-ob-table tbody td {
+    padding: 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+    color: var(--tv2-text);
+}
+
+.tv2-ob-table tbody tr:hover {
+    background: var(--tv2-hover);
+}
+
+.tv2-ob-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.tv2-ob-action-btn {
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--tv2-font);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tv2-ob-action-btn--buy {
+    background: var(--tv2-green-bg);
+    color: var(--tv2-green);
+    border: 1px solid var(--tv2-green-border);
+}
+
+.tv2-ob-action-btn--buy:hover {
+    background: var(--tv2-green);
+    color: #fff;
+}
+
+.tv2-ob-action-btn--sell {
+    background: var(--tv2-red-bg);
+    color: var(--tv2-red);
+    border: 1px solid var(--tv2-red-border);
+}
+
+.tv2-ob-action-btn--sell:hover {
+    background: var(--tv2-red);
+    color: #fff;
+}
+
+.tv2-ob-empty {
+    text-align: center;
+    padding: 24px;
+    color: var(--tv2-text-muted);
+    font-size: 13px;
+}
+
+/* Order Form */
+.tv2-order-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--tv2-surface-el);
+    border-radius: var(--tv2-radius-sm);
+    padding: 4px;
+    margin-bottom: 20px;
+}
+
+.tv2-order-toggle-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--tv2-font);
+    color: var(--tv2-text-sec);
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tv2-order-toggle-btn.active[data-side="buy"] {
+    background: var(--tv2-green-bg);
+    color: var(--tv2-green);
+    box-shadow: 0 1px 3px rgba(22,163,74,0.15);
+}
+
+.tv2-order-toggle-btn.active[data-side="sell"] {
+    background: var(--tv2-red-bg);
+    color: var(--tv2-red);
+    box-shadow: 0 1px 3px rgba(220,38,38,0.15);
+}
+
+.tv2-field { margin-bottom: 16px; }
+
+.tv2-field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--tv2-text);
+    margin-bottom: 6px;
+}
+
+.tv2-field-input {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-family: var(--tv2-font);
+    color: var(--tv2-text);
+    background: var(--tv2-surface-el);
+    border: 1px solid var(--tv2-border-strong);
+    border-radius: var(--tv2-radius-sm);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+
+.tv2-field-input:focus {
+    border-color: var(--tv2-blue);
+    box-shadow: 0 0 0 3px var(--tv2-blue-bg);
+}
+
+/* Hide number spinners */
+.tv2-field-input[type="number"]::-webkit-outer-spin-button,
+.tv2-field-input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+.tv2-field-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+/* Order Summary */
+.tv2-order-summary {
+    background: var(--tv2-surface-el);
+    border: 1px solid var(--tv2-border);
+    border-radius: var(--tv2-radius-sm);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.tv2-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--tv2-text-sec);
+    padding: 6px 0;
+}
+
+.tv2-summary-row--total {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--tv2-text);
+    border-top: 1px solid var(--tv2-border);
+    margin-top: 6px;
+    padding-top: 10px;
+}
+
+/* Submit Button */
+.tv2-submit-btn {
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: var(--tv2-font);
+    border: none;
+    border-radius: var(--tv2-radius-sm);
+    cursor: pointer;
+    transition: all 0.25s;
+}
+
+.tv2-submit-btn--buy {
+    background: var(--tv2-green);
+    color: #ffffff;
+}
+
+.tv2-submit-btn--buy:hover {
+    background: #15803d;
+    box-shadow: 0 4px 12px rgba(22,163,74,0.3);
+}
+
+.tv2-submit-btn--sell {
+    background: var(--tv2-red);
+    color: #ffffff;
+}
+
+.tv2-submit-btn--sell:hover {
+    background: #b91c1c;
+    box-shadow: 0 4px 12px rgba(220,38,38,0.3);
+}
+
+.tv2-disclaimer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--tv2-text-muted);
+    margin-top: 10px;
+}
+
+/* ═══════════════════════════════════════
+   3. PROPERTY DETAILS SECTION
+   ═══════════════════════════════════════ */
+.tv2-details-section {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.tv2-detail-card {
+    background: var(--tv2-surface);
+    border-radius: var(--tv2-radius);
+    border: 1px solid var(--tv2-border);
+    box-shadow: var(--tv2-shadow);
+    padding: 24px;
+}
+
+.tv2-detail-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tv2-detail-card-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--tv2-text);
+}
+
+.tv2-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.tv2-detail-item { }
+
+.tv2-detail-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--tv2-text-muted);
+    margin-bottom: 4px;
+}
+
+.tv2-detail-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--tv2-text);
+}
+
+/* Developer */
+.tv2-developer {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.tv2-developer-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f3f4f6;
+}
+
+.tv2-developer-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tv2-developer-info h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: var(--tv2-text);
+}
+
+.tv2-developer-info p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--tv2-text-sec);
+    margin: 0;
+}
+
+/* Documents */
+.tv2-documents {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tv2-doc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--tv2-surface-el);
+    border: 1px solid var(--tv2-border);
+    border-radius: var(--tv2-radius-sm);
+    transition: background 0.2s;
+}
+
+.tv2-doc-item:hover { background: rgba(0,0,0,0.02); }
+
+.tv2-doc-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tv2-text);
+}
+
+.tv2-doc-download {
+    padding: 6px;
+    background: transparent;
+    border: 1px solid var(--tv2-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.tv2-doc-download:hover {
+    background: var(--tv2-blue-bg);
+    border-color: var(--tv2-blue-border);
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════ */
+@media (max-width: 1024px) {
+    .tv2-hero { grid-template-columns: 1fr; }
+    .tv2-trading-section { grid-template-columns: 1fr; }
+    .tv2-details-section { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+    .tv2-page { padding: 16px; }
+    .tv2-hero { padding: 16px; }
+    .tv2-gallery-main { height: 220px; }
+    .tv2-hero-stats { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tv2-stat-value { font-size: 16px; }
+}

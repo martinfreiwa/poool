@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orderbook | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Live orderbook view with admin-only user identification." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <link rel="stylesheet" href="/static/css/mp-orderbook.css" />
+  <script src="/static/js/admin-theme.js"></script>
+</head>
+
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/marketplace/">Marketplace</a>
+            <span class="separator">›</span>
+            <span class="current">Orderbook</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <!-- Asset Selector -->
+          <select id="asset-selector" class="admin-select">
+            <option value="bali-villa">Bali Villa Resort (BVRT)</option>
+            <option value="jakarta-office">Jakarta Office Tower (JOTX)</option>
+            <option value="surabaya-wh">Surabaya Warehouse (SWHS)</option>
+            <option value="bandung-tech">Bandung Tech Hub (BTHB)</option>
+            <option value="yogya-hotel">Yogya Heritage Hotel (YHHT)</option>
+          </select>
+
+          <!-- Rebuild Button -->
+          <button class="admin-btn admin-btn--primary" id="btn-rebuild-orderbook" style="gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            <span>Rebuild Orderbook</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content">
+        <div class="admin-page-header" style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <h1 class="admin-page-title">Live Orderbook</h1>
+            <p class="admin-page-subtitle">Real-time bid/ask depth — <span id="selected-asset-name">Bali Villa Resort (BVRT)</span></p>
+          </div>
+          <div class="mp-ob-stats" id="ob-stats">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <!-- Spread Indicator -->
+        <div class="mp-ob-spread-bar" id="spread-bar">
+          <!-- Filled by JS -->
+        </div>
+
+        <!-- Orderbook Grid -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <div class="mp-orderbook-grid">
+              <!-- BIDS (Left) -->
+              <div class="mp-orderbook-side mp-orderbook-side--bids">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th style="text-align:right">Qty</th>
+                      <th style="text-align:right">Price (USD)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bids-body">
+                    <!-- Filled by JS -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- ASKS (Right) -->
+              <div class="mp-orderbook-side mp-orderbook-side--asks">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Price (USD)</th>
+                      <th>Qty</th>
+                      <th style="text-align:right">User</th>
+                    </tr>
+                  </thead>
+                  <tbody id="asks-body">
+                    <!-- Filled by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/mp-toast.js"></script>
+  <script src="/static/js/mp-orderbook.js"></script>
+</body>
+
+</html>

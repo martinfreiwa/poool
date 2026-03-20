@@ -315,7 +315,7 @@ pub async fn totp_setup_page(
         .await?
         .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?;
 
-    let (secret, url, qr_code) = service::generate_totp_secret(&user.email);
+    let (secret, url, qr_code) = service::generate_totp_secret(&user.email)?;
 
     let tmpl = state
         .templates
@@ -657,7 +657,10 @@ pub async fn google_redirect(State(state): State<AppState>, jar: CookieJar) -> i
         return Redirect::to("/auth/login?error=oauth_not_configured").into_response();
     }
 
-    let client_id = state.config.google_client_id.as_ref().unwrap();
+    let client_id = match state.config.google_client_id.as_ref() {
+        Some(id) => id,
+        None => return Redirect::to("/auth/login?error=oauth_not_configured").into_response(),
+    };
     let redirect_uri = format!("{}/auth/google/callback", state.config.base_url);
 
     let auth_url = format!(

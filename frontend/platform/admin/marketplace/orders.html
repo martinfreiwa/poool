@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open Orders | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — View and manage all currently open marketplace orders." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <script src="/static/js/admin-theme.js"></script>
+</head>
+
+<body class="admin-body">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/marketplace/">Marketplace</a>
+            <span class="separator">›</span>
+            <span class="current">Open Orders</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-health-indicators" title="System Health">
+            <span class="admin-health-dot admin-health-dot--ok" title="Matching Engine"></span>
+            <span class="admin-health-dot admin-health-dot--ok" title="Database"></span>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Open Orders</h1>
+          <p class="admin-page-subtitle">All currently active marketplace orders with held balances</p>
+        </div>
+
+        <!-- KPI Summary -->
+        <div class="admin-kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Total Open</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-total-open">—</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Total Held Balance</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-held-balance" style="color:var(--admin-warning);">—</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Avg. Order Age</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-avg-age">—</div>
+          </div>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table" id="orders-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>User</th>
+                  <th>Asset</th>
+                  <th>Side</th>
+                  <th>Type</th>
+                  <th style="text-align:right">Qty</th>
+                  <th style="text-align:right">Price</th>
+                  <th style="text-align:right">Held Balance</th>
+                  <th>Created</th>
+                  <th>Status</th>
+                  <th style="text-align:center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="orders-body">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/mp-toast.js"></script>
+  <script src="/static/js/mp-orders.js"></script>
+</body>
+
+</html>
