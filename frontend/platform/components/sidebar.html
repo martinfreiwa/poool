@@ -16,7 +16,7 @@
       // Prevent active tab flicker by explicitly styling the active tab before DOM paint
       var activePage = "";
       if (path === "/" || (path.includes("/marketplace") && !path.includes("/marketplace-secondary") && !path.includes("/marketplace-trading"))) activePage = "marketplace-parent";
-      else if (path.includes("/marketplace-secondary") || path.includes("/marketplace-trading")) activePage = "trading";
+      else if (path.includes("/marketplace-secondary") || path.includes("/marketplace-trading")) activePage = "trading-parent";
       else if (path.includes("/wallet") || path.includes("/transactions")) activePage = "wallet";
       else if (path.includes("/portfolio")) activePage = "portfolio";
       else if (path.includes("/cart") || path.includes("/checkout")) activePage = "cart";
@@ -105,17 +105,25 @@
                   class="sidebar__nav-child-text">Commodities</span></a>
             </div>
           </div>
-          <div id="nav-item-trading" class="sidebar__nav-item">
-            <!-- Single Trading link (no dropdown) -->
-            <a id="nav-item-trading-content" href="/marketplace-secondary" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-trading" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-trading" class="sidebar__nav-icon-wrapper">
+          <div id="nav-item-trading-parent" class="sidebar__nav-item">
+            <div id="nav-item-trading-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
+              data-item-id="trading-parent" style="cursor: pointer">
+              <div id="nav-text-icon-trading-parent" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-trading-parent" class="sidebar__nav-icon-wrapper">
                   <img src="/static/images/chart-line-up.svg" alt="Trading" class="nav-icon" width="20"
                     height="20" />
                 </div>
-                <span id="nav-text-trading" class="sidebar__nav-text">Trading</span>
+                <span id="nav-text-trading-parent" class="sidebar__nav-text">Trading</span>
               </div>
-            </a>
+              <svg id="nav-chevron-trading-parent" class="sidebar__nav-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div id="nav-children-trading-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
+              <a id="nav-child-overview" href="/marketplace-secondary" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Overview</span></a>
+              <a id="nav-child-trade-v1" href="/marketplace-trading" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Trade V1</span></a>
+              <a id="nav-child-trade-v2" href="/marketplace-trading-v2" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Trade V2</span></a>
+            </div>
           </div>
           <div id="nav-item-wallet" class="sidebar__nav-item">
             <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
@@ -507,17 +515,25 @@
                   class="sidebar__nav-child-text">Commodities</span></a>
             </div>
           </div>
-          <div id="nav-item-trading" class="sidebar__nav-item">
-            <!-- Single Trading link (no dropdown) -->
-            <a id="nav-item-trading-content" href="/marketplace-secondary" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-trading" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-trading" class="sidebar__nav-icon-wrapper">
+          <div id="nav-item-trading-parent" class="sidebar__nav-item">
+            <div id="nav-item-trading-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
+              data-item-id="trading-parent" style="cursor: pointer">
+              <div id="nav-text-icon-trading-parent" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-trading-parent" class="sidebar__nav-icon-wrapper">
                   <img src="/static/images/chart-line-up.svg" alt="Trading" class="nav-icon" width="20"
                     height="20" />
                 </div>
-                <span id="nav-text-trading" class="sidebar__nav-text">Trading</span>
+                <span id="nav-text-trading-parent" class="sidebar__nav-text">Trading</span>
               </div>
-            </a>
+              <svg id="nav-chevron-trading-parent" class="sidebar__nav-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div id="nav-children-trading-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
+              <a id="nav-child-overview" href="/marketplace-secondary" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Overview</span></a>
+              <a id="nav-child-trade-v1" href="/marketplace-trading" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Trade V1</span></a>
+              <a id="nav-child-trade-v2" href="/marketplace-trading-v2" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Trade V2</span></a>
+            </div>
           </div>
           <div id="nav-item-wallet" class="sidebar__nav-item">
             <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->

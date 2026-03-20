@@ -199,7 +199,7 @@
 
         // Footer CTA differs based on whether there are sell orders
         const footerCTA = hasOffers
-            ? `<a href="/marketplace-trading?asset=${asset.slug}" class="mp-sec__trade-btn" onclick="event.stopPropagation();">
+            ? `<a href="/marketplace-trading-v2?asset=${asset.slug}" class="mp-sec__trade-btn" onclick="event.stopPropagation();">
                     Trade
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
                </a>`
@@ -252,7 +252,7 @@
 
         card.addEventListener('click', () => {
             if (hasOffers) {
-                window.location.href = `/marketplace-trading?asset=${asset.slug}`;
+                window.location.href = `/marketplace-trading-v2?asset=${asset.slug}`;
             } else {
                 openBuyInterestModal(asset);
             }

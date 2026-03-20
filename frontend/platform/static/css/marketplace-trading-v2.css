@@ -37,6 +37,23 @@ body.tv2-body {
     font-family: var(--tv2-font);
 }
 
+/* === Wrapper + Sidebar Layout === */
+.tv2-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+.tv2-sidebar {
+    flex-shrink: 0;
+}
+
+.tv2-main {
+    flex: 1;
+    min-width: 0;
+    background: var(--tv2-bg);
+    overflow-y: auto;
+}
+
 /* === Page Layout === */
 .tv2-page {
     max-width: 1200px;
@@ -580,7 +597,8 @@ body.tv2-body {
     gap: 16px;
 }
 
-.tv2-detail-item { }
+
+
 
 .tv2-detail-label {
     display: block;

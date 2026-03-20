@@ -1618,6 +1618,11 @@ async fn page_marketplace_secondary(jar: CookieJar, State(state): State<AppState
     common::routes_helper::serve_protected(jar, &state, "marketplace-secondary.html").await
 }
 
+/// GET /my-trading — Investor's personal trading dashboard (orders, trades, buy interests, tax export).
+async fn page_my_trading(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "my-trading.html").await
+}
+
 /// GET /payment-in-progress  Payment in progress page (protected).
 async fn page_payment_in_progress(
     jar: CookieJar,
