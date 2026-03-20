@@ -16,6 +16,7 @@
       // Prevent active tab flicker by explicitly styling the active tab before DOM paint
       var activePage = "";
       if (path === "/" || (path.includes("/marketplace") && !path.includes("/marketplace-secondary") && !path.includes("/marketplace-trading"))) activePage = "marketplace-parent";
+      else if (path.includes("/my-trading")) activePage = "my-trading";
       else if (path.includes("/marketplace-secondary") || path.includes("/marketplace-trading")) activePage = "trading-parent";
       else if (path.includes("/wallet") || path.includes("/transactions")) activePage = "wallet";
       else if (path.includes("/portfolio")) activePage = "portfolio";
@@ -123,6 +124,7 @@
               <a id="nav-child-overview" href="/marketplace-secondary" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Overview</span></a>
               <a id="nav-child-trade-v1" href="/marketplace-trading" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Trade V1</span></a>
               <a id="nav-child-trade-v2" href="/marketplace-trading-v2" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Trade V2</span></a>
+              <a id="nav-child-my-trading" href="/my-trading" class="sidebar__nav-child"><span class="sidebar__nav-child-text">My Trading</span></a>
             </div>
           </div>
           <div id="nav-item-wallet" class="sidebar__nav-item">
@@ -533,6 +535,7 @@
               <a id="nav-child-overview" href="/marketplace-secondary" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Overview</span></a>
               <a id="nav-child-trade-v1" href="/marketplace-trading" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Trade V1</span></a>
               <a id="nav-child-trade-v2" href="/marketplace-trading-v2" class="sidebar__nav-child"><span class="sidebar__nav-child-text">Trade V2</span></a>
+              <a id="nav-child-my-trading" href="/my-trading" class="sidebar__nav-child"><span class="sidebar__nav-child-text">My Trading</span></a>
             </div>
           </div>
           <div id="nav-item-wallet" class="sidebar__nav-item">
