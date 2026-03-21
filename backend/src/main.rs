@@ -357,6 +357,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         // All other paths → serve from /en/ (Angular SPA root)
         // This handles /, /chunk-*.js, /styles-*.css, /main-*.js, etc.
+        .route("/platform", get(|| async { Redirect::to("https://platform.poool.app/") }))
+        .route("/platform/", get(|| async { Redirect::to("https://platform.poool.app/") }))
         .fallback_service(
             ServeDir::new("../frontend/www/en")
                 .fallback(ServeFile::new("../frontend/www/en/index.html")),

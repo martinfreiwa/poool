@@ -770,7 +770,7 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
         .map_err(|e| e.to_string())?;
 
         for (qty, asset_id) in items {
-            // Restore tokens
+            // 2. Restore tokens to asset
             sqlx::query("UPDATE assets SET tokens_available = tokens_available + $1 WHERE id = $2")
                 .bind(qty)
                 .bind(asset_id)
@@ -778,7 +778,7 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
                 .await
                 .map_err(|e| e.to_string())?;
 
-            // Revert funding_status if asset was 'funded' but now has tokens available again
+            // Restore funding_status if asset was 'funded' but now has tokens available again
             sqlx::query(
                 r#"UPDATE assets SET funding_status = 'funding_in_progress', updated_at = NOW()
                    WHERE id = $1 AND tokens_available > 0 AND funding_status = 'funded'"#,
@@ -788,13 +788,41 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
             .await
             .map_err(|e| e.to_string())?;
 
-            // Mark investment as failed
-            sqlx::query("UPDATE investments SET status = 'failed' WHERE asset_id = $1 AND status = 'funding_in_progress' AND user_id = (SELECT user_id FROM orders WHERE id = $2)")
-                .bind(asset_id)
-                .bind(order_id)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| e.to_string())?;
+            // 3. Subtract tokens from user's investment record
+            // We fetch the subtotal for this item's contribution from order_items (though we already have asset_id/qty)
+            let subtotal: i64 = sqlx::query_scalar(
+                "SELECT subtotal_cents FROM order_items WHERE order_id = $1 AND asset_id = $2",
+            )
+            .bind(order_id)
+            .bind(asset_id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
+
+            // Update investment: subtract tokens and value
+            // Only set status to 'failed' if they have NO tokens left for this asset
+            sqlx::query(
+                r#"
+                UPDATE investments
+                SET tokens_owned = GREATEST(0, tokens_owned - $1),
+                    purchase_value_cents = GREATEST(0, purchase_value_cents - $2),
+                    current_value_cents = GREATEST(0, current_value_cents - $2),
+                    status = CASE
+                        WHEN tokens_owned - $1 <= 0 THEN 'failed'
+                        ELSE status
+                    END,
+                    updated_at = NOW()
+                WHERE asset_id = $3
+                  AND user_id = (SELECT user_id FROM orders WHERE id = $4)
+                "#,
+            )
+            .bind(qty)
+            .bind(subtotal)
+            .bind(asset_id)
+            .bind(order_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| e.to_string())?;
         }
 
         // 3. Mark order as failed (expired)
