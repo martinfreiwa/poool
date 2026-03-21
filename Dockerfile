@@ -39,6 +39,13 @@ COPY frontend/platform/ /app/frontend/platform/
 COPY frontend/www/ /app/frontend/www/
 RUN bash /app/frontend/platform/static/css/build-bundle.sh
 
+# ── IMPORTANT: Normalize file permissions ────────────────────────
+# macOS may assign restrictive permissions (e.g. 750) to directories,
+# which breaks file serving in the distroless container where the app
+# runs as the non-root `poool` user. Force 755 on dirs and 644 on files.
+RUN find /app/frontend -type d -exec chmod 755 {} + && \
+    find /app/frontend -type f -exec chmod 644 {} +
+
 # ── Stage 4: User setup ─────────────────────────────────────────
 FROM debian:bookworm-slim AS user-setup
 RUN groupadd -g 1000 poool && \
