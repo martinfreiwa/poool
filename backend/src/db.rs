@@ -46,28 +46,58 @@ pub async fn create_pool(database_url: &str) -> PgPool {
 
     tracing::info!("Connecting to database...");
 
-    let pool = PgPoolOptions::new()
-        .max_connections(10)
-        .min_connections(1)
-        .acquire_timeout(std::time::Duration::from_secs(30))
-        .idle_timeout(std::time::Duration::from_secs(300))
-        .connect_with(connect_options)
-        .await
-        .expect("Failed to connect to PostgreSQL. Is the database running?");
+    // Retry the initial connection with exponential backoff.
+    // On Cloud Run the Cloud SQL Auth Proxy may need a few seconds to
+    // establish the Unix-socket before our app can connect.  Without
+    // retries the container panics immediately and Cloud Run marks the
+    // revision as failed ("container failed to start").
+    let max_attempts: u32 = 5;
+    let mut attempt: u32 = 0;
+    let pool = loop {
+        attempt += 1;
+        let opts = connect_options.clone();
+        match PgPoolOptions::new()
+            .max_connections(10)
+            .min_connections(1)
+            .acquire_timeout(std::time::Duration::from_secs(30))
+            .idle_timeout(std::time::Duration::from_secs(300))
+            .connect_with(opts)
+            .await
+        {
+            Ok(p) => break p,
+            Err(e) if attempt < max_attempts => {
+                let backoff = std::time::Duration::from_secs(2u64.pow(attempt));
+                tracing::warn!(
+                    "Database connection attempt {}/{} failed, retrying in {}s: {}",
+                    attempt,
+                    max_attempts,
+                    backoff.as_secs(),
+                    e
+                );
+                tokio::time::sleep(backoff).await;
+            }
+            Err(e) => {
+                panic!(
+                    "Failed to connect to PostgreSQL after {} attempts. Is the database running? Last error: {}",
+                    max_attempts, e
+                );
+            }
+        }
+    };
 
     // Verify connection works with retry
-    let mut attempts = 0;
+    let mut verify_attempts = 0;
     loop {
-        attempts += 1;
+        verify_attempts += 1;
         match sqlx::query("SELECT 1").execute(&pool).await {
             Ok(_) => {
                 tracing::info!("Database connection established ✓");
                 break;
             }
-            Err(e) if attempts < 3 => {
+            Err(e) if verify_attempts < 3 => {
                 tracing::warn!(
                     "Database connection test failed (attempt {}/3): {}",
-                    attempts,
+                    verify_attempts,
                     e
                 );
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
