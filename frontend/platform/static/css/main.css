@@ -497,9 +497,9 @@ label {
 /* ── Cross-document View Transitions (SPA-like page navigation) ── */
 @supports (view-transition-name: none) {
 
-  /* Sidebar stays perfectly static during page transitions */
-  .sidebar,
-  #sidebar-navigation,
+  /* Sidebar stays perfectly static during page transitions.
+     IMPORTANT: Only ONE element may have a given view-transition-name.
+     Use the outermost wrapper to avoid duplicates when .sidebar is nested inside it. */
   #dynamic-sidebar-container {
     view-transition-name: sidebar;
   }

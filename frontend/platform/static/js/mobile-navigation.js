@@ -301,10 +301,8 @@ document.addEventListener("DOMContentLoaded", function () {
           window.open("/docs", "_blank");
           break;
         case "mobile-menu-item-sign-out":
-          if (await pooolConfirm({ title: 'Sign out', message: 'Are you sure you want to sign out?', confirmText: 'Sign out', type: 'warning' })) {
-            window.location.href = "/logout";
-          }
-          break;
+          window.location.href = "/logout";
+          return;
       }
 
       closeMobileProfileDropdown();

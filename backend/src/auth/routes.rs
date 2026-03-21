@@ -677,6 +677,20 @@ pub async fn google_callback(
     State(state): State<AppState>,
     jar: CookieJar,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Response {
+    match google_callback_inner(&state, jar, params).await {
+        Ok(response) => response,
+        Err(e) => {
+            tracing::error!("Google OAuth callback error: {}", e);
+            Redirect::to("/auth/login?error=Google+sign+in+failed.+Please+try+again.").into_response()
+        }
+    }
+}
+
+async fn google_callback_inner(
+    state: &AppState,
+    jar: CookieJar,
+    params: std::collections::HashMap<String, String>,
 ) -> Result<Response, AppError> {
     let code = params
         .get("code")
@@ -714,9 +728,23 @@ pub async fn google_callback(
         .await
         .map_err(|e| AppError::Internal(format!("Failed to parse Google response: {}", e)))?;
 
+    // Check for error in Google response
+    if let Some(error) = token_data.get("error") {
+        let error_desc = token_data.get("error_description")
+            .and_then(|d| d.as_str())
+            .unwrap_or("unknown");
+        tracing::error!("Google OAuth token error: {} — {}", error, error_desc);
+        return Err(AppError::Internal(format!(
+            "Google OAuth failed: {} — {}", error, error_desc
+        )));
+    }
+
     let access_token = token_data["access_token"]
         .as_str()
-        .ok_or_else(|| AppError::Internal("No access token in Google response".to_string()))?;
+        .ok_or_else(|| {
+            tracing::error!("No access_token in Google response: {:?}", token_data);
+            AppError::Internal("No access token in Google response".to_string())
+        })?;
 
     // Fetch user info
     let user_info: serde_json::Value = client
