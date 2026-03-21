@@ -13,6 +13,9 @@
 | Sample Asset - Grand Resort | `sample-asset-grand-resort-38040b` | manual | 11 | 2026-03-21 |
 | Martins Villa | `martins-villa-ffea037b` | manual | 12 | 2026-03-21 |
 | Boutique Resort with 6 Villas in Central Ubud | `boutique-resort-ubud` | agent-x7k2 | 12 | 2026-03-21 |
+| Sunset Heights Villa | `sunset-heights-villa` | agent-r8f3 | 8 | 2026-03-21 |
+| Uluwatu Luxury Retreat | `uluwatu-luxury-retreat` | agent-p9m4 | 10 | 2026-03-21 |
+| New Development Project – 4 Villa Complex | `new-development-seminyak` | agent-q3v8 | 10 | 2026-03-21 |
 
 ---
 
@@ -23,11 +26,12 @@
 
 | Slug | Agent | Claimed At |
 |------|-------|------------|
-| uluwatu-luxury-retreat | agent-p9m4 | 2026-03-21T01:08:00+07:00 |
-| new-development-seminyak | agent-q3v8 | 2026-03-21T01:08:30+07:00 |
-| sunset-heights-villa | agent-r8f3 | 2026-03-21T01:08:09+07:00 |
+
+| beachfront-retreat-sanur-exited | agent-q3v8 | 2026-03-21T07:32:00+07:00 |
+
 | modern-surf-villa-canggu | agent-k5w9 | 2026-03-21T01:09:00+07:00 |
 | luxury-pool-villa-canggu-funded | agent-m3j7 | 2026-03-21T01:09:13+07:00 |
+| vacation-rental-villa-uluwatu | agent-p9m4 | 2026-03-21T07:31:00+07:00 |
 
 ---
 
@@ -38,9 +42,9 @@
 | # | Asset | Slug | UUID | Value (USD) | Bedrooms | Location | Status | Current Images |
 |---|-------|------|------|-------------|----------|----------|--------|----------------|
 
-| 2 | Uluwatu Luxury Retreat | uluwatu-luxury-retreat | a4444444-4444-4444-4444-444444444444 | 2500000 | — | Uluwatu, Bali | funded | villa4_1.jpg (dup) |
-| 3 | New Development Project – 4 Villa Complex | new-development-seminyak | e8719314-1fac-4e2a-ad2d-e86a725fec96 | 1800000 | 8 | Seminyak, Bali | funding_open | villa6.webp |
-| 4 | Sunset Heights Villa | sunset-heights-villa | a1111111-1111-1111-1111-111111111111 | 1200000 | — | Jimbaran, Bali | funding_open | villa1.jpg (dup) |
+
+
+
 | 5 | Modern Surf Villa near Echo Beach | modern-surf-villa-canggu | 6ddc6ee5-ed72-4d3c-90f9-8cf4b6704771 | 1150000 | 4 | Canggu, Bali | funded | villa2_1.webp, villa2_2.webp |
 | 6 | Luxury Pool Villa – Fully Funded | luxury-pool-villa-canggu-funded | 89295282-6302-42d3-9961-a168b4578a40 | 950000 | 3 | Canggu, Bali | funded | villa3_1.webp, villa1_2.webp |
 | 7 | Vacation Rental Villa with Temple Views | vacation-rental-villa-uluwatu | 0303245f-a4b0-4723-87f7-3cfcd64910d5 | 785000 | 3 | Uluwatu, Bali | funding_in_progress | villa4_1.webp, villa4_2.webp |
