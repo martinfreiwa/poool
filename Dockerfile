@@ -33,6 +33,8 @@ RUN cargo build --release --locked
 
 # Prepare frontend bundle in builder stage since it has bash
 WORKDIR /app
+# Cache-bust: ensure all static assets (images/subdirs) are freshly copied
+ARG CACHEBUST=1
 COPY frontend/platform/ /app/frontend/platform/
 COPY frontend/www/ /app/frontend/www/
 RUN bash /app/frontend/platform/static/css/build-bundle.sh
