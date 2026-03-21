@@ -616,6 +616,215 @@ CREATE INDEX idx_inv_limits_user ON investment_limits(user_id);
 ```
 
 
+---
+
+## Marketplace Tables (Phase 2 — Migrations 050b-055)
+
+### `wallets` — Extended Columns
+
+```sql
+-- New column added by migration 050b
+held_balance_cents BIGINT NOT NULL DEFAULT 0  -- Funds blocked by open buy orders
+-- Constraints:
+--   chk_held_balance_non_negative: held_balance_cents >= 0
+--   chk_held_lte_balance: held_balance_cents <= balance_cents
+```
+
+### `investments` — Extended Columns
+
+```sql
+-- New column added by migration 050c
+held_tokens INTEGER NOT NULL DEFAULT 0  -- Tokens blocked by open sell orders
+-- Constraints:
+--   chk_held_tokens_non_negative: held_tokens >= 0
+--   chk_held_tokens_lte_owned: held_tokens <= tokens_owned
+```
+
+### 27. `market_orders`
+*All limit/market orders in the marketplace (open, filled, cancelled)*
+
+```sql
+CREATE TABLE market_orders (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id),
+    asset_id        UUID NOT NULL REFERENCES assets(id),
+    side            VARCHAR(4) NOT NULL CHECK (side IN ('buy', 'sell')),
+    order_type      VARCHAR(10) NOT NULL DEFAULT 'limit'
+                    CHECK (order_type IN ('limit', 'market')),
+    price_cents     BIGINT NOT NULL CHECK (price_cents > 0),
+    quantity        INTEGER NOT NULL CHECK (quantity > 0),
+    quantity_filled INTEGER NOT NULL DEFAULT 0 CHECK (quantity_filled >= 0),
+    status          VARCHAR(20) NOT NULL DEFAULT 'open'
+                    CHECK (status IN (
+                        'open', 'partially_filled', 'filled', 'cancelled',
+                        'admin_cancelled', 'expired', 'pending_review', 'rejected'
+                    )),
+    idempotency_key UUID UNIQUE,
+    cancel_reason   TEXT,
+    expires_at      TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_filled_lte_qty CHECK (quantity_filled <= quantity)
+);
+-- Partial indexes: idx_orders_asset_status, idx_market_orders_user, idx_orders_expiry, idx_orders_pending
+```
+
+### 28. `trade_history`
+*Immutable log of all executed trades (NEVER updated or deleted)*
+
+```sql
+CREATE TABLE trade_history (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id        UUID NOT NULL REFERENCES assets(id),
+    buy_order_id    UUID NOT NULL REFERENCES market_orders(id),
+    sell_order_id   UUID NOT NULL REFERENCES market_orders(id),
+    buyer_user_id   UUID NOT NULL REFERENCES users(id),
+    seller_user_id  UUID NOT NULL REFERENCES users(id),
+    price_cents     BIGINT NOT NULL CHECK (price_cents > 0),
+    quantity        INTEGER NOT NULL CHECK (quantity > 0),
+    total_cents     BIGINT GENERATED ALWAYS AS (price_cents * quantity) STORED,
+    fee_cents       BIGINT NOT NULL DEFAULT 0 CHECK (fee_cents >= 0),
+    fee_bps         INTEGER NOT NULL DEFAULT 0,
+    on_chain_status VARCHAR(15) NOT NULL DEFAULT 'pending'
+                    CHECK (on_chain_status IN ('pending', 'submitted', 'confirmed', 'failed')),
+    on_chain_tx_hash VARCHAR(66),
+    on_chain_batch_id UUID,
+    executed_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_no_self_trade CHECK (buyer_user_id != seller_user_id)
+);
+-- Indexes: idx_trade_asset_time, idx_trade_buyer, idx_trade_seller, idx_trade_onchain
+```
+
+### 29. `p2p_offers`
+*Peer-to-peer (OTC) direct offers between users*
+
+```sql
+CREATE TABLE p2p_offers (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    asset_id          UUID NOT NULL REFERENCES assets(id),
+    maker_user_id     UUID NOT NULL REFERENCES users(id),
+    taker_user_id     UUID NOT NULL REFERENCES users(id),
+    side              VARCHAR(4) NOT NULL CHECK (side IN ('buy', 'sell')),
+    price_cents       BIGINT NOT NULL CHECK (price_cents > 0),
+    quantity          INTEGER NOT NULL CHECK (quantity > 0),
+    message           TEXT,
+    status            VARCHAR(15) NOT NULL DEFAULT 'pending'
+                      CHECK (status IN (
+                          'pending', 'accepted', 'declined', 'expired',
+                          'countered', 'cancelled', 'admin_cancelled'
+                      )),
+    parent_offer_id   UUID REFERENCES p2p_offers(id),
+    trade_id          UUID REFERENCES trade_history(id),
+    expires_at        TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '48 hours'),
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_no_self_offer CHECK (maker_user_id != taker_user_id)
+);
+-- Indexes: idx_p2p_taker (partial), idx_p2p_asset, idx_p2p_expiry (partial)
+```
+
+### 30. `fee_configurations`
+*4-tier fee hierarchy: Promotion > Developer Deal > Asset > Platform Default*
+
+```sql
+CREATE TABLE fee_configurations (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    scope         VARCHAR(15) NOT NULL CHECK (scope IN ('platform', 'asset', 'developer')),
+    asset_id      UUID REFERENCES assets(id),
+    developer_id  UUID REFERENCES users(id),
+    taker_fee_bps INTEGER NOT NULL DEFAULT 500 CHECK (taker_fee_bps >= 0 AND taker_fee_bps <= 1000),
+    maker_fee_bps INTEGER NOT NULL DEFAULT 0 CHECK (maker_fee_bps >= 0 AND maker_fee_bps <= 1000),
+    is_active     BOOLEAN NOT NULL DEFAULT true,
+    reason        TEXT,
+    created_by    UUID REFERENCES users(id),
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_fee_scope UNIQUE (scope, asset_id, developer_id, is_active)
+);
+```
+
+### 31. `fee_promotions`
+*Time-bounded fee promotions (highest priority in fee lookup)*
+
+```sql
+CREATE TABLE fee_promotions (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name          VARCHAR(100) NOT NULL,
+    scope         VARCHAR(15) NOT NULL CHECK (scope IN ('global', 'asset')),
+    asset_id      UUID REFERENCES assets(id),
+    taker_fee_bps INTEGER NOT NULL CHECK (taker_fee_bps >= 0),
+    maker_fee_bps INTEGER NOT NULL CHECK (maker_fee_bps >= 0),
+    starts_at     TIMESTAMPTZ NOT NULL,
+    ends_at       TIMESTAMPTZ NOT NULL,
+    is_active     BOOLEAN NOT NULL DEFAULT true,
+    created_by    UUID REFERENCES users(id),
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_promo_dates CHECK (ends_at > starts_at)
+);
+-- Index: idx_promo_active (partial, WHERE is_active = true)
+```
+
+### 32. `marketplace_alerts`
+*Auto/manual alerts for suspicious marketplace activity*
+
+```sql
+CREATE TABLE marketplace_alerts (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    alert_type   VARCHAR(50) NOT NULL,
+    severity     VARCHAR(15) NOT NULL DEFAULT 'warning'
+                 CHECK (severity IN ('info', 'warning', 'critical')),
+    asset_id     UUID REFERENCES assets(id),
+    user_id      UUID REFERENCES users(id),
+    trade_id     UUID REFERENCES trade_history(id),
+    message      TEXT NOT NULL,
+    metadata     JSONB,
+    status       VARCHAR(15) NOT NULL DEFAULT 'new'
+                 CHECK (status IN ('new', 'acknowledged', 'resolved', 'false_positive')),
+    resolved_by  UUID REFERENCES users(id),
+    resolved_at  TIMESTAMPTZ,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- Indexes: idx_alerts_status (partial), idx_alerts_severity (partial), idx_alerts_user
+```
+
+### 33. `marketplace_watchlist`
+*Admin watchlist for suspicious users*
+
+```sql
+CREATE TABLE marketplace_watchlist (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID NOT NULL REFERENCES users(id),
+    reason     TEXT NOT NULL,
+    added_by   UUID NOT NULL REFERENCES users(id),
+    is_active  BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- Unique partial index: idx_watchlist_user (one active entry per user)
+```
+
+### 34. `reconciliation_reports`
+*Daily balance reconciliation check results*
+
+```sql
+CREATE TABLE reconciliation_reports (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    report_date             DATE NOT NULL UNIQUE,
+    total_wallet_cents      BIGINT NOT NULL,
+    total_deposits_cents    BIGINT NOT NULL,
+    total_withdrawals_cents BIGINT NOT NULL,
+    total_purchases_cents   BIGINT NOT NULL,
+    cash_delta_cents        BIGINT NOT NULL,
+    total_fees_earned_cents BIGINT NOT NULL,
+    fee_wallet_cents        BIGINT NOT NULL,
+    fee_delta_cents         BIGINT NOT NULL,
+    token_mismatches        INTEGER NOT NULL DEFAULT 0,
+    token_details           JSONB,
+    status                  VARCHAR(15) NOT NULL DEFAULT 'pass'
+                            CHECK (status IN ('pass', 'warning', 'fail')),
+    notes                   TEXT,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
 
 ---
 
@@ -627,19 +836,29 @@ users ─────┬── user_profiles
             ├── oauth_accounts
             ├── kyc_records
             ├── wallets ──── wallet_transactions
+            │   └── + held_balance_cents (marketplace)
             ├── user_roles ── roles
             ├── user_settings
             ├── cart_items ─────┐
             ├── orders ─────────┤── assets ──┬── asset_images
             │   └── order_items ┘            ├── asset_documents
             ├── investments ─────────────────┤── asset_milestones
-            │   └── dividend_payouts         ├── asset_financials
+            │   ├── + held_tokens (mktplace) ├── asset_financials
+            │   └── dividend_payouts         │
+            ├── market_orders ───────────────┘
+            │   └── trade_history
+            │       ├── p2p_offers
+            │       └── marketplace_alerts
+            ├── fee_configurations
+            ├── fee_promotions
+            ├── marketplace_watchlist
             ├── developer_projects ──────────┘
             ├── notifications
             ├── support_tickets
             ├── investment_limits
             ├── password_reset_tokens
             └── audit_logs
+reconciliation_reports (standalone, no FKs to users)
 ```
 
 ---
@@ -651,10 +870,9 @@ users ─────┬── user_profiles
 > - **Rewards** – in der Sidebar als "Soon" markiert
 > - **Leaderboard** – in der Sidebar als "Soon" markiert
 > - **Community** – keine bestehende Seite
-> - **Sekundärmarkt / Trading** – noch nicht geplant
 > - **Multi-Währung** – aktuell nur USD
 >
-> Diese werden erst hinzugefügt, wenn die entsprechenden Frontend-Seiten gebaut werden.
+> **Marketplace-Tabellen** (27-34) wurden in Phase 2 hinzugefügt. TimescaleDB Hypertables (candles) stehen aus (Phase 2.9-2.10).
 
 ---
 *Ende des Datenbankschema-Dokuments.*

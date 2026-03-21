@@ -402,6 +402,31 @@ pub async fn handle_withdraw(
     let amount_cents = parse_dollars_to_cents(&form.amount);
 
     if amount_cents > 0 {
+        // --- Phase 1.7: Per-transaction max ($10,000) ---
+        const MAX_WITHDRAWAL_CENTS: i64 = 1_000_000; // $10,000
+        if amount_cents > MAX_WITHDRAWAL_CENTS {
+            tracing::warn!(
+                "Withdrawal blocked: user {} attempted {} cents (max {})",
+                user.id,
+                amount_cents,
+                MAX_WITHDRAWAL_CENTS
+            );
+            return Redirect::to("/wallet?error=amount_too_large").into_response();
+        }
+
+        // --- Phase 1.4/1.6: Step-up 2FA for withdrawals over $100 ---
+        if let Err(crate::error::AppError::TwoFactorRequired) =
+            crate::auth::step_up::require_step_up_2fa(
+                &state.db,
+                state.redis.as_ref(),
+                user.id,
+                crate::auth::step_up::FinancialAction::Withdrawal,
+                amount_cents,
+            )
+            .await
+        {
+            return Redirect::to("/wallet?error=2fa_required").into_response();
+        }
         // Use a transaction with FOR UPDATE lock to prevent TOCTOU double-spend race
         let mut tx = match state.db.begin().await {
             Ok(t) => t,
@@ -446,7 +471,7 @@ pub async fn handle_withdraw(
 
         // --- Masterplan Priority 1: Security Checks ---
         let now = Utc::now();
-        
+
         // 1. New Account Cooldown (72 hours)
         if now.signed_duration_since(created_at) < chrono::Duration::hours(72) {
             let _ = tx.rollback().await;

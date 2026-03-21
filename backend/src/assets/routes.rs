@@ -362,7 +362,9 @@ pub async fn page_commodity(
     };
 
     // Convert to display data
-    let display_data = asset.as_ref().map(super::models::CommodityDisplayData::from_asset);
+    let display_data = asset
+        .as_ref()
+        .map(super::models::CommodityDisplayData::from_asset);
 
     // Query milestones/roadmap for this asset
     let milestones = if let Some(ref a) = asset {

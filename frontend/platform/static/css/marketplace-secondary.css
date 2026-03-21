@@ -4,32 +4,11 @@
    ============================================================ */
 
 /* ═══════════════════════════════════════
-   VIEW TRANSITIONS API — Cross-Document
-   Required: both the old and new page must
-   opt in via @view-transition for MPA transitions.
+   VIEW TRANSITIONS API — Page-Specific Morphs
+   The global @view-transition opt-in and root/content
+   animations are in main.css (bundle.css).
+   Below are hero + title morphs specific to marketplace → trading.
    ═══════════════════════════════════════ */
-
-/* OPT-IN: Enable cross-document view transitions */
-@view-transition {
-    navigation: auto;
-}
-
-/* Root crossfade with blur */
-::view-transition-old(root) {
-    animation: mp-vt-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-::view-transition-new(root) {
-    animation: mp-vt-in 0.5s cubic-bezier(0.0, 0, 0.2, 1) forwards;
-}
-
-@keyframes mp-vt-out {
-    from { opacity: 1; transform: scale(1); filter: blur(0); }
-    to   { opacity: 0; transform: scale(0.98); filter: blur(4px); }
-}
-@keyframes mp-vt-in {
-    from { opacity: 0; transform: scale(1.02); filter: blur(4px); }
-    to   { opacity: 1; transform: scale(1); filter: blur(0); }
-}
 
 /* Hero image morph — card gallery → V3 hero mosaic */
 ::view-transition-old(tv3-hero-img) {
@@ -66,24 +45,6 @@
 }
 @keyframes mp-title-in {
     from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Main content slide */
-::view-transition-old(main-content) {
-    animation: mp-content-out 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-::view-transition-new(main-content) {
-    animation: mp-content-in 0.55s cubic-bezier(0.0, 0, 0.2, 1) 0.08s forwards;
-    opacity: 0;
-}
-
-@keyframes mp-content-out {
-    from { opacity: 1; transform: translateY(0); }
-    to   { opacity: 0; transform: translateY(-40px); }
-}
-@keyframes mp-content-in {
-    from { opacity: 0; transform: translateY(60px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -337,39 +298,46 @@ body.mp-secondary-body {
     color: var(--mp-text-secondary);
 }
 
-/* === Fee Banner === */
-.mp-sec__fee-banner {
+/* === Status Tabs (Available / Funded) === */
+.mp-sec__status-tabs {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 18px;
-    margin-bottom: 24px;
-    background: var(--mp-blue-soft);
-    border: 1px solid rgba(0,0,255,0.1);
-    border-radius: 10px;
-    font-size: 14px;
+    padding: 4px;
+    gap: 0;
+    margin-bottom: 20px;
+    background: var(--mp-surface);
+    border: 1px solid var(--mp-border);
+    border-radius: 30px;
+    width: fit-content;
+}
+
+.mp-sec__status-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--mp-font);
     color: var(--mp-text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: 26px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    line-height: 24px;
 }
 
-.mp-sec__fee-banner svg {
-    color: var(--mp-blue);
-    flex-shrink: 0;
-}
-
-.mp-sec__fee-banner strong {
+.mp-sec__status-tab:hover:not(.active) {
+    background: var(--mp-bg);
     color: var(--mp-text-primary);
 }
 
-.mp-sec__fee-tier {
-    margin-left: auto;
+.mp-sec__status-tab.active {
+    background: var(--mp-green-light);
     color: var(--mp-blue);
-    font-weight: 500;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-
-.mp-sec__fee-tier:hover {
-    opacity: 0.8;
+    font-weight: 700;
 }
 
 /* === Asset Grid === */
@@ -815,83 +783,61 @@ body.mp-secondary-body {
     transform: rotate(180deg);
 }
 
-/* === Card Footer — CTA === */
+/* === Card Footer — Full-Width CTA === */
 .mp-sec__card-footer {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-top: 1px solid var(--mp-border);
-    background: var(--mp-surface);
     width: 100%;
     box-sizing: border-box;
     margin-top: auto;
 }
 
-.mp-sec__volume {
-    font-size: 12px;
-    color: var(--mp-text-secondary);
-    font-variant-numeric: tabular-nums;
-}
-
-.mp-sec__volume span {
-    color: var(--mp-text-primary);
-    font-weight: 500;
-}
-
-.mp-sec__trade-btn {
-    display: inline-flex;
+/* Shared footer button base */
+.mp-sec__footer-btn {
+    display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 20px;
-    font-size: 14px;
-    font-weight: 600;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 700;
     font-family: var(--mp-font);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    line-height: 22px;
+    border-radius: 0 0 var(--mp-card-radius) var(--mp-card-radius);
+}
+
+/* Trade button — solid blue */
+.mp-sec__footer-btn--trade {
     color: #fff;
     background: var(--mp-blue);
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.15s;
-    text-decoration: none;
-    line-height: 20px;
 }
 
-.mp-sec__trade-btn:hover {
+.mp-sec__footer-btn--trade:hover {
     background: #0000cc;
-    transform: scale(1.03);
 }
 
-.mp-sec__trade-btn svg {
+.mp-sec__footer-btn--trade svg {
     transition: transform 0.2s;
 }
 
-.mp-sec__trade-btn:hover svg {
-    transform: translateX(2px);
+.mp-sec__footer-btn--trade:hover svg {
+    transform: translateX(3px);
 }
 
-/* === Buy Interest Button === */
-.mp-sec__interest-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 18px;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: var(--mp-font);
+/* Buy Interest button — outlined blue */
+.mp-sec__footer-btn--interest {
     color: var(--mp-blue);
     background: var(--mp-blue-soft);
-    border: 1px solid rgba(0,0,255,0.15);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    line-height: 20px;
+    border-top: 1px solid rgba(0,0,255,0.1);
 }
 
-.mp-sec__interest-btn:hover {
+.mp-sec__footer-btn--interest:hover {
     background: var(--mp-blue);
     color: #fff;
-    border-color: var(--mp-blue);
 }
 
 /* === Empty State === */

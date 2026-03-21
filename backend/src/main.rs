@@ -31,6 +31,8 @@ mod email;
 mod error;
 mod kyc;
 mod leaderboard;
+/// Marketplace module — secondary market trading engine for tokenized assets.
+mod marketplace;
 /// Legal module containing handlers for terms of service, privacy policy, and other legal documents.
 pub mod legal;
 mod payment_methods;
@@ -104,8 +106,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("Starting POOOL Backend...");
 
-    //  2. Database & State Initialization
-    let pool = db::create_pool(&config.database_url).await;
+    //  2. Database & State Initialization (Phase 1.1: Dual pools)
+    let pools = db::create_pools(&config).await;
+    let pool = pools.primary.clone();
 
     // ── 4. Run database migrations ────────────────────────────────
     // Reads .sql files from ../database/ in alphanumeric order, tracks which
@@ -145,6 +148,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = AppState {
         db: pool.clone(),
+        db_replica: pools.replica,
+        community_db: pools.community,
         templates,
         config: config.clone(),
         redis: redis_pool,
@@ -257,28 +262,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    // Masterplan Priority 2: Daily Financial Reconciliation
-    // "Daily Reconciliation Job (🔴 Kritisch)"
-    // Runs every 24 hours to verify: SUM(Wallets) == SUM(Deposits) - SUM(Withdrawals) - SUM(Purchases)
+    // Masterplan Priority 2: Daily Financial Reconciliation (Phase 1.9 — enhanced)
+    // Runs every 24 hours with the following checks:
+    // 1. Cash balance invariant: SUM(Wallets) == SUM(Deposits) - SUM(Withdrawals) - SUM(Purchases)
+    // 2. Token balance invariant: SUM(tokens_owned) per asset == tokens_total - tokens_available
+    // 3. Negative wallet balance detection
+    // 4. Sentry Fatal alert for cash deltas >$1
     let recon_pool = pool.clone();
     tokio::spawn(async move {
         // Initial delay to not slam the DB on startup
         tokio::time::sleep(std::time::Duration::from_secs(60)).await;
-        
+
         // Check once initially, then every 24h
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(24 * 60 * 60));
         loop {
             interval.tick().await;
+            tracing::info!("Starting daily financial reconciliation...");
 
-            // Compute the totals
-            // For deposits: include 'approved' or 'completed'
-            // For withdrawals: include 'completed' or 'approved' (deducted from wallet)
-            // For purchases: checkout deducts from wallet immediately for 'completed' orders.
+            // ── Check 1: Cash Balance Invariant ────────────────────────
             let totals = sqlx::query!(
                 r#"
                 SELECT 
                     (SELECT COALESCE(SUM(balance_cents), 0)::bigint FROM wallets WHERE wallet_type = 'cash' AND currency = 'USD') as total_wallets,
-                    (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM deposit_requests WHERE status IN ('approved', 'completed') AND currency = 'USD') as total_deposits,
+                    (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM deposit_requests WHERE status IN ('approved', 'completed', 'paid') AND currency = 'USD') as total_deposits,
                     (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM withdrawal_requests WHERE status != 'rejected' AND currency = 'USD') as total_withdrawals,
                     (SELECT COALESCE(SUM(total_cents), 0)::bigint FROM orders WHERE status IN ('completed', 'pending_kyc')) as total_purchases
                 "#
@@ -293,41 +299,122 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let total_withdrawals = t.total_withdrawals.unwrap_or(0);
                     let total_purchases = t.total_purchases.unwrap_or(0);
 
-                    // Note: If users sell assets, they GAIN cash. Since secondary market is not live, this should match.
-                    // Also referral rewards or admin adjustments might break this formula slightly, but for now we strictly alert.
                     let expected_wallets = total_deposits - total_withdrawals - total_purchases;
-                    let unexplained_difference = total_wallets - expected_wallets;
+                    let delta = total_wallets - expected_wallets;
 
-                    if unexplained_difference > 0 {
-                        // We have MORE money in the wallets than expected!
+                    if delta.abs() > 100 {
+                        // >$1 mismatch → FATAL alert
                         let msg = format!(
-                            "RECONCILIATION MISMATCH: Unexplained excess of {} cents in system cash wallets. (Wallets: {}, Expected: {})",
-                            unexplained_difference, total_wallets, expected_wallets
+                            "RECONCILIATION FATAL: Cash delta of {} cents (wallets={}, expected={}). Deposits={}, Withdrawals={}, Purchases={}",
+                            delta, total_wallets, expected_wallets, total_deposits, total_withdrawals, total_purchases
                         );
-                        tracing::warn!("{}", msg);
+                        tracing::error!("{}", msg);
                         sentry::with_scope(
                             |scope| {
-                                scope.set_tag("security.event", "reconciliation_mismatch");
+                                scope.set_tag("security.event", "reconciliation_fatal");
+                                scope.set_tag("reconciliation.delta_cents", delta.to_string());
                             },
                             || {
-                                sentry::capture_message(&msg, sentry::Level::Warning);
+                                sentry::capture_message(&msg, sentry::Level::Fatal);
                             },
                         );
-                    } else if unexplained_difference < 0 {
-                         // We have LESS money than expected. (Can happen if missing deposits or manual errors).
-                         let msg = format!(
-                            "WARNING RECONCILIATION: Wallets have {} cents less than expected. (Wallets: {}, Expected: {})",
-                            -unexplained_difference, total_wallets, expected_wallets
+                    } else if delta != 0 {
+                        let msg = format!(
+                            "RECONCILIATION WARNING: Minor delta of {} cents (wallets={}, expected={})",
+                            delta, total_wallets, expected_wallets
                         );
                         tracing::warn!("{}", msg);
+                        sentry::capture_message(&msg, sentry::Level::Warning);
                     } else {
-                        tracing::info!("Daily reconciliation successful: wallets perfectly match deposits/withdrawals/purchases.");
+                        tracing::info!("Reconciliation check 1/3 PASS: Cash wallets perfectly match deposits/withdrawals/purchases.");
                     }
                 }
                 Err(e) => {
-                    tracing::error!("Failed to run daily financial reconciliation query: {}", e);
+                    tracing::error!("Reconciliation check 1 FAILED: {}", e);
                 }
             }
+
+            // ── Check 2: Token Balance Invariant ───────────────────────
+            // For each asset: SUM(investments.tokens_owned) should == tokens_total - tokens_available
+            let token_mismatches = sqlx::query!(
+                r#"
+                SELECT a.id, a.title, a.tokens_total, a.tokens_available,
+                       COALESCE(inv.total_owned, 0)::int as total_owned
+                FROM assets a
+                LEFT JOIN (
+                    SELECT asset_id, SUM(tokens_owned)::int as total_owned
+                    FROM investments
+                    WHERE status != 'exited'
+                    GROUP BY asset_id
+                ) inv ON inv.asset_id = a.id
+                WHERE a.funding_status IN ('funding_open', 'funding_in_progress', 'funded')
+                  AND (a.tokens_total - a.tokens_available) != COALESCE(inv.total_owned, 0)
+                "#
+            )
+            .fetch_all(&recon_pool)
+            .await;
+
+            match token_mismatches {
+                Ok(rows) => {
+                    if rows.is_empty() {
+                        tracing::info!("Reconciliation check 2/3 PASS: All token balances match.");
+                    } else {
+                        for row in &rows {
+                            let expected_sold = row.tokens_total.unwrap_or(0) - row.tokens_available.unwrap_or(0);
+                            let msg = format!(
+                                "TOKEN MISMATCH: Asset '{}' ({:?}): sold={} but investments show {} tokens",
+                                row.title.as_deref().unwrap_or("unknown"), row.id, expected_sold, row.total_owned.unwrap_or(0)
+                            );
+                            tracing::error!("{}", msg);
+                            sentry::capture_message(&msg, sentry::Level::Error);
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("Reconciliation check 2 FAILED: {}", e);
+                }
+            }
+
+            // ── Check 3: Negative Balance Detection ────────────────────
+            let negative_wallets = sqlx::query!(
+                r#"
+                SELECT w.id, w.user_id, w.wallet_type, w.currency, w.balance_cents, u.email
+                FROM wallets w
+                JOIN users u ON u.id = w.user_id
+                WHERE w.balance_cents < 0
+                LIMIT 50
+                "#
+            )
+            .fetch_all(&recon_pool)
+            .await;
+
+            match negative_wallets {
+                Ok(rows) => {
+                    if rows.is_empty() {
+                        tracing::info!(
+                            "Reconciliation check 3/3 PASS: No negative wallet balances."
+                        );
+                    } else {
+                        for row in &rows {
+                            let msg = format!(
+                                "NEGATIVE BALANCE: User {} ({}) has {} cents in {} {} wallet",
+                                row.user_id,
+                                row.email,
+                                row.balance_cents,
+                                row.currency,
+                                row.wallet_type
+                            );
+                            tracing::error!("{}", msg);
+                            sentry::capture_message(&msg, sentry::Level::Fatal);
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("Reconciliation check 3 FAILED: {}", e);
+                }
+            }
+
+            tracing::info!("Daily financial reconciliation completed.");
         }
     });
 
@@ -341,7 +428,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ── WWW Landing Page Router ───────────────────────────────────────
     let www_router = Router::new()
-        .route("/health", get(handle_health))
+        .route("/health", get(handle_health_basic))
         // Language-specific landing pages
         .nest_service("/id", ServeDir::new("../frontend/www/id"))
         // Shared assets referenced by the Angular SPA
@@ -357,8 +444,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         // All other paths → serve from /en/ (Angular SPA root)
         // This handles /, /chunk-*.js, /styles-*.css, /main-*.js, etc.
-        .route("/platform", get(|| async { Redirect::to("https://platform.poool.app/") }))
-        .route("/platform/", get(|| async { Redirect::to("https://platform.poool.app/") }))
+        .route(
+            "/platform",
+            get(|| async { Redirect::to("https://platform.poool.app/") }),
+        )
+        .route(
+            "/platform/",
+            get(|| async { Redirect::to("https://platform.poool.app/") }),
+        )
         .fallback_service(
             ServeDir::new("../frontend/www/en")
                 .fallback(ServeFile::new("../frontend/www/en/index.html")),
@@ -387,6 +480,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(legal::router())
         .merge(admin::router())
         .merge(blog::router())
+        // ── Marketplace (trading engine APIs) ─────────────────────────
+        .merge(marketplace::router())
         // ── Support (merged router handles /support and /api/support) ──
         .merge(support::router(state.clone()))
         // ── User-facing utility API ────────────────────────────────────
@@ -407,7 +502,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // ── Community (demo) ──────────────────────────────────────────
         .route("/community", get(page_community))
         // ── Marketplace (demo) ─────────────────────────────────────────
-        .route("/marketplace-trading", get(page_marketplace_trading))
         .route("/marketplace-trading-v2", get(page_marketplace_trading_v2))
         .route("/marketplace-trading-v3", get(page_marketplace_trading_v3))
         .route("/marketplace-secondary", get(page_marketplace_secondary))
@@ -1497,13 +1591,68 @@ async fn api_deposit_status(
     }
 }
 
-/// GET /health — Health check endpoint for Cloud Run and uptime monitors.
-/// Returns 200 OK with a JSON status payload.
-async fn handle_health() -> impl IntoResponse {
+/// GET /health (www router) — simple liveness probe without DB/Redis checks.
+async fn handle_health_basic() -> impl IntoResponse {
     Json(serde_json::json!({
         "status": "ok",
         "version": env!("CARGO_PKG_VERSION"),
     }))
+}
+
+/// GET /health (platform router) — Health check endpoint for Cloud Run and uptime monitors.
+///
+/// Probes the database (via `SELECT 1`) and Redis (via `PING`) to determine
+/// system health. Returns 200 if the DB is reachable, 503 otherwise.
+/// Redis is optional — if not configured, health is still "ok".
+async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
+    let mut db_ok = false;
+    let mut redis_status = "not_configured";
+
+    // ── DB probe ────────────────────────────────────────────────
+    match sqlx::query("SELECT 1").execute(&state.db).await {
+        Ok(_) => db_ok = true,
+        Err(e) => {
+            tracing::error!("Health check: DB probe failed: {}", e);
+        }
+    }
+
+    // ── Redis probe (optional) ──────────────────────────────────
+    if let Some(ref redis_pool) = state.redis {
+        match redis_pool.get().await {
+            Ok(mut conn) => {
+                let ping_result: Result<String, redis::RedisError> =
+                    redis::cmd("PING").query_async(&mut *conn).await;
+                match ping_result {
+                    Ok(_) => redis_status = "ok",
+                    Err(e) => {
+                        tracing::error!("Health check: Redis PING failed: {}", e);
+                        redis_status = "error";
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::error!("Health check: Redis pool connection failed: {}", e);
+                redis_status = "error";
+            }
+        }
+    }
+
+    let overall_status = if db_ok { "ok" } else { "degraded" };
+
+    let body = serde_json::json!({
+        "status": overall_status,
+        "version": env!("CARGO_PKG_VERSION"),
+        "components": {
+            "database": if db_ok { "ok" } else { "error" },
+            "redis": redis_status,
+        }
+    });
+
+    if db_ok {
+        (axum::http::StatusCode::OK, Json(body)).into_response()
+    } else {
+        (axum::http::StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response()
+    }
 }
 
 /// Root `/` redirect (platform only). If authenticated, go to marketplace; otherwise go to login.
@@ -1606,23 +1755,27 @@ async fn page_community(jar: CookieJar, State(state): State<AppState>) -> impl I
     common::routes_helper::serve_protected(jar, &state, "community.html").await
 }
 
-/// GET /marketplace-trading — Marketplace trading demo page (protected).
-async fn page_marketplace_trading(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
-    common::routes_helper::serve_protected(jar, &state, "marketplace-trading.html").await
-}
-
 /// GET /marketplace-trading-v2 — V2 Marketplace trading page without charts (protected).
-async fn page_marketplace_trading_v2(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+async fn page_marketplace_trading_v2(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "marketplace-trading-v2.html").await
 }
 
 /// GET /marketplace-secondary — Secondary market overview page (protected).
-async fn page_marketplace_secondary(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+async fn page_marketplace_secondary(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "marketplace-secondary.html").await
 }
 
 /// GET /marketplace-trading-v3 — V3 Marketplace trading page with full property content (protected).
-async fn page_marketplace_trading_v3(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+async fn page_marketplace_trading_v3(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "marketplace-trading-v3.html").await
 }
 

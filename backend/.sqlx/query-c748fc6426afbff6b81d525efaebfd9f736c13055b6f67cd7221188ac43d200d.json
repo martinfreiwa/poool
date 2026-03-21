@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, name, scope, asset_id, taker_fee_bps, maker_fee_bps,\n                  starts_at, ends_at, is_active, created_by, created_at\n           FROM fee_promotions\n           WHERE is_active = true\n             AND starts_at <= NOW()\n             AND ends_at > NOW()\n             AND (scope = 'global' OR (scope = 'asset' AND asset_id = $1))\n           ORDER BY\n             CASE WHEN scope = 'asset' THEN 0 ELSE 1 END,\n             starts_at DESC\n           LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "scope",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "asset_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "taker_fee_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "maker_fee_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "starts_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "ends_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_by",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "c748fc6426afbff6b81d525efaebfd9f736c13055b6f67cd7221188ac43d200d"
+}

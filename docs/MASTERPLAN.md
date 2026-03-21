@@ -2240,10 +2240,10 @@ CREATE TABLE fee_configurations (
                     )),
     asset_id        UUID REFERENCES assets(id),
     developer_id    UUID REFERENCES users(id),
-    taker_fee_bps   INTEGER NOT NULL DEFAULT 50,        -- 50 BPS = 0.50%
+    taker_fee_bps   INTEGER NOT NULL DEFAULT 500,       -- 500 BPS = 5.00%
     maker_fee_bps   INTEGER NOT NULL DEFAULT 0,         -- 0 BPS = 0.00%
     withdrawal_fee_cents BIGINT NOT NULL DEFAULT 250,   -- $2.50
-    p2p_fee_bps     INTEGER NOT NULL DEFAULT 50,
+    p2p_fee_bps     INTEGER NOT NULL DEFAULT 500,
     listing_fee_cents BIGINT NOT NULL DEFAULT 0,
     reason          TEXT,                                -- "Developer Deal mit X"
     created_by      UUID REFERENCES users(id),
@@ -2284,7 +2284,7 @@ CREATE TABLE fee_audit_log (
 );
 ```
 
-**Warum Basis-Punkte (BPS)?** 50 BPS = 0.50%. Integer-Arithmetik, keine Rundungsfehler. Industrie-Standard bei NYSE, Coinbase, allen Börsen.
+**Warum Basis-Punkte (BPS)?** 500 BPS = 5.00%. Integer-Arithmetik, keine Rundungsfehler. Industrie-Standard bei NYSE, Coinbase, allen Börsen.
 
 #### D. Fee-Kaskade im Code (Rust)
 
@@ -2305,8 +2305,10 @@ async fn get_effective_fee(pool: &PgPool, asset_id: Uuid, developer_id: Option<U
     FeeConfig::platform_default()
 }
 
-fn calculate_fee(total_cents: i64, fee_bps: i32) -> i64 {
-    (total_cents * fee_bps as i64) / 10_000  // 50 BPS von $3,150 = $15.75
+fn calculate_fee(total_cents: i64, base_fee_bps: i32, tier_discount_bps: i32) -> i64 {
+    // Sicherstellen, dass die effektive Fee nie < 0 fällt (Max(0, base - discount))
+    let effective_fee_bps = std::cmp::max(0, base_fee_bps - tier_discount_bps);
+    (total_cents * effective_fee_bps as i64) / 10_000  // z.B. (500 BPS - 100 BPS) von $3,150 = $126.00
 }
 ```
 
@@ -2317,10 +2319,10 @@ fn calculate_fee(total_cents: i64, fee_bps: i32) -> i64 {
 │  POOOL Admin > Fee Management                                │
 │                                                              │
 │  ┌── Platform Defaults ──────────────────────────────────┐   │
-│  │  Taker Fee:     [0.50] %  ✏️                          │   │
+│  │  Taker Fee:     [5.00] %  ✏️                          │   │
 │  │  Maker Fee:     [0.00] %  ✏️                          │   │
 │  │  Withdrawal:    [$2.50]   ✏️                          │   │
-│  │  P2P Fee:       [0.50] %  ✏️     [Speichern]         │   │
+│  │  P2P Fee:       [5.00] %  ✏️     [Speichern]         │   │
 │  └───────────────────────────────────────────────────────┘   │
 │                                                              │
 │  ┌── Aktive Promotions ──────────────────────────────────┐   │
@@ -2340,7 +2342,7 @@ fn calculate_fee(total_cents: i64, fee_bps: i32) -> i64 {
 │  ┌── Asset-spezifische Fees ─────────────────────────────┐   │
 │  │  Asset                Taker   Maker   Status          │   │
 │  │  Luxury Villa Dubai   1.00%   0.00%   🟢 Custom       │   │
-│  │  Berlin Apartment     0.50%   0.00%   ⚪ Default      │   │
+│  │  Berlin Apartment     5.00%   0.00%   ⚪ Default      │   │
 │  │  (Klick → Inline-Edit)                                │   │
 │  └───────────────────────────────────────────────────────┘   │
 │                                                              │
@@ -6547,10 +6549,10 @@ CREATE TABLE fee_configurations (
                          CHECK (scope IN ('platform', 'asset', 'developer')),
     asset_id             UUID REFERENCES assets(id),
     developer_id         UUID REFERENCES users(id),
-    taker_fee_bps        INTEGER NOT NULL DEFAULT 50,     -- 50 BPS = 0.50%
+    taker_fee_bps        INTEGER NOT NULL DEFAULT 500,    -- 500 BPS = 5.00%
     maker_fee_bps        INTEGER NOT NULL DEFAULT 0,
     withdrawal_fee_cents BIGINT NOT NULL DEFAULT 250,     -- $2.50
-    p2p_fee_bps          INTEGER NOT NULL DEFAULT 50,
+    p2p_fee_bps          INTEGER NOT NULL DEFAULT 500,
     listing_fee_cents    BIGINT NOT NULL DEFAULT 0,
     reason               TEXT,
     created_by           UUID REFERENCES users(id),
@@ -6580,7 +6582,7 @@ CREATE TABLE fee_promotions (
 
 -- Platform Default einfügen (einmalig)
 INSERT INTO fee_configurations (scope, taker_fee_bps, maker_fee_bps, reason)
-VALUES ('platform', 50, 0, 'Platform Default: 0.50% Taker, 0% Maker')
+VALUES ('platform', 500, 0, 'Platform Default: 5.00% Taker, 0% Maker')
 ON CONFLICT DO NOTHING;
 ```
 
@@ -8144,10 +8146,10 @@ Zentrale Steuerung aller Gebühren (siehe auch Abschnitt 2.6). Der Admin konfigu
 
 | Feld | Aktueller Wert | Editierbar |
 |---|---|---|
-| Taker Fee | 0.50% (50 BPS) | ✅ Input mit BPS-Slider |
+| Taker Fee | 5.00% (500 BPS) | ✅ Input mit BPS-Slider |
 | Maker Fee | 0.00% (0 BPS) | ✅ Input mit BPS-Slider |
 | Withdrawal Fee | $2.50 (250 Cents) | ✅ Dollar-Input |
-| P2P Fee | 0.50% (50 BPS) | ✅ Input mit BPS-Slider |
+| P2P Fee | 5.00% (500 BPS) | ✅ Input mit BPS-Slider |
 | Listing Fee | $0.00 | ✅ Dollar-Input |
 
 **Tab 2: Asset-spezifische Overrides**
@@ -8874,7 +8876,7 @@ CREATE TABLE fee_configurations (
     scope         VARCHAR(15) NOT NULL CHECK (scope IN ('platform', 'asset', 'developer')),
     asset_id      UUID REFERENCES assets(id),           -- NULL für scope='platform'
     developer_id  UUID REFERENCES users(id),             -- NULL außer für scope='developer'
-    taker_fee_bps INTEGER NOT NULL DEFAULT 50            -- 50 = 0.50%
+    taker_fee_bps INTEGER NOT NULL DEFAULT 500           -- 500 = 5.00%
                   CHECK (taker_fee_bps >= 0 AND taker_fee_bps <= 1000),
     maker_fee_bps INTEGER NOT NULL DEFAULT 0             -- 0 = 0.00%
                   CHECK (maker_fee_bps >= 0 AND maker_fee_bps <= 1000),
@@ -9555,7 +9557,7 @@ DevOps (W1) → Rust Backend (W2) → Frontend (W6) → QA (W10)
 | 2.3 | Order-Submission API | `POST /api/marketplace/orders` – Validierung, Balance-Check, Redis | 3 Tage | Sektion 2.12 |
 | 2.4 | Matching-Engine | Tokio-Task mit Price-Time-Priority, Partial Fills | 5 Tage | Sektion 2.4 |
 | 2.5 | Settlement-Funktion | `settle_trade()` – 8-Step ACID Transaction | 3 Tage | Sektion 2.5 |
-| 2.6 | Fee-Berechnung | Taker 0.5%, Maker 0%, Treasury-Wallet | 1 Tag | Sektion 2.6 |
+| 2.6 | Fee-Berechnung | Taker 5.0%, Maker 0%, Treasury-Wallet | 1 Tag | Sektion 2.6 |
 | 2.7 | Order APIs | Cancel, Orderbook, Trades, Ticker, Candles | 4 Tage | Sektion 2.12 |
 | 2.8 | WebSocket-Server | Axum WebSocket für Live-Orderbook + Trades | 3 Tage | Sektion 2.9 |
 | 2.9 | ⏸️ ~~Konzentrationslimits + Großorder-Review~~ | DEFERRED – wird später geprüft | – | Sektion 2.10 |

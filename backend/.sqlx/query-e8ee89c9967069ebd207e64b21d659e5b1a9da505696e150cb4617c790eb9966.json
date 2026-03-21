@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT \n                    (SELECT COALESCE(SUM(balance_cents), 0)::bigint FROM wallets WHERE wallet_type = 'cash' AND currency = 'USD') as total_wallets,\n                    (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM deposit_requests WHERE status IN ('approved', 'completed', 'paid') AND currency = 'USD') as total_deposits,\n                    (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM withdrawal_requests WHERE status != 'rejected' AND currency = 'USD') as total_withdrawals,\n                    (SELECT COALESCE(SUM(total_cents), 0)::bigint FROM orders WHERE status IN ('completed', 'pending_kyc')) as total_purchases\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total_wallets",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "total_deposits",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "total_withdrawals",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "total_purchases",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "e8ee89c9967069ebd207e64b21d659e5b1a9da505696e150cb4617c790eb9966"
+}

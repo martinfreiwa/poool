@@ -78,7 +78,7 @@ pub struct PropertyDisplayData {
     pub annualised_net_return_percent: String,
     pub land_size_sqm: Option<String>,
     pub platform_fee_usd: String,          // 5% of total_value
-    pub total_investment_cost_usd: String,  // total_value + 5% fee
+    pub total_investment_cost_usd: String, // total_value + 5% fee
 }
 
 impl PropertyDisplayData {
@@ -212,13 +212,27 @@ fn extract_youtube_id(url: Option<&str>) -> Option<String> {
         return None;
     }
     // youtu.be/VIDEO_ID
-    if let Some(rest) = url.strip_prefix("https://youtu.be/").or_else(|| url.strip_prefix("http://youtu.be/")) {
-        return Some(rest.split(['?', '&', '#']).next().unwrap_or(rest).to_string());
+    if let Some(rest) = url
+        .strip_prefix("https://youtu.be/")
+        .or_else(|| url.strip_prefix("http://youtu.be/"))
+    {
+        return Some(
+            rest.split(['?', '&', '#'])
+                .next()
+                .unwrap_or(rest)
+                .to_string(),
+        );
     }
     // youtube.com/embed/VIDEO_ID
     if let Some(idx) = url.find("/embed/") {
         let after = &url[idx + 7..];
-        return Some(after.split(['?', '&', '#', '/']).next().unwrap_or(after).to_string());
+        return Some(
+            after
+                .split(['?', '&', '#', '/'])
+                .next()
+                .unwrap_or(after)
+                .to_string(),
+        );
     }
     // youtube.com/watch?v=VIDEO_ID
     if url.contains("youtube.com") {
@@ -228,7 +242,11 @@ fn extract_youtube_id(url: Option<&str>) -> Option<String> {
         }
     }
     // Bare video ID (11 chars, alphanumeric + _ + -)
-    if url.len() == 11 && url.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+    if url.len() == 11
+        && url
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+    {
         return Some(url.to_string());
     }
     None
@@ -359,9 +377,9 @@ impl CommodityDisplayData {
         let min_investment_dollars = asset.token_price_cents / 100;
 
         // ROI
-        let fixed_roi_bps = asset.fixed_roi_bps.unwrap_or(
-            asset.annual_yield_bps.unwrap_or(0),
-        );
+        let fixed_roi_bps = asset
+            .fixed_roi_bps
+            .unwrap_or(asset.annual_yield_bps.unwrap_or(0));
         let fixed_roi_pct = fixed_roi_bps as f64 / 100.0;
 
         // Yield / appreciation for card displays
@@ -390,7 +408,9 @@ impl CommodityDisplayData {
         let revenue_min = asset.revenue_min_cents.map(|c| c / 100);
         let revenue_max = asset.revenue_max_cents.map(|c| c / 100);
         let revenue_display = match (revenue_min, revenue_max) {
-            (Some(min), Some(max)) => Some(format!("${} – ${}", format_number(min), format_number(max))),
+            (Some(min), Some(max)) => {
+                Some(format!("${} – ${}", format_number(min), format_number(max)))
+            }
             (Some(min), None) => Some(format!("${}", format_number(min))),
             _ => None,
         };
@@ -398,7 +418,9 @@ impl CommodityDisplayData {
         let net_min = asset.net_profit_min_cents.map(|c| c / 100);
         let net_max = asset.net_profit_max_cents.map(|c| c / 100);
         let net_profit_display = match (net_min, net_max) {
-            (Some(min), Some(max)) => Some(format!("${} – ${}", format_number(min), format_number(max))),
+            (Some(min), Some(max)) => {
+                Some(format!("${} – ${}", format_number(min), format_number(max)))
+            }
             (Some(min), None) => Some(format!("${}", format_number(min))),
             _ => None,
         };
@@ -489,10 +511,10 @@ mod tests {
             location_city: Some("Lebak".to_string()),
             location_country: Some("ID".to_string()),
             total_value_cents: 45_000_000, // $450,000
-            token_price_cents: 100_000,     // $1,000
+            token_price_cents: 100_000,    // $1,000
             tokens_total: 450,
             tokens_available: 50,
-            annual_yield_bps: Some(3500),   // 35%
+            annual_yield_bps: Some(3500), // 35%
             capital_appreciation_bps: Some(0),
             funding_status: "funding_in_progress".to_string(),
             image_urls: Some(vec!["https://example.com/img1.webp".to_string()]),
@@ -525,7 +547,10 @@ mod tests {
         assert_eq!(display.funded_percentage, 88);
         assert_eq!(display.investor_count, 42);
         assert_eq!(display.min_investment_usd, "1,000");
-        assert_eq!(display.operator_name.as_deref(), Some("PT. NEO AGRO SOLUTIONS"));
+        assert_eq!(
+            display.operator_name.as_deref(),
+            Some("PT. NEO AGRO SOLUTIONS")
+        );
         assert_eq!(display.fixed_roi_percent, "35.00");
         assert_eq!(display.fixed_roi_bps, 3500);
     }
@@ -604,7 +629,10 @@ mod tests {
     fn test_revenue_display_formatting() {
         let asset = sample_commodity_asset();
         let display = CommodityDisplayData::from_asset(&asset);
-        assert_eq!(display.revenue_display.as_deref(), Some("$5,400,000 – $9,000,000"));
+        assert_eq!(
+            display.revenue_display.as_deref(),
+            Some("$5,400,000 – $9,000,000")
+        );
         assert_eq!(display.expenses_usd.as_deref(), Some("450,000"));
         assert_eq!(display.investor_payout_usd.as_deref(), Some("607,500"));
         assert_eq!(display.operator_split_pct, Some(55));

@@ -1,0 +1,80 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, scope, asset_id, developer_id, taker_fee_bps, maker_fee_bps,\n                  is_active, reason, created_by, created_at, updated_at\n           FROM fee_configurations\n           WHERE is_active = true\n             AND scope = 'platform'\n           LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "scope",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "asset_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "developer_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "taker_fee_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "maker_fee_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "reason",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_by",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "837f1f4facf5c339c2047168089a3bc1b35317cd137ecc8ec91d0ba24fc219f2"
+}

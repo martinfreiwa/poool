@@ -144,3 +144,11 @@ pub struct TotpSetupForm {
     pub secret: String,
     pub code: String,
 }
+
+/// Step-up 2FA verification form (JSON API — Phase 1.4).
+#[derive(Debug, serde::Deserialize)]
+pub struct StepUpVerifyForm {
+    pub code: String,
+    /// The financial action to authorize: "withdrawal", "trade", "payment_method", "password_change"
+    pub action: String,
+}

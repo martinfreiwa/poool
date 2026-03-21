@@ -23,26 +23,42 @@ pub const BANK_DETAILS_IDR: &str = r#"{
     "account_number": "0987654321"
 }"#;
 
-// ─── FX Rate Cache ──────────────────────────────────────────────
+// ─── FX Rate Cache (Phase 1.10 — Decimal-based) ────────────────
 
-use std::sync::atomic::{AtomicU64, Ordering};
-static CACHED_IDR_RATE: AtomicU64 = AtomicU64::new(0); // f64 stored as u64
-static CACHED_IDR_TIMESTAMP: AtomicU64 = AtomicU64::new(0); // unix timestamp
+use rust_decimal::Decimal;
+use tokio::sync::RwLock;
 
-/// Fetch the latest USD to IDR exchange rate, cached for 1 hour.
-pub async fn get_usd_to_idr_rate() -> f64 {
-    let now = Utc::now().timestamp() as u64;
-    let last_fetched = CACHED_IDR_TIMESTAMP.load(Ordering::SeqCst);
+/// Cached FX rate stored as Decimal for exact arithmetic.
+static CACHED_IDR_RATE: std::sync::OnceLock<RwLock<Option<(Decimal, u64)>>> =
+    std::sync::OnceLock::new();
 
-    // Cache for 1 hour (3600 seconds)
-    if now - last_fetched < 3600 {
-        let rate_bits = CACHED_IDR_RATE.load(Ordering::SeqCst);
-        if rate_bits != 0 {
-            return f64::from_bits(rate_bits);
+fn fx_cache() -> &'static RwLock<Option<(Decimal, u64)>> {
+    CACHED_IDR_RATE.get_or_init(|| RwLock::new(None))
+}
+
+/// Default IDR rate as Decimal (fallback when API is unreachable).
+fn default_idr_rate() -> Decimal {
+    Decimal::from(crate::config::DEFAULT_USD_TO_IDR_RATE_I64)
+}
+
+/// Fetch the latest USD to IDR exchange rate as Decimal, cached for 1 hour.
+///
+/// Phase 1.10: Uses rust_decimal::Decimal instead of f64 to prevent
+/// IEEE754 rounding errors in currency conversion.
+pub async fn get_usd_to_idr_rate() -> Decimal {
+    let now = chrono::Utc::now().timestamp() as u64;
+
+    // Check cache first
+    {
+        let cache = fx_cache().read().await;
+        if let Some((rate, timestamp)) = *cache {
+            if now - timestamp < 3600 {
+                return rate;
+            }
         }
     }
 
-    // Fetch from a free API
+    // Fetch from API
     #[derive(serde::Deserialize)]
     struct FxResponse {
         rates: std::collections::HashMap<String, f64>,
@@ -56,17 +72,30 @@ pub async fn get_usd_to_idr_rate() -> f64 {
         .await
     {
         if let Ok(data) = resp.json::<FxResponse>().await {
-            if let Some(rate) = data.rates.get("IDR") {
-                // Store rate first, then timestamp (SeqCst ensures ordering)
-                CACHED_IDR_RATE.store(rate.to_bits(), Ordering::SeqCst);
-                CACHED_IDR_TIMESTAMP.store(now, Ordering::SeqCst);
-                return *rate;
+            if let Some(rate_f64) = data.rates.get("IDR") {
+                // Convert f64 to Decimal using string representation for accuracy
+                let rate_str = format!("{:.6}", rate_f64);
+                if let Ok(rate) = rate_str.parse::<Decimal>() {
+                    let mut cache = fx_cache().write().await;
+                    *cache = Some((rate, now));
+                    return rate;
+                }
             }
         }
     }
 
     // Fallback if API is down
-    crate::config::DEFAULT_USD_TO_IDR_RATE
+    default_idr_rate()
+}
+
+/// Get the FX rate as f64 for backward compatibility (display, non-financial use).
+#[allow(dead_code)]
+pub async fn get_usd_to_idr_rate_f64() -> f64 {
+    use rust_decimal::prelude::ToPrimitive;
+    get_usd_to_idr_rate()
+        .await
+        .to_f64()
+        .unwrap_or(crate::config::DEFAULT_USD_TO_IDR_RATE)
 }
 
 // ─── Wallet Helpers ─────────────────────────────────────────────
@@ -388,12 +417,15 @@ pub async fn execute_checkout(
     });
 
     // 3. Handle FX if payment currency differs from asset currency (USD)
-    let (final_deduct_cents, fx_rate_applied): (i64, Option<f64>) = if payment_currency == "IDR" {
-        let rate = fx_rate.unwrap_or(crate::config::DEFAULT_USD_TO_IDR_RATE);
-        // Integer math: convert cents→dollars then multiply by rate
-        // total_cents / 100 = dollars, * rate_i64 = IDR whole amount
-        let rate_i64 = rate as i64;
-        let idr_total = (total_cents / 100) * rate_i64;
+    // Phase 1.10: Uses Decimal arithmetic to avoid IEEE754 rounding errors
+    let (final_deduct_cents, fx_rate_applied): (i64, Option<Decimal>) = if payment_currency == "IDR"
+    {
+        use rust_decimal::prelude::ToPrimitive;
+        let rate = fx_rate.unwrap_or_else(default_idr_rate);
+        // Decimal math: (total_cents * rate) / 100 = IDR whole amount
+        let total_dec = Decimal::from(total_cents);
+        let idr_total_dec = (total_dec * rate) / Decimal::from(100);
+        let idr_total = idr_total_dec.to_i64().unwrap_or(0);
         (idr_total, Some(rate))
     } else {
         (total_cents, None)
@@ -478,8 +510,7 @@ pub async fn execute_checkout(
     };
 
     // 6. Create order
-    let fx_rate_decimal = fx_rate_applied
-        .map(|r| sqlx::types::Decimal::try_from(r).unwrap_or(sqlx::types::Decimal::ZERO));
+    let fx_rate_decimal = fx_rate_applied;
     let fx_provider = if fx_rate_applied.is_some() {
         Some("hardcoded")
     } else {

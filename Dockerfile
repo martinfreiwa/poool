@@ -46,17 +46,21 @@ RUN bash /app/frontend/platform/static/css/build-bundle.sh
 RUN find /app/frontend -type d -exec chmod 755 {} + && \
     find /app/frontend -type f -exec chmod 644 {} +
 
-# ── Stage 4: User setup ─────────────────────────────────────────
-FROM debian:bookworm-slim AS user-setup
-RUN groupadd -g 1000 poool && \
+# ── Stage 4: Runtime image with PgBouncer sidecar ───────────────
+# Using debian-slim (instead of distroless) to support PgBouncer sidecar process.
+# Security: runs as non-root 'poool' user, same as before.
+FROM debian:bookworm-slim AS runtime
+
+# Install PgBouncer + minimal runtime dependencies (libssl, ca-certs)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        pgbouncer \
+        ca-certificates \
+        libssl3 && \
+    rm -rf /var/lib/apt/lists/* && \
+    # Create non-root user
+    groupadd -g 1000 poool && \
     useradd -u 1000 -g poool -s /bin/sh -m poool
-
-# ── Stage 5: Distroless runtime image ───────────────────────────
-FROM gcr.io/distroless/cc-debian12 AS runtime
-
-# Copy user/group definitions
-COPY --from=user-setup /etc/passwd /etc/passwd
-COPY --from=user-setup /etc/group /etc/group
 
 WORKDIR /app
 
@@ -73,8 +77,12 @@ COPY backend/templates /app/backend/templates
 # Copy database migrations
 COPY database/ /app/database/
 
+# Copy PgBouncer entrypoint and config
+COPY pgbouncer/entrypoint.sh /app/entrypoint.sh
+COPY pgbouncer/pgbouncer.ini /app/pgbouncer/pgbouncer.ini
+RUN chmod +x /app/entrypoint.sh
+
 # Set working directory to /app/backend so relative paths like ../frontend work
-# Note: WORKDIR in distroless will create the path if it doesn't exist
 WORKDIR /app/backend
 
 # Use the non-root user
@@ -86,8 +94,11 @@ ENV SERVER_PORT=8080
 ENV RUST_LOG=info
 ENV APP_ENV=production
 ENV POOOL_ENV=production
+# PgBouncer enabled by default in production; set to "false" to disable
+ENV PGBOUNCER_ENABLED=true
 
 EXPOSE 8080
 
-# Use ENTRYPOINT for distroless
-ENTRYPOINT ["/app/poool-backend"]
+# Use ENTRYPOINT with the PgBouncer sidecar script
+ENTRYPOINT ["/app/entrypoint.sh"]
+

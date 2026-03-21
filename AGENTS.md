@@ -3,6 +3,11 @@
 > This file provides essential context for AI agents working on this codebase.
 > Keep this file up to date as the project evolves.
 
+> **⚠️ BEFORE WRITING ANY CODE:**
+> 1. Read [`docs/AGENT_DEVELOPMENT_PROMPT.md`](docs/AGENT_DEVELOPMENT_PROMPT.md) — mandatory zero-defect coding standards, self-healing patterns, and security rules.
+> 2. Claim your task in [`docs/IMPLEMENTATION_ROADMAP.md`](docs/IMPLEMENTATION_ROADMAP.md) — 120+ tasks across 15 phases with multi-agent collaboration protocol.
+> 3. Failure to follow the development directive will result in bugs with real financial consequences.
+
 ---
 
 ## 🏗 Stack
@@ -92,9 +97,11 @@ poool/
 ├── database/
 │   └── *.sql                # Migrations (applied in order)
 ├── docs/
-│   ├── MASTERPLAN.md        # Architecture vision
-│   ├── DATABASE_SCHEMA.md   # Full schema reference
-│   └── KNOWLEDGE_HANDOFF.md # Historical ADRs & decisions
+│   ├── IMPLEMENTATION_ROADMAP.md  # Active Multi-Agent Tracking & Implementation Path (120+ tasks)
+│   ├── AGENT_DEVELOPMENT_PROMPT.md # ⚠️ MANDATORY — Zero-defect coding standards, read BEFORE coding
+│   ├── MASTERPLAN.md              # Architecture vision (9,780 lines, Chapters 1-6)
+│   ├── DATABASE_SCHEMA.md         # Full schema reference
+│   └── KNOWLEDGE_HANDOFF.md       # Historical ADRs & decisions
 ├── .agent/workflows/        # Agent workflow files (18 workflows)
 ├── BROKEN_LOGICS.md         # Known bugs & logic tracker — consolidated tracker
 └── AGENTS.md                # This file

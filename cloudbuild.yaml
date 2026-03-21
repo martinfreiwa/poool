@@ -1,22 +1,45 @@
 steps:
+  # Build with Docker layer caching (reuses dependency layer from cargo-chef)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool-backend:latest'
-      - '--cache-from=europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool-backend:latest'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool/poool-backend:$COMMIT_SHA'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool/poool-backend:latest'
+      - '--cache-from=europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool/poool-backend:latest'
       - '-f'
       - 'Dockerfile'
       - '.'
+    id: Build
     timeout: '1200s'
 
+  # Push both tags
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool-backend:latest'
+      - '--all-tags'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool/poool-backend'
+    id: Push
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'services'
+      - 'update'
+      - 'poool-backend'
+      - '--platform=managed'
+      - '--image=europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool/poool-backend:$COMMIT_SHA'
+      - '--labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=2dd37a2f-2d10-4345-a367-b9cc5dd25959'
+      - '--region=europe-west1'
+      - '--quiet'
+    id: Deploy
 
 images:
-  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool-backend:latest'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool/poool-backend:$COMMIT_SHA'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/poool/poool-backend:latest'
 
 options:
   machineType: 'E2_HIGHCPU_8'

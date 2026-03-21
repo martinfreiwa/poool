@@ -495,6 +495,14 @@ label {
 /* Components should define their own transition rules for better control */
 
 /* ── Cross-document View Transitions (SPA-like page navigation) ── */
+
+/* OPT-IN: Enable cross-document view transitions on every page.
+   Both the departing and arriving page must declare this rule
+   for the browser to run a view transition between them. */
+@view-transition {
+    navigation: auto;
+}
+
 @supports (view-transition-name: none) {
 
   /* Sidebar stays perfectly static during page transitions.

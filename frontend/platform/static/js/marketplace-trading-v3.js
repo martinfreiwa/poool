@@ -1,5 +1,5 @@
 // frontend/platform/static/js/marketplace-trading-v3.js
-// V3 Trading — Full property content + trading orderbook
+// V3 Trading — Simple Trade Widget (OP Principle, Variant 3: Market Price Toggle)
 
 (function () {
     'use strict';
@@ -148,7 +148,6 @@
     };
 
     const DEFAULT_SLUG = 'bali-villa-canggu-12';
-    let currentImgIdx = 0;
 
     function getAssetSlug() {
         return new URLSearchParams(window.location.search).get('asset') || DEFAULT_SLUG;
@@ -195,12 +194,11 @@
         // Fill 4 mosaic grid thumbnails
         const mosaicThumbs = document.querySelectorAll('.tv3-mosaic-thumb img');
         mosaicThumbs.forEach((img, i) => {
-            const imgIdx = i + 1; // images[1] through images[4]
+            const imgIdx = i + 1;
             if (asset.images[imgIdx]) {
                 img.src = asset.images[imgIdx];
                 img.alt = asset.name + ' ' + (imgIdx + 1);
             } else {
-                // Reuse images if less than 5
                 img.src = asset.images[imgIdx % asset.images.length];
                 img.alt = asset.name;
             }
@@ -252,35 +250,40 @@
         document.getElementById('tv3-loc-desc').textContent = asset.locationDesc || '';
     }
 
-    // ── Populate Order Book ──
-    function populateOrderBook(asset) {
-        const sellRows = document.getElementById('tv3-sell-rows');
-        const buyRows = document.getElementById('tv3-buy-rows');
-        document.getElementById('tv3-sell-count').textContent = asset.sellOrders.length;
-        document.getElementById('tv3-buy-count').textContent = asset.buyBids.length;
-
-        sellRows.innerHTML = '';
-        if (asset.sellOrders.length === 0) {
-            document.getElementById('tv3-sell-empty').style.display = 'block';
+    // ── Trade Widget: Market Data ──
+    function getMarketData(asset, side) {
+        if (side === 'buy') {
+            // Buying: show sell offers (cheapest first)
+            const sorted = [...asset.sellOrders].sort((a, b) => a.price - b.price);
+            const totalShares = sorted.reduce((s, o) => s + o.tokens, 0);
+            const bestPrice = sorted.length > 0 ? sorted[0].price : asset.tokenPrice;
+            return { bestPrice, totalShares, count: sorted.length, orders: sorted };
         } else {
-            document.getElementById('tv3-sell-empty').style.display = 'none';
-            asset.sellOrders.forEach(o => {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>${o.seller}</td><td>${o.tokens}</td><td>${fmt(o.price)}</td><td>${fmt(o.tokens * o.price)}</td><td><button class="tv3-ob-action tv3-ob-action--buy" data-price="${o.price}" data-qty="${o.tokens}">Buy</button></td>`;
-                sellRows.appendChild(row);
-            });
+            // Selling: show buy bids (highest first)
+            const sorted = [...asset.buyBids].sort((a, b) => b.price - a.price);
+            const totalShares = sorted.reduce((s, o) => s + o.tokens, 0);
+            const bestPrice = sorted.length > 0 ? sorted[0].price : asset.tokenPrice;
+            return { bestPrice, totalShares, count: sorted.length, orders: sorted };
         }
+    }
 
-        buyRows.innerHTML = '';
-        if (asset.buyBids.length === 0) {
-            document.getElementById('tv3-buy-empty').style.display = 'block';
-        } else {
-            document.getElementById('tv3-buy-empty').style.display = 'none';
-            asset.buyBids.forEach(o => {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>${o.buyer}</td><td>${o.tokens}</td><td>${fmt(o.price)}</td><td>${fmt(o.tokens * o.price)}</td><td><button class="tv3-ob-action tv3-ob-action--sell" data-price="${o.price}" data-qty="${o.tokens}">Sell</button></td>`;
-                buyRows.appendChild(row);
-            });
+    function populateTradeWidget(asset) {
+        // Sell-side depth for display
+        const sellData = getMarketData(asset, 'buy');
+        const buyData = getMarketData(asset, 'sell');
+
+        // Market depth summary
+        const depthSell = document.getElementById('tv3-depth-sell');
+        const depthBuy = document.getElementById('tv3-depth-buy');
+        if (depthSell) {
+            depthSell.textContent = sellData.totalShares > 0
+                ? sellData.totalShares + ' shares for sale from ' + fmt(sellData.bestPrice)
+                : 'No shares currently for sale';
+        }
+        if (depthBuy) {
+            depthBuy.textContent = buyData.totalShares > 0
+                ? buyData.totalShares + ' buy offers from ' + fmt(buyData.bestPrice)
+                : 'No buy offers placed';
         }
     }
 
@@ -359,56 +362,144 @@
         }
     }
 
-    // ── Order Summary ──
-    function updateSummary() {
-        const qty = parseInt(document.getElementById('tv3-qty').value) || 0;
-        const price = parseFloat(document.getElementById('tv3-price').value) || 0;
-        const subtotal = qty * price;
-        const fee = subtotal * 0.05;
-        document.getElementById('tv3-subtotal').textContent = fmt(subtotal);
-        document.getElementById('tv3-fee').textContent = fmt(fee);
-        document.getElementById('tv3-total').textContent = fmt(subtotal + fee);
+    // ── Trade Widget State ──
+    let currentSide = 'buy';
+    let priceMode = 'market'; // 'market' or 'custom'
+    let currentAsset = null;
+
+    function getActivePrice() {
+        if (priceMode === 'market') {
+            const data = getMarketData(currentAsset, currentSide);
+            return data.bestPrice;
+        } else {
+            return parseFloat(document.getElementById('tv3-price').value) || 0;
+        }
     }
 
-    // ── Buy/Sell Toggle ──
-    let currentSide = 'buy';
+    // ── Update Summary ──
+    function updateSummary() {
+        const qty = parseInt(document.getElementById('tv3-qty').value) || 0;
+        const price = getActivePrice();
+        const subtotal = qty * price;
+        const fee = subtotal * 0.05;
+        const total = subtotal + fee;
+
+        document.getElementById('tv3-subtotal').textContent = fmt(subtotal);
+        document.getElementById('tv3-fee').textContent = fmt(fee);
+        document.getElementById('tv3-total').textContent = fmt(total);
+
+        // Update submit button text
+        const btn = document.getElementById('tv3-submit-btn');
+        const action = currentSide === 'buy' ? 'Buy' : 'Sell';
+        const shareText = qty === 1 ? 'Share' : 'Shares';
+        btn.textContent = action + ' ' + qty + ' ' + shareText + ' · ' + fmt(total);
+    }
+
+    // ── Set Buy/Sell Side ──
     function setSide(side) {
         currentSide = side;
         document.getElementById('tv3-toggle-buy').classList.toggle('active', side === 'buy');
         document.getElementById('tv3-toggle-sell').classList.toggle('active', side === 'sell');
+
         const btn = document.getElementById('tv3-submit-btn');
-        if (side === 'buy') {
-            btn.textContent = 'Place Buy Order';
-            btn.className = 'tv3-submit-btn tv3-submit-btn--buy';
-        } else {
-            btn.textContent = 'Place Sell Order';
-            btn.className = 'tv3-submit-btn tv3-submit-btn--sell';
+        btn.className = side === 'buy'
+            ? 'tv3-submit-btn tv3-submit-btn--buy'
+            : 'tv3-submit-btn tv3-submit-btn--sell';
+
+        // Update market info for the active side
+        updateMarketInfo();
+        updateSummary();
+
+        // Update disclaimer
+        const disclaimer = document.getElementById('tv3-disclaimer');
+        if (disclaimer) {
+            disclaimer.textContent = side === 'buy'
+                ? "You won't be charged until matched with a seller."
+                : "Your shares will be listed and matched with a buyer.";
         }
+    }
+
+    // ── Update market info display ──
+    function updateMarketInfo() {
+        if (!currentAsset) return;
+        const data = getMarketData(currentAsset, currentSide);
+
+        // Market info card
+        const bestPriceEl = document.getElementById('tv3-best-price');
+        const availSharesEl = document.getElementById('tv3-avail-shares');
+        const availSellersEl = document.getElementById('tv3-avail-sellers');
+        const marketInfoEl = document.getElementById('tv3-market-info');
+        const customHint = document.getElementById('tv3-custom-hint');
+
+        if (bestPriceEl) bestPriceEl.textContent = fmt(data.bestPrice);
+        if (availSharesEl) availSharesEl.textContent = data.totalShares + ' shares';
+        if (availSellersEl) {
+            const label = currentSide === 'buy' ? 'sellers' : 'buyers';
+            availSellersEl.textContent = data.count + ' ' + label;
+        }
+
+        // Ensure market info remains transparent for luxury look
+        if (marketInfoEl) {
+            marketInfoEl.style.background = 'transparent';
+            marketInfoEl.style.borderColor = 'var(--tv3-border)';
+            if (bestPriceEl) bestPriceEl.style.color = 'var(--tv3-text)';
+        }
+
+        // Update label
+        const infoLabel = document.querySelector('.tv3-market-info-label');
+        if (infoLabel) {
+            infoLabel.textContent = currentSide === 'buy' ? 'Best available price' : 'Highest buy offer';
+        }
+
+        // Custom hint
+        if (customHint) {
+            customHint.textContent = 'Market price: ' + fmt(data.bestPrice) + '/share';
+        }
+    }
+
+    // ── Set Price Mode ──
+    function setPriceMode(mode) {
+        priceMode = mode;
+        document.getElementById('tv3-mode-market').classList.toggle('active', mode === 'market');
+        document.getElementById('tv3-mode-custom').classList.toggle('active', mode === 'custom');
+
+        document.getElementById('tv3-market-info').style.display = mode === 'market' ? 'block' : 'none';
+        document.getElementById('tv3-custom-field').style.display = mode === 'custom' ? 'block' : 'none';
+
+        if (mode === 'custom') {
+            const data = getMarketData(currentAsset, currentSide);
+            const priceInput = document.getElementById('tv3-price');
+            if (priceInput && !priceInput.value) {
+                priceInput.value = data.bestPrice.toFixed(2);
+            }
+        }
+
+        updateSummary();
     }
 
     // ── Init ──
     document.addEventListener('DOMContentLoaded', () => {
         const slug = getAssetSlug();
         const asset = ASSETS[slug] || ASSETS[DEFAULT_SLUG];
+        currentAsset = asset;
 
         populateHero(asset);
         populateDetails(asset);
-        populateOrderBook(asset);
+        populateTradeWidget(asset);
         buildChart(asset);
 
-        document.getElementById('tv3-price').value = asset.tokenPrice.toFixed(2);
+        // Initialize trade widget
+        updateMarketInfo();
         updateSummary();
 
         // ── Performance Strip ──
         document.getElementById('tv3-ticker-price').textContent = fmt(asset.tokenPrice);
         document.getElementById('tv3-ticker-yield').textContent = asset.annualYield + '%';
 
-        // Simulate 3M/6M/12M price changes from chart data
-        const chartData = asset.chartData || [];
         const current = asset.tokenPrice;
-        const price3m = chartData[Math.max(0, chartData.length - 90)] || current * 0.96;
-        const price6m = chartData[Math.max(0, chartData.length - 180)] || current * 0.92;
-        const price12m = chartData[0] || current * 0.87;
+        const price3m = current * 0.96;
+        const price6m = current * 0.92;
+        const price12m = current * 0.87;
         const pct = (from) => ((current - from) / from * 100).toFixed(1);
         const sign = (v) => parseFloat(v) >= 0 ? '+' + v + '%' : v + '%';
         const color = (v, el) => { el.classList.toggle('tv3-sp-value--green', parseFloat(v) >= 0); el.classList.toggle('tv3-sp-value--red', parseFloat(v) < 0); };
@@ -426,23 +517,19 @@
         if (mobilePrice) mobilePrice.textContent = fmt(asset.tokenPrice);
         if (mobileYield) mobileYield.textContent = '+' + asset.annualYield + '% yield';
 
-        // Inputs
+        // ── Trade Widget Events ──
         document.getElementById('tv3-qty').addEventListener('input', updateSummary);
-        document.getElementById('tv3-price').addEventListener('input', updateSummary);
+
+        const priceInput = document.getElementById('tv3-price');
+        if (priceInput) priceInput.addEventListener('input', updateSummary);
 
         // Buy/Sell toggle
         document.getElementById('tv3-toggle-buy').addEventListener('click', () => setSide('buy'));
         document.getElementById('tv3-toggle-sell').addEventListener('click', () => setSide('sell'));
 
-        // Order Book tabs
-        document.querySelectorAll('.tv3-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tv3-tab').forEach(t => t.classList.toggle('active', t === tab));
-                const v = tab.dataset.tab;
-                document.getElementById('tv3-sell-section').style.display = v === 'buy' ? 'none' : 'block';
-                document.getElementById('tv3-buy-section').style.display = v === 'sell' ? 'none' : 'block';
-            });
-        });
+        // Price mode toggle
+        document.getElementById('tv3-mode-market').addEventListener('click', () => setPriceMode('market'));
+        document.getElementById('tv3-mode-custom').addEventListener('click', () => setPriceMode('custom'));
 
         // Financial tabs
         document.querySelectorAll('.tv3-fin-tab').forEach(tab => {
@@ -451,45 +538,6 @@
                 document.getElementById('tv3-fin-cost').style.display = tab.dataset.fin === 'cost' ? 'block' : 'none';
                 document.getElementById('tv3-fin-rental').style.display = tab.dataset.fin === 'rental' ? 'block' : 'none';
             });
-        });
-
-        // ══ ORDER BOOK VOLUME BARS ══
-        function applyVolumeBars() {
-            // Sell rows
-            const sellRows = document.querySelectorAll('#tv3-sell-rows tr');
-            if (sellRows.length > 0) {
-                const maxSell = Math.max(...asset.sellOrders.map(o => o.tokens));
-                sellRows.forEach((row, i) => {
-                    if (asset.sellOrders[i]) {
-                        const pct = (asset.sellOrders[i].tokens / maxSell) * 100;
-                        row.style.setProperty('--volume-pct', pct + '%');
-                    }
-                });
-            }
-            // Buy rows
-            const buyRows = document.querySelectorAll('#tv3-buy-rows tr');
-            if (buyRows.length > 0) {
-                const maxBuy = Math.max(...asset.buyBids.map(o => o.tokens));
-                buyRows.forEach((row, i) => {
-                    if (asset.buyBids[i]) {
-                        const pct = (asset.buyBids[i].tokens / maxBuy) * 100;
-                        row.style.setProperty('--volume-pct', pct + '%');
-                    }
-                });
-            }
-        }
-        applyVolumeBars();
-
-        // Quick fill from order book
-        document.addEventListener('click', e => {
-            const btn = e.target.closest('.tv3-ob-action');
-            if (btn) {
-                document.getElementById('tv3-price').value = parseFloat(btn.dataset.price).toFixed(2);
-                document.getElementById('tv3-qty').value = btn.dataset.qty;
-                updateSummary();
-                setSide(btn.classList.contains('tv3-ob-action--buy') ? 'buy' : 'sell');
-                document.querySelector('.tv3-order-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
         });
 
         // Submit
@@ -513,7 +561,8 @@
         const sheetTotal = document.getElementById('tv3-sheet-total');
 
         function openSheet() {
-            if (sheetPrice) sheetPrice.value = asset.tokenPrice.toFixed(2);
+            const data = getMarketData(asset, 'buy');
+            if (sheetPrice) sheetPrice.value = data.bestPrice.toFixed(2);
             if (sheetOverlay) sheetOverlay.classList.add('open');
             if (bottomSheet) bottomSheet.classList.add('open');
             updateSheetTotal();
@@ -574,6 +623,232 @@
             void el.offsetWidth;
             el.style.animationName = '';
             observer.observe(el);
+        });
+    });
+})();
+
+// ═══════════════════════════════════════
+// INVESTMENT CALCULATOR
+// ═══════════════════════════════════════
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        const CHART_HEIGHT = 180;
+
+        // Calculator elements
+        const calcMainValue = document.getElementById('tv3-calc-main-value');
+        const calcYAxis = document.getElementById('tv3-calc-y-axis');
+        const calcChartBars = document.getElementById('tv3-calc-chart-bars');
+
+        // Slider elements
+        const investmentSlider = document.getElementById('tv3-calc-slider-1');
+        const growthSlider = document.getElementById('tv3-calc-slider-2');
+        const yieldSlider = document.getElementById('tv3-calc-slider-3');
+
+        const investmentValue = document.getElementById('tv3-calc-slider-value-1');
+        const growthValue = document.getElementById('tv3-calc-slider-value-2');
+        const yieldValue = document.getElementById('tv3-calc-slider-value-3');
+
+        if (!investmentSlider) return; // Guard: no calculator on page
+
+        // Update slider track fill
+        function updateSliderTrack(slider) {
+            const min = parseFloat(slider.min);
+            const max = parseFloat(slider.max);
+            const val = parseFloat(slider.value);
+            const pct = ((val - min) / (max - min)) * 100;
+            slider.style.background = `linear-gradient(to right, #0000FF ${pct}%, #e2e2e2 ${pct}%)`;
+        }
+
+        function formatSliderValue(val, isUSD) {
+            if (isUSD) return 'USD ' + new Intl.NumberFormat('en-US').format(Math.round(val));
+            return Number.isInteger(val) ? val + '%' : val.toFixed(1) + '%';
+        }
+
+        // Init slider events
+        [{ s: investmentSlider, v: investmentValue, usd: true },
+         { s: growthSlider, v: growthValue, usd: false },
+         { s: yieldSlider, v: yieldValue, usd: false }].forEach(function(cfg) {
+            updateSliderTrack(cfg.s);
+            cfg.s.addEventListener('input', function() {
+                if (cfg.v) cfg.v.textContent = formatSliderValue(parseFloat(this.value), cfg.usd);
+                updateSliderTrack(this);
+            });
+        });
+
+        // Calculate 5-year investment returns using integer cents (BIGINT-safe)
+        function calculateReturns(investment, growthRate, yieldRate) {
+            var returns = [];
+            var investCents = Math.round(investment * 100);
+            var propValueCents = investCents;
+
+            for (var y = 1; y <= 5; y++) {
+                var appreciationCents = Math.round(propValueCents * (growthRate / 100));
+                propValueCents += appreciationCents;
+                var rentalCents = Math.round(investCents * (yieldRate / 100));
+
+                returns.push({
+                    year: y,
+                    investment: investCents / 100,
+                    appreciation: appreciationCents / 100,
+                    rental: rentalCents / 100,
+                    total: (investCents + appreciationCents + rentalCents) / 100
+                });
+            }
+            return returns;
+        }
+
+        function formatCurrency(amount) {
+            if (amount >= 1000000) return (amount / 1000000).toFixed(1) + 'M';
+            if (amount >= 1000) return Math.round(amount / 1000) + 'k';
+            return Math.round(amount).toString();
+        }
+
+        function formatFullCurrency(amount) {
+            return Math.round(amount).toLocaleString();
+        }
+
+        function formatTooltipCurrency(amount) {
+            return '$' + Math.round(amount).toLocaleString();
+        }
+
+        function computeNiceMax(maxValue) {
+            var padded = maxValue * 1.15;
+            if (padded <= 0) return 1000;
+            var mag = Math.pow(10, Math.floor(Math.log10(padded)));
+            var norm = padded / mag;
+            var nice;
+            if (norm <= 1.5) nice = 1.5;
+            else if (norm <= 2) nice = 2;
+            else if (norm <= 2.5) nice = 2.5;
+            else if (norm <= 3) nice = 3;
+            else if (norm <= 5) nice = 5;
+            else if (norm <= 7.5) nice = 7.5;
+            else nice = 10;
+            return nice * mag;
+        }
+
+        function updateYAxis(maxValue) {
+            var yAxisMax = computeNiceMax(maxValue);
+            var steps = 6;
+            var stepValue = yAxisMax / (steps - 1);
+            if (!calcYAxis) return yAxisMax;
+
+            var lines = calcYAxis.querySelectorAll('.tv3-calc-y-axis-line');
+            lines.forEach(function(line, i) {
+                var value = yAxisMax - stepValue * i;
+                var num = line.querySelector('.tv3-calc-y-axis-number');
+                if (num) num.textContent = formatCurrency(Math.max(0, value));
+            });
+            return yAxisMax;
+        }
+
+        function updateChartBars(data, yAxisMax) {
+            if (!calcChartBars) return;
+            var bars = calcChartBars.querySelectorAll('.tv3-calc-bar');
+            var currentYear = new Date().getFullYear();
+
+            data.forEach(function(d, i) {
+                if (i >= bars.length) return;
+                var bar = bars[i];
+                var chartBar = bar.querySelector('.tv3-calc-chart-bar');
+                var totalH = (d.total / yAxisMax) * CHART_HEIGHT;
+                chartBar.style.height = totalH + 'px';
+                chartBar.style.bottom = '0px';
+
+                var invH = (d.investment / d.total) * totalH;
+                var appH = (d.appreciation / d.total) * totalH;
+                var renH = (d.rental / d.total) * totalH;
+
+                var s1 = chartBar.querySelector('.tv3-calc-series.series-1');
+                var s2 = chartBar.querySelector('.tv3-calc-series.series-2');
+                var s3 = chartBar.querySelector('.tv3-calc-series.series-3');
+
+                if (s1) { s1.style.height = invH + 'px'; s1.style.bottom = '0px'; }
+                if (s2) { s2.style.height = appH + 'px'; s2.style.bottom = invH + 'px'; }
+                if (s3) { s3.style.height = renH + 'px'; s3.style.bottom = (invH + appH) + 'px'; }
+
+                // Remove old tooltips/labels
+                var oldTip = bar.querySelector('.tv3-calc-bar-tooltip');
+                var oldLbl = bar.querySelector('.tv3-calc-bar-value-label');
+                if (oldTip) oldTip.remove();
+                if (oldLbl) oldLbl.remove();
+
+                // Tooltip
+                var tip = document.createElement('div');
+                tip.className = 'tv3-calc-bar-tooltip';
+                tip.innerHTML = '<div style="font-weight:600;margin-bottom:6px;font-size:13px;">' + (currentYear + d.year - 1) + '</div>' +
+                    '<div class="tv3-calc-bar-tooltip-row"><span class="tv3-calc-bar-tooltip-dot investment"></span><span class="tv3-calc-bar-tooltip-label">Investment</span><span class="tv3-calc-bar-tooltip-value">' + formatTooltipCurrency(d.investment) + '</span></div>' +
+                    '<div class="tv3-calc-bar-tooltip-row"><span class="tv3-calc-bar-tooltip-dot appreciation"></span><span class="tv3-calc-bar-tooltip-label">Appreciation</span><span class="tv3-calc-bar-tooltip-value">' + formatTooltipCurrency(d.appreciation) + '</span></div>' +
+                    '<div class="tv3-calc-bar-tooltip-row"><span class="tv3-calc-bar-tooltip-dot rental"></span><span class="tv3-calc-bar-tooltip-label">Rental</span><span class="tv3-calc-bar-tooltip-value">' + formatTooltipCurrency(d.rental) + '</span></div>' +
+                    '<div style="border-top:1px solid #333;margin-top:6px;padding-top:6px;display:flex;justify-content:space-between;gap:16px;"><span style="color:#A4A7AE;">Total</span><span style="font-weight:700;">' + formatTooltipCurrency(d.total) + '</span></div>';
+                bar.appendChild(tip);
+
+                // Value label
+                var lbl = document.createElement('div');
+                lbl.className = 'tv3-calc-bar-value-label';
+                lbl.textContent = formatCurrency(d.total);
+                bar.appendChild(lbl);
+            });
+        }
+
+        function updateMainTitle(data) {
+            if (!calcMainValue) return;
+            var cumulative = data.reduce(function(sum, yr) { return sum + yr.appreciation + yr.rental; }, 0);
+            calcMainValue.textContent = 'USD ' + formatFullCurrency(cumulative) + ' in 5 years';
+        }
+
+        function updateStatsCard(data) {
+            var invEl = document.getElementById('tv3-calc-stat-investment');
+            var appEl = document.getElementById('tv3-calc-stat-appreciation');
+            var renEl = document.getElementById('tv3-calc-stat-rental');
+
+            if (data.length > 0) {
+                var totalInv = data[0].investment;
+                var totalRen = data.reduce(function(s, y) { return s + y.rental; }, 0);
+                var totalApp = data.reduce(function(s, y) { return s + y.appreciation; }, 0);
+
+                if (invEl) invEl.textContent = '$' + formatFullCurrency(totalInv);
+                if (renEl) renEl.textContent = '$' + formatFullCurrency(totalRen);
+                if (appEl) appEl.textContent = '$' + formatFullCurrency(totalApp);
+            }
+        }
+
+        function updateCalculator() {
+            var inv = parseFloat(investmentSlider.value) || 100000;
+            var gro = parseFloat(growthSlider.value) || 10;
+            var yld = parseFloat(yieldSlider.value) || 12;
+            var data = calculateReturns(inv, gro, yld);
+            var maxVal = Math.max.apply(null, data.map(function(d) { return d.total; }));
+
+            var yAxisMax = updateYAxis(maxVal);
+            updateChartBars(data, yAxisMax);
+            updateMainTitle(data);
+            updateStatsCard(data);
+        }
+
+        // Attach listeners
+        [investmentSlider, growthSlider, yieldSlider].forEach(function(s) {
+            if (s) s.addEventListener('input', updateCalculator);
+        });
+
+        // Initialize
+        updateCalculator();
+    });
+})();
+
+// ═══════════════════════════════════════
+// DOCUMENT TABS
+// ═══════════════════════════════════════
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        var tabs = document.querySelectorAll('.tv3-doc-tab');
+        if (tabs.length === 0) return;
+
+        tabs.forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                tabs.forEach(function(t) { t.classList.remove('active'); });
+                this.classList.add('active');
+            });
         });
     });
 })();

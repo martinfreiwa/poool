@@ -38,32 +38,11 @@
 }
 
 /* ═══════════════════════════════════════
-   VIEW TRANSITIONS API — Cross-Document
-   Required: both the old and new page must
-   opt in via @view-transition for MPA transitions.
+   VIEW TRANSITIONS API — Page-Specific Morphs
+   The global @view-transition opt-in and root/content
+   animations are in main.css (bundle.css).
+   Below are hero + title morphs specific to marketplace → trading.
    ═══════════════════════════════════════ */
-
-/* OPT-IN: Enable cross-document view transitions */
-@view-transition {
-    navigation: auto;
-}
-
-/* Root transition: crossfade with blur + scale */
-::view-transition-old(root) {
-    animation: vt-fade-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-::view-transition-new(root) {
-    animation: vt-fade-in 0.5s cubic-bezier(0.0, 0, 0.2, 1) forwards;
-}
-
-@keyframes vt-fade-out {
-    from { opacity: 1; transform: scale(1); filter: blur(0); }
-    to   { opacity: 0; transform: scale(0.98); filter: blur(4px); }
-}
-@keyframes vt-fade-in {
-    from { opacity: 0; transform: scale(1.02); filter: blur(4px); }
-    to   { opacity: 1; transform: scale(1); filter: blur(0); }
-}
 
 /* Hero image morph — the card gallery morphs into the hero mosaic */
 ::view-transition-old(tv3-hero-img) {
@@ -104,24 +83,6 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Main content area — slides up smoothly */
-::view-transition-old(main-content) {
-    animation: vt-content-out 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-::view-transition-new(main-content) {
-    animation: vt-content-in 0.55s cubic-bezier(0.0, 0, 0.2, 1) 0.08s forwards;
-    opacity: 0;
-}
-
-@keyframes vt-content-out {
-    from { opacity: 1; transform: translateY(0); }
-    to   { opacity: 0; transform: translateY(-40px); }
-}
-@keyframes vt-content-in {
-    from { opacity: 0; transform: translateY(60px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
 /* Utility class for staggered fade-up on page load */
 @keyframes fadeUp {
     from { opacity: 0; transform: translateY(20px); }
@@ -141,13 +102,46 @@ body.tv3-body {
 
 /* === Layout === */
 .tv3-wrapper { display: flex; min-height: 100vh; }
-.tv3-sidebar { flex-shrink: 0; }
-.tv3-main { flex: 1; min-width: 0; background: var(--tv3-bg); overflow-y: auto; view-transition-name: main-content; }
+.tv3-sidebar { flex-shrink: 0; z-index: 100; }
+.tv3-main { flex: 1; min-width: 0; margin-left: 256px; background: var(--tv3-bg); overflow-y: visible; view-transition-name: main-content; }
 
 .tv3-page {
     max-width: 1096px;
-    margin: 0 auto;
+    margin: 0;
     padding: 24px 32px 80px;
+}
+
+/* ═══════════════════════════════════════
+   LAYOUT GRID (2 Columns)
+   ═══════════════════════════════════════ */
+.tv3-layout-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+@media (min-width: 1024px) {
+    .tv3-layout-grid {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 32px;
+    }
+    .tv3-layout-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+    .tv3-layout-sidebar {
+        width: 360px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
 }
 
 /* === Breadcrumbs === */
@@ -353,16 +347,8 @@ body.tv3-body {
 .tv3-price-stat--green { color: var(--tv3-green); }
 
 /* ═══════════════════════════════════════
-   2. TRADING SECTION
+   Generic Panel
    ═══════════════════════════════════════ */
-.tv3-trading-section {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 24px;
-    margin-bottom: 28px;
-}
-
-/* Generic Panel */
 .tv3-panel {
     background: var(--tv3-surface);
     border-radius: var(--tv3-radius);
@@ -372,14 +358,6 @@ body.tv3-body {
     margin-bottom: 0;
 }
 
-.tv3-panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 12px;
-}
 .tv3-panel-title {
     font-size: 17px;
     font-weight: 700;
@@ -388,90 +366,25 @@ body.tv3-body {
     color: var(--tv3-text);
 }
 
-/* Tabs */
-.tv3-panel-tabs {
-    display: flex; gap: 4px;
-    background: var(--tv3-surface-el);
-    border-radius: 8px;
-    padding: 3px;
-}
-.tv3-tab {
-    padding: 6px 14px;
-    font-size: 12px; font-weight: 600;
-    font-family: var(--tv3-font);
-    color: var(--tv3-text-sec);
-    background: transparent;
-    border: none; border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.tv3-tab:hover { color: var(--tv3-text); }
-.tv3-tab.active {
-    color: var(--tv3-text);
-    background: var(--tv3-surface);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+/* ═══════════════════════════════════════
+   2. TRADE WIDGET (OP Principle)
+   ═══════════════════════════════════════ */
+.tv3-trade-widget {
+    max-width: 100%;
+    margin-bottom: 0;
 }
 
-/* Order Book */
-.tv3-ob-section { margin-bottom: 20px; }
-.tv3-ob-section:last-child { margin-bottom: 0; }
-.tv3-ob-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    border-radius: var(--tv3-radius-sm);
-    font-size: 13px; font-weight: 600;
-    margin-bottom: 8px;
-}
-.tv3-ob-header--sell { background: var(--tv3-red-bg); color: var(--tv3-red); }
-.tv3-ob-header--buy { background: var(--tv3-green-bg); color: var(--tv3-green); }
-.tv3-ob-count {
-    background: rgba(0,0,0,0.06);
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
+.tv3-trade-widget .tv3-panel {
+    padding: 28px;
 }
 
-.tv3-ob-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.tv3-ob-table thead th {
-    text-align: left;
-    font-weight: 600; font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--tv3-text-muted);
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--tv3-border);
-}
-.tv3-ob-table tbody td {
-    padding: 10px;
-    border-bottom: 1px solid rgba(0,0,0,0.04);
+.tv3-trade-widget .tv3-panel-title {
+    font-size: 17px;
+    font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 0 20px;
     color: var(--tv3-text);
 }
-.tv3-ob-table tbody tr:hover { background: var(--tv3-hover); }
-.tv3-ob-table tbody tr:last-child td { border-bottom: none; }
-
-.tv3-ob-action {
-    padding: 5px 14px;
-    font-size: 12px; font-weight: 600;
-    font-family: var(--tv3-font);
-    border: none; border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.tv3-ob-action--buy {
-    background: var(--tv3-green-bg);
-    color: var(--tv3-green);
-    border: 1px solid var(--tv3-green-border);
-}
-.tv3-ob-action--buy:hover { background: var(--tv3-green); color: #fff; }
-.tv3-ob-action--sell {
-    background: var(--tv3-red-bg);
-    color: var(--tv3-red);
-    border: 1px solid var(--tv3-red-border);
-}
-.tv3-ob-action--sell:hover { background: var(--tv3-red); color: #fff; }
-.tv3-ob-empty { text-align: center; padding: 24px; color: var(--tv3-text-muted); font-size: 13px; }
 
 /* Order Form */
 .tv3-order-toggle {
@@ -494,13 +407,143 @@ body.tv3-body {
     transition: all 0.2s;
 }
 .tv3-toggle-btn.active[data-side="buy"] {
-    background: var(--tv3-green-bg); color: var(--tv3-green);
-    box-shadow: 0 1px 3px rgba(22,163,74,0.15);
+    background: var(--tv3-blue); color: var(--tv3-blue-text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 .tv3-toggle-btn.active[data-side="sell"] {
     background: var(--tv3-red-bg); color: var(--tv3-red);
     box-shadow: 0 1px 3px rgba(220,38,38,0.15);
 }
+
+/* Price Mode Toggle */
+.tv3-price-mode {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.tv3-price-mode .tv3-field-label {
+    margin-bottom: 0;
+}
+.tv3-price-mode-toggle {
+    display: flex; gap: 16px;
+    margin-top: 0;
+}
+.tv3-price-mode-btn {
+    padding: 8px 0;
+    font-size: 14px; font-weight: 600;
+    font-family: var(--tv3-font);
+    color: var(--tv3-text-sec);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.tv3-price-mode-btn:hover { color: var(--tv3-text); }
+.tv3-price-mode-btn.active {
+    color: var(--tv3-text);
+    border-bottom-color: var(--tv3-blue);
+}
+
+/* Market Info Summary */
+.tv3-market-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 0;
+    margin-bottom: 24px;
+    border-top: 1px solid var(--tv3-border);
+    border-bottom: 1px solid var(--tv3-border);
+    transition: all 0.3s ease;
+}
+.tv3-market-info-label {
+    font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--tv3-text-sec);
+    margin-bottom: 8px;
+}
+.tv3-market-info-value {
+    font-size: 42px; font-weight: 800;
+    color: var(--tv3-text);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 12px;
+}
+.tv3-market-info-avail {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 500;
+    color: var(--tv3-text-sec);
+    background: var(--tv3-surface-el);
+    padding: 6px 14px;
+    border-radius: 100px;
+}
+
+/* Custom Price Field — matches .tv3-market-info layout exactly */
+.tv3-custom-price-field {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 0;
+    margin-bottom: 24px;
+    border-top: 1px solid var(--tv3-border);
+    border-bottom: 1px solid var(--tv3-border);
+}
+.tv3-custom-price-field .tv3-market-info-label {
+    margin-bottom: 8px;
+}
+.tv3-custom-price-field #tv3-price {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    border-bottom: none;
+    padding: 0;
+    margin: 0;
+}
+.tv3-custom-hint {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin: 12px 0 0;
+    font-size: 13px; font-weight: 500;
+    color: var(--tv3-text-sec);
+    background: var(--tv3-surface-el);
+    padding: 6px 14px;
+    border-radius: 100px;
+}
+
+/* Shares Field — matches centered layout */
+.tv3-shares-field {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 0;
+    margin-bottom: 0;
+}
+.tv3-shares-field .tv3-market-info-label {
+    margin-bottom: 8px;
+}
+
+/* Market Depth Summary */
+.tv3-market-depth {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--tv3-border);
+}
+.tv3-depth-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--tv3-text-muted);
+}
+.tv3-depth-item--sell svg { color: var(--tv3-red); }
+.tv3-depth-item--buy svg { color: var(--tv3-green); }
 
 .tv3-field { margin-bottom: 16px; }
 .tv3-field-label {
@@ -526,6 +569,22 @@ body.tv3-body {
     border-color: var(--tv3-blue);
     box-shadow: 0 0 0 3px var(--tv3-blue-bg);
 }
+/* Huge premium input for Shares and Custom Price */
+#tv3-qty, #tv3-sheet-qty, #tv3-price, #tv3-sheet-price {
+    font-size: 32px;
+    font-weight: 700;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--tv3-border-strong);
+    border-radius: 0;
+    padding: 8px 0;
+    margin-top: 4px;
+}
+#tv3-qty:focus, #tv3-sheet-qty:focus, #tv3-price:focus, #tv3-sheet-price:focus {
+    border-color: var(--tv3-blue);
+    box-shadow: none;
+}
 .tv3-field-input[type="number"]::-webkit-outer-spin-button,
 .tv3-field-input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none; appearance: none; margin: 0;
@@ -533,25 +592,23 @@ body.tv3-body {
 .tv3-field-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
 .tv3-order-summary {
-    background: var(--tv3-surface-el);
-    border: 1px solid var(--tv3-border);
-    border-radius: var(--tv3-radius-sm);
-    padding: 16px;
-    margin-bottom: 16px;
+    padding: 16px 0;
+    margin-bottom: 24px;
+    border-top: 1px solid var(--tv3-border);
 }
 .tv3-sum-row {
     display: flex;
     justify-content: space-between;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--tv3-text-sec);
-    padding: 6px 0;
+    padding: 8px 0;
 }
 .tv3-sum-row--total {
-    font-size: 15px; font-weight: 700;
+    font-size: 18px; font-weight: 800;
     color: var(--tv3-text);
-    border-top: 1px solid var(--tv3-border);
-    margin-top: 6px;
-    padding-top: 10px;
+    border-top: 1px dashed var(--tv3-border-strong);
+    margin-top: 10px;
+    padding-top: 16px;
 }
 
 .tv3-submit-btn {
@@ -566,9 +623,9 @@ body.tv3-body {
     transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .tv3-submit-btn--buy { background: var(--tv3-blue); color: var(--tv3-blue-text); }
-.tv3-submit-btn--buy:hover { background: #0000CC; }
+.tv3-submit-btn--buy:hover { background: #0000e6; transform: translateY(-1px); }
 .tv3-submit-btn--sell { background: var(--tv3-red); color: #fff; }
-.tv3-submit-btn--sell:hover { background: #b91c1c; }
+.tv3-submit-btn--sell:hover { background: #b91c1c; transform: translateY(-1px); }
 .tv3-disclaimer { text-align: center; font-size: 12px; color: var(--tv3-text-muted); margin-top: 10px; }
 
 /* ═══════════════════════════════════════
@@ -580,7 +637,7 @@ body.tv3-body {
     border: 1px solid var(--tv3-border);
     box-shadow: var(--tv3-shadow);
     padding: 32px;
-    margin-bottom: 24px;
+    margin-bottom: 0;
 }
 
 .tv3-section-header {
@@ -642,7 +699,7 @@ body.tv3-body {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 24px;
-    margin-bottom: 24px;
+    margin-bottom: 0;
 }
 
 .tv3-detail-header {
@@ -673,7 +730,7 @@ body.tv3-body {
 /* ═══════════════════════════════════════
    5. CHART
    ═══════════════════════════════════════ */
-.tv3-chart-panel { margin-bottom: 24px; }
+.tv3-chart-panel { margin-bottom: 0; }
 .tv3-chart { width: 100%; height: 250px; }
 
 /* ═══════════════════════════════════════
@@ -1192,34 +1249,7 @@ body.tv3-body {
 
 
 
-/* ═══════════════════════════════════════
-   ORDER BOOK VOLUME BARS
-   ═══════════════════════════════════════ */
-.tv3-ob-table tbody tr {
-    position: relative;
-}
-.tv3-ob-table tbody tr::before {
-    content: '';
-    position: absolute;
-    top: 1px; bottom: 1px;
-    right: 0;
-    width: var(--volume-pct, 0%);
-    border-radius: 4px;
-    z-index: 0;
-    pointer-events: none;
-    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.tv3-ob-section:first-child .tv3-ob-table tbody tr::before {
-    background: var(--tv3-red-bg);
-}
-.tv3-ob-section:last-child .tv3-ob-table tbody tr::before,
-.tv3-ob-section:nth-child(2) .tv3-ob-table tbody tr::before {
-    background: var(--tv3-green-bg);
-}
-.tv3-ob-table tbody td {
-    position: relative;
-    z-index: 1;
-}
+
 
 /* ═══════════════════════════════════════
    MOBILE STICKY TRADE FOOTER
@@ -1328,10 +1358,322 @@ body.tv3-body {
 .tv3-sheet-body .tv3-field { margin-bottom: 16px; }
 
 /* ═══════════════════════════════════════
+   INVESTMENT CALCULATOR
+   ═══════════════════════════════════════ */
+.tv3-calculator-div {
+    position: relative;
+    border: 1px solid var(--tv3-border);
+    border-radius: 20px;
+    padding: 32px 24px;
+    overflow: hidden;
+    background: #fff;
+}
+.tv3-calc-gradient-1 {
+    position: absolute; top: -80px; right: -80px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,0,0.06) 0%, transparent 70%);
+    pointer-events: none;
+}
+.tv3-calc-gradient-2 {
+    position: absolute; bottom: -60px; left: -60px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,0,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+}
+.tv3-calc-main-title {
+    text-align: center; font-size: 16px; color: #717680;
+    font-weight: 400; margin-bottom: 4px;
+}
+.tv3-calc-main-value {
+    text-align: center; font-size: 24px; font-weight: 700;
+    color: var(--tv3-text); margin-bottom: 24px;
+}
+.tv3-calc-statistics-card {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border: 1px solid var(--tv3-border); border-radius: 12px;
+    padding: 16px; margin-bottom: 24px; gap: 8px;
+}
+.tv3-calc-stat-item {
+    display: flex; flex-direction: column; align-items: center;
+    flex: 1; text-align: center;
+}
+.tv3-calc-stat-legend {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+}
+.tv3-calc-stat-color {
+    width: 10px; height: 10px; border-radius: 3px;
+}
+.tv3-calc-stat-color.investment { background: #93B4FF; }
+.tv3-calc-stat-color.appreciation { background: #0000FF; }
+.tv3-calc-stat-color.rental { background: #F5A623; }
+.tv3-calc-stat-label {
+    font-size: 12px; font-weight: 500; color: #717680;
+}
+.tv3-calc-stat-value {
+    font-size: 16px; font-weight: 700; color: var(--tv3-text);
+}
+/* Chart */
+.tv3-calc-chart-container {
+    margin-bottom: 24px; position: relative;
+}
+.tv3-calc-chart-content {
+    display: flex; flex-direction: column; position: relative;
+    min-height: 220px;
+}
+.tv3-calc-y-axis {
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: absolute; left: 0; top: 0; bottom: 30px;
+    width: 100%; z-index: 1;
+}
+.tv3-calc-y-axis-line {
+    display: flex; align-items: center; gap: 8px;
+    height: 0; position: relative;
+}
+.tv3-calc-y-axis-number {
+    font-size: 11px; font-weight: 500; color: #A4A7AE;
+    min-width: 36px; text-align: right;
+}
+.tv3-calc-y-axis-divider {
+    flex: 1; height: 1px;
+    border-bottom: 1px dashed #E9EAEB;
+}
+.tv3-calc-x-axis {
+    display: flex; justify-content: space-around;
+    padding-left: 44px; margin-top: 8px;
+}
+.tv3-calc-x-axis span {
+    font-size: 12px; font-weight: 500; color: #717680;
+    text-align: center; flex: 1;
+}
+.tv3-calc-chart-bars {
+    display: flex; justify-content: space-around; align-items: flex-end;
+    position: relative; z-index: 2;
+    padding-left: 44px; height: 180px;
+}
+.tv3-calc-bar {
+    flex: 1; display: flex; justify-content: center;
+    position: relative; cursor: pointer;
+    padding: 0 8px;
+}
+.tv3-calc-bar:hover .tv3-calc-chart-bar {
+    filter: brightness(1.1);
+}
+.tv3-calc-bar:hover .tv3-calc-bar-tooltip {
+    opacity: 1; visibility: visible;
+    transform: translateX(-50%) translateY(-8px);
+}
+.tv3-calc-bar:hover .tv3-calc-bar-value-label {
+    opacity: 1;
+}
+.tv3-calc-chart-bar {
+    width: 100%; max-width: 56px; position: relative;
+    border-radius: 6px 6px 0 0; overflow: hidden;
+    transition: filter 0.2s ease, height 0.5s ease;
+}
+.tv3-calc-series {
+    position: absolute; left: 0; right: 0;
+    transition: height 0.5s ease, bottom 0.5s ease;
+}
+.tv3-calc-series.series-1 { background: #93B4FF; border-radius: 0 0 0 0; }
+.tv3-calc-series.series-2 { background: #0000FF; }
+.tv3-calc-series.series-3 { background: #F5A623; border-radius: 6px 6px 0 0; }
+/* Tooltip */
+.tv3-calc-bar-tooltip {
+    position: absolute; bottom: 100%; left: 50%;
+    transform: translateX(-50%) translateY(0);
+    background: #181D27; color: #fff;
+    border-radius: 10px; padding: 12px 16px;
+    font-size: 12px; white-space: nowrap;
+    opacity: 0; visibility: hidden;
+    transition: all 0.2s ease; z-index: 10;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    pointer-events: none;
+}
+.tv3-calc-bar-tooltip-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+}
+.tv3-calc-bar-tooltip-dot {
+    width: 8px; height: 8px; border-radius: 2px;
+}
+.tv3-calc-bar-tooltip-dot.investment { background: #93B4FF; }
+.tv3-calc-bar-tooltip-dot.appreciation { background: #0000FF; }
+.tv3-calc-bar-tooltip-dot.rental { background: #F5A623; }
+.tv3-calc-bar-tooltip-label {
+    flex: 1; color: #A4A7AE;
+}
+.tv3-calc-bar-tooltip-value {
+    font-weight: 600; color: #fff;
+}
+.tv3-calc-bar-value-label {
+    position: absolute; bottom: 100%; left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px; font-weight: 600; color: #717680;
+    margin-bottom: 4px; opacity: 0;
+    transition: opacity 0.2s ease;
+}
+/* Sliders */
+.tv3-calc-slider-section {
+    margin-bottom: 20px;
+}
+.tv3-calc-slider-labels {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+    font-size: 14px; color: var(--tv3-text);
+}
+.tv3-calc-slider-label-wrapper {
+    display: flex; align-items: center; gap: 4px;
+}
+.tv3-calc-slider-value {
+    font-weight: 700; font-size: 14px; color: var(--tv3-text);
+}
+.tv3-calc-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, #0000FF 50%, #e2e2e2 50%);
+    outline: none; cursor: pointer;
+}
+.tv3-calc-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #0000FF;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.tv3-calc-slider::-moz-range-thumb {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #0000FF;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.tv3-calc-slider-limits {
+    display: flex; justify-content: space-between;
+    margin-top: 4px;
+    font-size: 12px; color: #A4A7AE;
+}
+/* Tooltip helpers */
+.tv3-calc-help-tooltip-container {
+    position: relative; display: inline-flex; align-items: center;
+    cursor: help;
+}
+.tv3-calc-help-tooltip-icon {
+    vertical-align: middle; margin-left: 2px;
+}
+.tv3-calc-help-tooltip {
+    display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%);
+    background: #181D27; border-radius: 8px; padding: 10px 14px;
+    z-index: 10; white-space: normal; width: 220px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.tv3-calc-help-tooltip-text {
+    font-size: 12px; color: #fff; font-weight: 400; line-height: 1.4;
+}
+.tv3-calc-help-tooltip-container:hover .tv3-calc-help-tooltip {
+    display: block;
+}
+/* Disclaimer */
+.tv3-calc-help-button {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: #F5F5F5; border-radius: 8px;
+    padding: 10px 16px; margin-top: 8px;
+}
+.tv3-calc-help-text {
+    font-size: 12px; color: #717680; font-weight: 400;
+}
+
+/* ═══════════════════════════════════════
+   DOCUMENT TABS
+   ═══════════════════════════════════════ */
+.tv3-doc-tabs {
+    display: flex; border: 1px solid var(--tv3-border); border-radius: 100px;
+    padding: 4px; margin-bottom: 16px; background: #F5F5F5;
+}
+.tv3-doc-tab {
+    flex: 1; padding: 10px 16px;
+    font-size: 14px; font-weight: 600;
+    border: none; border-radius: 100px;
+    background: transparent; cursor: pointer;
+    color: #717680; transition: all 0.2s ease;
+}
+.tv3-doc-tab.active {
+    background: #CCFF00; color: #0000FF;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.tv3-doc-tab:not(.active):hover {
+    color: var(--tv3-text);
+}
+
+/* ═══════════════════════════════════════
+   RISK NOTIFICATION
+   ═══════════════════════════════════════ */
+.tv3-risk-panel {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+.tv3-risk-card {
+    background: #FFF8F0;
+    border: 1px solid #FFE0B2;
+    border-radius: 16px;
+    padding: 0;
+    overflow: hidden;
+}
+.tv3-risk-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 24px 24px 16px;
+}
+.tv3-risk-header-text h3 {
+    font-size: 20px; font-weight: 700; color: var(--tv3-text);
+    margin: 0 0 8px;
+}
+.tv3-risk-header-text p {
+    font-size: 14px; color: #717680; line-height: 1.5;
+    margin: 0;
+}
+.tv3-risk-icon-wrapper {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #F5A623; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.tv3-risk-content {
+    background: #fff;
+    border: 1px solid #FFE0B2;
+    border-radius: 12px;
+    margin: 0 16px 16px;
+    padding: 20px;
+}
+.tv3-risk-item h4 {
+    font-size: 14px; font-weight: 700; color: var(--tv3-text);
+    margin: 0 0 4px;
+}
+.tv3-risk-item p {
+    font-size: 14px; color: #717680; line-height: 1.5;
+    margin: 0;
+}
+.tv3-risk-divider {
+    height: 1px; background: #FFE0B2; margin: 16px 0;
+}
+.tv3-risk-footer {
+    padding: 12px 24px 20px;
+}
+.tv3-risk-footer p {
+    font-size: 13px; color: #717680; line-height: 1.5;
+    margin: 0;
+}
+
+/* ═══════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════ */
 @media (max-width: 1100px) {
-    .tv3-trading-section { grid-template-columns: 1fr; }
+    .tv3-trade-widget { max-width: 100%; }
     .tv3-details-grid { grid-template-columns: 1fr; }
     .tv3-hiw-cards { grid-template-columns: 1fr; }
     .tv3-hero-info-top { flex-direction: column; }
@@ -1339,6 +1681,8 @@ body.tv3-body {
 }
 
 @media (max-width: 768px) {
+    .tv3-sidebar { display: none; }
+    .tv3-main { margin-left: 0; }
     .tv3-page { padding: 16px; padding-bottom: 100px; }
     .tv3-mosaic { height: 250px; grid-template-columns: 1fr; }
     .tv3-mosaic-grid { display: none; }

@@ -427,10 +427,12 @@ pub async fn handle_checkout(
                             }
                         }
                         return (
-                            axum::http::StatusCode::from_u16(response_status.unwrap_or(200) as u16).unwrap_or(axum::http::StatusCode::OK),
+                            axum::http::StatusCode::from_u16(response_status.unwrap_or(200) as u16)
+                                .unwrap_or(axum::http::StatusCode::OK),
                             headers,
                             Json(body),
-                        ).into_response();
+                        )
+                            .into_response();
                     } else {
                         return (
                             axum::http::StatusCode::CONFLICT,
@@ -599,11 +601,7 @@ pub async fn handle_checkout(
                 .await;
             }
 
-            (
-                headers,
-                Json(json_body),
-            )
-                .into_response()
+            (headers, Json(json_body)).into_response()
         }
         Err(error_message) => {
             // Double-Submit Protection:

@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT tokens_total, funding_status, published\n           FROM assets\n           WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tokens_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "funding_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "published",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "b4123a0818ed0439cd0e063bc3d6f1e3f635327fe22a797b3fc66819f969e20f"
+}

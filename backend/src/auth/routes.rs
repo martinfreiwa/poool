@@ -38,6 +38,10 @@ use crate::error::AppError;
 #[derive(Clone)]
 pub struct AppState {
     pub db: sqlx::PgPool,
+    /// Optional read-replica pool for non-critical reads (Phase 1.1).
+    pub db_replica: Option<sqlx::PgPool>,
+    /// Optional community database pool (Phase 1.1).
+    pub community_db: Option<sqlx::PgPool>,
     pub templates: crate::templates::Templates,
     pub config: crate::config::Config,
     /// Optional Redis connection pool for caching sessions or query results.
@@ -60,6 +64,7 @@ pub fn router(state: AppState) -> Router<AppState> {
         .route("/signup", get(signup_page).post(signup_submit))
         .route("/2fa", get(totp_verify_page).post(totp_verify_submit))
         .route("/2fa/setup", get(totp_setup_page).post(totp_setup_submit))
+        .route("/2fa/step-up", post(step_up_verify))
         .route("/logout", get(logout))
         .route("/google", get(google_redirect))
         .route("/google/callback", get(google_callback))
@@ -366,6 +371,50 @@ pub async fn totp_setup_submit(
     response_headers.insert("HX-Redirect", "/marketplace".parse().unwrap());
 
     Ok((response_headers, Html("")).into_response())
+}
+
+/// POST /auth/2fa/step-up – Verify TOTP code for step-up 2FA (JSON API).
+///
+/// Called by frontend modals when a financial operation requires re-authentication.
+/// Creates a 15-minute trading session in Redis on success.
+pub async fn step_up_verify(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    axum::Json(form): axum::Json<super::models::StepUpVerifyForm>,
+) -> Result<axum::response::Response, AppError> {
+    let session_token = jar
+        .get(SESSION_COOKIE)
+        .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?
+        .value();
+
+    let user = service::get_user_by_session(&state.db, session_token)
+        .await?
+        .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?;
+
+    // Parse the action string
+    let action = match form.action.as_str() {
+        "withdrawal" => super::step_up::FinancialAction::Withdrawal,
+        "trade" => super::step_up::FinancialAction::Trade,
+        "payment_method" => super::step_up::FinancialAction::PaymentMethodAdd,
+        "password_change" => super::step_up::FinancialAction::PasswordChange,
+        _ => return Err(AppError::BadRequest("Invalid action type.".to_string())),
+    };
+
+    // Verify TOTP and create trading session
+    super::step_up::verify_and_create_trading_session(
+        &state.db,
+        state.redis.as_ref(),
+        user.id,
+        &form.code,
+        action,
+    )
+    .await?;
+
+    Ok(axum::Json(serde_json::json!({
+        "success": true,
+        "message": "Two-factor authentication verified."
+    }))
+    .into_response())
 }
 
 /// POST /auth/signup – Handle signup form submission via HTMX.
@@ -682,7 +731,8 @@ pub async fn google_callback(
         Ok(response) => response,
         Err(e) => {
             tracing::error!("Google OAuth callback error: {}", e);
-            Redirect::to("/auth/login?error=Google+sign+in+failed.+Please+try+again.").into_response()
+            Redirect::to("/auth/login?error=Google+sign+in+failed.+Please+try+again.")
+                .into_response()
         }
     }
 }
@@ -730,21 +780,21 @@ async fn google_callback_inner(
 
     // Check for error in Google response
     if let Some(error) = token_data.get("error") {
-        let error_desc = token_data.get("error_description")
+        let error_desc = token_data
+            .get("error_description")
             .and_then(|d| d.as_str())
             .unwrap_or("unknown");
         tracing::error!("Google OAuth token error: {} — {}", error, error_desc);
         return Err(AppError::Internal(format!(
-            "Google OAuth failed: {} — {}", error, error_desc
+            "Google OAuth failed: {} — {}",
+            error, error_desc
         )));
     }
 
-    let access_token = token_data["access_token"]
-        .as_str()
-        .ok_or_else(|| {
-            tracing::error!("No access_token in Google response: {:?}", token_data);
-            AppError::Internal("No access token in Google response".to_string())
-        })?;
+    let access_token = token_data["access_token"].as_str().ok_or_else(|| {
+        tracing::error!("No access_token in Google response: {:?}", token_data);
+        AppError::Internal("No access token in Google response".to_string())
+    })?;
 
     // Fetch user info
     let user_info: serde_json::Value = client

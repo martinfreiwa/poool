@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n            COUNT(*)::bigint as \"trade_count!\",\n            COALESCE(SUM(quantity), 0)::bigint as \"volume_tokens!\",\n            COALESCE(SUM(price_cents * quantity), 0)::bigint as \"volume_cents!\",\n            MAX(price_cents) as high_cents,\n            MIN(price_cents) as low_cents\n           FROM trade_history\n           WHERE asset_id = $1 AND executed_at >= $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "trade_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "volume_tokens!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "volume_cents!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "high_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "low_cents",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "3dad76e4a382d168b3ddc3700f4e8e80bb81589aaf46e03c706bc58fe828ba0d"
+}

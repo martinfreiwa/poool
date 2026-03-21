@@ -146,6 +146,7 @@
     ];
 
     let currentFilter = 'all';
+    let currentStatus = 'available';
 
     // Generate 12-month daily data points
     function generateSparkData(days, startPrice, endPrice, isPositive) {
@@ -248,15 +249,15 @@
         card.dataset.sellOrders = asset.sellOrders;
         card.dataset.buyInterest = asset.buyInterest;
 
-        // Footer CTA
+        // Footer CTA — full-width button
         const footerCTA = hasOffers
-            ? `<a href="/marketplace-trading-v3?asset=${asset.slug}" class="mp-sec__trade-btn" onclick="event.stopPropagation();">
-                    Trade
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+            ? `<a href="/marketplace-trading-v3?asset=${asset.slug}" class="mp-sec__footer-btn mp-sec__footer-btn--trade" onclick="event.stopPropagation();">
+                    View Property
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
                </a>`
-            : `<button class="mp-sec__interest-btn" data-asset-slug="${asset.slug}" data-asset-name="${asset.name}" onclick="event.stopPropagation();">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14l-7 7-7-7"/><path d="M12 3v18"/></svg>
-                    Buy Interest
+            : `<button class="mp-sec__footer-btn mp-sec__footer-btn--interest" data-asset-slug="${asset.slug}" data-asset-name="${asset.name}" onclick="event.stopPropagation();">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14l-7 7-7-7"/><path d="M12 3v18"/></svg>
+                    Place Buy Interest
                </button>`;
 
         card.innerHTML = `
@@ -304,7 +305,6 @@
                 <span>12m Chart</span>
             </button>
             <div class="mp-sec__card-footer">
-                <span class="mp-sec__volume">Vol: <span>${formatVolume(asset.volume24h)}</span></span>
                 ${footerCTA}
             </div>
         `;
@@ -353,39 +353,52 @@
         if (dots[newIdx]) dots[newIdx].classList.add('active');
     };
 
-    // ── Chart Toggle ──
+    // ── Chart Toggle (GLOBAL — all visible cards toggle together) ──
     window.mpSecToggleChart = function (slug) {
-        const section = document.getElementById(`chart-section-${slug}`);
-        const toggle = document.querySelector(`.mp-sec__chart-toggle[data-slug="${slug}"]`);
-        if (!section || !toggle) return;
+        const clickedSection = document.getElementById(`chart-section-${slug}`);
+        if (!clickedSection) return;
 
-        const isCurrentlyHidden = section.style.display === 'none' || !section.classList.contains('expanded');
+        // Determine new state from clicked card
+        const isCurrentlyHidden = clickedSection.style.display === 'none' || !clickedSection.classList.contains('expanded');
+
+        // Get ALL visible cards' chart sections and toggles
+        const allSections = document.querySelectorAll('.mp-sec__chart-section');
+        const allToggles = document.querySelectorAll('.mp-sec__chart-toggle');
 
         if (isCurrentlyHidden) {
-            // Show chart
-            section.style.display = 'block';
-            section.classList.add('expanded');
-            toggle.classList.add('expanded');
-            toggle.querySelector('span').textContent = 'Hide Chart';
+            // Show ALL charts
+            allSections.forEach(section => {
+                section.style.display = 'block';
+                section.classList.add('expanded');
 
-            // Lazy-render chart only on first expand
-            if (!section.dataset.rendered) {
-                section.dataset.rendered = 'true';
-                setTimeout(() => {
-                    const asset = MOCK_ASSETS.find(a => a.slug === slug);
-                    if (asset) {
-                        const sparkId = `sparkline-${slug}`;
-                        const isPositive = asset.change24h >= 0;
-                        buildSparkline(sparkId, asset.sparkline, isPositive, asset.price);
-                    }
-                }, 50);
-            }
+                // Lazy-render chart only on first expand
+                if (!section.dataset.rendered) {
+                    section.dataset.rendered = 'true';
+                    const sectionSlug = section.id.replace('chart-section-', '');
+                    setTimeout(() => {
+                        const asset = MOCK_ASSETS.find(a => a.slug === sectionSlug);
+                        if (asset) {
+                            const sparkId = `sparkline-${sectionSlug}`;
+                            const isPositive = asset.change24h >= 0;
+                            buildSparkline(sparkId, asset.sparkline, isPositive, asset.price);
+                        }
+                    }, 50);
+                }
+            });
+            allToggles.forEach(toggle => {
+                toggle.classList.add('expanded');
+                toggle.querySelector('span').textContent = 'Hide Chart';
+            });
         } else {
-            // Hide chart
-            section.style.display = 'none';
-            section.classList.remove('expanded');
-            toggle.classList.remove('expanded');
-            toggle.querySelector('span').textContent = '12m Chart';
+            // Hide ALL charts
+            allSections.forEach(section => {
+                section.style.display = 'none';
+                section.classList.remove('expanded');
+            });
+            allToggles.forEach(toggle => {
+                toggle.classList.remove('expanded');
+                toggle.querySelector('span').textContent = '12m Chart';
+            });
         }
     };
 
@@ -578,6 +591,16 @@
         document.getElementById('mp-search').addEventListener('input', debounce(filterAndSort, 200));
         document.getElementById('mp-sort').addEventListener('change', filterAndSort);
 
+        // Status tabs (Available / Funded)
+        document.querySelectorAll('.mp-sec__status-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mp-sec__status-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentStatus = btn.dataset.status;
+                filterAndSort();
+            });
+        });
+
         // Filter tabs
         document.querySelectorAll('.mp-sec__filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -590,7 +613,7 @@
 
         // Buy Interest modal — delegate
         document.addEventListener('click', (e) => {
-            const btn = e.target.closest('.mp-sec__interest-btn');
+            const btn = e.target.closest('.mp-sec__footer-btn--interest');
             if (btn) {
                 const slug = btn.dataset.assetSlug;
                 const asset = MOCK_ASSETS.find(a => a.slug === slug);

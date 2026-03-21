@@ -34,6 +34,10 @@ pub struct Config {
     pub didit_webhook_secret: Option<String>,
     /// Redis URL for caching (optional).
     pub redis_url: Option<String>,
+    /// Read-replica database URL (optional — falls back to primary).
+    pub database_replica_url: Option<String>,
+    /// Community database URL (optional — separate DB for community features).
+    pub community_database_url: Option<String>,
     /// Sentry DSN for error and performance monitoring (optional).
     pub sentry_dsn: Option<String>,
     /// Application environment (development, staging, production).
@@ -64,6 +68,8 @@ impl Config {
             didit_workflow_id: env_optional("DIDIT_WORKFLOW_ID"),
             didit_webhook_secret: env_optional("DIDIT_WEBHOOK_SECRET"),
             redis_url: env_optional("REDIS_URL"),
+            database_replica_url: env_optional("DATABASE_REPLICA_URL"),
+            community_database_url: env_optional("COMMUNITY_DATABASE_URL"),
             sentry_dsn: env_optional("SENTRY_DSN"),
             app_env: env_or("APP_ENV", "development"),
             gcs_bucket: env_optional("GCS_BUCKET_NAME"),

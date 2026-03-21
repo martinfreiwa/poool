@@ -26,6 +26,32 @@ pub enum AppError {
     Database(sqlx::Error),
     /// Rate limit exceeded – retry-after seconds.
     RateLimited(u64),
+
+    // ── Marketplace-specific errors (Phase 1.11) ───────────────────
+    /// User's available balance is insufficient for the operation.
+    InsufficientBalance {
+        /// The user's available balance in cents.
+        available_cents: i64,
+        /// The amount required in cents.
+        required_cents: i64,
+    },
+    /// User doesn't own enough tokens for the operation.
+    InsufficientTokens {
+        /// Tokens the user currently holds.
+        available: i32,
+        /// Tokens required for the operation.
+        required: i32,
+    },
+    /// Step-up 2FA verification is required for this financial operation (HTTP 428).
+    TwoFactorRequired,
+    /// Trading is currently disabled by admin kill-switch (HTTP 503).
+    TradingDisabled,
+    /// Self-trading (wash trading) is not allowed (HTTP 403).
+    WashTradingBlocked,
+    /// Order was rejected for a business-logic reason (HTTP 400).
+    OrderRejected(String),
+    /// A downstream service is unavailable (HTTP 503).
+    ServiceUnavailable(String),
 }
 
 impl std::fmt::Display for AppError {
@@ -39,6 +65,31 @@ impl std::fmt::Display for AppError {
             AppError::Conflict(msg) => write!(f, "Conflict: {}", msg),
             AppError::Database(err) => write!(f, "Database: {}", err),
             AppError::RateLimited(secs) => write!(f, "RateLimited: retry after {}s", secs),
+            AppError::InsufficientBalance {
+                available_cents,
+                required_cents,
+            } => {
+                write!(
+                    f,
+                    "InsufficientBalance: available={}, required={}",
+                    available_cents, required_cents
+                )
+            }
+            AppError::InsufficientTokens {
+                available,
+                required,
+            } => {
+                write!(
+                    f,
+                    "InsufficientTokens: available={}, required={}",
+                    available, required
+                )
+            }
+            AppError::TwoFactorRequired => write!(f, "TwoFactorRequired"),
+            AppError::TradingDisabled => write!(f, "TradingDisabled"),
+            AppError::WashTradingBlocked => write!(f, "WashTradingBlocked"),
+            AppError::OrderRejected(reason) => write!(f, "OrderRejected: {}", reason),
+            AppError::ServiceUnavailable(msg) => write!(f, "ServiceUnavailable: {}", msg),
         }
     }
 }
@@ -79,6 +130,36 @@ impl IntoResponse for AppError {
                     })),
                 )
                     .into_response();
+            }
+            // ── Marketplace errors ──────────────────────────────────
+            AppError::InsufficientBalance { .. } => (
+                StatusCode::BAD_REQUEST,
+                "Insufficient balance for this operation.".to_string(),
+            ),
+            AppError::InsufficientTokens { .. } => (
+                StatusCode::BAD_REQUEST,
+                "Insufficient tokens for this operation.".to_string(),
+            ),
+            AppError::TwoFactorRequired => (
+                // 428 Precondition Required — signals the client to present 2FA modal
+                StatusCode::from_u16(428).unwrap_or(StatusCode::FORBIDDEN),
+                "Two-factor authentication is required for this operation.".to_string(),
+            ),
+            AppError::TradingDisabled => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "Trading is currently paused. Please try again later.".to_string(),
+            ),
+            AppError::WashTradingBlocked => (
+                StatusCode::FORBIDDEN,
+                "Self-trading is not allowed.".to_string(),
+            ),
+            AppError::OrderRejected(reason) => (StatusCode::BAD_REQUEST, reason.clone()),
+            AppError::ServiceUnavailable(msg) => {
+                tracing::error!("Service unavailable: {}", msg);
+                (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "Service temporarily unavailable. Please try again later.".to_string(),
+                )
             }
         };
 
