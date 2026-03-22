@@ -253,8 +253,10 @@ fn derive_wallet_address(user_id: &Uuid) -> String {
     let hash2 = hasher2.finish();
 
     // Combine two 64-bit hashes into a 160-bit (20-byte) address
-    // This is deterministic: same UUID → same address
+    // Combine two 64-bit hashes into a 160-bit (20-byte) address
+    // This is deterministic: same UUID -> same address
     let h1 = format!("{:016x}", hash1);
     let h2 = format!("{:016x}", hash2);
-    format!("0x{}{}{}", &h1[..8], h1, &h2[..12])
+    // 8 + 16 + 16 = 40 hex chars = 160 bits
+    format!("0x{}{}{}", &h1[..8], h1, h2)
 }
