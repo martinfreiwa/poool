@@ -31,7 +31,6 @@ pub async fn get_portfolio(
             i.status,
             i.payout_expected_at,
             i.purchased_at,
-            i.created_at,
             COALESCE(a.occupancy_rate_bps, 0) AS occupancy_rate_bps,
             COALESCE(a.annual_yield_bps, 0) AS annual_yield_bps,
             a.chain_contract_address,
@@ -71,7 +70,6 @@ pub async fn get_portfolio(
         let purchased_at: chrono::DateTime<chrono::Utc> = r.get("purchased_at");
         let occupancy_rate_bps: i32 = r.get("occupancy_rate_bps");
         let annual_yield_bps: i32 = r.get("annual_yield_bps");
-        let created_at: chrono::DateTime<chrono::Utc> = r.get("created_at");
         let chain_contract_address: Option<String> = r.get("chain_contract_address");
         let chain_tx_hash: Option<String> = r.get("chain_tx_hash");
 
@@ -96,7 +94,7 @@ pub async fn get_portfolio(
             status,
             payout_expected_at: payout_expected_at.map(|t| t.to_rfc3339()),
             purchased_at: purchased_at.to_rfc3339(),
-            is_within_48h: (chrono::Utc::now().signed_duration_since(created_at))
+            is_within_48h: (chrono::Utc::now().signed_duration_since(purchased_at))
                 <= chrono::Duration::hours(48),
             chain_contract_address,
             chain_tx_hash,
@@ -182,7 +180,7 @@ pub async fn cancel_investment(
     let inv_opt = sqlx::query(
         r#"
         SELECT asset_id, tokens_owned, purchase_value_cents, status,
-               ((NOW() - created_at) <= INTERVAL '48 HOURS') AS is_within_48h
+               ((NOW() - purchased_at) <= INTERVAL '48 HOURS') AS is_within_48h
         FROM investments
         WHERE id = $1 AND user_id = $2
         FOR UPDATE
