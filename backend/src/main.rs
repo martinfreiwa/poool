@@ -318,7 +318,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     (SELECT COALESCE(SUM(balance_cents), 0)::bigint FROM wallets WHERE wallet_type = 'cash' AND currency = 'USD') as total_wallets,
                     (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM deposit_requests WHERE status IN ('approved', 'completed', 'paid') AND currency = 'USD') as total_deposits,
                     (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM withdrawal_requests WHERE status != 'rejected' AND currency = 'USD') as total_withdrawals,
-                    (SELECT COALESCE(SUM(total_cents), 0)::bigint FROM orders WHERE status IN ('completed', 'pending_kyc')) as total_purchases
+                    (SELECT COALESCE(SUM(total_cents), 0)::bigint FROM orders WHERE status IN ('completed', 'pending_kyc') AND payment_method = 'wallet') as total_purchases
                 "#
             )
             .fetch_one(&recon_pool)

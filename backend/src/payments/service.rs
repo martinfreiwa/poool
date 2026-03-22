@@ -1073,9 +1073,32 @@ pub async fn reject_order(
     .map_err(|e| format!("Failed to fetch order items: {}", e))?;
 
     for (qty, asset_id) in &order_items {
-        sqlx::query(
-            "UPDATE investments SET status = 'failed' WHERE user_id = $1 AND asset_id = $2 AND status = 'funding_in_progress'"
+        // We need to fetch the subtotal for this item from order_items
+        let subtotal: i64 = sqlx::query_scalar(
+            "SELECT subtotal_cents FROM order_items WHERE order_id = $1 AND asset_id = $2",
         )
+        .bind(order_id)
+        .bind(asset_id)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to fetch subtotal details: {}", e))?;
+
+        sqlx::query(
+            r#"
+            UPDATE investments
+            SET tokens_owned = GREATEST(0, tokens_owned - $1),
+                purchase_value_cents = GREATEST(0, purchase_value_cents - $2),
+                current_value_cents = GREATEST(0, current_value_cents - $2),
+                status = CASE
+                    WHEN tokens_owned - $1 <= 0 THEN 'failed'
+                    ELSE status
+                END,
+                updated_at = NOW()
+            WHERE user_id = $3 AND asset_id = $4
+            "#,
+        )
+        .bind(qty)
+        .bind(subtotal)
         .bind(user_id)
         .bind(asset_id)
         .execute(&mut *tx)
