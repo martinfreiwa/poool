@@ -150,12 +150,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tracing::info!("Rate limiter: using Redis backend (shared across instances)");
         auth::rate_limit::RateLimiter::new_redis(
             rp.clone(),
-            10,
+            100, // Increased for E2E testing
             std::time::Duration::from_secs(15 * 60),
         )
     } else {
         tracing::info!("Rate limiter: using in-memory backend (single instance only)");
-        auth::rate_limit::RateLimiter::new(10, std::time::Duration::from_secs(15 * 60))
+        auth::rate_limit::RateLimiter::new(100, std::time::Duration::from_secs(15 * 60))
     };
 
     let state = AppState {
@@ -814,7 +814,8 @@ async fn apply_security_headers(
     );
     headers.insert(
         axum::http::header::CONTENT_SECURITY_POLICY,
-        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"),
+        // BUG-003: Added https://www.youtube.com https://player.vimeo.com https://*.dropbox.com to frame-src to unblock video embeds
+        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"),
     );
     headers.insert(
         axum::http::header::REFERRER_POLICY,

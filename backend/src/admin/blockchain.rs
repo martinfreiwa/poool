@@ -483,10 +483,14 @@ pub async fn api_admin_blockchain_tokenize(
             logs.iter().find_map(|log| {
                 let topics = log.get("topics")?.as_array()?;
                 if topics.len() >= 2 {
-                    let addr_topic = topics[1].as_str()?;
-                    // Convert padded topic "0x000000000000000000000000[address]" to "0x[address]"
-                    if addr_topic.len() == 66 {
-                        return Some(format!("0x{}", &addr_topic[26..]));
+                    let topic0 = topics[0].as_str()?;
+                    // Check if event is AssetDeployed(address,string,uint256,address)
+                    if topic0 == "0xf54b4b9b8f2bef47422e0fed45f313d33ca3c25388cb5034358aecb5dcd85714" {
+                        let addr_topic = topics[1].as_str()?;
+                        // Convert padded topic "0x000000000000000000000000[address]" to "0x[address]"
+                        if addr_topic.len() == 66 {
+                            return Some(format!("0x{}", &addr_topic[26..]));
+                        }
                     }
                 }
                 None

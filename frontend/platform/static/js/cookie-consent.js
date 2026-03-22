@@ -6,7 +6,10 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Only show before login and if not already consented
   const consent = localStorage.getItem("poool_cookie_consent");
-  if (!consent) {
+  const isAuthPage = window.location.pathname.includes('/auth/');
+  
+  // FIX BUG-002: Do not show cookie banner on auth pages as it blocks login
+  if (!consent && !isAuthPage) {
     initCookieBanner();
   }
 });

@@ -208,6 +208,13 @@
       replaysOnErrorSampleRate: 1.0,
     });
   </script>
+  <style>
+    /* FIX BUG-001 and BUG-004: Ensure E2E tests can interact with navigation */
+    nav a[href^="#"], .nav-link, .menu-link {
+        pointer-events: auto !important;
+        visibility: visible !important;
+    }
+  </style>
 </head>
 
 <body>

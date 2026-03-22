@@ -299,6 +299,7 @@ function renderOrders() {
             <td style="font-weight:700;font-variant-numeric:tabular-nums;">${formatUSD(o.total_cents)}</td>
             <td>${getPaymentBadge(o.payment_method)}</td>
             <td>${getOrderStatusBadge(o.status)}</td>
+            <td style="font-size:12px;font-family:monospace;color:var(--admin-text-muted);">${o.chain_tx_hash ? `<a href="https://amoy.polygonscan.com/tx/${esc(o.chain_tx_hash)}" target="_blank" class="admin-link">${esc(o.chain_tx_hash.substring(0, 10))}...</a>` : '—'}</td>
             <td style="font-size:12px;color:var(--admin-text-muted);white-space:nowrap;">${formatDate(o.created_at)}</td>
             <td>
                 <div style="display:flex;gap:6px;">
