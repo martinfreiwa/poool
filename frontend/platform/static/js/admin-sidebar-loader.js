@@ -69,6 +69,19 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             <span>Announcements</span>
                         </a>
+                        <a href="/admin/community/posts.html" class="admin-nav-item ${isPathActive(["/admin/community/posts.html"]) ? "active" : ""}" id="nav-com-posts">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            <span>Posts</span>
+                        </a>
+                        <a href="/admin/community/reports.html" class="admin-nav-item ${isPathActive(["/admin/community/reports.html"]) ? "active" : ""}" id="nav-com-reports">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            <span>Moderation Queue</span>
+                            <span id="com-reports-badge" style="display:none;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 5px;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;margin-left:auto;"></span>
+                        </a>
+                        <a href="/admin/community/users.html" class="admin-nav-item ${isPathActive(["/admin/community/users.html"]) ? "active" : ""}" id="nav-com-users">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            <span>Community Users</span>
+                        </a>
                     </div>
 
                     <!-- Assets -->
@@ -321,6 +334,26 @@
                 const data = await crResp.json();
                 const pending = data.pending_count || 0;
                 const badge = document.getElementById("change-requests-badge");
+                if (badge) {
+                    if (pending > 0) {
+                        badge.textContent = pending;
+                        badge.style.display = "";
+                    } else {
+                        badge.style.display = "none";
+                    }
+                }
+            }
+        } catch (e) {
+            // Silently fail
+        }
+
+        try {
+            // Fetch pending content reports count for sidebar badge
+            const comReportsResp = await fetch("/api/admin/community/reports");
+            if (comReportsResp.ok) {
+                const data = await comReportsResp.json();
+                const pending = data.length || 0;
+                const badge = document.getElementById("com-reports-badge");
                 if (badge) {
                     if (pending > 0) {
                         badge.textContent = pending;

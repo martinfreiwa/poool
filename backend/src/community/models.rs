@@ -122,3 +122,24 @@ pub struct ContentReport {
 pub struct CreateContentReportRequest {
     pub reason: String,
 }
+
+#[derive(Debug, Serialize)]
+pub struct AdminReportDisplay {
+    pub id: Uuid,
+    pub post_id: Uuid,
+    pub reporter_id: Uuid,
+    pub reporter_name: String,
+    pub post_author_id: Uuid,
+    pub post_author_name: String,
+    pub post_content: String,
+    pub reason: String,
+    pub status: String,
+    pub admin_notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AdminReportActionRequest {
+    pub action: String, // 'hide_post', 'dismiss_report'
+    pub admin_notes: Option<String>,
+}

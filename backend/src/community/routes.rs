@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
     auth::middleware,
     auth::routes::AppState,
-    community::{models::*, service, user_bridge, validation},
+    community::{models, models::*, service, user_bridge, validation},
     error::AppError,
 };
 
@@ -309,6 +309,90 @@ async fn create_content_report(
     Ok(Json(serde_json::json!({ "id": report_id })))
 }
 
+async fn get_reports(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    let pending_reports = service::get_pending_reports(&c_pool).await?;
+
+    // Collect distinct reporter IDs and post IDs
+    let mut user_ids = std::collections::HashSet::new();
+    let mut post_ids = std::collections::HashSet::new();
+
+    for r in &pending_reports {
+        user_ids.insert(r.reporter_id);
+        post_ids.insert(r.post_id);
+    }
+
+    // Fetch posts to get the author IDs and content
+    let mut posts_map = std::collections::HashMap::new();
+    if !post_ids.is_empty() {
+        let p_ids: Vec<Uuid> = post_ids.into_iter().collect();
+        let posts: Vec<models::Post> = sqlx::query_as(
+            "SELECT * FROM posts WHERE id = ANY($1)"
+        )
+        .bind(&p_ids)
+        .fetch_all(&c_pool)
+        .await?;
+
+        for p in posts {
+            user_ids.insert(p.user_id);
+            posts_map.insert(p.id, p);
+        }
+    }
+
+    let user_ids_vec: Vec<Uuid> = user_ids.into_iter().collect();
+    let authors = user_bridge::get_users_info_batch(&state.db, &user_ids_vec).await?;
+
+    let mut response = Vec::with_capacity(pending_reports.len());
+
+    for r in pending_reports {
+        let reporter = authors.get(&r.reporter_id);
+        
+        let (post_author_id, post_author_name, post_content) = if let Some(post) = posts_map.get(&r.post_id) {
+            let p_author = authors.get(&post.user_id);
+            (
+                post.user_id,
+                p_author.map(|a| a.display_name.clone()).unwrap_or_else(|| "Unknown".into()),
+                post.content_sanitized.clone().unwrap_or(post.content.clone())
+            )
+        } else {
+            (Uuid::nil(), "Deleted Post".into(), "[Content Unavailable]".into())
+        };
+
+        response.push(models::AdminReportDisplay {
+            id: r.id,
+            post_id: r.post_id,
+            reporter_id: r.reporter_id,
+            reporter_name: reporter.map(|a| a.display_name.clone()).unwrap_or_else(|| "Unknown".into()),
+            post_author_id,
+            post_author_name,
+            post_content,
+            reason: r.reason,
+            status: r.status,
+            admin_notes: r.admin_notes,
+            created_at: r.created_at,
+        });
+    }
+
+    Ok(Json(response))
+}
+
+async fn take_report_action(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(report_id): Path<Uuid>,
+    Json(payload): Json<models::AdminReportActionRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    service::action_on_report(&c_pool, report_id, &payload.action, payload.admin_notes).await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
 // ─── Router Configuration ────────────────────────────────────────────────────
 
 pub fn router() -> Router<AppState> {
@@ -331,6 +415,8 @@ pub fn router() -> Router<AppState> {
             "/api/community/posts/:id/comments",
             get(get_comments).post(create_comment),
         )
-        // Admin Stats
+        // Admin Stats & Moderation
         .route("/api/admin/community/stats", get(get_admin_stats))
+        .route("/api/admin/community/reports", get(get_reports))
+        .route("/api/admin/community/reports/:id/action", post(take_report_action))
 }

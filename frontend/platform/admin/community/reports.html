@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Moderation Queue | Community Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Moderation Queue</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h1 class="admin-page-title">Moderation Queue</h1>
+            <p class="admin-page-subtitle">Review and manage user-reported content.</p>
+          </div>
+          <div>
+            <button class="admin-btn admin-btn--secondary" onclick="loadReports()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Reporter</th>
+                  <th>Reason</th>
+                  <th>Post Content</th>
+                  <th>Date</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="reports-table">
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                    Loading reports...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Action Modal -->
+  <div id="action-modal" class="ds-modal" style="display: none; z-index: 1000;">
+    <div class="ds-modal__backdrop" onclick="closeActionModal()"></div>
+    <div class="ds-modal__content" style="max-width: 500px; background: white; border-radius: 12px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 24px; width: 100%; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #101828;" id="modal-title">Take Action</h3>
+        <button style="background: none; border: none; cursor: pointer; color: #667085;" onclick="closeActionModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div>
+        <input type="hidden" id="modal-report-id">
+        <input type="hidden" id="modal-action-type">
+        
+        <p style="margin-bottom: 16px; font-size: 14px; color: #475467;" id="modal-desc">
+          Are you sure you want to proceed?
+        </p>
+        
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #344054;">Admin Notes (Required)</label>
+          <textarea id="modal-notes" rows="3" style="width: 100%; border: 1px solid #D0D5DD; border-radius: 8px; padding: 10px; font-family: inherit;" placeholder="Reason for this action..."></textarea>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button style="padding: 10px 16px; border-radius: 8px; border: 1px solid #D0D5DD; background: white; font-weight: 500; cursor: pointer;" onclick="closeActionModal()">Cancel</button>
+          <button id="modal-confirm-btn" style="padding: 10px 16px; border-radius: 8px; border: none; background: #D92D20; color: white; font-weight: 500; cursor: pointer;" onclick="confirmAction()">Confirm Action</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadReports();
+    });
+
+    async function loadReports() {
+        const tbody = document.getElementById('reports-table');
+        try {
+            const res = await fetch('/api/admin/community/reports');
+            if(res.ok) {
+                const reports = await res.json();
+                
+                if (reports.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--admin-text-muted);">No pending reports. The queue is empty! 🎉</td></tr>';
+                    // Update badge
+                    const badge = document.getElementById('com-reports-badge');
+                    if (badge) badge.style.display = 'none';
+                    return;
+                }
+                
+                let html = '';
+                reports.forEach(r => {
+                    const date = new Date(r.created_at).toLocaleString();
+                    // trunc content
+                    const truncContent = r.post_content.length > 100 ? r.post_content.substring(0, 100) + '...' : r.post_content;
+                    
+                    html += `
+                        <tr>
+                            <td>
+                                <div style="font-weight: 500; color: #101828;">${r.reporter_name}</div>
+                                <div style="font-size: 12px; color: #667085; font-family: monospace;">${r.reporter_id.substring(0, 8)}...</div>
+                            </td>
+                            <td>
+                                <span class="admin-badge" style="background:#FEF3F2; color:#B42318; border: 1px solid #FECDCA;">
+                                    ${r.reason}
+                                </span>
+                            </td>
+                            <td>
+                                <div style="font-size: 12px; color: #667085; margin-bottom: 4px;">Author: <span style="font-weight: 500; color: #344054;">${r.post_author_name}</span></div>
+                                <div style="font-size: 14px; max-width: 300px; white-space: normal; line-height: 1.4;">${truncContent}</div>
+                            </td>
+                            <td><span style="font-size: 13px; color: #667085;">${date}</span></td>
+                            <td style="text-align: right;">
+                                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                    <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="openActionModal('${r.id}', 'hide_post')">Hide Post</button>
+                                    <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="openActionModal('${r.id}', 'dismiss_report')">Dismiss</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+                
+                // Update badge
+                const badge = document.getElementById('com-reports-badge');
+                if (badge) {
+                    badge.textContent = reports.length;
+                    badge.style.display = '';
+                }
+
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:#D92D20;">Failed to load reports</td></tr>';
+            }
+        } catch(e) {
+            console.error("Failed to load reports", e);
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:#D92D20;">Error connecting to server</td></tr>';
+        }
+    }
+
+    function openActionModal(reportId, actionType) {
+        document.getElementById('modal-report-id').value = reportId;
+        document.getElementById('modal-action-type').value = actionType;
+        document.getElementById('modal-notes').value = '';
+        
+        const titleEl = document.getElementById('modal-title');
+        const descEl = document.getElementById('modal-desc');
+        const btn = document.getElementById('modal-confirm-btn');
+        
+        if (actionType === 'hide_post') {
+            titleEl.textContent = 'Hide Reported Post';
+            descEl.textContent = 'This will hide the post from the community feed. The author will be notified.';
+            btn.style.background = '#D92D20';
+            btn.textContent = 'Hide Post';
+        } else {
+            titleEl.textContent = 'Dismiss Report';
+            descEl.textContent = 'This will mark the report as resolved without taking action against the post.';
+            btn.style.background = '#027A48';
+            btn.textContent = 'Dismiss Report';
+        }
+        
+        document.getElementById('action-modal').style.display = 'block';
+    }
+
+    function closeActionModal() {
+        document.getElementById('action-modal').style.display = 'none';
+    }
+
+    async function confirmAction() {
+        const reportId = document.getElementById('modal-report-id').value;
+        const actionType = document.getElementById('modal-action-type').value;
+        const notes = document.getElementById('modal-notes').value.trim();
+        
+        if (!notes) {
+            alert("Admin notes are required.");
+            return;
+        }
+        
+        const btn = document.getElementById('modal-confirm-btn');
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+        
+        try {
+            const res = await fetch(`/api/admin/community/reports/${reportId}/action`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: actionType,
+                    admin_notes: notes
+                })
+            });
+            
+            if (res.ok) {
+                closeActionModal();
+                loadReports(); // REFRESH
+            } else {
+                const err = await res.text();
+                alert("Failed: " + err);
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Network error.");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+  </script>
+</body>
+</html>

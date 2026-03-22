@@ -94,6 +94,7 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | `2026-03-22 21:10` | `Antigravity` | `M1-FE` | `frontend/platform/` | `✅ Check-Out` | Built Feed dynamic fetching, Filters, Comments UI logic, 'Coming Soon' overlays for unused modules |
 | `2026-03-22 21:35` | `Antigravity` | `M1-ADMIN` | `backend/src/` & `admin/` | `✅ Check-Out` | Implemented Admin sidebar injection, Community Dashboard, Announcements Manager and KPI backend logic |
 | `2026-03-22 21:40` | `Antigravity` | `M1-QA` | `backend/src/community/tests.rs` | `✅ Check-Out` | Implemented tests for models, validation logic, and ran successful pipeline checks. Modul 1 is fully READY for launch! |
+| `2026-03-22 22:38` | `Antigravity` | `M2-FE`, `M2-BE`, `M2-DB` | `community/` & `platform/` | `✅ Check-Out` | Completed M2 User Posts backend, DB migrations, content moderation rules, and frontend post modalities |
 
 ---
 
@@ -220,7 +221,7 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M2-BE.3** | Post Edit/Delete (eigene) | `PUT /DELETE /api/community/posts/{id}` — nur innerhalb 15 Minuten editierbar, nur eigene löschbar | `✅ DONE` | Antigravity | `backend/src/community/` |
 | **M2-BE.4** | Content Report API | `POST /api/community/posts/{id}/report` — User meldet Post | `✅ DONE` | Antigravity | `backend/src/community/` |
 | **M2-BE.5** | Image Upload | Upload bis zu 4 Bilder pro Post via GCS, Validierung (Dateityp, Größe <5MB) | `❌` | - | `backend/src/community/` |
-| **M2-BE.6** | Admin Moderation API | `GET /api/admin/community/reports` + `POST .../action` — Reports bearbeiten, Posts verstecken/löschen | `❌` | - | `backend/src/admin/` |
+| **M2-BE.6** | Admin Moderation API | `GET /api/admin/community/reports` + `POST .../action` — Reports bearbeiten, Posts verstecken/löschen | `✅ DONE` | Antigravity | `backend/src/admin/` |
 | **M2-BE.7** | Post Rate Limiting | Redis-basiert: max 5 Posts/Stunde, Duplicate-Detection | `❌` | - | `backend/src/community/` |
 | **M2-BE.8** | New-User Sandbox & URL Filter | Enforce rule: Users under Level 2 cannot post URLs. Regex detection for "guaranteed return" variations auto-flags posts. | `❌` | - | `backend/src/community/` |
 | **M2-BE.9** | Asset Velocity Monitor | Background worker monitoring post velocity. If >5 mentions of an asset in 10 mins, alert Admins (Pump & Dump protection). | `❌` | - | `backend/src/community/` |
@@ -240,10 +241,10 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 |:---|:---|:---|:---|:---|:---|:---|
 | **M2-ADMIN.1** | `community/posts.html` | Posts verwalten | Tabelle aller Posts (Suche, Filter nach Typ/Autor/Status, Bulk-Aktionen: hide/delete/warn) | `❌` | - | `frontend/platform/admin/community/` |
 | **M2-ADMIN.2** | `community/post-detail.html` | Post-Detail | Einzelner Post mit allen Comments, Reactions, Report-History, Moderation-Aktionen | `❌` | - | `frontend/platform/admin/community/` |
-| **M2-ADMIN.3** | `community/reports.html` | Moderation Queue | Pending Reports Tabelle, Quick-Actions (hide/delete/warn/ban), Report-Detail-View, 🔴 Badge in Sidebar | `❌` | - | `frontend/platform/admin/community/` |
+| **M2-ADMIN.3** | `community/reports.html` | Moderation Queue | Pending Reports Tabelle, Quick-Actions (hide/delete/warn/ban), Report-Detail-View, 🔴 Badge in Sidebar | `✅ DONE` | Antigravity | `frontend/platform/admin/community/` |
 | **M2-ADMIN.4** | `community/users.html` | Community Users | User-Tabelle (Post-Count, Warnings, Ban-Status), Quick-Actions (warn/ban/unban), Suche | `❌` | - | `frontend/platform/admin/community/` |
-| **M2-ADMIN.5** | Admin Sidebar erweitern | - | Posts, Reports (mit 🔴 Badge), Community Users in Sidebar einfügen | `❌` | - | `frontend/platform/static/js/` ⚠️ |
-| **M2-ADMIN.6** | Admin Moderation APIs | Backend | `GET/POST /api/admin/community/reports`, `POST .../posts/{id}/hide`, `POST .../users/{id}/ban` | `❌` | - | `backend/src/admin/` |
+| **M2-ADMIN.5** | Admin Sidebar erweitern | - | Posts, Reports (mit 🔴 Badge), Community Users in Sidebar einfügen | `✅ DONE` | Antigravity | `frontend/platform/static/js/` ⚠️ |
+| **M2-ADMIN.6** | Admin Moderation APIs | Backend | `GET/POST /api/admin/community/reports`, `POST .../posts/{id}/hide`, `POST .../users/{id}/ban` | `✅ DONE` | Antigravity | `backend/src/admin/` |
 
 ### M2-QA: Tests
 

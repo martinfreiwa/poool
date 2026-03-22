@@ -458,3 +458,11 @@ The following bugs were found during a deep security and logic audit of the admi
 ---
 
 *Last Updated: 2026-03-22 17:30 ICT*
+
+### [P1] — sqlx::query! macro error on separate community database
+- **File:** `backend/src/community/service.rs`
+- **What was wrong:** Using `sqlx::query!` causes compilation error because `cargo check` only checks the core `db` and doesn't know about `community_db` at compile time.
+- **What I did:** Swapped `sqlx::query!` macro to runtime `sqlx::query` builder and manually mapped rows to bypass offline macro checks for a secondary database connection.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+

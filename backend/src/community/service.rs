@@ -1,4 +1,4 @@
-use crate::community::models::{Comment, Post};
+use crate::community::models::{Post, ContentReport};
 use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -308,6 +308,62 @@ pub async fn delete_user_post(
         .bind(post_id)
         .execute(&mut *tx)
         .await?;
+
+    tx.commit().await?;
+    Ok(())
+}
+
+pub async fn get_pending_reports(pool: &PgPool) -> Result<Vec<ContentReport>, AppError> {
+    let reports = sqlx::query_as::<_, ContentReport>(
+        "SELECT * FROM content_reports WHERE status = 'pending' ORDER BY created_at ASC"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(reports)
+}
+
+pub async fn action_on_report(
+    pool: &PgPool,
+    report_id: Uuid,
+    action: &str,
+    notes: Option<String>,
+) -> Result<(), AppError> {
+    let mut tx = pool.begin().await?;
+
+    // Get the report to find the post relative to it.
+    // Use manual query approach instead of macro to ensure cross-db compat
+    let row = sqlx::query("SELECT post_id FROM content_reports WHERE id = $1")
+        .bind(report_id)
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Report not found".into()))?;
+
+    use sqlx::Row;
+    let post_id: Uuid = row.try_get("post_id")?;
+
+    match action {
+        "hide_post" => {
+            sqlx::query("UPDATE posts SET is_hidden = true, hidden_reason = 'Moderator action' WHERE id = $1")
+                .bind(post_id)
+                .execute(&mut *tx)
+                .await?;
+            
+            sqlx::query("UPDATE content_reports SET status = 'resolved', admin_notes = $1, updated_at = NOW() WHERE id = $2")
+                .bind(notes)
+                .bind(report_id)
+                .execute(&mut *tx)
+                .await?;
+        }
+        "dismiss_report" => {
+            sqlx::query("UPDATE content_reports SET status = 'dismissed', admin_notes = $1, updated_at = NOW() WHERE id = $2")
+                .bind(notes)
+                .bind(report_id)
+                .execute(&mut *tx)
+                .await?;
+        }
+        _ => return Err(AppError::BadRequest("Invalid action type".into())),
+    }
 
     tx.commit().await?;
     Ok(())
