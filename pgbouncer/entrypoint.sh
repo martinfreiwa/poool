@@ -81,12 +81,13 @@ mkdir -p "$PGBOUNCER_DIR"
 
 cat > "$PGBOUNCER_DIR/pgbouncer.ini" <<EOF
 [databases]
-${DB_NAME} = host=${DB_HOST} port=${DB_PORT} dbname=${DB_NAME}
+${DB_NAME} = host=${DB_HOST} port=${DB_PORT} dbname=${DB_NAME} user=${DB_USER} password='${DB_PASS}'
 
 [pgbouncer]
 listen_addr = 127.0.0.1
 listen_port = 6432
 auth_type = trust
+auth_file = $PGBOUNCER_DIR/userlist.txt
 pool_mode = transaction
 default_pool_size = ${PGBOUNCER_POOL_SIZE:-25}
 min_pool_size = ${PGBOUNCER_MIN_POOL:-5}
