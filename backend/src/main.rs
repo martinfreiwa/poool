@@ -636,9 +636,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ── Platform Router (login, dashboard, API) ──────────────────────
     let platform_router = Router::new()
-        // ── Authentication ─────────────────────────────────────────────
-        // Fallback catch-all for /admin/ -> serves index.html
-        .route("/admin/*path", get(admin::routes::page_index))
         .nest("/auth", auth::routes::router(state.clone()))
         .route("/logout", get(auth::routes::logout))
         // ── Domain Routers (each module owns its routes) ────────────────
