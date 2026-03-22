@@ -80,23 +80,24 @@ fn build_connect_options(database_url: &str) -> PgConnectOptions {
         })
     };
 
-    if let Some(socket_path) = socket_dir {
-        // Parse user/password/dbname from DATABASE_URL but switch to socket transport.
-        // The DATABASE_URL in this case is only used for credentials, not the host.
-        let base: PgConnectOptions = database_url
-            .parse::<PgConnectOptions>()
-            .unwrap_or_else(|_| PgConnectOptions::new());
+    let mut opts: PgConnectOptions = database_url
+        .parse()
+        .expect("Invalid DATABASE_URL");
 
-        tracing::info!("Using Cloud SQL Unix socket at: {}", socket_path);
-
-        // .socket() sets the host to the directory; sqlx will look for .s.PGSQL.5432 inside it
-        base.socket(socket_path)
-    } else {
-        // TCP connection — either local dev or PgBouncer proxy
-        database_url
-            .parse::<PgConnectOptions>()
-            .expect("Invalid DATABASE_URL")
+    // If PGBOUNCER_ENABLED is true, we must disable SQLx's prepared statement cache
+    // because PgBouncer in transaction mode does not support named prepared statements
+    // across multiplexed connections without throwing "prepared statement already exists".
+    if pgbouncer_enabled {
+        tracing::info!("PgBouncer enabled — disabling statement cache");
+        opts = opts.statement_cache_capacity(0);
     }
+
+    if let Some(socket_path) = socket_dir {
+        tracing::info!("Using Cloud SQL Unix socket at: {}", socket_path);
+        opts = opts.socket(socket_path);
+    }
+
+    opts
 }
 
 /// Create a single connection pool with the given tuning parameters.

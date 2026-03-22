@@ -472,3 +472,70 @@ The following bugs were found during a deep security and logic audit of the admi
 - **What I did:** Fixed naming inconsistencies across `announcements.html`, `blockchain-sync.html`, `asset-change-review.html`, `marketplace/analytics.html`, and `mp-reconciliation.js`.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-22
+
+---
+
+## 🛡 Community Module Security Audit Fixes (2026-03-22)
+
+### [P0-SECURITY] — XSS in community feed post rendering (FIX-F1)
+- **File:** `frontend/platform/static/js/community-feed.js`
+- **What was wrong:** Post content, author names, and badges were rendered via `innerHTML` inside template literal strings. An attacker could inject `<script>` tags or event handlers through their display name or post content.
+- **What I did:** Replaced the entire post rendering with safe DOM construction using `createElement`/`textContent`. Created `buildPostElement()` function that uses `textContent` for all user-generated data.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P0-SECURITY] — XSS in community comment rendering (FIX-F2)
+- **File:** `frontend/platform/static/js/community-feed.js`
+- **What was wrong:** Comment author names and content were rendered via `innerHTML` in template literals, allowing XSS through crafted comments.
+- **What I did:** Refactored `loadComments()` to use DOM construction with `textContent` for author names and comment content.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P1] — Verified Owner badge injected as raw HTML into post content (FIX-F4)
+- **File:** `backend/src/community/routes.rs`, `backend/src/community/models.rs`, `frontend/platform/static/js/community-feed.js`
+- **What was wrong:** The backend appended `<span class="feed-post-badge">Verified Owner</span>` directly into the post content string, permanently modifying user content with HTML. Any rendering of content would execute the injected HTML.
+- **What I did:** Added `verified_owner: bool` field to `PostDisplay` struct. Backend now returns a boolean flag. Frontend renders the badge via safe DOM construction based on the flag.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P1] — Race condition in toggle_reaction (FIX-F6)
+- **File:** `backend/src/community/service.rs`
+- **What was wrong:** `toggle_reaction` did INSERT with ON CONFLICT DO NOTHING + separate DELETE as two independent queries without a transaction. Concurrent requests could result in ghost reactions or duplicate entries.
+- **What I did:** Wrapped both operations in a database transaction (`pool.begin()`) with SELECT FOR UPDATE to ensure atomicity.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P1] — Banned users could still post, comment, and react (FIX-F7)
+- **File:** `backend/src/community/routes.rs`
+- **What was wrong:** No ban check existed in the `create_user_post`, `create_comment`, or `toggle_reaction` handlers. A community-banned user could bypass the ban by making API calls directly.
+- **What I did:** Added `check_user_not_banned()` helper that queries `community_profiles.is_community_banned` and returns `AppError::Forbidden` if banned. Called in all three write handlers.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P2] — No comment rate limiting (FIX-CRL)
+- **File:** `backend/src/community/routes.rs`
+- **What was wrong:** Post creation had Redis-based rate limiting (10/hour) but comment creation had no rate limiting at all, allowing spam.
+- **What I did:** Added Redis-based rate limiting (30 comments/hour) to the `create_comment` handler, mirroring the existing post rate limiting pattern.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P1] — AMA admin handlers used `user.is_admin` (field doesn't exist)
+- **File:** `backend/src/community/routes.rs`
+- **What was wrong:** Five AMA admin route handlers (`admin_list_amas`, `admin_create_ama`, `admin_update_ama_status`, `admin_answer_question`, `admin_toggle_featured`) used `user.is_admin` for authorization, but the `User` model has no `is_admin` field. This was a compilation error preventing the entire project from building.
+- **What I did:** Replaced manual auth checks with the `AdminUser` extractor from `admin::extractors`, which is the standard pattern used by all other admin routes.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+---
+
+---
+
+### [P1] — Production-wide 401/500 errors on all authenticated API endpoints
+- **File:** `backend/src/db.rs` (`build_connect_options()`)
+- **What was wrong:** SQLx maintains a **client-side prepared statement cache** (`statement_cache_capacity`, default 100). In production with PgBouncer (`pool_mode = session`), PgBouncer reuses server-side PostgreSQL connections across clients. When Client A creates prepared statement `sqlx_s_1` on a server connection then disconnects, PgBouncer assigns that same server connection to Client B, which also tries to create `sqlx_s_1` — causing a `"prepared statement already exists"` error in the background. This made `get_user_by_session()` (used by all auth middleware) fail with an internal error, which surfaced as:
+  - `401 Unauthorized` on `/api/community/feed`, `/api/leaderboard/preferences` (session lookup fails silently → `None` returned → 401)
+  - `500 Internal Server Error` on `/api/me`, `/api/rewards`, `/api/portfolio` (error propagated directly)
+- **Affected endpoints:** ALL authenticated API endpoints on production platform.poool.app
+- **What I did:** Set `statement_cache_capacity(0)` in `build_connect_options()` when `PGBOUNCER_ENABLED=true`. This disables SQLx's client-side prepared statement cache, forcing it to use simple (unprepared) queries compatible with PgBouncer. Minor perf trade-off is acceptable vs. P1 auth breakage.
+- **Status:** ✅ Resolved — requires redeploy to take effect
+- **Date:** 2026-03-23
