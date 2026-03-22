@@ -123,6 +123,68 @@ async fn parse_and_notify_mentions(
     }
 }
 
+/// Helper to parse the first URL in the content and fetch its OpenGraph data
+async fn parse_and_store_opengraph(
+    c_pool: sqlx::PgPool,
+    content: String,
+    post_id: Uuid,
+) {
+    if let Ok(url_regex) = regex::Regex::new(r"https?://[^\s<]+") {
+        if let Some(mat) = url_regex.find(&content) {
+            let url = mat.as_str().to_string();
+            
+            let client = reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(3))
+                .build()
+                .unwrap_or_default();
+                
+            if let Ok(res) = client.get(&url).send().await {
+                if let Ok(html) = res.text().await {
+                    let title = extract_meta_tag(&html, "og:title");
+                    let image = extract_meta_tag(&html, "og:image");
+                    let desc = extract_meta_tag(&html, "og:description");
+                    
+                    if title.is_some() || image.is_some() || desc.is_some() {
+                        let preview = serde_json::json!({
+                            "url": url,
+                            "title": title.unwrap_or_else(|| url.clone()),
+                            "image": image,
+                            "description": desc,
+                        });
+                        
+                        let _ = sqlx::query("UPDATE posts SET link_preview = $1 WHERE id = $2")
+                            .bind(preview)
+                            .bind(post_id)
+                            .execute(&c_pool)
+                            .await;
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn extract_meta_tag(html: &str, property: &str) -> Option<String> {
+    let re_str = format!(r#"(?i)<meta\s+[^>]*?property=["']{}["'][^>]*?content=["']([^"']+)["'][^>]*>"#, property);
+    let re_str_alt = format!(r#"(?i)<meta\s+[^>]*?content=["']([^"']+)["'][^>]*?property=["']{}["'][^>]*>"#, property);
+    
+    // Check property before content
+    if let Ok(re) = regex::Regex::new(&re_str) {
+        if let Some(caps) = re.captures(html) {
+            return caps.get(1).map(|m| m.as_str().to_string());
+        }
+    }
+    
+    // Check content before property
+    if let Ok(re) = regex::Regex::new(&re_str_alt) {
+        if let Some(caps) = re.captures(html) {
+            return caps.get(1).map(|m| m.as_str().to_string());
+        }
+    }
+    
+    None
+}
+
 // ─── Route Handlers ──────────────────────────────────────────────────────────
 
 async fn get_feed(
@@ -174,6 +236,7 @@ async fn get_feed(
             content: p.content_sanitized.unwrap_or(p.content),
             asset_id: p.asset_id,
             image_urls: p.image_urls.unwrap_or_default(),
+            link_preview: p.link_preview,
             reaction_count: p.reaction_count,
             comment_count: p.comment_count,
             is_hidden: p.is_hidden,
@@ -239,6 +302,7 @@ async fn get_post_detail(
         content: p.content_sanitized.unwrap_or(p.content),
         asset_id: p.asset_id,
         image_urls: p.image_urls.unwrap_or_default(),
+        link_preview: p.link_preview,
         reaction_count: p.reaction_count,
         comment_count: p.comment_count,
         is_hidden: p.is_hidden,
@@ -543,6 +607,9 @@ async fn create_user_post(
     let core_db_clone = state.db.clone();
     let c_pool_clone = c_pool.clone();
     let content_clone = payload.content.clone();
+    let c_pool_clone_for_og = c_pool.clone();
+    let content_clone_for_og = payload.content.clone();
+    
     tokio::spawn(async move {
         parse_and_notify_mentions(
             core_db_clone,
@@ -550,6 +617,12 @@ async fn create_user_post(
             content_clone,
             user.id,
             author_name,
+            post_id,
+        ).await;
+        
+        parse_and_store_opengraph(
+            c_pool_clone_for_og,
+            content_clone_for_og,
             post_id,
         ).await;
     });
@@ -1360,7 +1433,6 @@ async fn admin_toggle_pin_comment(
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
-// ─── Router Configuration ────────────────────────────────────────────────────
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -1395,6 +1467,9 @@ pub fn router() -> Router<AppState> {
         .route("/api/admin/community/posts/:id/tags", post(admin_update_post_tags))
         .route("/api/admin/community/users", get(admin_get_users))
         .route("/api/admin/community/users/:id/ban", post(admin_toggle_ban_user))
+        .route("/api/community/appeals", post(submit_ban_appeal))
+        .route("/api/admin/community/appeals", get(get_ban_appeals))
+        .route("/api/admin/community/appeals/:id/review", post(review_ban_appeal))
         .route("/api/admin/community/users/:id/warn", post(admin_warn_user))
         .route("/api/admin/community/users/:id/mod-notes", post(admin_update_mod_notes))
         .route("/api/admin/community/users/:id/mute", post(admin_mute_user))
@@ -1594,7 +1669,7 @@ async fn search_community(
     State(state): State<AppState>,
     Query(query): Query<SearchQuery>,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut user = middleware::get_current_user(&jar, &state.db).await;
+    let user = middleware::get_current_user(&jar, &state.db).await;
     let c_pool = get_community_pool(&state)?;
 
     let limit = 20;
@@ -1711,6 +1786,7 @@ async fn search_community(
             content: p.content_sanitized.unwrap_or(p.content),
             asset_id: p.asset_id,
             image_urls: p.image_urls.unwrap_or_default(),
+            link_preview: p.link_preview,
             reaction_count: p.reaction_count,
             comment_count: p.comment_count,
             is_hidden: p.is_hidden,
@@ -2716,3 +2792,165 @@ async fn admin_award_xp(
     Ok(Json(serde_json::json!({ "status": "xp_awarded", "amount": amount_awarded })))
 }
 
+// ─── Ban Appeals Handlers (M7-BE.5) ──────────────────────────────────────────
+
+async fn submit_ban_appeal(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<models::CreateBanAppealReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db).await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    if payload.appeal_text.len() < 10 || payload.appeal_text.len() > 2000 {
+        return Err(AppError::BadRequest("Appeal text must be between 10 and 2000 characters.".into()));
+    }
+
+    // Check if the user is actually banned
+    let is_banned: Option<bool> = sqlx::query_scalar("SELECT is_community_banned FROM community_profiles WHERE user_id = $1")
+        .bind(user.id)
+        .fetch_optional(&c_pool)
+        .await?;
+
+    if !is_banned.unwrap_or(false) {
+        return Err(AppError::BadRequest("You are not currently banned.".into()));
+    }
+
+    // Check if they already have a pending appeal
+    let existing_pending: Option<Uuid> = sqlx::query_scalar("SELECT id FROM ban_appeals WHERE user_id = $1 AND status = 'pending'")
+        .bind(user.id)
+        .fetch_optional(&c_pool)
+        .await?;
+
+    if existing_pending.is_some() {
+        return Err(AppError::BadRequest("You already have a pending ban appeal. Please wait for an admin to review it.".into()));
+    }
+
+    sqlx::query("INSERT INTO ban_appeals (user_id, appeal_text) VALUES ($1, $2)")
+        .bind(user.id)
+        .bind(payload.appeal_text)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({"success": true, "message": "Appeal submitted successfully."})))
+}
+
+async fn get_ban_appeals(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Query(_q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    
+    // Status filter
+    let status_filter = _q.get("status").map(|s| s.as_str()).unwrap_or("pending");
+
+    let records = sqlx::query(
+        r#"
+        SELECT a.id, a.user_id, a.appeal_text, a.status, a.admin_notes, a.created_at, a.resolved_at
+        FROM ban_appeals a
+        WHERE ($1 = 'all' OR a.status = $1)
+        ORDER BY a.created_at ASC
+        "#
+    )
+    .bind(status_filter)
+    .fetch_all(&c_pool)
+    .await?;
+
+    // We manually construct BanAppealDisplay and fetch names
+    use sqlx::Row;
+    let mut appeals = Vec::new();
+    for rec in records {
+        let user_id: Uuid = rec.try_get("user_id")?;
+        let id: Uuid = rec.try_get("id")?;
+        let appeal_text: String = rec.try_get("appeal_text")?;
+        let r_status: String = rec.try_get("status")?;
+        let admin_notes: Option<String> = rec.try_get("admin_notes")?;
+        let created_at: chrono::DateTime<chrono::Utc> = rec.try_get("created_at")?;
+        let resolved_at: Option<chrono::DateTime<chrono::Utc>> = rec.try_get("resolved_at")?;
+        let name = user_bridge::get_user_info(&state.db, state.redis.as_ref(), user_id).await.map(|u| u.display_name).unwrap_or_else(|_| "Unknown".into());
+
+        appeals.push(models::BanAppealDisplay {
+            id,
+            user_id,
+            display_name: name,
+            appeal_text,
+            status: r_status,
+            admin_notes,
+            created_at,
+            resolved_at,
+        });
+    }
+
+    Ok(Json(serde_json::json!({"appeals": appeals})))
+}
+
+async fn review_ban_appeal(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(appeal_id): Path<Uuid>,
+    Json(payload): Json<models::AdminReviewAppealReq>,
+) -> Result<impl IntoResponse, AppError> {
+    // Unused admin variable
+    let _a = admin;
+    let c_pool = get_community_pool(&state)?;
+
+    let status = match payload.action.as_str() {
+        "approve" => "approved",
+        "reject" => "rejected",
+        _ => return Err(AppError::BadRequest("Action must be 'approve' or 'reject'".into())),
+    };
+
+    let mut tx = c_pool.begin().await.map_err(AppError::Database)?;
+
+    use sqlx::Row;
+    let record = sqlx::query(
+        "UPDATE ban_appeals SET status = $1, admin_notes = $2, resolved_at = NOW() WHERE id = $3 AND status = 'pending' RETURNING user_id"
+    )
+    .bind(status)
+    .bind(&payload.admin_notes)
+    .bind(appeal_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    let user_id: Uuid = match record {
+        Some(r) => r.try_get("user_id")?,
+        None => return Err(AppError::NotFound("Pending appeal not found".into())),
+    };
+
+    if status == "approved" {
+        // Lift the ban
+        sqlx::query("UPDATE community_profiles SET is_community_banned = false, ban_expires_at = NULL WHERE user_id = $1")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+            
+        // Notify the user
+        crate::community::notifications::notify_user(
+            &c_pool,
+            user_id,
+            None,
+            "system_alert",
+            None,
+            "Ban Appeal Approved: Your community ban has been lifted. You can now post and interact again.",
+            None
+        ).await.ok();
+    } else {
+        // Notify the user of rejection
+        crate::community::notifications::notify_user(
+            &c_pool,
+            user_id,
+            None,
+            "system_alert",
+            None,
+            "Ban Appeal Rejected: Your ban appeal was reviewed and rejected. The ban remains in place.",
+            None
+        ).await.ok();
+    }
+
+    tx.commit().await.map_err(AppError::Database)?;
+
+    Ok(Json(serde_json::json!({"success": true, "status": status})))
+}

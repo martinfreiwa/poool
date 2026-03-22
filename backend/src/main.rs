@@ -178,6 +178,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tokio::spawn(community::background::xp_aggregation_worker(c_pool.clone()));
         tokio::spawn(community::background::circle_invite_expiry_worker(c_pool.clone()));
         tokio::spawn(community::background::circle_retry_worker(c_pool.clone(), pool.clone()));
+        tokio::spawn(community::background::gdpr_anonymization_worker(c_pool.clone(), pool.clone()));
+        tokio::spawn(community::background::weekly_digest_worker(c_pool.clone(), pool.clone()));
     }
 
     // Auto-refund worker for expired primary escrow offerings
