@@ -207,18 +207,18 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 
 | ID | Task | Beschreibung | Status | File Zone |
 |:---|:---|:---|:---|:---|
-| **M2-DB.1** | `content_reports` Tabelle | Report-System für User-gemeldete Inhalte | `❌` | `database/community/` |
-| **M2-DB.2** | `ALTER TABLE posts` | post_type CHECK erweitern: + 'general', 'market_insight' | `❌` | `database/community/` |
-| **M2-DB.3** | Bild-Upload Indexes | idx_posts_user_id, idx_posts_post_type | `❌` | `database/community/` |
+| **M2-DB.1** | `content_reports` Tabelle | Report-System für User-gemeldete Inhalte | `✅ DONE` | `database/community/` |
+| **M2-DB.2** | `ALTER TABLE posts` | post_type CHECK erweitern: + 'general', 'market_insight' | `✅ DONE` | `database/community/` |
+| **M2-DB.3** | Bild-Upload Indexes | idx_posts_user_id, idx_posts_post_type | `✅ DONE` | `database/community/` |
 
 ### M2-BE: Backend
 
 | ID | Task | Description | Status | Assignee | File Zone |
 |:---|:---|:---|:---|:---|:---|
-| **M2-BE.1** | Content Moderation (`moderation.rs`) | Ammonia HTML-Sanitizer, Keyword-Filter ("guaranteed returns", "risk-free"), Spam-Detection, Investment-Disclaimer | `❌` | - | `backend/src/community/` |
-| **M2-BE.2** | User Posts CRUD | `POST /api/community/posts` — User-Posts mit Moderation-Pipeline (Sanitize → Keyword-Check → Disclaimer → Save) | `❌` | - | `backend/src/community/` |
-| **M2-BE.3** | Post Edit/Delete (eigene) | `PUT /DELETE /api/community/posts/{id}` — nur innerhalb 15 Minuten editierbar, nur eigene löschbar | `❌` | - | `backend/src/community/` |
-| **M2-BE.4** | Content Report API | `POST /api/community/posts/{id}/report` — User meldet Post | `❌` | - | `backend/src/community/` |
+| **M2-BE.1** | Content Moderation (`moderation.rs`) | Ammonia HTML-Sanitizer, Keyword-Filter ("guaranteed returns", "risk-free"), Spam-Detection, Investment-Disclaimer | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M2-BE.2** | User Posts CRUD | `POST /api/community/posts` — User-Posts mit Moderation-Pipeline (Sanitize → Keyword-Check → Disclaimer → Save) | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M2-BE.3** | Post Edit/Delete (eigene) | `PUT /DELETE /api/community/posts/{id}` — nur innerhalb 15 Minuten editierbar, nur eigene löschbar | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M2-BE.4** | Content Report API | `POST /api/community/posts/{id}/report` — User meldet Post | `✅ DONE` | Antigravity | `backend/src/community/` |
 | **M2-BE.5** | Image Upload | Upload bis zu 4 Bilder pro Post via GCS, Validierung (Dateityp, Größe <5MB) | `❌` | - | `backend/src/community/` |
 | **M2-BE.6** | Admin Moderation API | `GET /api/admin/community/reports` + `POST .../action` — Reports bearbeiten, Posts verstecken/löschen | `❌` | - | `backend/src/admin/` |
 | **M2-BE.7** | Post Rate Limiting | Redis-basiert: max 5 Posts/Stunde, Duplicate-Detection | `❌` | - | `backend/src/community/` |
@@ -229,9 +229,9 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 
 | ID | Task | Description | Status | File Zone |
 |:---|:---|:---|:---|:---|
-| **M2-FE.1** | "Create Post" Component | Post-Erstellungs-UI: Textarea, Bild-Upload, Post-Type Selector | `❌` | `frontend/platform/static/js/` |
-| **M2-FE.2** | Post Report Button | "Report" Flag auf jedem Post, Report-Reason Modal | `❌` | `frontend/platform/static/js/` |
-| **M2-FE.3** | Disclaimer Banner | Automatischer Disclaimer unter Investment-bezogenen Posts (CSS + JS) | `❌` | `frontend/platform/static/css/` |
+| **M2-FE.1** | "Create Post" Component | Post-Erstellungs-UI: Textarea, Bild-Upload, Post-Type Selector | `✅ DONE` | `frontend/platform/static/js/` |
+| **M2-FE.2** | Post Report Button | "Report" Flag auf jedem Post, Report-Reason Modal | `✅ DONE` | `frontend/platform/static/js/` |
+| **M2-FE.3** | Disclaimer Banner | Automatischer Disclaimer unter Investment-bezogenen Posts (CSS + JS) | `✅ DONE` | `frontend/platform/static/css/` |
 | **M2-FE.4** | Trending Assets Widget | Sidebar widget showing top 3 most-discussed assets in the last 24h, linking to trading page. | `❌` | `frontend/platform/static/js/` |
 
 ### M2-ADMIN: Admin Dashboard (+4 Seiten → gesamt 6)

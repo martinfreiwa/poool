@@ -2493,6 +2493,7 @@ dependencies = [
  "oauth2",
  "rand 0.8.5",
  "redis",
+ "regex",
  "reqwest",
  "rust_decimal",
  "sentry",

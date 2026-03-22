@@ -1,6 +1,7 @@
-/// Community Module (Phase M1)
+/// Community Module (Phase M1/M2)
 /// Handles announcements, reactions, comments, and community profiles.
 pub mod models;
+pub mod moderation;
 pub mod routes;
 pub mod service;
 pub mod user_bridge;

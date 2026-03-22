@@ -63,6 +63,15 @@ else
     DB_PORT="5432"
 fi
 
+# Override host if specified in query string parameters (e.g. for Cloud SQL unix sockets)
+if echo "$DB_NAMEQUERY" | grep -q 'host='; then
+    DB_HOST_OVERRIDE=$(echo "$DB_NAMEQUERY" | grep -o 'host=[^&]*' | cut -d= -f2-)
+    if [ -n "$DB_HOST_OVERRIDE" ]; then
+        DB_HOST="$DB_HOST_OVERRIDE"
+        echo "PgBouncer: Extracted host override from query string: $DB_HOST"
+    fi
+fi
+
 echo "PgBouncer: Proxying to ${DB_HOST}:${DB_PORT}/${DB_NAME} as ${DB_USER}"
 
 # ── Generate PgBouncer config ─────────────────────────────────────

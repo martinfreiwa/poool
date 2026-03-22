@@ -138,14 +138,27 @@ function renderSubmission(data) {
 
   // Conditionally show/hide video and maps checklist items
   toggleConditionalChecklist(asset);
-
   // Wire up action buttons
-  document.getElementById("btn-approve").onclick = () =>
-    handleDecision("approve");
-  document.getElementById("btn-reject").onclick = () =>
-    handleDecision("reject");
-  document.getElementById("btn-revise").onclick = () =>
-    handleDecision("request_revision");
+  const btnApprove = document.getElementById("btn-approve");
+  const btnTokenize = document.getElementById("btn-tokenize");
+
+  if (btnTokenize) {
+    btnTokenize.style.display = "inline-flex";
+    btnTokenize.onclick = () => {
+      window.location.href = `/admin/asset-tokenize.html?id=${asset.id}`;
+    };
+  }
+
+  if (btnApprove) {
+    btnApprove.onclick = () => handleDecision("approve");
+  }
+
+  const btnReject = document.getElementById("btn-reject");
+  if (btnReject) btnReject.onclick = () => handleDecision("reject");
+  
+  const btnRevise = document.getElementById("btn-revise");
+  if (btnRevise) btnRevise.onclick = () => handleDecision("request_revision");
+  
   const inReviewBtn = document.getElementById("btn-in-review");
   if (inReviewBtn) {
     inReviewBtn.onclick = () => handleDecision("in_review");

@@ -79,3 +79,46 @@ pub struct AnnouncementDisplay {
     pub is_pinned: bool,
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreatePostRequest {
+    pub post_type: String, // 'general' or 'market_insight'
+    pub content: String,
+    pub asset_id: Option<Uuid>,
+    pub image_urls: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PostDisplay {
+    pub id: Uuid,
+    pub author_name: String,
+    pub author_id: Uuid,
+    pub author_avatar: Option<String>,
+    pub post_type: String,
+    pub content: String,
+    pub asset_id: Option<Uuid>,
+    pub image_urls: Vec<String>,
+    pub reaction_count: i32,
+    pub comment_count: i32,
+    pub is_hidden: bool,
+    pub is_pinned: bool,
+    pub disclaimer_shown: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ContentReport {
+    pub id: Uuid,
+    pub post_id: Uuid,
+    pub reporter_id: Uuid,
+    pub reason: String,
+    pub status: String,
+    pub admin_notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateContentReportRequest {
+    pub reason: String,
+}

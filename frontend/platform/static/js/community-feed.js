@@ -120,6 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const parts = p.author_name.split(' ');
                     initials = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0, 2);
                 }
+                
+                let typeBadge = '';
+                if (p.post_type === 'announcement') typeBadge = '<span class="feed-post-badge feed-post-badge--announcement" style="margin-left: 8px;">Announcement</span>';
+                else if (p.post_type === 'market_insight') typeBadge = '<span class="feed-post-badge" style="background:#F0FDF4;color:#027A48;border:1px solid #D1FADF;margin-left: 8px;">Market Insight</span>';
+                else if (p.post_type === 'review') typeBadge = '<span class="feed-post-badge" style="background:#FFF9C4;color:#F57F17;border:1px solid #FFF59D;margin-left: 8px;">Review</span>';
 
                 html += `
                 <div class="feed-post">
@@ -135,13 +140,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
                         ${p.is_pinned ? '<span class="feed-post-badge" style="background:#FFF0ED;color:#DC6803;border:1px solid #FFD8CF;">Pinned</span>' : ''}
-                        <span class="feed-post-badge feed-post-badge--announcement" style="margin-left: 8px;">Announcement</span>
+                        ${typeBadge}
                     </div>
                     <div class="feed-post-body">
                         ${p.content}
                         ${p.image_urls && p.image_urls.length > 0 ? 
                             `<div style="margin-top: 16px;"><img src="${p.image_urls[0]}" style="max-width: 100%; border-radius: 12px; border: 1px solid #EAECF0;"></div>` : ''
                         }
+                        ${p.disclaimer_shown ? `<div class="feed-post-disclaimer" style="font-size:12px; color:#667085; background:#F9FAFB; padding:8px 12px; border-radius:6px; margin-top:12px; border:1px solid #EAECF0;"><em>⚠️ Disclaimer: This post contains community generated investment discussion. Do your own research, past performance does not guarantee future results.</em></div>` : ''}
                     </div>
                     <div class="feed-post-engagement" style="margin-top: 20px; border-top: 1px solid #EAECF0; padding-top: 16px;">
                         <div class="feed-post-reactions">
@@ -149,7 +155,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="feed-reaction-btn" onclick="toggleReaction('${p.id}', this, 'idea')">💡 <span>0</span></button>
                             <button class="feed-reaction-btn" onclick="toggleReaction('${p.id}', this, 'clap')">👏 <span>0</span></button>
                         </div>
-                        <div class="feed-post-stats" style="cursor:pointer;" onclick="toggleComments('${p.id}')"><span>${p.reaction_count || 0} reactions</span> · <span>${p.comment_count || 0} comments</span></div>
+                        <div style="display: flex; gap: 16px; align-items: center;">
+                            <div class="feed-post-stats" style="cursor:pointer;" onclick="toggleComments('${p.id}')"><span>${p.reaction_count || 0} reactions</span> · <span>${p.comment_count || 0} comments</span></div>
+                            <button class="ds-btn ds-btn--ghost ds-btn--sm" title="Report Post" onclick="openReportModal('${p.id}')" style="padding:4px; height:auto; border:none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98A2B3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     
                     <div id="comments-section-${p.id}" style="display: none; padding-top: 16px;">
@@ -161,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="ds-btn ds-btn--primary" onclick="submitComment('${p.id}')" style="height: 40px; padding: 0 16px;">Post</button>
                         </div>
                     </div>
-
                 </div>
                 `;
             }
@@ -254,6 +266,99 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(e);
             alert("Failed to post comment: " + e.message);
             input.disabled = false;
+        }
+    };
+
+    // ─── M2 CREATE POST & REPORT LOGIC ─────────────────────────────
+    
+    window.selectPostType = function(btn) {
+        document.querySelectorAll('.post-type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('post-type-input').value = btn.getAttribute('data-type');
+    };
+
+    const contentInput = document.getElementById('post-content-input');
+    if (contentInput) {
+        contentInput.addEventListener('input', () => {
+            const val = contentInput.value.toLowerCase();
+            const investmentKeywords = ["invest", "return", "yield", "profit", "dividend", "roi", "price target", "buy now", "sell now"];
+            const needsDisclaimer = investmentKeywords.some(k => val.includes(k));
+            document.getElementById('post-disclaimer-warning').style.display = needsDisclaimer ? 'block' : 'none';
+        });
+    }
+
+    const createPostBox = document.querySelector('.community-create-post');
+    if (createPostBox) {
+        createPostBox.addEventListener('click', () => {
+            document.getElementById('create-post-modal').style.display = 'block';
+        });
+    }
+
+    window.submitUserPost = async function() {
+        const postType = document.getElementById('post-type-input').value;
+        const content = document.getElementById('post-content-input').value.trim();
+        const imageUrl = document.getElementById('post-image-url-input').value.trim();
+        
+        if (!content) return alert("Content cannot be empty");
+        
+        const requestBody = {
+            post_type: postType,
+            content: content,
+            asset_id: null,
+            image_urls: imageUrl ? [imageUrl] : null
+        };
+        
+        try {
+            const res = await fetch('/api/community/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err);
+            }
+            
+            document.getElementById('create-post-modal').style.display = 'none';
+            document.getElementById('post-content-input').value = '';
+            document.getElementById('post-image-url-input').value = '';
+            document.getElementById('post-disclaimer-warning').style.display = 'none';
+            
+            // Refresh feed
+            loadFeed();
+        } catch (e) {
+            console.error(e);
+            alert("Failed to submit post: " + e.message);
+        }
+    };
+
+    window.openReportModal = function(postId) {
+        document.getElementById('report-post-id').value = postId;
+        document.getElementById('report-post-modal').style.display = 'block';
+    };
+
+    window.submitReport = async function() {
+        const postId = document.getElementById('report-post-id').value;
+        const reason = document.getElementById('report-reason').value;
+        
+        try {
+            const res = await fetch(`/api/community/posts/${postId}/report`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+            
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err);
+            }
+            
+            document.getElementById('report-post-modal').style.display = 'none';
+            alert('Report submitted successfully. Our team will review it shortly.');
+        } catch (e) {
+            console.error(e);
+            alert("Failed to submit report: " + e.message);
         }
     };
 

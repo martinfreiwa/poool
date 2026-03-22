@@ -3,7 +3,7 @@ use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-/// Gets the chronological announcement feed, paginated.
+/// Gets the chronological feed, paginated.
 pub async fn get_announcement_feed(
     pool: &PgPool,
     category: Option<String>,
@@ -17,10 +17,9 @@ pub async fn get_announcement_feed(
             r#"
             SELECT p.*
             FROM posts p
-            JOIN announcement_categories ac ON ac.post_id = p.id
-            WHERE p.post_type = 'announcement'
-              AND p.is_hidden = false
-              AND ac.category = $1
+            LEFT JOIN announcement_categories ac ON ac.post_id = p.id
+            WHERE p.is_hidden = false
+              AND (ac.category = $1 OR $1 = '')
             ORDER BY p.is_pinned DESC, p.created_at DESC
             LIMIT $2 OFFSET $3
             "#,
@@ -35,8 +34,7 @@ pub async fn get_announcement_feed(
             r#"
             SELECT *
             FROM posts
-            WHERE post_type = 'announcement'
-              AND is_hidden = false
+            WHERE is_hidden = false
             ORDER BY is_pinned DESC, created_at DESC
             LIMIT $1 OFFSET $2
             "#,
@@ -164,4 +162,153 @@ pub async fn create_comment(
         .await?;
 
     Ok(comment_id)
+}
+
+/// User creates a post.
+pub async fn create_user_post(
+    pool: &PgPool,
+    user_id: Uuid,
+    req: crate::community::models::CreatePostRequest,
+    is_high_level_user: bool,
+) -> Result<Uuid, AppError> {
+    let mut tx = pool.begin().await?;
+
+    // Moderate content
+    let mod_result = crate::community::moderation::moderate_content(&req.content, is_high_level_user);
+
+    let post_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO posts (user_id, post_type, content, content_sanitized, asset_id, image_urls, is_hidden, hidden_reason, disclaimer_shown)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id
+        "#,
+    )
+    .bind(user_id)
+    .bind(&req.post_type)
+    .bind(&req.content)
+    .bind(&mod_result.sanitized_content)
+    .bind(req.asset_id)
+    .bind(req.image_urls.as_deref())
+    .bind(mod_result.is_flagged)
+    .bind(&mod_result.flag_reason)
+    .bind(mod_result.needs_disclaimer)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(post_id)
+}
+
+/// User reports a post.
+pub async fn create_content_report(
+    pool: &PgPool,
+    post_id: Uuid,
+    reporter_id: Uuid,
+    reason: String,
+) -> Result<Uuid, AppError> {
+    let report_id = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        INSERT INTO content_reports (post_id, reporter_id, reason)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (post_id, reporter_id) DO NOTHING
+        RETURNING id
+        "#,
+    )
+    .bind(post_id)
+    .bind(reporter_id)
+    .bind(&reason)
+    .fetch_optional(pool)
+    .await?;
+
+    // If it was already reported, just return a dummy UUID (or the actual one if we fetched it, but ON CONFLICT DO NOTHING returns nothing)
+    Ok(report_id.unwrap_or_else(Uuid::new_v4))
+}
+
+/// Edit a user post (must be within 15 minutes of creation)
+pub async fn update_user_post(
+    pool: &PgPool,
+    post_id: Uuid,
+    user_id: Uuid,
+    new_content: String,
+    is_high_level_user: bool,
+) -> Result<(), AppError> {
+    let mut tx = pool.begin().await?;
+
+    use sqlx::Row;
+
+    // Check ownership and time
+    let post = sqlx::query(
+        "SELECT user_id, created_at FROM posts WHERE id = $1 FOR UPDATE"
+    )
+    .bind(post_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Post not found".to_string()))?;
+
+    let post_user_id: Uuid = post.try_get("user_id")?;
+    let created_at: chrono::DateTime<chrono::Utc> = post.try_get("created_at")?;
+
+    if post_user_id != user_id {
+        return Err(AppError::Forbidden("You can only edit your own posts".to_string()));
+    }
+
+    let now = chrono::Utc::now();
+    if (now - created_at).num_minutes() > 15 {
+        return Err(AppError::BadRequest("Posts can only be edited within 15 minutes of creation".to_string()));
+    }
+
+    let mod_result = crate::community::moderation::moderate_content(&new_content, is_high_level_user);
+
+    sqlx::query(
+        r#"
+        UPDATE posts 
+        SET content = $1, content_sanitized = $2, is_hidden = $3, hidden_reason = $4, disclaimer_shown = $5, updated_at = NOW()
+        WHERE id = $6
+        "#
+    )
+    .bind(&new_content)
+    .bind(&mod_result.sanitized_content)
+    .bind(mod_result.is_flagged)
+    .bind(&mod_result.flag_reason)
+    .bind(mod_result.needs_disclaimer)
+    .bind(post_id)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+    Ok(())
+}
+
+/// Delete a user post (must be owner)
+pub async fn delete_user_post(
+    pool: &PgPool,
+    post_id: Uuid,
+    user_id: Uuid,
+) -> Result<(), AppError> {
+    let mut tx = pool.begin().await?;
+
+    use sqlx::Row;
+
+    let post = sqlx::query(
+        "SELECT user_id FROM posts WHERE id = $1 FOR UPDATE"
+    )
+    .bind(post_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Post not found".to_string()))?;
+
+    let post_user_id: Uuid = post.try_get("user_id")?;
+
+    if post_user_id != user_id {
+        return Err(AppError::Forbidden("You can only delete your own posts".to_string()));
+    }
+
+    sqlx::query("DELETE FROM posts WHERE id = $1")
+        .bind(post_id)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+    Ok(())
 }

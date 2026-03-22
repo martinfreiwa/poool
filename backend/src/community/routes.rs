@@ -74,18 +74,22 @@ async fn get_feed(
     let mut feed = Vec::with_capacity(posts.len());
     for p in posts {
         let author = authors.get(&p.user_id);
-        feed.push(AnnouncementDisplay {
+        feed.push(PostDisplay {
             id: p.id,
             author_name: author
                 .map(|a| a.display_name.clone())
                 .unwrap_or_else(|| "Anonymous".into()),
+            author_id: p.user_id,
             author_avatar: author.and_then(|a| a.avatar_url.clone()),
-            category: "announcement".to_string(), // M1 MVP limitation logic
-            content: p.content,
+            post_type: p.post_type.clone(),
+            content: p.content_sanitized.unwrap_or(p.content),
+            asset_id: p.asset_id,
             image_urls: p.image_urls.unwrap_or_default(),
             reaction_count: p.reaction_count,
             comment_count: p.comment_count,
+            is_hidden: p.is_hidden,
             is_pinned: p.is_pinned,
+            disclaimer_shown: p.disclaimer_shown,
             created_at: p.created_at,
         });
     }
@@ -230,6 +234,81 @@ async fn get_admin_stats(
     })))
 }
 
+async fn create_user_post(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(payload): Json<CreatePostRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    // We can assume high_level = false for now until M4 XP system is in place
+    let is_high_level_user = false;
+
+    let post_id = service::create_user_post(&c_pool, user.id, payload, is_high_level_user).await?;
+
+    Ok(Json(serde_json::json!({ "id": post_id })))
+}
+
+#[derive(Deserialize)]
+pub struct UpdatePostReq {
+    pub content: String,
+}
+
+async fn update_user_post(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+    Json(payload): Json<UpdatePostReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let is_high_level_user = false;
+
+    service::update_user_post(&c_pool, post_id, user.id, payload.content, is_high_level_user).await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+async fn delete_user_post(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    service::delete_user_post(&c_pool, post_id, user.id).await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+async fn create_content_report(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+    Json(payload): Json<CreateContentReportRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    let report_id = service::create_content_report(&c_pool, post_id, user.id, payload.reason).await?;
+
+    Ok(Json(serde_json::json!({ "id": report_id })))
+}
+
 // ─── Router Configuration ────────────────────────────────────────────────────
 
 pub fn router() -> Router<AppState> {
@@ -241,6 +320,10 @@ pub fn router() -> Router<AppState> {
             "/api/admin/community/announcements",
             post(create_announcement),
         )
+        // User Posts
+        .route("/api/community/posts", post(create_user_post))
+        .route("/api/community/posts/:id", axum::routing::put(update_user_post).delete(delete_user_post))
+        .route("/api/community/posts/:id/report", post(create_content_report))
         // Reactions
         .route("/api/community/posts/:id/reactions", post(toggle_reaction))
         // Comments

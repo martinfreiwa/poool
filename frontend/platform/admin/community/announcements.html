@@ -13,6 +13,28 @@
   <script src="/static/js/admin-permission-guard.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <!-- Quill Editor -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <style>
+      .ql-toolbar.ql-snow {
+          border: 1px solid var(--input-border-color);
+          border-top-left-radius: 8px;
+          border-top-right-radius: 8px;
+          background: #F9FAFB;
+      }
+      .ql-container.ql-snow {
+          border: 1px solid var(--input-border-color);
+          border-top: none;
+          border-bottom-left-radius: 8px;
+          border-bottom-right-radius: 8px;
+          background: #FFF;
+          font-family: var(--font-family);
+          font-size: 15px;
+      }
+      .ql-editor {
+          min-height: 180px;
+      }
+  </style>
 </head>
 
 <body class="admin-body dom-ready">
@@ -81,44 +103,109 @@
   </div>
 
   <!-- Create Modal -->
-  <div id="create-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
-    <div style="background:var(--admin-card-bg); width: 100%; max-width: 600px; border-radius:12px; border:1px solid var(--admin-border-light); padding: 24px;">
-      <h2 style="margin-bottom:16px;">Create Announcement</h2>
+  <div id="create-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(16,24,40,0.6); backdrop-filter:blur(4px); z-index:9999; justify-content:center; align-items:flex-start; padding-top: 5vh; overflow-y:auto;">
+    
+    <div style="background:var(--admin-card-bg); width: 100%; max-width: 900px; border-radius:12px; border:1px solid var(--admin-border-light); display:flex; flex-direction:column; box-shadow: 0 20px 24px -4px rgba(16, 24, 40, 0.08);">
       
-      <form id="create-form">
-        <div style="margin-bottom:16px;">
-          <label style="display:block; margin-bottom:6px; font-weight:500;">Category</label>
-          <select id="ann-category" class="admin-input" required>
-            <option value="platform_updates">Platform Update</option>
-            <option value="new_commodities">New Commodity</option>
-            <option value="dividends">Dividend Update</option>
-            <option value="market_news">Market News</option>
-          </select>
-        </div>
+      <!-- Modal Header -->
+      <div style="padding: 24px; border-bottom: 1px solid var(--admin-border-light); display:flex; justify-content:space-between; align-items:center;">
+          <div>
+              <h2 style="margin:0; font-size: 18px; color:#101828;">Create New Announcement</h2>
+              <span style="font-size:14px; color:#667085;">It will be published immediately to all investors.</span>
+          </div>
+          <button onclick="document.getElementById('create-modal').style.display='none'" style="background:none; border:none; cursor:pointer; color:#98A2B3;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+      </div>
 
-        <div style="margin-bottom:16px;">
-          <label style="display:block; margin-bottom:6px; font-weight:500;">Message Content</label>
-          <!-- Admin can type strong to bold things, we'll allow basic html input -->
-          <textarea id="ann-content" class="admin-input" rows="6" placeholder="Enter content. You can use <strong>text</strong> for bold text..." required></textarea>
-        </div>
+      <div style="display:flex; flex-wrap:wrap;">
+          <!-- Left: Form -->
+          <form id="create-form" style="flex: 1; padding: 24px; min-width:300px;">
+            <div style="margin-bottom:20px;">
+              <label style="display:block; margin-bottom:6px; font-weight:500; color:#344054;">Category</label>
+              <!-- Fixed values to match PostgreSQL constraints exactly -->
+              <select id="ann-category" class="admin-input" style="width:100%" required>
+                <option value="platform_update">Platform Update</option>
+                <option value="new_commodity">New Commodity</option>
+                <option value="dividend">Dividend Update</option>
+                <option value="market_news">Market News</option>
+                <option value="farm_update">Farm Update</option>
+              </select>
+            </div>
 
-        <div style="margin-bottom:16px;">
-            <label style="display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" id="ann-pin">
-                <span>Pin to top of feed?</span>
-            </label>
-        </div>
+            <div style="margin-bottom:20px;">
+              <label style="display:block; margin-bottom:6px; font-weight:500; color:#344054;">Message Content</label>
+              <!-- Quill Container -->
+              <div id="editor-container"></div>
+            </div>
 
-        <div style="display:flex; gap:12px; justify-content:flex-end;">
-          <button type="button" class="admin-btn admin-btn--secondary" onclick="document.getElementById('create-modal').style.display='none'">Cancel</button>
-          <button type="submit" class="admin-btn admin-btn--primary">Post to Community</button>
-        </div>
-      </form>
+            <div style="margin-bottom:24px; background:#F9FAFB; padding:12px; border-radius:8px; border:1px solid #EAECF0;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="ann-pin" style="width:16px; height:16px;">
+                    <div>
+                        <span style="font-weight:500; color:#344054; display:block;">Pin to top of feed</span>
+                        <span style="font-size:13px; color:#667085;">This announcement will stay above all other posts.</span>
+                    </div>
+                </label>
+            </div>
+
+            <div style="display:flex; gap:12px; justify-content:flex-end;">
+              <button type="button" class="admin-btn admin-btn--secondary" onclick="document.getElementById('create-modal').style.display='none'">Cancel</button>
+              <button type="submit" class="admin-btn admin-btn--primary">Publish to Feed</button>
+            </div>
+          </form>
+
+          <!-- Right: Live Preview -->
+          <div style="flex: 1; padding: 24px; background: #F9FAFB; min-width:300px; border-left: 1px solid var(--admin-border-light);">
+              <label style="display:block; margin-bottom:16px; font-weight:500; color:#344054;">Live Preview</label>
+              
+              <!-- Mock Feed Post -->
+              <div style="background:#FFF; border:1px solid #EAECF0; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(16,24,40,0.05);">
+                  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                      <div style="display:flex; gap:12px; align-items:center;">
+                          <div style="width:40px; height:40px; border-radius:50%; background:#eef4ff; color:#3538cd; display:flex; align-items:center; justify-content:center;">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                          </div>
+                          <div>
+                              <div style="font-weight:600; font-size:14px; color:#101828;">POOOL Team <span style="font-size:10px; background:#ecfdf3; color:#027A48; padding:2px 6px; border-radius:10px; margin-left:4px;">Official</span></div>
+                              <div style="font-size:12px; color:#667085;">Just now</div>
+                          </div>
+                      </div>
+                      <span id="preview-badge" style="font-size:11px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; padding:4px 8px; border-radius:12px; background:#F2F4F7; color:#344054;">UPDATE</span>
+                  </div>
+                  
+                  <div id="preview-content" style="font-size:15px; line-height:1.6; color:#101828;">
+                      <span style="color:#98A2B3; font-style:italic;">Start typing to see the preview...</span>
+                  </div>
+                  
+                  <div style="margin-top:20px; padding-top:16px; border-top:1px solid #EAECF0; display:flex; gap:12px;">
+                      <span style="font-size:13px; color:#667085; display:flex; align-items:center; gap:4px;">🔥 0</span>
+                      <span style="font-size:13px; color:#667085; display:flex; align-items:center; gap:4px;">💬 0</span>
+                  </div>
+              </div>
+          </div>
+      </div>
     </div>
   </div>
 
+  <!-- Quill JS -->
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
+        // Initialize Quill
+        var quill = new Quill('#editor-container', {
+          theme: 'snow',
+          placeholder: 'Write your announcement...',
+          modules: {
+            toolbar: [
+              [{ 'header': [1, 2, 3, false] }],
+              ['bold', 'italic', 'underline', 'strike'],
+              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+              ['link', 'clean']
+            ]
+          }
+        });
+
         const loadAll = async () => {
             const tbody = document.getElementById('announcements-table');
             try {
@@ -163,12 +250,42 @@
 
         await loadAll();
 
+        // Live Preview Logic
+        const categoryInput = document.getElementById('ann-category');
+        const previewContent = document.getElementById('preview-content');
+        const previewBadge = document.getElementById('preview-badge');
+
+        const updatePreview = () => {
+            const raw = quill.root.innerHTML;
+            const textContent = quill.getText().trim();
+
+            if(!textContent) {
+                previewContent.innerHTML = '<span style="color:#98A2B3; font-style:italic;">Start typing to see the preview...</span>';
+            } else {
+                previewContent.innerHTML = raw; 
+            }
+            
+            const cat = categoryInput.options[categoryInput.selectedIndex].text;
+            previewBadge.textContent = cat;
+        };
+
+        quill.on('text-change', updatePreview);
+        categoryInput.addEventListener('change', updatePreview);
+
         document.getElementById('create-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // Validate Quill has content
+            const textContent = quill.getText().trim();
+            if (!textContent) {
+                alert("Please enter message content.");
+                return;
+            }
+
             const btn = e.target.querySelector('button[type="submit"]');
             
             const payload = {
-                content: document.getElementById('ann-content').value,
+                content: quill.root.innerHTML,
                 category: document.getElementById('ann-category').value,
                 is_pinned: document.getElementById('ann-pin').checked,
                 image_urls: null
@@ -185,7 +302,7 @@
                 });
                 if(!res.ok) throw new Error(await res.text());
                 
-                document.getElementById('ann-content').value = '';
+                quill.root.innerHTML = '';
                 document.getElementById('create-modal').style.display = 'none';
                 await loadAll(); // refresh table
             } catch(error) {
