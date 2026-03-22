@@ -28,6 +28,7 @@ const MarketChart = (function () {
   // ═══════════════════════════════════════════════════════════════
 
   async function fetchCandles(assetId, interval) {
+    if (!assetId) return null;
     try {
       const res = await fetch(
         `/api/marketplace/${assetId}/candles?interval=${interval}`
@@ -41,6 +42,7 @@ const MarketChart = (function () {
   }
 
   async function fetchChartSummary(assetId) {
+    if (!assetId) return null;
     try {
       const res = await fetch(
         `/api/marketplace/${assetId}/chart-summary`

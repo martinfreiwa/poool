@@ -21,6 +21,8 @@ pub struct Post {
     pub is_hidden: bool,
     pub hidden_reason: Option<String>,
     pub disclaimer_shown: bool,
+    pub is_locked: Option<bool>,
+    pub content_tags: Option<Vec<String>>,
     pub reaction_count: i32,
     pub comment_count: i32,
     pub created_at: DateTime<Utc>,
@@ -36,6 +38,7 @@ pub struct Comment {
     pub content_sanitized: Option<String>,
     pub helpful_count: i32,
     pub is_hidden: bool,
+    pub is_pinned: Option<bool>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -48,7 +51,7 @@ pub struct Reaction {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct CommunityProfile {
     pub user_id: Uuid,
     pub bio: Option<String>,
@@ -59,8 +62,10 @@ pub struct CommunityProfile {
     pub post_count: i32,
     pub follower_count: i32,
     pub following_count: i32,
-    pub login_streak: i32,
-    pub last_login_date: Option<chrono::NaiveDate>,
+    pub total_xp: i32,
+    pub tier: i32,
+    pub muted_until: Option<DateTime<Utc>>,
+    pub mod_notes: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -80,7 +85,7 @@ pub struct AnnouncementDisplay {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CreatePostRequest {
     pub post_type: String, // 'general' or 'market_insight'
     pub content: String,

@@ -58,6 +58,9 @@ include
 
 
 <body id="community-body" class="fouc-guard">
+  <script>
+    window.SSR_POST_ID = '{{ ssr_post_id | default("") }}';
+  </script>
   {% include 'components/mobile-menu.html' %}
 
   <div class="community-page">
@@ -92,11 +95,30 @@ include
             var panel = document.getElementById(clickedBtn.getAttribute('data-tab'));
             if (panel) panel.classList.remove('hidden');
           }
+          
+          window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab');
+            if (tab) {
+              const targetTab = document.querySelector(`.community-tab-btn[data-tab="community-${tab}-tab"]`);
+              if (targetTab) {
+                switchCommunityTab(targetTab);
+              }
+            } else {
+              // Default to feed
+              const feedTab = document.querySelector('.community-tab-btn[data-tab="community-feed-tab"]');
+              if (feedTab) switchCommunityTab(feedTab);
+            }
+          });
         </script>
         <div class="community-tab-nav">
           <button type="button" class="community-tab-btn active" data-tab="community-feed-tab"
             onclick="switchCommunityTab(this)">
             Feed
+          </button>
+          <button type="button" class="community-tab-btn" data-tab="community-search-tab"
+            onclick="switchCommunityTab(this)">
+            Search
           </button>
           <button type="button" class="community-tab-btn" data-tab="community-announcements-tab"
             onclick="switchCommunityTab(this)">
@@ -110,11 +132,149 @@ include
             onclick="switchCommunityTab(this)">
             Expert AMAs
           </button>
-          <button type="button" class="community-tab-btn" data-tab="community-reviews-tab"
+          <button type="button" class="community-tab-btn" data-tab="community-challenges-tab"
             onclick="switchCommunityTab(this)">
-            Reviews
+            Challenges
+          </button>
+          <button type="button" class="community-tab-btn" data-tab="community-notifications-tab"
+            onclick="switchCommunityTab(this)">
+            Notifications
           </button>
         </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB: SEARCH
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="community-search-tab" class="community-tab-panel hidden" x-data="communitySearch()">
+          <div class="community-content-layout" style="display: block; max-width: 800px; margin: 0 auto; padding-bottom: 60px;">
+            
+            <div style="margin-bottom: 24px;">
+              <h2 style="font-family: var(--font-heading); font-size: 24px; color: var(--text-primary); margin-bottom: 16px;">Search Community</h2>
+              <form @submit.prevent="executeSearch()" style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <input type="text" x-model="query" class="ds-input" placeholder="Search keywords, hashtags, users..." style="flex: 1; padding: 12px; font-size: 16px;">
+                <button type="submit" class="ds-btn ds-btn--primary" style="padding: 12px 24px; height: auto;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+              </form>
+              
+              <div style="display: flex; gap: 8px;">
+                <button type="button" @click="setType('all')" :class="type === 'all' ? 'ds-btn--primary' : 'ds-btn--secondary'" class="ds-btn ds-btn--sm">All</button>
+                <button type="button" @click="setType('posts')" :class="type === 'posts' ? 'ds-btn--primary' : 'ds-btn--secondary'" class="ds-btn ds-btn--sm">Posts</button>
+                <button type="button" @click="setType('users')" :class="type === 'users' ? 'ds-btn--primary' : 'ds-btn--secondary'" class="ds-btn ds-btn--sm">Users</button>
+              </div>
+            </div>
+
+            <!-- Loading State -->
+            <div x-show="loading" style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+               Searching...
+            </div>
+
+            <div x-show="!loading && hasSearched">
+                <!-- Users Results -->
+                <div x-show="users.length > 0 && (type === 'all' || type === 'users')" style="margin-bottom: 32px;">
+                    <h3 style="font-size: 18px; color: var(--text-primary); margin-bottom: 16px;">Users</h3>
+                    <div style="display: grid; gap: 12px;">
+                        <template x-for="u in users" :key="u.user_id">
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: white; border: 1px solid var(--card-border-color); border-radius: 12px; cursor: pointer;" @click="window.location.href='/community/feed?profile=' + u.user_id">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <template x-if="u.avatar_url">
+                                        <img :src="u.avatar_url" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                                    </template>
+                                    <template x-if="!u.avatar_url">
+                                        <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--bg-secondary); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px;" x-text="u.display_name.charAt(0)"></div>
+                                    </template>
+                                    <div>
+                                        <div style="font-weight: 600; color: var(--text-primary);" x-text="u.display_name"></div>
+                                        <div style="font-size: 13px; color: var(--text-secondary);" x-text="u.follower_count + ' Followers'"></div>
+                                    </div>
+                                </div>
+                                <button class="ds-btn ds-btn--secondary ds-btn--sm" @click.stop="">Follow</button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Posts Results -->
+                <div x-show="posts.length > 0 && (type === 'all' || type === 'posts')">
+                    <h3 style="font-size: 18px; color: var(--text-primary); margin-bottom: 16px;">Posts</h3>
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <template x-for="p in posts" :key="p.id">
+                            <div class="feed-post-card" @click="window.location.href='/community/feed?post=' + p.id">
+                                <div class="feed-post-header">
+                                    <div class="feed-post-avatar-wrapper">
+                                        <template x-if="p.author_avatar">
+                                            <img :src="p.author_avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                        </template>
+                                        <template x-if="!p.author_avatar">
+                                            <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-secondary); color: var(--text-secondary); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px;" x-text="p.author_name.charAt(0)"></div>
+                                        </template>
+                                    </div>
+                                    <div class="feed-post-author-info">
+                                        <div class="feed-post-author-name" x-text="p.author_name"></div>
+                                        <div class="feed-post-meta" x-text="new Date(p.created_at).toLocaleDateString()"></div>
+                                    </div>
+                                </div>
+                                <div class="feed-post-body">
+                                    <div class="feed-post-text" x-html="p.content" style="max-height: 100px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; line-clamp: 4; -webkit-box-orient: vertical;"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div x-show="users.length === 0 && posts.length === 0" style="text-align: center; padding: 40px; background: #F9FAFB; border-radius: 12px; border: 1px dashed #D0D5DD;">
+                  <p style="color: var(--text-tertiary); margin: 0;">No results found for your search.</p>
+                </div>
+            </div>
+
+          </div>
+        </div>
+
+        <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('communitySearch', () => ({
+                query: '',
+                type: 'all',
+                loading: false,
+                hasSearched: false,
+                users: [],
+                posts: [],
+                
+                setType(newType) {
+                    this.type = newType;
+                    if (this.query.trim() !== '') {
+                        this.executeSearch();
+                    }
+                },
+
+                async executeSearch() {
+                    const q = this.query.trim();
+                    if (!q) return;
+
+                    this.loading = true;
+                    this.hasSearched = true;
+                    
+                    try {
+                        const url = new URL('/api/community/search', window.location.origin);
+                        url.searchParams.set('q', q);
+                        url.searchParams.set('type', this.type);
+                        
+                        const res = await fetch(url.toString());
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.users = data.users || [];
+                            this.posts = data.posts || [];
+                        }
+                    } catch (e) {
+                        console.error('Search failed', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }));
+        });
+        </script>
 
         <!-- ═══════════════════════════════════════════════════════════
              TAB 1: FEED
@@ -126,9 +286,16 @@ include
             <div class="community-feed">
 
               <!-- Feed Toggle (M3-FE.3) -->
-              <div style="display:flex; gap:12px; margin-bottom: 24px;">
-                <button type="button" class="ds-btn ds-btn--primary" id="feed-btn-all" onclick="setFeedMode('all')" style="flex:1;">All Posts</button>
-                <button type="button" class="ds-btn ds-btn--secondary" id="feed-btn-following" onclick="setFeedMode('following')" style="flex:1;">Following</button>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+                <div style="display:flex; gap:12px; flex: 1; min-width: 200px;">
+                  <button type="button" class="ds-btn ds-btn--primary" id="feed-btn-all" onclick="setFeedMode('all')" style="flex:1;">All Posts</button>
+                  <button type="button" class="ds-btn ds-btn--secondary" id="feed-btn-following" onclick="setFeedMode('following')" style="flex:1;">Following</button>
+                </div>
+                <!-- Sort Toggle -->
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="ds-btn ds-btn--primary ds-btn--sm" id="sort-btn-fresh" onclick="setSortMode('fresh')">✨ Fresh</button>
+                    <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="sort-btn-hot" onclick="setSortMode('hot')">🔥 Hot</button>
+                </div>
               </div>
 
               <!-- Create Post -->
@@ -634,120 +801,222 @@ include
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════
-             TAB 5: REVIEWS
+             TAB 5: CHALLENGES
              ═══════════════════════════════════════════════════════════ -->
-        <div id="community-reviews-tab" class="community-tab-panel hidden" style="position:relative;">
-          <div class="coming-soon-overlay">
-            <div class="coming-soon-content">
-              <div class="coming-soon-icon">✨</div>
-              <h3 class="coming-soon-title">Coming Soon</h3>
-              <p class="coming-soon-text">Read and write reviews from verified investors. We're launching this shortly.</p>
-            </div>
-          </div>
-          <div class="reviews-layout">
-            <!-- Overall Rating -->
-            <div class="reviews-overview-row">
-              <div class="reviews-overview-card">
-                <div class="reviews-overall-score">4.7</div>
-                <div class="reviews-overall-stars">★★★★★</div>
-                <div class="reviews-overall-count">Based on 234 reviews</div>
-              </div>
-              <div class="reviews-breakdown-card">
-                <div class="reviews-bar-row"><span class="reviews-bar-label">5 stars</span>
-                  <div class="reviews-bar-track">
-                    <div class="reviews-bar-fill" style="width:68%;"></div>
-                  </div><span class="reviews-bar-count">159</span>
-                </div>
-                <div class="reviews-bar-row"><span class="reviews-bar-label">4 stars</span>
-                  <div class="reviews-bar-track">
-                    <div class="reviews-bar-fill" style="width:20%;"></div>
-                  </div><span class="reviews-bar-count">47</span>
-                </div>
-                <div class="reviews-bar-row"><span class="reviews-bar-label">3 stars</span>
-                  <div class="reviews-bar-track">
-                    <div class="reviews-bar-fill" style="width:8%;"></div>
-                  </div><span class="reviews-bar-count">19</span>
-                </div>
-                <div class="reviews-bar-row"><span class="reviews-bar-label">2 stars</span>
-                  <div class="reviews-bar-track">
-                    <div class="reviews-bar-fill" style="width:3%;"></div>
-                  </div><span class="reviews-bar-count">6</span>
-                </div>
-                <div class="reviews-bar-row"><span class="reviews-bar-label">1 star</span>
-                  <div class="reviews-bar-track">
-                    <div class="reviews-bar-fill" style="width:1%;"></div>
-                  </div><span class="reviews-bar-count">3</span>
-                </div>
-              </div>
+        <div id="community-challenges-tab" class="community-tab-panel hidden" x-data="communityChallenges()">
+          <div class="community-content-layout" style="display: block; max-width: 800px; margin: 0 auto; padding-bottom: 60px;">
+            
+            <!-- Page Header -->
+            <div style="margin-bottom: 32px; text-align: center;">
+              <h2 style="font-family: var(--font-heading); font-size: 28px; color: var(--text-primary); margin-bottom: 8px;">Gamified Challenges</h2>
+              <p style="color: var(--text-tertiary); font-size: 16px;">Complete quests to earn XP, level up, and unlock exclusive platform features.</p>
             </div>
 
-            <!-- Review Filter -->
-            <div class="reviews-filter-bar">
-              <button class="ann-filter-btn active">All Commodities</button>
-              <button class="ann-filter-btn">🍫 Cocoa</button>
-              <button class="ann-filter-btn">🌲 Timber</button>
-              <button class="ann-filter-btn">🌿 Vanilla</button>
-              <button class="ann-filter-btn">☕ Coffee</button>
+            <!-- Loading State -->
+            <div x-show="loading" style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+              Loading your challenges...
             </div>
 
-            <!-- Reviews List -->
-            <div class="reviews-list">
-              <div class="review-card">
-                <div class="review-header">
-                  <div class="review-author">
-                    <div class="feed-post-avatar-circle" style="background:#C8E6C9;color:#2E7D32;">SF</div>
-                    <div class="review-author-info"><span class="review-author-name">Sarah F.</span><span
-                        class="review-author-badge">✅ Verified Investor · Received Dividend</span></div>
+            <!-- Challenges Grid -->
+            <div x-show="!loading" style="display: grid; gap: 20px;">
+              <template x-for="c in challenges" :key="c.id">
+                <div style="background: white; border: 1px solid #EAECF0; border-radius: 12px; padding: 24px; display: flex; gap: 20px; align-items: center; transition: all 0.2s; box-shadow: 0 1px 3px rgba(16,24,40,0.05);" :style="c.is_completed ? 'border-color: #D1FADF; background: #F8FFF9;' : ''">
+                  
+                  <!-- Icon -->
+                  <div style="width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" :style="c.is_completed ? 'background: #D1FADF; color: #027A48;' : 'background: #F2F4F7; color: #475467;'">
+                    <template x-if="c.is_completed">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    </template>
+                    <template x-if="!c.is_completed">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                    </template>
                   </div>
-                  <div class="review-stars">★★★★★</div>
-                </div>
-                <div class="review-commodity">🍫 Bali Premium Cocoa Fund</div>
-                <p class="review-body">Excellent investment experience! The quarterly updates were detailed and
-                  transparent. Received my first dividend on time — 7.2% for Q1. The farm operator really knows their
-                  stuff. Would invest again in a heartbeat.</p>
-                <div class="review-footer"><span class="review-date">March 10, 2026</span><span
-                    class="review-helpful">💡 24 found this helpful</span></div>
-              </div>
 
-              <div class="review-card">
-                <div class="review-header">
-                  <div class="review-author">
-                    <div class="feed-post-avatar-circle" style="background:#BBDEFB;color:#1565C0;">AK</div>
-                    <div class="review-author-info"><span class="review-author-name">Alex K.</span><span
-                        class="review-author-badge">✅ Verified Investor</span></div>
+                  <!-- Content -->
+                  <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                      <h3 style="font-size: 18px; font-weight: 600; font-family: var(--font-heading); color: var(--text-primary); margin: 0;" x-text="c.title"></h3>
+                      <div style="display: flex; gap: 8px;">
+                        <span style="background: #FEF0C7; color: #B54708; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                          <span x-text="c.xp_reward + ' XP'"></span>
+                        </span>
+                      </div>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 15px; margin: 0 0 16px 0;" x-text="c.description"></p>
+                    
+                    <!-- Progress Bar -->
+                    <div style="position: relative; height: 8px; background: #EAECF0; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+                      <div style="position: absolute; top: 0; left: 0; height: 100%; transition: width 0.5s ease-out;" :style="'background: ' + (c.is_completed ? '#12B76A' : 'var(--brand-blue)') + '; width: ' + Math.min((c.current_value / c.requirement_value) * 100, 100) + '%;'"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 500;">
+                      <span :style="c.is_completed ? 'color: #027A48;' : 'color: var(--text-tertiary);'" x-text="c.is_completed ? 'Completed' : 'In Progress'"></span>
+                      <span style="color: var(--text-tertiary);" x-text="Math.min(c.current_value, c.requirement_value) + ' / ' + c.requirement_value"></span>
+                    </div>
                   </div>
-                  <div class="review-stars">★★★★☆</div>
+                  
                 </div>
-                <div class="review-commodity">🌲 Kalimantan Sustainable Timber</div>
-                <p class="review-body">Solid fundamentals and I like the sustainability angle. The monthly reports could
-                  be more detailed — I'd love to see more photos from the plantation. Overall a good addition to a
-                  diversified portfolio.</p>
-                <div class="review-footer"><span class="review-date">March 6, 2026</span><span class="review-helpful">💡
-                    18 found this helpful</span></div>
-              </div>
-
-              <div class="review-card">
-                <div class="review-header">
-                  <div class="review-author">
-                    <div class="feed-post-avatar-circle" style="background:#FFF9C4;color:#F57F17;">EW</div>
-                    <div class="review-author-info"><span class="review-author-name">Emma W.</span><span
-                        class="review-author-badge">✅ Verified Investor · Received Dividend</span></div>
-                  </div>
-                  <div class="review-stars">★★★★★</div>
-                </div>
-                <div class="review-commodity">🌿 Madagascar Vanilla</div>
-                <p class="review-body">"My Why" story: I invested in vanilla because I wanted to support smallholder
-                  farmers in Madagascar while earning sustainable returns. POOOL makes it so easy. The process from KYC
-                  to first investment took less than 48 hours.</p>
-                <div class="review-footer"><span class="review-date">Feb 28, 2026</span><span class="review-helpful">💡
-                    31 found this helpful</span></div>
+              </template>
+              
+              <!-- Empty State -->
+              <div x-show="challenges.length === 0" style="text-align: center; padding: 40px; background: #F9FAFB; border-radius: 12px; border: 1px dashed #D0D5DD;">
+                <p style="color: var(--text-tertiary); margin: 0;">No active challenges right now. Check back later!</p>
               </div>
             </div>
 
-            <button class="ds-btn ds-btn--secondary" style="width:100%;margin-top:8px;">Load More Reviews</button>
           </div>
         </div>
 
+        <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('communityChallenges', () => ({
+                challenges: [],
+                loading: true,
+
+                async init() {
+                    setTimeout(() => { this.loadData(); }, 100);
+                    
+                    document.addEventListener('tab-changed', (e) => {
+                       if (e.detail.tab === 'community-challenges-tab' && this.challenges.length === 0) {
+                           this.loadData();
+                       }
+                    });
+                },
+
+                async loadData() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch('/api/community/challenges');
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.challenges = data.challenges || [];
+                        }
+                    } catch (e) {
+                        console.error('Failed to load challenges', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }));
+        });
+        </script>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 6: NOTIFICATIONS
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="community-notifications-tab" class="community-tab-panel" style="display: none;">
+          <div class="community-content-layout">
+            <div style="flex: 1;" x-data="notificationsTab()">
+              <div class="ds-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+                  <h3 style="margin:0;">Notifications</h3>
+                  <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" @click="markAllAsRead()">Mark all read</button>
+                </div>
+
+                <div x-show="loading" style="text-align:center; padding: 40px; color: var(--text-400)">
+                  Loading notifications...
+                </div>
+
+                <div x-show="!loading && notifications.length === 0" style="text-align:center; padding: 40px; color: var(--text-400)">
+                  You don't have any notifications arriving right now.
+                </div>
+
+                <div class="notifications-list" style="display:flex; flex-direction:column; gap:12px;">
+                  <template x-for="notif in notifications" :key="notif.id">
+                    <div :style="notif.is_read ? 'opacity: 0.7;' : 'background: rgba(3,255,136,0.05);'"
+                         style="padding: 16px; border-radius: 8px; border: 1px solid var(--border-light); display:flex; gap: 16px; align-items:center; cursor: pointer; transition: all 0.2s;"
+                         @click="handleClick(notif)">
+                      <div class="notif-icon">
+                        <template x-if="notif.actor_avatar_url">
+                            <img :src="notif.actor_avatar_url" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />
+                        </template>
+                        <template x-if="!notif.actor_avatar_url">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--border-light); display:flex; align-items:center; justify-content:center; font-weight:bold;">
+                               <span x-text="notif.actor_id ? (notif.actor_display_name ? notif.actor_display_name.charAt(0) : 'U') : 'P'"></span>
+                            </div>
+                        </template>
+                      </div>
+                      <div class="notif-content" style="flex: 1;">
+                        <div x-text="notif.content" style="font-size: 14px; font-weight:500; color:var(--text-100); margin-bottom:4px; line-height: 1.4;"></div>
+                        <div x-text="formatDate(notif.created_at)" style="font-size: 12px; color:var(--text-400);"></div>
+                      </div>
+                      <div class="notif-unread-dot" x-show="!notif.is_read" style="width: 8px; height: 8px; background: #03FF88; border-radius: 50%; flex-shrink:0;"></div>
+                    </div>
+                  </template>
+                </div>
+                
+                <button x-show="hasMore" type="button" class="ds-btn ds-btn--ghost" style="width: 100%; margin-top: 24px;" @click="loadMore()">Load More</button>
+              </div>
+            </div>
+          </div>
+          <script>
+          document.addEventListener('alpine:init', () => {
+              Alpine.data('notificationsTab', () => ({
+                  notifications: [],
+                  loading: true,
+                  offset: 0,
+                  limit: 20,
+                  hasMore: true,
+                  
+                  async init() {
+                      await this.loadMore();
+                  },
+
+                  async loadMore() {
+                      if (!this.hasMore && this.offset !== 0) return;
+                      this.loading = true;
+                      try {
+                          const res = await fetch(`/api/community/notifications?limit=${this.limit}&offset=${this.offset}`);
+                          if (res.ok) {
+                              const data = await res.json();
+                              if (data.notifications.length < this.limit) {
+                                  this.hasMore = false;
+                              }
+                              this.notifications = [...this.notifications, ...data.notifications];
+                              this.offset += this.limit;
+                          }
+                      } catch (e) {
+                          console.error('Failed to load notifications', e);
+                      } finally {
+                          this.loading = false;
+                      }
+                  },
+
+                  async markAllAsRead() {
+                      try {
+                          await fetch('/api/community/notifications/read-all', { method: 'POST' });
+                          this.notifications.forEach(n => n.is_read = true);
+                          // Trigger custom event so sidebar updates
+                          window.dispatchEvent(new Event('notifications-read'));
+                      } catch (e) {
+                          console.error(e);
+                      }
+                  },
+
+                  async handleClick(notif) {
+                      if (!notif.is_read) {
+                          try {
+                              await fetch(`/api/community/notifications/${notif.id}/read`, { method: 'POST' });
+                              notif.is_read = true;
+                              window.dispatchEvent(new Event('notifications-read'));
+                          } catch (e) {
+                              console.error(e);
+                          }
+                      }
+                      if (notif.action_link) {
+                          window.location.href = notif.action_link;
+                      }
+                  },
+                  
+                  formatDate(dt) {
+                      if (!dt) return '';
+                      const date = new Date(dt);
+                      return date.toLocaleString();
+                  }
+              }));
+          });
+          </script>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════

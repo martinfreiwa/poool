@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Circles | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main" x-data="circlesAdmin()">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Circles</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h1 class="admin-page-title">Circles</h1>
+            <p class="admin-page-subtitle">Manage investor circles, review stats, and moderate.</p>
+          </div>
+          <div>
+            <button class="admin-btn admin-btn--secondary" @click="loadCircles()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Overview Row -->
+        <div class="admin-stats-grid" style="margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+          <div class="admin-stat-card">
+            <h3 class="admin-stat-title">Total Circles</h3>
+            <div class="admin-stat-value" x-text="circles.length">0</div>
+          </div>
+          <div class="admin-stat-card">
+            <h3 class="admin-stat-title">Avg Members per Circle</h3>
+            <div class="admin-stat-value" x-text="avgMembers">0</div>
+          </div>
+          <div class="admin-stat-card">
+            <h3 class="admin-stat-title">Total Circle XP</h3>
+            <div class="admin-stat-value" x-text="totalXP.toLocaleString()">0</div>
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            
+            <div class="admin-table-container">
+              <!-- Loading State -->
+              <div x-show="loading" class="admin-table-empty">
+                <p>Loading circles...</p>
+              </div>
+
+              <table class="admin-table" x-show="!loading && circles.length > 0">
+                <thead>
+                  <tr>
+                    <th>Circle</th>
+                    <th>Level</th>
+                    <th>Members</th>
+                    <th>Total XP</th>
+                    <th>Created</th>
+                    <th>Visibility</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="circle in circles" :key="circle.id">
+                    <tr>
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                          <div style="font-size: 24px;" x-text="circle.avatar_emoji || '🟢'"></div>
+                          <div>
+                            <div style="font-weight: 500; font-family: var(--font-heading); color: var(--text-primary);" x-text="circle.name"></div>
+                            <div style="font-size: 13px; color: var(--text-tertiary);" x-text="circle.id"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div style="font-weight: 500; font-family: var(--font-heading);" x-text="'Lvl ' + circle.level"></div>
+                        <div style="font-size: 13px; color: var(--text-tertiary);" x-text="circle.level_name"></div>
+                      </td>
+                      <td>
+                        <div x-text="circle.member_count + ' / ' + circle.max_members"></div>
+                      </td>
+                      <td x-text="circle.total_xp.toLocaleString()"></td>
+                      <td x-text="new Date(circle.created_at).toLocaleDateString()"></td>
+                      <td>
+                        <span class="admin-badge" :style="circle.is_public ? 'background: #dcfce7; color: #166534;' : 'background: #f3f4f6; color: #4b5563;'" x-text="circle.is_public ? 'Public' : 'Private'"></span>
+                      </td>
+                      <td style="text-align: right;">
+                        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                          <a :href="'/admin/community/circle-detail.html?id=' + circle.id" class="admin-btn admin-btn--secondary admin-btn--sm" title="View Details">
+                            View
+                          </a>
+                          <button class="admin-btn admin-btn--icon" style="color: var(--error-color)" title="Disband Circle" @click="confirmDelete(circle)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+
+              <!-- Empty State -->
+              <div x-show="!loading && circles.length === 0" class="admin-table-empty">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary); margin-bottom: 16px;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                <p>No circles found.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('circlesAdmin', () => ({
+        circles: [],
+        loading: true,
+
+        get avgMembers() {
+            if (this.circles.length === 0) return 0;
+            const total = this.circles.reduce((acc, c) => acc + c.member_count, 0);
+            return (total / this.circles.length).toFixed(1);
+        },
+
+        get totalXP() {
+            return this.circles.reduce((acc, c) => acc + Number(c.total_xp), 0);
+        },
+
+        async init() {
+          await this.loadCircles();
+        },
+
+        async loadCircles() {
+          this.loading = true;
+          try {
+            const res = await fetch('/api/admin/community/circles');
+            if (res.ok) {
+              const data = await res.json();
+              this.circles = data.circles || [];
+            }
+          } catch (e) {
+            console.error(e);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        async confirmDelete(circle) {
+          if (!confirm(`Are you sure you want to completely disband "${circle.name}"? This action cannot be undone.`)) {
+            return;
+          }
+
+          try {
+            const res = await fetch(`/api/admin/community/circles/${circle.id}`, {
+              method: 'DELETE'
+            });
+
+            if (res.ok) {
+              alert('Circle disbanded successfully.');
+              this.loadCircles();
+            } else {
+              alert('Failed to disband circle.');
+            }
+          } catch (e) {
+            console.error(e);
+            alert('An error occurred.');
+          }
+        }
+      }));
+    });
+  </script>
+</body>
+</html>

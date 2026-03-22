@@ -151,20 +151,49 @@
 
         document.getElementById('user-detail-container').innerHTML = `
             <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
-                <div>
-                  <h1 class="admin-page-title">User Detail</h1>
+                <div style="flex:1;">
+                  <h1 class="admin-page-title">${profile.display_name}</h1>
                   <p class="admin-page-subtitle">ID: <span style="font-family:monospace;">${userId}</span></p>
                 </div>
-                <div style="display:flex; gap:12px;">
-                  <button class="admin-btn admin-btn--secondary" style="color:#b42318; border-color:#b42318;" onclick="toggleBan('${userId}', ${profile.is_community_banned})">
-                    ${profile.is_community_banned ? 'Unban User' : 'Ban User'}
+                <div style="display:flex; flex-direction:column; gap:12px; align-items:flex-end;">
+                  <div style="display:flex; gap:12px;">
+                    <button class="admin-btn admin-btn--secondary" style="color:#d97706; border-color:#d97706;" onclick="warnUser('${userId}')">
+                      Send Warning
+                    </button>
+                    ${profile.muted_until && new Date(profile.muted_until) > new Date() 
+                        ? `<button class="admin-btn admin-btn--secondary" onclick="muteUser('${userId}', true)">Unmute</button>`
+                        : `<button class="admin-btn admin-btn--secondary" style="color:#d97706; border-color:#d97706;" onclick="muteUser('${userId}', false)">Mute User</button>`}
+                    
+                    <button class="admin-btn admin-btn--secondary" style="color:#667085; border-color:#667085;" onclick="toggleShadowban('${userId}', ${profile.is_shadowbanned})">
+                      ${profile.is_shadowbanned ? 'Un-Shadowban' : 'Shadowban'}
+                    </button>
+
+                    <button class="admin-btn admin-btn--secondary" style="color:#b42318; border-color:#b42318;" onclick="toggleBan('${userId}', ${profile.is_community_banned})">
+                      ${profile.is_community_banned ? 'Unban User' : 'Ban User'}
+                    </button>
+                  </div>
+                  <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="editModNotes('${userId}', \`${(profile.mod_notes || '').replace(/`/g, '\\`')}\`)">
+                    📝 Edit Mod Notes
                   </button>
                 </div>
-            </div>
+              </div>
+
+              <!-- Mod Notes Display if they exist -->
+              ${profile.mod_notes ? `
+              <div style="margin-top: 16px; padding: 12px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; font-size: 13px;">
+                <b style="color: #b45309;">Mod Notes:</b> <span style="color: #92400e; white-space: pre-wrap;">${profile.mod_notes}</span>
+              </div>
+              ` : ''}
+
+            ${profile.muted_until && new Date(profile.muted_until) > new Date() ? `
+              <div style="margin-top: 16px; padding: 12px; background: #fef3f2; border: 1px solid #fee4e2; border-radius: 6px; font-size: 13px;">
+                <b style="color: #b42318;">Muted Until:</b> <span style="color: #b42318;">${new Date(profile.muted_until).toLocaleString()}</span>
+              </div>
+            ` : ''}
 
             ${banStatusHtml}
 
-            <div class="grid-layout">
+            <div class="grid-layout" style="margin-top:24px;">
                 <!-- Left Column -->
                 <div style="display:flex; flex-direction: column; gap: 24px;">
                     <div class="admin-card">
@@ -244,28 +273,118 @@
         `;
     }
 
+    async function warnUser(userId) {
+        const reason = prompt("Enter reason for warning this user (they will receive a notification):");
+        if (!reason) return;
+
+        try {
+            const res = await fetch(`/api/admin/community/users/${userId}/warn`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+            if (res.ok) {
+                alert('Warning sent successfully.');
+                loadUserDetail(userId);
+            } else {
+                alert('Failed to send warning.');
+            }
+        } catch (e) {
+            alert("Error connecting to server");
+        }
+    }
+
+    async function editModNotes(userId, existingNotes) {
+        const newNotes = prompt("Enter moderator notes for this user (only visible to admins):", existingNotes);
+        if (newNotes === null) return;
+
+        try {
+            const res = await fetch(`/api/admin/community/users/${userId}/mod-notes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notes: newNotes })
+            });
+            if (res.ok) {
+                loadUserDetail(userId);
+            } else {
+                alert('Failed to update notes.');
+            }
+        } catch (e) {
+            alert("Error connecting to server");
+        }
+    }
+
+    async function muteUser(userId, isMuted) {
+        let hours = null;
+        if (!isMuted) {
+            const input = prompt("Enter number of hours to mute this user:");
+            if (input === null) return;
+            hours = parseInt(input, 10);
+            if (isNaN(hours) || hours <= 0) {
+                alert("Invalid number of hours.");
+                return;
+            }
+        } else {
+            if(!confirm("Are you sure you want to unmute this user?")) return;
+        }
+
+        try {
+            const res = await fetch(`/api/admin/community/users/${userId}/mute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hours })
+            });
+            if (res.ok) {
+                loadUserDetail(userId);
+            } else {
+                alert('Failed to update mute status.');
+            }
+        } catch (e) {
+            alert("Error connecting to server");
+        }
+    }
+
     async function toggleBan(userId, isBanned) {
         let reason = "";
         let actionStr = isBanned ? "unban" : "ban";
         
         if (!isBanned) {
-            reason = prompt("Enter reason for banning this user:");
+            reason = prompt("Enter a reason for banning this user:");
             if(reason === null) return;
         } else {
             if(!confirm("Are you sure you want to unban this user?")) return;
         }
-        
+
         try {
             const res = await fetch(`/api/admin/community/users/${userId}/ban`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reason: reason })
+                body: JSON.stringify({ is_banned: !isBanned, reason: reason })
             });
             if (res.ok) {
-                alert(`User successfully ${actionStr}ned.`);
                 loadUserDetail(userId);
             } else {
-                alert(`Failed to ${actionStr} user. Check console for details.`);
+                alert(`Failed to ${actionStr} user.`);
+            }
+        } catch(e) {
+            alert("Error connecting to server");
+        }
+    }
+
+    async function toggleShadowban(userId, isShadowbanned) {
+        let actionStr = isShadowbanned ? "un-shadowban" : "shadowban";
+        if(!confirm(`Are you sure you want to ${actionStr} this user?`)) return;
+
+        try {
+            const res = await fetch(`/api/admin/community/users/${userId}/shadowban`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_shadowbanned: !isShadowbanned })
+            });
+            if (res.ok) {
+                loadUserDetail(userId);
+            } else {
+                alert(`Failed to ${actionStr} user.`);
             }
         } catch(e) {
             alert("Error connecting to server");

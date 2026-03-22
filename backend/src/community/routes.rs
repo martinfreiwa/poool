@@ -20,6 +20,7 @@ pub struct FeedQuery {
     pub category: Option<String>,
     pub page: Option<i64>,
     pub feed_mode: Option<String>,
+    pub sort_by: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -50,19 +51,76 @@ fn get_community_pool(state: &AppState) -> Result<sqlx::PgPool, AppError> {
 
 /// FIX-F7: Check if user is community-banned before allowing write operations
 async fn check_user_not_banned(pool: &sqlx::PgPool, user_id: Uuid) -> Result<(), AppError> {
-    let is_banned: Option<bool> = sqlx::query_scalar(
-        "SELECT is_community_banned FROM community_profiles WHERE user_id = $1"
+    let record = sqlx::query!(
+        "SELECT is_community_banned, muted_until FROM community_profiles WHERE user_id = $1",
+        user_id
     )
-    .bind(user_id)
     .fetch_optional(pool)
     .await?;
 
-    if is_banned == Some(true) {
-        return Err(AppError::Forbidden(
-            "Your community access has been suspended. Contact support for more information.".to_string()
-        ));
+    if let Some(r) = record {
+        if r.is_community_banned {
+            return Err(AppError::Forbidden(
+                "Your community access has been suspended. Contact support for more information.".to_string()
+            ));
+        }
+
+        if let Some(muted_date) = r.muted_until {
+            if muted_date > chrono::Utc::now() {
+                return Err(AppError::Forbidden(format!(
+                    "Your account is muted until {}. You cannot post or comment.",
+                    muted_date.format("%Y-%m-%d %H:%M:%S UTC")
+                )));
+            }
+        }
     }
     Ok(())
+}
+
+/// Helper to extract @mentions from content and notify mentioned users
+async fn parse_and_notify_mentions(
+    core_db: sqlx::PgPool,
+    c_pool: sqlx::PgPool,
+    content: String,
+    author_id: Uuid,
+    author_name: String,
+    post_id: Uuid,
+) {
+    let mut mentions = std::collections::HashSet::new();
+    for word in content.split_whitespace() {
+        if word.starts_with('@') && word.len() > 1 {
+            let mention = word.trim_matches(|c: char| !c.is_alphanumeric() && c != '_' && c != '-');
+            if mention.len() > 1 {
+                mentions.insert(mention[1..].to_string()); // skip '@'
+            }
+        }
+    }
+
+    for mention in mentions {
+        let query = format!("{}%", mention);
+        let user_id = sqlx::query_scalar::<_, Uuid>(
+            "SELECT u.id FROM users u JOIN user_profiles up ON u.id = up.user_id WHERE up.display_name ILIKE $1 LIMIT 1"
+        )
+        .bind(&query)
+        .fetch_optional(&core_db)
+        .await
+        .unwrap_or(None);
+
+        if let Some(uid) = user_id {
+            if uid != author_id {
+                let msg = format!("{} mentioned you in a post.", author_name);
+                let _ = crate::community::notifications::notify_user(
+                    &c_pool,
+                    uid,
+                    Some(author_id),
+                    "mention",
+                    Some(post_id),
+                    &msg,
+                    Some(&format!("/community/feed?post={}", post_id))
+                ).await;
+            }
+        }
+    }
 }
 
 // ─── Route Handlers ──────────────────────────────────────────────────────────
@@ -91,7 +149,7 @@ async fn get_feed(
         None
     };
 
-    let posts = service::get_community_feed(&c_pool, query.category, only_following_user_id, limit, offset).await?;
+    let posts = service::get_community_feed(&c_pool, query.category, only_following_user_id, query.sort_by, limit, offset).await?;
 
     // Build user_ids list for batch fetching
     let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
@@ -127,6 +185,70 @@ async fn get_feed(
     }
 
     Ok(Json(feed))
+}
+
+async fn get_post_detail(
+    Path(post_id): Path<Uuid>,
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> Result<impl IntoResponse, AppError> {
+    // allow public read, but if user logged in we can fetch them
+    let user = middleware::get_current_user(&jar, &state.db).await;
+    let only_following_user_id: Option<Uuid> = None; // not constrained by following
+    let c_pool = get_community_pool(&state)?;
+
+    let post = sqlx::query_as::<_, models::Post>(
+        r#"
+        SELECT p.*
+        FROM posts p
+        JOIN community_profiles cp ON p.user_id = cp.user_id
+        WHERE p.id = $1 
+          AND p.is_hidden = false 
+          AND (cp.is_shadowbanned = false OR p.user_id = $2)
+        "#
+    )
+        .bind(post_id)
+        .bind(user.as_ref().map(|u| u.id))
+        .fetch_optional(&c_pool)
+        .await
+        .map_err(AppError::Database)?;
+
+    let p = match post {
+        Some(pt) => pt,
+        None => return Err(AppError::NotFound("Post not found".into())),
+    };
+
+    let author_info = user_bridge::get_user_info(&state.db, state.redis.as_ref(), p.user_id).await.ok();
+    
+    let mut author_badges = vec![];
+    if p.user_id != Uuid::nil() {
+        let mut b_map = service::get_badges_batch(&c_pool, &[p.user_id]).await?;
+        author_badges = b_map.remove(&p.user_id).unwrap_or_default();
+    }
+
+    let response = PostDisplay {
+        id: p.id,
+        author_name: author_info
+            .as_ref()
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Anonymous".into()),
+        author_id: p.user_id,
+        author_avatar: author_info.and_then(|a| a.avatar_url.clone()),
+        author_badges,
+        post_type: p.post_type.clone(),
+        content: p.content_sanitized.unwrap_or(p.content),
+        asset_id: p.asset_id,
+        image_urls: p.image_urls.unwrap_or_default(),
+        reaction_count: p.reaction_count,
+        comment_count: p.comment_count,
+        is_hidden: p.is_hidden,
+        is_pinned: p.is_pinned,
+        disclaimer_shown: p.disclaimer_shown,
+        verified_owner: false,
+        created_at: p.created_at,
+    };
+
+    Ok(Json(response))
 }
 
 async fn create_announcement(
@@ -194,8 +316,23 @@ async fn create_comment(
     let clean_html = validation::sanitize_html_basic(&payload.content);
     let c_pool = get_community_pool(&state)?;
 
+    if let Some(reason) = validation::check_automod(&payload.content) {
+        // M6-BE.1 Auto Mod
+        return Err(AppError::Forbidden(format!("Content violation: {}", reason)));
+    }
+
     // FIX-F7: Check ban before allowing comment
     check_user_not_banned(&c_pool, user.id).await?;
+
+    // Check if post is locked (M6-ADMIN.1)
+    let is_locked: Option<bool> = sqlx::query_scalar("SELECT is_locked FROM posts WHERE id = $1")
+        .bind(post_id)
+        .fetch_optional(&c_pool)
+        .await?;
+
+    if is_locked.unwrap_or(false) {
+        return Err(AppError::Forbidden("This thread has been locked by a moderator.".into()));
+    }
 
     // FIX-CRL: Comment rate limiting (30 comments/hour via Redis)
     if let Some(redis_pool) = state.redis.as_ref() {
@@ -214,10 +351,27 @@ async fn create_comment(
     }
 
     let comment_id =
-        service::create_comment(&c_pool, post_id, user.id, payload.content, clean_html).await?;
+        service::create_comment(&c_pool, post_id, user.id, payload.content.clone(), clean_html).await?;
 
     // Award XP for comment
     let _ = crate::community::xp::award_xp(&c_pool, user.id, "comment_created", Some("Posted a comment"), None).await;
+
+    let author_name = user_bridge::get_user_info(&state.db, state.redis.as_ref(), user.id).await.map(|u| u.display_name).unwrap_or_else(|_| "Someone".to_string());
+    
+    // Parse and notify mentions asynchronously
+    let core_db_clone = state.db.clone();
+    let c_pool_clone = c_pool.clone();
+    let content_clone = payload.content;
+    tokio::spawn(async move {
+        parse_and_notify_mentions(
+            core_db_clone,
+            c_pool_clone,
+            content_clone,
+            user.id,
+            author_name,
+            post_id,
+        ).await;
+    });
 
     Ok(Json(serde_json::json!({ "id": comment_id })))
 }
@@ -235,9 +389,18 @@ async fn get_comments(
     let c_pool = get_community_pool(&state)?;
 
     let comments = sqlx::query_as::<_, Comment>(
-        "SELECT * FROM comments WHERE post_id = $1 AND is_hidden = false ORDER BY created_at ASC",
+        r#"
+        SELECT c.*
+        FROM comments c
+        JOIN community_profiles cp ON c.user_id = cp.user_id
+        WHERE c.post_id = $1 
+          AND c.is_hidden = false 
+          AND (cp.is_shadowbanned = false OR c.user_id = $2)
+        ORDER BY c.created_at ASC
+        "#,
     )
     .bind(post_id)
+    .bind(&_user.id)
     .fetch_all(&c_pool)
     .await?;
 
@@ -288,11 +451,29 @@ async fn get_admin_stats(
         .await
         .unwrap_or((0,));
 
+    let total_circles: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM circles")
+        .fetch_one(&c_pool)
+        .await
+        .unwrap_or((0,));
+
+    let total_xp: (i64,) = sqlx::query_as("SELECT COALESCE(SUM(current_xp), 0) FROM user_xp_totals")
+        .fetch_one(&c_pool)
+        .await
+        .unwrap_or((0,));
+
+    let pending_reports_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM content_reports WHERE status = 'pending'")
+        .fetch_one(&c_pool)
+        .await
+        .unwrap_or((0,));
+
     Ok(Json(serde_json::json!({
         "total_posts": total_posts.0,
         "total_comments": total_comments.0,
         "total_reactions": total_reactions.0,
         "active_profiles": active_profiles.0,
+        "total_circles": total_circles.0,
+        "total_xp": total_xp.0,
+        "pending_reports_count": pending_reports_count.0,
     })))
 }
 
@@ -306,6 +487,10 @@ async fn create_user_post(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
+
+    if let Some(reason) = validation::check_automod(&payload.content) {
+        return Err(AppError::Forbidden(format!("Content violation: {}", reason)));
+    }
 
     // FIX-F7: Check ban before allowing post creation
     check_user_not_banned(&c_pool, user.id).await?;
@@ -347,10 +532,27 @@ async fn create_user_post(
         }
     }
 
-    let post_id = service::create_user_post(&c_pool, state.redis.as_ref(), user.id, payload, is_high_level_user).await?;
+    let post_id = service::create_user_post(&c_pool, state.redis.as_ref(), user.id, payload.clone(), is_high_level_user).await?;
 
     // Award XP for post creation
     let _ = crate::community::xp::award_xp(&c_pool, user.id, "post_created", Some("Created a post"), None).await;
+
+    let author_name = user_bridge::get_user_info(&state.db, state.redis.as_ref(), user.id).await.map(|u| u.display_name).unwrap_or_else(|_| "Someone".to_string());
+    
+    // Parse and notify mentions asynchronously
+    let core_db_clone = state.db.clone();
+    let c_pool_clone = c_pool.clone();
+    let content_clone = payload.content.clone();
+    tokio::spawn(async move {
+        parse_and_notify_mentions(
+            core_db_clone,
+            c_pool_clone,
+            content_clone,
+            user.id,
+            author_name,
+            post_id,
+        ).await;
+    });
 
     Ok(Json(serde_json::json!({ "id": post_id, "verified_owner": verified_owner })))
 }
@@ -372,6 +574,10 @@ async fn update_user_post(
 
     let c_pool = get_community_pool(&state)?;
     let is_high_level_user = false;
+
+    if let Some(reason) = validation::check_automod(&payload.content) {
+        return Err(AppError::Forbidden(format!("Content violation: {}", reason)));
+    }
 
     service::update_user_post(&c_pool, post_id, user.id, payload.content, is_high_level_user).await?;
 
@@ -495,6 +701,78 @@ async fn take_report_action(
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
+// ─── ADMIN CHALLENGES ──────────────────────────────────────────────
+
+#[derive(serde::Deserialize)]
+pub struct CreateChallengeReq {
+    pub title: String,
+    pub description: String,
+    pub xp_reward: i32,
+    pub badge_reward: Option<String>,
+    pub requirement_type: String, // e.g., "buy_asset", "invite_friend"
+    pub requirement_value: i32,
+    pub frequency: String, // "once", "daily", "weekly"
+}
+
+async fn admin_list_challenges(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let _ = admin;
+    let c_pool = get_community_pool(&state)?;
+    
+    let challenges: Vec<crate::community::challenges::Challenge> = sqlx::query_as(
+        "SELECT * FROM challenges ORDER BY created_at DESC"
+    )
+    .fetch_all(&c_pool)
+    .await
+    .map_err(AppError::Database)?;
+    
+    Ok(Json(challenges))
+}
+
+async fn admin_create_challenge(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Json(payload): Json<CreateChallengeReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let _ = admin;
+    let c_pool = get_community_pool(&state)?;
+    
+    let challenge = crate::community::challenges::admin_create_challenge(
+        &c_pool,
+        &payload.title,
+        &payload.description,
+        payload.xp_reward,
+        payload.badge_reward.as_deref(),
+        &payload.requirement_type,
+        payload.requirement_value,
+        &payload.frequency,
+    )
+    .await?;
+    
+    Ok(Json(challenge))
+}
+
+#[derive(serde::Deserialize)]
+pub struct ToggleChallengeReq {
+    pub is_active: bool,
+}
+
+async fn admin_toggle_challenge(
+    admin: crate::admin::extractors::AdminUser,
+    Path(id): Path<Uuid>,
+    State(state): State<AppState>,
+    Json(payload): Json<ToggleChallengeReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let _ = admin;
+    let c_pool = get_community_pool(&state)?;
+    
+    crate::community::challenges::admin_toggle_challenge(&c_pool, id, payload.is_active).await?;
+    
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
 #[derive(serde::Serialize)]
 pub struct TrendingAssetDisplay {
     pub id: Uuid,
@@ -557,7 +835,9 @@ pub struct AdminPostDisplay {
     pub content: String,
     pub is_pinned: bool,
     pub is_hidden: bool,
+    pub is_locked: bool,
     pub hidden_reason: Option<String>,
+    pub content_tags: Option<Vec<String>>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -589,7 +869,9 @@ async fn admin_get_posts(
             content: p.content_sanitized.clone().unwrap_or(p.content.clone()),
             is_pinned: p.is_pinned,
             is_hidden: p.is_hidden,
+            is_locked: p.is_locked.unwrap_or(false),
             hidden_reason: p.hidden_reason.clone(),
+            content_tags: p.content_tags.clone(),
             created_at: p.created_at,
         });
     }
@@ -612,6 +894,50 @@ async fn admin_hide_post(
 
     sqlx::query("UPDATE posts SET is_hidden = true, hidden_reason = $1 WHERE id = $2")
         .bind(&payload.reason)
+        .bind(post_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+#[derive(serde::Deserialize)]
+pub struct ToggleLockPayload {
+    pub is_locked: bool,
+}
+
+async fn admin_toggle_lock_post(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+    Json(payload): Json<ToggleLockPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    sqlx::query("UPDATE posts SET is_locked = $1 WHERE id = $2")
+        .bind(payload.is_locked)
+        .bind(post_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+#[derive(serde::Deserialize)]
+pub struct UpdateTagsPayload {
+    pub tags: Vec<String>,
+}
+
+async fn admin_update_post_tags(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+    Json(payload): Json<UpdateTagsPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    sqlx::query("UPDATE posts SET content_tags = $1 WHERE id = $2")
+        .bind(&payload.tags)
         .bind(post_id)
         .execute(&c_pool)
         .await?;
@@ -677,7 +1003,9 @@ async fn admin_get_post_detail(
         content: p.content_sanitized.clone().unwrap_or(p.content.clone()),
         is_pinned: p.is_pinned,
         is_hidden: p.is_hidden,
+        is_locked: p.is_locked.unwrap_or(false),
         hidden_reason: p.hidden_reason.clone(),
+        content_tags: p.content_tags.clone(),
         created_at: p.created_at,
     };
 
@@ -691,6 +1019,7 @@ async fn admin_get_post_detail(
             "author_name": name,
             "content": c.content_sanitized.unwrap_or(c.content),
             "is_hidden": c.is_hidden,
+            "is_pinned": c.is_pinned.unwrap_or(false),
             "created_at": c.created_at,
         }));
     }
@@ -740,6 +1069,9 @@ pub struct AdminUserDisplay {
     pub ban_reason: Option<String>,
     pub warning_count: i32,
     pub post_count: i32,
+    pub mod_notes: Option<String>,
+    pub muted_until: Option<chrono::DateTime<chrono::Utc>>,
+    pub is_shadowbanned: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -770,6 +1102,9 @@ async fn admin_get_users(
         let ban_reason: Option<String> = row.try_get("ban_reason")?;
         let warning_count: i32 = row.try_get("warning_count")?;
         let post_count: i32 = row.try_get("post_count")?;
+        let mod_notes: Option<String> = row.try_get("mod_notes")?;
+        let muted_until: Option<chrono::DateTime<chrono::Utc>> = row.try_get("muted_until")?;
+        let is_shadowbanned: bool = row.try_get("is_shadowbanned").unwrap_or(false);
         let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at")?;
 
         let user_info = core_users.get(&u_id);
@@ -782,6 +1117,9 @@ async fn admin_get_users(
             ban_reason,
             warning_count,
             post_count,
+            mod_notes,
+            muted_until,
+            is_shadowbanned,
             created_at,
         });
     }
@@ -813,12 +1151,222 @@ async fn admin_toggle_ban_user(
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
+#[derive(serde::Deserialize)]
+pub struct MuteUserPayload {
+    pub hours: Option<i32>, // If None, unmute
+}
+
+async fn admin_mute_user(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+    Json(payload): Json<MuteUserPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    let muted_until = payload.hours.map(|h| chrono::Utc::now() + chrono::Duration::hours(h as i64));
+
+    sqlx::query("UPDATE community_profiles SET muted_until = $1 WHERE user_id = $2")
+        .bind(muted_until)
+        .bind(user_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+#[derive(serde::Deserialize)]
+pub struct ShadowbanPayload {
+    pub is_shadowbanned: bool,
+}
+
+async fn admin_toggle_shadowban(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+    Json(payload): Json<ShadowbanPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    sqlx::query("UPDATE community_profiles SET is_shadowbanned = $1 WHERE user_id = $2")
+        .bind(payload.is_shadowbanned)
+        .bind(user_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+#[derive(serde::Deserialize)]
+pub struct WarnUserPayload {
+    pub reason: String,
+}
+
+async fn admin_warn_user(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+    Json(payload): Json<WarnUserPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    sqlx::query("UPDATE community_profiles SET warning_count = warning_count + 1 WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&c_pool)
+        .await?;
+
+    // Create an in-app notification for the warning
+    crate::community::notifications::notify_user(
+        &c_pool, 
+        user_id, 
+        None,
+        "system_alert", 
+        None,
+        &format!("Warning from Admin: {}", payload.reason), 
+        None
+    ).await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+#[derive(serde::Deserialize)]
+pub struct UpdateModNotesPayload {
+    pub notes: String,
+}
+
+async fn admin_update_mod_notes(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+    Json(payload): Json<UpdateModNotesPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    sqlx::query("UPDATE community_profiles SET mod_notes = $1 WHERE user_id = $2")
+        .bind(&payload.notes)
+        .bind(user_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+#[derive(serde::Serialize)]
+pub struct AdminCommentDisplay {
+    pub id: Uuid,
+    pub post_id: Uuid,
+    pub user_id: Uuid,
+    pub author_name: String,
+    pub content: String,
+    pub helpful_count: i32,
+    pub is_hidden: bool,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+async fn admin_get_comments(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Query(_q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<impl IntoResponse, AppError> {
+    let limit: i64 = _q.get("limit").and_then(|l| l.parse().ok()).unwrap_or(200);
+    let c_pool = get_community_pool(&state)?;
+
+    let comments: Vec<models::Comment> = sqlx::query_as(
+        "SELECT * FROM comments ORDER BY created_at DESC LIMIT $1" // show hidden comments too
+    )
+    .bind(limit)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let user_ids: Vec<Uuid> = comments.iter().map(|c| c.user_id).collect();
+    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+
+    let mut result = Vec::with_capacity(comments.len());
+    for c in comments {
+        let author_name = authors
+            .get(&c.user_id)
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Unknown".into());
+
+        result.push(AdminCommentDisplay {
+            id: c.id,
+            post_id: c.post_id,
+            user_id: c.user_id,
+            author_name,
+            content: c.content_sanitized.clone().unwrap_or(c.content.clone()),
+            helpful_count: c.helpful_count,
+            is_hidden: c.is_hidden,
+            created_at: c.created_at,
+        });
+    }
+
+    Ok(Json(result))
+}
+
+#[derive(serde::Deserialize)]
+pub struct HideCommentPayload {
+    pub reason: Option<String>,
+}
+
+async fn admin_hide_comment(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(comment_id): Path<Uuid>,
+    Json(_payload): Json<HideCommentPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    sqlx::query("UPDATE comments SET is_hidden = true WHERE id = $1") // missing hidden_reason in comment schema? just set hidden
+        .bind(comment_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+async fn admin_delete_comment(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(comment_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    sqlx::query("DELETE FROM comments WHERE id = $1")
+        .bind(comment_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+#[derive(serde::Deserialize)]
+pub struct TogglePinCommentPayload {
+    pub is_pinned: bool,
+}
+
+async fn admin_toggle_pin_comment(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(comment_id): Path<Uuid>,
+    Json(payload): Json<TogglePinCommentPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    sqlx::query("UPDATE comments SET is_pinned = $1 WHERE id = $2")
+        .bind(payload.is_pinned)
+        .bind(comment_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
 // ─── Router Configuration ────────────────────────────────────────────────────
 
 pub fn router() -> Router<AppState> {
     Router::new()
         // Feed & Filter
         .route("/api/community/feed", get(get_feed))
+        .route("/api/community/search", get(search_community))
         .route("/api/community/trending-assets", get(get_trending_assets))
         // Announcements
         .route(
@@ -827,7 +1375,7 @@ pub fn router() -> Router<AppState> {
         )
         // User Posts
         .route("/api/community/posts", post(create_user_post))
-        .route("/api/community/posts/:id", axum::routing::put(update_user_post).delete(delete_user_post))
+        .route("/api/community/posts/:id", axum::routing::get(get_post_detail).put(update_user_post).delete(delete_user_post))
         .route("/api/community/posts/:id/report", post(create_content_report))
         // Reactions
         .route("/api/community/posts/:id/reactions", post(toggle_reaction))
@@ -843,8 +1391,18 @@ pub fn router() -> Router<AppState> {
         .route("/api/admin/community/posts", get(admin_get_posts))
         .route("/api/admin/community/posts/:id", get(admin_get_post_detail))
         .route("/api/admin/community/posts/:id/hide", post(admin_hide_post))
+        .route("/api/admin/community/posts/:id/lock", post(admin_toggle_lock_post))
+        .route("/api/admin/community/posts/:id/tags", post(admin_update_post_tags))
         .route("/api/admin/community/users", get(admin_get_users))
         .route("/api/admin/community/users/:id/ban", post(admin_toggle_ban_user))
+        .route("/api/admin/community/users/:id/warn", post(admin_warn_user))
+        .route("/api/admin/community/users/:id/mod-notes", post(admin_update_mod_notes))
+        .route("/api/admin/community/users/:id/mute", post(admin_mute_user))
+        .route("/api/admin/community/users/:id/shadowban", post(admin_toggle_shadowban))
+        .route("/api/admin/community/comments", get(admin_get_comments))
+        .route("/api/admin/community/comments/:id", delete(admin_delete_comment))
+        .route("/api/admin/community/comments/:id/hide", post(admin_hide_comment))
+        .route("/api/admin/community/comments/:id/pin", post(admin_toggle_pin_comment))
         // Social Layer
         .route("/api/community/profile/me", get(get_profile_me))
         .route("/api/community/profile", put(update_profile))
@@ -868,6 +1426,16 @@ pub fn router() -> Router<AppState> {
         .route("/api/community/invites", get(get_my_invites))
         .route("/api/community/invites/:id/accept", post(accept_invite))
         .route("/api/community/invites/:id/decline", post(decline_invite))
+        // Property Reviews (M5)
+        .route("/api/community/assets/:id/reviews", get(list_asset_reviews).put(upsert_asset_review).delete(delete_asset_review))
+        .route("/api/community/reviews/:review_id/upvote", post(toggle_review_upvote))
+        // Challenges (M5)
+        .route("/api/community/challenges", get(list_challenges))
+        // Notifications (M5)
+        .route("/api/community/notifications", get(list_notifications))
+        .route("/api/community/notifications/unread-count", get(get_unread_notification_count))
+        .route("/api/community/notifications/read-all", post(mark_all_notifications_read))
+        .route("/api/community/notifications/:id/read", post(mark_notification_read))
         // Expert AMAs (M5)
         .route("/api/community/amas", get(list_amas))
         .route("/api/community/amas/:id", get(get_ama_detail))
@@ -878,6 +1446,9 @@ pub fn router() -> Router<AppState> {
         .route("/api/admin/community/amas/:id/status", post(admin_update_ama_status))
         .route("/api/admin/community/amas/:id/questions/:qid/answer", post(admin_answer_question))
         .route("/api/admin/community/amas/:id/questions/:qid/feature", post(admin_toggle_featured))
+        // Admin Challenges
+        .route("/api/admin/community/challenges", get(admin_list_challenges).post(admin_create_challenge))
+        .route("/api/admin/community/challenges/:id/toggle", post(admin_toggle_challenge))
         // Admin Badges (M3-ADMIN)
         .route("/api/admin/community/badges", get(admin_list_badges).post(admin_create_badge))
         .route("/api/admin/community/badges/:id", put(admin_update_badge))
@@ -885,6 +1456,14 @@ pub fn router() -> Router<AppState> {
         .route("/api/admin/community/users/:id/badge/:badge_id", delete(admin_revoke_badge))
         // Admin User Detail (M3-ADMIN)
         .route("/api/admin/community/users/:id/detail", get(admin_get_user_detail))
+        // Admin Circles (M4-ADMIN / M5-ADMIN)
+        .route("/api/admin/community/circles", get(admin_list_circles))
+        .route("/api/admin/community/circles/:id", get(admin_get_circle_detail).delete(admin_delete_circle).put(admin_update_circle))
+        .route("/api/admin/community/circles/:id/transfer", post(admin_transfer_circle))
+        .route("/api/admin/community/circles/:id/members/:user_id", delete(admin_remove_circle_member))
+        // Admin Leaderboard (M4-ADMIN)
+        .route("/api/admin/community/leaderboard", get(admin_get_leaderboard))
+        .route("/api/admin/community/users/:id/xp", post(admin_award_xp))
 }
 
 // ─── Social Handlers ─────────────────────────────────────────────────────────
@@ -1001,6 +1580,151 @@ async fn unfollow_user(
     crate::community::service::remove_follow(&c_pool, user.id, target_id).await?;
 
     Ok(Json(serde_json::json!({"success": true})))
+}
+
+#[derive(Deserialize)]
+struct SearchQuery {
+    pub q: String,
+    pub r#type: Option<String>, // "users", "posts", "all"
+    pub page: Option<i64>,
+}
+
+async fn search_community(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Query(query): Query<SearchQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let mut user = middleware::get_current_user(&jar, &state.db).await;
+    let c_pool = get_community_pool(&state)?;
+
+    let limit = 20;
+    let offset = (query.page.unwrap_or(1).max(1) - 1) * limit;
+
+    let search_type = query.r#type.as_deref().unwrap_or("all");
+    let search_term = format!("%{}%", query.q);
+
+    let mut users_result = Vec::new();
+    let mut posts_result = Vec::new();
+
+    if search_type == "all" || search_type == "users" {
+        users_result = sqlx::query_as::<_, crate::community::models::CommunityProfile>(
+            r#"
+            SELECT * FROM community_profiles 
+            WHERE is_shadowbanned = false 
+              AND is_community_banned = false
+              AND bio ILIKE $1
+            ORDER BY follower_count DESC
+            LIMIT $2 OFFSET $3
+            "#
+        )
+        .bind(&search_term)
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&c_pool)
+        .await?;
+        
+        // Match with display_names in main DB!
+        // Wait, display names are in the main database... it's better to fetch users whose display_name matches from main db!
+        let user_matches_from_main = sqlx::query!(
+            "SELECT u.id FROM users u JOIN user_profiles up ON u.id = up.user_id WHERE up.display_name ILIKE $1 LIMIT $2",
+            &search_term, limit
+        ).fetch_all(&state.db).await?;
+        
+        let matching_uids: Vec<Uuid> = user_matches_from_main.iter().map(|u| u.id).collect();
+        
+        if !matching_uids.is_empty() {
+             let name_matched_users = sqlx::query_as::<_, crate::community::models::CommunityProfile>(
+                r#"
+                SELECT * FROM community_profiles 
+                WHERE is_shadowbanned = false 
+                  AND is_community_banned = false
+                  AND user_id = ANY($1)
+                "#
+            )
+            .bind(&matching_uids)
+            .fetch_all(&c_pool)
+            .await?;
+            
+            for u in name_matched_users {
+                if !users_result.iter().any(|existing| existing.user_id == u.user_id) {
+                    users_result.push(u);
+                }
+            }
+        }
+    }
+
+    if search_type == "all" || search_type == "posts" {
+        // Tag search vs content search
+        posts_result = sqlx::query_as::<_, crate::community::models::Post>(
+            r#"
+            SELECT p.* FROM posts p
+            JOIN community_profiles cp ON p.user_id = cp.user_id
+            WHERE p.is_hidden = false 
+              AND cp.is_shadowbanned = false
+              AND cp.is_community_banned = false
+              AND (p.content ILIKE $1 OR p.content_tags::text ILIKE $1)
+            ORDER BY p.created_at DESC
+            LIMIT $2 OFFSET $3
+            "#
+        )
+        .bind(&search_term)
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&c_pool)
+        .await?;
+    }
+
+    // Resolve Users
+    let mut uids_to_fetch = std::collections::HashSet::new();
+    for u in &users_result { uids_to_fetch.insert(u.user_id); }
+    for p in &posts_result { uids_to_fetch.insert(p.user_id); }
+    let uids_vec: Vec<Uuid> = uids_to_fetch.into_iter().collect();
+
+    let authors = crate::community::user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &uids_vec).await?;
+    let badges = crate::community::service::get_badges_batch(&c_pool, &uids_vec).await?;
+    
+    // Format response
+    let mut users_formatted = Vec::new();
+    for u in users_result {
+        let auth = authors.get(&u.user_id);
+        users_formatted.push(serde_json::json!({
+            "user_id": u.user_id,
+            "display_name": auth.map(|a| a.display_name.clone()).unwrap_or_else(|| "Anonymous".into()),
+            "avatar_url": auth.and_then(|a| a.avatar_url.clone()),
+            "bio": u.bio,
+            "follower_count": u.follower_count,
+            "badges": badges.get(&u.user_id).cloned().unwrap_or_default(),
+        }));
+    }
+
+    let mut posts_formatted = Vec::new();
+    for p in posts_result {
+        let auth = authors.get(&p.user_id);
+        let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
+        posts_formatted.push(PostDisplay {
+            id: p.id,
+            author_name: auth.map(|a| a.display_name.clone()).unwrap_or_else(|| "Anonymous".into()),
+            author_id: p.user_id,
+            author_avatar: auth.and_then(|a| a.avatar_url.clone()),
+            author_badges,
+            post_type: p.post_type,
+            content: p.content_sanitized.unwrap_or(p.content),
+            asset_id: p.asset_id,
+            image_urls: p.image_urls.unwrap_or_default(),
+            reaction_count: p.reaction_count,
+            comment_count: p.comment_count,
+            is_hidden: p.is_hidden,
+            is_pinned: p.is_pinned,
+            disclaimer_shown: p.disclaimer_shown,
+            verified_owner: false,
+            created_at: p.created_at,
+        });
+    }
+
+    Ok(Json(serde_json::json!({
+        "users": users_formatted,
+        "posts": posts_formatted,
+    })))
 }
 
 // ─── XP Handlers (M4) ───────────────────────────────────────────────────────
@@ -1272,6 +1996,180 @@ async fn get_circle_leaderboard(
     let c_pool = get_community_pool(&state)?;
     let entries = crate::community::circles::get_circle_leaderboard(&c_pool, 20).await?;
     Ok(Json(serde_json::json!({"circles": entries})))
+}
+
+// ─── Property Reviews Handlers (M5) ───────────────────────────────────────
+
+async fn list_asset_reviews(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(asset_id): Path<Uuid>,
+    axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<impl IntoResponse, AppError> {
+    let viewer_id = middleware::get_current_user(&jar, &state.db).await.map(|u| u.id);
+    let limit = q.get("limit").and_then(|l| l.parse::<i64>().ok()).unwrap_or(20);
+    let offset = q.get("offset").and_then(|o| o.parse::<i64>().ok()).unwrap_or(0);
+
+    let c_pool = get_community_pool(&state)?;
+    let reviews = crate::community::reviews::list_reviews_for_asset(&c_pool, asset_id, viewer_id, limit, offset).await?;
+    let stats = crate::community::reviews::get_review_stats(&c_pool, asset_id).await?;
+
+    // Also get my review if logged in
+    let my_review = if let Some(vid) = viewer_id {
+        crate::community::reviews::get_my_review(&c_pool, vid, asset_id).await?
+    } else {
+        None
+    };
+
+    Ok(Json(serde_json::json!({
+        "stats": stats,
+        "reviews": reviews,
+        "my_review": my_review,
+    })))
+}
+
+#[derive(serde::Deserialize)]
+struct UpsertReviewReq {
+    rating: i16,
+    content: String,
+}
+
+async fn upsert_asset_review(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(asset_id): Path<Uuid>,
+    Json(payload): Json<UpsertReviewReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let review = crate::community::reviews::upsert_review(
+        &c_pool, 
+        &state.db, 
+        user.id, 
+        asset_id, 
+        payload.rating, 
+        &payload.content
+    ).await?;
+
+    Ok(Json(serde_json::json!({ "success": true, "review": review })))
+}
+
+async fn delete_asset_review(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(asset_id): Path<Uuid>, // We use the asset ID for standardizing route structure but delete relies on lookup
+    axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    // the route is /api/community/assets/:id/reviews, but a user only has one review per asset
+    // So we can find the review by user_id and asset_id.
+    let c_pool = get_community_pool(&state)?;
+    
+    // Grab review ID first
+    let review = crate::community::reviews::get_my_review(&c_pool, user.id, asset_id).await?
+        .ok_or_else(|| AppError::NotFound("Review not found".into()))?;
+
+    crate::community::reviews::delete_review(&c_pool, user.id, review.id).await?;
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+async fn toggle_review_upvote(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(review_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let (is_upvoted, count) = crate::community::reviews::toggle_review_upvote(&c_pool, user.id, review_id).await?;
+
+    Ok(Json(serde_json::json!({ "is_upvoted": is_upvoted, "helpful_count": count })))
+}
+
+// ─── Challenges Handlers (M5) ──────────────────────────────────────────────
+
+async fn list_challenges(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let challenges = crate::community::challenges::list_challenges_for_user(&c_pool, user.id).await?;
+
+    Ok(Json(serde_json::json!({ "challenges": challenges })))
+}
+
+// ─── Notifications Handlers (M5) ────────────────────────────────────────────
+
+async fn list_notifications(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Query(_q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let limit = _q.get("limit").and_then(|l| l.parse::<i64>().ok()).unwrap_or(50);
+    let c_pool = get_community_pool(&state)?;
+    let notifications = crate::community::notifications::get_my_notifications(&c_pool, user.id, limit).await?;
+
+    Ok(Json(serde_json::json!({ "notifications": notifications })))
+}
+
+async fn get_unread_notification_count(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db).await;
+    if user.is_none() {
+        return Ok(Json(serde_json::json!({ "count": 0 }))); // Fail silently for count
+    }
+
+    let c_pool = get_community_pool(&state)?;
+    let count = crate::community::notifications::get_unread_count(&c_pool, user.unwrap().id).await?;
+
+    Ok(Json(serde_json::json!({ "count": count })))
+}
+
+async fn mark_notification_read(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(notification_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    crate::community::notifications::mark_as_read(&c_pool, user.id, notification_id).await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+async fn mark_all_notifications_read(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    crate::community::notifications::mark_all_as_read(&c_pool, user.id).await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
 }
 
 // ─── AMA Handlers (M5) ──────────────────────────────────────────────
@@ -1687,3 +2585,134 @@ async fn admin_get_user_detail(
         "xp_summary": xp_summary,
     })))
 }
+
+// ─── Admin Circle Handlers (M4-ADMIN) ──────────────────────────────────────
+
+async fn admin_list_circles(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let circles = crate::community::circles::admin_get_all_circles(&c_pool).await?;
+    Ok(Json(serde_json::json!({ "circles": circles })))
+}
+
+async fn admin_delete_circle(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    crate::community::circles::admin_delete_circle(&c_pool, circle_id).await?;
+    Ok(Json(serde_json::json!({ "status": "deleted" })))
+}
+
+async fn admin_remove_circle_member(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path((circle_id, target_id)): Path<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    crate::community::circles::admin_remove_member(&c_pool, circle_id, target_id).await?;
+    Ok(Json(serde_json::json!({ "status": "removed" })))
+}
+
+async fn admin_get_circle_detail(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let circle = crate::community::circles::get_circle(&c_pool, circle_id).await?
+        .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+    let members = crate::community::circles::get_circle_members(&c_pool, circle_id).await?;
+
+    Ok(Json(serde_json::json!({
+        "circle": circle,
+        "members": members,
+    })))
+}
+
+#[derive(serde::Deserialize)]
+struct AdminUpdateCircleReq {
+    name: Option<String>,
+    description: Option<String>,
+    avatar_emoji: Option<String>,
+    is_public: Option<bool>,
+}
+
+async fn admin_update_circle(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(payload): Json<AdminUpdateCircleReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let circle = crate::community::circles::admin_force_update_circle(
+        &c_pool, circle_id, payload.name.as_deref(), payload.description.as_deref(), payload.avatar_emoji.as_deref(), payload.is_public
+    ).await?;
+    
+    Ok(Json(serde_json::json!({ "circle": circle })))
+}
+
+#[derive(serde::Deserialize)]
+struct AdminTransferCircleReq {
+    new_owner_id: Uuid,
+}
+
+async fn admin_transfer_circle(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(payload): Json<AdminTransferCircleReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    crate::community::circles::admin_force_transfer_circle(&c_pool, circle_id, payload.new_owner_id).await?;
+    
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+// ─── Admin Leaderboard Handlers (M4-ADMIN) ─────────────────────────────────
+
+async fn admin_get_leaderboard(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Query(_q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<impl IntoResponse, AppError> {
+    let limit = _q.get("limit").and_then(|l| l.parse::<i64>().ok()).unwrap_or(100);
+    let c_pool = get_community_pool(&state)?;
+    let entries = crate::community::xp::get_user_leaderboard(&c_pool, limit).await?;
+    Ok(Json(serde_json::json!({ "leaderboard": entries })))
+}
+
+#[derive(serde::Deserialize)]
+struct AdminAwardXpReq {
+    amount: i32,
+    reason_label: String,
+    description: String,
+}
+
+async fn admin_award_xp(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+    Json(payload): Json<AdminAwardXpReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    
+    let amount_awarded = crate::community::xp::award_xp(
+        &c_pool, 
+        user_id, 
+        &payload.reason_label, 
+        Some(&payload.description), 
+        Some(payload.amount)
+    ).await?;
+
+    if amount_awarded != 0 {
+        // Evaluate level up
+        crate::community::xp::update_user_level(&c_pool, user_id).await?;
+    }
+
+    Ok(Json(serde_json::json!({ "status": "xp_awarded", "amount": amount_awarded })))
+}
+

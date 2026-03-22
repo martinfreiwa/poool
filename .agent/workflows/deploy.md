@@ -122,6 +122,7 @@ curl -s -o /dev/null -w "HTTP %{http_code}" https://platform.poool.app/auth/logi
 ### Known Failure Modes:
 | Symptom | Cause | Fix |
 |---------|-------|-----|
+| `prepared statement "sqlx_s_N" already exists` | PgBouncer Session pool conflict | Ensure `PGBOUNCER_ENABLED=true` enables `opts.statement_cache_capacity(0)` |
 | `prepared statement "sqlx_s_N" already exists` | Backend bypassing PgBouncer (connecting to socket directly) | Ensure `PGBOUNCER_ENABLED=true` and `db.rs` checks it |
 | `unsupported startup parameter: extra_float_digits` | PgBouncer rejecting sqlx connection params | Add `ignore_startup_parameters` to PgBouncer config |
 | `"trust" authentication failed` | PgBouncer not passing credentials upstream | Add `user=` and `password=` to `[databases]` line |

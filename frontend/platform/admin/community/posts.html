@@ -125,11 +125,15 @@
                                 <div style="font-size: 13px; max-width: 250px; white-space: normal; line-height: 1.4;">
                                     ${truncContent}
                                 </div>
+                                ${p.content_tags ? `<div style="margin-top:4px;">${p.content_tags.map(t => `<span class="admin-badge" style="background:#fef3c7; color:#b45309; padding:2px 6px; font-size:10px;">${t}</span>`).join('')}</div>` : ''}
                             </td>
                             <td>${statusBadge}</td>
                             <td><span style="font-size: 13px; color: #667085;">${date}</span></td>
                             <td style="text-align: right;">
-                                ${!p.is_hidden ? `<button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="hidePost('${p.id}')">Hide</button>` : `<span style="font-size:12px; color:#667085;">Hidden</span>`}
+                                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                                    ${!p.is_locked ? `<button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="toggleLock('${p.id}', true)">Lock</button>` : `<button class="admin-btn admin-btn--secondary admin-btn--sm" style="color:#d97706; border-color:#d97706;" onclick="toggleLock('${p.id}', false)">Unlock</button>`}
+                                    ${!p.is_hidden ? `<button class="admin-btn admin-btn--secondary admin-btn--sm" style="color:var(--error-color)" onclick="hidePost('${p.id}')">Hide</button>` : `<span style="font-size:12px; color:#667085; line-height:30px;">Hidden</span>`}
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -141,6 +145,25 @@
         } catch(e) {
             console.error(e);
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#D92D20;">Network error</td></tr>';
+        }
+    }
+
+    async function toggleLock(postId, isLocked) {
+        if(!confirm(`Are you sure you want to ${isLocked ? 'lock' : 'unlock'} this thread?`)) return;
+        
+        try {
+            const res = await fetch(`/api/admin/community/posts/${postId}/lock`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_locked: isLocked })
+            });
+            if (res.ok) {
+                loadPosts();
+            } else {
+                alert("Failed to toggle thread lock");
+            }
+        } catch(e) {
+            alert("Error connecting to server");
         }
     }
 

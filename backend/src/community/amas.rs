@@ -316,16 +316,28 @@ pub async fn answer_question(
         return Err(AppError::NotFound("Question not found".into()));
     }
 
-    // Award XP to the question author
-    let author_id: Option<Uuid> = sqlx::query_scalar(
-        "SELECT user_id FROM ama_questions WHERE id = $1"
+    // Award XP to the question author and notify them
+    let info: Option<(Uuid, Uuid)> = sqlx::query_as(
+        "SELECT user_id, ama_id FROM ama_questions WHERE id = $1"
     )
     .bind(question_id)
     .fetch_optional(pool)
     .await?;
 
-    if let Some(uid) = author_id {
+    if let Some((uid, ama_id)) = info {
         let _ = crate::community::xp::award_xp(pool, uid, "ama_question", Some("Your AMA question was answered!"), Some(50)).await;
+        
+        let notif_content = "Your AMA question was answered by the expert!".to_string();
+        let link = format!("/community/feed?ama={}", ama_id);
+        let _ = crate::community::notifications::notify_user(
+            pool,
+            uid,
+            None, // platform
+            "ama_answer",
+            Some(ama_id),
+            &notif_content,
+            Some(&link)
+        ).await;
     }
 
     Ok(())

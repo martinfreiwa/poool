@@ -160,6 +160,105 @@ pub async fn update_circle(
     Ok(circle)
 }
 
+pub async fn admin_force_update_circle(
+    pool: &PgPool,
+    circle_id: Uuid,
+    name: Option<&str>,
+    description: Option<&str>,
+    emoji: Option<&str>,
+    is_public: Option<bool>,
+) -> Result<Circle, AppError> {
+    let circle = sqlx::query_as::<_, Circle>(
+        r#"UPDATE circles SET
+            name = COALESCE($2, name),
+            description = COALESCE($3, description),
+            avatar_emoji = COALESCE($4, avatar_emoji),
+            is_public = COALESCE($5, is_public),
+            updated_at = NOW()
+           WHERE id = $1 RETURNING *"#
+    )
+    .bind(circle_id)
+    .bind(name)
+    .bind(description)
+    .bind(emoji)
+    .bind(is_public)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(circle)
+}
+
+pub async fn admin_force_transfer_circle(
+    pool: &PgPool,
+    circle_id: Uuid,
+    new_owner_id: Uuid,
+) -> Result<(), AppError> {
+    
+    // Check if new_owner is in circle_members. If not, add them.
+    let is_member: Option<String> = sqlx::query_scalar(
+        "SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2"
+    )
+    .bind(circle_id)
+    .bind(new_owner_id)
+    .fetch_optional(pool)
+    .await?;
+    
+    // Begin transaction
+    let mut tx = pool.begin().await?;
+
+    // Current owner -> admin/member
+    sqlx::query(
+        "UPDATE circle_members SET role = 'member' WHERE circle_id = $1 AND role = 'owner'"
+    )
+    .bind(circle_id)
+    .execute(&mut *tx)
+    .await?;
+
+    if is_member.is_some() {
+        // Just upgrade them
+        sqlx::query(
+            "UPDATE circle_members SET role = 'owner' WHERE circle_id = $1 AND user_id = $2"
+        )
+        .bind(circle_id)
+        .bind(new_owner_id)
+        .execute(&mut *tx)
+        .await?;
+    } else {
+        // Check if full (this is admin so forcibly allow them over limits maybe?)
+        sqlx::query(
+            "INSERT INTO circle_members (circle_id, user_id, role) VALUES ($1, $2, 'owner')"
+        )
+        .bind(circle_id)
+        .bind(new_owner_id)
+        .execute(&mut *tx)
+        .await?;
+        
+        sqlx::query("UPDATE circles SET member_count = member_count + 1 WHERE id = $1")
+            .bind(circle_id)
+            .execute(&mut *tx)
+            .await?;
+            
+        sqlx::query("UPDATE community_profiles SET circle_id = $1 WHERE user_id = $2")
+            .bind(circle_id)
+            .bind(new_owner_id)
+            .execute(&mut *tx)
+            .await?;
+    }
+
+    // Set circles.owner_id
+    sqlx::query(
+        "UPDATE circles SET owner_id = $1 WHERE id = $2"
+    )
+    .bind(new_owner_id)
+    .bind(circle_id)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
 /// Get all members of a circle.
 pub async fn get_circle_members(pool: &PgPool, circle_id: Uuid) -> Result<Vec<CircleMember>, AppError> {
     let members = sqlx::query_as::<_, CircleMember>(
@@ -226,6 +325,9 @@ pub async fn join_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Resul
         .await?;
 
     tx.commit().await?;
+
+    // Award Gamification Challenge
+    crate::community::challenges::increment_progress(pool, user_id, "join_circle", 1).await?;
 
     Ok(())
 }
@@ -473,3 +575,90 @@ pub async fn kick_member(pool: &PgPool, actor_id: Uuid, target_id: Uuid, circle_
 
     Ok(())
 }
+
+// ─── Admin Features ──────────────────────────────────────────────────
+
+/// List all circles for admin (ordered by creation date).
+pub async fn admin_get_all_circles(pool: &PgPool) -> Result<Vec<Circle>, AppError> {
+    let circles = sqlx::query_as::<_, Circle>(
+        "SELECT * FROM circles ORDER BY created_at DESC"
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(circles)
+}
+
+/// Admin completely deletes a circle and unlinks all members.
+pub async fn admin_delete_circle(pool: &PgPool, circle_id: Uuid) -> Result<(), AppError> {
+    let mut tx = pool.begin().await?;
+
+    // Unlink members in community_profiles
+    sqlx::query("UPDATE community_profiles SET circle_id = NULL WHERE circle_id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Delete members
+    sqlx::query("DELETE FROM circle_members WHERE circle_id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Delete invites
+    sqlx::query("DELETE FROM circle_invites WHERE circle_id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Delete circle
+    let res = sqlx::query("DELETE FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+        
+    if res.rows_affected() == 0 {
+        return Err(AppError::NotFound("Circle not found".into()));
+    }
+
+    tx.commit().await?;
+    Ok(())
+}
+
+/// Admin removes a user from a circle. Owner cannot be removed.
+pub async fn admin_remove_member(pool: &PgPool, circle_id: Uuid, target_id: Uuid) -> Result<(), AppError> {
+    let role: Option<String> = sqlx::query_scalar(
+        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
+    )
+    .bind(target_id)
+    .bind(circle_id)
+    .fetch_optional(pool)
+    .await?;
+
+    let role = role.ok_or_else(|| AppError::NotFound("User not in circle".into()))?;
+    if role == "owner" {
+        return Err(AppError::BadRequest("Cannot remove circle owner. Delete circle instead.".into()));
+    }
+
+    let mut tx = pool.begin().await?;
+
+    sqlx::query("DELETE FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+        .bind(target_id)
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    sqlx::query("UPDATE circles SET member_count = GREATEST(0, member_count - 1), updated_at = NOW() WHERE id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    sqlx::query("UPDATE community_profiles SET circle_id = NULL WHERE user_id = $1")
+        .bind(target_id)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+
+    Ok(())
+}
+

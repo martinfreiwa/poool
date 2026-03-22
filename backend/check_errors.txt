@@ -1,0 +1,273 @@
+    Checking poool-backend v0.1.0 (/Users/martin/Projects/poool/backend)
+error: error returned from database: column "display_name" does not exist
+    --> src/community/routes.rs:1609:38
+     |
+1609 |           let user_matches_from_main = sqlx::query!(
+     |  ______________________________________^
+1610 | |             "SELECT id FROM users WHERE display_name ILIKE $1 LIMIT $2",
+1611 | |             &search_term, limit
+1612 | |         ).fetch_all(&state.db).await?;
+     | |_________^
+     |
+     = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+   --> src/community/routes.rs:117:26
+    |
+117 |                     Some(&format!("/community/feed?post={}", post_id))
+    |                     ---- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Uuid`, found `&String`
+    |                     |
+    |                     arguments to this enum variant are incorrect
+    |
+help: the type constructed contains `&std::string::String` due to the type of the argument passed
+   --> src/community/routes.rs:117:21
+    |
+117 |                     Some(&format!("/community/feed?post={}", post_id))
+    |                     ^^^^^--------------------------------------------^
+    |                          |
+    |                          this argument influences the type of `Some`
+note: tuple variant defined here
+   --> /rustc/4a4ef493e3a1488c6e321570238084b38948f6db/library/core/src/option.rs:608:4
+
+error[E0061]: this function takes 7 arguments but 5 arguments were supplied
+   --> src/community/routes.rs:112:25
+    |
+112 |                   let _ = crate::community::notifications::notify_user(
+    |  _________________________^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-
+113 | |                     &c_pool,
+114 | |                     uid,
+115 | |                     "mention",
+    | |                     --------- argument #3 of type `std::option::Option<Uuid>` is missing
+116 | |                     &msg,
+117 | |                     Some(&format!("/community/feed?post={}", post_id))
+118 | |                 ).await;
+    | |_________________- argument #7 of type `std::option::Option<&str>` is missing
+    |
+note: function defined here
+   --> src/community/notifications.rs:26:14
+    |
+ 26 | pub async fn notify_user(
+    |              ^^^^^^^^^^^
+...
+ 29 |     actor_id: Option<Uuid>,
+    |     ----------------------
+...
+ 33 |     link_url: Option<&str>,
+    |     ----------------------
+help: provide the arguments
+    |
+112 ~                 let _ = crate::community::notifications::notify_user(
+113 +                     &c_pool,
+114 +                     uid,
+115 +                     /* std::option::Option<Uuid> */,
+116 +                     &msg,
+117 +                     Some(&format!("/community/feed?post={}", post_id)),
+118 +                     "mention",
+119 +                     /* std::option::Option<&str> */,
+120 ~                 ).await;
+    |
+
+error[E0277]: the trait bound `for<'r> CommunityProfile: FromRow<'r, _>` is not satisfied
+    --> src/community/routes.rs:1591:44
+     |
+1591 |         users_result = sqlx::query_as::<_, crate::community::models::CommunityProfile>(
+     |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+     |
+help: the trait `for<'r> FromRow<'r, _>` is not implemented for `CommunityProfile`
+    --> src/community/models.rs:55:1
+     |
+  55 | pub struct CommunityProfile {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: the following other types implement trait `FromRow<'r, R>`:
+               `()` implements `FromRow<'r, R>`
+               `(T1, T2)` implements `FromRow<'r, R>`
+               `(T1, T2, T3)` implements `FromRow<'r, R>`
+               `(T1, T2, T3, T4)` implements `FromRow<'r, R>`
+               `(T1, T2, T3, T4, T5)` implements `FromRow<'r, R>`
+               `(T1, T2, T3, T4, T5, T6)` implements `FromRow<'r, R>`
+               `(T1, T2, T3, T4, T5, T6, T7)` implements `FromRow<'r, R>`
+               `(T1, T2, T3, T4, T5, T6, T7, T8)` implements `FromRow<'r, R>`
+             and 57 others
+note: required by a bound in `sqlx::query_as`
+    --> /Users/martin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-core-0.8.6/src/query_as.rs:345:8
+     |
+ 342 | pub fn query_as<'q, DB, O>(sql: &'q str) -> QueryAs<'q, DB, O, <DB as Database>::Arguments<'q>>
+     |        -------- required by a bound in this function
+...
+ 345 |     O: for<'r> FromRow<'r, DB::Row>,
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `query_as`
+
+error[E0599]: the method `fetch_all` exists for struct `QueryAs<'_, Postgres, CommunityProfile, PgArguments>`, but its trait bounds were not satisfied
+    --> src/community/routes.rs:1604:10
+     |
+1591 |           users_result = sqlx::query_as::<_, crate::community::models::CommunityProfile>(
+     |  ________________________-
+1592 | |             r#"
+1593 | |             SELECT * FROM community_profiles 
+1594 | |             WHERE is_shadowbanned = false 
+...    |
+1603 | |         .bind(offset)
+1604 | |         .fetch_all(&c_pool)
+     | |         -^^^^^^^^^ method cannot be called due to unsatisfied trait bounds
+     | |_________|
+     |
+     |
+    ::: src/community/models.rs:55:1
+     |
+  55 |   pub struct CommunityProfile {
+     |   --------------------------- doesn't satisfy `CommunityProfile: FromRow<'r, PgRow>`
+     |
+     = note: the following trait bounds were not satisfied:
+             `CommunityProfile: FromRow<'r, PgRow>`
+
+error[E0282]: type annotations needed
+    --> src/community/routes.rs:1609:13
+     |
+1609 |         let user_matches_from_main = sqlx::query!(
+     |             ^^^^^^^^^^^^^^^^^^^^^^
+...
+1614 |         let matching_uids: Vec<Uuid> = user_matches_from_main.iter().map(|u| u.id).collect();
+     |                                        ---------------------- type must be known at this point
+     |
+help: consider giving `user_matches_from_main` an explicit type
+     |
+1609 |         let user_matches_from_main: /* Type */ = sqlx::query!(
+     |                                   ++++++++++++
+
+error[E0277]: the trait bound `for<'r> CommunityProfile: FromRow<'r, _>` is not satisfied
+    --> src/community/routes.rs:1617:59
+     |
+1617 |              let name_matched_users = sqlx::query_as::<_, crate::community::models::CommunityProfile>(
+     |                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unsatisfied trait bound
+     |
+help: the trait `for<'r> FromRow<'r, _>` is not implemented for `CommunityProfile`
+    --> src/community/models.rs:55:1
+     |
+  55 | pub struct CommunityProfile {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: the following other types implement trait `FromRow<'r, R>`:
+               `()` implements `FromRow<'r, R>`
+               `(T1, T2)` implements `FromRow<'r, R>`
+               `(T1, T2, T3)` implements `FromRow<'r, R>`
+               `(T1, T2, T3, T4)` implements `FromRow<'r, R>`
+               `(T1, T2, T3, T4, T5)` implements `FromRow<'r, R>`
+               `(T1, T2, T3, T4, T5, T6)` implements `FromRow<'r, R>`
+               `(T1, T2, T3, T4, T5, T6, T7)` implements `FromRow<'r, R>`
+               `(T1, T2, T3, T4, T5, T6, T7, T8)` implements `FromRow<'r, R>`
+             and 57 others
+note: required by a bound in `sqlx::query_as`
+    --> /Users/martin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-core-0.8.6/src/query_as.rs:345:8
+     |
+ 342 | pub fn query_as<'q, DB, O>(sql: &'q str) -> QueryAs<'q, DB, O, <DB as Database>::Arguments<'q>>
+     |        -------- required by a bound in this function
+...
+ 345 |     O: for<'r> FromRow<'r, DB::Row>,
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `query_as`
+
+error[E0599]: the method `fetch_all` exists for struct `QueryAs<'_, _, CommunityProfile, _>`, but its trait bounds were not satisfied
+    --> src/community/routes.rs:1626:14
+     |
+1617 |                let name_matched_users = sqlx::query_as::<_, crate::community::models::CommunityProfile>(
+     |  _______________________________________-
+1618 | |                 r#"
+1619 | |                 SELECT * FROM community_profiles 
+1620 | |                 WHERE is_shadowbanned = false 
+...    |
+1625 | |             .bind(&matching_uids)
+1626 | |             .fetch_all(&c_pool)
+     | |             -^^^^^^^^^ method cannot be called on `QueryAs<'_, _, CommunityProfile, _>` due to unsatisfied trait bounds
+     | |_____________|
+     |
+     |
+    ::: src/community/models.rs:55:1
+     |
+  55 |   pub struct CommunityProfile {
+     |   --------------------------- doesn't satisfy `CommunityProfile: FromRow<'r, _>`
+     |
+     = note: the following trait bounds were not satisfied:
+             `CommunityProfile: FromRow<'r, _>`
+
+error[E0614]: type `Pool<Postgres>` cannot be dereferenced
+    --> src/main.rs:2027:22
+     |
+2027 |     .fetch_optional(&*state.db)
+     |                      ^^^^^^^^^ can't be dereferenced
+
+error[E0282]: type annotations needed
+    --> src/main.rs:2013:23
+     |
+2013 |       let post_record = sqlx::query!(
+     |  _______________________^
+2014 | |         r#"
+2015 | |         SELECT
+2016 | |             posts.content,
+...    |
+2027 | |     .fetch_optional(&*state.db)
+2028 | |     .await
+     | |__________^ cannot infer type
+
+error[E0282]: type annotations needed
+    --> src/main.rs:2047:32
+     |
+2047 |             if let Some(arr) = imgs.as_array() {
+     |                                ^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+    --> src/main.rs:2048:42
+     |
+2048 |                 if let Some(first_img) = arr.first() {
+     |                                          ^^^ cannot infer type
+
+error[E0282]: type annotations needed
+    --> src/main.rs:2049:38
+     |
+2049 |                     if let Some(s) = first_img.as_str() {
+     |                                      ^^^^^^^^^ cannot infer type
+
+error[E0282]: type annotations needed
+    --> src/main.rs:2050:90
+     |
+2050 |                         context.insert("og_image".to_string(), serde_json::Value::String(s.to_string()));
+     |                                                                                          ^ cannot infer type
+
+warning: unused import: `redis::AsyncCommands`
+   --> src/community/user_bridge.rs:143:21
+    |
+143 |                 use redis::AsyncCommands;
+    |                     ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `is_completed` is never read
+  --> src/community/challenges.rs:97:13
+   |
+97 |             is_completed = true;
+   |             ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `only_following_user_id`
+   --> src/community/routes.rs:195:9
+    |
+195 |     let only_following_user_id: Option<Uuid> = None; // not constrained by following
+    |         ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_only_following_user_id`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `q`
+    --> src/community/routes.rs:2045:26
+     |
+2045 |     axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+     |                          ^ help: if this is intentional, prefix it with an underscore: `_q`
+
+warning: unused variable: `core_pool`
+  --> src/community/background.rs:18:42
+   |
+18 | async fn check_velocity(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+   |                                          ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_core_pool`
+
+Some errors have detailed explanations: E0061, E0277, E0282, E0308, E0599, E0614.
+For more information about an error, try `rustc --explain E0061`.
+warning: `poool-backend` (bin "poool-backend") generated 5 warnings
+error: could not compile `poool-backend` (bin "poool-backend") due to 14 previous errors; 5 warnings emitted

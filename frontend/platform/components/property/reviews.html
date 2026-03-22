@@ -1,0 +1,250 @@
+<div class="reviews-section" x-data="propertyReviews('{{ asset.id }}')" style="margin-top: 48px; border-top: 1px solid #EAECF0; padding-top: 32px;">
+  <div class="reviews-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--brand-blue)">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <h2 style="font-size: 24px; font-weight: 500; font-family: var(--font-heading); color: var(--text-primary); margin: 0;">Verified Reviews</h2>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="font-size: 18px; font-weight: 600;" x-text="stats.average_rating ? stats.average_rating.toFixed(1) : '0.0'">0.0</div>
+      <div style="font-size: 14px; color: var(--text-tertiary);" x-text="'(' + stats.total_reviews + ')'">0</div>
+    </div>
+  </div>
+
+  <div class="reviews-stats" style="margin-bottom: 32px; padding: 20px; background: #F9FAFB; border-radius: 12px; border: 1px solid #EAECF0;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <p style="font-size: 14px; color: var(--text-tertiary); margin: 0;">Reviews are mostly from verified investors who hold tokens in this property.</p>
+      <button class="poool-btn poool-btn-outline" style="padding: 8px 16px; font-size: 14px; background: white;" @click="openModal()"><span x-text="myReview ? 'Edit my review' : 'Write a review'"></span></button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div x-show="loading" style="padding: 20px; text-align: center; color: var(--text-tertiary);">Loading reviews...</div>
+
+  <!-- List -->
+  <div class="reviews-list" x-show="!loading" style="display: flex; flex-direction: column; gap: 24px;">
+    <template x-for="r in reviews" :key="r.id">
+      <div class="review-card" style="padding-bottom: 24px; border-bottom: 1px solid #EAECF0;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: #D0D5DD; overflow: hidden; display: flex; align-items: center; justify-content: center; font-weight: 600; color: #475467;">
+              <template x-if="r.user_avatar_url">
+                <img :src="r.user_avatar_url" style="width: 100%; height: 100%; object-fit: cover;" />
+              </template>
+              <template x-if="!r.user_avatar_url">
+                <span x-text="r.user_display_name.charAt(0)"></span>
+              </template>
+            </div>
+            <div>
+              <div style="font-weight: 500; font-size: 15px; color: var(--text-primary);" x-text="r.user_display_name"></div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-tertiary);">
+                <span x-text="new Date(r.created_at).toLocaleDateString()"></span>
+                <template x-if="r.is_owner">
+                  <span style="color: #027A48; background: #ECFDF3; padding: 2px 6px; border-radius: 4px; font-weight: 500; font-size: 11px;">Verified Owner</span>
+                </template>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 2px;">
+            <!-- Stars -->
+            <template x-for="i in 5">
+              <svg width="16" height="16" viewBox="0 0 24 24" :fill="i <= r.rating ? '#FEC84B' : 'none'" stroke="#FEC84B" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </template>
+          </div>
+        </div>
+        
+        <p style="font-size: 15px; line-height: 1.6; color: var(--text-secondary); margin: 0 0 16px 0; white-space: pre-wrap;" x-text="r.content"></p>
+        
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <button @click="toggleUpvote(r)" style="display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px solid #EAECF0; padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; transition: all 0.2s;" :style="r.has_upvoted ? 'background: #F0FDF4; border-color: #A7F3D0; color: #065F46;' : 'color: #475467;'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="19" x2="12" y2="5"></line>
+              <polyline points="5 12 12 5 19 12"></polyline>
+            </svg>
+            <span x-text="r.has_upvoted ? 'Helpful' : 'Helpful'"></span>
+            <span x-show="r.helpful_count > 0" x-text="'(' + r.helpful_count + ')'" style="font-weight: 500; margin-left: 2px;"></span>
+          </button>
+          
+          <template x-if="myReview && myReview.id === r.id">
+            <button @click="deleteReview(r.id)" style="display: inline-flex; align-items: center; gap: 4px; background: none; border: none; padding: 6px; font-size: 13px; color: #EF4444; cursor: pointer;">
+              Delete my review
+            </button>
+          </template>
+        </div>
+      </div>
+    </template>
+    
+    <div x-show="reviews.length === 0" style="text-align: center; padding: 40px 20px; background: #FCFCFD; border-radius: 12px; border: 1px dashed #D0D5DD;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="color: var(--text-tertiary); margin-bottom: 16px;">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <p style="color: var(--text-tertiary); margin: 0 0 16px 0;">No reviews yet for this property.</p>
+      <button class="poool-btn poool-btn-primary" style="padding: 8px 24px; font-size: 14px; border-radius: 8px;" @click="openModal()">Be the first to review</button>
+    </div>
+  </div>
+
+  <!-- Write Review Modal -->
+  <div x-show="showModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);" x-transition>
+    <div style="background: white; border-radius: 16px; width: 100%; max-width: 500px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); margin: 16px;" @click.away="showModal = false">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h3 style="font-family: var(--font-heading); font-size: 20px; margin: 0;">Write a Review</h3>
+        <button @click="showModal = false" style="background: none; border: none; cursor: pointer; color: #98A2B3;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-secondary);">Your Rating</label>
+        <div style="display: flex; gap: 8px;">
+          <template x-for="i in 5">
+            <button @click="formRating = i" @mouseenter="hoverRating = i" @mouseleave="hoverRating = 0" style="background: none; border: none; padding: 0; cursor: pointer;">
+              <svg width="32" height="32" viewBox="0 0 24 24" stroke="#FEC84B" stroke-width="2" :fill="(hoverRating >= i || formRating >= i) ? '#FEC84B' : 'none'" style="transition: all 0.1s;">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 24px;">
+        <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; color: var(--text-secondary);">Your Experience</label>
+        <textarea x-model="formBody" rows="5" placeholder="Share details of your own experience at this property..." style="width: 100%; border: 1px solid #D0D5DD; border-radius: 8px; padding: 12px; font-family: inherit; font-size: 15px; resize: vertical; box-sizing: border-box;"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="poool-btn poool-btn-outline" style="padding: 10px 20px; border-radius: 8px;" @click="showModal = false">Cancel</button>
+        <button class="poool-btn poool-btn-primary" style="padding: 10px 24px; border-radius: 8px;" @click="submitReview()" :disabled="submitting || formRating === 0 || formBody.trim() === ''">
+          <span x-text="submitting ? 'Posting...' : 'Post Review'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('propertyReviews', (assetId) => ({
+        assetId: assetId,
+        reviews: [],
+        stats: { average_rating: 0, total_reviews: 0 },
+        myReview: null,
+        loading: true,
+        
+        showModal: false,
+        formRating: 0,
+        hoverRating: 0,
+        formBody: '',
+        submitting: false,
+
+        async init() {
+            if (!this.assetId) return;
+            // Add a small delay so we don't block main render
+            setTimeout(() => {
+              this.loadData();
+            }, 100);
+        },
+
+        async loadData() {
+            this.loading = true;
+            try {
+                const res = await fetch(`/api/community/assets/${this.assetId}/reviews?limit=20`);
+                if (res.ok) {
+                    const data = await res.json();
+                    this.reviews = data.reviews || [];
+                    this.stats = data.stats || this.stats;
+                    this.myReview = data.my_review || null;
+                }
+            } catch (e) {
+                console.error('Failed to load reviews', e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        openModal() {
+            if (this.myReview) {
+                this.formRating = this.myReview.rating;
+                this.formBody = this.myReview.content;
+            } else {
+                this.formRating = 0;
+                this.formBody = '';
+            }
+            this.showModal = true;
+        },
+
+        async submitReview() {
+            if (this.formRating < 1 || this.formRating > 5 || !this.formBody.trim()) return;
+            this.submitting = true;
+            try {
+                const res = await fetch(`/api/community/assets/${this.assetId}/reviews`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rating: this.formRating,
+                        content: this.formBody.trim()
+                    })
+                });
+
+                if (res.ok) {
+                    this.showModal = false;
+                    await this.loadData(); // Reload
+                } else {
+                    const err = await res.json();
+                    alert("Error posting review: " + (err.error || "Unknown error"));
+                }
+            } catch (e) {
+                alert("Network error. Make sure you are logged in.");
+            } finally {
+                this.submitting = false;
+            }
+        },
+
+        async deleteReview(id) {
+            if (!confirm("Are you sure you want to delete your review?")) return;
+            try {
+                const res = await fetch(`/api/community/assets/${this.assetId}/reviews`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    await this.loadData();
+                } else {
+                    alert("Failed to delete review.");
+                }
+            } catch(e) {}
+        },
+
+        async toggleUpvote(review) {
+            try {
+                // Optimistic UI update
+                const is_upvoted = !review.has_upvoted;
+                review.has_upvoted = is_upvoted;
+                review.helpful_count += is_upvoted ? 1 : -1;
+
+                const res = await fetch(`/api/community/reviews/${review.id}/upvote`, {
+                    method: 'POST'
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    // Sync up with server real count
+                    review.has_upvoted = data.is_upvoted;
+                    review.helpful_count = data.helpful_count;
+                } else {
+                    // Revert
+                    review.has_upvoted = !is_upvoted;
+                    review.helpful_count += is_upvoted ? -1 : 1;
+                    
+                    if (res.status === 401) {
+                        alert("You must be logged in to upvote reviews.");
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }));
+});
+</script>

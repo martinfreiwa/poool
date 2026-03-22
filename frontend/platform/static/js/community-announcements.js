@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSkeleton();
         try {
             const url = currentCategory ? `/api/community/feed?category=${currentCategory}` : `/api/community/feed`;
-            const res = await fetch(url);
+            const res = await fetch(url, { credentials: 'same-origin' });
             if (!res.ok) throw new Error("Failed to fetch announcements");
             const posts = await res.json();
             

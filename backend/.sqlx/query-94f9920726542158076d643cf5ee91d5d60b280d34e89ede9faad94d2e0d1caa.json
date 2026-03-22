@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT is_community_banned, muted_until FROM community_profiles WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "is_community_banned",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 1,
+        "name": "muted_until",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "94f9920726542158076d643cf5ee91d5d60b280d34e89ede9faad94d2e0d1caa"
+}

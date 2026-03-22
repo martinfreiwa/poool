@@ -364,10 +364,15 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M4-BE.9** | Login Streak Tracker | Backend | M4-BE.4 | `✅ DONE` | Agent |
 | **M4-BE.7** | Circle Retry Worker (failed auto-joins) | Backend | M4-BE.2 | `✅ DONE` | Agent |
 | **M4-BE.10** | Level-gated feature enforcement | Backend | M4-BE.6 | `✅ DONE` | Agent |
-| **M4-ADMIN.1**| Admin: Circles Overview page | Admin | M4-BE.1 | `❌` | - |
-| **M4-ADMIN.2**| Admin: Leaderboard Management page| Admin | M4-BE.8 | `❌` | - |
-| **M4-ADMIN.4**| Admin: Circle & XP APIs | Admin | M4-ADMIN.1/2| `❌` | - |
-| **M4-ADMIN.3**| Admin Sidebar: Circles + Leaderboard| Admin | M4-ADMIN.1 | `❌` | - |
+| **M4-BE.11** | Circle Roles API (Promote/Demote) | Backend | M4-BE.1 | `❌` | - |
+| **M4-BE.12** | Circle Transfer Ownership API | Backend | M4-BE.1 | `❌` | - |
+| **M4-BE.13** | Circle Privacy Settings API (is_public) | Backend | M4-BE.1 | `❌` | - |
+| **M4-BE.14** | Fix Owner Self-Kick Bug | Backend | M4-BE.3 | `❌` | - |
+| **M4-BE.15** | Circle Join Requests (Private Circles)| Backend | M4-BE.1 | `❌` | - |
+| **M4-ADMIN.1**| Admin: Circles Overview page | Admin | M4-BE.1 | `✅ DONE` | Antigravity |
+| **M4-ADMIN.2**| Admin: Leaderboard Management page| Admin | M4-BE.8 | `✅ DONE` | Antigravity |
+| **M4-ADMIN.4**| Admin: Circle & XP APIs | Admin | M4-ADMIN.1/2| `✅ DONE` | Antigravity |
+| **M4-ADMIN.3**| Admin Sidebar: Circles + Leaderboard| Admin | M4-ADMIN.1 | `✅ DONE` | Antigravity |
 | **M2-ADMIN.7**| Admin Audit Log table + inserts | Admin | None | `❌` | - |
 
 ---
@@ -382,30 +387,77 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 
 | ID | Task | Category | Status |
 |:---|:---|:---|:---|
-| **M5-DB.1** | `reviews` table migration | Backend | `❌` |
+| **M5-DB.1** | `reviews` table migration | Backend | `✅ DONE` |
 | **M5-DB.2** | `amas` + `ama_questions` + upvotes | Backend | `✅ DONE` |
-| **M5-DB.3** | `challenges` + `challenge_progress` | Backend | `❌` |
+| **M5-DB.3** | `challenges` + `challenge_progress` | Backend | `✅ DONE` |
 
 ### M5-Tasks: Features & System
 
 | ID | Task | Category | Dependencies | Status | Assignee |
 |:---|:---|:---|:---|:---|:---|
-| **M5-BE.1** | Reviews API (CRUD + verified check) | Backend | M5-DB.1 | `❌` | - |
-| **M5-FE.1** | Reviews Tab UI | User | M5-BE.1 | `❌` | - |
+| **M5-BE.1** | Reviews API (CRUD + verified check) | Backend | M5-DB.1 | `✅ DONE` | Antigravity |
+| **M5-FE.1** | Reviews Tab UI | User | M5-BE.1 | `✅ DONE` | Antigravity |
 | **M5-BE.2** | AMAs API (Q&A + upvoting) | Backend | M5-DB.2 | `✅ DONE` | Antigravity |
 | **M5-BE.3** | Admin AMA Management API | Admin | M5-BE.2 | `✅ DONE` | Antigravity |
 | **M5-FE.2** | Expert AMAs Tab UI | User | M5-BE.2 | `✅ DONE` | Antigravity |
-| **M5-BE.4** | Challenges API | Backend | M5-DB.3, M4-BE.1 | `❌` | - |
-| **M5-FE.3** | Challenges UI | User | M5-BE.4 | `❌` | - |
-| **M5-BE.5** | In-App Notification System | Backend | None | `❌` | - |
-| **M5-BE.7** | SSR Post Pages (MiniJinja, SEO) | Backend | None | `❌` | - |
+| **M5-BE.4** | Challenges API | Backend | M5-DB.3, M4-BE.1 | `✅ DONE` | Antigravity |
+| **M5-FE.3** | Challenges UI | User | M5-BE.4 | `✅ DONE` | Antigravity |
+| **M5-BE.5** | In-App Notification System | Backend | None | `✅ DONE` | Antigravity |
+| **M5-BE.7** | SSR Post Pages (MiniJinja, SEO) | Backend | None | `✅ DONE` | Antigravity |
 | **M5-BE.6** | Weekly Digest Worker (inactive users)| Backend | M5-BE.5 | `❌` | - |
 | **M5-ADMIN.1**| Admin: AMA Management page | Admin | M5-BE.3 | `✅ DONE` | Antigravity |
-| **M5-ADMIN.2**| Admin: Challenges page | Admin | M5-BE.4 | `❌` | - |
+| **M5-ADMIN.2**| Admin: Challenges page | Admin | M5-BE.4 | `✅ DONE` | Antigravity |
 | **M2-ADMIN.2**| backlog: Admin Post Detail page | Admin | None | `✅ DONE` | Antigravity |
 | **M3-ADMIN.1**| backlog: Admin User Detail page | Admin | None | `✅ DONE` | Antigravity |
 | **M3-ADMIN.2**| backlog: Admin Badge Management | Admin | None | `✅ DONE` | Antigravity |
 | **M5-ADMIN.3**| Admin Sidebar finalize | Admin | All admin | `✅ DONE` | Antigravity |
+| **M5-ADMIN.4**| Admin: Circle Detail Page (Data & Settings) | Admin | M4-BE.1 | `✅ DONE` | Antigravity |
+| **M5-ADMIN.5**| Admin: Global Comments Moderation Page | Admin | None | `✅ DONE` | Antigravity |
+| **M5-ADMIN.6**| Admin: Force Transfer Circle Ownership API | Admin | M4-BE.1 | `✅ DONE` | Antigravity |
+| **M5-ADMIN.7**| Admin: User Mute/Warning System API | Admin | None | `✅ DONE` | Antigravity |
+
+---
+
+## 🔴 MODULE 6: Advanced Moderation (Phase 4)
+
+**Ziel:** Thread Locking, Muting, Mod Notes, Unified Queue, Auto-Mod.
+**Voraussetzung:** Modul 5 `✅ DONE`
+**Geschätzte Dauer:** +2 Wochen
+
+### M6-Tasks: Features & System
+
+| ID | Task | Category | Dependencies | Status | Assignee |
+|:---|:---|:---|:---|:---|:---|
+| **M6-ADMIN.1**| Thread Locking API & UI | Admin | M2 | `✅ DONE` | Antigravity |
+| **M6-ADMIN.2**| Admin Mod Notes on Users | Admin | M3 | `✅ DONE` | Antigravity |
+| **M6-ADMIN.3**| Unified Moderation Queue (Approve/Warn) | Admin | M2 | `✅ DONE` | Antigravity |
+| **M6-ADMIN.4**| Admin Pinned Comments API & UI | Admin | M2 | `✅ DONE` | Antigravity |
+| **M6-ADMIN.5**| Granular Punishments (Timed Muting) | Admin | M3 | `✅ DONE` | Antigravity |
+| **M6-ADMIN.6**| Shadowbanning API | Admin | M3 | `✅ DONE` | Antigravity |
+| **M6-BE.1**   | Auto-Mod (Profanity & Link Filters) | Backend | None | `✅ DONE` | Antigravity |
+| **M6-ADMIN.7**| Content Tagging (NSFW / Spoiler labels)| Admin | M2 | `✅ DONE` | Antigravity |
+| **M6-ADMIN.8**| Advanced Community Analytics (Trend data, Circle Stats, XP Economy) | Admin | M0 | `✅ DONE` | Antigravity |
+
+---
+
+## 🔵 MODULE 7: Mature Network Features (Phase 5)
+
+**Ziel:** UX, Discovery, Search, Mentions, Retention, Compliance.
+**Voraussetzung:** Modul 6 `✅ DONE`
+**Geschätzte Dauer:** +2 Wochen
+
+### M7-Tasks: Features & System
+
+| ID | Task | Category | Dependencies | Status | Assignee |
+|:---|:---|:---|:---|:---|:---|
+| **M7-BE.1**   | Global Search API (Keywords, Hashtags, Users) | Backend | M2 | `✅ DONE` | Antigravity |
+| **M7-FE.1**   | Global Search Bar & Filters UI | User | M7-BE.1 | `✅ DONE` | Antigravity |
+| **M7-BE.2**   | Algorithmic Sorting (Hot / Trending) | Backend | M2 | `✅ DONE` | Antigravity |
+| **M7-FE.2**   | Sort Toggles UI (Hot vs. Fresh) | User | M7-BE.2 | `✅ DONE` | Antigravity |
+| **M7-BE.3**   | @-Mentions Parser & Notifications | Backend | M5 | `✅ DONE` | Antigravity |
+| **M7-BE.4**   | OpenGraph & Rich Link Preview Extractor | Backend | M2 | `❌` | - |
+| **M7-BE.5**   | Ban Appeals API & Unified Workflow | Backend | M6 | `❌` | - |
+| **M7-BE.6**   | GDPR Deletion & Anonymization Worker | Backend | M2 | `❌` | - |
 
 ---
 
@@ -419,6 +471,8 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M3** | Social Layer | `🔒 LOCKED` | M2 | M2 ALL `✅` | +1-2 Wochen |
 | **M4** | Circles & XP | `🔒 LOCKED` | M3 | M3 ALL `✅` | +2 Wochen |
 | **M5** | Advanced Features | `🔒 LOCKED` | M3 (nicht M4!) | M3 ALL `✅` | +2-3 Wochen |
+| **M6** | Advanced Moderation| `✅ DONE` | M5 | M5 ALL `✅` | +2 Wochen |
+| **M7** | Mature Network Features| `🟢 OPEN` | M6 | M6 ALL `✅` | +2 Wochen |
 
 > **Paralleles Arbeiten möglich:**
 > - **M4 + M5** können parallel gebaut werden (beide bauen auf M3 auf)
@@ -597,6 +651,84 @@ W8-9     M4 ║ M5b  Leaderboard ║ Challenges, Notifications
 
 > [!TIP]
 > **"Coming Soon" Overlays:** In Modul 1 werden Tabs die noch nicht aktiv sind mit einem schönen "Coming Soon" Overlay versehen. Das setzt Erwartungen und zeigt den Usern, dass mehr kommt — ohne leere oder kaputte Seiten.
+
+---
+
+## 🚀 Extended Backlog: UX & Discovery (Post-M7)
+
+### Tier 1: Core Discovery
+* [ ] **UX.1** Algorithmic Feed Sorting (Hot / Trending)
+* [ ] **UX.2** Global Search Engine (Posts, Comments, Users, Circles)
+* [ ] **UX.3** @-Mentions & Notification Triggers
+* [ ] **UX.4** Hashtag Architecture (`#tag` filtering)
+* [ ] **UX.5** Rich Link Previews (OpenGraph Cards)
+
+### Tier 2: Personalization & Retention
+* [ ] **UX.6** Saved / Bookmarked Posts Tab
+* [ ] **UX.7** Threaded Comment Collapse `[-]`
+* [ ] **UX.8** "Recommended for You" Feed Injection
+* [ ] **UX.9** Offline Push / Email Digests
+* [ ] **UX.10** Direct Messaging (1-on-1 Investor DMs)
+
+### Tier 3: Rich Media & Expression
+* [ ] **UX.11** Native Polls & Surveys
+* [ ] **UX.12** Auto-Saving Drafts to `localStorage`
+* [ ] **UX.13** Inline GIF / Tenor API Integration
+* [ ] **UX.14** Custom User Flairs
+* [ ] **UX.15** Native Dark/Light Mode Toggle
+
+### Tier 4: Community Polish & "Live" Feel
+* [ ] **UX.16** Quote Reposts (Share + embed commentary)
+* [ ] **UX.17** Dynamic "Top Contributor" Badges
+* [ ] **UX.18** Presence / Live Indicators ("John is typing...")
+* [ ] **UX.19** Native Post Translation Button
+* [ ] **UX.20** "Time to Read" Estimates for long posts
+
+---
+
+## 🔗 Extended Backlog: Web3 & Integrations
+* [ ] **W3.1** Token-Gated Circles (e.g. Hold $1000 of Asset to join)
+* [ ] **W3.2** NFT Avatar Verification (MetaMask/WalletConnect)
+* [ ] **W3.3** External Social Sync (Auto-cross-post to X/Discord)
+* [ ] **W3.4** Portfolio Value Tiers / Badges (Dynamic Net Worth badges)
+* [ ] **W3.5** Embedded "Buy Asset" Widget inside posts
+* [ ] **W3.6** DAO Treasury Display for Investment Clubs
+* [ ] **W3.7** Trading PnL Leaderboard Sync
+
+---
+
+## 📊 Extended Backlog: Circle Owner Analytics & Tools
+* [ ] **CO.1** Active Member Heatmaps (Best time to post)
+* [ ] **CO.2** Custom Banner Uploads & Primary Brand Colors
+* [ ] **CO.3** Membership Questionnaires ("Answer 3 questions to join")
+* [ ] **CO.4** Top Contributor Analytics (Visible only to owner)
+* [ ] **CO.5** Automated Welcome Messages (DM/Notification on join)
+* [ ] **CO.6** Custom Role Management (Owner-created flairs)
+* [ ] **CO.7** Post Scheduling Tools
+* [ ] **CO.8** Circle-Level Shadowbanning
+* [ ] **CO.9** Bulk Member Pruning (Kick inactive >90 days)
+* [ ] **CO.10** Keyword Defense Alerts (Ping owner if "spam" is typed)
+* [ ] **CO.11** Engagement Funnel Metrics (Views -> Clicks -> Comments)
+* [ ] **CO.12** Custom Navigation Links in sidebar
+* [ ] **CO.13** Circle Moderation Audit Log & Content Export CSV
+* [ ] **CO.14** Auto-Approve Rulesets (Auto-accept Level 5+)
+* [ ] **CO.15** Read-Only "Panic Mode" (Market crash lockdown)
+* [ ] **CO.16** Pinned Rules Checkbox (Agree to terms before joining)
+
+---
+
+## 📱 Extended Backlog: Mobile Experience & Native Hooks
+* [ ] **MOB.1** Progressive Web App (PWA) Install Prompt
+* [ ] **MOB.2** Web Push Notifications & Critical SMS Alerts
+* [ ] **MOB.3** App Icon Badge Counts (Unread Notifications)
+* [ ] **MOB.4** Double Tap to Like & Swipe-to-Go-Back Gestures
+* [ ] **MOB.5** Mobile-Optimized Bottom Nav Bar
+* [ ] **MOB.6** Haptic Feedback (Vibration API)
+* [ ] **MOB.7** Direct Camera Integration (Bypass file-picker)
+* [ ] **MOB.8** Pull-to-Refresh Gesture
+* [ ] **MOB.9** Offline Mode (Service Worker Caching)
+* [ ] **MOB.10** Background Data Syncing
+* [ ] **MOB.11** Native OS "Share" Sheet formatting
 
 ---
 

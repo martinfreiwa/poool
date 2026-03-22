@@ -73,6 +73,10 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                             <span>Posts</span>
                         </a>
+                        <a href="/admin/community/comments.html" class="admin-nav-item ${isPathActive(["/admin/community/comments.html"]) ? "active" : ""}" id="nav-com-comments">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                            <span>Comments</span>
+                        </a>
                         <a href="/admin/community/reports.html" class="admin-nav-item ${isPathActive(["/admin/community/reports.html"]) ? "active" : ""}" id="nav-com-reports">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                             <span>Moderation Queue</span>
@@ -89,6 +93,18 @@
                         <a href="/admin/community/amas.html" class="admin-nav-item ${isPathActive(["/admin/community/amas.html"]) ? "active" : ""}" id="nav-com-amas">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                             <span>Expert AMAs</span>
+                        </a>
+                        <a href="/admin/community/challenges.html" class="admin-nav-item ${isPathActive(["/admin/community/challenges.html"]) ? "active" : ""}" id="nav-com-challenges">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            <span>Challenges</span>
+                        </a>
+                        <a href="/admin/community/circles.html" class="admin-nav-item ${isPathActive(["/admin/community/circles.html"]) ? "active" : ""}" id="nav-com-circles">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                            <span>Circles</span>
+                        </a>
+                        <a href="/admin/community/leaderboard.html" class="admin-nav-item ${isPathActive(["/admin/community/leaderboard.html"]) ? "active" : ""}" id="nav-com-leaderboard">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                            <span>Leaderboard</span>
                         </a>
                     </div>
 

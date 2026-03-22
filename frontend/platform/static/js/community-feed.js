@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await fetch(`/api/community/posts/${postId}/reactions`, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reaction_type: type })
             });
@@ -101,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let currentFeedMode = 'all';
+    let currentSortMode = 'fresh';
 
     window.setFeedMode = function(mode) {
         currentFeedMode = mode;
@@ -113,6 +115,24 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             btnAll.className = 'ds-btn ds-btn--secondary';
             btnFollowing.className = 'ds-btn ds-btn--primary';
+        }
+        
+        loadFeed();
+    };
+
+    window.setSortMode = function(mode) {
+        currentSortMode = mode;
+        const btnFresh = document.getElementById('sort-btn-fresh');
+        const btnHot = document.getElementById('sort-btn-hot');
+        
+        if (btnFresh && btnHot) {
+            if (mode === 'fresh') {
+                btnFresh.className = 'ds-btn ds-btn--primary ds-btn--sm';
+                btnHot.className = 'ds-btn ds-btn--secondary ds-btn--sm';
+            } else {
+                btnFresh.className = 'ds-btn ds-btn--secondary ds-btn--sm';
+                btnHot.className = 'ds-btn ds-btn--primary ds-btn--sm';
+            }
         }
         
         loadFeed();
@@ -353,17 +373,38 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSkeleton();
         try {
             let url = '/api/community/feed';
-            if (currentFeedMode === 'following') {
-                url += '?feed_mode=following';
+            let isSinglePost = false;
+            
+            if (window.SSR_POST_ID) {
+                url = `/api/community/posts/${window.SSR_POST_ID}`;
+                isSinglePost = true;
+                
+                // Add a "Back to feed" button at the top
+                const backBtn = document.createElement('button');
+                backBtn.className = 'ds-btn ds-btn--secondary';
+                backBtn.style.marginBottom = '20px';
+                backBtn.innerHTML = '← Back to Community Feed';
+                backBtn.onclick = () => {
+                    window.location.href = '/community';
+                };
+                feedContainer.parentElement.insertBefore(backBtn, feedContainer);
+            } else {
+                url += `?sort_by=${currentSortMode}`;
+                if (currentFeedMode === 'following') {
+                    url += '&feed_mode=following';
+                }
             }
-            const res = await fetch(url);
+            
+            const res = await fetch(url, { credentials: 'same-origin' });
             if (!res.ok) {
                 if(res.status === 401) {
                     throw new Error("unauthorized");
                 }
                 throw new Error("Failed to fetch feed");
             }
-            const posts = await res.json();
+            
+            const data = await res.json();
+            const posts = isSinglePost ? [data] : data;
             
             if (posts.length === 0) {
                 if (currentFeedMode === 'following') {
@@ -415,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.loadComments = async function(postId) {
         const listContainer = document.getElementById(`comments-list-${postId}`);
         try {
-            const res = await fetch(`/api/community/posts/${postId}/comments`);
+            const res = await fetch(`/api/community/posts/${postId}/comments`, { credentials: 'same-origin' });
             if (!res.ok) throw new Error("Failed to load comments");
             const comments = await res.json();
             
@@ -481,6 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.disabled = true;
             const res = await fetch(`/api/community/posts/${postId}/comments`, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content })
             });
@@ -509,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('profile-content-state').style.display = 'none';
 
         try {
-            const res = await fetch(`/api/community/profile/${userId}`);
+            const res = await fetch(`/api/community/profile/${userId}`, { credentials: 'same-origin' });
             if (!res.ok) throw new Error("Profile not found");
             const profile = await res.json();
 
@@ -573,7 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnElement.innerText = "Updating...";
 
             if (currentlyFollowing) {
-                const res = await fetch(`/api/community/follow/${userId}`, { method: 'DELETE' });
+                const res = await fetch(`/api/community/follow/${userId}`, { method: 'DELETE', credentials: 'same-origin' });
                 if (!res.ok) throw new Error("Failed to unfollow");
                 
                 btnElement.innerText = "Follow User";
@@ -583,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const followersEl = document.getElementById('profile-modal-followers');
                 followersEl.innerText = Math.max(0, parseInt(followersEl.innerText) - 1);
             } else {
-                const res = await fetch(`/api/community/follow/${userId}`, { method: 'POST' });
+                const res = await fetch(`/api/community/follow/${userId}`, { method: 'POST', credentials: 'same-origin' });
                 if (!res.ok) {
                     const err = await res.text();
                     throw new Error(err);
@@ -654,6 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch('/api/upload/post-image', {
                 method: 'POST',
+                credentials: 'same-origin',
                 body: fd
             });
             const data = await res.json();
@@ -721,6 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch('/api/community/posts', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
             });
@@ -759,6 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch(`/api/community/posts/${postId}/report`, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reason })
             });
@@ -781,7 +826,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!container) return;
         
         try {
-            const res = await fetch('/api/community/trending-assets');
+            const res = await fetch('/api/community/trending-assets', { credentials: 'same-origin' });
             if (!res.ok) return;
 
             const assets = await res.json();
@@ -834,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const res = await fetch('/api/community/profile/me');
+            const res = await fetch('/api/community/profile/me', { credentials: 'same-origin' });
             if (!res.ok) return;
 
             const profile = await res.json();

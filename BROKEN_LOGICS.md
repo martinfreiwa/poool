@@ -560,3 +560,25 @@ The following bugs were found during a deep security and logic audit of the admi
 - **What I did:** Matched the logic in `cleanup_expired_orders` to accurately subtract `tokens_owned` (`GREATEST(0, tokens_owned - $1)`) and correct the active value before setting the status to 'failed' if ownership drops to zero.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+
+### [P1] — Production-wide 500 errors on all community API endpoints
+- **File:** `backend/src/db.rs`
+- **What was wrong:** The `community` database pool was set to `None` if `COMMUNITY_DATABASE_URL` was missing, causing a panic/500 error in `get_community_pool` which assumes the pool exists.
+- **What I did:** Changed the `community` pool initialization to fallback to `Some(primary.clone())` when `COMMUNITY_DATABASE_URL` is not provided, making it safe for production deployments that rely entirely on the primary DB.
+- **Status:** ✅ Resolved — requires redeploy to take effect
+- **Date:** 2026-03-22
+
+### [P1] — Community Feed API returns 401 Unauthorized on Production
+- **File:** `frontend/platform/static/js/community-feed.js`, `frontend/platform/static/js/community-announcements.js`
+- **What was wrong:** The `/api/community/feed` endpoint returned a `401 Unauthorized` error on production even when the user was visibly logged in. This was because JavaScript `fetch()` calls were omitting the `poool_session` HTTP-Only cookie on the production environment because they lacked explicit `credentials: 'same-origin'` configuration, causing `middleware::get_current_user` to evaluate to `None`.
+- **What I did:** Added `{ credentials: 'same-origin' }` to all `fetch` calls in the community JavaScript files so that cookies are reliably attached in the production environment.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P1] — Missing `cast` binary in Cloud Run Docker image
+- **File:** `Dockerfile`
+- **What was wrong:** The production Cloud Run image lacked the `cast` binary, causing `std::process::Command::new("cast")` to fail with "No such file or directory" during tokenization or pause actions. This surfaced as a generic 500 API error in the frontend.
+- **What I did:** Added Foundry installation to the builder stage in `Dockerfile` and copied the `cast` binary to the runtime container.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+

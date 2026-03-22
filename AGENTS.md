@@ -127,6 +127,7 @@
 ### If you see these errors, here's what's broken:
 | Error | Cause | Fix File |
 |-------|-------|----------|
+| `prepared statement "sqlx_s_N" already exists` | PgBouncer Session pool conflict | `db.rs` — ensure `statement_cache_capacity(0)` is set when Pgbouncer is enabled |
 | `prepared statement "sqlx_s_N" already exists` | Backend bypassing PgBouncer | `db.rs` — ensure `PGBOUNCER_ENABLED` check exists |
 | `unsupported startup parameter: extra_float_digits` | PgBouncer rejecting params | `entrypoint.sh` — add `ignore_startup_parameters` |
 | `"trust" authentication failed` | Missing credentials upstream | `entrypoint.sh` — add `user=`/`password=` to `[databases]` |

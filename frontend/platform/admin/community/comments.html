@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Comments | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main" x-data="commentsAdmin()">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Global Comments</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h1 class="admin-page-title">Global Comments Moderation</h1>
+            <p class="admin-page-subtitle">Review, hide, or delete comments across all posts.</p>
+          </div>
+          <div>
+            <button class="admin-btn admin-btn--secondary" @click="loadComments()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters (Optional step for later, but static UI for now) -->
+        <div class="admin-toolbar" style="margin-bottom: 24px;">
+            <div class="admin-toolbar-search">
+                 <!-- Real search can be added later -->
+                 <div style="font-size: 13px; color: var(--text-tertiary);">Currently showing last 200 comments.</div>
+            </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            
+            <div class="admin-table-container">
+              <!-- Loading State -->
+              <div x-show="loading" class="admin-table-empty">
+                <p>Loading comments...</p>
+              </div>
+
+              <!-- Table -->
+              <table class="admin-table" x-show="!loading && comments.length > 0">
+                <thead>
+                  <tr>
+                    <th>Author</th>
+                    <th>Content</th>
+                    <th>Date</th>
+                    <th>Helpfuls</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="c in comments" :key="c.id">
+                    <tr :style="c.is_hidden ? 'opacity: 0.6; background: #fafafa;' : ''">
+                      <td>
+                        <div style="font-weight: 500; font-family: var(--font-heading);" x-text="c.author_name"></div>
+                        <div style="font-size: 11px; color: var(--text-tertiary); font-family: monospace;" x-text="c.user_id"></div>
+                      </td>
+                      <td>
+                        <div style="max-width: 300px; white-space: normal; font-size: 13px; line-height: 1.4; color: var(--text-secondary);" x-text="c.content.length > 100 ? c.content.substring(0, 100) + '...' : c.content"></div>
+                      </td>
+                      <td>
+                        <div style="font-size: 13px;" x-text="new Date(c.created_at).toLocaleDateString()"></div>
+                        <div style="font-size: 11px; color: var(--text-tertiary);" x-text="new Date(c.created_at).toLocaleTimeString()"></div>
+                      </td>
+                      <td>
+                        <span class="admin-badge" style="background:#f3f4f6; color:#4b5563;" x-text="c.helpful_count"></span>
+                      </td>
+                      <td>
+                        <span class="admin-badge" :style="c.is_hidden ? 'background: #fef2f2; color: #991b1b;' : 'background: #dcfce7; color: #166534;'" x-text="c.is_hidden ? 'Hidden' : 'Visible'"></span>
+                      </td>
+                      <td style="text-align: right;">
+                        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                          <a :href="'/community/post/' + c.post_id" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm" title="View Context">
+                            Context
+                          </a>
+                          
+                          <button x-show="!c.is_hidden" @click="hideComment(c)" class="admin-btn admin-btn--secondary admin-btn--sm" style="color: var(--error-color); border-color: var(--error-color)" title="Hide Comment">
+                            Hide
+                          </button>
+                          
+                          <button class="admin-btn admin-btn--icon" style="color: var(--error-color)" title="Delete Permanently" @click="deleteComment(c)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+
+              <!-- Empty State -->
+              <div x-show="!loading && comments.length === 0" class="admin-table-empty">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary); margin-bottom: 16px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                <p>No comments found.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('commentsAdmin', () => ({
+        comments: [],
+        loading: true,
+
+        async init() {
+          await this.loadComments();
+        },
+
+        async loadComments() {
+          this.loading = true;
+          try {
+            const res = await fetch('/api/admin/community/comments?limit=200');
+            if (res.ok) {
+              const data = await res.json();
+              this.comments = data || [];
+            }
+          } catch (e) {
+            console.error(e);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        async hideComment(comment) {
+          if (!confirm('Are you sure you want to softly hide this comment from users?')) return;
+
+          try {
+            const res = await fetch(`/api/admin/community/comments/${comment.id}/hide`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reason: "Admin hide" })
+            });
+
+            if (res.ok) {
+              comment.is_hidden = true;
+            } else {
+              alert('Failed to hide comment.');
+            }
+          } catch (e) {
+            console.error(e);
+            alert('An error occurred.');
+          }
+        },
+
+        async deleteComment(comment) {
+          if (!confirm('Are you ABSOLUTELY SURE you want to permanently delete this comment?')) return;
+
+          try {
+            const res = await fetch(`/api/admin/community/comments/${comment.id}`, {
+              method: 'DELETE'
+            });
+
+            if (res.ok) {
+              this.comments = this.comments.filter(c => c.id !== comment.id);
+            } else {
+              alert('Failed to delete comment.');
+            }
+          } catch (e) {
+            console.error(e);
+            alert('An error occurred.');
+          }
+        }
+      }));
+    });
+  </script>
+</body>
+</html>

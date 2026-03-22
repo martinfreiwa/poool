@@ -8,24 +8,41 @@ pub async fn get_community_feed(
     pool: &PgPool,
     category: Option<String>,
     only_following_user_id: Option<Uuid>,
+    sort_by: Option<String>,
     limit: i64,
     offset: i64,
 ) -> Result<Vec<Post>, AppError> {
     let limit = limit.clamp(1, 50);
 
+    let is_hot = sort_by.as_deref() == Some("hot");
+
+    // Dynamic ordering:
+    // If "hot", sort by engagement score (reactions + comments).
+    // If "fresh" (default), sort by creation date.
+    let order_clause = if is_hot {
+        "ORDER BY p.is_pinned DESC, (p.reaction_count + p.comment_count * 2) DESC, p.created_at DESC"
+    } else {
+        "ORDER BY p.is_pinned DESC, p.created_at DESC"
+    };
+
     let rows = if let Some(cat) = category {
-        sqlx::query_as::<_, Post>(
+        let query_str = format!(
             r#"
             SELECT p.*
             FROM posts p
             LEFT JOIN announcement_categories ac ON ac.post_id = p.id
+            JOIN community_profiles cp ON p.user_id = cp.user_id
             WHERE p.is_hidden = false
+              AND cp.is_shadowbanned = false
               AND (ac.category = $1 OR $1 = '')
               AND ($2 IS NULL OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $2))
-            ORDER BY p.is_pinned DESC, p.created_at DESC
+            {}
             LIMIT $3 OFFSET $4
             "#,
-        )
+            order_clause
+        );
+        
+        sqlx::query_as::<_, Post>(&query_str)
         .bind(cat)
         .bind(only_following_user_id)
         .bind(limit)
@@ -33,16 +50,21 @@ pub async fn get_community_feed(
         .fetch_all(pool)
         .await?
     } else {
-        sqlx::query_as::<_, Post>(
+        let query_str = format!(
             r#"
-            SELECT *
-            FROM posts
-            WHERE is_hidden = false
-              AND ($1 IS NULL OR user_id IN (SELECT following_id FROM follows WHERE follower_id = $1))
-            ORDER BY is_pinned DESC, created_at DESC
+            SELECT p.*
+            FROM posts p
+            JOIN community_profiles cp ON p.user_id = cp.user_id
+            WHERE p.is_hidden = false
+              AND cp.is_shadowbanned = false
+              AND ($1 IS NULL OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1))
+            {}
             LIMIT $2 OFFSET $3
             "#,
-        )
+            order_clause
+        );
+
+        sqlx::query_as::<_, Post>(&query_str)
         .bind(only_following_user_id)
         .bind(limit)
         .bind(offset)
@@ -115,7 +137,7 @@ pub async fn toggle_reaction(
     .fetch_optional(&mut *tx)
     .await?;
 
-    let added = if existing.is_some() {
+    let added = if let Some(_) = existing {
         // Remove existing reaction (toggle off)
         sqlx::query(
             "DELETE FROM reactions WHERE post_id = $1 AND user_id = $2 AND reaction_type = $3"
@@ -140,6 +162,29 @@ pub async fn toggle_reaction(
     };
 
     tx.commit().await?;
+
+    if added {
+        // Find owner of the post and notify
+        let owner_id: Option<Uuid> = sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
+            .bind(post_id)
+            .fetch_optional(pool)
+            .await?;
+
+        if let Some(target_id) = owner_id {
+            let notif_content = format!("Someone reacted with {} to your post.", reaction_type);
+            let link = format!("/community/feed?post={}", post_id);
+            let _ = crate::community::notifications::notify_user(
+                pool,
+                target_id,
+                Some(user_id),
+                "post_like",
+                Some(post_id),
+                &notif_content,
+                Some(&link),
+            ).await;
+        }
+    }
+
     Ok(added)
 }
 
@@ -171,6 +216,26 @@ pub async fn create_comment(
         .bind(post_id)
         .execute(pool)
         .await?;
+
+    // Find owner of the post and notify
+    let owner_id: Option<Uuid> = sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
+        .bind(post_id)
+        .fetch_optional(pool)
+        .await?;
+
+    if let Some(target_id) = owner_id {
+        let notif_content = format!("Someone commented on your post.");
+        let link = format!("/community/feed?post={}", post_id);
+        let _ = crate::community::notifications::notify_user(
+            pool,
+            target_id,
+            Some(user_id),
+            "comment_reply",
+            Some(post_id),
+            &notif_content,
+            Some(&link),
+        ).await;
+    }
 
     Ok(comment_id)
 }
@@ -401,7 +466,42 @@ pub async fn action_on_report(
         }
         "dismiss_report" => {
             sqlx::query("UPDATE content_reports SET status = 'dismissed', admin_notes = $1, updated_at = NOW() WHERE id = $2")
-                .bind(notes)
+                .bind(&notes)
+                .bind(report_id)
+                .execute(&mut *tx)
+                .await?;
+        }
+        "warn_user" => {
+            let author_id: Option<Uuid> = sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
+                .bind(post_id)
+                .fetch_optional(&mut *tx)
+                .await?;
+            if let Some(uid) = author_id {
+                sqlx::query("UPDATE community_profiles SET warning_count = warning_count + 1 WHERE user_id = $1")
+                    .bind(uid)
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            sqlx::query("UPDATE content_reports SET status = 'resolved', admin_notes = $1, updated_at = NOW() WHERE id = $2")
+                .bind(&notes)
+                .bind(report_id)
+                .execute(&mut *tx)
+                .await?;
+        }
+        "ban_user" => {
+            let author_id: Option<Uuid> = sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
+                .bind(post_id)
+                .fetch_optional(&mut *tx)
+                .await?;
+            if let Some(uid) = author_id {
+                sqlx::query("UPDATE community_profiles SET is_community_banned = true, ban_reason = $1 WHERE user_id = $2")
+                    .bind("Banned via report action")
+                    .bind(uid)
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            sqlx::query("UPDATE content_reports SET status = 'resolved', admin_notes = $1, updated_at = NOW() WHERE id = $2")
+                .bind(&notes)
                 .bind(report_id)
                 .execute(&mut *tx)
                 .await?;
@@ -572,6 +672,19 @@ pub async fn add_follow(pool: &PgPool, follower_id: Uuid, following_id: Uuid) ->
         sqlx::query("UPDATE community_profiles SET follower_count = follower_count + 1 WHERE user_id = $1")
             .bind(following_id)
             .execute(&mut *tx).await?;
+
+        // Notify
+        let notif_content = "Someone started following you.".to_string();
+        let link = format!("/community/profile?user={}", follower_id);
+        let _ = crate::community::notifications::notify_user(
+            pool,
+            following_id,
+            Some(follower_id),
+            "new_follower",
+            None,
+            &notif_content,
+            Some(&link),
+        ).await;
     }
 
     tx.commit().await?;

@@ -100,13 +100,19 @@
 
         let commentsHtml = cmts.length === 0 ? '<p style="color:#667085;">No comments yet.</p>' : `
             <table class="admin-table" style="margin-top: 10px;">
-                <thead><tr><th>Author</th><th>Content</th><th>Date</th></tr></thead>
+                <thead><tr><th>Author</th><th>Content</th><th>Date</th><th style="text-align:right;">Actions</th></tr></thead>
                 <tbody>
                     ${cmts.map(c => `
-                        <tr>
+                        <tr style="${c.is_hidden ? 'opacity: 0.5' : ''}; ${c.is_pinned ? 'background:#f0fdf4' : ''}">
                             <td style="width:150px;"><b>${c.author_name}</b><br><small style="color:#667085">${c.user_id.substring(0,8)}</small></td>
-                            <td style="max-width: 250px; white-space: normal;">${c.content}</td>
+                            <td style="max-width: 250px; white-space: normal;">
+                                ${c.is_pinned ? '<span style="font-size:10px; background:#22c55e; color:white; padding:2px 4px; border-radius:4px; margin-right:4px;">PINNED</span>' : ''}
+                                ${c.content}
+                            </td>
                             <td style="width:120px;"><small>${new Date(c.created_at).toLocaleString()}</small></td>
+                            <td style="text-align:right;">
+                                <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="togglePinComment('${c.id}', ${c.is_pinned})">${c.is_pinned ? 'Unpin' : 'Pin'}</button>
+                            </td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -135,13 +141,18 @@
             </div>
         `;
 
+        const lockBtn = p.is_locked 
+            ? `<button class="admin-btn admin-btn--secondary" style="color:#d97706; border-color:#d97706;" onclick="toggleLock('${p.id}', false)">Unlock Thread</button>`
+            : `<button class="admin-btn admin-btn--secondary" onclick="toggleLock('${p.id}', true)">Lock Thread</button>`;
+
         document.getElementById('post-detail-container').innerHTML = `
             <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
                 <div>
                 <h1 class="admin-page-title">Post Detail</h1>
                 <p class="admin-page-subtitle">ID: <span style="font-family:monospace;">${p.id}</span></p>
                 </div>
-                <div>
+                <div style="display:flex; gap: 8px;">
+                ${lockBtn}
                 ${!p.is_hidden 
                     ? `<button class="admin-btn admin-btn--secondary" style="color:#d92d20; border-color:#d92d20;" onclick="hidePost('${p.id}')">Hide Post</button>` 
                     : ``}
@@ -157,6 +168,10 @@
                         </div>
                         <div class="admin-card-body" style="background:#f9fafb; font-size:15px; line-height:1.5;">
                             ${p.content}
+                            ${p.content_tags ? `<div style="margin-top:12px; display:flex; gap:8px;">${p.content_tags.map(t => `<span class="admin-badge" style="background:#fef3c7; color:#b45309;">${t}</span>`).join('')}</div>` : ''}
+                        </div>
+                        <div class="admin-card-body" style="display:flex; justify-content: flex-end; padding-top: 0; background:#f9fafb;">
+                            <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="editTags('${p.id}', '${(p.content_tags || []).join(',')}')">Edit Tags</button>
                         </div>
                         <div class="admin-card-body" style="display:flex; gap: 40px; border-top: 1px solid var(--admin-border-color);">
                             <div>
@@ -226,6 +241,63 @@
                 loadPostDetail(postId);
             } else {
                 alert("Failed to hide post");
+            }
+        } catch(e) {
+            alert("Error connecting to server");
+        }
+    }
+    async function toggleLock(postId, isLocked) {
+        if(!confirm(`Are you sure you want to ${isLocked ? 'lock' : 'unlock'} this thread?`)) return;
+        
+        try {
+            const res = await fetch(`/api/admin/community/posts/${postId}/lock`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_locked: isLocked })
+            });
+            if (res.ok) {
+                loadPostDetail(postId);
+            } else {
+                alert("Failed to toggle thread lock");
+            }
+        } catch(e) {
+            alert("Error connecting to server");
+        }
+    }
+
+    async function togglePinComment(commentId, isPinned) {
+        try {
+            const res = await fetch(`/api/admin/community/comments/${commentId}/pin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_pinned: !isPinned })
+            });
+            if (res.ok) {
+                const urlParams = new URLSearchParams(window.location.search);
+                loadPostDetail(urlParams.get('id'));
+            } else {
+                alert("Failed to pin comment");
+            }
+        } catch(e) {
+            alert("Error connecting to server");
+        }
+    }
+    async function editTags(postId, currentTagsStr) {
+        const input = prompt("Enter tags separated by commas (e.g. NSFW, Spoiler):", currentTagsStr);
+        if (input === null) return;
+
+        const tags = input.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
+        try {
+            const res = await fetch(`/api/admin/community/posts/${postId}/tags`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tags })
+            });
+            if (res.ok) {
+                loadPostDetail(postId);
+            } else {
+                alert("Failed to update tags");
             }
         } catch(e) {
             alert("Error connecting to server");

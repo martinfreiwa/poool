@@ -155,6 +155,17 @@ pub async fn update_user_level(pool: &PgPool, user_id: Uuid) -> Result<Option<(i
     .await?;
 
     if new_level > old_level {
+        let notif_content = format!("Congratulations! You've leveled up to {} (Level {}).", new_name, new_level);
+        let _ = crate::community::notifications::notify_user(
+            pool,
+            user_id,
+            None,
+            "level_up",
+            None,
+            &notif_content,
+            Some("/community?tab=xp-tracker"),
+        ).await;
+
         Ok(Some((new_level, new_name)))
     } else {
         Ok(None)
@@ -252,6 +263,33 @@ pub async fn get_xp_summary(pool: &PgPool, user_id: Uuid) -> Result<XpSummary, A
         progress_pct: progress.clamp(0.0, 1.0) * 100.0,
         login_streak,
     })
+}
+
+
+// ─── User Leaderboard ───────────────────────────────────────────────
+
+#[derive(Debug, serde::Serialize, sqlx::FromRow)]
+pub struct UserLeaderboardEntry {
+    pub user_id: Uuid,
+    pub xp_total: i32,
+    pub level: i32,
+    pub level_name: String,
+    pub circle_id: Option<Uuid>,
+    pub login_streak: i32,
+}
+
+pub async fn get_user_leaderboard(pool: &PgPool, limit: i64) -> Result<Vec<UserLeaderboardEntry>, AppError> {
+    let entries = sqlx::query_as::<_, UserLeaderboardEntry>(
+        r#"SELECT user_id, xp_total, level, level_name, circle_id, login_streak
+           FROM community_profiles
+           ORDER BY xp_total DESC
+           LIMIT $1"#
+    )
+    .bind(limit.clamp(1, 100))
+    .fetch_all(pool)
+    .await?;
+
+    Ok(entries)
 }
 
 // ─── XP Aggregation Worker ──────────────────────────────────────────
@@ -384,6 +422,9 @@ pub async fn track_login_streak(pool: &PgPool, user_id: Uuid) -> Result<i32, App
     } else if new_streak == 30 {
         let _ = award_xp(pool, user_id, "login_streak_30", Some("30-day login streak!"), None).await;
     }
+
+    // Award Gamification Challenge
+    let _ = crate::community::challenges::increment_progress(pool, user_id, "login_streak", 1).await;
 
     tracing::debug!(user_id = %user_id, streak = new_streak, "Login streak updated");
     Ok(new_streak)

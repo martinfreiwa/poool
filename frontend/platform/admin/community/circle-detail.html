@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Circle Detail | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 1024px) {
+      .grid-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/circles.html">Circles</a>
+            <span class="separator">›</span>
+            <span class="current">Circle Detail</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content" id="circle-detail-container">
+        <div style="text-align:center; padding: 40px;">Loading...</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let currentCircle = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const circleId = urlParams.get('id');
+        if (!circleId) {
+            document.getElementById('circle-detail-container').innerHTML = '<div style="padding:40px; color:red;">No circle ID specified.</div>';
+            return;
+        }
+        loadCircleDetail(circleId);
+    });
+
+    async function loadCircleDetail(circleId) {
+        try {
+            const res = await fetch(`/api/admin/community/circles/${circleId}`);
+            if(res.ok) {
+                const data = await res.json();
+                currentCircle = data.circle;
+                renderDetail(circleId, data);
+            } else {
+                document.getElementById('circle-detail-container').innerHTML = '<div style="padding:40px; color:red;">Circle not found or network error.</div>';
+            }
+        } catch(e) {
+            console.error(e);
+            document.getElementById('circle-detail-container').innerHTML = '<div style="padding:40px; color:red;">Error connecting to server.</div>';
+        }
+    }
+
+    function renderDetail(circleId, data) {
+        const c = data.circle || {};
+        const members = data.members || [];
+
+        let membersHtml = members.length === 0 ? '<p style="color:#667085; padding: 16px;">No members found.</p>' : `
+            <table class="admin-table">
+                <thead><tr><th>User ID</th><th>Role</th><th>Joined</th><th style="text-align:right;">Actions</th></tr></thead>
+                <tbody>
+                    ${members.map(m => `
+                        <tr>
+                            <td style="font-family:monospace; font-size:12px;">${m.user_id}</td>
+                            <td><span class="admin-badge" style="background:${m.role === 'owner' ? '#FEF3F2;color:#B42318' : '#F9FAFB;color:#667085'}">${m.role}</span></td>
+                            <td><small>${new Date(m.joined_at).toLocaleString()}</small></td>
+                            <td style="text-align:right;">
+                                ${m.role !== 'owner' ? `<button class="admin-btn admin-btn--sm admin-btn--ghost" style="color:#D92D20;" onclick="kickMember('${circleId}', '${m.user_id}')">Kick</button>` : ''}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        document.getElementById('circle-detail-container').innerHTML = `
+            <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                  <h1 class="admin-page-title">${c.avatar_emoji || '🟢'} ${escapeHtml(c.name)}</h1>
+                  <p class="admin-page-subtitle">ID: <span style="font-family:monospace;">${circleId}</span></p>
+                </div>
+                <div style="display:flex; gap:12px;">
+                  <button class="admin-btn admin-btn--secondary" style="color:#b42318; border-color:#b42318;" onclick="deleteCircle('${circleId}')">
+                    Disband Circle
+                  </button>
+                </div>
+            </div>
+
+            <div class="grid-layout">
+                <!-- Left Column -->
+                <div style="display:flex; flex-direction: column; gap: 24px;">
+                    <!-- Details Card -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Circle Settings</h2>
+                        </div>
+                        <div class="admin-card-body">
+                            <form onsubmit="updateCircle(event, '${circleId}')" style="display: flex; flex-direction: column; gap: 16px;">
+                                <div>
+                                    <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Name</label>
+                                    <input type="text" id="edit-name" class="admin-input" style="width:100%;" value="${escapeHtml(c.name)}">
+                                </div>
+                                <div style="display:grid; grid-template-columns: 80px 1fr; gap: 16px;">
+                                    <div>
+                                        <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Emoji</label>
+                                        <input type="text" id="edit-emoji" class="admin-input" style="width:100%; text-align:center;" value="${escapeHtml(c.avatar_emoji || '')}">
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Visibility</label>
+                                        <select id="edit-visibility" class="admin-input" style="width:100%; padding: 8px 12px;">
+                                            <option value="true" ${c.is_public ? 'selected' : ''}>Public</option>
+                                            <option value="false" ${!c.is_public ? 'selected' : ''}>Private</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Description</label>
+                                    <textarea id="edit-desc" class="admin-input" rows="3" style="width:100%; resize:none;">${escapeHtml(c.description || '')}</textarea>
+                                </div>
+                                <div>
+                                    <button type="submit" class="admin-btn admin-btn--primary" style="width:100%;">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Force Transfer Card -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title" style="color:#B42318;">Force Transfer Ownership</h2>
+                        </div>
+                        <div class="admin-card-body" style="background:#FFF0F0;">
+                            <p style="font-size: 13px; color: #D92D20; margin-bottom: 12px;">
+                                Transfer ownership of the circle to another user. If the user is not in the circle, they will be added. Current owner will be demoted to a regular member.
+                            </p>
+                            <form onsubmit="forceTransfer(event, '${circleId}')" style="display: flex; gap: 12px;">
+                                <input type="text" id="transfer-user-id" class="admin-input" style="flex:1;" placeholder="New Owner User ID..." required />
+                                <button type="submit" class="admin-btn admin-btn--primary" style="background:#D92D20; border-color:#D92D20;">Transfer</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div style="display:flex; flex-direction: column; gap: 24px;">
+                    <!-- Stats Card -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Stats</h2>
+                        </div>
+                        <div class="admin-card-body">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
+                                    <div style="font-size:24px; font-weight:600; color:#101828;">${c.member_count} / ${c.max_members}</div>
+                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">Members</div>
+                                </div>
+                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
+                                    <div style="font-size:24px; font-weight:600; color:#101828;">${c.total_xp.toLocaleString()}</div>
+                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">Total XP</div>
+                                </div>
+                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center; grid-column:span 2;">
+                                    <div style="font-size:24px; font-weight:600; color:#101828;">Level ${c.level}</div>
+                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">${c.level_name}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Members List -->
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Members (${members.length})</h2>
+                        </div>
+                        <div class="admin-card-body admin-card-body--flush" style="max-height: 400px; overflow-y: auto;">
+                            ${membersHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function updateCircle(e, circleId) {
+        e.preventDefault();
+        
+        const name = document.getElementById('edit-name').value.trim() || undefined;
+        const emoji = document.getElementById('edit-emoji').value.trim() || undefined;
+        const description = document.getElementById('edit-desc').value.trim() || undefined;
+        const isPublic = document.getElementById('edit-visibility').value === 'true';
+
+        try {
+            const res = await fetch(`/api/admin/community/circles/${circleId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, avatar_emoji: emoji, description, is_public: isPublic })
+            });
+
+            if (res.ok) {
+                alert('Circle updated.');
+                loadCircleDetail(circleId); // Refresh
+            } else {
+                alert('Failed to update circle.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error updating circle.');
+        }
+    }
+
+    async function forceTransfer(e, circleId) {
+        e.preventDefault();
+        const input = document.getElementById('transfer-user-id');
+        const newUserId = input.value.trim();
+        
+        if (!newUserId) return;
+        if (!confirm('Are you ABSOLUTELY SURE you want to forcibly transfer leadership of this circle to this specific User ID?')) return;
+
+        try {
+            const res = await fetch(`/api/admin/community/circles/${circleId}/transfer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ new_owner_id: newUserId })
+            });
+
+            if (res.ok) {
+                alert('Ownership transferred successfully.');
+                input.value = '';
+                loadCircleDetail(circleId); // Refresh
+            } else {
+                alert('Transfer failed. Please check the User ID and try again.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error transferring ownership.');
+        }
+    }
+
+    async function kickMember(circleId, targetUserId) {
+        if (!confirm('Are you sure you want to kick this member?')) return;
+        
+        try {
+            const res = await fetch(`/api/admin/community/circles/${circleId}/members/${targetUserId}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                loadCircleDetail(circleId); // Refresh
+            } else {
+                alert('Failed to kick member.');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function deleteCircle(circleId) {
+        if (!confirm('Are you sure you want to DESTROY this circle entirely? This action is irreversible.')) return;
+        
+        try {
+            const res = await fetch(`/api/admin/community/circles/${circleId}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                alert('Circle deleted. Returning to circles list.');
+                window.location.href = '/admin/community/circles.html';
+            } else {
+                alert('Failed to delete circle.');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function escapeHtml(unsafe) {
+        if (unsafe == null) return '';
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+
+</html>

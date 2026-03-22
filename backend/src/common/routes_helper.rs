@@ -44,6 +44,89 @@ pub async fn serve_protected(
     }
 }
 
+pub async fn serve_protected_with_context<T: serde::Serialize>(
+    jar: CookieJar,
+    state: &AppState,
+    file: &str,
+    extra_context: T,
+) -> axum::response::Response {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return Redirect::to("/auth/login").into_response(),
+    };
+
+    let mut map = match serde_json::to_value(&extra_context) {
+        Ok(serde_json::Value::Object(m)) => m,
+        _ => serde_json::Map::new(),
+    };
+    if let Ok(u_val) = serde_json::to_value(&user) {
+        map.insert("user".to_string(), u_val);
+    }
+
+    match state.templates.get_template(file) {
+        Ok(template) => match template.render(map) {
+            Ok(content) => Html(content).into_response(),
+            Err(e) => {
+                error!("Template rendering error for {}: {}", file, e);
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    Html(format!("<h1>Internal Server Error: {}</h1>", e)),
+                )
+                    .into_response()
+            }
+        },
+        Err(e) => {
+            error!("Template not found for {}: {}", file, e);
+            (
+                axum::http::StatusCode::NOT_FOUND,
+                Html("<h1>Page not found</h1>".to_string()),
+            )
+                .into_response()
+        }
+    }
+}
+
+pub async fn serve_public_with_context<T: serde::Serialize>(
+    jar: CookieJar,
+    state: &AppState,
+    file: &str,
+    extra_context: T,
+) -> axum::response::Response {
+    let mut map = match serde_json::to_value(&extra_context) {
+        Ok(serde_json::Value::Object(m)) => m,
+        _ => serde_json::Map::new(),
+    };
+    
+    // Optionally inject user if logged in, but DO NOT redirect if missing
+    if let Some(u) = middleware::get_current_user(&jar, &state.db).await {
+        if let Ok(u_val) = serde_json::to_value(&u) {
+            map.insert("user".to_string(), u_val);
+        }
+    }
+
+    match state.templates.get_template(file) {
+        Ok(template) => match template.render(map) {
+            Ok(content) => Html(content).into_response(),
+            Err(e) => {
+                error!("Template rendering error for public {}: {}", file, e);
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    Html(format!("<h1>Internal Server Error: {}</h1>", e)),
+                )
+                    .into_response()
+            }
+        },
+        Err(e) => {
+            error!("Template not found for {}: {}", file, e);
+            (
+                axum::http::StatusCode::NOT_FOUND,
+                Html("<h1>Page not found</h1>".to_string()),
+            )
+                .into_response()
+        }
+    }
+}
+
 /// Helper: serve an admin-protected HTML page.
 ///
 /// Checks if the user is authenticated AND has an 'admin' or 'super_admin' role.

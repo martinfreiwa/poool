@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Challenges | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Challenges</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h1 class="admin-page-title">Challenges</h1>
+            <p class="admin-page-subtitle">Create and manage gamified tasks for the community.</p>
+          </div>
+          <div>
+            <button class="admin-btn admin-btn--primary" onclick="openCreateChallengeModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              New Challenge
+            </button>
+          </div>
+        </div>
+
+        <!-- Challenges Table -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Requirement</th>
+                  <th>Reward</th>
+                  <th>Frequency</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="challenges-table">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                    Loading challenges...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create Challenge Modal -->
+  <div id="challenge-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <h3 style="font-size:20px;font-weight:700;color:#181D27;margin:0;">Create Challenge</h3>
+        <button onclick="closeCreateChallengeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#667085;">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Title *</label>
+          <input type="text" id="challenge-title" class="admin-input" placeholder="e.g. First Investment" style="width:100%;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Description *</label>
+          <textarea id="challenge-description" class="admin-input" placeholder="Make your first asset purchase on POOOL." rows="3" style="width:100%;resize:none;"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">XP Reward *</label>
+            <input type="number" id="challenge-xp" class="admin-input" value="100" min="0" style="width:100%;" />
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Badge Reward ID (Optional)</label>
+            <input type="text" id="challenge-badge" class="admin-input" placeholder="e.g. B-001" style="width:100%;" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Requirement Type *</label>
+            <select id="challenge-req-type" class="admin-input" style="width:100%;padding:8px 12px;">
+              <option value="buy_asset">Buy Asset</option>
+              <option value="write_post">Write Post</option>
+              <option value="invite_friend">Invite Friend</option>
+              <option value="leave_review">Leave Review</option>
+              <option value="daily_login">Daily Login</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Requirement Target Value *</label>
+            <input type="number" id="challenge-req-val" class="admin-input" value="1" min="1" style="width:100%;" />
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Frequency *</label>
+          <select id="challenge-frequency" class="admin-input" style="width:100%;padding:8px 12px;">
+            <option value="once">Once (Lifetime)</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button class="admin-btn admin-btn--secondary" onclick="closeCreateChallengeModal()" style="flex:1;">Cancel</button>
+          <button class="admin-btn admin-btn--primary" onclick="createChallenge()" style="flex:1;">Create Challenge</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => { loadChallenges(); });
+
+    async function loadChallenges() {
+      try {
+        const res = await fetch('/api/admin/community/challenges');
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        renderChallenges(data || []);
+      } catch (e) {
+        document.getElementById('challenges-table').innerHTML =
+          '<tr><td colspan="6" style="text-align:center;padding:40px;color:#D92D20;">Failed to load</td></tr>';
+      }
+    }
+
+    function renderChallenges(challenges) {
+      const tbody = document.getElementById('challenges-table');
+      if (challenges.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No challenges found. Create the first one!</td></tr>';
+        return;
+      }
+
+      let html = '';
+      for (const c of challenges) {
+        const statusHtml = c.is_active
+          ? '<span class="admin-badge" style="background:#ECFDF3;color:#027A48;">Active</span>'
+          : '<span class="admin-badge" style="background:#F9FAFB;color:#667085;">Inactive</span>';
+
+        // Requirement display e.g. "Buy Asset (x1)"
+        const reqDisplay = c.requirement_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ` (x${c.requirement_value})`;
+
+        const rewardHtml = c.xp_reward > 0 
+          ? `<span style="font-weight:600;color:#027A48;">+${c.xp_reward} XP</span>${c.badge_reward ? ' + Badge' : ''}`
+          : (c.badge_reward ? 'Badge Only' : 'None');
+
+        html += `<tr>
+          <td>
+            <div style="font-weight:500;color:#181D27;">${escHtml(c.title)}</div>
+            <div style="font-size:12px;color:#667085;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(c.description)}">${escHtml(c.description)}</div>
+          </td>
+          <td style="font-size:13px;color:#344054;">${reqDisplay}</td>
+          <td style="font-size:13px;">${rewardHtml}</td>
+          <td style="font-size:13px;color:#667085;text-transform:capitalize;">${escHtml(c.frequency)}</td>
+          <td>${statusHtml}</td>
+          <td style="text-align:right;">
+             <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="toggleChallengeStatus('${c.id}', ${!c.is_active})">
+               ${c.is_active ? 'Deactivate' : 'Activate'}
+             </button>
+          </td>
+        </tr>`;
+      }
+      tbody.innerHTML = html;
+    }
+
+    function openCreateChallengeModal() {
+      document.getElementById('challenge-modal').style.display = 'flex';
+    }
+
+    function closeCreateChallengeModal() {
+      document.getElementById('challenge-modal').style.display = 'none';
+      
+      // Reset inputs
+      document.getElementById('challenge-title').value = '';
+      document.getElementById('challenge-description').value = '';
+      document.getElementById('challenge-xp').value = '100';
+      document.getElementById('challenge-badge').value = '';
+      document.getElementById('challenge-req-type').value = 'buy_asset';
+      document.getElementById('challenge-req-val').value = '1';
+      document.getElementById('challenge-frequency').value = 'once';
+    }
+
+    async function createChallenge() {
+      const title = document.getElementById('challenge-title').value.trim();
+      const desc = document.getElementById('challenge-description').value.trim();
+      if (!title || !desc) return alert('Title and Description are required.');
+
+      const xp = parseInt(document.getElementById('challenge-xp').value, 10) || 0;
+      const badge = document.getElementById('challenge-badge').value.trim() || null;
+      const reqType = document.getElementById('challenge-req-type').value;
+      const reqVal = parseInt(document.getElementById('challenge-req-val').value, 10) || 1;
+      const freq = document.getElementById('challenge-frequency').value;
+
+      try {
+        const res = await fetch('/api/admin/community/challenges', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            description: desc,
+            xp_reward: xp,
+            badge_reward: badge,
+            requirement_type: reqType,
+            requirement_value: reqVal,
+            frequency: freq
+          })
+        });
+        
+        if (!res.ok) throw new Error(await res.text());
+        closeCreateChallengeModal();
+        loadChallenges();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function toggleChallengeStatus(id, newStatus) {
+      if (!confirm(`Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} this challenge?`)) return;
+
+      try {
+        const res = await fetch(`/api/admin/community/challenges/${id}/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: newStatus })
+        });
+        
+        if (!res.ok) throw new Error(await res.text());
+        loadChallenges();
+      } catch (e) {
+        alert('Failed: ' + e.message);
+      }
+    }
+
+    function escHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+  </script>
+</body>
+
+</html>

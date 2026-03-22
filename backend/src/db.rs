@@ -251,8 +251,8 @@ pub async fn create_pools(config: &crate::config::Config) -> DatabasePools {
             .await,
         )
     } else {
-        tracing::info!("No COMMUNITY_DATABASE_URL — community features disabled or using primary");
-        None
+        tracing::info!("No COMMUNITY_DATABASE_URL — using primary database for community");
+        Some(primary.clone())
     };
 
     DatabasePools {

@@ -209,6 +209,41 @@
       <div id="sidebar-footer" class="sidebar__footer">
         <!-- Footer Navigation -->
         <nav id="footer-nav" class="sidebar__footer-nav">
+          <div id="nav-item-notifications" class="sidebar__nav-item" x-data="notificationBadge()" @notifications-read.window="init()">
+            <a id="nav-item-notifications-content" href="/community?tab=notifications" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-notifications" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-notifications" class="sidebar__nav-icon-wrapper">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                </div>
+                <span id="nav-text-notifications" class="sidebar__nav-text">Notifications</span>
+              </div>
+              <span id="notification-badge-count" x-show="count > 0" class="sidebar__nav-badge" style="background:#F04438;color:#FFF;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;" x-text="count"></span>
+            </a>
+            <script>
+                document.addEventListener('alpine:init', () => {
+                    Alpine.data('notificationBadge', () => ({
+                        count: 0,
+                        async init() {
+                            try {
+                                const res = await fetch('/api/community/notifications/unread-count');
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    this.count = data.count || 0;
+                                }
+                            } catch (e) {
+                                console.error('Failed to load notification count', e);
+                            }
+                        },
+                        async markAsRead() {
+                            this.count = 0;
+                        }
+                    }));
+                });
+            </script>
+          </div>
           <div id="nav-item-settings" class="sidebar__nav-item">
             <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
               <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
@@ -618,6 +653,41 @@
       <div id="sidebar-footer" class="sidebar__footer">
         <!-- Footer Navigation -->
         <nav id="footer-nav" class="sidebar__footer-nav">
+          <div id="nav-item-notifications" class="sidebar__nav-item" x-data="notificationBadge()" @notifications-read.window="init()">
+            <a id="nav-item-notifications-content" href="/community?tab=notifications" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-notifications" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-notifications" class="sidebar__nav-icon-wrapper">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                </div>
+                <span id="nav-text-notifications" class="sidebar__nav-text">Notifications</span>
+              </div>
+              <span id="notification-badge-count" x-show="count > 0" class="sidebar__nav-badge" style="background:#F04438;color:#FFF;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;" x-text="count"></span>
+            </a>
+            <script>
+                document.addEventListener('alpine:init', () => {
+                    Alpine.data('notificationBadge', () => ({
+                        count: 0,
+                        async init() {
+                            try {
+                                const res = await fetch('/api/community/notifications/unread-count');
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    this.count = data.count || 0;
+                                }
+                            } catch (e) {
+                                console.error('Failed to load notification count', e);
+                            }
+                        },
+                        async markAsRead() {
+                            this.count = 0;
+                        }
+                    }));
+                });
+            </script>
+          </div>
           <div id="nav-item-settings" class="sidebar__nav-item">
             <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
               <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">

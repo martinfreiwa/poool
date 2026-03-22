@@ -78,6 +78,29 @@
 
         </div>
 
+        <div class="admin-kpi-grid" style="margin-top: 24px; grid-template-columns: repeat(3, minmax(200px, 1fr));">
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Active Circles</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-circles">—</div>
+          </div>
+
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Total XP Distributed</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-xp" style="font-family: monospace;">—</div>
+          </div>
+
+          <div class="admin-kpi-card" style="border-left: 4px solid #d92d20;">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label" style="color: #d92d20; font-weight: 600;">Pending Reports</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-reports" style="color: #d92d20;">—</div>
+          </div>
+        </div>
+
         <!-- Two Column: Activity + Quick Actions -->
         <div class="admin-section-grid" style="margin-top: 24px;">
           
@@ -144,6 +167,10 @@
                 document.getElementById('kpi-posts').textContent = stats.total_posts;
                 document.getElementById('kpi-comments').textContent = stats.total_comments;
                 document.getElementById('kpi-reactions').textContent = stats.total_reactions;
+                
+                document.getElementById('kpi-circles').textContent = stats.total_circles || 0;
+                document.getElementById('kpi-xp').textContent = (stats.total_xp || 0).toLocaleString();
+                document.getElementById('kpi-reports').textContent = stats.pending_reports_count || 0;
             }
         } catch(e) {
             console.error("Failed to load community stats", e);

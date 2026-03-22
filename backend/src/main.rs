@@ -678,8 +678,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // ── Payment result pages ──────────────────────────────────────
         .route("/payment-success", get(page_payment_success))
         .route("/payment-in-progress", get(page_payment_in_progress))
-        // ── Community (demo) ──────────────────────────────────────────
+        // ── Community (demo + SSR Post Pages) ─────────────────────────
         .route("/community", get(page_community))
+        .route("/community/post/:id", get(page_community_post))
         // ── Rewards V2 (premium layout) ───────────────────────────────
         .route("/rewards-v2", get(page_rewards_v2))
         // ── Marketplace (demo) ─────────────────────────────────────────
@@ -2001,6 +2002,71 @@ async fn page_payment_success(jar: CookieJar, State(state): State<AppState>) -> 
 /// GET /community — Community demo page (protected).
 async fn page_community(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "community.html").await
+}
+
+/// GET /community/post/:id — SSR Post Page (Public/Protected mixed)
+async fn page_community_post(
+    Path(id): Path<uuid::Uuid>,
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    #[derive(sqlx::FromRow)]
+    struct PostOgData {
+        content: String,
+        image_urls: Option<serde_json::Value>,
+        display_name: Option<String>,
+        avatar_url: Option<String>,
+    }
+
+    let post_record = sqlx::query_as::<_, PostOgData>(
+        r#"
+        SELECT
+            posts.content,
+            posts.image_urls,
+            up.display_name,
+            u.avatar_url
+        FROM posts
+        LEFT JOIN user_profiles up ON up.user_id = posts.user_id
+        LEFT JOIN users u ON u.id = posts.user_id
+        WHERE posts.id = $1
+        "#
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+
+    let mut context = serde_json::Map::new();
+    if let Some(p) = post_record {
+        let content_snippet = if p.content.len() > 150 {
+            format!("{}...", &p.content[..147])
+        } else {
+            p.content.clone()
+        };
+
+        let author = p.display_name.unwrap_or_else(|| "User".to_string());
+        let og_title = format!("Post by {}", author);
+        context.insert("og_title".to_string(), serde_json::Value::String(og_title));
+        context.insert("og_description".to_string(), serde_json::Value::String(content_snippet));
+
+        // Ensure image_urls is an array then extract the first string
+        if let Some(imgs) = p.image_urls {
+            if let Some(arr) = imgs.as_array() {
+                if let Some(serde_json::Value::String(s)) = arr.first() {
+                    context.insert("og_image".to_string(), serde_json::Value::String(s.to_string()));
+                }
+            }
+        }
+
+        let og_url = format!("https://poool.finance/community/post/{}", id);
+        context.insert("og_url".to_string(), serde_json::Value::String(og_url));
+    }
+
+    context.insert("ssr_post_id".to_string(), serde_json::Value::String(id.to_string()));
+
+    // Serve via public with context, which will include user if logged in, but won't force login for crawlers
+    common::routes_helper::serve_public_with_context(jar, &state, "community.html", context).await
 }
 
 /// GET /marketplace-trading-v2 — V2 Marketplace trading page without charts (protected).

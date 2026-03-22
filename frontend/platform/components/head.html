@@ -13,6 +13,33 @@
     <meta name="description" content="{{ meta_description }}" />{% endif %}
     {% if no_index %}
     <meta name="robots" content="noindex, nofollow" />{% endif %}
+    
+    <!-- OpenGraph Tags for SEO/Sharing -->
+    {% if og_title %}
+    <meta property="og:title" content="{{ og_title }}" />
+    {% else %}
+    <meta property="og:title" content="{{ title | default('POOOL') }} - POOOL" />
+    {% endif %}
+    
+    {% if og_description %}
+    <meta property="og:description" content="{{ og_description }}" />
+    {% elif meta_description %}
+    <meta property="og:description" content="{{ meta_description }}" />
+    {% endif %}
+    
+    {% if og_image %}
+    <meta property="og:image" content="{{ og_image }}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    {% else %}
+    <!-- Default fallback image -->
+    <meta property="og:image" content="{{ request_url }}/static/images/poool-og-default.png" />
+    <meta name="twitter:card" content="summary" />
+    {% endif %}
+    
+    {% if og_url %}
+    <meta property="og:url" content="{{ og_url }}" />
+    {% endif %}
+    <meta property="og:type" content="{{ og_type | default('website') }}" />
 
     <!-- Sentry Error Tracking -->
     <script src="https://browser.sentry-cdn.com/9.7.0/bundle.tracing.replay.min.js" crossorigin="anonymous"></script>

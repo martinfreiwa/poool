@@ -159,6 +159,8 @@
                             <td style="text-align: right;">
                                 <div style="display: flex; gap: 8px; justify-content: flex-end;">
                                     <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="openActionModal('${r.id}', 'hide_post')">Hide Post</button>
+                                    <button class="admin-btn admin-btn--secondary admin-btn--sm" style="color:#d97706; border-color:#d97706;" onclick="openActionModal('${r.id}', 'warn_user')">Warn User</button>
+                                    <button class="admin-btn admin-btn--secondary admin-btn--sm" style="color:#b42318; border-color:#b42318;" onclick="openActionModal('${r.id}', 'ban_user')">Ban User</button>
                                     <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="openActionModal('${r.id}', 'dismiss_report')">Dismiss</button>
                                 </div>
                             </td>
@@ -197,9 +199,19 @@
             descEl.textContent = 'This will hide the post from the community feed. The author will be notified.';
             btn.style.background = '#D92D20';
             btn.textContent = 'Hide Post';
+        } else if (actionType === 'warn_user') {
+            titleEl.textContent = 'Warn User';
+            descEl.textContent = 'This will send a warning to the author and resolve the report.';
+            btn.style.background = '#d97706';
+            btn.textContent = 'Warn User';
+        } else if (actionType === 'ban_user') {
+            titleEl.textContent = 'Ban User';
+            descEl.textContent = 'This will permanently ban the author from the community and resolve the report.';
+            btn.style.background = '#b42318';
+            btn.textContent = 'Ban User';
         } else {
             titleEl.textContent = 'Dismiss Report';
-            descEl.textContent = 'This will mark the report as resolved without taking action against the post.';
+            descEl.textContent = 'This will mark the report as resolved without taking action against the post or author.';
             btn.style.background = '#027A48';
             btn.textContent = 'Dismiss Report';
         }

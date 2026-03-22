@@ -10,6 +10,9 @@ pub mod validation;
 pub mod xp;
 pub mod circles;
 pub mod amas;
+pub mod reviews;
+pub mod challenges;
+pub mod notifications;
 
 pub use routes::router;
 

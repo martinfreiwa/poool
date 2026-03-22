@@ -57,15 +57,15 @@ document.addEventListener("keydown", function (e) {
 });
 
 // Handle swipe gestures for mobile menu (only close, not open)
-let touchStartX = 0;
-let touchEndX = 0;
+let mobileNavTouchStartX = 0;
+let mobileNavTouchEndX = 0;
 
 function handleSwipe() {
   const burgerMenu = document.getElementById("mobile-burger-menu");
   if (!burgerMenu) return;
 
   // Only allow swipe left to close (if menu is open) - remove swipe to open
-  if (touchStartX - touchEndX > 50 && burgerMenu.classList.contains("active")) {
+  if (mobileNavTouchStartX - mobileNavTouchEndX > 50 && burgerMenu.classList.contains("active")) {
     closeMobileMenu();
   }
 }
@@ -74,7 +74,7 @@ function handleSwipe() {
 document.addEventListener(
   "touchstart",
   function (e) {
-    touchStartX = e.changedTouches[0].screenX;
+    mobileNavTouchStartX = e.changedTouches[0].screenX;
   },
   { passive: true },
 );
@@ -82,7 +82,7 @@ document.addEventListener(
 document.addEventListener(
   "touchend",
   function (e) {
-    touchEndX = e.changedTouches[0].screenX;
+    mobileNavTouchEndX = e.changedTouches[0].screenX;
     handleSwipe();
   },
   { passive: true },

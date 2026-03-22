@@ -16,7 +16,7 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 # ── Stage 3: Build & cache dependencies ────────────────────────
 FROM chef AS builder
-RUN apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev curl git && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/backend
 COPY --from=planner /app/backend/recipe.json recipe.json
 # Build dependencies
@@ -41,6 +41,8 @@ COPY frontend/platform/ /app/frontend/platform/
 COPY frontend/www/ /app/frontend/www/
 RUN bash /app/frontend/platform/static/css/build-bundle.sh
 
+# Install Foundry to get 'cast' binary for blockchain interactions
+RUN curl -L https://foundry.paradigm.xyz | bash && /root/.foundry/bin/foundryup
 # ── IMPORTANT: Normalize file permissions ────────────────────────
 # macOS may assign restrictive permissions (e.g. 750) to directories,
 # which breaks file serving in the distroless container where the app
@@ -72,6 +74,9 @@ COPY --from=builder /app/backend/target/release/poool-backend /app/poool-backend
 # Copy frontend files (including generated bundle.css)
 COPY --from=builder /app/frontend/platform/ /app/frontend/platform/
 COPY --from=builder /app/frontend/www/ /app/frontend/www/
+
+# Copy cast binary for admin tokenization / emergency actions
+COPY --from=builder /root/.foundry/bin/cast /usr/local/bin/cast
 
 # Copy templates for runtime
 COPY backend/templates /app/backend/templates
