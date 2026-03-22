@@ -25,8 +25,7 @@ cd /Users/martin/Projects/poool/backend && SQLX_OFFLINE=true cargo check --relea
 cd /Users/martin/Projects/poool && rg "PGBOUNCER_ENABLED" backend/src/db.rs
 ```
    - Must see `PGBOUNCER_ENABLED` check that skips Cloud SQL socket auto-detection.
-   - Must see `statement_cache_capacity(0)` on all `PgConnectOptions`.
-   - If either is missing, the deployment WILL fail with `prepared statement already exists`.
+   - If missing, the deployment WILL fail with `prepared statement already exists`.
 
 4. **Verify Dockerfile has PGBOUNCER_ENABLED=true**:
 ```bash
@@ -116,10 +115,9 @@ curl -s -o /dev/null -w "HTTP %{http_code}" https://platform.poool.app/auth/logi
 ### Critical Rules:
 1. **Backend → PgBouncer → Cloud SQL.** The backend must NEVER connect directly to the Unix socket.
 2. **`PGBOUNCER_ENABLED=true`** in Dockerfile tells `db.rs` to skip socket auto-detection.
-3. **`statement_cache_capacity(0)`** disables sqlx prepared statement caching (required for PgBouncer transaction mode).
+3. **`pool_mode = session`** in PgBouncer config — mandatory for `sqlx` prepared statements to work without collision.
 4. **`ignore_startup_parameters = extra_float_digits, options`** in PgBouncer config prevents sqlx connection rejection.
-5. **`pool_mode = transaction`** in PgBouncer config. Named prepared statements CANNOT work in this mode.
-6. **`entrypoint.sh` rewrites `DATABASE_URL`** to `127.0.0.1:6432` before starting the backend.
+5. **`entrypoint.sh` rewrites `DATABASE_URL`** to `127.0.0.1:6432` before starting the backend.
 
 ### Known Failure Modes:
 | Symptom | Cause | Fix |

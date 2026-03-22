@@ -85,8 +85,7 @@ fn build_connect_options(database_url: &str) -> PgConnectOptions {
         // The DATABASE_URL in this case is only used for credentials, not the host.
         let base: PgConnectOptions = database_url
             .parse::<PgConnectOptions>()
-            .unwrap_or_else(|_| PgConnectOptions::new())
-            .statement_cache_capacity(0);
+            .unwrap_or_else(|_| PgConnectOptions::new());
 
         tracing::info!("Using Cloud SQL Unix socket at: {}", socket_path);
 
@@ -97,7 +96,6 @@ fn build_connect_options(database_url: &str) -> PgConnectOptions {
         database_url
             .parse::<PgConnectOptions>()
             .expect("Invalid DATABASE_URL")
-            .statement_cache_capacity(0)
     }
 }
 
