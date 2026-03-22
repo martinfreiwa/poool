@@ -322,7 +322,7 @@
       scoreDiv.style.alignItems = 'center';
 
       var scoreNum = document.createElement('span');
-      scoreNum.className = 'score-number';
+      scoreNum.className = 'score-number ds-text-money';
       scoreNum.textContent = formatMetric(entry.metric_value, currentMetric);
       scoreDiv.appendChild(scoreNum);
 

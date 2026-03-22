@@ -7,7 +7,7 @@
   display: flex;
   width: 100%;
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--content-bg);
 }
 
 .lb-main {
@@ -15,7 +15,7 @@
   min-height: 100vh;
   margin-left: 256px;
   padding: 48px 24px 64px 24px;
-  background: #fafafa;
+  background: var(--content-bg);
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -51,7 +51,7 @@
 }
 
 .lb-title {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   font-weight: 700;
   font-size: 36px;
   line-height: 44px;
@@ -61,8 +61,8 @@
 }
 
 .lb-last-updated {
-  font-size: 12px;
-  color: #98a2b3;
+  font-size: var(--body-font-size, 14px);
+  color: var(--text-secondary, #535862);
   font-weight: 500;
 }
 
@@ -72,12 +72,12 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: #fffaeb;
-  border: 1px solid #fedf89;
+  background: var(--badge-warning-bg);
+  border: 1px solid var(--badge-warning-color);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #b54708;
+  color: var(--badge-warning-color);
   margin-bottom: 8px;
 }
 
@@ -86,7 +86,7 @@
   display: flex;
   gap: 0;
   margin-bottom: 24px;
-  background: #ffffff;
+  background: var(--card-bg);
   border: 1px solid var(--card-border-color);
   border-radius: 10px;
   padding: 4px;
@@ -95,10 +95,10 @@
 
 .lb-tf-btn {
   padding: 8px 20px;
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   font-size: 14px;
   font-weight: 600;
-  color: #667085;
+  color: var(--body-color);
   background: transparent;
   border: none;
   border-radius: 8px;
@@ -107,13 +107,13 @@
 }
 
 .lb-tf-btn:hover {
-  color: #101828;
+  color: var(--page-title-color);
   background: #f9fafb;
 }
 
 .lb-tf-btn.active {
   color: #ffffff;
-  background: #0000FF;
+  background: var(--btn-primary-bg);
   box-shadow: 0 1px 3px rgba(0, 0, 255, 0.2);
 }
 
@@ -127,7 +127,7 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--body-color);
-  background-color: #ffffff;
+  background-color: var(--card-bg);
 }
 
 /* --- Podium Section --- */
@@ -171,7 +171,7 @@
 
 .lb-podium-crown {
   margin-bottom: 4px;
-  animation: float 3s ease-in-out infinite;
+  animation: float 3s ease infinite;
 }
 
 @keyframes float {
@@ -229,13 +229,13 @@
   font-size: 12px;
   font-weight: 700;
   color: #ffffff;
-  background: #0000FF;
+  background: var(--btn-primary-bg);
   border: 2px solid #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .lb-podium-name {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
@@ -247,7 +247,7 @@
 }
 
 .lb-podium-score {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   font-size: 24px;
   font-weight: 700;
   color: #ffffff;
@@ -275,12 +275,7 @@
   display: flex;
   align-items: center;
   gap: 24px;
-  background: #ffffff;
-  border: 1px solid var(--card-border-color);
-  border-radius: 12px;
-  padding: 20px 24px;
   margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
 }
 
 .lb-yr-left {
@@ -293,7 +288,7 @@
 .lb-yr-label {
   font-size: 12px;
   font-weight: 500;
-  color: #667085;
+  color: var(--body-color);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -305,10 +300,10 @@
 }
 
 .lb-yr-rank {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   font-size: 32px;
   font-weight: 700;
-  color: #101828;
+  color: var(--page-title-color);
 }
 
 .lb-yr-delta {
@@ -328,7 +323,7 @@
 }
 
 .lb-yr-delta.neutral {
-  color: #667085;
+  color: var(--body-color);
 }
 
 .lb-yr-center {
@@ -345,13 +340,13 @@
 .lb-yr-score-label {
   font-size: 12px;
   font-weight: 500;
-  color: #667085;
+  color: var(--body-color);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .lb-yr-score {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   font-size: 28px;
   font-weight: 700;
   color: #0000FF;
@@ -377,7 +372,7 @@
 .lb-yr-bar-label {
   font-size: 11px;
   font-weight: 500;
-  color: #667085;
+  color: var(--body-color);
   min-width: 70px;
   text-align: right;
 }
@@ -397,7 +392,7 @@
 }
 
 .lb-yr-bar-fill.invest {
-  background: #0000FF;
+  background: var(--btn-primary-bg);
 }
 
 .lb-yr-bar-fill.referral {
@@ -426,7 +421,7 @@
 .lb-yr-vis-text {
   font-size: 11px;
   font-weight: 500;
-  color: #667085;
+  color: var(--body-color);
   text-align: center;
 }
 
@@ -469,7 +464,7 @@
 }
 
 .lb-toggle-label input:checked + .lb-toggle-slider {
-  background: #0000FF;
+  background: var(--btn-primary-bg);
 }
 
 .lb-toggle-label input:checked + .lb-toggle-slider::before {
@@ -478,11 +473,7 @@
 
 /* --- Rankings Table --- */
 .lb-table-card {
-  background: #ffffff;
-  border: 1px solid var(--card-border-color);
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
 }
 
 .lb-table-header {
@@ -496,10 +487,10 @@
 }
 
 .lb-table-header h3 {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   font-size: 18px;
   font-weight: 600;
-  color: #101828;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -524,70 +515,27 @@
   transform: translateY(-50%);
   width: 16px;
   height: 16px;
-  color: #98a2b3;
+  color: var(--input-placeholder-color);
 }
 
 #lb-search-input {
+  /* Using ds-input for core styles */
   width: 100%;
-  height: 36px;
-  box-sizing: border-box;
-  padding: 0 12px 0 36px;
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  outline: none;
-  transition: all 0.2s ease;
+  padding-left: 36px;
 }
-
 #lb-search-input:focus {
-  border-color: #0000FF;
-  box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.1);
+  border-color: var(--input-border-focus);
 }
 
 .lb-select {
-  height: 36px;
-  box-sizing: border-box;
-  padding: 0 32px 0 12px;
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  background: #ffffff url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23667085' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
-  appearance: none;
-  outline: none;
-  cursor: pointer;
+  /* Extending ds-select */
   min-width: 140px;
 }
 
-.lb-select:focus {
-  border-color: #0000FF;
-  box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.1);
-}
-
-/* ── Tier filter (native select) inside the table filters ──
-   Matches the search input height (36px) */
 #lb-tier-filter {
-  height: 36px;
-  box-sizing: border-box;
-  padding: 0 32px 0 12px;
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  background: #ffffff url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23667085' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
-  appearance: none;
-  -webkit-appearance: none;
-  outline: none;
-  cursor: pointer;
+  /* Extending ds-select */
   min-width: 140px;
   max-width: 200px;
-  color: var(--body-color);
-}
-
-#lb-tier-filter:focus {
-  border-color: #0000FF;
-  box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.1);
 }
 
 .lb-table-meta {
@@ -597,19 +545,21 @@
 }
 
 .lb-table-header h3 {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   font-size: 18px;
   font-weight: 600;
-  color: #101828;
+  color: var(--page-title-color);
   margin: 0;
 }
 
 .lb-participants-count {
   font-size: 13px;
   font-weight: 500;
-  color: #667085;
+  color: var(--body-color);
 }
 
+/* --- Redundant table styles removed in favor of ds-table --- */
+/*
 .lb-table {
   width: 100%;
   border-collapse: collapse;
@@ -620,7 +570,7 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: #667085;
+  color: var(--body-color);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   background: #f9fafb;
@@ -639,6 +589,7 @@
 .lb-table tbody tr:hover {
   background: #f9fafb;
 }
+*/
 
 .lb-table tbody tr.is-me {
   background: rgba(0, 0, 255, 0.04);
@@ -648,15 +599,11 @@
   background: rgba(0, 0, 255, 0.08);
 }
 
-.lb-table tbody td {
-  padding: 14px 24px;
-  font-size: 14px;
-  color: #101828;
-}
+/* --- Cell styling handled by ds-table --- */
 
 .lb-table .rank-cell {
   font-weight: 700;
-  color: #667085;
+  color: var(--body-color);
   width: 60px;
 }
 
@@ -681,7 +628,7 @@
 
 .lb-row-name {
   font-weight: 600;
-  color: #101828;
+  color: var(--page-title-color);
 }
 
 .lb-row-me-badge {
@@ -689,7 +636,7 @@
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 4px;
-  background: #0000FF;
+  background: var(--btn-primary-bg);
   color: #ffffff;
   margin-left: 6px;
   text-transform: uppercase;
@@ -706,7 +653,7 @@
 .lb-score-bar-cell .score-number {
   font-weight: 600;
   min-width: 32px;
-  color: #101828;
+  color: var(--page-title-color);
 }
 
 .lb-score-bar-cell .score-bar {
@@ -742,7 +689,7 @@
   min-width: 170px;
   z-index: 100;
   box-shadow: 0 4px 6px -2px rgba(16, 24, 40, 0.03), 0 12px 16px -4px rgba(16, 24, 40, 0.08);
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   text-align: left;
   cursor: default;
 }
@@ -785,7 +732,7 @@
 }
 
 .lb-tt-row span:first-child {
-  color: #98a2b3;
+  color: var(--input-placeholder-color);
 }
 
 .lb-tt-row span:last-child {
@@ -807,15 +754,15 @@
   padding: 20px 24px;
   text-align: center;
   border-top: 1px solid var(--card-border-color);
-  background: #fafafa;
+  background: var(--content-bg);
 }
 
 #lb-load-more-btn {
   padding: 8px 24px;
-  background: #ffffff;
-  border: 1px solid #d0d5dd;
+  background: var(--card-bg);
+  border: 1px solid var(--input-border-color);
   border-radius: 8px;
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   font-size: 14px;
   font-weight: 600;
   color: var(--body-color);
@@ -825,7 +772,7 @@
 
 #lb-load-more-btn:hover {
   background: #f9fafb;
-  border-color: #98a2b3;
+  border-color: var(--input-placeholder-color);
 }
 
 /* --- Loading Skeleton --- */
@@ -865,7 +812,7 @@
 .skeleton-box {
   background: linear-gradient(90deg, #f2f4f7 25%, #e4e7ec 50%, #f2f4f7 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  animation: shimmer 1.5s ease infinite;
 }
 
 @keyframes shimmer {
@@ -889,27 +836,27 @@
 .lb-empty-layer .empty-icon {
   width: 48px;
   height: 48px;
-  color: #98a2b3;
+  color: var(--input-placeholder-color);
 }
 
 .state-title {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-family: var(--font-family);
   font-size: 20px;
   font-weight: 600;
-  color: #101828;
+  color: var(--page-title-color);
   margin: 0;
 }
 
 .state-desc {
   font-size: 14px;
-  color: #667085;
+  color: var(--body-color);
   max-width: 400px;
   margin: 0;
 }
 
 .retry-btn {
   padding: 10px 20px;
-  background: #0000FF;
+  background: var(--btn-primary-bg);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -920,7 +867,7 @@
 }
 
 .retry-btn:hover {
-  background: #0000cc;
+  background: var(--btn-primary-hover-bg);
 }
 
 .hidden {

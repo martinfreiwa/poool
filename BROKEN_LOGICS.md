@@ -582,3 +582,9 @@ The following bugs were found during a deep security and logic audit of the admi
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
 
+### [P2] — Leaderboard design system misalignment
+- **File:** `frontend/platform/static/css/leaderboard.css`, `frontend/platform/leaderboard.html`
+- **What was wrong:** The leaderboard UI deviated from `DESIGN.md`: hardcoded color hex values instead of CSS tokens, used custom `.lb-table-card` and `.lb-table` classes instead of `.ds-` prefixed components, missing `.ds-text-money` for financial numbers, and used unapproved easing.
+- **What I did:** Refactored HTML/CSS to use `dashboard-tokens.css` variables, `ds-card`, `ds-table`, `ds-input`, `ds-select`, and `ds-text-money`, and replaced custom hex values.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23

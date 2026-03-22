@@ -16,7 +16,7 @@ include
       <div class="lb-container">
         <div class="ds-page-header lb-page-header">
           <div class="ds-page-header__title-row lb-title-wrapper">
-            <h1 class="ds-page-header__title lb-title">Leaderboard</h1>
+            <h1 class="ds-page-header__title">Leaderboard</h1>
           </div>
           <span id="lb-last-updated" class="lb-last-updated"></span>
         </div>
@@ -78,7 +78,7 @@ include
             <!-- Metric dropdown (right) -->
             <div style="display: flex; align-items: center; gap: 12px;">
               <span style="font-weight: 500; color: var(--body-color); white-space: nowrap;">Ranking By:</span>
-              <select id="lb-metric-select" class="lb-select" onchange="switchMetric()" style="min-width: 250px;">
+              <select id="lb-metric-select" class="ds-select lb-select" onchange="switchMetric()" style="min-width: 250px;">
                 <option value="invested">Total Investment</option>
                 <option value="assets">Number of Assets</option>
                 <option value="roi">Portfolio ROI</option>
@@ -131,7 +131,7 @@ include
           </div>
 
           <!-- Your Rank Card -->
-          <div class="lb-your-rank-card" id="lb-my-rank-card">
+          <div class="ds-card lb-your-rank-card" id="lb-my-rank-card">
             <div class="lb-yr-left">
               <span class="lb-yr-label">Your Position</span>
               <div class="lb-yr-rank-row">
@@ -140,7 +140,7 @@ include
             </div>
             <div class="lb-yr-center" style="flex: 1; text-align: center;">
               <span class="lb-yr-score-label" id="lb-my-metric-label">Total Investment</span>
-              <span class="lb-yr-score" id="lb-my-score">0</span>
+              <span class="lb-yr-score ds-text-money" id="lb-my-score">0</span>
             </div>
             <div class="lb-yr-visibility">
               <label class="lb-toggle-label">
@@ -151,8 +151,8 @@ include
             </div>
           </div>
 
-          <!-- Rankings Table -->
-          <div class="lb-table-card">
+        <!-- Rankings Table -->
+          <div class="ds-table-container lb-table-card">
             <div class="lb-table-header">
               <h3>Rankings</h3>
               <div class="lb-table-filters">
@@ -161,9 +161,9 @@ include
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
-                  <input type="text" id="lb-search-input" placeholder="Search investor..." onkeyup="debounceSearch(event)" />
+                  <input type="text" id="lb-search-input" class="ds-input" placeholder="Search investor..." onkeyup="debounceSearch(event)" />
                 </div>
-                <select id="lb-tier-filter" class="lb-select" onchange="applyFilters()">
+                <select id="lb-tier-filter" class="ds-select lb-select" onchange="applyFilters()">
                   <option value="">All Tiers</option>
                   <option value="5">Premium</option>
                   <option value="4">Elite</option>
@@ -176,7 +176,7 @@ include
             <div class="lb-table-meta">
               <span id="lb-total-participants" class="lb-participants-count"></span>
             </div>
-            <table class="lb-table" id="lb-rankings-table">
+            <table class="ds-table lb-table" id="lb-rankings-table">
               <thead>
                 <tr>
                   <th>#</th>
