@@ -68,8 +68,9 @@ fn build_connect_options(database_url: &str) -> PgConnectOptions {
         // Parse user/password/dbname from DATABASE_URL but switch to socket transport.
         // The DATABASE_URL in this case is only used for credentials, not the host.
         let base: PgConnectOptions = database_url
-            .parse()
-            .unwrap_or_else(|_| PgConnectOptions::new());
+            .parse::<PgConnectOptions>()
+            .unwrap_or_else(|_| PgConnectOptions::new())
+            .statement_cache_capacity(0);
 
         tracing::info!("Using Cloud SQL Unix socket at: {}", socket_path);
 
@@ -77,7 +78,10 @@ fn build_connect_options(database_url: &str) -> PgConnectOptions {
         base.socket(socket_path)
     } else {
         // Standard TCP connection (local dev via DATABASE_URL)
-        database_url.parse().expect("Invalid DATABASE_URL")
+        database_url
+            .parse::<PgConnectOptions>()
+            .expect("Invalid DATABASE_URL")
+            .statement_cache_capacity(0)
     }
 }
 
