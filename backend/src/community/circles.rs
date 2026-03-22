@@ -535,6 +535,10 @@ pub async fn kick_member(pool: &PgPool, actor_id: Uuid, target_id: Uuid, circle_
     .fetch_optional(pool)
     .await?;
 
+    if actor_id == target_id {
+        return Err(AppError::BadRequest("You cannot kick yourself. Please use the leave circle function.".into()));
+    }
+
     match actor_role.as_deref() {
         Some("owner") => {},
         Some("admin") => {
@@ -572,6 +576,125 @@ pub async fn kick_member(pool: &PgPool, actor_id: Uuid, target_id: Uuid, circle_
         .await?;
 
     tx.commit().await?;
+
+    Ok(())
+}
+
+// ─── Circle Roles & Settings (M4-BE.11, M4-BE.12, M4-BE.13) ──────────────────
+
+/// Promote or demote a member. Owner can promote to admin or demote to member.
+pub async fn update_member_role(pool: &PgPool, owner_id: Uuid, target_id: Uuid, circle_id: Uuid, new_role: &str) -> Result<(), AppError> {
+    if new_role != "admin" && new_role != "member" {
+        return Err(AppError::BadRequest("Role must be 'admin' or 'member'.".into()));
+    }
+
+    // Verify actor is owner
+    let owner_check: Option<Uuid> = sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .fetch_optional(pool)
+        .await?;
+
+    if owner_check != Some(owner_id) {
+        return Err(AppError::Unauthorized("Only the circle owner can manage roles.".into()));
+    }
+
+    // Verify target is in circle
+    let target_role: Option<String> = sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+        .bind(target_id)
+        .bind(circle_id)
+        .fetch_optional(pool)
+        .await?;
+
+    if target_role.is_none() {
+        return Err(AppError::NotFound("User is not in this circle.".into()));
+    }
+
+    if target_role.as_deref() == Some("owner") {
+        return Err(AppError::BadRequest("Cannot change the owner's role directly. Use transfer ownership instead.".into()));
+    }
+
+    sqlx::query("UPDATE circle_members SET role = $1 WHERE user_id = $2 AND circle_id = $3")
+        .bind(new_role)
+        .bind(target_id)
+        .bind(circle_id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
+/// Transfer circle ownership.
+pub async fn transfer_ownership(pool: &PgPool, current_owner_id: Uuid, new_owner_id: Uuid, circle_id: Uuid) -> Result<(), AppError> {
+    // Verify current owner
+    let owner_check: Option<Uuid> = sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .fetch_optional(pool)
+        .await?;
+
+    if owner_check != Some(current_owner_id) {
+        return Err(AppError::Unauthorized("Only the circle owner can transfer ownership.".into()));
+    }
+
+    // Verify new owner is in circle
+    let new_role: Option<String> = sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+        .bind(new_owner_id)
+        .bind(circle_id)
+        .fetch_optional(pool)
+        .await?;
+
+    if new_role.is_none() {
+        return Err(AppError::BadRequest("The new owner must be a member of the circle.".into()));
+    }
+
+    let mut tx = pool.begin().await?;
+
+    // Demote current owner to admin
+    sqlx::query("UPDATE circle_members SET role = 'admin' WHERE user_id = $1 AND circle_id = $2")
+        .bind(current_owner_id)
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Promote new owner
+    sqlx::query("UPDATE circle_members SET role = 'owner' WHERE user_id = $1 AND circle_id = $2")
+        .bind(new_owner_id)
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Update circles table
+    sqlx::query("UPDATE circles SET owner_id = $1, updated_at = NOW() WHERE id = $2")
+        .bind(new_owner_id)
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
+/// Update circle privacy setting.
+pub async fn update_circle_privacy(pool: &PgPool, actor_id: Uuid, circle_id: Uuid, is_public: bool) -> Result<(), AppError> {
+    // Verify actor is owner or admin
+    let actor_role: Option<String> = sqlx::query_scalar(
+        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
+    )
+    .bind(actor_id)
+    .bind(circle_id)
+    .fetch_optional(pool)
+    .await?;
+
+    match actor_role.as_deref() {
+        Some("owner") | Some("admin") => {},
+        _ => return Err(AppError::Unauthorized("Only the circle owner or an admin can change privacy settings.".into())),
+    }
+
+    sqlx::query("UPDATE circles SET is_public = $1, updated_at = NOW() WHERE id = $2")
+        .bind(is_public)
+        .bind(circle_id)
+        .execute(pool)
+        .await?;
 
     Ok(())
 }

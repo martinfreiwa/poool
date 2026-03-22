@@ -276,6 +276,52 @@ document.addEventListener('DOMContentLoaded', () => {
             img.style.cssText = 'max-width: 100%; border-radius: 12px; border: 1px solid #EAECF0;';
             imgWrap.appendChild(img);
             body.appendChild(imgWrap);
+        } else if (p.link_preview) {
+            // Render OpenGraph Rich Link Preview
+            const lp = p.link_preview;
+            const linkWrap = document.createElement('a');
+            linkWrap.href = lp.url;
+            linkWrap.target = '_blank';
+            linkWrap.rel = 'noopener noreferrer';
+            linkWrap.className = 'feed-post-link-preview';
+            linkWrap.style.cssText = 'display: flex; flex-direction: column; margin-top: 16px; border: 1px solid #EAECF0; border-radius: 12px; overflow: hidden; text-decoration: none; color: inherit; transition: border-color 0.2s;';
+            
+            linkWrap.addEventListener('mouseover', () => linkWrap.style.borderColor = '#D0D5DD');
+            linkWrap.addEventListener('mouseout', () => linkWrap.style.borderColor = '#EAECF0');
+
+            if (lp.image) {
+                const img = document.createElement('img');
+                img.src = lp.image;
+                img.style.cssText = 'width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid #EAECF0;';
+                linkWrap.appendChild(img);
+            }
+
+            const textWrap = document.createElement('div');
+            textWrap.style.cssText = 'padding: 12px 16px; background: #F9FAFB;';
+
+            const domain = document.createElement('div');
+            try {
+                domain.textContent = new URL(lp.url).hostname.replace('www.', '');
+            } catch (e) {
+                domain.textContent = lp.url;
+            }
+            domain.style.cssText = 'font-size: 11px; color: #667085; text-transform: uppercase; font-weight: 500; margin-bottom: 4px;';
+            textWrap.appendChild(domain);
+
+            const title = document.createElement('div');
+            title.textContent = lp.title || lp.url;
+            title.style.cssText = 'font-size: 14px; font-weight: 600; color: #101828; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;';
+            textWrap.appendChild(title);
+
+            if (lp.description) {
+                const desc = document.createElement('div');
+                desc.textContent = lp.description;
+                desc.style.cssText = 'font-size: 13px; color: #475467; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;';
+                textWrap.appendChild(desc);
+            }
+
+            linkWrap.appendChild(textWrap);
+            body.appendChild(linkWrap);
         }
 
         // Disclaimer (static text, safe)

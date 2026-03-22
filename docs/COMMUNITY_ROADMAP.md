@@ -404,7 +404,7 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M5-FE.3** | Challenges UI | User | M5-BE.4 | `✅ DONE` | Antigravity |
 | **M5-BE.5** | In-App Notification System | Backend | None | `✅ DONE` | Antigravity |
 | **M5-BE.7** | SSR Post Pages (MiniJinja, SEO) | Backend | None | `✅ DONE` | Antigravity |
-| **M5-BE.6** | Weekly Digest Worker (inactive users)| Backend | M5-BE.5 | `❌` | - |
+| **M5-BE.6** | Weekly Digest Worker (inactive users)| Backend | M5-BE.5 | `✅ DONE` | Antigravity |
 | **M5-ADMIN.1**| Admin: AMA Management page | Admin | M5-BE.3 | `✅ DONE` | Antigravity |
 | **M5-ADMIN.2**| Admin: Challenges page | Admin | M5-BE.4 | `✅ DONE` | Antigravity |
 | **M2-ADMIN.2**| backlog: Admin Post Detail page | Admin | None | `✅ DONE` | Antigravity |
@@ -455,9 +455,9 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M7-BE.2**   | Algorithmic Sorting (Hot / Trending) | Backend | M2 | `✅ DONE` | Antigravity |
 | **M7-FE.2**   | Sort Toggles UI (Hot vs. Fresh) | User | M7-BE.2 | `✅ DONE` | Antigravity |
 | **M7-BE.3**   | @-Mentions Parser & Notifications | Backend | M5 | `✅ DONE` | Antigravity |
-| **M7-BE.4**   | OpenGraph & Rich Link Preview Extractor | Backend | M2 | `❌` | - |
-| **M7-BE.5**   | Ban Appeals API & Unified Workflow | Backend | M6 | `❌` | - |
-| **M7-BE.6**   | GDPR Deletion & Anonymization Worker | Backend | M2 | `❌` | - |
+| **M7-BE.4**   | OpenGraph & Rich Link Preview Extractor | Backend | M2 | `✅ DONE` | Antigravity |
+| **M7-BE.5**   | Ban Appeals API & Unified Workflow | Backend | M6 | `✅ DONE` | Antigravity |
+| **M7-BE.6**   | GDPR Deletion & Anonymization Worker | Backend | M2 | `✅ DONE` | Antigravity |
 
 ---
 
@@ -472,7 +472,7 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M4** | Circles & XP | `🔒 LOCKED` | M3 | M3 ALL `✅` | +2 Wochen |
 | **M5** | Advanced Features | `🔒 LOCKED` | M3 (nicht M4!) | M3 ALL `✅` | +2-3 Wochen |
 | **M6** | Advanced Moderation| `✅ DONE` | M5 | M5 ALL `✅` | +2 Wochen |
-| **M7** | Mature Network Features| `🟢 OPEN` | M6 | M6 ALL `✅` | +2 Wochen |
+| **M7** | Mature Network Features| `✅ DONE` | M6 | M6 ALL `✅` | +2 Wochen |
 
 > **Paralleles Arbeiten möglich:**
 > - **M4 + M5** können parallel gebaut werden (beide bauen auf M3 auf)

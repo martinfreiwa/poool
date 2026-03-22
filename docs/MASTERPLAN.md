@@ -9777,5 +9777,31 @@ BLOCKER:
 ```
 
 ---
+
+## 7. Extended Community Backlog (Post-M7 Vision)
+
+> **Architektur-Note:** Die Community läuft in einer separaten PostgreSQL-Instanz (siehe Sektion 1.7). Die folgenden Features repräsentieren die finale Stufe des Web3/Social-Ausbaus und dürfen erst nach Abschluss von Modul 7 (Community Roadmap) angegangen werden.
+
+### 7.1. UX & Discovery (The "Sticky" Layer)
+* **Core Discovery:** Algorithmic Feed Sorting (Hot/Trending), Global Search Engine, @-Mentions & Notifications, Hashtag Architecture, Rich Link Previews (OpenGraph).
+* **Retention:** Saved/Bookmarked Posts, Threaded Comment Collapse, "Recommended for You" Feeds, Offline Push/Email Digests, Direct Messaging (DMs).
+* **Rich Media:** Native Polls & Surveys, Auto-Saving Drafts (localStorage), Inline GIF/Tenor Integration, Custom User Flairs, Native Dark/Light Mode.
+* **Polish:** Quote Reposts, Dynamic "Top Contributor" Badges, Live Presence Indicators ("John is typing..."), Native Content Translation, "Time to Read" Estimates.
+
+### 7.2. Web3 & Platform Integrations
+* **Token-Gated Circles:** Automatische Freigabe für Investoren, die z.B. $1.000 eines spezifischen Assets halten.
+* **NFT Verification & Sync:** WalletConnect-Integration für NFT-Avatare; automatische Cross-Posts zu X (Twitter) und Discord.
+* **On-Chain Features:** Embedded "Buy Asset"-Widgets in Posts, DAO Treasury Display für Investment-Clubs, On-Chain Tipping, Trading PnL Leaderboards (Sync aus Trade-History!).
+
+### 7.3. Circle Owner Analytics & Tools
+* **Analytics:** Active Member Heatmaps, Top Contributor Reports, Engagement Funnel Metrics.
+* **Branding:** Upload von Custom Bannern, primäre HEX-Brand-Colors für den Circle.
+* **Management & Moderation:** Automated Welcome Messages, Post Scheduling, Circle-Level Shadowbanning, Keyword Alerts (Defense), Membership Questionnaires, Moderation Audit Logs.
+
+### 7.4. Mobile Experience & Native Hooks
+* **Native Feel:** PWA Install Prompts, Mobile-Optimized Bottom Nav, Swipe-to-Go-Back Gestures, Pull-to-Refresh.
+* **OS Integrations:** Web Push Notifications, Critical SMS Alerts, Haptic Feedback (Vibration API), Native OS Share Sheets.
+
+---
 *Dieser Masterplan bildet das unerschütterliche technische Fundament für die Transformation von POOOL in einen echten, lebendigen Finanzmarktplatz.*
 

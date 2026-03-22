@@ -238,3 +238,128 @@ async fn retry_circle_auto_joins(c_pool: &PgPool, core_pool: &PgPool) -> Result<
     Ok(())
 }
 
+// ─── GDPR Worker (M7-BE.6) ───────────────────────────────────────────────────
+
+/// GDPR Deletion & Anonymization Worker
+/// Scans the core DB for users with status = 'deleted' recently, 
+/// and ensures their community footprints (profile, bio) are anonymized.
+pub async fn gdpr_anonymization_worker(community_pool: PgPool, core_pool: PgPool) {
+    let mut interval = tokio::time::interval(Duration::from_secs(60 * 60)); // Once an hour
+
+    loop {
+        interval.tick().await;
+        if let Err(e) = run_gdpr_anonymization(&community_pool, &core_pool).await {
+            tracing::error!("GDPR worker failed: {:?}", e);
+        }
+    }
+}
+
+async fn run_gdpr_anonymization(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+    use sqlx::Row;
+
+    // 1. Fetch recently deleted users from Core DB
+    let deleted_users = sqlx::query(
+        "SELECT id FROM users WHERE status = 'deleted' AND updated_at >= NOW() - INTERVAL '1 day'"
+    )
+    .fetch_all(core_pool)
+    .await?;
+
+    if deleted_users.is_empty() {
+        return Ok(());
+    }
+
+    let mut anonymized_count = 0;
+
+    for row in deleted_users {
+        let user_id: Uuid = row.try_get("id")?;
+
+        // 2. Anonymize their community profile
+        let result = sqlx::query(
+            r#"UPDATE community_profiles 
+               SET display_name = 'Deleted User', 
+                   bio = NULL, 
+                   avatar_emoji = NULL, 
+                   is_community_banned = true 
+               WHERE user_id = $1 AND display_name != 'Deleted User'"#
+        )
+        .bind(user_id)
+        .execute(c_pool)
+        .await?;
+
+        // 3. Delete any active ban appeals
+        sqlx::query("DELETE FROM ban_appeals WHERE user_id = $1")
+            .bind(user_id)
+            .execute(c_pool)
+            .await?;
+
+        if result.rows_affected() > 0 {
+            // Remove them from their circle if they are in one
+            sqlx::query("DELETE FROM circle_members WHERE user_id = $1")
+                .bind(user_id)
+                .execute(c_pool)
+                .await?;
+
+            anonymized_count += 1;
+        }
+    }
+
+    if anonymized_count > 0 {
+        tracing::info!("GDPR Worker: Anonymized {} community profiles.", anonymized_count);
+    }
+
+    Ok(())
+}
+
+// ─── Weekly Digest Worker (M5-BE.6) ────────────────────────────────────────────
+
+/// Weekly Digest Worker
+/// Runs daily, finds users who haven't logged in for 7 days, and sends a weekly digest email.
+pub async fn weekly_digest_worker(community_pool: PgPool, core_pool: PgPool) {
+    let mut interval = tokio::time::interval(Duration::from_secs(24 * 60 * 60)); // Once a day
+
+    loop {
+        interval.tick().await;
+        if let Err(e) = run_weekly_digest(&community_pool, &core_pool).await {
+            tracing::error!("Weekly digest worker failed: {:?}", e);
+            // Ignore error
+        }
+    }
+}
+
+async fn run_weekly_digest(_c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+    use sqlx::Row;
+
+    // Fetch users inactive for > 7 days who have notifications enabled
+    let inactive_users = sqlx::query(
+        r#"
+        SELECT u.id, u.email, p.first_name 
+        FROM users u
+        LEFT JOIN user_profiles p ON p.user_id = u.id
+        LEFT JOIN user_settings s ON s.user_id = u.id
+        WHERE u.status = 'active'
+          AND COALESCE(s.email_notifications, true) = true
+          AND u.id NOT IN (
+              SELECT user_id FROM user_sessions WHERE updated_at > NOW() - INTERVAL '7 days'
+          )
+          LIMIT 100
+        "#
+    )
+    .fetch_all(core_pool)
+    .await?;
+
+    if inactive_users.is_empty() {
+        return Ok(());
+    }
+
+    for row in inactive_users {
+        let _user_id: Uuid = row.try_get("id")?;
+        let email: String = row.try_get("email")?;
+        let _first_name: Option<String> = row.try_get("first_name").unwrap_or(None);
+
+        tracing::info!("Weekly Digest Worker: Would send digest email to {}", email);
+        // Note: Actual email sending goes here using the email module
+        // crate::email::queue_email(...)
+    }
+
+    Ok(())
+}

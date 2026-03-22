@@ -23,6 +23,7 @@ pub struct Post {
     pub disclaimer_shown: bool,
     pub is_locked: Option<bool>,
     pub content_tags: Option<Vec<String>>,
+    pub link_preview: Option<serde_json::Value>,
     pub reaction_count: i32,
     pub comment_count: i32,
     pub created_at: DateTime<Utc>,
@@ -104,6 +105,7 @@ pub struct PostDisplay {
     pub content: String,
     pub asset_id: Option<Uuid>,
     pub image_urls: Vec<String>,
+    pub link_preview: Option<serde_json::Value>,
     pub reaction_count: i32,
     pub comment_count: i32,
     pub is_hidden: bool,
@@ -148,5 +150,28 @@ pub struct AdminReportDisplay {
 #[derive(Debug, Deserialize)]
 pub struct AdminReportActionRequest {
     pub action: String, // 'hide_post', 'dismiss_report'
+    pub admin_notes: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateBanAppealReq {
+    pub appeal_text: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BanAppealDisplay {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub display_name: String,
+    pub appeal_text: String,
+    pub status: String,
+    pub admin_notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub resolved_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AdminReviewAppealReq {
+    pub action: String, // 'approve', 'reject'
     pub admin_notes: Option<String>,
 }
