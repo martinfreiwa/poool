@@ -82,7 +82,6 @@ pub async fn get_portfolio(
         total_yield_weighted += (annual_yield_bps as i64 * current_value_cents);
 
         mapped_rows.push(InvestmentItem {
-
             id,
             asset_id,
             asset_title,
@@ -97,7 +96,8 @@ pub async fn get_portfolio(
             status,
             payout_expected_at: payout_expected_at.map(|t| t.to_rfc3339()),
             purchased_at: purchased_at.to_rfc3339(),
-            is_within_48h: (chrono::Utc::now().signed_duration_since(created_at)) <= chrono::Duration::hours(48),
+            is_within_48h: (chrono::Utc::now().signed_duration_since(created_at))
+                <= chrono::Duration::hours(48),
             chain_contract_address,
             chain_tx_hash,
         });
@@ -151,12 +151,6 @@ pub async fn get_portfolio(
 
     let investments = mapped_rows;
 
-
-
-
-
-
-
     Ok(PortfolioResponse {
         investments,
         total_value_cents,
@@ -192,7 +186,7 @@ pub async fn cancel_investment(
         FROM investments
         WHERE id = $1 AND user_id = $2
         FOR UPDATE
-        "#
+        "#,
     )
     .bind(investment_id)
     .bind(user_id)
@@ -216,8 +210,6 @@ pub async fn cancel_investment(
         return Err("The 48-hour cooling-off period has expired for this investment.".to_string());
     }
 
-
-
     // 1. Credit wallet
     let wallet_id: Uuid = sqlx::query_scalar!(
         r#"
@@ -227,7 +219,8 @@ pub async fn cancel_investment(
         SET balance_cents = wallets.balance_cents + $2, updated_at = NOW()
         RETURNING id
         "#,
-        user_id, inv_purchase_value_cents
+        user_id,
+        inv_purchase_value_cents
     )
     .fetch_one(&mut *tx)
     .await
@@ -271,15 +264,14 @@ pub async fn cancel_investment(
             SELECT order_id FROM order_items WHERE asset_id = $2
         )
         "#,
-        user_id, inv_asset_id
+        user_id,
+        inv_asset_id
     )
     .execute(&mut *tx)
     .await
     .map_err(|e| e.to_string())?;
 
-
     tx.commit().await.map_err(|e| e.to_string())?;
 
     Ok(())
 }
-

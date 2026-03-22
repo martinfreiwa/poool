@@ -562,7 +562,6 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
 
     use sqlx::Row;
 
-
     for (idx, row) in rows.iter().enumerate() {
         let ci_id: Uuid = row.get("id");
         let _asset_id: Uuid = row.get("asset_id");
@@ -969,7 +968,8 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             </div>
         "#.to_string();
 
-        kfs_modal_html = format!(r#"
+        kfs_modal_html = format!(
+            r#"
             <!-- KFS Modal -->
             <div id="kfs-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; opacity:0; transition:opacity 0.3s ease;">
                 <div style="background:#fff; border-radius:12px; width:90%; max-width:500px; padding:24px; box-shadow:0 12px 24px rgba(0,0,0,0.1); transform:translateY(20px); transition:transform 0.3s ease;" id="kfs-modal-content">
@@ -1018,11 +1018,12 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                     closeKFSModal();
                 }}
             </script>
-        "#, list = primary_list_html);
+        "#,
+            list = primary_list_html
+        );
     }
 
     let summary_html = format!(
-
         r##"<div id="cart-page-summary" class="cart-page-summary">
             <!-- Proceed to Payment Summary Box -->
             <div class="cart-summary-container" id="payment-summary-box" style="{payment_vis}">
@@ -1218,7 +1219,6 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         total_idr = idr_display,
         kfs_checkbox = kfs_checkbox_html,
     );
-
 
     // Build the items container (left column) with "Add More" ghost card at the bottom
     let populated_content = format!(

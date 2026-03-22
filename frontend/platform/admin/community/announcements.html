@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Announcements | Admin | POOOL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Announcements</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h1 class="admin-page-title">Manage Announcements</h1>
+            <p class="admin-page-subtitle">Post global updates to the community feed.</p>
+          </div>
+          <button class="admin-btn admin-btn--primary" onclick="document.getElementById('create-modal').style.display = 'flex'">
+            + New Announcement
+          </button>
+        </div>
+
+        <!-- Past Announcements Table -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">Live Announcements</h3>
+          </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Content Preview</th>
+                  <th>Category</th>
+                  <th>Date</th>
+                  <th>Reactions</th>
+                </tr>
+              </thead>
+              <tbody id="announcements-table">
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 20px; color: var(--admin-text-muted);">
+                    Loading announcements...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Create Modal -->
+  <div id="create-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:var(--admin-card-bg); width: 100%; max-width: 600px; border-radius:12px; border:1px solid var(--admin-border-light); padding: 24px;">
+      <h2 style="margin-bottom:16px;">Create Announcement</h2>
+      
+      <form id="create-form">
+        <div style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:500;">Category</label>
+          <select id="ann-category" class="admin-input" required>
+            <option value="platform_updates">Platform Update</option>
+            <option value="new_commodities">New Commodity</option>
+            <option value="dividends">Dividend Update</option>
+            <option value="market_news">Market News</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block; margin-bottom:6px; font-weight:500;">Message Content</label>
+          <!-- Admin can type strong to bold things, we'll allow basic html input -->
+          <textarea id="ann-content" class="admin-input" rows="6" placeholder="Enter content. You can use <strong>text</strong> for bold text..." required></textarea>
+        </div>
+
+        <div style="margin-bottom:16px;">
+            <label style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="ann-pin">
+                <span>Pin to top of feed?</span>
+            </label>
+        </div>
+
+        <div style="display:flex; gap:12px; justify-content:flex-end;">
+          <button type="button" class="admin-btn admin-btn--secondary" onclick="document.getElementById('create-modal').style.display='none'">Cancel</button>
+          <button type="submit" class="admin-btn admin-btn--primary">Post to Community</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const loadAll = async () => {
+            const tbody = document.getElementById('announcements-table');
+            try {
+                // Feeds return the announcements essentially
+                const res = await fetch('/api/community/feed');
+                if(!res.ok) throw new Error("Failed");
+                const posts = await res.json();
+
+                if (posts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--admin-text-muted);">No announcements yet.</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+                posts.forEach(p => {
+                    const date = new Date(p.created_at).toLocaleDateString();
+                    // Preview limits to ~60 chars and strips html tags
+                    const stripped = p.content.replace(/(<([^>]+)>)/gi, "");
+                    const preview = stripped.length > 50 ? stripped.substring(0, 50) + "..." : stripped;
+
+                    html += `
+                        <tr>
+                            <td>
+                                ${p.is_pinned ? `<span class="admin-badge" style="background:#eef4ff; color:#3538cd;">Pinned</span>` : `<span class="admin-badge" style="background:#ecfdf3; color:#027A48;">Live</span>`}
+                            </td>
+                            <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${stripped}">
+                                ${preview}
+                            </td>
+                            <td>${p.category}</td>
+                            <td>${date}</td>
+                            <td>🔥 ${p.reaction_count || 0}</td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+
+            } catch(e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#d92d20;">Error loading announcements.</td></tr>';
+            }
+        };
+
+        await loadAll();
+
+        document.getElementById('create-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            
+            const payload = {
+                content: document.getElementById('ann-content').value,
+                category: document.getElementById('ann-category').value,
+                is_pinned: document.getElementById('ann-pin').checked,
+                image_urls: null
+            };
+
+            btn.textContent = 'Posting...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/admin/community/announcements', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if(!res.ok) throw new Error(await res.text());
+                
+                document.getElementById('ann-content').value = '';
+                document.getElementById('create-modal').style.display = 'none';
+                await loadAll(); // refresh table
+            } catch(error) {
+                console.error(error);
+                alert("Failed to create announcement: " + error.message);
+            } finally {
+                btn.textContent = 'Post to Community';
+                btn.disabled = false;
+            }
+        });
+    });
+  </script>
+
+</body>
+</html>

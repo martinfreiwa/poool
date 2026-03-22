@@ -414,7 +414,8 @@ pub async fn execute_checkout(
         FROM investment_limits
         WHERE user_id = $1 AND limit_year = $2
         "#,
-        user_id, current_year
+        user_id,
+        current_year
     )
     .fetch_optional(&mut *tx)
     .await
@@ -423,7 +424,8 @@ pub async fn execute_checkout(
     if let Some(limit) = limit_info {
         // available_cents is generated as (annual_limit_cents - invested_12m_cents)
         if limit.available_cents.unwrap_or(0) < total_cents {
-            let available_usd = crate::common::currency::format_usd(limit.available_cents.unwrap_or(0));
+            let available_usd =
+                crate::common::currency::format_usd(limit.available_cents.unwrap_or(0));
             return Err(format!(
                 "Order exceeds your annual investment limit. Available: {}. Please update your profile or contact support.",
                 available_usd

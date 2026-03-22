@@ -13,6 +13,8 @@ pub fn router() -> Router<AppState> {
         .route("/portfolio.html", get(page_portfolio))
         .route("/transactions", get(page_transactions))
         .route("/api/portfolio", get(get_portfolio_handler))
-        .route("/api/portfolio/cancel", axum::routing::post(cancel_investment_handler))
+        .route(
+            "/api/portfolio/cancel",
+            axum::routing::post(cancel_investment_handler),
+        )
 }
-

@@ -90,7 +90,10 @@ mod tests {
 
         // Deduct from Alice's wallet
         let alice = wallets.get_mut("alice").unwrap();
-        assert!(alice.balance_cents >= buy_total + buy_fee, "Insufficient funds for buy");
+        assert!(
+            alice.balance_cents >= buy_total + buy_fee,
+            "Insufficient funds for buy"
+        );
         alice.balance_cents -= buy_total + buy_fee;
         platform_fees += buy_fee;
 
@@ -111,7 +114,10 @@ mod tests {
 
         // Bob pays
         let bob = wallets.get_mut("bob").unwrap();
-        assert!(bob.balance_cents >= sell_total + buyer_fee, "Bob insufficient funds");
+        assert!(
+            bob.balance_cents >= sell_total + buyer_fee,
+            "Bob insufficient funds"
+        );
         bob.balance_cents -= sell_total + buyer_fee;
 
         // Alice receives
@@ -132,7 +138,10 @@ mod tests {
         // ── Step 5: Bob withdraws $10,000 ──────────────────────
         let withdraw_bob = 1_000_000;
         let bob = wallets.get_mut("bob").unwrap();
-        assert!(bob.balance_cents >= withdraw_bob, "Insufficient for withdrawal");
+        assert!(
+            bob.balance_cents >= withdraw_bob,
+            "Insufficient for withdrawal"
+        );
         bob.balance_cents -= withdraw_bob;
         total_withdrawals += withdraw_bob;
 
@@ -144,7 +153,8 @@ mod tests {
         // Secondary trades are zero-sum between investors (money stays in pool).
         let total_wallet_balance: i64 = wallets.values().map(|w| w.balance_cents).sum();
         let primary_purchase_outflow = buy_total; // Money that left wallets to pay developer/SPV
-        let expected_cash = total_deposits - total_withdrawals - platform_fees - primary_purchase_outflow;
+        let expected_cash =
+            total_deposits - total_withdrawals - platform_fees - primary_purchase_outflow;
         assert_eq!(
             total_wallet_balance, expected_cash,
             "Cash not conserved: wallets={}, expected={}",

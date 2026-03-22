@@ -63,7 +63,11 @@ pub async fn cancel_investment_handler(
     match service::cancel_investment(&state.db, user_id, payload.investment_id).await {
         Ok(_) => Json(serde_json::json!({"success": true})).into_response(),
         Err(e) => {
-            tracing::error!("Failed to cancel investment {}: {}", payload.investment_id, e);
+            tracing::error!(
+                "Failed to cancel investment {}: {}",
+                payload.investment_id,
+                e
+            );
             (
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({"error": e})),
@@ -72,7 +76,6 @@ pub async fn cancel_investment_handler(
         }
     }
 }
-
 
 /// GET /portfolio — Render the portfolio page.
 pub async fn page_portfolio(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {

@@ -675,10 +675,7 @@ pub async fn disable_totp(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> 
 
 /// Export all user data as a JSON value for GDPR data portability.
 /// Returns a comprehensive JSON object containing all personal data.
-pub async fn export_user_data(
-    pool: &PgPool,
-    user_id: Uuid,
-) -> Result<serde_json::Value, AppError> {
+pub async fn export_user_data(pool: &PgPool, user_id: Uuid) -> Result<serde_json::Value, AppError> {
     use sqlx::Row;
 
     // 1. User account
@@ -876,11 +873,12 @@ pub async fn delete_account_selective(
     use sqlx::Row;
 
     // 1. Verify the user exists and get their password hash
-    let user_row = sqlx::query("SELECT password_hash, email FROM users WHERE id = $1 AND status = 'active'")
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or_else(|| AppError::NotFound("User not found or already deleted.".to_string()))?;
+    let user_row =
+        sqlx::query("SELECT password_hash, email FROM users WHERE id = $1 AND status = 'active'")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("User not found or already deleted.".to_string()))?;
 
     let password_hash: Option<String> = user_row.try_get("password_hash").unwrap_or(None);
     let email: String = user_row.try_get("email").unwrap_or_default();
@@ -929,9 +927,10 @@ pub async fn delete_account_selective(
     let anon_email = format!("{}@deleted.poool.co", anon_hash);
 
     // 5. Begin transaction for atomic deletion
-    let mut tx = pool.begin().await.map_err(|e| {
-        AppError::Internal(format!("Failed to start deletion transaction: {}", e))
-    })?;
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to start deletion transaction: {}", e)))?;
 
     // 5a. Anonymize user record — keep the row but clear all PII
     sqlx::query(
@@ -1052,9 +1051,9 @@ pub async fn delete_account_selective(
     // - dividend_payouts (financial records)
     // - wallets (balance = 0, kept for reconciliation)
 
-    tx.commit().await.map_err(|e| {
-        AppError::Internal(format!("Failed to commit account deletion: {}", e))
-    })?;
+    tx.commit()
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to commit account deletion: {}", e)))?;
 
     // 6. Audit log the deletion (immutable record, best-effort after commit)
     crate::common::audit::log(

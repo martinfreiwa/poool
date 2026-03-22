@@ -188,10 +188,7 @@ struct AssetRow {
 ///
 /// This reads the asset's data from PostgreSQL and constructs the full
 /// metadata object. It does NOT pin to IPFS — call `pin_json()` separately.
-pub async fn build_metadata(
-    pool: &PgPool,
-    asset_id: uuid::Uuid,
-) -> Result<AssetMetadata, String> {
+pub async fn build_metadata(pool: &PgPool, asset_id: uuid::Uuid) -> Result<AssetMetadata, String> {
     let row = sqlx::query_as::<_, AssetRow>(
         r#"SELECT 
             id, title, description, asset_type, property_type,
@@ -211,7 +208,10 @@ pub async fn build_metadata(
 
     let base_url =
         std::env::var("BASE_URL").unwrap_or_else(|_| "https://platform.poool.app".to_string());
-    let chain = row.chain_network.clone().unwrap_or_else(|| "polygon".to_string());
+    let chain = row
+        .chain_network
+        .clone()
+        .unwrap_or_else(|| "polygon".to_string());
 
     let metadata = AssetMetadata {
         name: row.title.clone(),

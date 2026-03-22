@@ -31,10 +31,10 @@ impl PinataConfig {
     /// Load Pinata config from environment. Returns None if not configured.
     pub fn from_env() -> Option<Self> {
         let jwt = std::env::var("PINATA_JWT").ok().filter(|v| !v.is_empty())?;
-        
+
         let api_url = std::env::var("PINATA_API_URL")
             .unwrap_or_else(|_| "https://api.pinata.cloud".to_string());
-        
+
         let gateway_url = std::env::var("PINATA_GATEWAY_URL")
             .unwrap_or_else(|_| "https://gateway.pinata.cloud/ipfs".to_string());
 

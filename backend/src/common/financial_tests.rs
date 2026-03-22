@@ -105,7 +105,7 @@ mod tests {
     }
 
     // ─── format_usd ────────────────────────────────────────────
-    
+
     fn format_usd(cents: i64) -> String {
         let is_negative = cents < 0;
         let abs = cents.unsigned_abs();
@@ -339,10 +339,8 @@ mod tests {
         let per_token_x1e18: u128 =
             (total_payout_cents as u128) * 1_000_000_000_000_000_000 / (total_tokens as u128);
 
-        let a_payout =
-            ((a_tokens as u128) * per_token_x1e18 / 1_000_000_000_000_000_000) as i64;
-        let b_payout =
-            ((b_tokens as u128) * per_token_x1e18 / 1_000_000_000_000_000_000) as i64;
+        let a_payout = ((a_tokens as u128) * per_token_x1e18 / 1_000_000_000_000_000_000) as i64;
+        let b_payout = ((b_tokens as u128) * per_token_x1e18 / 1_000_000_000_000_000_000) as i64;
 
         assert_eq!(a_payout, 600_000); // $6,000
         assert_eq!(b_payout, 400_000); // $4,000
@@ -359,12 +357,9 @@ mod tests {
         let per_token_x1e18: u128 =
             (total_payout_cents as u128) * 1_000_000_000_000_000_000 / (total_tokens as u128);
 
-        let a_payout =
-            ((3333_u128) * per_token_x1e18 / 1_000_000_000_000_000_000) as i64;
-        let b_payout =
-            ((3333_u128) * per_token_x1e18 / 1_000_000_000_000_000_000) as i64;
-        let c_payout =
-            ((3334_u128) * per_token_x1e18 / 1_000_000_000_000_000_000) as i64;
+        let a_payout = ((3333_u128) * per_token_x1e18 / 1_000_000_000_000_000_000) as i64;
+        let b_payout = ((3333_u128) * per_token_x1e18 / 1_000_000_000_000_000_000) as i64;
+        let c_payout = ((3334_u128) * per_token_x1e18 / 1_000_000_000_000_000_000) as i64;
 
         assert_eq!(a_payout, 3_333);
         assert_eq!(b_payout, 3_333);

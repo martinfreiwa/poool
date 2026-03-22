@@ -194,8 +194,8 @@ pub async fn run_settlement_worker(pool: &PgPool) {
         .flatten()
         .and_then(|v| v.parse().ok())
         .unwrap_or(300) // Default: 5 minutes
-        .max(5)         // Floor: 5 seconds (safety)
-        .min(3600);     // Ceiling: 1 hour (safety)
+        .max(5) // Floor: 5 seconds (safety)
+        .min(3600); // Ceiling: 1 hour (safety)
 
         // Dynamic batch size override (can be smaller or larger than env var)
         let dynamic_batch_size: usize = sqlx::query_scalar::<_, String>(
@@ -207,10 +207,12 @@ pub async fn run_settlement_worker(pool: &PgPool) {
         .flatten()
         .and_then(|v| v.parse().ok())
         .unwrap_or(config.max_batch_size)
-        .max(1)    // At least 1
+        .max(1) // At least 1
         .min(200); // Safety cap at 200
 
-        if let Err(e) = process_pending_settlements(pool, &config, &client, dynamic_batch_size).await {
+        if let Err(e) =
+            process_pending_settlements(pool, &config, &client, dynamic_batch_size).await
+        {
             tracing::error!("⛓️ Settlement batch failed: {}", e);
             sentry::capture_message(
                 &format!("On-chain settlement batch failed: {}", e),

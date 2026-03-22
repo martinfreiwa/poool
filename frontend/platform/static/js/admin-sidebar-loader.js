@@ -58,6 +58,19 @@
                         </a>
                     </div>
 
+                    <!-- Community -->
+                    <div class="admin-nav-section">
+                        <span class="admin-nav-section-label">Community</span>
+                        <a href="/admin/community/" class="admin-nav-item ${isPathActive(["/admin/community/", "/admin/community/index.html"]) ? "active" : ""}" id="nav-com-overview">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                            <span>Overview</span>
+                        </a>
+                        <a href="/admin/community/announcements.html" class="admin-nav-item ${isPathActive(["/admin/community/announcements.html"]) ? "active" : ""}" id="nav-com-announcements">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            <span>Announcements</span>
+                        </a>
+                    </div>
+
                     <!-- Assets -->
                     <div class="admin-nav-section">
                         <span class="admin-nav-section-label">Assets</span>

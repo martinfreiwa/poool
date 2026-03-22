@@ -1278,3 +1278,49 @@ button.community-tab-btn.active {
   .reviews-overview-row { grid-template-columns: 1fr; }
   .ama-hero-title { font-size: 20px; }
 }
+
+/* ── Coming Soon Overlay ────────────────────────────────────────── */
+.community-tab-panel {
+  position: relative;
+}
+
+.coming-soon-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.coming-soon-content {
+  text-align: center;
+  background: #fff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid var(--card-border-color);
+  max-width: 320px;
+}
+
+.coming-soon-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.coming-soon-title {
+  font-family: var(--font-family);
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--page-title-color);
+}
+
+.coming-soon-text {
+  font-size: 14px;
+  color: var(--label-color);
+  line-height: 1.5;
+}

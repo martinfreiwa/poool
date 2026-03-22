@@ -1,6 +1,6 @@
 {% with title="Community", meta_description="Connect with other POOOL investors. Share insights, celebrate milestones,
 and grow together.",
-extra_css=['community'], extra_js=['htmx-init', 'profile-dropdown'] %}{%
+extra_css=['community'], extra_js=['htmx-init', 'profile-dropdown', 'community-feed', 'community-announcements'] %}{%
 include
 "components/head.html" %}{% endwith %}
 
@@ -376,7 +376,8 @@ include
                 </div>
               </div>
 
-            </div>
+              </div>
+            </div> <!-- closing community-feed-container -->
 
             <!-- Right: Sidebar Panel -->
             <div class="community-right-panel">
@@ -503,15 +504,15 @@ include
              TAB 2: ANNOUNCEMENTS
              ═══════════════════════════════════════════════════════════ -->
         <div id="community-announcements-tab" class="community-tab-panel hidden">
-          <div class="announcements-filter-bar">
-            <button class="ann-filter-btn active">All</button>
-            <button class="ann-filter-btn">New Commodities</button>
-            <button class="ann-filter-btn">Dividends</button>
-            <button class="ann-filter-btn">Platform Updates</button>
-            <button class="ann-filter-btn">Market News</button>
+          <div class="announcements-filter-bar" id="ann-category-filters">
+            <button class="ann-filter-btn active" data-category="">All</button>
+            <button class="ann-filter-btn" data-category="new_commodities">New Commodities</button>
+            <button class="ann-filter-btn" data-category="dividends">Dividends</button>
+            <button class="ann-filter-btn" data-category="platform_updates">Platform Updates</button>
+            <button class="ann-filter-btn" data-category="market_news">Market News</button>
           </div>
 
-          <div class="announcements-list">
+          <div class="announcements-list" id="community-announcements-container">
             <!-- Pinned Announcement -->
             <div class="ann-card ann-card--pinned">
               <div class="ann-card-pin">
@@ -622,7 +623,14 @@ include
         <!-- ═══════════════════════════════════════════════════════════
              TAB 3: MY CIRCLE
              ═══════════════════════════════════════════════════════════ -->
-        <div id="community-circle-tab" class="community-tab-panel hidden">
+        <div id="community-circle-tab" class="community-tab-panel hidden" style="position:relative;">
+          <div class="coming-soon-overlay">
+            <div class="coming-soon-content">
+              <div class="coming-soon-icon">🚧</div>
+              <h3 class="coming-soon-title">Coming Soon</h3>
+              <p class="coming-soon-text">This feature is currently in development and will be available in the next community update.</p>
+            </div>
+          </div>
           <div class="circle-layout">
             <!-- Circle Stats -->
             <div class="circle-stats-row">
@@ -770,7 +778,14 @@ include
         <!-- ═══════════════════════════════════════════════════════════
              TAB 4: EXPERT AMAS
              ═══════════════════════════════════════════════════════════ -->
-        <div id="community-ama-tab" class="community-tab-panel hidden">
+        <div id="community-ama-tab" class="community-tab-panel hidden" style="position:relative;">
+          <div class="coming-soon-overlay">
+            <div class="coming-soon-content">
+              <div class="coming-soon-icon">🎙️</div>
+              <h3 class="coming-soon-title">Coming Soon</h3>
+              <p class="coming-soon-text">Expert AMAs are being scheduled. Check back later to request themes and ask questions.</p>
+            </div>
+          </div>
           <div class="ama-layout">
             <!-- Upcoming AMA Hero -->
             <div class="ama-hero-card">
@@ -828,7 +843,14 @@ include
         <!-- ═══════════════════════════════════════════════════════════
              TAB 5: REVIEWS
              ═══════════════════════════════════════════════════════════ -->
-        <div id="community-reviews-tab" class="community-tab-panel hidden">
+        <div id="community-reviews-tab" class="community-tab-panel hidden" style="position:relative;">
+          <div class="coming-soon-overlay">
+            <div class="coming-soon-content">
+              <div class="coming-soon-icon">✨</div>
+              <h3 class="coming-soon-title">Coming Soon</h3>
+              <p class="coming-soon-text">Read and write reviews from verified investors. We're launching this shortly.</p>
+            </div>
+          </div>
           <div class="reviews-layout">
             <!-- Overall Rating -->
             <div class="reviews-overview-row">

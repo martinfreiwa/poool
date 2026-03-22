@@ -83,7 +83,6 @@ pub struct CloneHolder {
     pub last_synced_at: String,
 }
 
-
 /// A settlement batch record.
 #[derive(Serialize)]
 pub struct SettlementBatch {
@@ -273,26 +272,38 @@ pub async fn api_admin_blockchain_clone_detail(
     let tokens_sold = asset.2 - asset.3;
 
     // 2. Fetch Holders from onchain_balances
-    let holders_rows = sqlx::query_as::<_, (uuid::Uuid, String, String, i64, chrono::DateTime<chrono::Utc>)>(
+    let holders_rows = sqlx::query_as::<
+        _,
+        (
+            uuid::Uuid,
+            String,
+            String,
+            i64,
+            chrono::DateTime<chrono::Utc>,
+        ),
+    >(
         r#"SELECT ob.user_id, u.email, u.chain_wallet_address, ob.balance, ob.last_synced_at 
            FROM onchain_balances ob
            JOIN users u ON ob.user_id = u.id
            WHERE ob.asset_id = $1 AND ob.balance > 0
            ORDER BY ob.balance DESC
-           LIMIT 100"#
+           LIMIT 100"#,
     )
     .bind(asset_id)
     .fetch_all(pool)
     .await
     .unwrap_or_default();
 
-    let holders = holders_rows.into_iter().map(|r| CloneHolder {
-        user_id: r.0.to_string(),
-        email: r.1,
-        wallet_address: r.2,
-        balance: r.3,
-        last_synced_at: r.4.format("%b %d, %Y %H:%M").to_string(),
-    }).collect();
+    let holders = holders_rows
+        .into_iter()
+        .map(|r| CloneHolder {
+            user_id: r.0.to_string(),
+            email: r.1,
+            wallet_address: r.2,
+            balance: r.3,
+            last_synced_at: r.4.format("%b %d, %Y %H:%M").to_string(),
+        })
+        .collect();
 
     // In a real app we'd fetch actual IS_PAUSED state from RPC, but we return false to keep it fast
     Ok(Json(CloneDetailResponse {
@@ -902,11 +913,10 @@ pub async fn api_admin_blockchain_sync_status(
     .ok()
     .flatten();
 
-    let total_balance_entries: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM onchain_balances")
-            .fetch_one(pool)
-            .await
-            .unwrap_or(0);
+    let total_balance_entries: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM onchain_balances")
+        .fetch_one(pool)
+        .await
+        .unwrap_or(0);
 
     let indexer = IndexerStatus {
         enabled: indexer_enabled,
@@ -930,17 +940,19 @@ pub async fn api_admin_blockchain_sync_status(
             .await
             .unwrap_or(0);
 
-    let submitted_trades: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM trade_history WHERE on_chain_status = 'submitted'")
-            .fetch_one(pool)
-            .await
-            .unwrap_or(0);
+    let submitted_trades: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM trade_history WHERE on_chain_status = 'submitted'",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_or(0);
 
-    let confirmed_trades: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM trade_history WHERE on_chain_status = 'confirmed'")
-            .fetch_one(pool)
-            .await
-            .unwrap_or(0);
+    let confirmed_trades: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM trade_history WHERE on_chain_status = 'confirmed'",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_or(0);
 
     let failed_batches_24h: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM chain_settlement_batches WHERE status = 'failed' AND created_at > NOW() - INTERVAL '24 hours'",
@@ -949,15 +961,14 @@ pub async fn api_admin_blockchain_sync_status(
     .await
     .unwrap_or(0);
 
-    let last_batch_at: Option<String> =
-        sqlx::query_scalar::<_, chrono::DateTime<chrono::Utc>>(
-            "SELECT created_at FROM chain_settlement_batches ORDER BY created_at DESC LIMIT 1",
-        )
-        .fetch_optional(pool)
-        .await
-        .ok()
-        .flatten()
-        .map(|dt| dt.format("%b %d, %Y %H:%M UTC").to_string());
+    let last_batch_at: Option<String> = sqlx::query_scalar::<_, chrono::DateTime<chrono::Utc>>(
+        "SELECT created_at FROM chain_settlement_batches ORDER BY created_at DESC LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten()
+    .map(|dt| dt.format("%b %d, %Y %H:%M UTC").to_string());
 
     let avg_batch_size: f64 = sqlx::query_scalar::<_, f64>(
         "SELECT COALESCE(AVG(batch_size::float), 0) FROM chain_settlement_batches WHERE status = 'confirmed'",
@@ -977,7 +988,15 @@ pub async fn api_admin_blockchain_sync_status(
     };
 
     // ── KYC Whitelist Queue ──
-    let queue_rows = sqlx::query_as::<_, (uuid::Uuid, String, String, Option<chrono::DateTime<chrono::Utc>>)>(
+    let queue_rows = sqlx::query_as::<
+        _,
+        (
+            uuid::Uuid,
+            String,
+            String,
+            Option<chrono::DateTime<chrono::Utc>>,
+        ),
+    >(
         r#"SELECT u.id, u.email, k.status, k.verified_at
            FROM users u
            JOIN kyc_records k ON k.user_id = u.id
@@ -993,26 +1012,26 @@ pub async fn api_admin_blockchain_sync_status(
 
     let whitelist_queue: Vec<WhitelistQueueEntry> = queue_rows
         .into_iter()
-        .map(|(user_id, email, status, verified_at)| WhitelistQueueEntry {
-            user_id: user_id.to_string(),
-            email,
-            kyc_status: status,
-            has_wallet: false,
-            verified_at: verified_at.map(|dt| dt.format("%b %d, %Y %H:%M").to_string()),
-        })
+        .map(
+            |(user_id, email, status, verified_at)| WhitelistQueueEntry {
+                user_id: user_id.to_string(),
+                email,
+                kyc_status: status,
+                has_wallet: false,
+                verified_at: verified_at.map(|dt| dt.format("%b %d, %Y %H:%M").to_string()),
+            },
+        )
         .collect();
 
     // ── Config Summary ──
-    let network =
-        std::env::var("CHAIN_NETWORK").unwrap_or_else(|_| "polygon_amoy".to_string());
+    let network = std::env::var("CHAIN_NETWORK").unwrap_or_else(|_| "polygon_amoy".to_string());
     let rpc_url = std::env::var("CHAIN_RPC_URL")
         .unwrap_or_else(|_| "https://rpc-amoy.polygon.technology".to_string());
     let identity_registry = std::env::var("CHAIN_IDENTITY_REGISTRY_ADDRESS")
         .unwrap_or_else(|_| "Not configured".to_string());
-    let settlement_address = std::env::var("CHAIN_SETTLEMENT_ADDRESS")
-        .unwrap_or_else(|_| "Not configured".to_string());
-    let chain_id =
-        std::env::var("CHAIN_ID").unwrap_or_else(|_| "80002".to_string());
+    let settlement_address =
+        std::env::var("CHAIN_SETTLEMENT_ADDRESS").unwrap_or_else(|_| "Not configured".to_string());
+    let chain_id = std::env::var("CHAIN_ID").unwrap_or_else(|_| "80002".to_string());
 
     let explorer_url = match network.as_str() {
         "polygon" => "https://polygonscan.com".to_string(),
@@ -1156,7 +1175,10 @@ pub async fn api_admin_blockchain_pause_clone(
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(ApiError::Internal(format!("Clone pause failed: {}", stderr)));
+        return Err(ApiError::Internal(format!(
+            "Clone pause failed: {}",
+            stderr
+        )));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);

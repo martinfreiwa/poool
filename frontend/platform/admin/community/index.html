@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Dashboard | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <span class="current">Community Dashboard</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Community Overview</h1>
+          <p class="admin-page-subtitle">Platform community health and engagement metrics.</p>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="admin-kpi-grid">
+          
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Active Profiles</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-profiles">—</div>
+          </div>
+
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Total Posts</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-posts">—</div>
+          </div>
+
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Total Comments</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-comments">—</div>
+          </div>
+
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-header">
+              <span class="admin-kpi-label">Total Reactions</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-reactions">—</div>
+          </div>
+
+        </div>
+
+        <!-- Two Column: Activity + Quick Actions -->
+        <div class="admin-section-grid" style="margin-top: 24px;">
+          
+          <!-- Recent Announcements -->
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Recent Announcements</h3>
+              <a href="/admin/community/announcements.html" class="admin-btn admin-btn--secondary admin-btn--sm">View All</a>
+            </div>
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Admin</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Engagement</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-announcements-table">
+                  <tr>
+                    <td colspan="4" style="text-align: center; padding: 20px; color: var(--admin-text-muted);">
+                      Loading...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Quick Actions</h3>
+            </div>
+            <div class="admin-card-body">
+              <div class="admin-quick-actions">
+                <a href="/admin/community/announcements.html" class="admin-quick-action" style="padding: 16px;">
+                  <div class="admin-quick-action-icon" style="background: #eef4ff; color: #3538cd;">
+                    <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </div>
+                  <span>Create Announcement</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Fetch KPIs
+        try {
+            const res = await fetch('/api/admin/community/stats');
+            if(res.ok) {
+                const stats = await res.json();
+                document.getElementById('kpi-profiles').textContent = stats.active_profiles;
+                document.getElementById('kpi-posts').textContent = stats.total_posts;
+                document.getElementById('kpi-comments').textContent = stats.total_comments;
+                document.getElementById('kpi-reactions').textContent = stats.total_reactions;
+            }
+        } catch(e) {
+            console.error("Failed to load community stats", e);
+        }
+
+        // Fetch Recent Activity (re-using feed for now since MVP only has announcements)
+        try {
+            const res = await fetch('/api/community/feed');
+            if(res.ok) {
+                const posts = await res.json();
+                const tbody = document.getElementById('recent-announcements-table');
+                
+                if (posts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--admin-text-muted);">No announcements yet.</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+                // Limit to 5
+                posts.slice(0, 5).forEach(p => {
+                    const date = new Date(p.created_at).toLocaleDateString();
+                    html += `
+                        <tr>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    ${p.author_avatar ? `<img src="${p.author_avatar}" style="width:24px; height:24px; border-radius:50%;">` : `<div style="width:24px; height:24px; border-radius:50%; background:#f2f4f7;"></div>`}
+                                    <span style="font-weight: 500;">${p.author_name}</span>
+                                </div>
+                            </td>
+                            <td><span class="admin-badge" style="background:#eef4ff; color:#3538cd;">${p.category}</span></td>
+                            <td>${date}</td>
+                            <td>
+                                <span style="font-size:12px; color:#667085;">
+                                    🔥 ${p.reaction_count || 0} · 💬 ${p.comment_count || 0}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            }
+        } catch(e) {
+            console.error("Failed to load feed", e);
+        }
+    });
+  </script>
+</body>
+</html>

@@ -153,7 +153,10 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/blockchain-treasury", get(page_admin_generic))
         .route("/admin/blockchain-contracts.html", get(page_admin_generic))
         .route("/admin/blockchain-contracts", get(page_admin_generic))
-        .route("/admin/blockchain-contract-detail.html", get(page_admin_generic))
+        .route(
+            "/admin/blockchain-contract-detail.html",
+            get(page_admin_generic),
+        )
         .route("/admin/blockchain-contract-detail", get(page_admin_generic))
         .route("/admin/blockchain-sync.html", get(page_admin_generic))
         .route("/admin/blockchain-sync", get(page_admin_generic))
@@ -172,10 +175,7 @@ pub fn router() -> axum::Router<AppState> {
             "/admin/marketplace/primary-escrow.html",
             get(page_admin_generic),
         )
-        .route(
-            "/admin/marketplace/primary-escrow",
-            get(page_admin_generic),
-        )
+        .route("/admin/marketplace/primary-escrow", get(page_admin_generic))
         .route(
             "/admin/marketplace/reconciliation.html",
             get(page_admin_generic),

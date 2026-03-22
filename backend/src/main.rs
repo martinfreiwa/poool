@@ -26,6 +26,7 @@ mod blockchain;
 mod blog;
 mod cart;
 mod common;
+mod community;
 mod config;
 mod db;
 mod developer;
@@ -120,7 +121,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ── 4. Run database migrations ────────────────────────────────
     // Reads .sql files from ../database/ in alphanumeric order, tracks which
     // have been applied in a `_schema_migrations` table. Idempotent.
-    run_migrations(&pool).await;
+    run_migrations(&pool, "../database", "core").await;
+
+    if let Some(ref comm_pool) = pools.community {
+        run_migrations(comm_pool, "../database/community", "community").await;
+    }
 
     let templates = templates::create_engine();
 
@@ -166,7 +171,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Spawn background tasks
     tokio::spawn(email::run_email_scheduler(pool.clone()));
     tokio::spawn(support::sla::monitor_sla_breaches(pool.clone()));
-    
+
     // Auto-refund worker for expired primary escrow offerings
     tokio::spawn(admin::primary_escrow::run_auto_refund_worker(pool.clone()));
 
@@ -384,8 +389,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         tracing::info!("Reconciliation check 2/3 PASS: All token balances match.");
                     } else {
                         for row in &rows {
-                            let expected_sold =
-                                row.tokens_total - row.tokens_available;
+                            let expected_sold = row.tokens_total - row.tokens_available;
                             let msg = format!(
                                 "TOKEN MISMATCH: Asset '{}' ({:?}): sold={} but investments show {} tokens",
                                 row.title, row.id, expected_sold, row.total_owned.unwrap_or(0)
@@ -442,7 +446,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // ── Task 10.8: Persist reconciliation results ──────────────
             let report_date = chrono::Utc::now().date_naive();
-            let status = if recon_cash_delta.abs() > 100 || recon_token_mismatches > 0 || recon_negative_count > 0 {
+            let status = if recon_cash_delta.abs() > 100
+                || recon_token_mismatches > 0
+                || recon_negative_count > 0
+            {
                 "fail"
             } else if recon_cash_delta != 0 {
                 "warning"
@@ -490,7 +497,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             {
                 tracing::error!("Failed to persist reconciliation report: {}", e);
             } else {
-                tracing::info!("📊 Reconciliation report persisted for {} — status: {}", report_date, status);
+                tracing::info!(
+                    "📊 Reconciliation report persisted for {} — status: {}",
+                    report_date,
+                    status
+                );
             }
 
             tracing::info!("Daily financial reconciliation completed.");
@@ -631,10 +642,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(portfolio::router())
         .merge(payment_methods::router())
         .merge(developer::router())
-
         .merge(legal::router())
         .merge(admin::router())
         .merge(blog::router())
+        .merge(community::router())
         // ── Marketplace (trading engine APIs) ─────────────────────────
         .merge(marketplace::router())
         // ── Support (merged router handles /support and /api/support) ──
@@ -647,7 +658,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/orders/:order_id", get(api_order_detail))
         .route("/api/deposits/:deposit_id/status", get(api_deposit_status))
         // ── IPFS: Public metadata endpoint (read by smart contracts & IPFS gateways) ──
-        .route("/api/assets/:asset_id/metadata.json", get(api_asset_metadata))
+        .route(
+            "/api/assets/:asset_id/metadata.json",
+            get(api_asset_metadata),
+        )
         // ── Reports (still in main.rs pending Phase 5 extraction) ─────
         .route("/api/admin/reports/:report_type", get(api_admin_reports))
         // ── Profile / KYC page redirect ───────────────────────────────
@@ -1642,7 +1656,9 @@ async fn api_asset_metadata(
                     let mut response = Json(json).into_response();
                     response.headers_mut().insert(
                         axum::http::header::CACHE_CONTROL,
-                        axum::http::HeaderValue::from_static("public, max-age=3600, s-maxage=86400"),
+                        axum::http::HeaderValue::from_static(
+                            "public, max-age=3600, s-maxage=86400",
+                        ),
                     );
                     response.headers_mut().insert(
                         axum::http::header::CONTENT_TYPE,
@@ -2071,7 +2087,7 @@ async fn api_me(jar: CookieJar, State(state): State<AppState>) -> axum::response
 /// Migrations are tracked in a `_schema_migrations` table. Each migration file
 /// is run exactly once. If a migration fails, the error is logged and the server
 /// continues (allowing partial migration scenarios to be debugged).
-async fn run_migrations(pool: &sqlx::PgPool) {
+async fn run_migrations(pool: &sqlx::PgPool, dir: &str, label: &str) {
     // 1. Ensure tracking table exists
     if let Err(e) = sqlx::query(
         r#"CREATE TABLE IF NOT EXISTS _schema_migrations (
@@ -2086,11 +2102,12 @@ async fn run_migrations(pool: &sqlx::PgPool) {
         return;
     }
 
-    // 2. Read migration files from ../database/ (relative to CWD = backend/)
-    let migrations_dir = std::path::Path::new("../database");
+    // 2. Read migration files from the specified directory
+    let migrations_dir = std::path::Path::new(dir);
     if !migrations_dir.exists() {
         tracing::warn!(
-            "Migrations directory {:?} not found — skipping migrations",
+            "[{}] Migrations directory {:?} not found — skipping migrations",
+            label,
             migrations_dir
         );
         return;
@@ -2141,7 +2158,7 @@ async fn run_migrations(pool: &sqlx::PgPool) {
             }
         };
 
-        tracing::info!("Applying migration: {}", filename);
+        tracing::info!("[{}] Applying migration: {}", label, filename);
 
         // Run migration in a transaction
         let mut tx = match pool.begin().await {
@@ -2194,10 +2211,11 @@ async fn run_migrations(pool: &sqlx::PgPool) {
     }
 
     if applied_count > 0 {
-        tracing::info!("Applied {} new migration(s)", applied_count);
+        tracing::info!("[{}] Applied {} new migration(s)", label, applied_count);
     } else {
         tracing::info!(
-            "Database schema is up to date ({} migrations tracked)",
+            "[{}] Database schema is up to date ({} migrations tracked)",
+            label,
             applied.len()
         );
     }

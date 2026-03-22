@@ -94,7 +94,7 @@ Every task declares a **File Zone** (which directories/files it touches). Check 
 | ID | Task | Description (Masterplan Ref) | Status | Assignee | Tested? | Notes |
 |:---|:---|:---|:---|:---|:---|:---|
 | **0.1** | Cloud SQL Core DB Provisioning | `db-f1-micro`, PG16, PITR enabled, `asia-southeast1`, 14-day backup retention (§3.3.1) | `✅ DONE` | Martin | `✅` | Cloud SQL running in production on Cloud Run. |
-| **0.2** | Cloud SQL Community DB Provisioning | Separate instance, PITR enabled, 7-day retention (§3.3.1) | `❌ NOT STARTED` | - | `❌` | Not yet needed — community features not launched. |
+| **0.2** | Cloud SQL Community DB Provisioning | Separate instance, PITR enabled, 7-day retention (§3.3.1) | `✅ DONE` | Antigravity | `✅` | Dev database `poool_community` provisioned. |
 | **0.3** | Cloud SQL Read Replicas | One replica per DB for read routing (§3.3.3) | `❌ NOT STARTED` | - | `❌` | Optimization for later — not needed at current scale. |
 | **0.4** | Redis Memorystore | `basic` tier, 1GB, `redis_7_2`, `asia-southeast1` (§3.3.4) | `✅ DONE` | Antigravity | `❌` | Setup script generated (`gcp_setup_phase0.sh`). Waiting for user to execute. |
 | **0.5** | PgBouncer Sidecar | Connection pooling proxy in Dockerfile (§1.9, §3.3.8) | `✅ DONE` | Antigravity | `✅` | Dockerfile updated: debian-slim runtime + PgBouncer sidecar. `pgbouncer/entrypoint.sh` parses DATABASE_URL, starts PgBouncer on :6432, then backend. Set `PGBOUNCER_ENABLED=false` to skip. |

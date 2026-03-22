@@ -1,15 +1,11 @@
-use axum::{
-    extract::State,
-    Json,
-};
+use axum::{extract::State, Json};
 use serde::Serialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use super::extractors::AdminUser;
 use crate::auth::routes::AppState;
 use crate::error::AppError as ApiError;
-use super::extractors::AdminUser;
-
 
 /// Response type for the Primary Escrow tracker
 #[derive(Serialize)]
@@ -45,7 +41,7 @@ pub struct EscrowCampagin {
 // Removed redundant page_admin_primary_escrow as page_admin_generic handles it.
 
 /// JSON API to list all open and pending primary offering campaigns
- pub async fn api_admin_primary_escrow_list(
+pub async fn api_admin_primary_escrow_list(
     _admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<EscrowCampagin>>, ApiError> {
@@ -73,7 +69,6 @@ pub struct EscrowCampagin {
         let target_total_cents = row.tokens_total as i64 * row.token_price_cents;
         let target_min_cents = row.min_funding_tokens as i64 * row.token_price_cents;
 
-        
         let progress = if row.tokens_total > 0 {
             (sold as f64 / row.tokens_total as f64) * 100.0
         } else {
@@ -84,7 +79,9 @@ pub struct EscrowCampagin {
             asset_id: row.id,
             title: row.title,
             funding_status: row.funding_status,
-            funding_end_at: row.funding_end_at.map(|d| d.format("%Y-%m-%d %H:%M").to_string()),
+            funding_end_at: row
+                .funding_end_at
+                .map(|d| d.format("%Y-%m-%d %H:%M").to_string()),
             tokens_total: row.tokens_total,
             tokens_available: row.tokens_available,
             min_funding_tokens: row.min_funding_tokens,
@@ -102,7 +99,7 @@ pub struct EscrowCampagin {
 }
 
 /// Core Abort & Auto-Refund Worker (Phase 16.4)
-/// Continuously checks for `funding_open` or `funding_in_progress` assets 
+/// Continuously checks for `funding_open` or `funding_in_progress` assets
 /// whose `funding_end_at` has passed without reaching `min_funding_tokens`.
 pub async fn run_auto_refund_worker(pool: PgPool) {
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(600)); // Every 10 mins
@@ -112,7 +109,10 @@ pub async fn run_auto_refund_worker(pool: PgPool) {
 
         if let Err(e) = process_expired_escrow_refunds(&pool).await {
             tracing::error!("Auto-refund worker encountered an error: {}", e);
-            sentry::capture_message(&format!("Auto-refund worker error: {}", e), sentry::Level::Error);
+            sentry::capture_message(
+                &format!("Auto-refund worker error: {}", e),
+                sentry::Level::Error,
+            );
         }
     }
 }
@@ -138,7 +138,10 @@ async fn process_expired_escrow_refunds(pool: &PgPool) -> Result<(), ApiError> {
             asset.title, asset.id, asset.min_funding_tokens, sold
         );
 
-        let mut tx = pool.begin().await.map_err(|e| ApiError::Internal(e.to_string()))?;
+        let mut tx = pool
+            .begin()
+            .await
+            .map_err(|e| ApiError::Internal(e.to_string()))?;
 
         // 1. Mark asset as aborted
         sqlx::query!(
@@ -172,7 +175,8 @@ async fn process_expired_escrow_refunds(pool: &PgPool) -> Result<(), ApiError> {
                 SET balance_cents = wallets.balance_cents + $2, updated_at = NOW()
                 RETURNING id
                 "#,
-                inv.user_id, inv.purchase_value_cents
+                inv.user_id,
+                inv.purchase_value_cents
             )
             .fetch_one(&mut *tx)
             .await
@@ -198,7 +202,7 @@ async fn process_expired_escrow_refunds(pool: &PgPool) -> Result<(), ApiError> {
             .execute(&mut *tx)
             .await
             .map_err(|e| ApiError::Internal(e.to_string()))?;
-            
+
             // Fail associated orders if pending (best-effort link via order items, or fail all pending for this asset)
             sqlx::query(
                 r#"
@@ -208,20 +212,27 @@ async fn process_expired_escrow_refunds(pool: &PgPool) -> Result<(), ApiError> {
                     JOIN order_items oi ON oi.order_id = o.id 
                     WHERE oi.asset_id = $1 AND o.status = 'pending'
                 )
-                "#
+                "#,
             )
             .bind(asset.id)
             .execute(&mut *tx)
             .await
             .map_err(|e| ApiError::Internal(e.to_string()))?;
-
         }
 
-        sentry::capture_message(&format!("Auto-refund completed for '{}'. {} investors refunded.", asset.title, investments.len()), sentry::Level::Info);
+        sentry::capture_message(
+            &format!(
+                "Auto-refund completed for '{}'. {} investors refunded.",
+                asset.title,
+                investments.len()
+            ),
+            sentry::Level::Info,
+        );
 
-        tx.commit().await.map_err(|e| ApiError::Internal(e.to_string()))?;
+        tx.commit()
+            .await
+            .map_err(|e| ApiError::Internal(e.to_string()))?;
     }
 
     Ok(())
 }
-

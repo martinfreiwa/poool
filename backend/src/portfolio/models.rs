@@ -21,7 +21,6 @@ pub struct InvestmentItem {
     pub chain_tx_hash: Option<String>,
 }
 
-
 #[derive(Serialize)]
 pub struct AnnualLimit {
     pub annual_limit_cents: i64,
