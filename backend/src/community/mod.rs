@@ -4,6 +4,7 @@ pub mod models;
 pub mod moderation;
 pub mod routes;
 pub mod service;
+pub mod background;
 pub mod user_bridge;
 pub mod validation;
 

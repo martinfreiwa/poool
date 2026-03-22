@@ -95,6 +95,9 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | `2026-03-22 21:35` | `Antigravity` | `M1-ADMIN` | `backend/src/` & `admin/` | `✅ Check-Out` | Implemented Admin sidebar injection, Community Dashboard, Announcements Manager and KPI backend logic |
 | `2026-03-22 21:40` | `Antigravity` | `M1-QA` | `backend/src/community/tests.rs` | `✅ Check-Out` | Implemented tests for models, validation logic, and ran successful pipeline checks. Modul 1 is fully READY for launch! |
 | `2026-03-22 22:38` | `Antigravity` | `M2-FE`, `M2-BE`, `M2-DB` | `community/` & `platform/` | `✅ Check-Out` | Completed M2 User Posts backend, DB migrations, content moderation rules, and frontend post modalities |
+| `2026-03-22 22:50` | `Antigravity` | `M2-ADMIN` | `community/` & `admin/` | `✅ Check-Out` | Implemented full Moderation workflow: Admin pending queue, Post viewer/hider, User management (bans), and API routes |
+| `2026-03-22 23:00` | `Antigravity` | `M2-ADMIN`, `M2-FE` | `admin/`, `platform/` | `✅ Check-Out` | Implemented User moderation UI (Bans/Warnings), Admin Posts viewer, and dynamic Trending Assets Sidebar Widget |
+| `2026-03-22 23:10` | `Antigravity` | `M2-BE` | `storage/`, `community/` | `✅ Check-Out` | Implemented Post Image Uploader, Redis Rate Limiter, and Asset Velocity Monitor protecting from Pump & Dump spam attacks |
 
 ---
 
@@ -220,11 +223,11 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M2-BE.2** | User Posts CRUD | `POST /api/community/posts` — User-Posts mit Moderation-Pipeline (Sanitize → Keyword-Check → Disclaimer → Save) | `✅ DONE` | Antigravity | `backend/src/community/` |
 | **M2-BE.3** | Post Edit/Delete (eigene) | `PUT /DELETE /api/community/posts/{id}` — nur innerhalb 15 Minuten editierbar, nur eigene löschbar | `✅ DONE` | Antigravity | `backend/src/community/` |
 | **M2-BE.4** | Content Report API | `POST /api/community/posts/{id}/report` — User meldet Post | `✅ DONE` | Antigravity | `backend/src/community/` |
-| **M2-BE.5** | Image Upload | Upload bis zu 4 Bilder pro Post via GCS, Validierung (Dateityp, Größe <5MB) | `❌` | - | `backend/src/community/` |
+| **M2-BE.5** | Image Upload | Upload bis zu 4 Bilder pro Post via GCS, Validierung (Dateityp, Größe <5MB) | `✅ DONE` | Antigravity | `backend/src/community/` |
 | **M2-BE.6** | Admin Moderation API | `GET /api/admin/community/reports` + `POST .../action` — Reports bearbeiten, Posts verstecken/löschen | `✅ DONE` | Antigravity | `backend/src/admin/` |
-| **M2-BE.7** | Post Rate Limiting | Redis-basiert: max 5 Posts/Stunde, Duplicate-Detection | `❌` | - | `backend/src/community/` |
-| **M2-BE.8** | New-User Sandbox & URL Filter | Enforce rule: Users under Level 2 cannot post URLs. Regex detection for "guaranteed return" variations auto-flags posts. | `❌` | - | `backend/src/community/` |
-| **M2-BE.9** | Asset Velocity Monitor | Background worker monitoring post velocity. If >5 mentions of an asset in 10 mins, alert Admins (Pump & Dump protection). | `❌` | - | `backend/src/community/` |
+| **M2-BE.7** | Post Rate Limiting | Redis-basiert: max 5 Posts/Stunde, Duplicate-Detection | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M2-BE.8** | New-User Sandbox & URL Filter | Enforce rule: Users under Level 2 cannot post URLs. Regex detection for "guaranteed return" variations auto-flags posts. | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M2-BE.9** | Asset Velocity Monitor | Background worker monitoring post velocity. If >5 mentions of an asset in 10 mins, alert Admins (Pump & Dump protection). | `✅ DONE` | Antigravity | `backend/src/community/` |
 
 ### M2-FE: Frontend (Platform)
 
@@ -233,16 +236,16 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M2-FE.1** | "Create Post" Component | Post-Erstellungs-UI: Textarea, Bild-Upload, Post-Type Selector | `✅ DONE` | `frontend/platform/static/js/` |
 | **M2-FE.2** | Post Report Button | "Report" Flag auf jedem Post, Report-Reason Modal | `✅ DONE` | `frontend/platform/static/js/` |
 | **M2-FE.3** | Disclaimer Banner | Automatischer Disclaimer unter Investment-bezogenen Posts (CSS + JS) | `✅ DONE` | `frontend/platform/static/css/` |
-| **M2-FE.4** | Trending Assets Widget | Sidebar widget showing top 3 most-discussed assets in the last 24h, linking to trading page. | `❌` | `frontend/platform/static/js/` |
+| **M2-FE.4** | Trending Assets Widget | Sidebar widget showing top 3 most-discussed assets in the last 24h, linking to trading page. | `✅ DONE` | `frontend/platform/static/js/` |
 
 ### M2-ADMIN: Admin Dashboard (+4 Seiten → gesamt 6)
 
 | ID | Task | Seite | Description | Status | Assignee | File Zone |
 |:---|:---|:---|:---|:---|:---|:---|
-| **M2-ADMIN.1** | `community/posts.html` | Posts verwalten | Tabelle aller Posts (Suche, Filter nach Typ/Autor/Status, Bulk-Aktionen: hide/delete/warn) | `❌` | - | `frontend/platform/admin/community/` |
+| **M2-ADMIN.1** | `community/posts.html` | Posts verwalten | Tabelle aller Posts (Suche, Filter nach Typ/Autor/Status, Bulk-Aktionen: hide/delete/warn) | `✅ DONE` | Antigravity | `frontend/platform/admin/community/` |
 | **M2-ADMIN.2** | `community/post-detail.html` | Post-Detail | Einzelner Post mit allen Comments, Reactions, Report-History, Moderation-Aktionen | `❌` | - | `frontend/platform/admin/community/` |
 | **M2-ADMIN.3** | `community/reports.html` | Moderation Queue | Pending Reports Tabelle, Quick-Actions (hide/delete/warn/ban), Report-Detail-View, 🔴 Badge in Sidebar | `✅ DONE` | Antigravity | `frontend/platform/admin/community/` |
-| **M2-ADMIN.4** | `community/users.html` | Community Users | User-Tabelle (Post-Count, Warnings, Ban-Status), Quick-Actions (warn/ban/unban), Suche | `❌` | - | `frontend/platform/admin/community/` |
+| **M2-ADMIN.4** | `community/users.html` | Community Users | User-Tabelle (Post-Count, Warnings, Ban-Status), Quick-Actions (warn/ban/unban), Suche | `✅ DONE` | Antigravity | `frontend/platform/admin/community/` |
 | **M2-ADMIN.5** | Admin Sidebar erweitern | - | Posts, Reports (mit 🔴 Badge), Community Users in Sidebar einfügen | `✅ DONE` | Antigravity | `frontend/platform/static/js/` ⚠️ |
 | **M2-ADMIN.6** | Admin Moderation APIs | Backend | `GET/POST /api/admin/community/reports`, `POST .../posts/{id}/hide`, `POST .../users/{id}/ban` | `✅ DONE` | Antigravity | `backend/src/admin/` |
 
@@ -267,10 +270,10 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 
 | ID | Task | Beschreibung | Status | File Zone |
 |:---|:---|:---|:---|:---|
-| **M3-DB.1** | `follows` Tabelle | Unidirektionaler Follow mit self-follow CHECK | `❌` | `database/community/` |
-| **M3-DB.2** | `badges` + `user_badges` Tabellen | Badge-Definitionen + Earned-Badges pro User | `❌` | `database/community/` |
-| **M3-DB.3** | `ALTER TABLE community_profiles` | + bio, follower_count, following_count Felder | `❌` | `database/community/` |
-| **M3-DB.4** | Seed: Badge Definitions | INSERT 16 Badge-Definitionen (Masterplan §2.3) | `❌` | `database/community/` |
+| **M3-DB.1** | `follows` Tabelle | Unidirektionaler Follow mit self-follow CHECK | `✅ DONE` | `database/community/` |
+| **M3-DB.2** | `badges` + `user_badges` Tabellen | Badge-Definitionen + Earned-Badges pro User | `✅ DONE` | `database/community/` |
+| **M3-DB.3** | `ALTER TABLE community_profiles` | + bio, follower_count, following_count Felder | `✅ DONE` | `database/community/` |
+| **M3-DB.4** | Seed: Badge Definitions | INSERT 16 Badge-Definitionen (Masterplan §2.3) | `✅ DONE` | `database/community/` |
 
 ### M3-BE: Backend
 

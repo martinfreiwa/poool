@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Posts | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Posts</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h1 class="admin-page-title">Community Posts</h1>
+            <p class="admin-page-subtitle">View and moderate all user posts on the platform.</p>
+          </div>
+          <div>
+            <button class="admin-btn admin-btn--secondary" onclick="loadPosts()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Author</th>
+                  <th>Type</th>
+                  <th>Content</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="posts-table">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                    Loading posts...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadPosts();
+    });
+
+    async function loadPosts() {
+        const tbody = document.getElementById('posts-table');
+        try {
+            const res = await fetch('/api/admin/community/posts');
+            if(res.ok) {
+                const posts = await res.json();
+                
+                if (posts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--admin-text-muted);">No posts found.</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+                posts.forEach(p => {
+                    const date = new Date(p.created_at).toLocaleString();
+                    const truncContent = p.content.length > 80 ? p.content.substring(0, 80) + '...' : p.content;
+                    const typeColor = p.post_type === 'announcement' ? '#eef4ff' : '#F2F4F7';
+                    const typeText = p.post_type === 'announcement' ? '#3538cd' : '#344054';
+                    
+                    const statusBadge = p.is_hidden 
+                        ? `<span class="admin-badge" style="background:#FEF3F2; color:#B42318;">Hidden</span>`
+                        : `<span class="admin-badge" style="background:#ECFDF3; color:#027A48;">Active</span>`;
+
+                    html += `
+                        <tr>
+                            <td>
+                                <div style="font-weight: 500; color: #101828;">${p.author_name}</div>
+                                <div style="font-size: 11px; color: #667085; font-family: monospace;">${p.user_id.substring(0,8)}...</div>
+                            </td>
+                            <td>
+                                <span class="admin-badge" style="background:${typeColor}; color:${typeText};">${p.post_type}</span>
+                            </td>
+                            <td>
+                                <div style="font-size: 13px; max-width: 250px; white-space: normal; line-height: 1.4;">
+                                    ${truncContent}
+                                </div>
+                            </td>
+                            <td>${statusBadge}</td>
+                            <td><span style="font-size: 13px; color: #667085;">${date}</span></td>
+                            <td style="text-align: right;">
+                                ${!p.is_hidden ? `<button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="hidePost('${p.id}')">Hide</button>` : `<span style="font-size:12px; color:#667085;">Hidden</span>`}
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#D92D20;">Failed to load posts</td></tr>';
+            }
+        } catch(e) {
+            console.error(e);
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#D92D20;">Network error</td></tr>';
+        }
+    }
+
+    async function hidePost(postId) {
+        if(!confirm("Are you sure you want to hide this post?")) return;
+        
+        try {
+            const res = await fetch(`/api/admin/community/posts/${postId}/hide`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: "Admin UI manual hide" })
+            });
+            if (res.ok) {
+                loadPosts();
+            } else {
+                alert("Failed to hide post");
+            }
+        } catch(e) {
+            alert("Error connecting to server");
+        }
+    }
+  </script>
+</body>
+</html>

@@ -116,6 +116,98 @@ pub async fn upload_avatar(
     .into_response()
 }
 
+// ─── Community Post Image Upload ───────────────────────────────
+
+const MAX_POST_IMAGE_BYTES: usize = 5 * 1024 * 1024; // 5 MB
+
+/// POST /api/upload/post-image
+///
+/// Uploads an image for a community post.
+/// Request: multipart/form-data with `file` (max 5 MB).
+/// Response: { "status": "success", "image_url": "url" }
+pub async fn upload_post_image(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    mut multipart: Multipart,
+) -> axum::response::Response {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Not authenticated"})),
+            )
+                .into_response()
+        }
+    };
+
+    let bucket = match &state.config.gcs_bucket {
+        Some(b) => b.clone(),
+        None => {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(serde_json::json!({"error": "File storage is not configured"})),
+            )
+                .into_response()
+        }
+    };
+
+    // Read multipart field
+    let (file_bytes, mime_type) = match read_multipart_file(&mut multipart, MAX_POST_IMAGE_BYTES).await {
+        Ok(v) => v,
+        Err(e) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": e})),
+            )
+                .into_response()
+        }
+    };
+
+    if let Err(e) = service::validate_image_mime(&mime_type) {
+        return e.into_response();
+    }
+
+    let ext = service::extension_for_mime(&mime_type);
+    let object_path = format!("community/posts/{}/{}.{}", user.id, Uuid::new_v4(), ext);
+
+    // Try GCS first
+    let image_url = match tokio::time::timeout(
+        std::time::Duration::from_secs(15),
+        service::upload_public(&bucket, &object_path, file_bytes.clone(), &mime_type),
+    )
+    .await
+    {
+        Ok(Ok(url)) => url,
+        Ok(Err(e)) => {
+            tracing::warn!("Post image upload failed: {}; falling back to local.", e);
+            match service::upload_local(&object_path, file_bytes).await {
+                Ok(url) => url,
+                Err(e) => {
+                    tracing::error!("Local post image save failed: {}", e);
+                    return e.into_response();
+                }
+            }
+        }
+        Err(_) => {
+            tracing::warn!("GCS asset image upload timed out. Falling back to local.");
+            match service::upload_local(&object_path, file_bytes).await {
+                Ok(url) => url,
+                Err(e) => {
+                    tracing::error!("Local post image save failed: {}", e);
+                    return e.into_response();
+                }
+            }
+        }
+    };
+
+    Json(serde_json::json!({
+        "status": "success",
+        "image_url": image_url,
+    }))
+    .into_response()
+}
+
 // ─── KYC Document ──────────────────────────────────────────────
 
 /// POST /api/upload/kyc

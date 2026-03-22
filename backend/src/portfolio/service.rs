@@ -78,8 +78,8 @@ pub async fn get_portfolio(
         total_value_cents += current_value_cents;
         total_purchase_cents += purchase_value_cents;
         total_rental_cents += total_rental_cents_val;
-        total_occupancy_weighted += (occupancy_rate_bps as i64 * current_value_cents);
-        total_yield_weighted += (annual_yield_bps as i64 * current_value_cents);
+        total_occupancy_weighted += occupancy_rate_bps as i64 * current_value_cents;
+        total_yield_weighted += annual_yield_bps as i64 * current_value_cents;
 
         mapped_rows.push(InvestmentItem {
             id,

@@ -26,6 +26,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/api/upload/avatar", post(upload_avatar))
         .route("/api/upload/kyc", post(upload_kyc_document))
+        .route("/api/upload/post-image", post(upload_post_image))
         // Asset file management (developer draft flow)
         .route(
             "/api/developer/draft/:id/documents",

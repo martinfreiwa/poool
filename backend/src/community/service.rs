@@ -167,10 +167,43 @@ pub async fn create_comment(
 /// User creates a post.
 pub async fn create_user_post(
     pool: &PgPool,
+    redis: Option<&deadpool_redis::Pool>,
     user_id: Uuid,
     req: crate::community::models::CreatePostRequest,
     is_high_level_user: bool,
 ) -> Result<Uuid, AppError> {
+
+    // --- Post Rate Limiting (M2-BE.7) ---
+    if let Some(redis_pool) = redis {
+        use redis::AsyncCommands;
+        if let Ok(mut conn) = redis_pool.get().await {
+            let rl_key = format!("community:ratelimit:posts:{}", user_id);
+            // 1) Rate Limit: max 5 posts per hour
+            let count: Option<i64> = conn.get(&rl_key).await.unwrap_or(None);
+            if let Some(c) = count {
+                if c >= 5 {
+                    return Err(AppError::BadRequest("Rate limit exceeded: Max 5 posts per hour.".into()));
+                }
+            }
+
+            // 2) Duplicate-Detection: check last post hash in 5 minutes
+            use sha2::{Digest, Sha256};
+            let mut hasher = Sha256::new();
+            hasher.update(req.content.as_bytes());
+            let content_hash = format!("{:x}", hasher.finalize());
+            let dup_key = format!("community:dup:{}:{}", user_id, content_hash);
+            let is_dup: Option<String> = conn.get(&dup_key).await.unwrap_or(None);
+            if is_dup.is_some() {
+                return Err(AppError::BadRequest("Duplicate post detected. Please wait before posting the same content.".into()));
+            }
+
+            // Mark successful post creation in Redis limits
+            let _ : () = conn.incr(&rl_key, 1).await.unwrap_or(());
+            let _ : () = conn.expire(&rl_key, 3600).await.unwrap_or(());
+            let _ : () = conn.set_ex(&dup_key, "1", 300).await.unwrap_or(());
+        }
+    }
+
     let mut tx = pool.begin().await?;
 
     // Moderate content
@@ -367,4 +400,28 @@ pub async fn action_on_report(
 
     tx.commit().await?;
     Ok(())
+}
+
+
+pub async fn get_trending_assets(pool: &PgPool) -> Result<Vec<(Uuid, i64)>, AppError> {
+    use sqlx::Row;
+    let rows = sqlx::query(
+        "SELECT asset_id, count(*) as post_count \
+         FROM posts \
+         WHERE asset_id IS NOT NULL \
+         GROUP BY asset_id \
+         ORDER BY post_count DESC \
+         LIMIT 3"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let mut trending = Vec::new();
+    for row in rows {
+        let asset_id: Uuid = row.try_get("asset_id")?;
+        let count: i64 = row.try_get("post_count")?;
+        trending.push((asset_id, count));
+    }
+
+    Ok(trending)
 }

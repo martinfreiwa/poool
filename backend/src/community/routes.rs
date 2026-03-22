@@ -55,7 +55,7 @@ async fn get_feed(
     Query(query): Query<FeedQuery>,
 ) -> Result<impl IntoResponse, AppError> {
     // Auth check
-    let user = middleware::get_current_user(&jar, &state.db)
+    let _user = middleware::get_current_user(&jar, &state.db)
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
@@ -248,7 +248,7 @@ async fn create_user_post(
     // We can assume high_level = false for now until M4 XP system is in place
     let is_high_level_user = false;
 
-    let post_id = service::create_user_post(&c_pool, user.id, payload, is_high_level_user).await?;
+    let post_id = service::create_user_post(&c_pool, state.redis.as_ref(), user.id, payload, is_high_level_user).await?;
 
     Ok(Json(serde_json::json!({ "id": post_id })))
 }
@@ -393,12 +393,215 @@ async fn take_report_action(
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
+#[derive(serde::Serialize)]
+pub struct TrendingAssetDisplay {
+    pub id: Uuid,
+    pub name: String,
+    pub symbol: String,
+    pub post_count: i64,
+}
+
+async fn get_trending_assets(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let trending = service::get_trending_assets(&c_pool).await?;
+
+    if trending.is_empty() {
+        return Ok(Json(Vec::<TrendingAssetDisplay>::new()));
+    }
+
+    let asset_ids: Vec<Uuid> = trending.iter().map(|(id, _)| *id).collect();
+
+    let assets: Vec<(Uuid, String, String)> = sqlx::query_as(
+        "SELECT id, name, symbol FROM assets WHERE id = ANY($1)"
+    )
+    .bind(&asset_ids)
+    .fetch_all(&state.db)
+    .await?;
+
+    let mut asset_map = std::collections::HashMap::new();
+    for a in assets {
+        asset_map.insert(a.0, (a.1, a.2));
+    }
+
+    let mut result = Vec::new();
+    for (id, count) in trending {
+        if let Some((name, symbol)) = asset_map.get(&id) {
+            result.push(TrendingAssetDisplay {
+                id,
+                name: name.clone(),
+                symbol: symbol.clone(),
+                post_count: count,
+            });
+        }
+    }
+
+    Ok(Json(result))
+}
+
+// --- Admin Posts & Users API ---
+
+#[derive(serde::Serialize)]
+pub struct AdminPostDisplay {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub author_name: String,
+    pub post_type: String,
+    pub content: String,
+    pub is_pinned: bool,
+    pub is_hidden: bool,
+    pub hidden_reason: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+async fn admin_get_posts(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    let posts: Vec<models::Post> = sqlx::query_as("SELECT * FROM posts ORDER BY created_at DESC")
+        .fetch_all(&c_pool)
+        .await?;
+
+    let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
+    let authors = user_bridge::get_users_info_batch(&state.db, &user_ids).await?;
+
+    let mut result = Vec::new();
+    for p in posts {
+        let author_name = authors
+            .get(&p.user_id)
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Unknown".into());
+
+        result.push(AdminPostDisplay {
+            id: p.id,
+            user_id: p.user_id,
+            author_name,
+            post_type: p.post_type.clone(),
+            content: p.content_sanitized.clone().unwrap_or(p.content.clone()),
+            is_pinned: p.is_pinned,
+            is_hidden: p.is_hidden,
+            hidden_reason: p.hidden_reason.clone(),
+            created_at: p.created_at,
+        });
+    }
+
+    Ok(Json(result))
+}
+
+#[derive(serde::Deserialize)]
+pub struct HidePostPayload {
+    pub reason: String,
+}
+
+async fn admin_hide_post(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+    Json(payload): Json<HidePostPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    sqlx::query("UPDATE posts SET is_hidden = true, hidden_reason = $1 WHERE id = $2")
+        .bind(&payload.reason)
+        .bind(post_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+#[derive(serde::Serialize)]
+pub struct AdminUserDisplay {
+    pub user_id: Uuid,
+    pub display_name: String,
+    pub avatar_url: Option<String>,
+    pub is_community_banned: bool,
+    pub ban_reason: Option<String>,
+    pub warning_count: i32,
+    pub post_count: i32,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+async fn admin_get_users(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    // Use query! structure with an anonymous record but dynamic execute
+    use sqlx::Row;
+    let rows = sqlx::query("SELECT * FROM community_profiles ORDER BY created_at DESC")
+        .fetch_all(&c_pool)
+        .await?;
+
+    let mut user_ids = Vec::new();
+    for row in &rows {
+        let u_id: Uuid = row.try_get("user_id")?;
+        user_ids.push(u_id);
+    }
+
+    let core_users = user_bridge::get_users_info_batch(&state.db, &user_ids).await?;
+
+    let mut result = Vec::new();
+    for row in rows {
+        let u_id: Uuid = row.try_get("user_id")?;
+        let is_community_banned: bool = row.try_get("is_community_banned")?;
+        let ban_reason: Option<String> = row.try_get("ban_reason")?;
+        let warning_count: i32 = row.try_get("warning_count")?;
+        let post_count: i32 = row.try_get("post_count")?;
+        let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at")?;
+
+        let user_info = core_users.get(&u_id);
+        
+        result.push(AdminUserDisplay {
+            user_id: u_id,
+            display_name: user_info.map(|u| u.display_name.clone()).unwrap_or_else(|| "Unknown".into()),
+            avatar_url: user_info.and_then(|u| u.avatar_url.clone()),
+            is_community_banned,
+            ban_reason,
+            warning_count,
+            post_count,
+            created_at,
+        });
+    }
+
+    Ok(Json(result))
+}
+
+#[derive(serde::Deserialize)]
+pub struct BanUserPayload {
+    pub reason: Option<String>,
+    pub is_banned: bool,
+}
+
+async fn admin_toggle_ban_user(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+    Json(payload): Json<BanUserPayload>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    sqlx::query("UPDATE community_profiles SET is_community_banned = $1, ban_reason = $2 WHERE user_id = $3")
+        .bind(payload.is_banned)
+        .bind(&payload.reason)
+        .bind(user_id)
+        .execute(&c_pool)
+        .await?;
+
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
 // ─── Router Configuration ────────────────────────────────────────────────────
 
 pub fn router() -> Router<AppState> {
     Router::new()
         // Feed & Filter
         .route("/api/community/feed", get(get_feed))
+        .route("/api/community/trending-assets", get(get_trending_assets))
         // Announcements
         .route(
             "/api/admin/community/announcements",
@@ -419,4 +622,8 @@ pub fn router() -> Router<AppState> {
         .route("/api/admin/community/stats", get(get_admin_stats))
         .route("/api/admin/community/reports", get(get_reports))
         .route("/api/admin/community/reports/:id/action", post(take_report_action))
+        .route("/api/admin/community/posts", get(admin_get_posts))
+        .route("/api/admin/community/posts/:id/hide", post(admin_hide_post))
+        .route("/api/admin/community/users", get(admin_get_users))
+        .route("/api/admin/community/users/:id/ban", post(admin_toggle_ban_user))
 }

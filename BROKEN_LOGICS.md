@@ -466,3 +466,9 @@ The following bugs were found during a deep security and logic audit of the admi
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-22
 
+### [P2] — Admin community module card see-through
+- **File:** `frontend/platform/admin/community/announcements.html` (and multiple other admin pages)
+- **What was wrong:** The creation modal and several other admin cards used `var(--admin-card-bg)` and `var(--admin-border-light)`, which were not defined in `admin.css`. The correct variables are `var(--admin-bg-card)` and `var(--admin-border)`. This caused cards to appear transparent.
+- **What I did:** Fixed naming inconsistencies across `announcements.html`, `blockchain-sync.html`, `asset-change-review.html`, `marketplace/analytics.html`, and `mp-reconciliation.js`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22

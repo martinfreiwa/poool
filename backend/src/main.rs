@@ -172,6 +172,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(email::run_email_scheduler(pool.clone()));
     tokio::spawn(support::sla::monitor_sla_breaches(pool.clone()));
 
+    if let Some(c_pool) = &state.community_db {
+        tokio::spawn(community::background::monitor_asset_velocity(c_pool.clone(), pool.clone()));
+    }
+
     // Auto-refund worker for expired primary escrow offerings
     tokio::spawn(admin::primary_escrow::run_auto_refund_worker(pool.clone()));
 

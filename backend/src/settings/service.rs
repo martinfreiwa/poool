@@ -881,7 +881,7 @@ pub async fn delete_account_selective(
             .ok_or_else(|| AppError::NotFound("User not found or already deleted.".to_string()))?;
 
     let password_hash: Option<String> = user_row.try_get("password_hash").unwrap_or(None);
-    let email: String = user_row.try_get("email").unwrap_or_default();
+    let _email: String = user_row.try_get("email").unwrap_or_default();
 
     // For accounts with a password, verify it
     if let Some(ref hash) = password_hash {

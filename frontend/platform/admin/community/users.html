@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Users | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Users</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h1 class="admin-page-title">Community Users</h1>
+            <p class="admin-page-subtitle">Manage platform users within the community layer.</p>
+          </div>
+          <div>
+            <button class="admin-btn admin-btn--secondary" onclick="loadUsers()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Posts</th>
+                  <th>Warnings</th>
+                  <th>Status</th>
+                  <th>Joined Community</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="users-table">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                    Loading users...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadUsers();
+    });
+
+    async function loadUsers() {
+        const tbody = document.getElementById('users-table');
+        try {
+            const res = await fetch('/api/admin/community/users');
+            if(res.ok) {
+                const users = await res.json();
+                
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--admin-text-muted);">No community users found.</td></tr>';
+                    return;
+                }
+                
+                let html = '';
+                users.forEach(u => {
+                    const date = new Date(u.created_at).toLocaleDateString();
+                    
+                    const statusBadge = u.is_community_banned
+                        ? `<span class="admin-badge" style="background:#FEF3F2; color:#B42318;">Banned</span>`
+                        : `<span class="admin-badge" style="background:#ECFDF3; color:#027A48;">Active</span>`;
+
+                    const actionHtml = u.is_community_banned
+                        ? `<button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="toggleBan('${u.user_id}', false)">Unban</button>`
+                        : `<button class="admin-btn admin-btn--ghost admin-btn--sm" style="color: #D92D20;" onclick="toggleBan('${u.user_id}', true)">Ban</button>`;
+
+                    const avatarHtml = u.avatar_url 
+                        ? `<img src="${u.avatar_url}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">`
+                        : `<div style="width:32px; height:32px; border-radius:50%; background:#f2f4f7; display:flex; align-items:center; justify-content:center; font-weight:600; color:#475467; font-size:12px;">${u.display_name.charAt(0).toUpperCase()}</div>`;
+
+                    html += `
+                        <tr>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    ${avatarHtml}
+                                    <div>
+                                        <div style="font-weight: 500; color: #101828;">${u.display_name}</div>
+                                        <div style="font-size: 11px; color: #667085; font-family: monospace;">${u.user_id.substring(0,8)}...</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span style="font-weight: 500;">${u.post_count}</span></td>
+                            <td>
+                                ${u.warning_count > 0 
+                                    ? `<span class="admin-badge" style="background:#FFFAEB; color:#B54708;">${u.warning_count} Warnings</span>` 
+                                    : `<span style="color:#667085;">0 Warnings</span>`}
+                            </td>
+                            <td>${statusBadge}</td>
+                            <td><span style="font-size: 13px; color: #667085;">${date}</span></td>
+                            <td style="text-align: right;">
+                                ${actionHtml}
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#D92D20;">Failed to load users</td></tr>';
+            }
+        } catch(e) {
+            console.error(e);
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:#D92D20;">Network error</td></tr>';
+        }
+    }
+
+    async function toggleBan(userId, isBan) {
+        let reason = null;
+        if (isBan) {
+            reason = prompt("Reason for community ban:");
+            if (reason === null) return;
+        } else {
+            if(!confirm("Are you sure you want to unban this user?")) return;
+        }
+        
+        try {
+            const res = await fetch(`/api/admin/community/users/${userId}/ban`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason, is_banned: isBan })
+            });
+            if (res.ok) {
+                loadUsers();
+            } else {
+                alert("Failed to update user ban status");
+            }
+        } catch(e) {
+            alert("Error connecting to server");
+        }
+    }
+  </script>
+</body>
+</html>

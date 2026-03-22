@@ -294,10 +294,79 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    window.postImageUrls = [];
+    
+    window.uploadPostImage = async function(e) {
+        if (!e.target.files || e.target.files.length === 0) return;
+        
+        if (window.postImageUrls.length >= 4) {
+            alert("Maximum 4 images allowed per post.");
+            return;
+        }
+
+        const file = e.target.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+            alert("Image must be smaller than 5MB");
+            return;
+        }
+
+        document.getElementById('post-image-uploading').style.display = 'block';
+        
+        const fd = new FormData();
+        fd.append('file', file);
+        
+        try {
+            const res = await fetch('/api/upload/post-image', {
+                method: 'POST',
+                body: fd
+            });
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.error || 'Upload failed');
+            }
+            
+            window.postImageUrls.push(data.image_url);
+            renderPostImagePreviews();
+            
+        } catch (err) {
+            console.error(err);
+            alert(err.message);
+        } finally {
+            document.getElementById('post-image-uploading').style.display = 'none';
+            e.target.value = ''; // reset file input
+        }
+    };
+
+    function renderPostImagePreviews() {
+        const container = document.getElementById('post-image-previews');
+        if (!container) return;
+        
+        let html = '';
+        window.postImageUrls.forEach((url, index) => {
+            html += `
+            <div style="position: relative; flex-shrink: 0;">
+                <img src="${url}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #EAECF0;">
+                <button type="button" onclick="removePostImage(${index})" style="position: absolute; top: -6px; right: -6px; background: white; border: 1px solid #EAECF0; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #D92D20; font-weight: bold; padding: 0;">✕</button>
+            </div>`;
+        });
+        container.innerHTML = html;
+        
+        // Hide upload button if 4 images
+        const btn = document.querySelector(`button[onclick="document.getElementById('post-image-file-input').click()"]`);
+        if (btn) {
+            btn.style.display = window.postImageUrls.length >= 4 ? 'none' : 'inline-flex';
+        }
+    }
+
+    window.removePostImage = function(index) {
+        window.postImageUrls.splice(index, 1);
+        renderPostImagePreviews();
+    };
+
     window.submitUserPost = async function() {
         const postType = document.getElementById('post-type-input').value;
         const content = document.getElementById('post-content-input').value.trim();
-        const imageUrl = document.getElementById('post-image-url-input').value.trim();
         
         if (!content) return alert("Content cannot be empty");
         
@@ -305,9 +374,14 @@ document.addEventListener('DOMContentLoaded', () => {
             post_type: postType,
             content: content,
             asset_id: null,
-            image_urls: imageUrl ? [imageUrl] : null
+            image_urls: window.postImageUrls.length > 0 ? window.postImageUrls : null
         };
         
+        const submitBtn = document.getElementById('submit-post-btn');
+        const oldText = submitBtn.innerText;
+        submitBtn.innerText = "Posting...";
+        submitBtn.disabled = true;
+
         try {
             const res = await fetch('/api/community/posts', {
                 method: 'POST',
@@ -322,14 +396,18 @@ document.addEventListener('DOMContentLoaded', () => {
             
             document.getElementById('create-post-modal').style.display = 'none';
             document.getElementById('post-content-input').value = '';
-            document.getElementById('post-image-url-input').value = '';
             document.getElementById('post-disclaimer-warning').style.display = 'none';
+            window.postImageUrls = [];
+            renderPostImagePreviews();
             
             // Refresh feed
             loadFeed();
         } catch (e) {
             console.error(e);
             alert("Failed to submit post: " + e.message);
+        } finally {
+            submitBtn.innerText = oldText;
+            submitBtn.disabled = false;
         }
     };
 
@@ -361,5 +439,51 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Failed to submit report: " + e.message);
         }
     };
+
+    window.loadTrendingAssets = async function() {
+        const container = document.getElementById('trending-assets-container');
+        if (!container) return;
+        
+        try {
+            const res = await fetch('/api/community/trending-assets');
+            if (!res.ok) return;
+
+            const assets = await res.json();
+            
+            if (assets.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #667085; font-size: 13px;">No trending assets yet</div>';
+                return;
+            }
+
+            let html = '';
+            // Define some emojis or standard icons based on symbol 
+            const getIcon = (sym) => {
+                if (sym.includes('CACAO') || sym.includes('COCOA')) return '🍫';
+                if (sym.includes('TIMBER') || sym.includes('ALBAC')) return '🌲';
+                if (sym.includes('VANIL')) return '🌿';
+                if (sym.includes('COFFEE')) return '☕';
+                return '💎';
+            };
+
+            for (const asset of assets) {
+                html += `
+                <div class="trending-item" style="cursor:pointer;" onclick="window.location.href='/assets/${asset.id}'">
+                  <div class="trending-item-icon" style="background:#F2F4F7; color:#344054;">${getIcon(asset.symbol)}</div>
+                  <div class="trending-item-info">
+                    <div class="trending-item-name">${asset.name}</div>
+                    <div class="trending-item-investors">${asset.post_count} discussions</div>
+                  </div><span class="trending-item-change" style="color:#027A48;">🔥</span>
+                </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        } catch (e) {
+            console.error("Failed to load trending assets", e);
+        }
+    };
+
+    // Load trending assets on initialization
+    loadTrendingAssets();
 
 });

@@ -193,7 +193,7 @@ include
               </div>
 
               <!-- Trending Commodities -->
-              <div class="community-trending-card">
+              <div class="community-trending-card" id="trending-assets-widget">
                 <div class="trending-card-title">
                   <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -202,33 +202,10 @@ include
                   </svg>
                   Trending This Week
                 </div>
-                <div class="trending-item">
-                  <div class="trending-item-icon trending-item-icon--cocoa">🍫</div>
-                  <div class="trending-item-info">
-                    <div class="trending-item-name">Bali Premium Cocoa</div>
-                    <div class="trending-item-investors">42 investors this week</div>
-                  </div><span class="trending-item-change">+18%</span>
-                </div>
-                <div class="trending-item">
-                  <div class="trending-item-icon trending-item-icon--timber">🌲</div>
-                  <div class="trending-item-info">
-                    <div class="trending-item-name">Kalimantan Timber</div>
-                    <div class="trending-item-investors">28 investors this week</div>
-                  </div><span class="trending-item-change">+35%</span>
-                </div>
-                <div class="trending-item">
-                  <div class="trending-item-icon trending-item-icon--vanilla">🌿</div>
-                  <div class="trending-item-info">
-                    <div class="trending-item-name">Madagascar Vanilla</div>
-                    <div class="trending-item-investors">19 investors this week</div>
-                  </div><span class="trending-item-change">+12%</span>
-                </div>
-                <div class="trending-item">
-                  <div class="trending-item-icon trending-item-icon--coffee">☕</div>
-                  <div class="trending-item-info">
-                    <div class="trending-item-name">Sumatra Coffee Fund</div>
-                    <div class="trending-item-investors">15 investors this week</div>
-                  </div><span class="trending-item-change">+8%</span>
+                <div id="trending-assets-container">
+                  <div style="padding: 20px; text-align: center; color: #667085; font-size: 13px;">
+                    Loading trending assets...
+                  </div>
                 </div>
               </div>
 
@@ -776,10 +753,20 @@ include
                   ⚠️ Your post appears to discuss investments. A disclaimer will be automatically added.
                 </div>
               </div>
-              <!-- Simulated Image Upload -->
+              <!-- Image Upload (M2-BE.5) -->
               <div class="ds-form-group">
-                <label class="ds-label">Attach Image (Optional)</label>
-                <input type="url" id="post-image-url-input" class="ds-input" placeholder="https://example.com/image.jpg">
+                <label class="ds-label">Attach Images (Max 4)</label>
+                <div id="post-image-previews" style="display:flex; gap:8px; margin-bottom:8px; overflow-x:auto; min-height: 0;"></div>
+                <input type="file" id="post-image-file-input" class="ds-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="uploadPostImage(event)">
+                <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" onclick="document.getElementById('post-image-file-input').click()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                  </svg>
+                  Add Image
+                </button>
+                <div class="ds-helper-text" id="post-image-uploading" style="display: none; color: #1570EF; margin-top: 8px;">
+                  Uploading image...
+                </div>
               </div>
             </div>
             <div class="ds-modal__footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">

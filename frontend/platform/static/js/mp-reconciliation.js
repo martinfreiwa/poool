@@ -17,7 +17,7 @@
         const icon = c.passed ? '✅' : '❌';
         const cls = c.passed ? 'admin-badge--success' : 'admin-badge--danger';
         return `
-          <div class="mp-recon-check" style="display:flex; align-items:center; justify-content:space-between; padding:16px; border:1px solid var(--admin-border); border-radius:var(--admin-radius-sm); margin-bottom:8px; background:var(--admin-card-bg);">
+          <div class="mp-recon-check" style="display:flex; align-items:center; justify-content:space-between; padding:16px; border:1px solid var(--admin-border); border-radius:var(--admin-radius-sm); margin-bottom:8px; background:var(--admin-bg-card);">
             <div style="display:flex; align-items:center; gap:12px;">
               <span style="font-size:20px;">${icon}</span>
               <div>
