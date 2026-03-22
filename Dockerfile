@@ -1,5 +1,7 @@
 # ── Stage 1: Prepare recipes ───────────────────────────────────
-FROM lukemathwalker/cargo-chef:latest-rust-latest AS chef
+FROM rust:1-bookworm AS chef
+# Install cargo-chef manually to ensure we use bookworm (glibc 2.36) to match the runtime
+RUN cargo install cargo-chef --locked
 WORKDIR /app/backend
 
 # ── Stage 2: Plan dependencies ─────────────────────────────────
