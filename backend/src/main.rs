@@ -360,10 +360,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         tracing::info!("Reconciliation check 2/3 PASS: All token balances match.");
                     } else {
                         for row in &rows {
-                            let expected_sold = row.tokens_total.unwrap_or(0) - row.tokens_available.unwrap_or(0);
+                            let expected_sold = row.tokens_total - row.tokens_available;
                             let msg = format!(
                                 "TOKEN MISMATCH: Asset '{}' ({:?}): sold={} but investments show {} tokens",
-                                row.title.as_deref().unwrap_or("unknown"), row.id, expected_sold, row.total_owned.unwrap_or(0)
+                                &row.title, row.id, expected_sold, row.total_owned.unwrap_or(0)
                             );
                             tracing::error!("{}", msg);
                             sentry::capture_message(&msg, sentry::Level::Error);
@@ -418,7 +418,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
+    // ── Marketplace: Matching Engine + Settlement Worker ───────
+    // These are the core trading engine tasks. They only start if Redis is
+    // configured (the orderbook and match queue live in Redis).
+    if let Some(ref redis) = state.redis {
+        // Matching Engine (Tokio Task #1): scans Redis orderbook for matches
+        let match_redis = redis.clone();
+        let match_pool = pool.clone();
+        tokio::spawn(async move {
+            marketplace::matching::run_matching_engine(&match_redis, &match_pool).await;
+        });
+
+        // Settlement Worker (Tokio Task #2): consumes match queue, executes ACID settlements
+        let settle_redis = redis.clone();
+        let settle_pool = pool.clone();
+        tokio::spawn(async move {
+            marketplace::settlement::run_settlement_worker(&settle_redis, &settle_pool).await;
+        });
+
+        // Background Worker #1: Order Expiry (hourly cleanup of expired orders)
+        let expiry_redis = redis.clone();
+        let expiry_pool = pool.clone();
+        tokio::spawn(async move {
+            marketplace::background::run_order_expiry_worker(&expiry_redis, &expiry_pool).await;
+        });
+
+        // Background Worker #2: Redis Sync (every 5 min — detect & fix drift)
+        let sync_redis = redis.clone();
+        let sync_pool = pool.clone();
+        tokio::spawn(async move {
+            marketplace::background::run_redis_sync_worker(&sync_redis, &sync_pool).await;
+        });
+
+        // Background Worker #3: Price Snapshot (every 5 min — cache last trade prices)
+        let price_redis = redis.clone();
+        let price_pool = pool.clone();
+        tokio::spawn(async move {
+            marketplace::background::run_price_snapshot_worker(&price_redis, &price_pool).await;
+        });
+
+        // WebSocket: Redis Pub/Sub subscriber (cross-instance message delivery)
+        let pubsub_redis = redis.clone();
+        tokio::spawn(async move {
+            marketplace::websocket::run_pubsub_subscriber(&pubsub_redis).await;
+        });
+
+        tracing::info!("🚀 Marketplace engine started (Matching + Settlement + WebSocket + 3 Background Workers)");
+    } else {
+        tracing::warn!("⚠️ Redis not configured — Marketplace trading is DISABLED. Order submission still works but matching won't occur.");
+    }
+
     //  3. Router configuration
+
     //
     // Two routers for host-based routing:
     //   • www_router   → Landing page (www.poool.app)
@@ -501,6 +552,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/payment-in-progress", get(page_payment_in_progress))
         // ── Community (demo) ──────────────────────────────────────────
         .route("/community", get(page_community))
+        // ── Rewards V2 (premium layout) ───────────────────────────────
+        .route("/rewards-v2", get(page_rewards_v2))
         // ── Marketplace (demo) ─────────────────────────────────────────
         .route("/marketplace-trading-v2", get(page_marketplace_trading_v2))
         .route("/marketplace-trading-v3", get(page_marketplace_trading_v3))
@@ -1790,6 +1843,11 @@ async fn page_payment_in_progress(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "payment-in-progress.html").await
+}
+
+/// GET /rewards-v2 — Premium rewards page with "Digital Private Office" layout (protected).
+async fn page_rewards_v2(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "rewards-v2.html").await
 }
 
 //  API Endpoints

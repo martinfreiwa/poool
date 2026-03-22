@@ -28,6 +28,8 @@ pub mod emails;
 pub mod kyc;
 /// Module
 pub mod legal;
+/// Admin marketplace section — trading oversight, orderbooks, trades, kill-switch.
+pub mod marketplace;
 /// Module
 pub mod notifications;
 /// Module
@@ -64,6 +66,7 @@ pub use developer_projects::*;
 pub use emails::*;
 pub use kyc::*;
 pub use legal::*;
+pub use marketplace::*;
 pub use notifications::*;
 pub use orders::*;
 pub use pages::*;
@@ -136,6 +139,31 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/support-ticket", get(page_admin_generic))
         .route("/admin/approvals.html", get(page_admin_generic))
         .route("/admin/approvals", get(page_admin_generic))
+        // ── Admin Marketplace Pages ──────────────────────────────
+        .route("/admin/marketplace/", get(page_admin_generic))
+        .route("/admin/marketplace/index.html", get(page_admin_generic))
+        .route("/admin/marketplace/orderbook.html", get(page_admin_generic))
+        .route("/admin/marketplace/orderbook", get(page_admin_generic))
+        .route("/admin/marketplace/trades.html", get(page_admin_generic))
+        .route("/admin/marketplace/trades", get(page_admin_generic))
+        .route("/admin/marketplace/orders.html", get(page_admin_generic))
+        .route("/admin/marketplace/orders", get(page_admin_generic))
+        .route("/admin/marketplace/approvals.html", get(page_admin_generic))
+        .route("/admin/marketplace/approvals", get(page_admin_generic))
+        .route("/admin/marketplace/reconciliation.html", get(page_admin_generic))
+        .route("/admin/marketplace/reconciliation", get(page_admin_generic))
+        .route("/admin/marketplace/fees.html", get(page_admin_generic))
+        .route("/admin/marketplace/fees", get(page_admin_generic))
+        .route("/admin/marketplace/settings.html", get(page_admin_generic))
+        .route("/admin/marketplace/settings", get(page_admin_generic))
+        .route("/admin/marketplace/p2p.html", get(page_admin_generic))
+        .route("/admin/marketplace/p2p", get(page_admin_generic))
+        .route("/admin/marketplace/analytics.html", get(page_admin_generic))
+        .route("/admin/marketplace/analytics", get(page_admin_generic))
+        .route("/admin/marketplace/alerts.html", get(page_admin_generic))
+        .route("/admin/marketplace/alerts", get(page_admin_generic))
+        .route("/admin/marketplace/compliance.html", get(page_admin_generic))
+        .route("/admin/marketplace/compliance", get(page_admin_generic))
         // ── JSON API ─────────────────────────────────────────────
         .route("/api/admin/stats/overview", get(api_admin_stats_overview))
         // Access / RBAC
@@ -396,4 +424,89 @@ pub fn router() -> axum::Router<AppState> {
         )
         // Storage Analytics
         .route("/api/admin/storage", get(api_admin_storage))
+        // ── Admin Marketplace APIs ───────────────────────────────
+        .route(
+            "/api/admin/marketplace/stats",
+            get(marketplace::api_admin_marketplace_stats),
+        )
+        .route(
+            "/api/admin/marketplace/recent-trades",
+            get(marketplace::api_admin_marketplace_recent_trades),
+        )
+        .route(
+            "/api/admin/marketplace/trades",
+            get(marketplace::api_admin_marketplace_trades),
+        )
+        .route(
+            "/api/admin/marketplace/orders",
+            get(marketplace::api_admin_marketplace_orders),
+        )
+        .route(
+            "/api/admin/marketplace/orders/:order_id",
+            delete(marketplace::api_admin_marketplace_order_cancel),
+        )
+        .route(
+            "/api/admin/marketplace/orderbook/:asset_id",
+            get(marketplace::api_admin_marketplace_orderbook),
+        )
+        .route(
+            "/api/admin/marketplace/orderbook/rebuild",
+            post(marketplace::api_admin_marketplace_orderbook_rebuild),
+        )
+        .route(
+            "/api/admin/marketplace/toggle-trading",
+            post(marketplace::api_admin_marketplace_toggle_trading),
+        )
+        .route(
+            "/api/admin/marketplace/health",
+            get(marketplace::api_admin_marketplace_health),
+        )
+        .route(
+            "/api/admin/marketplace/reconciliation",
+            get(marketplace::api_admin_marketplace_reconciliation),
+        )
+        // ── 6A.7: Pending Approvals ──────────────────────────────
+        .route(
+            "/api/admin/marketplace/approvals",
+            get(marketplace::api_admin_marketplace_approvals),
+        )
+        .route(
+            "/api/admin/marketplace/approvals/:order_id/approve",
+            post(marketplace::api_admin_marketplace_approve_order),
+        )
+        .route(
+            "/api/admin/marketplace/approvals/:order_id/reject",
+            post(marketplace::api_admin_marketplace_reject_order),
+        )
+        // ── 6A.8: Fee Management ─────────────────────────────────
+        .route(
+            "/api/admin/marketplace/fees",
+            get(marketplace::api_admin_marketplace_fees)
+                .post(marketplace::api_admin_marketplace_create_fee),
+        )
+        // ── 6A.9: P2P Offers ─────────────────────────────────────
+        .route(
+            "/api/admin/marketplace/p2p",
+            get(marketplace::api_admin_marketplace_p2p),
+        )
+        // ── 6A.12: Alerts & Watchlist ────────────────────────────
+        .route(
+            "/api/admin/marketplace/alerts",
+            get(marketplace::api_admin_marketplace_alerts),
+        )
+        .route(
+            "/api/admin/marketplace/alerts/:alert_id",
+            post(marketplace::api_admin_marketplace_alert_action),
+        )
+        .route(
+            "/api/admin/marketplace/watchlist",
+            get(marketplace::api_admin_marketplace_watchlist)
+                .post(marketplace::api_admin_marketplace_add_watchlist),
+        )
+        // ── 6A.14: Marketplace Settings ──────────────────────────
+        .route(
+            "/api/admin/marketplace/settings",
+            get(marketplace::api_admin_marketplace_settings)
+                .post(marketplace::api_admin_marketplace_save_settings),
+        )
 }

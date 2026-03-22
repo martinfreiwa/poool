@@ -1,0 +1,137 @@
+/* marketplace-orderbook.css — Orderbook component styles */
+
+/* ── Container ── */
+.ob-container {
+    font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 13px;
+    color: #1a1a2e;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* ── Header ── */
+.ob-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 0.6fr 1fr;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #717680;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+/* ── Rows ── */
+.ob-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 0.6fr 1fr;
+    padding: 6px 12px;
+    transition: background-color 0.15s ease;
+    border-radius: 4px;
+    margin: 1px 4px;
+    font-variant-numeric: tabular-nums;
+}
+
+.ob-row:hover {
+    background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* ── Price colors ── */
+.ob-price {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.ob-price--ask {
+    color: #ef4444;
+}
+
+.ob-price--bid {
+    color: #22c55e;
+}
+
+/* ── Quantity / Orders / Total ── */
+.ob-qty,
+.ob-orders,
+.ob-total {
+    color: #535862;
+    font-size: 12px;
+    text-align: right;
+}
+
+.ob-orders {
+    color: #9ca3af;
+    font-size: 11px;
+}
+
+/* ── Spread bar ── */
+.ob-spread {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.02);
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    margin: 4px 0;
+}
+
+.ob-spread-label {
+    color: #9ca3af;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ob-spread-value {
+    color: #717680;
+    font-size: 12px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Flash animation ── */
+.ob-flash {
+    animation: ob-flash-anim 0.6s ease-out;
+}
+
+@keyframes ob-flash-anim {
+    0% { background-color: rgba(59, 130, 246, 0.15); }
+    100% { background-color: transparent; }
+}
+
+/* ── Asks section (red tint) ── */
+.ob-asks {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Bids section (green tint) ── */
+.ob-bids {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Empty state ── */
+.ob-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+    .ob-header,
+    .ob-row {
+        grid-template-columns: 1fr 1fr 1fr;
+        font-size: 12px;
+        padding: 5px 8px;
+    }
+
+    .ob-orders {
+        display: none;
+    }
+}

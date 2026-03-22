@@ -7,7 +7,7 @@ default-run = "poool-backend"
 
 [dependencies]
 # Web framework
-axum = { version = "0.7", features = ["multipart"] }
+axum = { version = "0.7", features = ["multipart", "ws"] }
 axum-extra = { version = "0.9", features = ["cookie"] }
 tokio = { version = "1.0", features = ["full"] }
 tower-http = { version = "0.6", features = ["fs", "cors", "trace", "compression-full"] }

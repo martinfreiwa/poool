@@ -31,6 +31,7 @@ const BIDS_PREFIX: &str = "bids:asset:";
 const LOCK_PREFIX: &str = "lock:order:";
 const IDEMPOTENCY_PREFIX: &str = "idempotency:";
 const RATE_LIMIT_PREFIX: &str = "rl:orders:user:";
+const MATCH_QUEUE_KEY: &str = "match:queue";
 
 /// Default orderbook depth (number of price levels).
 const DEFAULT_DEPTH: usize = 20;
@@ -124,6 +125,78 @@ pub async fn remove_member(
         .map_err(|e| AppError::ServiceUnavailable(format!("Redis ZREM member failed: {}", e)))?;
 
     Ok(())
+}
+
+/// Insert a raw member string into the orderbook at a given price.
+///
+/// Used by the matching engine to re-insert partially-filled orders with
+/// an updated quantity in the member string.
+pub async fn insert_member(
+    redis: &RedisPool,
+    asset_id: Uuid,
+    side: &str,
+    price_cents: i64,
+    raw_member: &str,
+) -> Result<(), AppError> {
+    let mut conn = redis
+        .get()
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis unavailable: {}", e)))?;
+
+    let key = order_set_key(asset_id, side);
+
+    let _: i32 = redis::cmd("ZADD")
+        .arg(&key)
+        .arg(price_cents)
+        .arg(raw_member)
+        .query_async(&mut *conn)
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis ZADD member failed: {}", e)))?;
+
+    Ok(())
+}
+
+/// Push a match event JSON string onto the settlement queue.
+pub async fn push_match_to_queue(
+    redis: &RedisPool,
+    event_json: &str,
+) -> Result<(), AppError> {
+    let mut conn = redis
+        .get()
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis unavailable: {}", e)))?;
+
+    let _: i64 = redis::cmd("RPUSH")
+        .arg(MATCH_QUEUE_KEY)
+        .arg(event_json)
+        .query_async(&mut *conn)
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis RPUSH failed: {}", e)))?;
+
+    Ok(())
+}
+
+/// Pop a match event from the settlement queue (blocking, with timeout).
+///
+/// Returns `None` if no event is available within the timeout.
+pub async fn pop_match_from_queue(
+    redis: &RedisPool,
+    timeout_seconds: u64,
+) -> Result<Option<String>, AppError> {
+    let mut conn = redis
+        .get()
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Redis unavailable: {}", e)))?;
+
+    // BLPOP returns Vec<(key, value)> or empty if timeout
+    let result: Option<(String, String)> = redis::cmd("BLPOP")
+        .arg(MATCH_QUEUE_KEY)
+        .arg(timeout_seconds)
+        .query_async(&mut *conn)
+        .await
+        .unwrap_or(None);
+
+    Ok(result.map(|(_, value)| value))
 }
 
 // ═══════════════════════════════════════════════════════════════

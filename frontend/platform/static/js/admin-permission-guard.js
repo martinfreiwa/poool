@@ -58,6 +58,19 @@
     "nav-storage": "system.health",
     "nav-system": "system.health",
     "nav-settings": "settings.view",
+    // ── Marketplace Admin Pages (Phase 6B.2) ──
+    "nav-mp-overview": "marketplace.view",
+    "nav-mp-orderbook": "marketplace.view",
+    "nav-mp-trades": "marketplace.view",
+    "nav-mp-orders": "marketplace.manage",
+    "nav-mp-approvals": "marketplace.manage",
+    "nav-mp-fees": "marketplace.manage",
+    "nav-mp-alerts": "marketplace.manage",
+    "nav-mp-p2p": "marketplace.view",
+    "nav-mp-recon": "marketplace.manage",
+    "nav-mp-compliance": "marketplace.compliance",
+    "nav-mp-analytics": "marketplace.view",
+    "nav-mp-settings": "marketplace.manage",
   };
 
   // ── PII Masking Rules ──

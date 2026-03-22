@@ -5,8 +5,74 @@
 
 > **⚠️ BEFORE WRITING ANY CODE:**
 > 1. Read [`docs/AGENT_DEVELOPMENT_PROMPT.md`](docs/AGENT_DEVELOPMENT_PROMPT.md) — mandatory zero-defect coding standards, self-healing patterns, and security rules.
-> 2. Claim your task in [`docs/IMPLEMENTATION_ROADMAP.md`](docs/IMPLEMENTATION_ROADMAP.md) — 120+ tasks across 15 phases with multi-agent collaboration protocol.
-> 3. Failure to follow the development directive will result in bugs with real financial consequences.
+> 2. Read [`docs/DESIGN.md`](docs/DESIGN.md) — mandatory design system reference for ALL frontend/UI work. Contains colors, typography, spacing, component specs, and do's/don'ts.
+> 3. Claim your task in [`docs/IMPLEMENTATION_ROADMAP.md`](docs/IMPLEMENTATION_ROADMAP.md) — 120+ tasks across 15 phases with multi-agent collaboration protocol.
+> 4. Failure to follow the development directive will result in bugs with real financial consequences.
+
+> **🔧 SELF-HEALING PROTOCOL — MANDATORY:**
+> If you encounter ANY bug, error, or broken logic while working on the codebase — **you MUST fix it immediately.**
+> Do NOT ignore it. Do NOT just report it. Do NOT defer it to "a future task."
+> This is a **financial platform handling real money.** A bug you walk past today is a bug that loses someone's investment tomorrow.
+>
+> ---
+>
+> **Severity Tiers — Determines How You Fix:**
+>
+> | Tier | What It Looks Like | Action |
+> |------|-------------------|--------|
+> | **P0 — CRITICAL** | Financial calculation wrong, money could be lost/duplicated, security hole, data corruption, broken transaction boundaries | **Stop your current task.** Fix this FIRST. Wrap in a DB transaction. Add a test. Verify with `cargo check` AND `cargo test`. Log in `BROKEN_LOGICS.md`. |
+> | **P1 — HIGH** | Compilation error, route returns 500, wrong SQL column name, broken API contract, missing null/error check on user input | Fix immediately inline. Verify it compiles. Log in `BROKEN_LOGICS.md`. |
+> | **P2 — MEDIUM** | UI glitch, wrong CSS class, misaligned layout, typo in user-facing text, missing loading state, console warning | Fix if it takes < 5 minutes. If longer, log it in `BROKEN_LOGICS.md` as unresolved and continue your task. |
+>
+> ---
+>
+> **Rules:**
+>
+> 1. **Fix on sight.** If you see broken code — fix it right then and there, even if it's outside your current task scope. The default is always to **fix it.**
+>
+> 2. **Financial code gets extra protection.** Any fix that touches monetary values (`BIGINT` cents), wallet balances, order processing, fee calculations, or payment flows **MUST:**
+>    - Be wrapped in a SQL transaction (`BEGIN` / `COMMIT`)
+>    - Never use floating-point math — cents only
+>    - Include a before/after sanity check (e.g., balance shouldn't go negative)
+>    - Be logged with `[P0-FINANCIAL]` tag in `BROKEN_LOGICS.md`
+>    - If you are unsure about the business rule, **ask the user** — do not guess with money
+>
+> 3. **Verify the fix.** Every fix must be verified before moving on:
+>    - **Rust backend:** Run `cargo check` (minimum) or `cargo test` (for P0)
+>    - **Frontend:** Check the browser or confirm the CSS/JS change is syntactically correct
+>    - **SQL migrations:** Confirm the migration applies without errors
+>    - Never leave a fix unverified. An unverified fix is worse than no fix.
+>
+> 4. **Cascade check.** After fixing a bug, `grep` / `rg` the codebase for the same pattern. If the same mistake exists elsewhere, fix **every instance** in one pass. Common cascades:
+>    - Wrong column name → search all queries using that table
+>    - Missing error handling → search for other `unwrap()` calls in production paths
+>    - Wrong CSS token → search for other hardcoded hex values that should use a variable
+>    - Missing null check → search for similar unchecked `.get()` or `.parse()` calls
+>
+> 5. **Don't break other things.** Before fixing, read the surrounding code to understand the context. Check if other code depends on the current (broken) behavior. If the fix is risky:
+>    - Make the smallest possible change
+>    - If it touches a shared function, check all callers
+>    - If it touches a DB schema, check all queries referencing that table
+>
+> 6. **Scope guardrail.** Self-healing is mandatory, but don't spiral. If you discover more than **3 unrelated P2 bugs** while working on a task, fix the first 3, log the rest in `BROKEN_LOGICS.md`, and return to your primary task. P0 and P1 bugs have no limit — always fix them all.
+>
+> 7. **Security bugs are always P0.** If you find any of these, treat as P0 regardless of context:
+>    - SQL injection (raw string interpolation in queries)
+>    - Missing authentication/authorization checks on routes
+>    - Secrets or API keys hardcoded in source files
+>    - User input directly rendered without sanitization (XSS)
+>    - `unwrap()` on user-supplied data in production paths
+>
+> 8. **Log what you fixed.** After every fix, add a structured entry to `BROKEN_LOGICS.md`:
+>    ```
+>    ### [P0/P1/P2] — Short description
+>    - **File:** `path/to/file.rs` (or `.html`, `.css`, `.js`)
+>    - **What was wrong:** One sentence describing the bug
+>    - **What I did:** One sentence describing the fix
+>    - **Status:** ✅ Resolved
+>    - **Date:** YYYY-MM-DD
+>    ```
+>    If the bug was already listed, update its status to ✅ Resolved with your fix description.
 
 ---
 
@@ -97,6 +163,7 @@ poool/
 ├── database/
 │   └── *.sql                # Migrations (applied in order)
 ├── docs/
+│   ├── DESIGN.md                    # ⚠️ MANDATORY — Design system (colors, typography, components)
 │   ├── IMPLEMENTATION_ROADMAP.md  # Active Multi-Agent Tracking & Implementation Path (120+ tasks)
 │   ├── AGENT_DEVELOPMENT_PROMPT.md # ⚠️ MANDATORY — Zero-defect coding standards, read BEFORE coding
 │   ├── MASTERPLAN.md              # Architecture vision (9,780 lines, Chapters 1-6)
