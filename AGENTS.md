@@ -93,6 +93,48 @@
 
 ---
 
+## 🚨 Production Architecture: PgBouncer + Cloud SQL (CRITICAL)
+
+> **DO NOT modify `backend/src/db.rs` or `pgbouncer/entrypoint.sh` without reading this section.**
+> Breaking the PgBouncer integration takes down ALL of production (login, marketplace, leaderboard, everything).
+
+```
+┌──────────────────────────────────────────────────────┐
+│ Cloud Run Container                                   │
+│                                                       │
+│  ┌──────────────┐  TCP 127.0.0.1:6432  ┌──────────┐ │
+│  │ POOOL Backend │ ─────────────────► │ PgBouncer │  │
+│  │  (Rust/Axum)  │                    │ (sidecar) │  │
+│  └──────────────┘                     └─────┬────┘  │
+│                                              │       │
+│                      Unix socket: /cloudsql/...      │
+│                                              │       │
+└──────────────────────────────────────────────┼───────┘
+                                               │
+                                         ┌─────▼─────┐
+                                         │ Cloud SQL  │
+                                         │ PostgreSQL │
+                                         └───────────┘
+```
+
+### Rules — ALL mandatory:
+1. **Backend → PgBouncer → Cloud SQL.** Backend must NEVER connect directly to the `/cloudsql/` Unix socket.
+2. **`PGBOUNCER_ENABLED=true`** in Dockerfile tells `db.rs` to skip socket auto-detection.
+3. **`statement_cache_capacity(0)`** on all `PgConnectOptions` in `db.rs` — required for PgBouncer transaction mode.
+4. **`ignore_startup_parameters = extra_float_digits, options`** in PgBouncer config.
+5. **`pool_mode = transaction`** in PgBouncer — named prepared statements cannot work in this mode.
+6. **`entrypoint.sh` rewrites `DATABASE_URL`** to `127.0.0.1:6432` before starting the backend.
+
+### If you see these errors, here's what's broken:
+| Error | Cause | Fix File |
+|-------|-------|----------|
+| `prepared statement "sqlx_s_N" already exists` | Backend bypassing PgBouncer | `db.rs` — ensure `PGBOUNCER_ENABLED` check exists |
+| `unsupported startup parameter: extra_float_digits` | PgBouncer rejecting params | `entrypoint.sh` — add `ignore_startup_parameters` |
+| `"trust" authentication failed` | Missing credentials upstream | `entrypoint.sh` — add `user=`/`password=` to `[databases]` |
+| `GLIBC_X.XX not found` | Builder/runtime glibc mismatch | `Dockerfile` — pin builder to `rust:1-bookworm` |
+
+---
+
 ## 🚀 Local Development
 
 ```bash

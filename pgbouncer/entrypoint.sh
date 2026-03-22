@@ -99,6 +99,7 @@ server_idle_timeout = 120
 server_connect_timeout = 5
 server_login_retry = 3
 ignore_startup_parameters = extra_float_digits, options
+server_reset_query = DISCARD ALL
 query_timeout = 60
 query_wait_timeout = 30
 client_idle_timeout = 300
