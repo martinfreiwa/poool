@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            let html = '';
+            annContainer.innerHTML = '';
             for (const p of posts) {
                 // Determine icon and color based on category
                 let iconClass = 'ann-icon--platform';
@@ -87,9 +87,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     iconContent = `<polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />`;
                 }
 
-                html += `
-                <div class="ann-card ${p.is_pinned ? 'ann-card--pinned' : ''}">
-                    ${p.is_pinned ? `<div class="ann-card-pin"><svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" /></svg>Pinned</div>` : ''}
+                // Build card using DOM construction (FIX-F3: XSS-safe)
+                const card = document.createElement('div');
+                card.className = `ann-card ${p.is_pinned ? 'ann-card--pinned' : ''}`;
+
+                // Pinned badge (static HTML, safe)
+                let pinnedHtml = '';
+                if (p.is_pinned) {
+                    pinnedHtml = `<div class="ann-card-pin"><svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" /></svg>Pinned</div>`;
+                }
+
+                // Build the header and footer as static HTML (no user content)
+                const headerHtml = `
+                    ${pinnedHtml}
                     <div class="ann-card-header">
                         <div class="ann-icon ${iconClass}">
                             <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -100,19 +110,39 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="ann-category">${displayCategory}</span>
                             <span class="ann-date">${timeAgo(p.created_at)}</span>
                         </div>
-                    </div>
-                    <!-- Assuming title is bolded inside content, else we fallback -->
-                    <div class="ann-body">
-                        ${p.content}
-                    </div>
+                    </div>`;
+
+                const footerHtml = `
                     <div class="ann-footer">
-                        <span class="ann-read-more" style="cursor:pointer;" onclick="switchCommunityTab(document.querySelector('[data-tab=community-feed-tab]'))">View in Feed →</span>
+                        <span class="ann-read-more" style="cursor:pointer;">View in Feed →</span>
                         <span class="ann-reactions">🔥 ${p.reaction_count || 0} · 💬 ${p.comment_count || 0}</span>
-                    </div>
-                </div>
-                `;
+                    </div>`;
+
+                // Set static parts via innerHTML (these only contain developer-controlled strings)
+                card.innerHTML = headerHtml;
+
+                // Content body — use textContent (SAFE: XSS prevention)
+                const bodyDiv = document.createElement('div');
+                bodyDiv.className = 'ann-body';
+                bodyDiv.textContent = p.content; // SAFE: textContent escapes HTML
+                card.appendChild(bodyDiv);
+
+                // Append footer
+                const footerWrapper = document.createElement('div');
+                footerWrapper.innerHTML = footerHtml;
+                const footerEl = footerWrapper.firstElementChild;
+                // Attach click handler to "View in Feed" link
+                const readMore = footerEl.querySelector('.ann-read-more');
+                if (readMore) {
+                    readMore.addEventListener('click', () => {
+                        const feedTab = document.querySelector('[data-tab=community-feed-tab]');
+                        if (feedTab) switchCommunityTab(feedTab);
+                    });
+                }
+                card.appendChild(footerEl);
+
+                annContainer.appendChild(card);
             }
-            annContainer.innerHTML = html;
         } catch (e) {
             console.error(e);
             annContainer.innerHTML = `<div style="padding: 24px; color: #D92D20; text-align: center;">Failed to load announcements. Please try again.</div>`;

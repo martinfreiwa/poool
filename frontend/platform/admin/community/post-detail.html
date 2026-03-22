@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Post Detail | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 1024px) {
+      .grid-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/posts.html">Posts</a>
+            <span class="separator">›</span>
+            <span class="current">Post Detail</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content" id="post-detail-container">
+        <div style="text-align:center; padding: 40px;">Loading...</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const postId = urlParams.get('id');
+        if (!postId) {
+            document.getElementById('post-detail-container').innerHTML = '<div style="padding:40px; color:red;">No post ID specified.</div>';
+            return;
+        }
+        loadPostDetail(postId);
+    });
+
+    async function loadPostDetail(postId) {
+        try {
+            const res = await fetch(`/api/admin/community/posts/${postId}`);
+            if(res.ok) {
+                const data = await res.json();
+                renderDetail(data);
+            } else {
+                document.getElementById('post-detail-container').innerHTML = '<div style="padding:40px; color:red;">Post not found or network error.</div>';
+            }
+        } catch(e) {
+            console.error(e);
+            document.getElementById('post-detail-container').innerHTML = '<div style="padding:40px; color:red;">Error connecting to server.</div>';
+        }
+    }
+
+    function renderDetail(data) {
+        const p = data.post;
+        const cmts = data.comments;
+        const reacs = data.reactions;
+        const reps = data.reports;
+
+        const date = new Date(p.created_at).toLocaleString();
+        const typeColor = p.post_type === 'announcement' ? '#eef4ff' : '#F2F4F7';
+        const typeText = p.post_type === 'announcement' ? '#3538cd' : '#344054';
+
+        const statusBadge = p.is_hidden 
+            ? `<span class="admin-badge" style="background:#FEF3F2; color:#B42318;">Hidden</span>`
+            : `<span class="admin-badge" style="background:#ECFDF3; color:#027A48;">Active</span>`;
+
+        let commentsHtml = cmts.length === 0 ? '<p style="color:#667085;">No comments yet.</p>' : `
+            <table class="admin-table" style="margin-top: 10px;">
+                <thead><tr><th>Author</th><th>Content</th><th>Date</th></tr></thead>
+                <tbody>
+                    ${cmts.map(c => `
+                        <tr>
+                            <td style="width:150px;"><b>${c.author_name}</b><br><small style="color:#667085">${c.user_id.substring(0,8)}</small></td>
+                            <td style="max-width: 250px; white-space: normal;">${c.content}</td>
+                            <td style="width:120px;"><small>${new Date(c.created_at).toLocaleString()}</small></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        let reportsHtml = reps.length === 0 ? '<p style="color:#667085;">No reports.</p>' : `
+            <table class="admin-table" style="margin-top: 10px;">
+                <thead><tr><th>Reporter</th><th>Reason</th><th>Status</th><th>Date</th></tr></thead>
+                <tbody>
+                    ${reps.map(r => `
+                        <tr>
+                            <td><b>${r.reporter_name}</b></td>
+                            <td>${r.reason}</td>
+                            <td><span class="admin-badge">${r.status}</span></td>
+                            <td><small>${new Date(r.created_at).toLocaleDateString()}</small></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        let reactionsHtml = reacs.length === 0 ? '<p style="color:#667085;">No reactions.</p>' : `
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                ${reacs.map(r => `<span class="admin-badge">${r.reaction_type} - ${r.author_name}</span>`).join('')}
+            </div>
+        `;
+
+        document.getElementById('post-detail-container').innerHTML = `
+            <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                <h1 class="admin-page-title">Post Detail</h1>
+                <p class="admin-page-subtitle">ID: <span style="font-family:monospace;">${p.id}</span></p>
+                </div>
+                <div>
+                ${!p.is_hidden 
+                    ? `<button class="admin-btn admin-btn--secondary" style="color:#d92d20; border-color:#d92d20;" onclick="hidePost('${p.id}')">Hide Post</button>` 
+                    : ``}
+                </div>
+            </div>
+
+            <div class="grid-layout">
+                <!-- Left Column -->
+                <div style="display:flex; flex-direction: column; gap: 24px;">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Content</h2>
+                        </div>
+                        <div class="admin-card-body" style="background:#f9fafb; font-size:15px; line-height:1.5;">
+                            ${p.content}
+                        </div>
+                        <div class="admin-card-body" style="display:flex; gap: 40px; border-top: 1px solid var(--admin-border-color);">
+                            <div>
+                                <div style="font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Author</div>
+                                <div><b>${p.author_name}</b></div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Date</div>
+                                <div>${date}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Type</div>
+                                <div><span class="admin-badge" style="background:${typeColor}; color:${typeText};">${p.post_type}</span></div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:4px;">Status</div>
+                                <div>${statusBadge}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Comments (${cmts.length})</h2>
+                        </div>
+                        <div class="admin-card-body admin-card-body--flush">
+                            ${commentsHtml}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div style="display:flex; flex-direction: column; gap: 24px;">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Reports (${reps.length})</h2>
+                        </div>
+                        <div class="admin-card-body admin-card-body--flush">
+                            ${reportsHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Reactions (${reacs.length})</h2>
+                        </div>
+                        <div class="admin-card-body">
+                            ${reactionsHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function hidePost(postId) {
+        const reason = prompt("Enter a reason to hide this post:", "Violates community guidelines");
+        if(reason === null) return;
+        
+        try {
+            const res = await fetch(`/api/admin/community/posts/${postId}/hide`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason })
+            });
+            if (res.ok) {
+                loadPostDetail(postId);
+            } else {
+                alert("Failed to hide post");
+            }
+        } catch(e) {
+            alert("Error connecting to server");
+        }
+    }
+  </script>
+</body>
+</html>

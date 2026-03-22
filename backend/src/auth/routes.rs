@@ -220,6 +220,11 @@ pub async fn login_submit(
     .await
     .ok();
 
+    // Track login streak for XP (M4-BE.9)
+    if let Some(c_pool) = &state.community_db {
+        let _ = crate::community::xp::track_login_streak(c_pool, user.id).await;
+    }
+
     // Set session cookie
     let max_age_secs = if form.remember_me() {
         30 * 24 * 60 * 60 // 30 days
@@ -831,6 +836,11 @@ async fn google_callback_inner(
 
     // Create session
     let session_token = service::create_session(&state.db, user.id, true, true, None, None).await?;
+
+    // Track login streak for XP (M4-BE.9)
+    if let Some(c_pool) = &state.community_db {
+        let _ = crate::community::xp::track_login_streak(c_pool, user.id).await;
+    }
 
     let cookie = Cookie::build((SESSION_COOKIE, session_token))
         .path("/")

@@ -123,7 +123,7 @@
                                 <div style="display:flex; align-items:center; gap:12px;">
                                     ${avatarHtml}
                                     <div>
-                                        <div style="font-weight: 500; color: #101828;">${u.display_name}</div>
+                                        <a href="/admin/community/user-detail.html?id=${u.user_id}" style="font-weight: 500; color: #101828; text-decoration: none;">${u.display_name}</a>
                                         <div style="font-size: 11px; color: #667085; font-family: monospace;">${u.user_id.substring(0,8)}...</div>
                                     </div>
                                 </div>
@@ -137,7 +137,10 @@
                             <td>${statusBadge}</td>
                             <td><span style="font-size: 13px; color: #667085;">${date}</span></td>
                             <td style="text-align: right;">
-                                ${actionHtml}
+                                <div style="display:flex;gap:4px;justify-content:flex-end;">
+                                    <a href="/admin/community/user-detail.html?id=${u.user_id}" class="admin-btn admin-btn--ghost admin-btn--sm">View</a>
+                                    ${actionHtml}
+                                </div>
                             </td>
                         </tr>
                     `;

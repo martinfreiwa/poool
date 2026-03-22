@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Badge Management | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Badges</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h1 class="admin-page-title">Badge Management</h1>
+            <p class="admin-page-subtitle">Define, edit, and assign community badges to users.</p>
+          </div>
+          <div>
+            <button class="admin-btn admin-btn--primary" onclick="openCreateModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              New Badge
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+          <div class="admin-card" style="padding: 20px;">
+            <div style="font-size: 12px; font-weight: 600; color: #667085; text-transform: uppercase; letter-spacing: 0.5px;">Total Badges</div>
+            <div id="stat-total" style="font-size: 28px; font-weight: 700; color: #181D27; margin-top: 4px;">—</div>
+          </div>
+          <div class="admin-card" style="padding: 20px;">
+            <div style="font-size: 12px; font-weight: 600; color: #667085; text-transform: uppercase; letter-spacing: 0.5px;">Total Awards</div>
+            <div id="stat-awards" style="font-size: 28px; font-weight: 700; color: #181D27; margin-top: 4px;">—</div>
+          </div>
+          <div class="admin-card" style="padding: 20px;">
+            <div style="font-size: 12px; font-weight: 600; color: #667085; text-transform: uppercase; letter-spacing: 0.5px;">Most Popular</div>
+            <div id="stat-popular" style="font-size: 16px; font-weight: 700; color: #181D27; margin-top: 4px;">—</div>
+          </div>
+        </div>
+
+        <!-- Badges Grid -->
+        <div class="admin-card">
+          <div class="admin-card-body">
+            <div id="badges-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+              <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                Loading badges...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grant Badge Section -->
+        <div class="admin-card" style="margin-top: 24px;">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">Grant Badge to User</h3>
+          </div>
+          <div class="admin-card-body">
+            <div style="display: flex; gap: 12px; align-items: flex-end;">
+              <div style="flex: 1;">
+                <label style="display: block; font-size: 13px; font-weight: 500; color: #344054; margin-bottom: 6px;">User ID</label>
+                <input type="text" id="grant-user-id" class="admin-input" placeholder="UUID of the user" style="width: 100%;" />
+              </div>
+              <div style="flex: 1;">
+                <label style="display: block; font-size: 13px; font-weight: 500; color: #344054; margin-bottom: 6px;">Badge Code</label>
+                <select id="grant-badge-code" class="admin-input" style="width: 100%; padding: 8px 12px;">
+                  <option value="">Select a badge...</option>
+                </select>
+              </div>
+              <button class="admin-btn admin-btn--primary" onclick="grantBadge()" style="white-space: nowrap;">Grant Badge</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Create/Edit Badge Modal -->
+  <div id="badge-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <h3 id="modal-title" style="font-size:20px;font-weight:700;color:#181D27;margin:0;">Create Badge</h3>
+        <button onclick="closeBadgeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#667085;">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Code (unique ID)</label>
+          <input type="text" id="badge-code" class="admin-input" placeholder="e.g. early_adopter" style="width:100%;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Name</label>
+          <input type="text" id="badge-name" class="admin-input" placeholder="e.g. Early Adopter" style="width:100%;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Description</label>
+          <textarea id="badge-description" class="admin-input" placeholder="Description of how to earn this badge" rows="2" style="width:100%;resize:none;"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Icon (emoji)</label>
+            <input type="text" id="badge-icon" class="admin-input" placeholder="🏅" style="width:100%;" />
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Display Order</label>
+            <input type="number" id="badge-order" class="admin-input" placeholder="0" value="0" style="width:100%;" />
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button class="admin-btn admin-btn--secondary" onclick="closeBadgeModal()" style="flex:1;">Cancel</button>
+          <button id="badge-save-btn" class="admin-btn admin-btn--primary" onclick="saveBadge()" style="flex:1;">Create Badge</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _badges = [];
+    let _editBadgeId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadBadges();
+    });
+
+    async function loadBadges() {
+      try {
+        const res = await fetch('/api/admin/community/badges');
+        if (!res.ok) throw new Error('Failed to load');
+        const data = await res.json();
+        _badges = data.badges || [];
+        renderBadges();
+        updateStats();
+        updateBadgeSelect();
+      } catch (e) {
+        console.error(e);
+        document.getElementById('badges-grid').innerHTML =
+          '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#D92D20;">Failed to load badges</div>';
+      }
+    }
+
+    function renderBadges() {
+      const grid = document.getElementById('badges-grid');
+      if (_badges.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--admin-text-muted);">No badges defined yet.</div>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      for (const b of _badges) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#fff;border:1px solid #EAECF0;border-radius:12px;padding:20px;transition:box-shadow 0.2s;';
+        card.onmouseenter = () => card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)';
+        card.onmouseleave = () => card.style.boxShadow = 'none';
+
+        card.innerHTML = `
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <div style="font-size:28px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#F9FAFB;border-radius:10px;">${escHtml(b.icon)}</div>
+            <div style="flex:1;">
+              <div style="font-size:15px;font-weight:600;color:#181D27;">${escHtml(b.name)}</div>
+              <div style="font-size:11px;color:#98A2B3;font-family:monospace;">${escHtml(b.code)}</div>
+            </div>
+          </div>
+          <p style="font-size:13px;color:#667085;line-height:1.4;margin:0 0 12px;">${escHtml(b.description)}</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;color:#667085;">${b.users_count} user${b.users_count !== 1 ? 's' : ''}</span>
+            <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="editBadge('${b.id}')">Edit</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    function updateStats() {
+      document.getElementById('stat-total').textContent = _badges.length;
+      const totalAwards = _badges.reduce((sum, b) => sum + b.users_count, 0);
+      document.getElementById('stat-awards').textContent = totalAwards;
+      if (_badges.length > 0) {
+        const popular = [..._badges].sort((a, b) => b.users_count - a.users_count)[0];
+        document.getElementById('stat-popular').textContent = popular.icon + ' ' + popular.name + ' (' + popular.users_count + ')';
+      }
+    }
+
+    function updateBadgeSelect() {
+      const select = document.getElementById('grant-badge-code');
+      select.innerHTML = '<option value="">Select a badge...</option>';
+      for (const b of _badges) {
+        const opt = document.createElement('option');
+        opt.value = b.code;
+        opt.textContent = b.icon + ' ' + b.name;
+        select.appendChild(opt);
+      }
+    }
+
+    function openCreateModal() {
+      _editBadgeId = null;
+      document.getElementById('modal-title').textContent = 'Create Badge';
+      document.getElementById('badge-save-btn').textContent = 'Create Badge';
+      document.getElementById('badge-code').value = '';
+      document.getElementById('badge-code').disabled = false;
+      document.getElementById('badge-name').value = '';
+      document.getElementById('badge-description').value = '';
+      document.getElementById('badge-icon').value = '🏅';
+      document.getElementById('badge-order').value = _badges.length;
+      document.getElementById('badge-modal').style.display = 'flex';
+    }
+
+    function editBadge(badgeId) {
+      const b = _badges.find(x => x.id === badgeId);
+      if (!b) return;
+      _editBadgeId = badgeId;
+      document.getElementById('modal-title').textContent = 'Edit Badge';
+      document.getElementById('badge-save-btn').textContent = 'Save Changes';
+      document.getElementById('badge-code').value = b.code;
+      document.getElementById('badge-code').disabled = true;
+      document.getElementById('badge-name').value = b.name;
+      document.getElementById('badge-description').value = b.description;
+      document.getElementById('badge-icon').value = b.icon;
+      document.getElementById('badge-order').value = b.display_order;
+      document.getElementById('badge-modal').style.display = 'flex';
+    }
+
+    function closeBadgeModal() {
+      document.getElementById('badge-modal').style.display = 'none';
+    }
+
+    async function saveBadge() {
+      const btn = document.getElementById('badge-save-btn');
+      btn.disabled = true;
+
+      try {
+        if (_editBadgeId) {
+          // Update
+          const res = await fetch('/api/admin/community/badges/' + _editBadgeId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: document.getElementById('badge-name').value,
+              description: document.getElementById('badge-description').value,
+              icon: document.getElementById('badge-icon').value,
+              display_order: parseInt(document.getElementById('badge-order').value) || 0,
+            })
+          });
+          if (!res.ok) throw new Error(await res.text());
+        } else {
+          // Create
+          const code = document.getElementById('badge-code').value.trim();
+          if (!code) return alert('Badge code is required');
+          const res = await fetch('/api/admin/community/badges', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code,
+              name: document.getElementById('badge-name').value,
+              description: document.getElementById('badge-description').value,
+              icon: document.getElementById('badge-icon').value,
+              display_order: parseInt(document.getElementById('badge-order').value) || 0,
+            })
+          });
+          if (!res.ok) throw new Error(await res.text());
+        }
+        closeBadgeModal();
+        loadBadges();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function grantBadge() {
+      const userId = document.getElementById('grant-user-id').value.trim();
+      const badgeCode = document.getElementById('grant-badge-code').value;
+      if (!userId || !badgeCode) return alert('Please enter a User ID and select a badge.');
+
+      try {
+        const res = await fetch('/api/admin/community/users/' + userId + '/badge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ badge_code: badgeCode })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        alert('Badge granted successfully!');
+        loadBadges();
+      } catch (e) {
+        alert('Failed: ' + e.message);
+      }
+    }
+
+    function escHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+  </script>
+</body>
+
+</html>

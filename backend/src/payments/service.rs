@@ -738,6 +738,7 @@ pub async fn execute_checkout(
         currency: "USD".to_string(),
         items_purchased: items_count,
         invoice_number: Some(invoice_number),
+        purchased_asset_ids: cart_items.iter().map(|item| item.1).collect(),
     })
 }
 
@@ -927,7 +928,7 @@ pub async fn approve_order(
     pool: &sqlx::PgPool,
     order_id: uuid::Uuid,
     admin_user_id: uuid::Uuid,
-) -> Result<(), String> {
+) -> Result<(uuid::Uuid, Vec<uuid::Uuid>), String> {
     let mut tx = pool.begin().await.map_err(|e| e.to_string())?;
 
     // 1. Fetch order and lock it
@@ -943,6 +944,13 @@ pub async fn approve_order(
         return Err(format!("Cannot approve order with status: {}", status));
     }
 
+    // Capture asset IDs for milestones
+    let order_assets: Vec<Uuid> = sqlx::query_scalar("SELECT asset_id FROM order_items WHERE order_id = $1")
+        .bind(order_id)
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(|e| format!("Failed to get order items: {}", e))?;
+
     // 2. Update order status to completed
     sqlx::query("UPDATE orders SET status = 'completed', completed_at = NOW() WHERE id = $1")
         .bind(order_id)
@@ -951,9 +959,6 @@ pub async fn approve_order(
         .map_err(|e| format!("Failed to update order status: {}", e))?;
 
     // 3. Update investments from funding_in_progress to active
-    // Note: investments table uses (user_id, asset_id) as the unique identifier,
-    // not order_id. Activate all funding_in_progress investments for this user
-    // that belong to assets in this order.
     sqlx::query(
         r#"
         UPDATE investments SET status = 'active'
@@ -970,8 +975,7 @@ pub async fn approve_order(
     .await
     .map_err(|e| format!("Failed to update investments: {}", e))?;
 
-    // Auto-update funding_status to 'funded' for any assets in this order
-    // that have no remaining tokens available
+    // Auto-update funding_status to 'funded'
     sqlx::query(
         r#"
         UPDATE assets SET funding_status = 'funded', updated_at = NOW()
@@ -1026,7 +1030,7 @@ pub async fn approve_order(
         ..Default::default()
     });
 
-    Ok(())
+    Ok((user_id, order_assets))
 }
 
 /// Admin: Reject a pending order.

@@ -39,7 +39,7 @@ pub struct Comment {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Reaction {
     pub id: Uuid,
     pub post_id: Uuid,
@@ -94,6 +94,7 @@ pub struct PostDisplay {
     pub author_name: String,
     pub author_id: Uuid,
     pub author_avatar: Option<String>,
+    pub author_badges: Vec<String>,
     pub post_type: String,
     pub content: String,
     pub asset_id: Option<Uuid>,
@@ -103,6 +104,7 @@ pub struct PostDisplay {
     pub is_hidden: bool,
     pub is_pinned: bool,
     pub disclaimer_shown: bool,
+    pub verified_owner: bool,
     pub created_at: DateTime<Utc>,
 }
 

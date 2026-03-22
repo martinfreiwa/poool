@@ -539,3 +539,10 @@ The following bugs were found during a deep security and logic audit of the admi
 - **What I did:** Set `statement_cache_capacity(0)` in `build_connect_options()` when `PGBOUNCER_ENABLED=true`. This disables SQLx's client-side prepared statement cache, forcing it to use simple (unprepared) queries compatible with PgBouncer. Minor perf trade-off is acceptable vs. P1 auth breakage.
 - **Status:** ✅ Resolved — requires redeploy to take effect
 - **Date:** 2026-03-23
+
+### [P1] — `require_auth` function call referenced nonexistent function
+- **File:** `backend/src/community/routes.rs` (line 510)
+- **What was wrong:** `get_trending_assets` handler called `crate::auth::routes::require_auth(&jar)` which does not exist in the codebase. This prevented compilation.
+- **What I did:** Replaced with the standard auth pattern: `middleware::get_current_user(&jar, &state.db).await.ok_or_else(...)`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23

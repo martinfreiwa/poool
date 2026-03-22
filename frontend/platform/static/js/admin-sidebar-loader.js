@@ -78,9 +78,17 @@
                             <span>Moderation Queue</span>
                             <span id="com-reports-badge" style="display:none;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 5px;background:#ef4444;color:#fff;border-radius:10px;font-size:10px;font-weight:700;margin-left:auto;"></span>
                         </a>
-                        <a href="/admin/community/users.html" class="admin-nav-item ${isPathActive(["/admin/community/users.html"]) ? "active" : ""}" id="nav-com-users">
+                        <a href="/admin/community/users.html" class="admin-nav-item ${isPathActive(["/admin/community/users.html", "/admin/community/user-detail.html"]) ? "active" : ""}" id="nav-com-users">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                             <span>Community Users</span>
+                        </a>
+                        <a href="/admin/community/badges.html" class="admin-nav-item ${isPathActive(["/admin/community/badges.html"]) ? "active" : ""}" id="nav-com-badges">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+                            <span>Badges</span>
+                        </a>
+                        <a href="/admin/community/amas.html" class="admin-nav-item ${isPathActive(["/admin/community/amas.html"]) ? "active" : ""}" id="nav-com-amas">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                            <span>Expert AMAs</span>
                         </a>
                     </div>
 

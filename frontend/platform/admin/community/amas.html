@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expert AMAs | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <span class="current">Expert AMAs</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h1 class="admin-page-title">Expert AMAs</h1>
+            <p class="admin-page-subtitle">Create, manage, and moderate Ask Me Anything sessions.</p>
+          </div>
+          <div>
+            <button class="admin-btn admin-btn--primary" onclick="openCreateAmaModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              New AMA
+            </button>
+          </div>
+        </div>
+
+        <!-- AMAs Table -->
+        <div class="admin-card">
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Expert</th>
+                  <th>Status</th>
+                  <th>Scheduled</th>
+                  <th>Questions</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="amas-table">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                    Loading AMAs...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- AMA Detail / Questions Panel -->
+        <div id="ama-detail-panel" class="admin-card" style="display: none; margin-top: 24px;">
+          <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="admin-card-title" id="detail-title">Questions</h3>
+            <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="closeDetailPanel()">✕ Close</button>
+          </div>
+          <div class="admin-card-body admin-card-body--flush" id="ama-questions-table">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Create AMA Modal -->
+  <div id="ama-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <h3 style="font-size:20px;font-weight:700;color:#181D27;margin:0;">Create AMA</h3>
+        <button onclick="closeAmaModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#667085;">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Title *</label>
+          <input type="text" id="ama-title" class="admin-input" placeholder="e.g. Understanding Cocoa Supply Chains" style="width:100%;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Description</label>
+          <textarea id="ama-description" class="admin-input" placeholder="What will the AMA cover?" rows="3" style="width:100%;resize:none;"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Expert Name *</label>
+            <input type="text" id="ama-expert-name" class="admin-input" placeholder="Dr. Ana Suarez" style="width:100%;" />
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Expert Title</label>
+            <input type="text" id="ama-expert-title" class="admin-input" placeholder="Agricultural Economist" style="width:100%;" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Scheduled Date & Time</label>
+            <input type="datetime-local" id="ama-scheduled" class="admin-input" style="width:100%;" />
+          </div>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Initial Status</label>
+            <select id="ama-status" class="admin-input" style="width:100%;padding:8px 12px;">
+              <option value="scheduled">Scheduled</option>
+              <option value="draft">Draft</option>
+              <option value="accepting_questions">Accepting Questions</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button class="admin-btn admin-btn--secondary" onclick="closeAmaModal()" style="flex:1;">Cancel</button>
+          <button class="admin-btn admin-btn--primary" onclick="createAma()" style="flex:1;">Create AMA</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Answer Question Modal -->
+  <div id="answer-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 style="font-size:18px;font-weight:700;color:#181D27;margin:0;">Answer Question</h3>
+        <button onclick="closeAnswerModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#667085;">✕</button>
+      </div>
+      <div id="answer-question-text" style="font-size:14px;color:#344054;background:#F9FAFB;padding:12px 16px;border-radius:8px;margin-bottom:16px;line-height:1.5;"></div>
+      <textarea id="answer-text" class="admin-input" placeholder="Type your expert answer..." rows="4" style="width:100%;resize:none;"></textarea>
+      <div style="display:flex;gap:12px;margin-top:12px;">
+        <button class="admin-btn admin-btn--secondary" onclick="closeAnswerModal()" style="flex:1;">Cancel</button>
+        <button class="admin-btn admin-btn--primary" onclick="submitAnswer()" style="flex:1;">Submit Answer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _selectedAmaId = null;
+    let _answerQuestionId = null;
+
+    document.addEventListener('DOMContentLoaded', () => { loadAmas(); });
+
+    const STATUS_STYLES = {
+      'draft':               { bg: '#F9FAFB', color: '#667085', text: 'Draft' },
+      'scheduled':           { bg: '#EFF8FF', color: '#175CD3', text: 'Scheduled' },
+      'accepting_questions': { bg: '#ECFDF3', color: '#027A48', text: 'Accepting Questions' },
+      'live':                { bg: '#FEF3F2', color: '#B42318', text: '🔴 LIVE' },
+      'closed':              { bg: '#FFFAEB', color: '#B54708', text: 'Closed' },
+      'archived':            { bg: '#F9FAFB', color: '#98A2B3', text: 'Archived' },
+    };
+
+    async function loadAmas() {
+      try {
+        const res = await fetch('/api/admin/community/amas');
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        renderAmas(data.amas || []);
+      } catch (e) {
+        document.getElementById('amas-table').innerHTML =
+          '<tr><td colspan="6" style="text-align:center;padding:40px;color:#D92D20;">Failed to load</td></tr>';
+      }
+    }
+
+    function renderAmas(amas) {
+      const tbody = document.getElementById('amas-table');
+      if (amas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No AMAs yet. Create the first one!</td></tr>';
+        return;
+      }
+
+      let html = '';
+      for (const a of amas) {
+        const s = STATUS_STYLES[a.status] || STATUS_STYLES['draft'];
+        const date = a.scheduled_at ? new Date(a.scheduled_at).toLocaleString() : '—';
+
+        html += `<tr>
+          <td>
+            <div style="font-weight:500;color:#181D27;">${escHtml(a.title)}</div>
+            <div style="font-size:11px;color:#98A2B3;font-family:monospace;">${a.id.substring(0,8)}...</div>
+          </td>
+          <td>
+            <div style="font-weight:500;">${escHtml(a.expert_name)}</div>
+            <div style="font-size:11px;color:#667085;">${escHtml(a.expert_title || '')}</div>
+          </td>
+          <td><span class="admin-badge" style="background:${s.bg};color:${s.color};">${s.text}</span></td>
+          <td style="font-size:13px;color:#667085;">${date}</td>
+          <td style="font-weight:500;">—</td>
+          <td style="text-align:right;">
+            <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">
+              <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="viewQuestions('${a.id}', '${escHtml(a.title)}')">Questions</button>
+              <select class="admin-input" style="padding:4px 8px;font-size:11px;min-width:100px;" onchange="changeStatus('${a.id}', this.value)">
+                <option value="" disabled selected>Status...</option>
+                <option value="draft">Draft</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="accepting_questions">Accepting Q</option>
+                <option value="live">Go Live</option>
+                <option value="closed">Close</option>
+                <option value="archived">Archive</option>
+              </select>
+            </div>
+          </td>
+        </tr>`;
+      }
+      tbody.innerHTML = html;
+    }
+
+    function openCreateAmaModal() {
+      document.getElementById('ama-modal').style.display = 'flex';
+    }
+    function closeAmaModal() {
+      document.getElementById('ama-modal').style.display = 'none';
+    }
+
+    async function createAma() {
+      const title = document.getElementById('ama-title').value.trim();
+      const expertName = document.getElementById('ama-expert-name').value.trim();
+      if (!title || !expertName) return alert('Title and Expert Name required.');
+
+      const dt = document.getElementById('ama-scheduled').value;
+      const scheduled = dt ? new Date(dt).toISOString() : null;
+
+      try {
+        const res = await fetch('/api/admin/community/amas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            description: document.getElementById('ama-description').value || null,
+            expert_name: expertName,
+            expert_title: document.getElementById('ama-expert-title').value || null,
+            scheduled_at: scheduled,
+            status: document.getElementById('ama-status').value,
+          })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        closeAmaModal();
+        loadAmas();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function changeStatus(amaId, newStatus) {
+      if (!newStatus) return;
+      try {
+        const res = await fetch('/api/admin/community/amas/' + amaId + '/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        loadAmas();
+        if (_selectedAmaId === amaId) viewQuestions(amaId);
+      } catch (e) {
+        alert('Failed: ' + e.message);
+      }
+    }
+
+    async function viewQuestions(amaId, title) {
+      _selectedAmaId = amaId;
+      const panel = document.getElementById('ama-detail-panel');
+      panel.style.display = 'block';
+      if (title) document.getElementById('detail-title').textContent = 'Questions — ' + title;
+
+      try {
+        const res = await fetch('/api/community/amas/' + amaId);
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        renderQuestions(data.questions || []);
+      } catch (e) {
+        document.getElementById('ama-questions-table').innerHTML =
+          '<div style="padding:20px;color:#D92D20;">Failed to load questions</div>';
+      }
+    }
+
+    function renderQuestions(questions) {
+      const container = document.getElementById('ama-questions-table');
+      if (questions.length === 0) {
+        container.innerHTML = '<div style="padding:20px;color:#667085;text-align:center;">No questions yet.</div>';
+        return;
+      }
+
+      let html = '<table class="admin-table"><thead><tr><th>Question</th><th>Upvotes</th><th>Featured</th><th>Answer</th><th style="text-align:right;">Actions</th></tr></thead><tbody>';
+      for (const q of questions) {
+        const featuredBadge = q.is_featured
+          ? '<span class="admin-badge" style="background:#FFF9C4;color:#F57F17;">⭐ Yes</span>'
+          : '<span style="color:#98A2B3;">No</span>';
+        const answerHtml = q.answer
+          ? '<span class="admin-badge" style="background:#ECFDF3;color:#027A48;">Answered</span>'
+          : '<span style="color:#D92D20;">Pending</span>';
+        html += `<tr>
+          <td style="max-width:300px;white-space:normal;font-size:13px;">${escHtml(q.question)}</td>
+          <td style="font-weight:600;">${q.upvote_count}</td>
+          <td>${featuredBadge}</td>
+          <td>${answerHtml}</td>
+          <td style="text-align:right;">
+            <div style="display:flex;gap:4px;justify-content:flex-end;">
+              ${!q.answer ? `<button class="admin-btn admin-btn--primary admin-btn--sm" onclick="openAnswerModal('${q.id}', '${escHtml(q.question).replace(/'/g, "\\'")}')">Answer</button>` : ''}
+              <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="toggleFeatured('${q.id}')">${q.is_featured ? 'Unfeature' : 'Feature'}</button>
+            </div>
+          </td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function closeDetailPanel() {
+      document.getElementById('ama-detail-panel').style.display = 'none';
+      _selectedAmaId = null;
+    }
+
+    function openAnswerModal(questionId, questionText) {
+      _answerQuestionId = questionId;
+      document.getElementById('answer-question-text').textContent = questionText;
+      document.getElementById('answer-text').value = '';
+      document.getElementById('answer-modal').style.display = 'flex';
+    }
+    function closeAnswerModal() {
+      document.getElementById('answer-modal').style.display = 'none';
+    }
+
+    async function submitAnswer() {
+      const answer = document.getElementById('answer-text').value.trim();
+      if (!answer) return alert('Please type an answer.');
+      try {
+        const res = await fetch('/api/admin/community/amas/' + _selectedAmaId + '/questions/' + _answerQuestionId + '/answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answer })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        closeAnswerModal();
+        viewQuestions(_selectedAmaId);
+      } catch (e) {
+        alert('Failed: ' + e.message);
+      }
+    }
+
+    async function toggleFeatured(questionId) {
+      try {
+        const res = await fetch('/api/admin/community/amas/' + _selectedAmaId + '/questions/' + questionId + '/feature', { method: 'POST' });
+        if (!res.ok) throw new Error(await res.text());
+        viewQuestions(_selectedAmaId);
+      } catch (e) {
+        alert('Failed: ' + e.message);
+      }
+    }
+
+    function escHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+  </script>
+</body>
+
+</html>

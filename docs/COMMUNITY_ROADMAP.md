@@ -2,7 +2,7 @@
 
 > **Source:** `docs/COMMUNITY_MASTERPLAN.md`
 > **Strategy:** Modularer Aufbau — einfach starten, Stück für Stück erweitern
-> **Last Sync:** 2026-03-21
+> **Last Sync:** 2026-03-23
 > **Kernprinzip:** Jedes Modul ist **eigenständig launchbar**. Modul 1 allein liefert bereits echten Wert für Nutzer. Jedes weitere Modul erweitert, ohne das Bestehende zu brechen.
 
 ---
@@ -98,6 +98,12 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | `2026-03-22 22:50` | `Antigravity` | `M2-ADMIN` | `community/` & `admin/` | `✅ Check-Out` | Implemented full Moderation workflow: Admin pending queue, Post viewer/hider, User management (bans), and API routes |
 | `2026-03-22 23:00` | `Antigravity` | `M2-ADMIN`, `M2-FE` | `admin/`, `platform/` | `✅ Check-Out` | Implemented User moderation UI (Bans/Warnings), Admin Posts viewer, and dynamic Trending Assets Sidebar Widget |
 | `2026-03-22 23:10` | `Antigravity` | `M2-BE` | `storage/`, `community/` | `✅ Check-Out` | Implemented Post Image Uploader, Redis Rate Limiter, and Asset Velocity Monitor protecting from Pump & Dump spam attacks |
+| `2026-03-22 23:45` | `Antigravity` | `Global` | `docs/` | `✅ Check-Out` | Added Module 3.5 (Audit Fixes) and restructured Modules 4 & 5 based on comprehensive security & scalability audit. |
+| `2026-03-23 00:00` | `Antigravity` | `M4-DB, M4-BE.1-6` | `community/xp.rs, circles.rs, routes.rs` | `✅ Check-Out` | M4 Phase 1 COMPLETE: 6 DB objects (circles, circle_members, circle_invites, xp_ledger, xp_levels, ALTER community_profiles). XP award system with daily caps. Circles CRUD + invite + auto-join. 18 API endpoints. XP aggregation + invite expiry workers. |
+| `2026-03-23 00:15` | `Antigravity` | `M4-FE.1-5, M4-BE.8` | `community-circles.js, community.html` | `✅ Check-Out` | M4 Frontend COMPLETE: Replaced 'Coming Soon' overlay with dynamic API-wired Circle tab. XP summary card, circle management, member list, leaderboard, XP history, create/invite modals, level-up animation. |
+| `2026-03-23 00:30` | `Antigravity` | `M4-BE.7,9,10` | `xp.rs, background.rs, auth/routes.rs` | `✅ Check-Out` | M4 Phase 2 COMPLETE: Login streak tracker (hooks into email + OAuth login), circle retry worker (30min), level-gated features (L2 circles, L3 invites). Streak badge in XP card. |
+| `2026-03-23 00:50` | `Antigravity` | `M5-DB.2, M5-BE.2-3, M5-FE.2` | `amas.rs, routes.rs, community-amas.js, community.html` | `✅ Check-Out` | Expert AMAs COMPLETE: 3 DB tables (amas, ama_questions, ama_question_upvotes) + upvote trigger. 11 API endpoints (4 user, 7 admin). Dynamic AMA tab replaces Coming Soon overlay. Question submission, upvoting, expert answers with XP rewards. |
+| `2026-03-23 01:15` | `Antigravity` | `M3-ADMIN.1-4` | `routes.rs, admin-sidebar-loader.js, badges.html, amas.html, user-detail.html, users.html` | `✅ Check-Out` | M3-ADMIN COMPLETE: Admin badge management page (CRUD + grant/revoke), admin AMA management page (create/status/answer/feature), user detail backend API, sidebar extended with Badges + Expert AMAs links. Users table now links to user detail. Fixed P1: require_auth -> get_current_user. |
 
 ---
 
@@ -243,7 +249,7 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | ID | Task | Seite | Description | Status | Assignee | File Zone |
 |:---|:---|:---|:---|:---|:---|:---|
 | **M2-ADMIN.1** | `community/posts.html` | Posts verwalten | Tabelle aller Posts (Suche, Filter nach Typ/Autor/Status, Bulk-Aktionen: hide/delete/warn) | `✅ DONE` | Antigravity | `frontend/platform/admin/community/` |
-| **M2-ADMIN.2** | `community/post-detail.html` | Post-Detail | Einzelner Post mit allen Comments, Reactions, Report-History, Moderation-Aktionen | `❌` | - | `frontend/platform/admin/community/` |
+| **M2-ADMIN.2** | `community/post-detail.html` | Post-Detail | Einzelner Post mit allen Comments, Reactions, Report-History, Moderation-Aktionen | `✅ DONE` | Antigravity | `frontend/platform/admin/community/` |
 | **M2-ADMIN.3** | `community/reports.html` | Moderation Queue | Pending Reports Tabelle, Quick-Actions (hide/delete/warn/ban), Report-Detail-View, 🔴 Badge in Sidebar | `✅ DONE` | Antigravity | `frontend/platform/admin/community/` |
 | **M2-ADMIN.4** | `community/users.html` | Community Users | User-Tabelle (Post-Count, Warnings, Ban-Status), Quick-Actions (warn/ban/unban), Suche | `✅ DONE` | Antigravity | `frontend/platform/admin/community/` |
 | **M2-ADMIN.5** | Admin Sidebar erweitern | - | Posts, Reports (mit 🔴 Badge), Community Users in Sidebar einfügen | `✅ DONE` | Antigravity | `frontend/platform/static/js/` ⚠️ |
@@ -279,128 +285,127 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 
 | ID | Task | Description | Status | Assignee | File Zone |
 |:---|:---|:---|:---|:---|:---|
-| **M3-BE.1** | Follow API | `POST/DELETE /api/community/follow/{user_id}`, Follower/Following-Listen | `❌` | - | `backend/src/community/` |
-| **M3-BE.2** | Personal Feed | `GET /api/community/feed` — jetzt mit Follow-Boost (Scoring-Algorithmus) | `❌` | - | `backend/src/community/` |
-| **M3-BE.3** | Profile API | `GET /api/community/profile/{id}` — Bio, Badges, Post-Count, Follower-Count | `❌` | - | `backend/src/community/` |
-| **M3-BE.4** | Profile Edit | `PUT /api/community/profile` — Bio bearbeiten | `❌` | - | `backend/src/community/` |
-| **M3-BE.5** | Badge Worker | Background-Worker: alle 6h Badges berechnen (Core-DB Investments + Community-DB Stats) | `❌` | - | `backend/src/community/` |
-| **M3-BE.6** | Milestone Posts (Auto) | System-generierte Posts: "🎉 Sarah hat ihr 5. Investment getätigt!" | `❌` | - | `backend/src/community/` |
-| **M3-BE.7** | Dynamic Asset-Owner Tags | Cross-DB check: If post content contains asset name, query Core DB to append `[Verified Owner]` tag if holding balance > 0. | `❌` | - | `backend/src/community/` |
+| **M3-BE.1** | Follow API | `POST/DELETE /api/community/follow/{user_id}`, Follower/Following-Listen | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M3-BE.2** | Personal Feed | `GET /api/community/feed` — jetzt mit Follow-Boost (Scoring-Algorithmus) | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M3-BE.3** | Profile API | `GET /api/community/profile/{id}` — Bio, Badges, Post-Count, Follower-Count | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M3-BE.4** | Profile Edit | `PUT /api/community/profile` — Bio bearbeiten | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M3-BE.5** | Badge Worker | Background-Worker: alle 6h Badges berechnen (Core-DB Investments + Community-DB Stats) | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M3-BE.6** | Milestone Posts (Auto) | System-generierte Posts: "🎉 Sarah hat ihr 5. Investment getätigt!" | `✅ DONE` | Antigravity | `backend/src/community/` |
+| **M3-BE.7** | Dynamic Asset-Owner Tags | Cross-DB check: If post content contains asset name, query Core DB to append `[Verified Owner]` tag if holding balance > 0. | `✅ DONE` | Antigravity | `backend/src/community/` |
 
 ### M3-FE: Frontend (Platform)
 
 | ID | Task | Description | Status | File Zone |
 |:---|:---|:---|:---|:---|
-| **M3-FE.1** | Follow-Button | Follow/Unfollow Button auf jedem User-Profil + Post-Header | `❌` | `frontend/platform/static/js/` |
-| **M3-FE.2** | User Profile Modal | Click auf Username → Modal mit Bio, Badges, Posts, Follow-Button | `❌` | `frontend/platform/static/js/` |
-| **M3-FE.3** | Feed Toggle | "All Posts" / "Following" Toggle im Feed | `❌` | `frontend/platform/static/js/` |
-| **M3-FE.4** | Badge Display | Badges auf Profilen und neben Usernamen in Posts | `❌` | `frontend/platform/static/css/` |
-| **M3-FE.5** | First-Time Onboarding UI | "Welcome" checklist modal encouraging users to set a bio, leave a comment, and earn their first 50 XP. | `❌` | `frontend/platform/static/js/` |
+| **M3-FE.1** | Follow-Button | Follow/Unfollow Button auf jedem User-Profil + Post-Header | `✅ DONE` | `frontend/platform/static/js/` |
+| **M3-FE.2** | User Profile Modal | Click auf Username → Modal mit Bio, Badges, Posts, Follow-Button | `✅ DONE` | `frontend/platform/static/js/` |
+| **M3-FE.3** | Feed Toggle | "All Posts" / "Following" Toggle im Feed | `✅ DONE` | `frontend/platform/static/js/` |
+| **M3-FE.4** | Badge Display | Badges auf Profilen und neben Usernamen in Posts | `✅ DONE` | `frontend/platform/static/css/` |
+| **M3-FE.5** | First-Time Onboarding UI | "Welcome" checklist modal encouraging users to set a bio, leave a comment, and earn their first 50 XP. | `✅ DONE` | `frontend/platform/static/js/` |
 
 ### M3-ADMIN: Admin Dashboard (+2 Seiten → gesamt 8)
 
 | ID | Task | Seite | Description | Status | Assignee | File Zone |
 |:---|:---|:---|:---|:---|:---|:---|
-| **M3-ADMIN.1** | `community/user-detail.html` | User-Detail | Vollständiges Community-Profil: Posts, XP, Badges, Moderation-History, Warn/Ban Buttons | `❌` | - | `frontend/platform/admin/community/` |
-| **M3-ADMIN.2** | `community/badges.html` | Badge-Verwaltung | Badge-Definitionen, Badge manuell an User vergeben, Badge-Statistiken | `❌` | - | `frontend/platform/admin/community/` |
-| **M3-ADMIN.3** | Admin Sidebar erweitern | - | + Badges in Sidebar einfügen | `❌` | - | `frontend/platform/static/js/` ⚠️ |
-| **M3-ADMIN.4** | Admin Badge APIs | Backend | `GET/POST/PUT /api/admin/community/badges`, `POST .../users/{id}/badge` | `❌` | - | `backend/src/admin/` |
+| **M3-ADMIN.1** | `community/user-detail.html` | User-Detail | Vollständiges Community-Profil: Posts, XP, Badges, Moderation-History, Warn/Ban Buttons | `✅ DONE` | Antigravity | `frontend/platform/admin/community/` |
+| **M3-ADMIN.2** | `community/badges.html` | Badge-Verwaltung | Badge-Definitionen, Badge manuell an User vergeben, Badge-Statistiken | `✅ DONE` | Antigravity | `frontend/platform/admin/community/` |
+| **M3-ADMIN.3** | Admin Sidebar erweitern | - | + Badges in Sidebar einfügen | `✅ DONE` | Antigravity | `frontend/platform/static/js/` ⚠️ |
+| **M3-ADMIN.4** | Admin Badge APIs | Backend | `GET/POST/PUT /api/admin/community/badges`, `POST .../users/{id}/badge` | `✅ DONE` | Antigravity | `backend/src/admin/` |
 
 ---
 
-## 🔴 MODULE 4: Circles & XP
+## 🛡️ MODULE 3.5: Post-Audit Fixes (Security & Architecture)
+
+**Ziel:** Address critical P0/P1 vulnerabilities identified in the March 2026 audit before proceeding to M4.
+
+| ID | Task | Description | Status | Assignee | Priority |
+|:---|:---|:---|:---|:---|:---|
+| **FIX-F1** | XSS in Feed | `textContent` for user content in `community-feed.js`, no `innerHTML` | `✅ DONE` | Antigravity | **P0** |
+| **FIX-F2** | XSS in Comments | `textContent` for comment content in `community-feed.js` | `✅ DONE` | Antigravity | **P0** |
+| **FIX-F3** | XSS in Announcements | `textContent` for announcement content in `community-announcements.js` | `✅ DONE` | Antigravity | **P0** |
+| **FIX-F7** | Ban Bypass | Add `check_user_not_banned()` middleware to all write routes | `✅ DONE` | Antigravity | **P1** |
+| **FIX-F6** | Race Condition | Wrap `toggle_reaction` in DB transaction | `✅ DONE` | Antigravity | **P1** |
+| **FIX-F4** | Verified Owner HTML Inj | Move HTML badge generation to frontend, add boolean flag to payload | `✅ DONE` | Antigravity | **P1** |
+| **FIX-F5** | Missing Auth | Add `CookieJar` auth check to Trending Assets endpoint | `✅ SAFE` | Antigravity | **P1** |
+| **FIX-F9** | Missing Redis Cache | Cache user bridge lookups (5min TTL) | `✅ DONE` | Antigravity | P2 |
+| **FIX-CRL** | Comment Rate Limiting | Rate limiting for comments (Redis, 30/h) | `✅ DONE` | Antigravity | P2 |
+
+
+## ✅ MODULE 4: Circles & XP (Phase 1 & 2) — COMPLETE
 
 **Ziel:** Circle-System mit Referral-Integration, XP, Levels.
 **Voraussetzung:** Modul 3 `✅ DONE`
-**Geschätzte Dauer:** +2 Wochen
+**Status:** `✅ DONE` — 15/15 backend + frontend tasks complete
 
-### M4-DB: Zusätzliche Migrationen
+### M4-DB: Database Migrations
+`008_circles_xp.sql` applied — 5 new tables + ALTER community_profiles
 
-| ID | Task | Beschreibung | Status | File Zone |
-|:---|:---|:---|:---|:---|
-| **M4-DB.1** | `circles` + `circle_members` Tabellen | Circle-System mit 1-User-1-Circle Constraint, Member-Count Trigger | `❌` | `database/community/` |
-| **M4-DB.2** | `xp_ledger` Tabelle | Append-Only XP-Log mit 24 Reason-Types | `❌` | `database/community/` |
-| **M4-DB.3** | `circle_invites` Tabelle | Manuelle Einladungen mit 7-Tage-Expiry | `❌` | `database/community/` |
-| **M4-DB.4** | `ALTER TABLE community_profiles` | + circle_id, xp_total, level, level_name, login_streak, last_login_date | `❌` | `database/community/` |
+### M4-Phase 1: MVP Foundation (Circles + XP Core)
 
-### M4-BE: Backend
-
-| ID | Task | Description | Status | Assignee | File Zone |
+| ID | Task | Category | Dependencies | Status | Assignee |
 |:---|:---|:---|:---|:---|:---|
-| **M4-BE.1** | Circle CRUD | My Circle, Circle-Details, Name/Description bearbeiten (9 Endpoints) | `❌` | - | `backend/src/community/` |
-| **M4-BE.2** | Signup Hook: Auto-Join | Nach Referral-Signup → auto-circle_members INSERT in Community-DB | `❌` | - | `backend/src/auth/` ⚠️ |
-| **M4-BE.3** | Circle Invite/Accept/Leave/Kick | Manuelle Circle-Verwaltung | `❌` | - | `backend/src/community/` |
-| **M4-BE.4** | XP System | XP-Vergabe bei Aktionen (Post, Comment, React, etc.) mit Daily Caps | `❌` | - | `backend/src/community/` |
-| **M4-BE.5** | XP API | 3 Endpoints: XP-Übersicht, History, Leaderboard | `❌` | - | `backend/src/community/` |
-| **M4-BE.6** | XP Aggregation Worker | Alle 5min: SUM xp_ledger → profiles + circles, Level-Up Detection | `❌` | - | `backend/src/community/` |
-| **M4-BE.7** | Circle Retry Worker | Retry fehlgeschlagener Auto-Joins (wenn Community-DB kurz down war) | `❌` | - | `backend/src/community/` |
-| **M4-BE.8** | Leaderboard API | Circle-Leaderboard (XP-basiert), Weekly Ranking | `❌` | - | `backend/src/community/` |
+| **M4-BE.4** | XP Award Service | Backend | `008_circles_xp.sql` | `✅ DONE` | Agent |
+| **M4-BE.6** | XP Aggregation Worker (5-min) | Backend | M4-BE.4 | `✅ DONE` | Agent |
+| **M4-BE.1** | Circle CRUD API | Backend | `008_circles_xp.sql` | `✅ DONE` | Agent |
+| **M4-BE.3** | Circle Invite/Admin API | Backend | M4-BE.1 | `✅ DONE` | Agent |
+| **M4-BE.2** | Referral Signup Auto-Join Hook | Backend | M4-BE.1 | `✅ DONE` | Agent |
+| **M4-BE.5** | XP API (summary, history) | Backend | M4-BE.4 | `✅ DONE` | Agent |
+| **M4-FE.1** | My Circle Tab UI (member list, invite) | User | M4-BE.1/3 | `✅ DONE` | Agent |
+| **M4-FE.2** | XP Display (header badge + progress) | User | M4-BE.5 | `✅ DONE` | Agent |
+| **M4-FE.3** | XP History page/section | User | M4-BE.5 | `✅ DONE` | Agent |
 
-### M4-FE: Frontend (Platform)
+### M4-Phase 2: Growth & Engagement
 
-| ID | Task | Description | Status | File Zone |
-|:---|:---|:---|:---|:---|
-| **M4-FE.1** | My Circle Tab (aktivieren) | "Coming Soon" entfernen, Circle-Stats, Member-Liste, Invite-Button | `❌` | `frontend/platform/static/js/` |
-| **M4-FE.2** | XP Display | Level-Badge im Header, XP-Progress-Bar, Level-Name neben Username | `❌` | `frontend/platform/static/js/` |
-| **M4-FE.3** | XP History | Timeline der letzten XP-Einträge ("🔥 +10 XP — Post erstellt") | `❌` | `frontend/platform/static/js/` |
-| **M4-FE.4** | Circle Leaderboard | Top 20 Circles mit XP, Level, Member-Count | `❌` | `frontend/platform/static/js/` |
-| **M4-FE.5** | Level-Up Animation | Celebration-Animation wenn User ein neues Level erreicht | `❌` | `frontend/platform/static/css/` |
-
-### M4-ADMIN: Admin Dashboard (+2 Seiten → gesamt 10)
-
-| ID | Task | Seite | Description | Status | Assignee | File Zone |
-|:---|:---|:---|:---|:---|:---|:---|
-| **M4-ADMIN.1** | `community/circles.html` | Circles-Übersicht | Top Circles (Name, Owner, Members, XP, Level), Anomaly-Detection, Admin-Edit | `❌` | - | `frontend/platform/admin/community/` |
-| **M4-ADMIN.2** | `community/leaderboard.html` | Leaderboard-Verwaltung | Circle+User Rankings, XP-Anomalien prüfen, manuelles XP-Adjustment, Season-Reset | `❌` | - | `frontend/platform/admin/community/` |
-| **M4-ADMIN.3** | Admin Sidebar erweitern | - | + Circles, Leaderboard in Sidebar einfügen | `❌` | - | `frontend/platform/static/js/` ⚠️ |
-| **M4-ADMIN.4** | Admin Circle & XP APIs | Backend | `GET /api/admin/community/circles`, `POST .../xp-adjust`, `GET .../leaderboard` | `❌` | - | `backend/src/admin/` |
+| ID | Task | Category | Dependencies | Status | Assignee |
+|:---|:---|:---|:---|:---|:---|
+| **M4-BE.8** | Leaderboard API (circles + users) | Backend | M4-BE.6 | `✅ DONE` | Agent |
+| **M4-FE.4** | Circle Leaderboard UI (top 20) | User | M4-BE.8 | `✅ DONE` | Agent |
+| **M4-FE.5** | Level-Up Animation (CSS + JS toast) | User | M4-BE.6 | `✅ DONE` | Agent |
+| **M4-BE.9** | Login Streak Tracker | Backend | M4-BE.4 | `✅ DONE` | Agent |
+| **M4-BE.7** | Circle Retry Worker (failed auto-joins) | Backend | M4-BE.2 | `✅ DONE` | Agent |
+| **M4-BE.10** | Level-gated feature enforcement | Backend | M4-BE.6 | `✅ DONE` | Agent |
+| **M4-ADMIN.1**| Admin: Circles Overview page | Admin | M4-BE.1 | `❌` | - |
+| **M4-ADMIN.2**| Admin: Leaderboard Management page| Admin | M4-BE.8 | `❌` | - |
+| **M4-ADMIN.4**| Admin: Circle & XP APIs | Admin | M4-ADMIN.1/2| `❌` | - |
+| **M4-ADMIN.3**| Admin Sidebar: Circles + Leaderboard| Admin | M4-ADMIN.1 | `❌` | - |
+| **M2-ADMIN.7**| Admin Audit Log table + inserts | Admin | None | `❌` | - |
 
 ---
 
-## 🟣 MODULE 5: Advanced Features
+## 🟣 MODULE 5: Advanced Features (Phase 3)
 
-**Ziel:** Reviews, AMAs, Challenges.
-**Voraussetzung:** Modul 3 `✅ DONE` (Modul 4 ist Bonus, nicht Pflicht)
+**Ziel:** Reviews, AMAs, Challenges, Notifications, SEO.
+**Voraussetzung:** Modul 3 `✅ DONE` ← Ready to start
 **Geschätzte Dauer:** +2-3 Wochen
-
-> **Hinweis:** Modul 5 kann teilweise **parallel** zu Modul 4 gebaut werden, da es auf Modul 3 aufbaut (nicht auf Modul 4). Reviews und AMAs brauchen kein Circle/XP-System.
 
 ### M5-DB: Zusätzliche Migrationen
 
-| ID | Task | Beschreibung | Status | File Zone |
-|:---|:---|:---|:---|:---|
-| **M5-DB.1** | `reviews` Tabelle | Asset-Reviews mit 1-pro-User-pro-Asset Constraint | `❌` | `database/community/` |
-| **M5-DB.2** | `amas` + `ama_questions` + `ama_question_upvotes` | AMA-System mit Lifecycle | `❌` | `database/community/` |
-| **M5-DB.3** | `challenges` + `challenge_progress` | Circle-Challenges (nur mit Modul 4) | `❌` | `database/community/` |
+| ID | Task | Category | Status |
+|:---|:---|:---|:---|
+| **M5-DB.1** | `reviews` table migration | Backend | `❌` |
+| **M5-DB.2** | `amas` + `ama_questions` + upvotes | Backend | `✅ DONE` |
+| **M5-DB.3** | `challenges` + `challenge_progress` | Backend | `❌` |
 
-### M5-BE: Backend
+### M5-Tasks: Features & System
 
-| ID | Task | Description | Status | Assignee | File Zone |
+| ID | Task | Category | Dependencies | Status | Assignee |
 |:---|:---|:---|:---|:---|:---|
-| **M5-BE.1** | Reviews API | CRUD mit Verified-Investor Check (Cross-DB), 5 Endpoints | `❌` | - | `backend/src/community/` |
-| **M5-BE.2** | AMAs API | AMA CRUD + Frage-Einreichung + Upvoting, 7 Endpoints | `❌` | - | `backend/src/community/` |
-| **M5-BE.3** | Admin AMA Management | AMA erstellen, Fragen beantworten, Status ändern | `❌` | - | `backend/src/admin/` |
-| **M5-BE.4** | Challenges API | Challenges anzeigen, beitreten, Progress (braucht Modul 4) | `❌` | - | `backend/src/community/` |
-| **M5-BE.5** | Notification System | Community-Events → In-App Notifications | `❌` | - | `backend/src/community/` |
-| **M5-BE.6** | Async Digest Worker | Background Tokio task: compile "Top in your Circle" weekly email via SendGrid for users inactive >3 days. | `❌` | - | `backend/src/community/` |
-| **M5-BE.7** | SSR Post & Review Pages | Refactor `/community/post/{id}` and `/community/reviews/{id}` to be SSR MiniJinja templates for Google SEO indexing. | `❌` | - | `backend/src/community/` |
-
-### M5-FE: Frontend (Platform)
-
-| ID | Task | Description | Status | File Zone |
-|:---|:---|:---|:---|:---|
-| **M5-FE.1** | Reviews Tab (aktivieren) | "Coming Soon" entfernen, Star-Ratings, Review-List, Write-Review Modal | `❌` | `frontend/platform/static/js/` |
-| **M5-FE.2** | Expert AMAs Tab (aktivieren) | "Coming Soon" entfernen, Upcoming/Past AMAs, Frage-Einreichung | `❌` | `frontend/platform/static/js/` |
-| **M5-FE.3** | Challenges UI | Aktive Challenges, Progress-Bar, Completion-Animation | `❌` | `frontend/platform/static/js/` |
-
-### M5-ADMIN: Admin Dashboard (+2 Seiten → gesamt 12)
-
-| ID | Task | Seite | Description | Status | Assignee | File Zone |
-|:---|:---|:---|:---|:---|:---|:---|
-| **M5-ADMIN.1** | `community/amas.html` | AMA-Verwaltung | AMA erstellen (Titel, Expert, Datum), Status wechseln, Fragen-Queue, Antwort-Interface | `❌` | - | `frontend/platform/admin/community/` |
-| **M5-ADMIN.2** | `community/challenges.html` | Challenge-Verwaltung | Challenge erstellen, Teilnehmer-Übersicht, Progress, Templates wiederverwenden | `❌` | - | `frontend/platform/admin/community/` |
-| **M5-ADMIN.3** | Admin Sidebar finalisieren | - | + AMAs, Challenges in Sidebar — Community-Sektion komplett (10 Einträge) | `❌` | - | `frontend/platform/static/js/` ⚠️ |
-| **M5-ADMIN.4** | Admin AMA & Challenge APIs | Backend | `POST/PUT /api/admin/community/amas`, `POST .../challenges` | `❌` | - | `backend/src/admin/` |
+| **M5-BE.1** | Reviews API (CRUD + verified check) | Backend | M5-DB.1 | `❌` | - |
+| **M5-FE.1** | Reviews Tab UI | User | M5-BE.1 | `❌` | - |
+| **M5-BE.2** | AMAs API (Q&A + upvoting) | Backend | M5-DB.2 | `✅ DONE` | Antigravity |
+| **M5-BE.3** | Admin AMA Management API | Admin | M5-BE.2 | `✅ DONE` | Antigravity |
+| **M5-FE.2** | Expert AMAs Tab UI | User | M5-BE.2 | `✅ DONE` | Antigravity |
+| **M5-BE.4** | Challenges API | Backend | M5-DB.3, M4-BE.1 | `❌` | - |
+| **M5-FE.3** | Challenges UI | User | M5-BE.4 | `❌` | - |
+| **M5-BE.5** | In-App Notification System | Backend | None | `❌` | - |
+| **M5-BE.7** | SSR Post Pages (MiniJinja, SEO) | Backend | None | `❌` | - |
+| **M5-BE.6** | Weekly Digest Worker (inactive users)| Backend | M5-BE.5 | `❌` | - |
+| **M5-ADMIN.1**| Admin: AMA Management page | Admin | M5-BE.3 | `✅ DONE` | Antigravity |
+| **M5-ADMIN.2**| Admin: Challenges page | Admin | M5-BE.4 | `❌` | - |
+| **M2-ADMIN.2**| backlog: Admin Post Detail page | Admin | None | `✅ DONE` | Antigravity |
+| **M3-ADMIN.1**| backlog: Admin User Detail page | Admin | None | `✅ DONE` | Antigravity |
+| **M3-ADMIN.2**| backlog: Admin Badge Management | Admin | None | `✅ DONE` | Antigravity |
+| **M5-ADMIN.3**| Admin Sidebar finalize | Admin | All admin | `✅ DONE` | Antigravity |
 
 ---
 

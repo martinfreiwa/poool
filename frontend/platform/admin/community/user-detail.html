@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Detail | Admin | POOOL</title>
+  
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 32px;
+      background: #eef4ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #3538cd;
+      font-size: 24px;
+    }
+    @media (max-width: 1024px) {
+      .grid-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <!-- Sidebar Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="admin-main">
+      <!-- Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/">Community</a>
+            <span class="separator">›</span>
+            <a href="/admin/community/users.html">Users</a>
+            <span class="separator">›</span>
+            <span class="current">User Detail</span>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="admin-content" id="user-detail-container">
+        <div style="text-align:center; padding: 40px;">Loading...</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('id');
+        if (!userId) {
+            document.getElementById('user-detail-container').innerHTML = '<div style="padding:40px; color:red;">No user ID specified.</div>';
+            return;
+        }
+        loadUserDetail(userId);
+    });
+
+    async function loadUserDetail(userId) {
+        try {
+            const res = await fetch(`/api/admin/community/users/${userId}/detail`);
+            if(res.ok) {
+                const data = await res.json();
+                renderDetail(userId, data);
+            } else {
+                document.getElementById('user-detail-container').innerHTML = '<div style="padding:40px; color:red;">User not found or network error.</div>';
+            }
+        } catch(e) {
+            console.error(e);
+            document.getElementById('user-detail-container').innerHTML = '<div style="padding:40px; color:red;">Error connecting to server.</div>';
+        }
+    }
+
+    function renderDetail(userId, data) {
+        const user = data.user || {};
+        const profile = data.profile || {};
+        const badges = data.badges || [];
+        const recentPosts = data.recent_posts || [];
+        const xp = data.xp_summary || { total_xp: 0, current_level: 1, current_level_name: 'Newcomer' };
+
+        const displayName = profile.display_name || user.first_name || 'Anonymous User';
+        const initials = displayName.substring(0,2).toUpperCase();
+        
+        const avatarHtml = user.avatar_url 
+            ? `<img src="${user.avatar_url}" style="width:64px; height:64px; border-radius:32px; object-fit:cover;">`
+            : `<div class="avatar">${initials}</div>`;
+
+        const banStatusHtml = profile.is_community_banned
+            ? `<div style="background:#FEF3F2; border:1px solid #FECDCA; padding:16px; border-radius:8px; margin-bottom:24px;">
+                 <div style="color:#B42318; font-weight:600; display:flex; align-items:center; gap:8px;">
+                   ⚠️ User is Currently Banned
+                 </div>
+                 <div style="color:#D92D20; font-size:14px; margin-top:8px;">Reason: ${profile.ban_reason || 'No reason provided'}</div>
+               </div>`
+            : '';
+
+        let badgesHtml = badges.length === 0 ? '<p style="color:#667085;">No badges.</p>' : `
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                ${badges.map(b => `<span class="admin-badge" style="background:#f9fafb;" title="${b.description}">${b.icon} ${b.name}</span>`).join('')}
+            </div>
+        `;
+
+        let postsHtml = recentPosts.length === 0 ? '<p style="color:#667085;">No recent posts.</p>' : `
+            <table class="admin-table">
+                <thead><tr><th>Content</th><th>Type</th><th>Date</th></tr></thead>
+                <tbody>
+                    ${recentPosts.map(p => `
+                        <tr>
+                            <td style="max-width:200px; white-space:normal; font-size:13px;">
+                                <a href="/admin/community/post-detail.html?id=${p.id}" style="color:#3538cd; text-decoration:none;">${p.content}${p.content.length === 200 ? '...' : ''}</a>
+                                ${p.is_hidden ? '<span class="admin-badge" style="background:#FEF3F2; color:#B42318; margin-left:8px;">Hidden</span>' : ''}
+                            </td>
+                            <td><span class="admin-badge">${p.post_type}</span></td>
+                            <td><small>${new Date(p.created_at).toLocaleString()}</small></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        document.getElementById('user-detail-container').innerHTML = `
+            <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                  <h1 class="admin-page-title">User Detail</h1>
+                  <p class="admin-page-subtitle">ID: <span style="font-family:monospace;">${userId}</span></p>
+                </div>
+                <div style="display:flex; gap:12px;">
+                  <button class="admin-btn admin-btn--secondary" style="color:#b42318; border-color:#b42318;" onclick="toggleBan('${userId}', ${profile.is_community_banned})">
+                    ${profile.is_community_banned ? 'Unban User' : 'Ban User'}
+                  </button>
+                </div>
+            </div>
+
+            ${banStatusHtml}
+
+            <div class="grid-layout">
+                <!-- Left Column -->
+                <div style="display:flex; flex-direction: column; gap: 24px;">
+                    <div class="admin-card">
+                        <div class="admin-card-body">
+                            <div class="profile-header">
+                                ${avatarHtml}
+                                <div>
+                                    <div style="font-size:18px; font-weight:600; color:#101828;">${displayName}</div>
+                                    <div style="font-size:14px; color:#667085;">${user.email || 'No email associated'}</div>
+                                    <div style="font-size:12px; color:#667085; font-family:monospace; margin-top:4px;">Core ID: ${user.id}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="background:#f9fafb; padding:16px; border-radius:8px; margin-bottom:16px;">
+                                <div style="font-size:12px; color:#667085; text-transform:uppercase; font-weight:600; margin-bottom:8px;">Bio</div>
+                                <div style="font-size:14px; color:#344054;">${profile.bio || '<i>No bio provided</i>'}</div>
+                            </div>
+                            
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
+                                    <div style="font-size:24px; font-weight:600; color:#101828;">${profile.post_count || 0}</div>
+                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">Posts</div>
+                                </div>
+                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
+                                    <div style="font-size:24px; font-weight:600; color:#101828;">${profile.follower_count || 0}</div>
+                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">Followers</div>
+                                </div>
+                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
+                                    <div style="font-size:24px; font-weight:600; color:#101828;">${profile.warning_count || 0}</div>
+                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">Warnings</div>
+                                </div>
+                                <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
+                                    <div style="font-size:24px; font-weight:600; color:#101828;">${profile.login_streak || 0}</div>
+                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">Login Streak</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Level & XP</h2>
+                        </div>
+                        <div class="admin-card-body">
+                            <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
+                                <div style="font-size:32px; font-weight:700; color:#1570EF;">Lvl ${xp.current_level}</div>
+                                <div>
+                                    <div style="font-weight:600; color:#101828;">${xp.current_level_name}</div>
+                                    <div style="font-size:14px; color:#667085;">${xp.total_xp} Total XP</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Badges (${badges.length})</h2>
+                        </div>
+                        <div class="admin-card-body">
+                            ${badgesHtml}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div style="display:flex; flex-direction: column; gap: 24px;">
+                    <div class="admin-card">
+                        <div class="admin-card-header">
+                            <h2 class="admin-card-title">Recent Posts</h2>
+                        </div>
+                        <div class="admin-card-body admin-card-body--flush">
+                            ${postsHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function toggleBan(userId, isBanned) {
+        let reason = "";
+        let actionStr = isBanned ? "unban" : "ban";
+        
+        if (!isBanned) {
+            reason = prompt("Enter reason for banning this user:");
+            if(reason === null) return;
+        } else {
+            if(!confirm("Are you sure you want to unban this user?")) return;
+        }
+        
+        try {
+            const res = await fetch(`/api/admin/community/users/${userId}/ban`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason })
+            });
+            if (res.ok) {
+                alert(`User successfully ${actionStr}ned.`);
+                loadUserDetail(userId);
+            } else {
+                alert(`Failed to ${actionStr} user. Check console for details.`);
+            }
+        } catch(e) {
+            alert("Error connecting to server");
+        }
+    }
+  </script>
+</body>
+</html>

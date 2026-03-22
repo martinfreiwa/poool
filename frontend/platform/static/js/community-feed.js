@@ -100,87 +100,301 @@ document.addEventListener('DOMContentLoaded', () => {
         return Math.floor(seconds) + " seconds ago";
     }
 
+    let currentFeedMode = 'all';
+
+    window.setFeedMode = function(mode) {
+        currentFeedMode = mode;
+        const btnAll = document.getElementById('feed-btn-all');
+        const btnFollowing = document.getElementById('feed-btn-following');
+        
+        if (mode === 'all') {
+            btnAll.className = 'ds-btn ds-btn--primary';
+            btnFollowing.className = 'ds-btn ds-btn--secondary';
+        } else {
+            btnAll.className = 'ds-btn ds-btn--secondary';
+            btnFollowing.className = 'ds-btn ds-btn--primary';
+        }
+        
+        loadFeed();
+    };
+
+    // ─── XSS-safe helpers ───────────────────────────────────────
+    function getInitials(name) {
+        if (!name) return '?';
+        const parts = name.split(' ');
+        return (parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0, 2)).toUpperCase();
+    }
+
+    function escapeAttr(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    /**
+     * Build a post DOM element using safe DOM construction.
+     * User-generated content uses textContent (XSS-safe).
+     * Only static/developer-controlled strings use innerHTML.
+     */
+    function buildPostElement(p) {
+        const postEl = document.createElement('div');
+        postEl.className = 'feed-post';
+
+        // ─── Header ───
+        const header = document.createElement('div');
+        header.className = 'feed-post-header';
+
+        const authorDiv = document.createElement('div');
+        authorDiv.className = 'feed-post-author';
+        authorDiv.style.cursor = 'pointer';
+        authorDiv.addEventListener('click', () => openUserProfile(p.author_id));
+
+        // Avatar
+        if (p.author_avatar) {
+            const avatarImg = document.createElement('img');
+            avatarImg.src = p.author_avatar;
+            avatarImg.className = 'feed-post-avatar-circle';
+            avatarImg.style.cssText = 'border:none; object-fit:cover;';
+            authorDiv.appendChild(avatarImg);
+        } else {
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'feed-post-avatar feed-post-avatar--announcement';
+            avatarDiv.style.cssText = 'font-size:12px; font-weight:bold;';
+            avatarDiv.textContent = getInitials(p.author_name);
+            authorDiv.appendChild(avatarDiv);
+        }
+
+        // Meta (name + time)
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'feed-post-meta';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'feed-post-name';
+        nameSpan.textContent = p.author_name; // SAFE: textContent
+
+        // Official badge (only for system-controlled POOOL accounts)
+        if (p.author_name && p.author_name.includes('POOOL')) {
+            const officialBadge = document.createElement('span');
+            officialBadge.className = 'feed-post-verified-badge';
+            officialBadge.textContent = 'Official';
+            nameSpan.appendChild(officialBadge);
+        }
+
+        // Verified Owner badge (FIX-F4: boolean flag, not HTML injection)
+        if (p.verified_owner) {
+            const ownerBadge = document.createElement('span');
+            ownerBadge.className = 'feed-post-badge';
+            ownerBadge.style.cssText = 'background:#F0FDF4;color:#027A48;border:1px solid #D1FADF;margin-left:6px;font-size:11px;';
+            ownerBadge.textContent = 'Verified Owner';
+            nameSpan.appendChild(ownerBadge);
+        }
+
+        // Author badges (emojis from system, safe)
+        if (p.author_badges && p.author_badges.length > 0) {
+            p.author_badges.slice(0, 3).forEach(icon => {
+                const badgeSpan = document.createElement('span');
+                badgeSpan.style.cssText = 'margin-left:4px; font-size:14px;';
+                badgeSpan.textContent = icon; // emoji from DB, safe as textContent
+                nameSpan.appendChild(badgeSpan);
+            });
+        }
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'feed-post-time';
+        timeSpan.textContent = timeAgo(p.created_at);
+
+        metaDiv.appendChild(nameSpan);
+        metaDiv.appendChild(timeSpan);
+        authorDiv.appendChild(metaDiv);
+        header.appendChild(authorDiv);
+
+        // Pinned badge
+        if (p.is_pinned) {
+            const pinnedBadge = document.createElement('span');
+            pinnedBadge.className = 'feed-post-badge';
+            pinnedBadge.style.cssText = 'background:#FFF0ED;color:#DC6803;border:1px solid #FFD8CF;';
+            pinnedBadge.textContent = 'Pinned';
+            header.appendChild(pinnedBadge);
+        }
+
+        // Type badge
+        if (p.post_type === 'announcement') {
+            const typeBadge = document.createElement('span');
+            typeBadge.className = 'feed-post-badge feed-post-badge--announcement';
+            typeBadge.style.marginLeft = '8px';
+            typeBadge.textContent = 'Announcement';
+            header.appendChild(typeBadge);
+        } else if (p.post_type === 'market_insight') {
+            const typeBadge = document.createElement('span');
+            typeBadge.className = 'feed-post-badge';
+            typeBadge.style.cssText = 'background:#F0FDF4;color:#027A48;border:1px solid #D1FADF;margin-left:8px;';
+            typeBadge.textContent = 'Market Insight';
+            header.appendChild(typeBadge);
+        } else if (p.post_type === 'review') {
+            const typeBadge = document.createElement('span');
+            typeBadge.className = 'feed-post-badge';
+            typeBadge.style.cssText = 'background:#FFF9C4;color:#F57F17;border:1px solid #FFF59D;margin-left:8px;';
+            typeBadge.textContent = 'Review';
+            header.appendChild(typeBadge);
+        }
+
+        postEl.appendChild(header);
+
+        // ─── Body ───
+        const body = document.createElement('div');
+        body.className = 'feed-post-body';
+
+        const contentP = document.createElement('p');
+        contentP.textContent = p.content; // SAFE: textContent — the core XSS fix
+        body.appendChild(contentP);
+
+        // Images (URLs are server-controlled GCS paths)
+        if (p.image_urls && p.image_urls.length > 0) {
+            const imgWrap = document.createElement('div');
+            imgWrap.style.marginTop = '16px';
+            const img = document.createElement('img');
+            img.src = p.image_urls[0];
+            img.style.cssText = 'max-width: 100%; border-radius: 12px; border: 1px solid #EAECF0;';
+            imgWrap.appendChild(img);
+            body.appendChild(imgWrap);
+        }
+
+        // Disclaimer (static text, safe)
+        if (p.disclaimer_shown) {
+            const disclaimer = document.createElement('div');
+            disclaimer.className = 'feed-post-disclaimer';
+            disclaimer.style.cssText = 'font-size:12px; color:#667085; background:#F9FAFB; padding:8px 12px; border-radius:6px; margin-top:12px; border:1px solid #EAECF0;';
+            disclaimer.textContent = '⚠️ Disclaimer: This post contains community generated investment discussion. Do your own research, past performance does not guarantee future results.';
+            body.appendChild(disclaimer);
+        }
+
+        postEl.appendChild(body);
+
+        // ─── Engagement ───
+        const engagement = document.createElement('div');
+        engagement.className = 'feed-post-engagement';
+        engagement.style.cssText = 'margin-top: 20px; border-top: 1px solid #EAECF0; padding-top: 16px;';
+
+        const reactions = document.createElement('div');
+        reactions.className = 'feed-post-reactions';
+
+        const reactionTypes = [
+            { emoji: '🔥', type: 'fire', count: p.reaction_count || 0 },
+            { emoji: '💡', type: 'idea', count: 0 },
+            { emoji: '👏', type: 'clap', count: 0 },
+        ];
+        reactionTypes.forEach(r => {
+            const btn = document.createElement('button');
+            btn.className = 'feed-reaction-btn';
+            btn.textContent = r.emoji + ' ';
+            const countSpan = document.createElement('span');
+            countSpan.textContent = r.count;
+            btn.appendChild(countSpan);
+            btn.addEventListener('click', () => toggleReaction(p.id, btn, r.type));
+            reactions.appendChild(btn);
+        });
+
+        const statsRow = document.createElement('div');
+        statsRow.style.cssText = 'display: flex; gap: 16px; align-items: center;';
+
+        const stats = document.createElement('div');
+        stats.className = 'feed-post-stats';
+        stats.style.cursor = 'pointer';
+        stats.textContent = `${p.reaction_count || 0} reactions · ${p.comment_count || 0} comments`;
+        stats.addEventListener('click', () => toggleComments(p.id));
+
+        const reportBtn = document.createElement('button');
+        reportBtn.className = 'ds-btn ds-btn--ghost ds-btn--sm';
+        reportBtn.title = 'Report Post';
+        reportBtn.style.cssText = 'padding:4px; height:auto; border:none;';
+        reportBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98A2B3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>';
+        reportBtn.addEventListener('click', () => openReportModal(p.id));
+
+        statsRow.appendChild(stats);
+        statsRow.appendChild(reportBtn);
+        engagement.appendChild(reactions);
+        engagement.appendChild(statsRow);
+        postEl.appendChild(engagement);
+
+        // ─── Comments Section ───
+        const commentsSection = document.createElement('div');
+        commentsSection.id = `comments-section-${p.id}`;
+        commentsSection.style.cssText = 'display: none; padding-top: 16px;';
+
+        const commentsList = document.createElement('div');
+        commentsList.id = `comments-list-${p.id}`;
+        commentsList.innerHTML = '<div style="font-size: 13px; color: #667085; text-align: center;">Loading comments...</div>';
+
+        const commentInputRow = document.createElement('div');
+        commentInputRow.style.cssText = 'display: flex; gap: 8px; margin-top: 12px; align-items: flex-start;';
+
+        const textarea = document.createElement('textarea');
+        textarea.id = `comment-input-${p.id}`;
+        textarea.className = 'ds-input';
+        textarea.placeholder = 'Write a comment...';
+        textarea.rows = 1;
+        textarea.style.cssText = 'flex:1; resize:none; overflow-wrap:normal; min-height: 40px; padding: 10px;';
+
+        const submitBtn = document.createElement('button');
+        submitBtn.className = 'ds-btn ds-btn--primary';
+        submitBtn.style.cssText = 'height: 40px; padding: 0 16px;';
+        submitBtn.textContent = 'Post';
+        submitBtn.addEventListener('click', () => submitComment(p.id));
+
+        commentInputRow.appendChild(textarea);
+        commentInputRow.appendChild(submitBtn);
+        commentsSection.appendChild(commentsList);
+        commentsSection.appendChild(commentInputRow);
+        postEl.appendChild(commentsSection);
+
+        return postEl;
+    }
+
     async function loadFeed() {
         renderSkeleton();
         try {
-            const res = await fetch('/api/community/feed');
-            if (!res.ok) throw new Error("Failed to fetch feed");
+            let url = '/api/community/feed';
+            if (currentFeedMode === 'following') {
+                url += '?feed_mode=following';
+            }
+            const res = await fetch(url);
+            if (!res.ok) {
+                if(res.status === 401) {
+                    throw new Error("unauthorized");
+                }
+                throw new Error("Failed to fetch feed");
+            }
             const posts = await res.json();
             
             if (posts.length === 0) {
-                renderEmptyState();
+                if (currentFeedMode === 'following') {
+                     feedContainer.innerHTML = `<div style="padding: 40px 24px; color: #667085; text-align: center; background: white; border-radius: 12px; border: 1px solid #EAECF0;">
+                        <div style="font-size: 24px; margin-bottom: 12px;">🔭</div>
+                        <h3 style="margin-bottom: 8px; font-weight: 600; color: #101828;">Nothing to see here yet</h3>
+                        <p style="font-size: 14px;">You aren't following anyone yet, or the people you follow haven't posted.</p>
+                        <button class="ds-btn ds-btn--secondary" style="margin-top: 16px;" onclick="setFeedMode('all')">View All Posts</button>
+                    </div>`;
+                } else {
+                    renderEmptyState();
+                }
                 return;
             }
 
-            let html = '';
+            feedContainer.innerHTML = '';
             for (const p of posts) {
-                // Determine initials
-                let initials = "?";
-                if (p.author_name) {
-                    const parts = p.author_name.split(' ');
-                    initials = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0, 2);
-                }
-                
-                let typeBadge = '';
-                if (p.post_type === 'announcement') typeBadge = '<span class="feed-post-badge feed-post-badge--announcement" style="margin-left: 8px;">Announcement</span>';
-                else if (p.post_type === 'market_insight') typeBadge = '<span class="feed-post-badge" style="background:#F0FDF4;color:#027A48;border:1px solid #D1FADF;margin-left: 8px;">Market Insight</span>';
-                else if (p.post_type === 'review') typeBadge = '<span class="feed-post-badge" style="background:#FFF9C4;color:#F57F17;border:1px solid #FFF59D;margin-left: 8px;">Review</span>';
-
-                html += `
-                <div class="feed-post">
-                    <div class="feed-post-header">
-                        <div class="feed-post-author">
-                            ${p.author_avatar ? 
-                                `<img src="${p.author_avatar}" class="feed-post-avatar-circle" style="border:none; object-fit:cover;">` : 
-                                `<div class="feed-post-avatar feed-post-avatar--announcement" style="font-size:12px; font-weight:bold;">${initials.toUpperCase()}</div>`
-                            }
-                            <div class="feed-post-meta">
-                                <span class="feed-post-name">${p.author_name} ${p.author_name.includes('POOOL') ? '<span class="feed-post-verified-badge">Official</span>' : ''}</span>
-                                <span class="feed-post-time">${timeAgo(p.created_at)}</span>
-                            </div>
-                        </div>
-                        ${p.is_pinned ? '<span class="feed-post-badge" style="background:#FFF0ED;color:#DC6803;border:1px solid #FFD8CF;">Pinned</span>' : ''}
-                        ${typeBadge}
-                    </div>
-                    <div class="feed-post-body">
-                        ${p.content}
-                        ${p.image_urls && p.image_urls.length > 0 ? 
-                            `<div style="margin-top: 16px;"><img src="${p.image_urls[0]}" style="max-width: 100%; border-radius: 12px; border: 1px solid #EAECF0;"></div>` : ''
-                        }
-                        ${p.disclaimer_shown ? `<div class="feed-post-disclaimer" style="font-size:12px; color:#667085; background:#F9FAFB; padding:8px 12px; border-radius:6px; margin-top:12px; border:1px solid #EAECF0;"><em>⚠️ Disclaimer: This post contains community generated investment discussion. Do your own research, past performance does not guarantee future results.</em></div>` : ''}
-                    </div>
-                    <div class="feed-post-engagement" style="margin-top: 20px; border-top: 1px solid #EAECF0; padding-top: 16px;">
-                        <div class="feed-post-reactions">
-                            <button class="feed-reaction-btn" onclick="toggleReaction('${p.id}', this, 'fire')">🔥 <span>${p.reaction_count || 0}</span></button>
-                            <button class="feed-reaction-btn" onclick="toggleReaction('${p.id}', this, 'idea')">💡 <span>0</span></button>
-                            <button class="feed-reaction-btn" onclick="toggleReaction('${p.id}', this, 'clap')">👏 <span>0</span></button>
-                        </div>
-                        <div style="display: flex; gap: 16px; align-items: center;">
-                            <div class="feed-post-stats" style="cursor:pointer;" onclick="toggleComments('${p.id}')"><span>${p.reaction_count || 0} reactions</span> · <span>${p.comment_count || 0} comments</span></div>
-                            <button class="ds-btn ds-btn--ghost ds-btn--sm" title="Report Post" onclick="openReportModal('${p.id}')" style="padding:4px; height:auto; border:none;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98A2B3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="comments-section-${p.id}" style="display: none; padding-top: 16px;">
-                        <div id="comments-list-${p.id}">
-                            <div style="font-size: 13px; color: #667085; text-align: center;">Loading comments...</div>
-                        </div>
-                        <div style="display: flex; gap: 8px; margin-top: 12px; align-items: flex-start;">
-                            <textarea id="comment-input-${p.id}" class="ds-input" placeholder="Write a comment..." rows="1" style="flex:1; resize:none; overflow-wrap:normal; min-height: 40px; padding: 10px;"></textarea>
-                            <button class="ds-btn ds-btn--primary" onclick="submitComment('${p.id}')" style="height: 40px; padding: 0 16px;">Post</button>
-                        </div>
-                    </div>
-                </div>
-                `;
+                const postEl = buildPostElement(p);
+                feedContainer.appendChild(postEl);
             }
-            feedContainer.innerHTML = html;
         } catch (e) {
             console.error(e);
-            feedContainer.innerHTML = `<div style="padding: 24px; color: #D92D20; text-align: center;">Failed to load feed. Please try again.</div>`;
+            if (e.message === "unauthorized") {
+                feedContainer.innerHTML = `<div style="padding: 40px 24px; color: #667085; text-align: center; background: white; border-radius: 12px; border: 1px solid #EAECF0;">
+                    <div style="font-size: 24px; margin-bottom: 12px;">🔒</div>
+                    <h3 style="margin-bottom: 8px; font-weight: 600; color: #101828;">Log in to view this</h3>
+                    <p style="font-size: 14px;">You must be logged in to view your personalized feed.</p>
+                </div>`;
+            } else {
+                feedContainer.innerHTML = `<div style="padding: 24px; color: #D92D20; text-align: center;">Failed to load feed. Please try again.</div>`;
+            }
         }
     }
 
@@ -206,40 +420,55 @@ document.addEventListener('DOMContentLoaded', () => {
             const comments = await res.json();
             
             if (comments.length === 0) {
-                listContainer.innerHTML = `<div style="font-size: 13px; color: #667085; padding-bottom: 8px;">No comments yet. Be the first to start the discussion!</div>`;
+                listContainer.innerHTML = '<div style="font-size: 13px; color: #667085; padding-bottom: 8px;">No comments yet. Be the first to start the discussion!</div>';
                 return;
             }
 
-            let html = '';
+            listContainer.innerHTML = '';
             comments.forEach(c => {
-                let initials = "?";
-                if (c.author_name) {
-                    const parts = c.author_name.split(' ');
-                    initials = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0, 2);
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;';
+
+                // Avatar
+                if (c.author_avatar) {
+                    const img = document.createElement('img');
+                    img.src = c.author_avatar;
+                    img.style.cssText = 'width: 28px; height: 28px; border-radius: 50%; object-fit:cover;';
+                    row.appendChild(img);
+                } else {
+                    const avatarDiv = document.createElement('div');
+                    avatarDiv.style.cssText = 'width: 28px; height: 28px; background: #eaecf0; border-radius: 50%; display: flex; align-items:center; justify-content:center; font-size: 10px; font-weight:600; color:#344054;';
+                    avatarDiv.textContent = getInitials(c.author_name);
+                    row.appendChild(avatarDiv);
                 }
 
-                html += `
-                <div style="display:flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;">
-                    ${c.author_avatar ? 
-                        `<img src="${c.author_avatar}" style="width: 28px; height: 28px; border-radius: 50%; object-fit:cover;">` : 
-                        `<div style="width: 28px; height: 28px; background: #eaecf0; border-radius: 50%; display: flex; align-items:center; justify-content:center; font-size: 10px; font-weight:600; color:#344054;">${initials.toUpperCase()}</div>`
-                    }
-                    <div style="flex:1; background: #F9FAFB; padding: 10px 12px; border-radius: 8px; border: 1px solid #EAECF0;">
-                        <div style="display:flex; justify-content: space-between; margin-bottom: 4px;">
-                            <span style="font-weight: 600; font-size: 13px; color: #344054;">${c.author_name}</span>
-                            <span style="font-size: 12px; color: #667085;">${timeAgo(c.created_at)}</span>
-                        </div>
-                        <div style="font-size: 14px; color: #475467; word-break: break-word;">
-                            ${c.content}
-                        </div>
-                    </div>
-                </div>
-                `;
+                // Comment body
+                const body = document.createElement('div');
+                body.style.cssText = 'flex:1; background: #F9FAFB; padding: 10px 12px; border-radius: 8px; border: 1px solid #EAECF0;';
+
+                const header = document.createElement('div');
+                header.style.cssText = 'display:flex; justify-content: space-between; margin-bottom: 4px;';
+                const nameSpan = document.createElement('span');
+                nameSpan.style.cssText = 'font-weight: 600; font-size: 13px; color: #344054;';
+                nameSpan.textContent = c.author_name; // SAFE: textContent escapes HTML
+                const timeSpan = document.createElement('span');
+                timeSpan.style.cssText = 'font-size: 12px; color: #667085;';
+                timeSpan.textContent = timeAgo(c.created_at);
+                header.appendChild(nameSpan);
+                header.appendChild(timeSpan);
+
+                const contentDiv = document.createElement('div');
+                contentDiv.style.cssText = 'font-size: 14px; color: #475467; word-break: break-word;';
+                contentDiv.textContent = c.content; // SAFE: textContent escapes HTML
+
+                body.appendChild(header);
+                body.appendChild(contentDiv);
+                row.appendChild(body);
+                listContainer.appendChild(row);
             });
-            listContainer.innerHTML = html;
         } catch (e) {
             console.error(e);
-            listContainer.innerHTML = `<div style="font-size: 13px; color: #D92D20;">Failed to load comments.</div>`;
+            listContainer.innerHTML = '<div style="font-size: 13px; color: #D92D20;">Failed to load comments.</div>';
         }
     };
 
@@ -266,6 +495,113 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(e);
             alert("Failed to post comment: " + e.message);
             input.disabled = false;
+        }
+    };
+
+    // ─── USER PROFILE LOGIC (M3) ─────────────────────────────
+    
+    let currentProfileId = null;
+
+    window.openUserProfile = async function(userId) {
+        currentProfileId = userId;
+        document.getElementById('user-profile-modal').style.display = 'block';
+        document.getElementById('profile-loading-state').style.display = 'block';
+        document.getElementById('profile-content-state').style.display = 'none';
+
+        try {
+            const res = await fetch(`/api/community/profile/${userId}`);
+            if (!res.ok) throw new Error("Profile not found");
+            const profile = await res.json();
+
+            // Populate Modal
+            document.getElementById('profile-modal-name').innerText = profile.display_name;
+            document.getElementById('profile-modal-bio').innerText = profile.bio || "This user hasn't written a bio yet.";
+            document.getElementById('profile-modal-followers').innerText = profile.follower_count;
+            document.getElementById('profile-modal-following').innerText = profile.following_count;
+            document.getElementById('profile-modal-posts').innerText = profile.post_count;
+
+            const badgesContainer = document.getElementById('profile-modal-badges');
+            if (profile.badges && profile.badges.length > 0) {
+                badgesContainer.innerHTML = profile.badges.map(b => 
+                    `<div title="${b.name}" style="background:#F2F4F7; border: 1px solid #EAECF0; border-radius:16px; padding: 4px 8px; font-size:14px; cursor:help; display:flex; align-items:center;">
+                        ${b.icon} <span style="font-size:12px; font-weight:500; margin-left:6px; color:#344054;">${b.name}</span>
+                    </div>`
+                ).join('');
+            } else {
+                badgesContainer.innerHTML = `<div style="font-size:13px; color:#98A2B3;">No badges earned yet.</div>`;
+            }
+
+            const avatarContainer = document.getElementById('profile-modal-avatar');
+            if (profile.avatar_url) {
+                avatarContainer.style.background = `url(${profile.avatar_url}) center/cover`;
+                avatarContainer.innerHTML = '';
+            } else {
+                avatarContainer.style.background = '#F2F4F7';
+                const parts = profile.display_name.split(' ');
+                const init = parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0].substring(0, 2);
+                avatarContainer.innerHTML = `<span id="profile-modal-initials">${init.toUpperCase()}</span>`;
+            }
+
+            const followBtn = document.getElementById('profile-modal-follow-btn');
+            // Remove previous listeners
+            const newBtn = followBtn.cloneNode(true);
+            followBtn.parentNode.replaceChild(newBtn, followBtn);
+            
+            if (profile.is_following) {
+                newBtn.innerText = "Unfollow";
+                newBtn.className = "ds-btn ds-btn--secondary";
+            } else {
+                newBtn.innerText = "Follow User";
+                newBtn.className = "ds-btn ds-btn--primary";
+            }
+            newBtn.style.width = "100%";
+            
+            newBtn.onclick = () => toggleFollow(userId, profile.is_following, newBtn);
+
+            document.getElementById('profile-loading-state').style.display = 'none';
+            document.getElementById('profile-content-state').style.display = 'block';
+
+        } catch (e) {
+            console.error(e);
+            document.getElementById('profile-loading-state').innerHTML = `<p style="color: #D92D20;">Failed to load profile.</p>`;
+        }
+    };
+
+    window.toggleFollow = async function(userId, currentlyFollowing, btnElement) {
+        try {
+            btnElement.disabled = true;
+            btnElement.innerText = "Updating...";
+
+            if (currentlyFollowing) {
+                const res = await fetch(`/api/community/follow/${userId}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error("Failed to unfollow");
+                
+                btnElement.innerText = "Follow User";
+                btnElement.className = "ds-btn ds-btn--primary";
+                
+                // Optimistically update followers count 
+                const followersEl = document.getElementById('profile-modal-followers');
+                followersEl.innerText = Math.max(0, parseInt(followersEl.innerText) - 1);
+            } else {
+                const res = await fetch(`/api/community/follow/${userId}`, { method: 'POST' });
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
+                btnElement.innerText = "Unfollow";
+                btnElement.className = "ds-btn ds-btn--secondary";
+                
+                // Optimistically update followers count
+                const followersEl = document.getElementById('profile-modal-followers');
+                followersEl.innerText = parseInt(followersEl.innerText) + 1;
+            }
+            // Bind the new toggle state
+            btnElement.onclick = () => toggleFollow(userId, !currentlyFollowing, btnElement);
+        } catch (e) {
+            alert(e.message || "Failed to toggle follow status");
+            btnElement.innerText = currentlyFollowing ? "Unfollow" : "Follow User";
+        } finally {
+            btnElement.disabled = false;
         }
     };
 
@@ -485,5 +821,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load trending assets on initialization
     loadTrendingAssets();
+
+    // Onboarding logic
+    window.closeOnboardingModal = function() {
+        document.getElementById('onboarding-modal').style.display = 'none';
+        localStorage.setItem('poool_community_onboarding_dismissed', 'true');
+    };
+
+    async function checkOnboarding() {
+        if (localStorage.getItem('poool_community_onboarding_dismissed') === 'true') {
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/community/profile/me');
+            if (!res.ok) return;
+
+            const profile = await res.json();
+            
+            // Checking if they need onboarding (XP concept)
+            const hasBio = !!profile.bio;
+            const hasPosts = profile.post_count > 0;
+
+            if (!hasBio || !hasPosts) {
+                document.getElementById('ob-bio').checked = hasBio;
+                document.getElementById('ob-post').checked = hasPosts;
+                
+                document.getElementById('onboarding-modal').style.display = 'flex';
+            } else {
+                // If they completed it but never dismissed modal, we can silently dismiss
+                localStorage.setItem('poool_community_onboarding_dismissed', 'true');
+            }
+        } catch (e) {
+            console.error("Failed to check onboarding status", e);
+        }
+    }
+
+    checkOnboarding();
 
 });

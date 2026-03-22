@@ -575,6 +575,20 @@ pub async fn handle_checkout(
                 "Checkout success"
             );
 
+            // If wallet transaction, trigger milestones immediately
+            if payment_method == "wallet" {
+                if let Some(c_pool) = &state.community_db {
+                    for asset_id in result.purchased_asset_ids {
+                        let _ = crate::community::service::trigger_investment_milestones(
+                            &state.db,
+                            c_pool,
+                            user.id,
+                            asset_id
+                        ).await;
+                    }
+                }
+            }
+
             // Return JSON with redirect URL so the frontend fetch() can reliably read it.
             // Also include HX-Redirect for any HTMX-based callers.
             let mut headers = HeaderMap::new();
@@ -1085,7 +1099,18 @@ pub async fn api_admin_approve_order(
     }
 
     match service::approve_order(&state.db, id, _user.id).await {
-        Ok(_) => {
+        Ok((user_id, asset_ids)) => {
+            if let Some(c_pool) = &state.community_db {
+                for asset_id in asset_ids {
+                    let _ = crate::community::service::trigger_investment_milestones(
+                        &state.db,
+                        c_pool,
+                        user_id,
+                        asset_id
+                    ).await;
+                }
+            }
+
             Json(serde_json::json!({"success": true, "message": "Order approved successfully"}))
                 .into_response()
         }

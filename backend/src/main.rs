@@ -174,6 +174,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(c_pool) = &state.community_db {
         tokio::spawn(community::background::monitor_asset_velocity(c_pool.clone(), pool.clone()));
+        tokio::spawn(community::background::gamification_worker(c_pool.clone(), pool.clone()));
+        tokio::spawn(community::background::xp_aggregation_worker(c_pool.clone()));
+        tokio::spawn(community::background::circle_invite_expiry_worker(c_pool.clone()));
+        tokio::spawn(community::background::circle_retry_worker(c_pool.clone(), pool.clone()));
     }
 
     // Auto-refund worker for expired primary escrow offerings

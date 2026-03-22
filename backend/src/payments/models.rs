@@ -112,6 +112,7 @@ pub struct CheckoutResult {
     pub currency: String,
     pub items_purchased: i32,
     pub invoice_number: Option<String>,
+    pub purchased_asset_ids: Vec<Uuid>,
 }
 
 /// Invoice view for the frontend.
