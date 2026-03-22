@@ -32,7 +32,7 @@
     font-weight: 700;
     font-size: 20px;
     line-height: 30px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
   }
 
@@ -84,7 +84,7 @@
     font-weight: 700;
     font-size: 18px;
     line-height: 28px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
     flex: 1;
   }
@@ -96,7 +96,7 @@
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -104,6 +104,6 @@
   .mobile-leasing-divider {
     width: 100%;
     height: 1px;
-    background: #e9eaeb;
+    background: var(--table-border-color);
   }
 }

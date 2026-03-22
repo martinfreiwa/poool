@@ -1,0 +1,68 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            id, title, funding_status, funding_end_at,\n            tokens_total, tokens_available, min_funding_tokens, \n            token_price_cents, COALESCE(escrow_agent, 'unassigned') as escrow_agent\n        FROM assets\n        WHERE funding_status IN ('funding_open', 'funding_in_progress')\n        ORDER BY created_at DESC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "funding_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "funding_end_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "tokens_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "tokens_available",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "min_funding_tokens",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "token_price_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "escrow_agent",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "11953ed910e6cb4d8c59711dfc107d3a24e5197d7cccb42f0d9fdec9b1a6ce5a"
+}

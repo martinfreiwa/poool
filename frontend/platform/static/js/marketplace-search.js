@@ -315,6 +315,9 @@
           filterInput.dispatchEvent(new Event("input", { bubbles: true }));
         }, 300);
       }
+    } else {
+      // Clear sidebar input if not on marketplace or no query (fixes persistence bug)
+      sidebarInput.value = "";
     }
 
     function runSidebarSearch() {

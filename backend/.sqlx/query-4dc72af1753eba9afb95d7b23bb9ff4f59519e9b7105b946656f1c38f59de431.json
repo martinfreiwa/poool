@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE investment_limits SET invested_12m_cents = invested_12m_cents + $1, updated_at = NOW() WHERE user_id = $2 AND limit_year = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4dc72af1753eba9afb95d7b23bb9ff4f59519e9b7105b946656f1c38f59de431"
+}

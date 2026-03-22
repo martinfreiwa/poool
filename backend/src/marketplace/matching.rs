@@ -144,10 +144,7 @@ pub async fn run_matching_engine(redis: &RedisPool, pool: &PgPool) {
 /// 5. Compute match price (maker's price) and quantity (min of both sides).
 /// 6. Update Redis: remove fully-filled orders, re-insert partial-fills.
 /// 7. Return the MatchEvent for the settlement worker.
-async fn try_match_once(
-    redis: &RedisPool,
-    asset_id: Uuid,
-) -> Result<Option<MatchEvent>, String> {
+async fn try_match_once(redis: &RedisPool, asset_id: Uuid) -> Result<Option<MatchEvent>, String> {
     // 1. Get best ask and bid
     let best_ask = orderbook::best_ask(redis, asset_id)
         .await

@@ -253,7 +253,7 @@
       actionsContainer.innerHTML = `
         <a href="/marketplace" class="pip-btn pip-btn--primary">
           <span class="button-text">Continue Shopping</span>
-          <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#62F7A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#98FB96" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
         <a href="/portfolio" class="pip-btn pip-btn--secondary">
           View Portfolio
@@ -522,7 +522,7 @@
       actionsContainer.innerHTML = `
         <a href="/marketplace" class="pip-btn pip-btn--primary">
           <span class="button-text">Continue Shopping</span>
-          <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#62F7A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#98FB96" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
         <a href="/wallet" class="pip-btn pip-btn--secondary">
           Go to Wallet
@@ -592,7 +592,7 @@
       actionsContainer.innerHTML = `
         <a href="/marketplace" class="pip-btn pip-btn--primary">
           <span class="button-text">Continue Shopping</span>
-          <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#62F7A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#98FB96" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
         <a href="/wallet" class="pip-btn pip-btn--secondary">Go to Wallet</a>
       `;

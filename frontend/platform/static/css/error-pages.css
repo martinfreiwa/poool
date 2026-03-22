@@ -12,9 +12,9 @@
     --brand-600: var(--primary-color);
     --brand-700: var(--primary-color);
     --brand-50: #ebebff;
-    --gray-900: #181d27;
+    --gray-900: var(--page-title-color);
     --gray-700: #414651;
-    --gray-600: #535862;
+    --gray-600: var(--text-secondary);
     --gray-400: #a4a7ae;
     --gray-300: #d5d7da;
     --gray-100: #f2f4f7;

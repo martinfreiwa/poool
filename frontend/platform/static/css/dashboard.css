@@ -223,12 +223,12 @@ thead th {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: var(--table-header-bg, #FAFAFA);
-  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  border-bottom: 1px solid var(--table-border-color, var(--table-border-color));
 }
 tbody td {
   padding: var(--table-cell-padding, 16px 24px);
   font-size: var(--table-cell-font-size, 14px);
-  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  border-bottom: 1px solid var(--table-border-color, var(--table-border-color));
 }
 tbody tr:hover {
   background: var(--table-row-hover-bg, #F8F9FC);

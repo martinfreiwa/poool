@@ -276,6 +276,75 @@ pub async fn disable_totp_handler(
     }
 }
 
+// ─── GET /api/settings/export-data (GDPR Art. 15/20) ──────────
+
+/// Export all user data as a downloadable JSON file.
+pub async fn export_data_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::export_user_data(&state.db, user_id).await {
+        Ok(data) => {
+            let body = serde_json::to_string_pretty(&data).unwrap_or_default();
+            (
+                StatusCode::OK,
+                [
+                    (axum::http::header::CONTENT_TYPE, "application/json"),
+                    (
+                        axum::http::header::CONTENT_DISPOSITION,
+                        "attachment; filename=\"poool_data_export.json\"",
+                    ),
+                ],
+                body,
+            )
+                .into_response()
+        }
+        Err(e) => {
+            tracing::error!("Data export failed for user {}: {}", user_id, e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "Failed to export data."})),
+            )
+                .into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/delete-account (GDPR Art. 17) ─────────
+
+/// Selectively delete user account per GDPR + financial regulatory requirements.
+pub async fn delete_account_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<super::models::DeleteAccountForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::delete_account_selective(&state.db, user_id, &form.current_password).await {
+        Ok(()) => Json(ApiResponse::ok(
+            "Account deletion completed. You will be logged out.",
+        ))
+        .into_response(),
+        Err(e) => {
+            tracing::warn!("Account deletion failed for user {}: {}", user_id, e);
+            let msg = match &e {
+                crate::error::AppError::BadRequest(m) => m.clone(),
+                crate::error::AppError::NotFound(m) => m.clone(),
+                _ => "Failed to delete account.".to_string(),
+            };
+            Json(ApiResponse::err(&msg)).into_response()
+        }
+    }
+}
+
 /// GET /settings — Render the user settings page.
 #[allow(dead_code)]
 pub async fn page_settings(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {

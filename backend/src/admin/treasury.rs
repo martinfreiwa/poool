@@ -281,3 +281,163 @@ pub async fn api_admin_dividends_process(
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ── NEW: Dividend Distribution System (Phase 9) ───────────────
+// ═══════════════════════════════════════════════════════════════
+
+/// GET /api/admin/dividends/distributions
+/// List all dividend distributions, optionally filtered by asset_id.
+pub async fn api_admin_dividends_list(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<axum::response::Response, ApiError> {
+    let asset_id = params
+        .get("asset_id")
+        .and_then(|v| uuid::Uuid::parse_str(v).ok());
+
+    match crate::dividends::service::list_distributions(&state.db, asset_id).await {
+        Ok(distributions) => {
+            Ok(Json(serde_json::json!({ "distributions": distributions })).into_response())
+        }
+        Err(e) => Err(ApiError::Internal(e)),
+    }
+}
+
+/// POST /api/admin/dividends/distributions
+/// Create and calculate a new dividend distribution with anti-sniping.
+///
+/// Body: { asset_id, period_start, period_end, total_amount_cents, min_holding_days? }
+pub async fn api_admin_dividends_create_distribution(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<axum::response::Response, ApiError> {
+    let asset_id = body
+        .get("asset_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ApiError::BadRequest("asset_id required".to_string()))?;
+
+    let total_amount_cents = body
+        .get("total_amount_cents")
+        .and_then(|v| v.as_i64())
+        .ok_or_else(|| {
+            ApiError::BadRequest("total_amount_cents required (positive integer)".to_string())
+        })?;
+
+    let period_start = body
+        .get("period_start")
+        .and_then(|v| v.as_str())
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
+        .ok_or_else(|| ApiError::BadRequest("period_start required (YYYY-MM-DD)".to_string()))?;
+
+    let period_end = body
+        .get("period_end")
+        .and_then(|v| v.as_str())
+        .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
+        .ok_or_else(|| ApiError::BadRequest("period_end required (YYYY-MM-DD)".to_string()))?;
+
+    let min_holding_days = body
+        .get("min_holding_days")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(7) as i32;
+
+    let aid = ApiError::parse_uuid(asset_id)?;
+
+    match crate::dividends::service::calculate_dividends(
+        &state.db,
+        aid,
+        period_start,
+        period_end,
+        total_amount_cents,
+        min_holding_days,
+        admin.user.id,
+    )
+    .await
+    {
+        Ok(result) => Ok(Json(serde_json::json!({
+            "status": "calculated",
+            "result": result
+        }))
+        .into_response()),
+        Err(e) => Err(ApiError::BadRequest(e)),
+    }
+}
+
+/// GET /api/admin/dividends/distributions/:id
+/// Get distribution details with all payouts.
+pub async fn api_admin_dividends_distribution_detail(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(dist_id): axum::extract::Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    let did = ApiError::parse_uuid(&dist_id)?;
+
+    match crate::dividends::service::get_distribution_detail(&state.db, did).await {
+        Ok(detail) => Ok(Json(detail).into_response()),
+        Err(e) => Err(ApiError::NotFound(e)),
+    }
+}
+
+/// POST /api/admin/dividends/distributions/:id/approve
+/// Approve a calculated distribution.
+pub async fn api_admin_dividends_approve_distribution(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(dist_id): axum::extract::Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    let did = ApiError::parse_uuid(&dist_id)?;
+
+    match crate::dividends::service::approve_distribution(&state.db, did, admin.user.id).await {
+        Ok(()) => Ok(Json(serde_json::json!({"status": "approved"})).into_response()),
+        Err(e) => Err(ApiError::BadRequest(e)),
+    }
+}
+
+/// POST /api/admin/dividends/distributions/:id/execute
+/// Execute an approved distribution — credit all eligible wallets.
+/// 🔴 CRITICAL FINANCIAL OPERATION — This credits real money to user wallets.
+pub async fn api_admin_dividends_execute_distribution(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(dist_id): axum::extract::Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    let did = ApiError::parse_uuid(&dist_id)?;
+
+    match crate::dividends::service::execute_distribution(&state.db, did).await {
+        Ok(summary) => Ok(Json(serde_json::json!({
+            "status": "distributed",
+            "summary": summary
+        }))
+        .into_response()),
+        Err(e) => {
+            tracing::error!(
+                "[P0-FINANCIAL] Dividend execution failed for {}: {}",
+                dist_id,
+                e
+            );
+            Err(ApiError::Internal(format!("Distribution failed: {}", e)))
+        }
+    }
+}
+
+/// POST /api/admin/dividends/distributions/:id/cancel
+/// Cancel a distribution (only if not yet distributed).
+pub async fn api_admin_dividends_cancel_distribution(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(dist_id): axum::extract::Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<axum::response::Response, ApiError> {
+    let did = ApiError::parse_uuid(&dist_id)?;
+    let reason = body
+        .get("reason")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Cancelled by admin");
+
+    match crate::dividends::service::cancel_distribution(&state.db, did, reason).await {
+        Ok(()) => Ok(Json(serde_json::json!({"status": "cancelled"})).into_response()),
+        Err(e) => Err(ApiError::BadRequest(e)),
+    }
+}

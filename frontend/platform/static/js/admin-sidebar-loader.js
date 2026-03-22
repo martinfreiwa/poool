@@ -91,6 +91,18 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20M12 10v10M7 2v4M17 2v4"/></svg>
                             <span>Treasury</span>
                         </a>
+                        <a href="/admin/blockchain-treasury.html" class="admin-nav-item ${isPathActive(["/admin/blockchain-treasury.html"]) ? "active" : ""}" id="nav-blockchain">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                            <span>Blockchain Treasury</span>
+                        </a>
+                        <a href="/admin/blockchain-contracts.html" class="admin-nav-item ${isPathActive(["/admin/blockchain-contracts.html", "/admin/blockchain-contract-detail.html"]) ? "active" : ""}" id="nav-blockchain-contracts">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                            <span>Live Contracts</span>
+                        </a>
+                        <a href="/admin/blockchain-sync.html" class="admin-nav-item ${isPathActive(["/admin/blockchain-sync.html"]) ? "active" : ""}" id="nav-blockchain-sync">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.26l-3.42 3.42"/><line x1="12" y1="12" x2="16" y2="16"/></svg>
+                            <span>Web3 Sync & Health</span>
+                        </a>
                         <a href="/admin/dividends.html" class="admin-nav-item ${isPathActive(["/admin/dividends.html"]) ? "active" : ""}" id="nav-dividends">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
                             <span>Dividends</span>

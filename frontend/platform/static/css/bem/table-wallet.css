@@ -70,7 +70,7 @@
   width: 40px;
   height: 40px;
   background: #f3f4f6;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -89,7 +89,7 @@
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 /* Status badge styling */
@@ -159,7 +159,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 /* Amount styling */
@@ -172,7 +172,7 @@
 }
 
 .table__wrapper--wallet .amount-negative {
-  color: #181d27;
+  color: var(--page-title-color);
   font-family: 'TT Norms Pro', sans-serif;
   font-weight: 600;
   font-size: 14px;
@@ -196,7 +196,7 @@
 }
 
 .table__wrapper--wallet .wallet-transaction-action-btn:hover {
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 /* Footer styles specific to wallet */

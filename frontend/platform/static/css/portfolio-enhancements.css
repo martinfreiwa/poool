@@ -60,7 +60,7 @@
     line-height: 44px !important;
     font-weight: 700 !important;
     letter-spacing: -0.02em !important;
-    color: #181d27 !important;
+    color: var(--page-title-color) !important;
     margin: 0 !important;
 }
 

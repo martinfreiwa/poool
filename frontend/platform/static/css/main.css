@@ -147,7 +147,7 @@ body {
   font-size: 36px;
   line-height: 44px;
   letter-spacing: -0.02em;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -155,7 +155,7 @@ body {
   font-family: 'TT Norms Pro', sans-serif;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -172,7 +172,7 @@ h6 {
   font-family: 'TT Norms Pro', sans-serif;
   font-weight: 600;
   line-height: 1.2;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 h1 {
@@ -198,7 +198,7 @@ h4 {
 p {
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 a {
@@ -239,7 +239,7 @@ button {
 
 .btn-secondary {
   background: #ffffff;
-  color: #181d27;
+  color: var(--page-title-color);
   padding: 10px 16px;
   border-radius: 8px;
   border: 1px solid #e8e9eb;
@@ -279,7 +279,7 @@ label {
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #181d27;
+  color: var(--page-title-color);
   margin-bottom: 6px;
 }
 
@@ -289,7 +289,7 @@ label {
 
 .card {
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   /* Updated to match unified standard */
   border-radius: 12px;
   /* Updated to match unified standard */

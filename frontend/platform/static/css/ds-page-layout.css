@@ -40,7 +40,7 @@
     --ds-header-icon-gap: 12px;
     --ds-header-title-size: 36px;
     --ds-header-title-weight: 700;
-    --ds-header-title-color: #181D27;
+    --ds-header-title-color: var(--page-title-color);
     --ds-header-title-lh: 1.2;
 
     /* Font stack */
@@ -98,7 +98,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #535862;
+    color: var(--text-secondary);
 }
 
 .ds-page-header__icon svg,
@@ -147,7 +147,7 @@
 .page-header-divider {
     border: none;
     height: 1px;
-    background: #e9eaeb;
+    background: var(--table-border-color);
     margin: 0 0 24px 0;
     width: 100%;
 }

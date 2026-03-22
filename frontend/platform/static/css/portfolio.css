@@ -44,7 +44,7 @@
   font-weight: 700;
   font-size: 36px;
   line-height: 44px;
-  color: #181D27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -66,7 +66,7 @@
   width: 100%;
   height: 132px;
   background: var(--card-bg, #ffffff);
-  border: 1px solid var(--card-border-color, #e9eaeb);
+  border: 1px solid var(--card-border-color, var(--table-border-color));
   box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
   border-radius: 12px;
 }
@@ -119,7 +119,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   flex: none;
   order: 0;
   flex-grow: 0;
@@ -171,7 +171,7 @@
   font-weight: 700;
   font-size: 30px;
   line-height: 38px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .portfolio-value-price {
@@ -288,7 +288,7 @@
   width: 132px;
   height: 40px;
   background: var(--card-bg, #ffffff);
-  border: 1px solid var(--card-border-color, #e9eaeb);
+  border: 1px solid var(--card-border-color, var(--table-border-color));
   border-radius: 8px;
   cursor: pointer;
   flex: none;
@@ -333,7 +333,7 @@
 .portfolio-value-details {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #e9eaeb;
+  border-top: 1px solid var(--table-border-color);
 }
 
 /* Key Financials Section */
@@ -350,7 +350,7 @@
   font-weight: 700;
   font-size: 24px;
   line-height: 32px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0 0 16px;
 }
 
@@ -377,7 +377,7 @@
   min-height: 108px;
   height: auto;
   background: var(--card-bg, #ffffff);
-  border: 1px solid var(--card-border-color, #e9eaeb);
+  border: 1px solid var(--card-border-color, var(--table-border-color));
   box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
   border-radius: 12px;
   order: 0;
@@ -419,7 +419,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 .financials-info {
@@ -463,7 +463,7 @@
   font-weight: 600;
   font-size: 24px;
   line-height: 32px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .financials-period-wrapper {
@@ -525,7 +525,7 @@
   font-weight: 400;
   font-size: 12px;
   line-height: 18px;
-  color: #535862;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -561,7 +561,7 @@
   width: 175px;
   height: 180px;
   background: var(--card-bg, #ffffff);
-  border: 1px solid var(--card-border-color, #e9eaeb);
+  border: 1px solid var(--card-border-color, var(--table-border-color));
   box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
   border-radius: 12px;
 }
@@ -586,7 +586,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 .insights-value {
@@ -595,7 +595,7 @@
   font-weight: 600;
   font-size: 24px;
   line-height: 32px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .investment-limit-container {
@@ -604,7 +604,7 @@
   width: 522px;
   height: 273px;
   background: var(--card-bg, #ffffff);
-  border: 1px solid var(--card-border-color, #e9eaeb);
+  border: 1px solid var(--card-border-color, var(--table-border-color));
   box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
   border-radius: 12px;
   padding: 24px;
@@ -661,7 +661,7 @@
   left: 24px;
   right: 24px;
   top: 68px;
-  background: #e9eaeb;
+  background: var(--table-border-color);
 }
 
 /* Progress Section */
@@ -790,7 +790,7 @@
   font-weight: 400;
   font-size: 18px;
   line-height: 28px;
-  color: #535862;
+  color: var(--text-secondary);
   flex: none;
   order: 1;
   flex-grow: 0;
@@ -856,7 +856,7 @@
 .limit-item:nth-child(3) .limit-item-icon {
   width: 8px;
   height: 8px;
-  background: #e9eaeb;
+  background: var(--table-border-color);
   border-radius: 50%;
   flex: none;
   order: 0;
@@ -894,7 +894,7 @@
   font-weight: 700;
   font-size: 24px;
   line-height: 32px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0 0 16px;
 }
 
@@ -902,7 +902,7 @@
   width: 100%;
   max-width: 100%;
   background: white;
-  border: 1px solid var(--card-border-color, #e9eaeb);
+  border: 1px solid var(--card-border-color, var(--table-border-color));
   border-radius: 12px;
   overflow: hidden;
   box-shadow: var(--card-shadow, 0px 1px 2px rgba(10, 13, 18, 0.05));
@@ -910,14 +910,14 @@
 
 .assets-table-header {
   padding: 20px;
-  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  border-bottom: 1px solid var(--table-border-color, var(--table-border-color));
 }
 
 .assets-title {
   font-size: 20px;
   line-height: 30px;
   font-weight: 700;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -956,7 +956,7 @@
   gap: 12px;
   height: 44px;
   background: var(--table-header-bg, #FAFAFA);
-  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  border-bottom: 1px solid var(--table-border-color, var(--table-border-color));
   flex: none;
   align-self: stretch;
   flex-grow: 0;
@@ -1103,7 +1103,7 @@
 }
 
 .asset-row {
-  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  border-bottom: 1px solid var(--table-border-color, var(--table-border-color));
   transition: background-color 0.2s;
 }
 
@@ -1134,7 +1134,7 @@
   font-size: 14px;
   line-height: 20px;
   font-weight: 600;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .location-cell {
@@ -1146,7 +1146,7 @@
 .location-text {
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 .investment-value,
@@ -1154,7 +1154,7 @@
   font-size: 14px;
   line-height: 20px;
   font-weight: 600;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .status-badge {
@@ -1178,7 +1178,7 @@
 
 .status-sold {
   background: var(--badge-neutral-bg, #F2F4F7);
-  color: var(--badge-neutral-color, #344054);
+  color: var(--badge-neutral-color, var(--body-color));
 }
 
 .actions-cell {
@@ -1218,7 +1218,7 @@
   width: 96px;
   height: 96px;
   background: #f8f9fc;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1229,14 +1229,14 @@
   font-size: 18px;
   line-height: 28px;
   font-weight: 700;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0 0 8px;
 }
 
 .empty-state-description {
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   margin: 0;
   max-width: 300px;
 }
@@ -1357,7 +1357,7 @@
   padding: 48px 24px;
   text-align: center;
   background: #fff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
   width: 100%;
   margin-top: 24px;
@@ -1376,7 +1376,7 @@
   font-weight: 600;
   font-size: 16px;
   line-height: 24px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -1387,7 +1387,7 @@
   font-size: 14px;
   line-height: 20px;
   text-align: center;
-  color: #535862;
+  color: var(--text-secondary);
   max-width: 352px;
   margin: 0 0 16px 0;
 }

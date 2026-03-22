@@ -90,6 +90,7 @@
     setVal("settings-state", data.state_province || "");
     setVal("settings-postal", data.postal_code || "");
     setVal("settings-tax-id", data.tax_id || "");
+    setVal("settings-annual-income", data.annual_income_cents ? data.annual_income_cents / 100 : "");
 
     // KYC Badge — properly resolve instead of showing "Loading"
     const kycBadge = document.getElementById("settings-kyc-status");
@@ -152,7 +153,7 @@
   function updateProfileCompleteness(data) {
     const fields = [
       "first_name", "last_name", "date_of_birth", "nationality",
-      "address_line_1", "city", "state_province", "postal_code", "tax_id"
+      "address_line_1", "city", "state_province", "postal_code", "tax_id", "annual_income_cents"
     ];
     const filled = fields.filter(f => data[f] && String(data[f]).trim() !== "").length;
     const pct = Math.round((filled / fields.length) * 100) || 0;
@@ -196,6 +197,7 @@
       state_province: getVal("settings-state"),
       postal_code: getVal("settings-postal"),
       tax_id: getVal("settings-tax-id"),
+      annual_income_cents: getVal("settings-annual-income") ? parseInt(getVal("settings-annual-income")) * 100 : null,
     };
 
     // 1. Upload photo if pending
@@ -216,10 +218,10 @@
 
     if (res && res.success) {
       showToast(res.message, "success");
-      savedSettings = { ...savedSettings, ...body };
       pendingPhotoFile = null;
       pendingPhotoPreview = null;
       updateSidebarName(body.first_name, body.last_name);
+      loadSettings(); // Refresh calculated limits
     } else if (res) {
       showToast(res.message || "Failed to save.", "error");
     }

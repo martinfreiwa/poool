@@ -43,7 +43,7 @@
   box-sizing: border-box;
   position: relative;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -229,7 +229,7 @@
 .mobile-financials-card {
   position: relative;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -289,7 +289,7 @@
   position: relative;
   z-index: 10;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
   padding: 12px 16px;
   display: flex;
@@ -344,7 +344,7 @@
 .mobile-legend-divider {
   width: 1px;
   height: 24px;
-  background: #e9eaeb;
+  background: var(--table-border-color);
 }
 
 .mobile-financials-pie-chart-container {
@@ -385,7 +385,7 @@
 .mobile-security-compliance-card {
   position: relative;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
   padding: 12px;
   display: flex;
@@ -467,7 +467,7 @@
 .mobile-operator-card {
   position: relative;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 16px;
   padding: 16px;
   overflow: hidden;

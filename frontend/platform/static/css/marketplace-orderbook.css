@@ -55,7 +55,7 @@
 .ob-qty,
 .ob-orders,
 .ob-total {
-    color: #535862;
+    color: var(--text-secondary);
     font-size: 12px;
     text-align: right;
 }
@@ -120,6 +120,25 @@
     text-align: center;
     color: #9ca3af;
     font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* ── Loading dot ── */
+.ob-loading-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #0000FF;
+    animation: ob-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ob-dot-pulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
 }
 
 /* ── Responsive ── */

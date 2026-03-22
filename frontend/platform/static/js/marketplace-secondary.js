@@ -668,4 +668,75 @@
             timeout = setTimeout(() => fn.apply(this, args), ms);
         };
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ── LIVE PRICE UPDATES (Task 5.3) ─────────────────────────────
+    // Polls GET /api/marketplace/:asset_id/chart-summary every 30s
+    // to update card prices, 24h change, and volume with flash anim.
+    // ═══════════════════════════════════════════════════════════════
+
+    async function fetchLiveSummary(assetSlug) {
+        try {
+            const res = await fetch(`/api/marketplace/${assetSlug}/chart-summary`);
+            if (!res.ok) return null;
+            return await res.json();
+        } catch {
+            return null;
+        }
+    }
+
+    async function updateLivePrices() {
+        // Only run if page is visible
+        if (document.visibilityState !== 'visible') return;
+
+        for (const asset of MOCK_ASSETS) {
+            const summary = await fetchLiveSummary(asset.slug);
+            if (!summary || summary.last_price_cents == null) continue;
+
+            // Find the card
+            const card = document.querySelector(`.mp-sec__card[data-name="${asset.name.toLowerCase()}"]`);
+            if (!card) continue;
+
+            // Update price
+            const priceEl = card.querySelector('.mp-sec__price');
+            if (priceEl) {
+                const oldPrice = parseInt(card.dataset.price);
+                const newPrice = summary.last_price_cents;
+                if (oldPrice !== newPrice) {
+                    priceEl.textContent = formatUSD(newPrice);
+                    card.dataset.price = newPrice;
+                    // Flash animation
+                    priceEl.style.transition = 'color 0.3s';
+                    priceEl.style.color = newPrice > oldPrice ? '#16a34a' : '#dc2626';
+                    setTimeout(() => { priceEl.style.color = ''; }, 1500);
+                }
+            }
+
+            // Update 24h change
+            if (summary.change_24h_pct != null) {
+                const changeEl = card.querySelector('.mp-sec__change');
+                if (changeEl) {
+                    const pct = summary.change_24h_pct;
+                    const isPositive = pct >= 0;
+                    changeEl.textContent = (isPositive ? '+' : '') + pct.toFixed(1) + '%';
+                    changeEl.className = 'mp-sec__change ' + (
+                        pct === 0 ? 'mp-sec__change--neutral' :
+                        isPositive ? 'mp-sec__change--up' : 'mp-sec__change--down'
+                    );
+                    card.dataset.change = pct;
+                }
+            }
+
+            // Update volume
+            if (summary.volume_24h != null) {
+                // Volume is in share count; convert to cents for display
+                card.dataset.volume = summary.volume_24h * (summary.last_price_cents || asset.price);
+            }
+        }
+    }
+
+    // Start polling every 30 seconds
+    setInterval(updateLivePrices, 30000);
+    // Also run once after 2 seconds (initial data)
+    setTimeout(updateLivePrices, 2000);
 })();

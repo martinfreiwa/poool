@@ -21,20 +21,27 @@ pub mod admin;
 pub mod assets;
 mod auth;
 /// Blog module containing handlers for blog articles, authors, and categories.
+/// Blockchain integration module — on-chain settlement via POOOLProperty1155 on Polygon.
+mod blockchain;
 mod blog;
 mod cart;
 mod common;
 mod config;
 mod db;
 mod developer;
+
+/// Dividend system — calculation, anti-sniping, and payout execution for rental income.
+mod dividends;
 mod email;
 mod error;
+/// IPFS integration — Pinata-based metadata storage for ERC-1155 asset tokens.
+mod ipfs;
 mod kyc;
 mod leaderboard;
-/// Marketplace module — secondary market trading engine for tokenized assets.
-mod marketplace;
 /// Legal module containing handlers for terms of service, privacy policy, and other legal documents.
 pub mod legal;
+/// Marketplace module — secondary market trading engine for tokenized assets.
+mod marketplace;
 mod payment_methods;
 mod payments;
 mod portfolio;
@@ -159,6 +166,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Spawn background tasks
     tokio::spawn(email::run_email_scheduler(pool.clone()));
     tokio::spawn(support::sla::monitor_sla_breaches(pool.clone()));
+    
+    // Auto-refund worker for expired primary escrow offerings
+    tokio::spawn(admin::primary_escrow::run_auto_refund_worker(pool.clone()));
 
     // Rate limiter cleanup (every 10 minutes)
     tokio::spawn(async move {
@@ -279,6 +289,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             interval.tick().await;
             tracing::info!("Starting daily financial reconciliation...");
 
+            // Accumulators for persisting to reconciliation_reports (Task 10.8)
+            let mut recon_cash_delta: i64 = 0;
+            let mut recon_total_wallets: i64 = 0;
+            let mut recon_total_deposits: i64 = 0;
+            let mut recon_total_withdrawals: i64 = 0;
+            let mut recon_total_purchases: i64 = 0;
+            let mut recon_token_mismatches: i32 = 0;
+            let mut recon_negative_count: i32 = 0;
+
             // ── Check 1: Cash Balance Invariant ────────────────────────
             let totals = sqlx::query!(
                 r#"
@@ -299,11 +318,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let total_withdrawals = t.total_withdrawals.unwrap_or(0);
                     let total_purchases = t.total_purchases.unwrap_or(0);
 
+                    recon_total_wallets = total_wallets;
+                    recon_total_deposits = total_deposits;
+                    recon_total_withdrawals = total_withdrawals;
+                    recon_total_purchases = total_purchases;
+
                     let expected_wallets = total_deposits - total_withdrawals - total_purchases;
                     let delta = total_wallets - expected_wallets;
+                    recon_cash_delta = delta;
 
                     if delta.abs() > 100 {
-                        // >$1 mismatch → FATAL alert
                         let msg = format!(
                             "RECONCILIATION FATAL: Cash delta of {} cents (wallets={}, expected={}). Deposits={}, Withdrawals={}, Purchases={}",
                             delta, total_wallets, expected_wallets, total_deposits, total_withdrawals, total_purchases
@@ -335,7 +359,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             // ── Check 2: Token Balance Invariant ───────────────────────
-            // For each asset: SUM(investments.tokens_owned) should == tokens_total - tokens_available
             let token_mismatches = sqlx::query!(
                 r#"
                 SELECT a.id, a.title, a.tokens_total, a.tokens_available,
@@ -356,14 +379,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             match token_mismatches {
                 Ok(rows) => {
+                    recon_token_mismatches = rows.len() as i32;
                     if rows.is_empty() {
                         tracing::info!("Reconciliation check 2/3 PASS: All token balances match.");
                     } else {
                         for row in &rows {
-                            let expected_sold = row.tokens_total - row.tokens_available;
+                            let expected_sold =
+                                row.tokens_total - row.tokens_available;
                             let msg = format!(
                                 "TOKEN MISMATCH: Asset '{}' ({:?}): sold={} but investments show {} tokens",
-                                &row.title, row.id, expected_sold, row.total_owned.unwrap_or(0)
+                                row.title, row.id, expected_sold, row.total_owned.unwrap_or(0)
                             );
                             tracing::error!("{}", msg);
                             sentry::capture_message(&msg, sentry::Level::Error);
@@ -390,6 +415,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             match negative_wallets {
                 Ok(rows) => {
+                    recon_negative_count = rows.len() as i32;
                     if rows.is_empty() {
                         tracing::info!(
                             "Reconciliation check 3/3 PASS: No negative wallet balances."
@@ -412,6 +438,59 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Err(e) => {
                     tracing::error!("Reconciliation check 3 FAILED: {}", e);
                 }
+            }
+
+            // ── Task 10.8: Persist reconciliation results ──────────────
+            let report_date = chrono::Utc::now().date_naive();
+            let status = if recon_cash_delta.abs() > 100 || recon_token_mismatches > 0 || recon_negative_count > 0 {
+                "fail"
+            } else if recon_cash_delta != 0 {
+                "warning"
+            } else {
+                "pass"
+            };
+            let notes = format!(
+                "Cash delta: {} cents, Token mismatches: {}, Negative wallets: {}",
+                recon_cash_delta, recon_token_mismatches, recon_negative_count
+            );
+            if let Err(e) = sqlx::query(
+                r#"INSERT INTO reconciliation_reports (
+                    report_date, total_wallet_cents, total_deposits_cents,
+                    total_withdrawals_cents, total_purchases_cents, cash_delta_cents,
+                    total_fees_earned_cents, fee_wallet_cents, fee_delta_cents,
+                    token_mismatches, status, notes
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                ON CONFLICT (report_date) DO UPDATE SET
+                    total_wallet_cents = EXCLUDED.total_wallet_cents,
+                    total_deposits_cents = EXCLUDED.total_deposits_cents,
+                    total_withdrawals_cents = EXCLUDED.total_withdrawals_cents,
+                    total_purchases_cents = EXCLUDED.total_purchases_cents,
+                    cash_delta_cents = EXCLUDED.cash_delta_cents,
+                    total_fees_earned_cents = EXCLUDED.total_fees_earned_cents,
+                    fee_wallet_cents = EXCLUDED.fee_wallet_cents,
+                    fee_delta_cents = EXCLUDED.fee_delta_cents,
+                    token_mismatches = EXCLUDED.token_mismatches,
+                    status = EXCLUDED.status,
+                    notes = EXCLUDED.notes"#,
+            )
+            .bind(report_date)
+            .bind(recon_total_wallets)
+            .bind(recon_total_deposits)
+            .bind(recon_total_withdrawals)
+            .bind(recon_total_purchases)
+            .bind(recon_cash_delta)
+            .bind(0_i64) // total_fees_earned_cents — tracked separately when fee system is wired
+            .bind(0_i64) // fee_wallet_cents — tracked separately when fee system is wired
+            .bind(0_i64) // fee_delta_cents
+            .bind(recon_token_mismatches)
+            .bind(status)
+            .bind(&notes)
+            .execute(&recon_pool)
+            .await
+            {
+                tracing::error!("Failed to persist reconciliation report: {}", e);
+            } else {
+                tracing::info!("📊 Reconciliation report persisted for {} — status: {}", report_date, status);
             }
 
             tracing::info!("Daily financial reconciliation completed.");
@@ -467,6 +546,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         tracing::warn!("⚠️ Redis not configured — Marketplace trading is DISABLED. Order submission still works but matching won't occur.");
     }
+
+    // ── Blockchain: On-chain settlement worker ────────────────
+    // Batches confirmed trades and calls settleBatch() on POOOLProperty1155.
+    // Only runs if CHAIN_SETTLEMENT_PRIVATE_KEY is set and CHAIN_SETTLEMENT_ENABLED=true.
+    let chain_pool = pool.clone();
+    tokio::spawn(async move {
+        blockchain::service::run_settlement_worker(&chain_pool).await;
+    });
+
+    // ── Blockchain: Event indexer worker ──────────────────────
+    // Polls Polygon for ERC-1155 TransferSingle/TransferBatch events
+    // and updates onchain_balances. Configurable via platform_settings.
+    let indexer_pool = pool.clone();
+    tokio::spawn(async move {
+        blockchain::event_indexer::run_event_indexer(&indexer_pool).await;
+    });
+
+    // ── Blockchain: KYC → Whitelist sync worker ──────────────
+    // Monitors for KYC-approved users and calls addToWhitelist() on-chain.
+    // Only runs if CHAIN_SETTLEMENT_ENABLED=true.
+    let whitelist_pool = pool.clone();
+    tokio::spawn(async move {
+        blockchain::kyc_whitelist::run_kyc_whitelist_worker(&whitelist_pool).await;
+    });
 
     //  3. Router configuration
 
@@ -528,6 +631,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(portfolio::router())
         .merge(payment_methods::router())
         .merge(developer::router())
+
         .merge(legal::router())
         .merge(admin::router())
         .merge(blog::router())
@@ -542,6 +646,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // ── Deposit & order status polling ────────────────────────────
         .route("/api/orders/:order_id", get(api_order_detail))
         .route("/api/deposits/:deposit_id/status", get(api_deposit_status))
+        // ── IPFS: Public metadata endpoint (read by smart contracts & IPFS gateways) ──
+        .route("/api/assets/:asset_id/metadata.json", get(api_asset_metadata))
         // ── Reports (still in main.rs pending Phase 5 extraction) ─────
         .route("/api/admin/reports/:report_type", get(api_admin_reports))
         // ── Profile / KYC page redirect ───────────────────────────────
@@ -683,7 +789,7 @@ async fn apply_security_headers(
     );
     headers.insert(
         axum::http::header::CONTENT_SECURITY_POLICY,
-        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com; worker-src 'self' blob:; base-uri 'self'; form-action 'self';"),
+        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"),
     );
     headers.insert(
         axum::http::header::REFERRER_POLICY,
@@ -1501,6 +1607,71 @@ async fn api_admin_reports(
             })),
         )
             .into_response(),
+    }
+}
+
+/// GET /api/assets/:asset_id/metadata.json — public ERC-1155 metadata endpoint.
+///
+/// This is the URI that the smart contract's `uri()` function returns.
+/// It MUST be publicly accessible (no auth) because IPFS gateways, indexers,
+/// and wallets (e.g., MetaMask, OpenSea) need to fetch it.
+///
+/// Returns the full ERC-1155 compliant metadata JSON for the asset,
+/// built from the database. If the metadata has already been pinned to IPFS,
+/// the IPFS CID is included in the response headers.
+async fn api_asset_metadata(
+    State(state): State<AppState>,
+    Path(asset_id): Path<String>,
+) -> impl IntoResponse {
+    let asset_uuid = match uuid::Uuid::parse_str(&asset_id) {
+        Ok(u) => u,
+        Err(_) => {
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Invalid asset ID"})),
+            )
+                .into_response()
+        }
+    };
+
+    match ipfs::metadata::build_metadata(&state.db, asset_uuid).await {
+        Ok(metadata) => {
+            match ipfs::metadata::metadata_to_json(&metadata) {
+                Ok(json) => {
+                    // Strong cache headers — metadata changes rarely
+                    let mut response = Json(json).into_response();
+                    response.headers_mut().insert(
+                        axum::http::header::CACHE_CONTROL,
+                        axum::http::HeaderValue::from_static("public, max-age=3600, s-maxage=86400"),
+                    );
+                    response.headers_mut().insert(
+                        axum::http::header::CONTENT_TYPE,
+                        axum::http::HeaderValue::from_static("application/json"),
+                    );
+                    response
+                }
+                Err(e) => (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({"error": e})),
+                )
+                    .into_response(),
+            }
+        }
+        Err(e) => {
+            if e.contains("not found") {
+                (
+                    axum::http::StatusCode::NOT_FOUND,
+                    Json(serde_json::json!({"error": e})),
+                )
+                    .into_response()
+            } else {
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({"error": e})),
+                )
+                    .into_response()
+            }
+        }
     }
 }
 

@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id, title, tokens_total, tokens_available, min_funding_tokens\n        FROM assets\n        WHERE funding_status IN ('funding_open', 'funding_in_progress')\n          AND funding_end_at < NOW()\n          AND (tokens_total - tokens_available) < min_funding_tokens\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "tokens_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "tokens_available",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "min_funding_tokens",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ff6f360d51845ac168c38949c922a8bf78c977e48ce64d97701df3aa83bf11ec"
+}

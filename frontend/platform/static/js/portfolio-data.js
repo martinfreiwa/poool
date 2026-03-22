@@ -87,8 +87,8 @@
     setText("portfolio-monthly-income", data.monthlyIncome);
     setText("portfolio-total-rental", data.totalRental);
     setText("portfolio-total-appreciation", data.totalAppreciation);
-    setText("portfolio-monthly-income-change", "N/A");
-    setText("portfolio-total-rental-change", "N/A");
+    setText("portfolio-monthly-income-change", "—");
+    setText("portfolio-total-rental-change", "—");
     setText("portfolio-total-appreciation-change", data.appreciation.display);
 
     const period = data.periodLabel;
@@ -100,8 +100,8 @@
     setText("mobile-portfolio-monthly-income", data.monthlyIncome);
     setText("mobile-portfolio-total-rental", data.totalRental);
     setText("mobile-portfolio-total-appreciation", data.totalAppreciation);
-    setText("mobile-portfolio-monthly-income-change", "N/A");
-    setText("mobile-portfolio-total-rental-change", "N/A");
+    setText("mobile-portfolio-monthly-income-change", "—");
+    setText("mobile-portfolio-total-rental-change", "—");
     setText("mobile-portfolio-total-appreciation-change", data.appreciation.display);
     setText("mobile-portfolio-monthly-income-period", period);
     setText("mobile-portfolio-total-rental-period", `as of ${period}`);
@@ -149,6 +149,25 @@
     </div>`;
   }
 
+  const POLYGONSCAN_BASE = "https://polygonscan.com";
+
+  function buildChainBadge(inv) {
+    if (!inv.chainContractAddress) return "";
+    const addr = escHtml(inv.chainContractAddress);
+    const txLink = inv.chainTxHash
+      ? `${POLYGONSCAN_BASE}/tx/${escHtml(inv.chainTxHash)}`
+      : `${POLYGONSCAN_BASE}/address/${addr}`;
+    return `<a href="${txLink}" target="_blank" rel="noopener noreferrer"
+      title="View on Polygonscan" class="chain-badge"
+      style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#7C3AED; text-decoration:none; background:#F3F0FF; border:1px solid #DDD6FE; border-radius:4px; padding:2px 6px; margin-left:6px;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+      </svg>
+      <span>On-chain</span>
+    </a>`;
+  }
+
   function updateAssetsTable(investments) {
     const body = document.getElementById("portfolio-assets-body");
     if (!body) return;
@@ -171,6 +190,7 @@
       const cover = escHtml(inv.coverImage);
       const statusCss = escHtml(inv.statusCss);
       const statusLabel = escHtml(inv.statusLabel);
+      const chainBadge = buildChainBadge(inv);
       return `
       <div class="portfolio-assets-row">
         <div class="portfolio-assets-cell property-col">
@@ -180,7 +200,7 @@
                 width="48" height="48" onerror="this.src='/static/images/property-placeholder.webp'" />
             </div>
             <div class="portfolio-assets-property-info">
-              <div class="portfolio-assets-property-name">${title}</div>
+              <div class="portfolio-assets-property-name">${title}${chainBadge}</div>
             </div>
           </div>
         </div>
@@ -201,7 +221,15 @@
         <div class="portfolio-assets-cell status-col">
           ${buildStatusBadgeHtml(statusCss, statusLabel)}
         </div>
-        <div class="portfolio-assets-cell actions-col">
+        <div class="portfolio-assets-cell actions-col" style="gap:8px; display: flex; align-items: center;">
+          ${(inv.isWithin48h && inv.originalStatus === 'funding_in_progress') ? `
+          <button class="portfolio-assets-action-btn"
+            style="color: #D92D20; border: 1px solid #FDA29B; background: #FEF3F2;"
+            onclick="window.cancelInvestment('${inv.id}')"
+            id="cancel-btn-${inv.id}">
+            Refund
+          </button>
+          ` : ''}
           <button class="portfolio-assets-action-btn"
             onclick="window.location.href='/property/${slug}'">
             See Details
@@ -209,6 +237,24 @@
         </div>
       </div>`;}).join("");
   }
+
+  // ─── Cancel Action Binding ─────────────────────────────────────
+  window.cancelInvestment = async function(id) {
+    if (!confirm("Are you sure you want to unconditionally cancel this investment and receive a full refund?")) {
+      return;
+    }
+    const btn = document.getElementById(`cancel-btn-${id}`);
+    if (btn) btn.disabled = true;
+    try {
+      await PortfolioDataService.cancelInvestment(id);
+      alert("Investment cancelled. Your wallet has been refunded.");
+      window.location.reload();
+    } catch (e) {
+      alert("Error: " + e.message);
+      if (btn) btn.disabled = false;
+    }
+  };
+
 
   function updateMobileAssetsTable(investments) {
     const body = document.getElementById("mobile-portfolio-assets-body");
@@ -237,7 +283,16 @@
                 style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; display:inline-block;">
                 ${title}
               </span>
+              ${(inv.isWithin48h && inv.originalStatus === 'funding_in_progress') ? `
+              <button class="portfolio-assets-action-btn"
+                style="color: #D92D20; border: 1px solid #FDA29B; background: #FEF3F2; padding: 4px 8px; font-size: 11px; margin-top:4px;"
+                onclick="event.stopPropagation(); window.cancelInvestment('${inv.id}')"
+                id="cancel-btn-mobile-${inv.id}">
+                Cancel & Refund
+              </button>
+              ` : ''}
             </div>
+
           </div>
         </td>
         <td class="mobile-assets-cell-investment">

@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web3 Sync & Health | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Monitor the Event Indexer, Settlement Worker, and KYC Whitelist Sync status." />
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .sync-kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .sync-kpi-card { background: var(--admin-card-bg); border: 1px solid var(--admin-border); border-radius: var(--admin-radius-lg); padding: 16px; }
+    .sync-kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--admin-text-muted); margin-bottom: 6px; }
+    .sync-kpi-value { font-size: 22px; font-weight: 700; color: var(--admin-text-primary); font-family: 'SF Mono', 'Fira Code', monospace; }
+    .sync-kpi-sub { font-size: 11px; color: var(--admin-text-muted); margin-top: 4px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .status-dot--active { background: #10b981; }
+    .status-dot--disabled { background: #f59e0b; }
+    .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .config-item { display: flex; flex-direction: column; gap: 2px; }
+    .config-item-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--admin-text-muted); }
+    .config-item-value { font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--admin-text-primary); word-break: break-all; }
+    @media (max-width: 768px) {
+      .sync-kpi-grid { grid-template-columns: 1fr; }
+      .config-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <span class="current">Web3 Sync & Health</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h1 class="admin-page-title">Web3 Sync & Health</h1>
+            <p class="admin-page-subtitle">
+              Monitor the background Event Indexer, Settlement Worker, and KYC Whitelist synchronization status.
+            </p>
+          </div>
+          <div style="display:flex; gap:12px;">
+            <button class="admin-btn admin-btn--secondary" onclick="window.location.reload();">Refresh</button>
+          </div>
+        </div>
+
+        <!-- ── Event Indexer Section ── -->
+        <div class="admin-card" style="margin-bottom: 20px;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); display: flex; align-items: center; justify-content: center; color: var(--admin-accent);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              </div>
+              <div>
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text-primary); margin: 0;">Event Indexer (Polygon)</h3>
+                <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Polls for ERC-1155 TransferSingle/TransferBatch events and syncs on-chain balances.</p>
+              </div>
+            </div>
+            <div id="kpi-indexer-status">
+              <span class="admin-badge admin-badge--warning" style="padding:4px 10px;">Loading...</span>
+            </div>
+          </div>
+          <div style="padding: 16px 20px;">
+            <div class="sync-kpi-grid">
+              <div class="sync-kpi-card">
+                <div class="sync-kpi-label">Last Synced Block</div>
+                <div class="sync-kpi-value" id="kpi-last-block">—</div>
+                <div class="sync-kpi-sub" id="kpi-last-sync">Loading...</div>
+              </div>
+              <div class="sync-kpi-card">
+                <div class="sync-kpi-label">Poll Interval</div>
+                <div class="sync-kpi-value" id="kpi-poll-interval">—</div>
+                <div class="sync-kpi-sub">Confirmation depth: <span id="kpi-confirmation-depth">—</span></div>
+              </div>
+              <div class="sync-kpi-card">
+                <div class="sync-kpi-label">On-Chain Balance Records</div>
+                <div class="sync-kpi-value" id="kpi-balance-entries">—</div>
+                <div class="sync-kpi-sub">Cached in onchain_balances table</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Settlement Worker Section ── -->
+        <div class="admin-card" style="margin-bottom: 20px;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); display: flex; align-items: center; justify-content: center; color: #8b5cf6;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <div>
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text-primary); margin: 0;">Settlement Worker</h3>
+                <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Batches confirmed trades and calls settleBatch() on Polygon EIP-1167 clones.</p>
+              </div>
+            </div>
+            <div id="kpi-settlement-status">
+              <span class="admin-badge admin-badge--warning" style="padding:4px 10px;">Loading...</span>
+            </div>
+          </div>
+          <div style="padding: 16px 20px;">
+            <div class="sync-kpi-grid">
+              <div class="sync-kpi-card">
+                <div class="sync-kpi-label">Pending Trades</div>
+                <div class="sync-kpi-value" id="kpi-pending-trades" style="color:var(--admin-warning);">—</div>
+                <div class="sync-kpi-sub">Awaiting on-chain settlement</div>
+              </div>
+              <div class="sync-kpi-card">
+                <div class="sync-kpi-label">Submitted (In-Flight)</div>
+                <div class="sync-kpi-value" id="kpi-submitted-trades">—</div>
+                <div class="sync-kpi-sub">TX broadcast, awaiting confirmation</div>
+              </div>
+              <div class="sync-kpi-card">
+                <div class="sync-kpi-label">Confirmed</div>
+                <div class="sync-kpi-value" id="kpi-confirmed-trades" style="color:var(--admin-success);">—</div>
+                <div class="sync-kpi-sub">Successfully settled on-chain</div>
+              </div>
+            </div>
+            <div class="sync-kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+              <div class="sync-kpi-card">
+                <div class="sync-kpi-label">Failed Batches (24h)</div>
+                <div class="sync-kpi-value" id="kpi-failed-batches">—</div>
+              </div>
+              <div class="sync-kpi-card">
+                <div class="sync-kpi-label">Last Batch</div>
+                <div class="sync-kpi-value" id="kpi-last-batch" style="font-size:14px;">—</div>
+              </div>
+              <div class="sync-kpi-card">
+                <div class="sync-kpi-label">Avg Batch Size</div>
+                <div class="sync-kpi-value" id="kpi-avg-batch">—</div>
+                <div class="sync-kpi-sub">trades per batch</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── KYC Whitelist Queue ── -->
+        <div class="admin-card" style="margin-bottom: 20px;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text-primary); margin: 0;">
+                KYC Whitelist Sync Queue
+              </h3>
+              <p style="font-size: 12px; color: var(--admin-text-muted); margin: 4px 0 0 0;">
+                Users who passed KYC but don't yet have a chain wallet address. Use "Force Sync" to manually assign one.
+              </p>
+            </div>
+            <span id="whitelist-count-badge" class="admin-kpi-label">Loading...</span>
+          </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>KYC Status</th>
+                  <th>Verified At</th>
+                  <th>Chain Wallet</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="whitelist-tbody">
+                <tr><td colspan="5" style="text-align:center; padding:40px; color:var(--admin-text-muted);">Loading whitelist queue...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Blockchain Config ── -->
+        <div class="admin-card" style="margin-bottom: 20px;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border);">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text-primary); margin: 0;">
+              Blockchain Configuration
+            </h3>
+          </div>
+          <div style="padding: 16px 20px;">
+            <div class="config-grid">
+              <div class="config-item">
+                <span class="config-item-label">Network</span>
+                <span class="config-item-value" id="cfg-network">—</span>
+              </div>
+              <div class="config-item">
+                <span class="config-item-label">Chain ID</span>
+                <span class="config-item-value" id="cfg-chain-id">—</span>
+              </div>
+              <div class="config-item">
+                <span class="config-item-label">AssetFactory</span>
+                <span class="config-item-value" id="cfg-factory">—</span>
+              </div>
+              <div class="config-item">
+                <span class="config-item-label">Identity Registry</span>
+                <span class="config-item-value" id="cfg-registry">—</span>
+              </div>
+              <div class="config-item">
+                <span class="config-item-label">Settlement Wallet</span>
+                <span class="config-item-value" id="cfg-settlement">—</span>
+              </div>
+              <div class="config-item">
+                <span class="config-item-label">RPC Endpoint</span>
+                <span class="config-item-value" id="cfg-rpc">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Live Terminal Log ── -->
+        <div class="admin-card" style="margin-bottom: 20px;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border);">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text-primary); margin: 0;">
+              System Report
+            </h3>
+          </div>
+          <div id="event-log-terminal" class="admin-card-body" style="background:#0f172a; color:#38bdf8; font-family:'SF Mono', 'Fira Code', monospace; font-size:12px; padding:20px; max-height: 400px; overflow-y:auto; line-height:1.6;">
+            <span style="color:#64748b;">Loading system report...</span>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+  <script src="/static/js/admin-blockchain-sync.js"></script>
+</body>
+
+</html>

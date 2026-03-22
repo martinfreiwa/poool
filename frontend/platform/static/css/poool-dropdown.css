@@ -6,13 +6,13 @@
 :root {
   /* Design Tokens */
   --pd-primary: var(--primary-color);
-  --pd-accent: #62f7a4;
-  --pd-text-main: #181d27;
+  --pd-accent: #98FB96;
+  --pd-text-main: var(--page-title-color);
   --pd-text-medium: #414651;
   --pd-text-light: #717680;
   --pd-text-muted: #a4a7ae;
   --pd-border: #d5d7da;
-  --pd-border-light: #e9eaeb;
+  --pd-border-light: var(--table-border-color);
   --pd-bg: #ffffff;
   --pd-bg-hover: #f5f5ff;
   --pd-bg-subtle: #f9fafb;

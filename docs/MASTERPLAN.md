@@ -4722,6 +4722,8 @@ Das T-REX Framework (ERC-3643) teilt die Zuständigkeiten in mehrere modulare Sm
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
+**Architektur-Update (Phase 7 Pivot):** Um eine strikte rechtliche Trennung (SPV Ring-Fencing) für Regulatoren und Whitelabel-Fähigkeit für B2B-Kunden zu garantieren, wird jeder RWA-Token nicht als eigenständiger, teurer Contract deployed, sondern über das **Factory and Clones Pattern (EIP-1167)**. Eine zentrale `AssetFactory` hält die Logik (den Implementation Contract) und erzeugt für jede neue Immobilie eine winzige Minimal-Proxy-Adresse, die auf die Logik verweist. Dies spart ~90% der Gas-Kosten beim Deployment neuer Immobilien und garantiert trotzdem jedem SPV seine eigene unverwechselbare Contract-Adresse auf der Blockchain (Polygon PoS / Base).
+
 **Die vier Kernkomponenten im Detail:**
 
 1.  **`IdentityRegistry` (IDR):** Das Herzstück der On-Chain-Compliance. Dieser Contract speichert, welche Wallet-Adressen mit einer verifizierten On-Chain-Identität (ONCHAINID) verknüpft sind. Vor jedem `transfer()` oder `transferFrom()` fragt der Token-Contract den IDR: *"Ist `to` ein verifizierter User?"*. Nur wenn `isVerified(to) == true`, wird der Transfer durchgelassen.

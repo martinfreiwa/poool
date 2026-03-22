@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contract Detail | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Detailed view of an isolated EIP-1167 Asset Token Clone." />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .wallet-address-display {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 4px 8px; background: var(--admin-bg);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 14px; color: var(--admin-accent); word-break: break-all;
+    }
+    .wallet-address-display .copy-btn {
+      background: none; border: 1px solid var(--admin-border);
+      border-radius: 4px; padding: 2px 4px; cursor: pointer;
+      color: var(--admin-text-muted); flex-shrink: 0; transition: all 0.15s;
+    }
+    .wallet-address-display .copy-btn:hover { color: var(--admin-accent); border-color: var(--admin-accent); }
+    .basescan-link { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px; color: var(--admin-accent); text-decoration: none; display: flex; align-items: center; gap: 4px;}
+    .basescan-link:hover { text-decoration: underline; }
+    .danger-zone {
+      border: 2px solid rgba(239, 68, 68, 0.3); border-radius: var(--admin-radius-lg);
+      padding: 24px; background: rgba(239, 68, 68, 0.03);
+      margin-top: 24px;
+    }
+  </style>
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/blockchain-contracts.html">Live Contracts</a>
+            <span class="separator">›</span>
+            <span class="current">Contract Detail</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <!-- Page Header -->
+        <div class="admin-page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div style="width: 48px; height: 48px; border-radius: 8px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); display: flex; align-items: center; justify-content: center; color: var(--admin-accent);">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            </div>
+            <div>
+              <h1 class="admin-page-title" id="page-asset-title">Loading...</h1>
+              <div class="wallet-address-display" style="margin-top:4px;">
+                  <span id="clone-address">Loading...</span>
+                  <button class="copy-btn" title="Copy Address" onclick="window._copyAddr(document.getElementById('clone-address').textContent)">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  </button>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; gap:12px;">
+             <span id="kpi-live-status"></span>
+             <a id="contract-link" href="#" target="_blank" class="admin-btn admin-btn--secondary">View on PolygonScan</a>
+          </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="admin-kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+          <div class="admin-kpi-card" style="padding: 16px;">
+            <div class="admin-kpi-header" style="margin-bottom: 8px;">
+              <span class="admin-kpi-label">Total Supply (MINTED)</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-supply" style="font-size: 28px; font-family: 'SF Mono', monospace;">—</div>
+            <span class="admin-kpi-subtext">Fixed Supply at Genesis</span>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px;">
+            <div class="admin-kpi-header" style="margin-bottom: 8px;">
+              <span class="admin-kpi-label">Tokens Distributed</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-sold" style="font-size: 28px; color: var(--admin-success); font-family: 'SF Mono', monospace;">—</div>
+            <div class="token-supply-bar" style="margin-top:8px;">
+                <div class="sold" id="kpi-sold-bar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="admin-kpi-card" style="padding: 16px;">
+            <div class="admin-kpi-header" style="margin-bottom: 8px;">
+              <span class="admin-kpi-label">Total Holders</span>
+            </div>
+            <div class="admin-kpi-value" id="kpi-holders-count" style="font-size: 28px;">—</div>
+            <span class="admin-kpi-subtext">Unique on-chain wallets</span>
+          </div>
+        </div>
+
+        <div class="admin-card" style="margin-bottom: 20px;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h3 style="font-size: 14px; font-weight: 600; color: var(--admin-text-primary); margin: 0;">
+                Synced On-Chain Holders (Top 100)
+              </h3>
+              <p style="font-size: 12px; color: var(--admin-text-muted); margin: 4px 0 0 0;">
+                Reflects the `onchain_balances` DB table synchronized from Polygon events.
+              </p>
+            </div>
+            <button class="admin-btn admin-btn--secondary" onclick="window.location.reload();">Refresh Sync</button>
+          </div>
+          <div class="admin-card-body admin-card-body--flush">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User Wallet</th>
+                  <th>Balance</th>
+                  <th>% of Supply</th>
+                  <th>Last Sync</th>
+                </tr>
+              </thead>
+              <tbody id="holders-tbody">
+                <tr><td colspan="4" style="text-align:center; padding:40px; color:var(--admin-text-muted);">Fetching holder sync data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="danger-zone">
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--admin-danger); margin: 0 0 8px; display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              <path d="M12 9v4" /><path d="M12 17h.01" />
+            </svg>
+            Isolated Contract Controls
+          </h3>
+          <p style="font-size: 13px; color: var(--admin-text-secondary); margin: 0 0 20px;">
+            These actions apply <strong>ONLY to this specific asset's contract</strong>.
+          </p>
+          <div style="display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 400px;">
+             <button id="btn-freeze-transfers" class="admin-btn admin-btn--danger" style="justify-content:center; padding:12px; font-weight:600;">Freeze Token Transfers (Pause)</button>
+             <button class="admin-btn admin-btn--secondary" style="justify-content:center; padding:12px; font-weight:600;">Trigger Manual On-Chain Netting</button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+  
+  <script>
+    window._copyAddr = function(text) {
+      if (!text) return;
+      navigator.clipboard.writeText(text);
+    };
+  </script>
+  <script src="/static/js/admin-blockchain-contract-detail.js"></script>
+</body>
+
+</html>

@@ -4,7 +4,7 @@
   width: 100%;
   background: #ffffff;
   border-radius: 12px;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   overflow: hidden;
   margin-top: 24px;
 }
@@ -14,7 +14,7 @@
   display: flex;
   align-items: center;
   background: #fafafa;
-  border-bottom: 1px solid #e9eaeb;
+  border-bottom: 1px solid var(--table-border-color);
   padding: 12px 24px;
   height: 44px;
   box-sizing: border-box;
@@ -58,7 +58,7 @@
   padding: 16px 24px;
   height: 72px;
   box-sizing: border-box;
-  border-bottom: 1px solid #e9eaeb;
+  border-bottom: 1px solid var(--table-border-color);
   transition: background-color 0.2s ease;
 }
 
@@ -137,7 +137,7 @@
 }
 
 .portfolio-assets-property-name {
-  color: #181d27;
+  color: var(--page-title-color);
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 600;

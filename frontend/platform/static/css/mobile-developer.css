@@ -34,7 +34,7 @@
   font-weight: 700;
   font-size: 20px;
   line-height: 30px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -50,7 +50,7 @@
   margin: 0 16px;
   width: calc(100% - 32px);
   background: #fcfcfd;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
 }
 

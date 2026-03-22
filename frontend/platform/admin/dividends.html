@@ -93,7 +93,7 @@
           <h1 class="admin-page-title">Dividend Distribution Tool</h1>
           <p class="admin-page-subtitle">
             Prorated rental income distribution for token holders based on
-            current ownership.
+            current ownership. Anti-sniping filters protect against short-term dividend farming.
           </p>
         </div>
 
@@ -118,8 +118,8 @@
               ⛓ On-Chain Ownership Snapshot
             </div>
             <p style="font-size: 11px; color: var(--admin-text-secondary); margin: 0; line-height: 1.5;">
-              Distribution splits are calculated from the on-chain token ownership recorded in the ERC-3643 smart contract.
-              The snapshot is taken at the time you click "Preview Distributions" — ensuring accurate, tamper-proof allocation.
+              Distribution splits are calculated from the on-chain token ownership recorded in the ERC-1155 smart contract.
+              Anti-sniping logic requires a minimum holding period before investors are eligible for dividends.
             </p>
           </div>
         </div>
@@ -144,10 +144,35 @@
               </select>
             </div>
 
-            <div style="margin-bottom: 20px">
+            <div style="margin-bottom: 16px">
               <label class="info-label">Total Distribution Amount ($)</label>
               <input type="number" id="total-amount" class="admin-input"
                 style="width: 100%; font-size: 18px; font-weight: 700" placeholder="0.00" step="0.01" />
+              <div id="projected-yield" style="font-size: 12px; color: var(--admin-success); margin-top: 6px; font-weight: 600; display: none;">
+                Projected Yield: 0.00%
+              </div>
+            </div>
+
+            <!-- Period selection for Phase 9 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+              <div>
+                <label class="info-label">Period Start</label>
+                <input type="date" id="period-start" class="admin-input" style="width: 100%" />
+              </div>
+              <div>
+                <label class="info-label">Period End</label>
+                <input type="date" id="period-end" class="admin-input" style="width: 100%" />
+              </div>
+            </div>
+
+            <!-- Anti-sniping control -->
+            <div style="margin-bottom: 20px">
+              <label class="info-label">Min Holding Days (Anti-Sniping)</label>
+              <input type="number" id="min-holding-days" class="admin-input"
+                style="width: 100%" placeholder="7" value="7" min="0" max="365" />
+              <p style="font-size: 11px; color: var(--admin-text-muted); margin-top: 4px">
+                Investors must hold tokens for at least this many days to qualify. Set 0 to disable.
+              </p>
             </div>
 
             <button class="admin-btn admin-btn--primary" style="width: 100%; height: 44px" id="btn-preview">
@@ -182,12 +207,11 @@
                 <h3 style="font-size: 14px; font-weight: 700; margin: 0">
                   Prorated Splits Preview
                 </h3>
-                <div style="
-                      font-size: 13px;
-                      font-weight: 600;
-                      color: var(--admin-text-muted);
-                    " id="tokens-total-label">
-                  Total Tokens: 0
+                <div style="display: flex; gap: 16px; align-items: center;">
+                  <div style="font-size: 13px; font-weight: 600; color: var(--admin-text-muted);" id="tokens-total-label">
+                    Total Tokens: 0
+                  </div>
+                  <div style="font-size: 13px; font-weight: 600; color: var(--admin-success);" id="eligible-label"></div>
                 </div>
               </div>
               <table class="admin-table">
@@ -196,6 +220,8 @@
                     <th>Investor</th>
                     <th>Tokens Owned</th>
                     <th>Share %</th>
+                    <th>Holding Days</th>
+                    <th>Eligible</th>
                     <th style="text-align: right">Payout Amount</th>
                   </tr>
                 </thead>
@@ -208,15 +234,20 @@
                     background: var(--admin-bg);
                     border-top: 1px solid var(--admin-border);
                     display: flex;
-                    justify-content: flex-end;
-                    gap: 12px;
+                    justify-content: space-between;
+                    align-items: center;
                   ">
-                <button class="admin-btn admin-btn--secondary" id="btn-cancel">
-                  Discard
+                <button class="admin-btn admin-btn--outline" id="btn-export-csv">
+                  <span class="icon" style="font-size: 14px;">⬇️</span> Export CSV
                 </button>
-                <button class="admin-btn admin-btn--primary" id="btn-process" style="padding: 0 32px">
-                  Confirm & Distribute Funds
-                </button>
+                <div style="display: flex; gap: 12px;">
+                  <button class="admin-btn admin-btn--secondary" id="btn-cancel">
+                    Discard
+                  </button>
+                  <button class="admin-btn admin-btn--primary" id="btn-process" style="padding: 0 32px">
+                    Confirm &amp; Distribute Funds
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -262,42 +293,41 @@
           </div>
         </div>
 
-        <!-- DISTRIBUTION TRACKING SECTION -->
+        <!-- DISTRIBUTION HISTORY (Phase 9) -->
         <div class="admin-card" style="margin-top: 24px">
-          <div class="admin-card-header" style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-              ">
-            <h2 class="admin-card-title">Distribution Request Tracking</h2>
-            <a href="/admin/approvals" class="admin-btn admin-btn--secondary admin-btn--sm">View All Approvals</a>
+          <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="admin-card-title">Distribution History</h2>
+            <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-refresh-distributions" title="Refresh">
+              ↻ Refresh
+            </button>
           </div>
           <div class="admin-card-body" style="padding: 0">
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Request ID</th>
-                  <th>Asset Title</th>
+                  <th>Asset</th>
+                  <th>Period</th>
                   <th>Amount</th>
+                  <th>Holders</th>
                   <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="distribution-tracking-body">
+              <tbody id="distributions-history-body">
                 <tr>
-                  <td colspan="5" style="
-                        text-align: center;
-                        padding: 24px;
-                        color: var(--admin-text-muted);
-                      ">
-                    Loading tracking data...
+                  <td colspan="7" style="text-align: center; padding: 24px; color: var(--admin-text-muted);">
+                    Loading distributions...
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
+
+        <!-- Legacy Tracking Table Removed for Clarity -->
       </div>
+    </div>
     </main>
   </div>
 

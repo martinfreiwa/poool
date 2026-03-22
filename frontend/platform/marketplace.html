@@ -250,19 +250,19 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
                     <div class="investment-row">
                       <span class="investment-label">Investment duration</span>
                       <span class="investment-value">
-                        {% if asset.term_months %}{{ asset.term_months }} months{% else %}N/A{% endif %}
+                        {% if asset.term_months %}{{ asset.term_months }} months{% else %}—{% endif %}
                       </span>
                     </div>
                     <div class="investment-row">
                       <span class="investment-label">Projected return</span>
                       <span class="investment-value">
-                        {% if asset.capital_appreciation_bps %}{{ (asset.capital_appreciation_bps / 100) }}%{% else %}N/A{% endif %}
+                        {% if asset.capital_appreciation_bps %}{{ (asset.capital_appreciation_bps / 100) }}%{% else %}—{% endif %}
                       </span>
                     </div>
                     <div class="investment-row">
                       <span class="investment-label">Projected annualised net return</span>
                       <span class="investment-value">
-                        {% if asset.annual_yield_bps %}{{ (asset.annual_yield_bps / 100) }}%{% else %}N/A{% endif %}
+                        {% if asset.annual_yield_bps %}{{ (asset.annual_yield_bps / 100) }}%{% else %}—{% endif %}
                       </span>
                     </div>
                   </div>

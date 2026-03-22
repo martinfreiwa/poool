@@ -21,14 +21,14 @@ withdrawals, and platform investments.", extra_css=['wallet', 'bem/table', 'bem/
                 <!-- Loading Skeleton -->
                 <div id="transactions-loading-skeleton">
                     <div style="margin-bottom: 24px;">
-                        <div style="height: 40px; width: 260px; background: linear-gradient(90deg, #e9eaeb 25%, #f3f4f6 50%, #e9eaeb 75%); background-size: 1200px 100%; animation: shimmer 1.4s infinite linear; border-radius: 8px;"></div>
+                        <div style="height: 40px; width: 260px; background: linear-gradient(90deg, var(--table-border-color) 25%, #f3f4f6 50%, var(--table-border-color) 75%); background-size: 1200px 100%; animation: shimmer 1.4s infinite linear; border-radius: 8px;"></div>
                     </div>
-                    <div style="background: #fff; border: 1px solid #e9eaeb; border-radius: 12px; box-shadow: 0px 1px 2px rgba(10,13,18,0.05); overflow: hidden;">
-                        <div style="height: 44px; background: #fafafa; border-bottom: 1px solid #e9eaeb;"></div>
+                    <div style="background: #fff; border: 1px solid var(--table-border-color); border-radius: 12px; box-shadow: 0px 1px 2px rgba(10,13,18,0.05); overflow: hidden;">
+                        <div style="height: 44px; background: #fafafa; border-bottom: 1px solid var(--table-border-color);"></div>
                         <div style="display: flex; flex-direction: column;">
-                            <div style="height: 72px; border-bottom: 1px solid #e9eaeb;"></div>
-                            <div style="height: 72px; border-bottom: 1px solid #e9eaeb;"></div>
-                            <div style="height: 72px; border-bottom: 1px solid #e9eaeb;"></div>
+                            <div style="height: 72px; border-bottom: 1px solid var(--table-border-color);"></div>
+                            <div style="height: 72px; border-bottom: 1px solid var(--table-border-color);"></div>
+                            <div style="height: 72px; border-bottom: 1px solid var(--table-border-color);"></div>
                             <div style="height: 72px;"></div>
                         </div>
                     </div>
@@ -76,28 +76,20 @@ withdrawals, and platform investments.", extra_css=['wallet', 'bem/table', 'bem/
                     <div id="wallet-transactions-empty" class="hidden">
                         <div class="table__wrapper table__wrapper--wallet ds-table-container">
                             <div class="table__container">
-                                <div class="table__row"
-                                    style="justify-content: center; padding: 64px 24px; border-bottom: none; width: 100%; min-height: 300px;">
-                                    <div
-                                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 12px; text-align: center;">
-                                        <div
-                                            style="width: 48px; height: 48px; border-radius: 50%; background: #F2F4F7; border: 8px solid #F9FAFB; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
-                                            <svg  width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                <div class="table__row--empty">
+                                    <div class="ds-table-empty">
+                                        <div class="ds-table-empty__icon">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
                                                 stroke="#475467" stroke-width="2" stroke-linecap="round"
                                                 stroke-linejoin="round">
-                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z">
-                                                </path>
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                                 <polyline points="14 2 14 8 20 8"></polyline>
                                                 <line x1="16" y1="13" x2="8" y2="13"></line>
                                                 <line x1="16" y1="17" x2="8" y2="17"></line>
                                             </svg>
                                         </div>
-                                        <span
-                                            style="color: #101828; font-size: 16px; font-weight: 600;">No transactions
-                                            yet</span>
-                                        <span style="color: #667085; font-size: 14px; max-width: 250px;">Your
-                                            transactions will appear here
-                                            once you make a deposit or withdrawal.</span>
+                                        <h3 class="ds-table-empty__title">No transactions yet</h3>
+                                        <p class="ds-table-empty__description">Your transactions will appear here once you make a deposit or withdrawal.</p>
                                     </div>
                                 </div>
                             </div>

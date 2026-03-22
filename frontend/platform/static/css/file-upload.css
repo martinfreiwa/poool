@@ -66,7 +66,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 .upload-link {
@@ -144,7 +144,7 @@
   align-items: center;
   padding: 16px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
   margin-bottom: 8px;
   transition: all 0.2s ease;
@@ -202,7 +202,7 @@
   font-weight: 600;
   font-size: 8px;
   line-height: 12px;
-  color: #535862;
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
@@ -225,7 +225,7 @@
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .file-size {
@@ -246,7 +246,7 @@
 .progress-bar {
   width: 100px;
   height: 4px;
-  background: #e9eaeb;
+  background: var(--table-border-color);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -271,7 +271,7 @@
   width: 32px;
   height: 32px;
   background: none;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
   display: flex;
   align-items: center;

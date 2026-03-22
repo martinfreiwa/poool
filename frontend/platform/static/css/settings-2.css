@@ -45,7 +45,7 @@
   font-family: 'TT Norms Pro', sans-serif;
   font-weight: 700;
   font-size: 32px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
   letter-spacing: -0.02em;
 }
@@ -65,7 +65,7 @@
   flex-direction: row;
   gap: 32px;
   overflow-x: auto;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--card-border-color);
   margin-bottom: 8px;
   padding-bottom: 0;
   scrollbar-width: none; /* Firefox */
@@ -78,7 +78,7 @@
 /* Profile Completeness Banner (inline, above sections) */
 .settings-completeness-banner {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   padding: 20px 24px;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
@@ -118,7 +118,7 @@
 
 .settings-completeness-banner__subtitle {
   font-size: 12px;
-  color: #535862;
+  color: var(--text-secondary);
   font-family: 'TT Norms Pro', sans-serif;
 }
 
@@ -132,7 +132,7 @@
 .settings-completeness-banner__bar-bg {
   width: 100%;
   height: 6px;
-  background: #eaecf0;
+  background: var(--card-border-color);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 12px;
@@ -176,7 +176,7 @@
   font-size: 14px;
   font-weight: 500;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #535862;
+  color: var(--text-secondary);
   text-decoration: none;
   transition: all 0.2s ease;
   display: flex;
@@ -241,20 +241,20 @@
   font-size: 20px;
   font-weight: 600;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0 0 6px 0;
 }
 
 .settings-section__header p {
   font-size: 14px;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #535862;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .settings-card {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
   display: flex;
@@ -264,7 +264,7 @@
 .settings-card-divider {
   border: 0;
   height: 1px;
-  background: #eaecf0;
+  background: var(--card-border-color);
   margin: 0;
 }
 
@@ -310,7 +310,7 @@
 
 .settings-icon-btn:hover {
   background: #f2f4f7;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 /* Show edit button on hover (only if in read state) */
@@ -358,15 +358,23 @@
 
 .settings-read-label {
   font-size: 14px;
-  color: #535862;
+  color: var(--text-secondary);
   font-family: 'TT Norms Pro', sans-serif;
 }
 
 .settings-read-value {
   font-size: 14px;
   font-weight: 500;
-  color: #181d27;
+  color: var(--page-title-color);
   font-family: 'TT Norms Pro', sans-serif;
+}
+
+/* Placeholder state: muted italic for empty fields */
+.settings-read-value--empty,
+.settings-read-value:empty::after {
+  color: #98a2b3;
+  font-weight: 400;
+  font-style: italic;
 }
 
 .settings-read-avatar img {
@@ -374,7 +382,7 @@
   height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
 }
 
 /* ─── Form Elements ─── */
@@ -392,7 +400,7 @@
 .settings-form-row__label {
   font-size: 14px;
   font-weight: 500;
-  color: #344054;
+  color: var(--body-color);
   padding-top: 8px;
   font-family: 'TT Norms Pro', sans-serif;
 }
@@ -406,10 +414,10 @@
 .settings-input {
   width: 100%;
   padding: 10px 14px;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 8px;
   font-size: 14px;
-  color: #181d27;
+  color: var(--page-title-color);
   background: #ffffff;
   font-family: 'TT Norms Pro', sans-serif;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -434,13 +442,13 @@
   gap: 12px;
   margin-top: 16px;
   padding-top: 24px;
-  border-top: 1px solid #eaecf0;
+  border-top: 1px solid var(--card-border-color);
 }
 
 /* ─── Financial Profile Styles ─── */
 .settings-fin-status {
   padding: 24px 32px;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--card-border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -456,7 +464,7 @@
   width: 40px;
   height: 40px;
   background: #f2f4f7;
-  color: #535862;
+  color: var(--text-secondary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -464,7 +472,7 @@
 }
 
 .settings-fin-status__icon svg {
-  stroke: #535862;
+  stroke: var(--text-secondary);
 }
 
 .settings-fin-status__right {
@@ -478,7 +486,7 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 1px;
   padding: 0;
-  background: #eaecf0;
+  background: var(--card-border-color);
 }
 
 @media (max-width: 800px) {
@@ -497,7 +505,7 @@
 
 .settings-fin-widget__label {
   font-size: 13px;
-  color: #535862;
+  color: var(--text-secondary);
   font-family: 'TT Norms Pro', sans-serif;
   font-weight: 500;
 }
@@ -515,7 +523,7 @@
 }
 
 .settings-fin-widget--highlight .settings-fin-widget__label {
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .settings-fin-widget--highlight .settings-fin-widget__value {
@@ -542,7 +550,7 @@
 .settings-referral-section__info p {
   margin: 2px 0 0;
   font-size: 13px;
-  color: #535862;
+  color: var(--text-secondary);
   font-family: 'TT Norms Pro', sans-serif;
 }
 
@@ -556,9 +564,9 @@
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 15px;
   font-weight: 600;
-  color: #181d27;
+  color: var(--page-title-color);
   background: #f9fafb;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   padding: 8px 20px;
   border-radius: 8px;
   letter-spacing: 1px;
@@ -572,12 +580,12 @@
   gap: 6px;
   padding: 8px 14px;
   border-radius: 8px;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   background: #ffffff;
   font-size: 13px;
   font-weight: 600;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #344054;
+  color: var(--body-color);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -599,7 +607,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 24px 32px;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--card-border-color);
 }
 
 .settings-security-row:last-child {
@@ -624,7 +632,7 @@
 .settings-security-row__status-icon {
   display: flex;
   align-items: center;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 /* ─── iOS Toggles ─── */
@@ -648,7 +656,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #e9eaeb;
+  background-color: var(--table-border-color);
   transition: .3s;
   border-radius: 24px;
 }
@@ -701,13 +709,13 @@ input:checked + .settings-toggle-slider:before {
 
 .settings-btn--secondary {
   background: #ffffff;
-  border: 1px solid #eaecf0;
-  color: #344054;
+  border: 1px solid var(--card-border-color);
+  color: var(--body-color);
 }
 
 .settings-btn--secondary:hover {
   background: #fcfcfd;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 /* Reusing Info Grid from existing settings */
@@ -723,7 +731,7 @@ input:checked + .settings-toggle-slider:before {
   gap: 16px;
   padding: 16px;
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   text-decoration: none;
   transition: border-color 0.2s;
@@ -760,7 +768,7 @@ input:checked + .settings-toggle-slider:before {
 }
 .settings-learn-card {
   background: white;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   overflow: hidden;
   text-decoration: none;
@@ -850,7 +858,7 @@ input:checked + .settings-toggle-slider:before {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 8px;
   transition: border-color 0.2s ease;
 }
@@ -868,7 +876,7 @@ input:checked + .settings-toggle-slider:before {
 .settings-session-card__device {
   font-size: 14px;
   font-weight: 500;
-  color: #181d27;
+  color: var(--page-title-color);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -896,7 +904,7 @@ input:checked + .settings-toggle-slider:before {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 8px;
   transition: border-color 0.2s ease;
 }
@@ -920,7 +928,7 @@ input:checked + .settings-toggle-slider:before {
 .settings-oauth-card__provider-name {
   font-size: 14px;
   font-weight: 500;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .settings-oauth-card__email {
@@ -936,7 +944,7 @@ input:checked + .settings-toggle-slider:before {
 
 /* ─── Financial Card Pulse ─── */
 .settings-card--financial {
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   overflow: hidden;
 }
 
@@ -956,7 +964,7 @@ input:checked + .settings-toggle-slider:before {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: #181d27;
+  color: var(--page-title-color);
   font-family: 'TT Norms Pro', sans-serif;
 }
 
@@ -1005,7 +1013,7 @@ input:checked + .settings-toggle-slider:before {
 
 .settings-section-divider {
   height: 1px;
-  background: #eaecf0;
+  background: var(--card-border-color);
   border: none;
   margin: 0;
 }
@@ -1022,7 +1030,7 @@ input:checked + .settings-toggle-slider:before {
   gap: 10px;
   padding: 10px 16px;
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 8px;
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -1063,7 +1071,7 @@ input:checked + .settings-toggle-slider:before {
   align-items: center;
   font-size: 14px;
   font-weight: 600;
-  color: #181d27;
+  color: var(--page-title-color);
   text-decoration: none;
   font-family: 'TT Norms Pro', sans-serif;
   transition: color 0.2s;
@@ -1079,7 +1087,7 @@ input:checked + .settings-toggle-slider:before {
 }
 
 .skeleton-box {
-  background: linear-gradient(90deg, #f2f4f7 25%, #e9eaeb 50%, #f2f4f7 75%);
+  background: linear-gradient(90deg, #f2f4f7 25%, var(--table-border-color) 50%, #f2f4f7 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 8px;
@@ -1125,13 +1133,13 @@ input:checked + .settings-toggle-slider:before {
 #settings-empty-state h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0 0 8px 0;
 }
 
 #settings-empty-state p {
   font-size: 14px;
-  color: #535862;
+  color: var(--text-secondary);
   margin: 0 0 16px 0;
 }
 
@@ -1170,7 +1178,7 @@ input:checked + .settings-toggle-slider:before {
 .settings-modal__title {
   font-size: 18px;
   font-weight: 600;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0 0 20px 0;
   font-family: 'TT Norms Pro', sans-serif;
 }
@@ -1181,7 +1189,7 @@ input:checked + .settings-toggle-slider:before {
   gap: 12px;
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid #eaecf0;
+  border-top: 1px solid var(--card-border-color);
 }
 
 .settings-modal__error {
@@ -1193,7 +1201,7 @@ input:checked + .settings-toggle-slider:before {
 .settings-label {
   font-size: 14px;
   font-weight: 500;
-  color: #344054;
+  color: var(--body-color);
   margin-bottom: 6px;
   display: block;
   font-family: 'TT Norms Pro', sans-serif;
@@ -1274,7 +1282,7 @@ input:checked + .settings-toggle-slider:before {
   height: 72px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #eaecf0;
+  border: 2px solid var(--card-border-color);
   flex-shrink: 0;
   transition: border-color 0.2s ease;
 }
@@ -1348,7 +1356,7 @@ input:checked + .settings-toggle-slider:before {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--card-border-color);
 }
 
 .settings-search-input-wrapper svg {
@@ -1362,7 +1370,7 @@ input:checked + .settings-toggle-slider:before {
   outline: none;
   font-size: 16px;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #181d27;
+  color: var(--page-title-color);
   background: transparent;
 }
 
@@ -1374,7 +1382,7 @@ input:checked + .settings-toggle-slider:before {
   font-size: 11px;
   padding: 3px 8px;
   background: #f2f4f7;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 4px;
   color: #717680;
   font-family: 'TT Norms Pro', sans-serif;
@@ -1448,7 +1456,7 @@ input:checked + .settings-toggle-slider:before {
 .settings-search-result-item__title {
   font-size: 14px;
   font-weight: 500;
-  color: #181d27;
+  color: var(--page-title-color);
   font-family: 'TT Norms Pro', sans-serif;
 }
 
@@ -1460,14 +1468,14 @@ input:checked + .settings-toggle-slider:before {
 
 .settings-search-result-item__title mark {
   background: #FEF0C7;
-  color: #181d27;
+  color: var(--page-title-color);
   border-radius: 2px;
   padding: 0 1px;
 }
 
 .settings-search-footer {
   padding: 12px 20px;
-  border-top: 1px solid #eaecf0;
+  border-top: 1px solid var(--card-border-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1481,7 +1489,7 @@ input:checked + .settings-toggle-slider:before {
   font-size: 11px;
   padding: 2px 6px;
   background: #f2f4f7;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 4px;
   font-family: inherit;
   font-weight: 500;
@@ -1503,9 +1511,9 @@ input:checked + .settings-toggle-slider:before {
   text-align: left;
   font-family: 'TT Norms Pro', sans-serif;
   font-size: 14px;
-  color: #181d27;
+  color: var(--page-title-color);
   padding: 10px 14px;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 8px;
   transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
@@ -1545,7 +1553,7 @@ input:checked + .settings-toggle-slider:before {
   left: 0;
   right: 0;
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12), 0 2px 6px rgba(16, 24, 40, 0.06);
   z-index: 100;
@@ -1567,7 +1575,7 @@ input:checked + .settings-toggle-slider:before {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--card-border-color);
 }
 
 .nationality-dropdown__search-wrap svg {
@@ -1579,7 +1587,7 @@ input:checked + .settings-toggle-slider:before {
   outline: none;
   font-size: 14px;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #181d27;
+  color: var(--page-title-color);
   background: transparent;
   width: 100%;
 }
@@ -1614,7 +1622,7 @@ input:checked + .settings-toggle-slider:before {
   padding: 8px 14px;
   font-size: 14px;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #344054;
+  color: var(--body-color);
   cursor: pointer;
   display: flex;
   align-items: center;

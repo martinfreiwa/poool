@@ -56,14 +56,26 @@
               <path d="M8 6v3.5M8 11h.007M14 8A6 6 0 112 8a6 6 0 0112 0z" stroke="#b42318" stroke-width="1.5"
                 stroke-linecap="round" />
             </svg>
-            The following will be permanently deleted
+            The following will be permanently deleted or anonymized
           </div>
           <ul class="consequences-list">
-            <li>Your account login and profile data</li>
-            <li>Wallet balance and transaction history</li>
-            <li>Investment records and portfolio data</li>
+            <li>Your account login credentials and profile data (name, address, phone)</li>
+            <li>Notification preferences and settings</li>
+            <li>OAuth connections (Google, Facebook)</li>
+            <li>Session data and referral codes</li>
+          </ul>
+          <div class="consequences-title" style="margin-top: 12px; color: #344054;">
+            <svg  width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 6v3.5M8 11h.007M14 8A6 6 0 112 8a6 6 0 0112 0z" stroke="#0000d4" stroke-width="1.5"
+                stroke-linecap="round" />
+            </svg>
+            Retained per financial regulations (5-10 years)
+          </div>
+          <ul class="consequences-list" style="color: #475467;">
             <li>KYC / identity verification records</li>
-            <li>Notification and settings preferences</li>
+            <li>Wallet transaction history</li>
+            <li>Investment records (anonymized)</li>
+            <li>Audit logs</li>
           </ul>
         </div>
 
@@ -71,11 +83,11 @@
         <form class="deletion-form" id="deletion-form" onsubmit="submitDeletionRequest(event)" novalidate>
 
           <div class="form-group">
-            <label class="form-label" for="del-email">
-              Your email address <span class="required" aria-hidden="true">*</span>
+            <label class="form-label" for="del-password">
+              Your current password <span class="required" aria-hidden="true">*</span>
             </label>
-            <input id="del-email" class="form-input" type="email" name="email"
-              placeholder="Confirm your POOOL account email" autocomplete="email" required />
+            <input id="del-password" class="form-input" type="password" name="current_password"
+              placeholder="Enter your password to confirm" autocomplete="current-password" required />
           </div>
 
           <div class="confirm-box">
@@ -124,10 +136,16 @@
     function validateConfirmation(input) {
       const confirmMatch = input.value.trim().toLowerCase() === CONFIRM_TEXT;
       const checkChecked = document.getElementById("del-understand").checked;
-      document.getElementById("del-submit").disabled = !(confirmMatch && checkChecked);
+      const hasPassword = document.getElementById("del-password").value.length > 0;
+      document.getElementById("del-submit").disabled = !(confirmMatch && checkChecked && hasPassword);
     }
 
     document.getElementById("del-understand").addEventListener("change", function () {
+      const confirmInput = document.getElementById("del-confirm");
+      validateConfirmation(confirmInput);
+    });
+
+    document.getElementById("del-password").addEventListener("input", function () {
       const confirmInput = document.getElementById("del-confirm");
       validateConfirmation(confirmInput);
     });
@@ -137,26 +155,31 @@
       const btn = document.getElementById("del-submit");
       const errBox = document.getElementById("deletion-error");
       btn.disabled = true;
-      btn.textContent = "Submitting…";
+      btn.textContent = "Deleting account…";
       errBox.style.display = "none";
       errBox.textContent = "";
 
-      const email = document.getElementById("del-email").value;
+      const password = document.getElementById("del-password").value;
 
-      const payload = {
-        subject: "Account Deletion Request",
-        message: `User requested account deletion.\nEmail: ${email}\nAction: Confirmed irreversible deletion.`,
-        category: "general"
-      };
+      // Get CSRF token
+      const csrfValue = `; ${document.cookie}`;
+      const csrfParts = csrfValue.split('; csrf_token=');
+      let csrfToken = "";
+      if (csrfParts.length === 2) csrfToken = csrfParts.pop().split(';').shift();
+
+      const headers = { "Content-Type": "application/json" };
+      if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
 
       try {
-        const resp = await fetch("/api/support/tickets", {
+        const resp = await fetch("/api/settings/delete-account", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          headers,
+          body: JSON.stringify({ current_password: password }),
         });
 
-        if (resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+
+        if (resp.ok && data.success) {
           document.getElementById("deletion-page-content").style.display = "none";
           document.getElementById("deletion-success").classList.add("shown");
 
@@ -172,8 +195,7 @@
             }
           }, 1000);
         } else {
-          const errData = await resp.json().catch(() => ({}));
-          errBox.textContent = errData.error || "Failed to submit request. Please try again.";
+          errBox.textContent = data.message || "Failed to delete account. Please try again.";
           errBox.style.display = "block";
           btn.disabled = false;
           btn.textContent = "Permanently delete account";

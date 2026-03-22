@@ -2,7 +2,7 @@
 
 .chart-bar-tooltip {
   position: absolute;
-  background: #181d27;
+  background: var(--page-title-color);
   color: #ffffff;
   font-family: 'TT Norms Pro', sans-serif;
   font-size: 12px;
@@ -25,7 +25,7 @@
   transform: translateX(-50%);
   border-width: 5px;
   border-style: solid;
-  border-color: #181d27 transparent transparent transparent;
+  border-color: var(--page-title-color) transparent transparent transparent;
 }
 
 /* ─── Chart Filter Dropdown ──────────────────────────────────── */
@@ -37,7 +37,7 @@
   z-index: 100;
   width: 240px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
   padding: 0;
@@ -68,7 +68,7 @@
   font-family: 'TT Norms Pro', sans-serif;
   font-weight: 600;
   font-size: 14px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .chart-filter-close {
@@ -179,11 +179,11 @@
 }
 
 .chart-tab.active {
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .chart-tab:hover:not(.active) {
-  color: #535862;
+  color: var(--text-secondary);
   background: rgba(0, 0, 0, 0.02);
 }
 
@@ -202,3 +202,20 @@
   background: #f2f4f7;
   transform: scale(0.98);
 }
+
+/* ─── Y-Axis Labels ──────────────────────────────────────────── */
+
+.chart-y-axis-label {
+  position: relative;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 16px;
+  color: #717680;
+  background-color: #ffffff;
+  padding-right: 8px;
+  transform: translateY(1px); /* Slight vertical alignment */
+  z-index: 5;
+}
+

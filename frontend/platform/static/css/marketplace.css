@@ -13,14 +13,14 @@
 
   /* Gray Scale */
   --color-gray-50: #fafafa;
-  --color-gray-200: #e9eaeb;
+  --color-gray-200: var(--table-border-color);
   --color-gray-300: #d5d7da;
   --color-gray-400: #a4a7ae;
   --color-gray-500: #717680;
-  --color-gray-600: #535862;
+  --color-gray-600: var(--text-secondary);
   --color-gray-700: #414651;
   --color-gray-800: #252b37;
-  --color-gray-900: #181d27;
+  --color-gray-900: var(--page-title-color);
 
   /* Brand Colors */
   --color-brand-600: var(--primary-color);
@@ -524,7 +524,7 @@
   font-size: 16px;
   line-height: 44px;
   /* Match wrapper height for vertical centering */
-  color: #717680;
+  color: var(--text-secondary);
   /* Gray for placeholder state */
   outline: none;
   cursor: pointer;
@@ -540,14 +540,14 @@
 .dropdown-select:valid:not([value=""]) {
   font-weight: 500;
   /* Medium weight for selected text */
-  color: #181d27;
+  color: var(--page-title-color);
   /* Dark color for selected */
 }
 
 .dropdown-select option {
   padding: 8px;
   font-weight: 400;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .dropdown-chevron {
@@ -783,7 +783,7 @@
   min-height: 572px;
   height: auto;
   background: var(--card-bg, #ffffff);
-  border: 1px solid var(--card-border-color, #e9eaeb);
+  border: 1px solid var(--card-border-color, var(--table-border-color));
   border-radius: var(--card-border-radius, 16px);
   flex: none;
   order: 0;
@@ -1232,7 +1232,7 @@
   font-weight: 700;
   font-size: 20px;
   line-height: 30px;
-  color: #181d27;
+  color: var(--page-title-color);
   flex: none;
   order: 0;
   flex-grow: 1;
@@ -1353,7 +1353,7 @@
   font-size: 14px;
   line-height: 20px;
   text-align: right;
-  color: #535862;
+  color: var(--text-secondary);
   flex: none;
   order: 1;
   flex-grow: 0;
@@ -1512,7 +1512,7 @@
 .loading-spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid #e9eaeb;
+  border: 2px solid var(--table-border-color);
   border-top: 2px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -1694,7 +1694,7 @@
   font-weight: 600;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   flex: none;
   flex-grow: 0;
 }
@@ -1758,7 +1758,7 @@
   font-size: 14px;
   line-height: 20px;
   text-align: center;
-  color: #535862;
+  color: var(--text-secondary);
   flex: none;
   order: 0;
   flex-grow: 0;
@@ -1784,7 +1784,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #535862;
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 20px;
   font-family: 'TT Norms Pro', sans-serif;

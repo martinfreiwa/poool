@@ -102,7 +102,7 @@
   font-size: 36px;
   line-height: 44px;
   letter-spacing: -0.02em;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -111,7 +111,7 @@
   display: flex;
   gap: 0;
   margin-bottom: 0;
-  border-bottom: 2px solid #EAECF0;
+  border-bottom: 2px solid var(--card-border-color);
 }
 
 .rewards-tab-btn {
@@ -130,7 +130,7 @@
 }
 
 .rewards-tab-btn:hover {
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .rewards-tab-btn.active {
@@ -169,7 +169,7 @@
 /* --- Cards Container Grid --- */
 .rewards-card-container {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   padding: 24px;
@@ -201,7 +201,7 @@
 
 .rewards-summary-card {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
@@ -378,7 +378,7 @@
 
 .breakdown-separator {
   height: 1px;
-  background: #eaecf0;
+  background: var(--card-border-color);
   width: 100%;
 }
 
@@ -392,7 +392,7 @@
 /* --- Tier Progress Card --- */
 .tier-progress-card {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
@@ -483,7 +483,7 @@
 
 .tp-progress-bar {
   height: 8px;
-  background: #eaecf0;
+  background: var(--card-border-color);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -508,7 +508,7 @@
 /* --- Refer and Earn Card --- */
 .refer-earn-card {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
@@ -543,7 +543,7 @@
 
 .refer-separator {
   height: 1px;
-  background: #eaecf0;
+  background: var(--card-border-color);
   margin-bottom: 16px;
 }
 
@@ -583,7 +583,7 @@
   display: flex;
   align-items: center;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
   padding: 10px 14px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
@@ -601,7 +601,7 @@
   width: 100%;
   font-size: 14px;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #344054;
+  color: var(--body-color);
   background: transparent;
 }
 
@@ -654,7 +654,7 @@
 .tier-right-column {
   flex: 1;
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   padding: 0;
   overflow: hidden;
@@ -721,7 +721,7 @@
   top: 44px;
   bottom: 0;
   width: 2px;
-  background: #eaecf0;
+  background: var(--card-border-color);
   z-index: 1;
 }
 
@@ -744,7 +744,7 @@
 }
 
 .border-top {
-  border-top: 1px solid #eaecf0;
+  border-top: 1px solid var(--card-border-color);
   padding-top: 16px;
   margin-top: 12px;
 }
@@ -962,7 +962,7 @@
   justify-content: center;
   padding: 64px 24px;
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   text-align: center;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
@@ -1022,7 +1022,7 @@
   background: #f2f4f7;
   background-image: linear-gradient(90deg,
       #f2f4f7 0px,
-      #eaecf0 40px,
+      var(--card-border-color) 40px,
       #f2f4f7 80px);
   background-size: 1000px 100%;
   animation: shimmer 2s infinite linear;
@@ -1080,7 +1080,7 @@
 
 .metric-card {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
@@ -1141,7 +1141,7 @@
 /* --- Campaign Breakdown Table --- */
 .campaign-breakdown-card {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   overflow: hidden;
@@ -1149,7 +1149,7 @@
 
 .campaign-card-header {
   padding: 20px 24px;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--card-border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1204,7 +1204,7 @@
   padding: 12px 16px;
   font-weight: 500;
   color: #475467;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--card-border-color);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1267,7 +1267,7 @@
 /* Reuses .campaign-breakdown-card for consistent card shell */
 .campaign-link-generator-card {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   overflow: hidden;
@@ -1302,7 +1302,7 @@
 }
 
 .chart-filter-btn:hover {
-  color: #344054;
+  color: var(--body-color);
 }
 
 .chart-filter-btn.active {
@@ -1328,7 +1328,7 @@
   right: 0;
   z-index: 50;
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
   padding: 16px;
@@ -1368,7 +1368,7 @@
 
 .chart-date-field input[type="date"] {
   padding: 8px 10px;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
   font-size: 13px;
   font-family: 'TT Norms Pro', sans-serif;
@@ -1433,14 +1433,14 @@
 .link-gen-input-wrapper label {
   font-size: 14px;
   font-weight: 500;
-  color: #344054;
+  color: var(--body-color);
 }
 
 #campaign-subid-input {
   width: 100%;
   box-sizing: border-box;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 14px;
@@ -1467,7 +1467,7 @@
   flex-direction: column;
   gap: 10px;
   padding-top: 20px;
-  border-top: 1px solid #eaecf0;
+  border-top: 1px solid var(--card-border-color);
 }
 
 .social-share-label {
@@ -1493,7 +1493,7 @@
   font-size: 14px;
   font-weight: 500;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #344054;
+  color: var(--body-color);
   cursor: pointer;
   transition: color 0.15s ease;
   line-height: 1;
@@ -1516,12 +1516,12 @@
   gap: 8px;
   padding: 8px 14px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 999px;
   font-size: 14px;
   font-weight: 500;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #344054;
+  color: var(--body-color);
   cursor: pointer;
   transition: all 0.2s ease;
   line-height: 1;
@@ -1531,7 +1531,7 @@
 .social-share-pill:hover {
   background: #f8f9fc;
   border-color: #d1d5db;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .social-share-pill svg {
@@ -1554,7 +1554,7 @@
 #campaign-search-input {
   width: 260px;
   padding: 9px 12px 9px 36px;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
   font-size: 14px;
   font-family: 'TT Norms Pro', sans-serif;
@@ -1583,9 +1583,9 @@
   font-size: 14px;
   font-weight: 500;
   font-family: 'TT Norms Pro', sans-serif;
-  color: #344054;
+  color: var(--body-color);
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
@@ -1628,7 +1628,7 @@
 /* --- Section Card --- */
 .marketing-section {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   padding: 24px;
@@ -1698,7 +1698,7 @@
 /* --- Asset Card --- */
 .marketing-asset-card {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 10px;
   overflow: hidden;
   display: flex;
@@ -1717,7 +1717,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--card-border-color);
   padding: 16px;
 }
 
@@ -1775,7 +1775,7 @@
   justify-content: center;
   gap: 6px;
   padding: 10px 16px;
-  border-top: 1px solid #eaecf0;
+  border-top: 1px solid var(--card-border-color);
   font-size: 14px;
   font-weight: 600;
   font-family: 'TT Norms Pro', sans-serif;
@@ -1799,7 +1799,7 @@
   gap: 6px;
   padding: 6px 12px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
@@ -1838,7 +1838,7 @@
   align-items: center;
   gap: 6px;
   padding: 12px;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 10px;
   background: #fff;
   transition: box-shadow 0.2s ease;
@@ -1852,7 +1852,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 2px solid #eaecf0;
+  border: 2px solid var(--card-border-color);
 }
 
 .swatch-label {
@@ -1876,7 +1876,7 @@
 }
 
 .marketing-email-block {
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -1887,7 +1887,7 @@
   justify-content: space-between;
   padding: 12px 16px;
   background: #f9fafb;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--card-border-color);
 }
 
 .email-block-label {
@@ -1900,7 +1900,7 @@
   padding: 16px;
   font-size: 14px;
   line-height: 1.65;
-  color: #344054;
+  color: var(--body-color);
   white-space: pre-wrap;
   font-family: 'TT Norms Pro', sans-serif;
   background: #ffffff;
@@ -1912,7 +1912,7 @@
 
 .commissions-card {
   background: #ffffff;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 12px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   padding: 24px;
@@ -1989,7 +1989,7 @@
   font-family: 'TT Norms Pro', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: #344054;
+  color: var(--body-color);
 }
 
 .commissions-input,
@@ -2066,7 +2066,7 @@
   font-family: 'TT Norms Pro', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: #344054;
+  color: var(--body-color);
   border: none;
   outline: none;
   background: transparent;
@@ -2096,14 +2096,14 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 12px 16px;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--card-border-color);
   text-align: left;
   white-space: nowrap;
 }
 
 .commissions-table tbody td {
   font-size: 14px;
-  color: #344054;
+  color: var(--body-color);
   padding: 14px 16px;
   border-bottom: 1px solid #f2f4f7;
   white-space: nowrap;
@@ -2151,7 +2151,7 @@
   font-family: 'TT Norms Pro', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: #344054;
+  color: var(--body-color);
   background: #ffffff;
   border: 1px solid #d0d5dd;
   border-radius: 8px;

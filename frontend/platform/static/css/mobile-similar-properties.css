@@ -17,7 +17,7 @@
   font-weight: 700;
   font-size: 20px;
   line-height: 30px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 

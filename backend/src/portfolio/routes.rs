@@ -45,6 +45,35 @@ pub async fn get_portfolio_handler(
     }
 }
 
+#[derive(serde::Deserialize)]
+pub struct CancelInvestmentRequest {
+    pub investment_id: uuid::Uuid,
+}
+
+pub async fn cancel_investment_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Json(payload): axum::extract::Json<CancelInvestmentRequest>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::cancel_investment(&state.db, user_id, payload.investment_id).await {
+        Ok(_) => Json(serde_json::json!({"success": true})).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to cancel investment {}: {}", payload.investment_id, e);
+            (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": e})),
+            )
+                .into_response()
+        }
+    }
+}
+
+
 /// GET /portfolio — Render the portfolio page.
 pub async fn page_portfolio(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     let user = match middleware::get_current_user(&jar, &state.db).await {

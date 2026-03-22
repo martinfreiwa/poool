@@ -7,7 +7,7 @@
 ///
 /// NO business logic lives here.
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     response::IntoResponse,
     Json,
 };
@@ -35,8 +35,7 @@ pub async fn api_orderbook(
         .as_ref()
         .ok_or_else(|| AppError::ServiceUnavailable("Redis not available".into()))?;
 
-    let mut snapshot =
-        super::orderbook::get_orderbook_snapshot(redis, asset_id, None).await?;
+    let mut snapshot = super::orderbook::get_orderbook_snapshot(redis, asset_id, None).await?;
 
     // Fill last_price from trade_history
     let last_price: Option<i64> = sqlx::query_scalar(
@@ -149,4 +148,125 @@ pub async fn api_cancel_order(
         "order_id": order_id,
         "message": "Order cancelled successfully."
     })))
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── CANDLESTICK CHART APIs ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+
+/// GET /api/marketplace/:asset_id/candles?interval=1h&from=&to=&limit=
+///
+/// Returns OHLCV candlestick data for charting.
+pub async fn api_candles(
+    State(state): State<AppState>,
+    Path(asset_id): Path<Uuid>,
+    Query(query): Query<super::charts::CandleQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let response = super::charts::get_candles(&state.db, asset_id, query).await?;
+    Ok(Json(response))
+}
+
+/// GET /api/marketplace/:asset_id/chart-summary
+///
+/// Returns 24h chart summary (last price, high, low, volume, change).
+pub async fn api_chart_summary(
+    State(state): State<AppState>,
+    Path(asset_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let summary = super::charts::get_chart_summary(&state.db, asset_id).await?;
+    Ok(Json(summary))
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── P2P/OTC OFFER APIs ───────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+
+/// POST /api/marketplace/p2p/offers
+///
+/// Create a new P2P offer. Requires authentication.
+pub async fn api_create_p2p_offer(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Json(body): Json<super::p2p::CreateP2POfferRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Authentication required.".into()))?;
+
+    let response = super::p2p::create_offer(&state.db, user.id, body).await?;
+    Ok(Json(response))
+}
+
+/// POST /api/marketplace/p2p/offers/:offer_id/respond
+///
+/// Respond to a P2P offer (accept, decline, or counter).
+pub async fn api_respond_p2p_offer(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Path(offer_id): Path<Uuid>,
+    Json(body): Json<super::p2p::RespondP2POfferRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Authentication required.".into()))?;
+
+    let response = super::p2p::respond_to_offer(&state.db, user.id, offer_id, body).await?;
+    Ok(Json(response))
+}
+
+/// DELETE /api/marketplace/p2p/offers/:offer_id
+///
+/// Cancel a pending P2P offer (maker only).
+pub async fn api_cancel_p2p_offer(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Path(offer_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Authentication required.".into()))?;
+
+    let response = super::p2p::cancel_offer(&state.db, user.id, offer_id).await?;
+    Ok(Json(response))
+}
+
+/// GET /api/marketplace/p2p/offers/incoming
+///
+/// Get incoming offers for the authenticated user.
+pub async fn api_incoming_offers(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> Result<impl IntoResponse, AppError> {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Authentication required.".into()))?;
+
+    let offers = super::p2p::get_incoming_offers(&state.db, user.id).await?;
+    Ok(Json(offers))
+}
+
+/// GET /api/marketplace/p2p/offers/outgoing
+///
+/// Get outgoing offers for the authenticated user.
+pub async fn api_outgoing_offers(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> Result<impl IntoResponse, AppError> {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Authentication required.".into()))?;
+
+    let offers = super::p2p::get_outgoing_offers(&state.db, user.id).await?;
+    Ok(Json(offers))
+}
+
+/// GET /api/marketplace/:asset_id/p2p
+///
+/// Get pending P2P offers for a specific asset (public).
+pub async fn api_asset_p2p_offers(
+    State(state): State<AppState>,
+    Path(asset_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let offers = super::p2p::get_asset_offers(&state.db, asset_id).await?;
+    Ok(Json(offers))
 }

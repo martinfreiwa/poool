@@ -35,8 +35,8 @@
 				<div class="settings-topbar">
 					<div class="settings-topbar__title">
 						<svg  width="32" height="32" viewBox="0 0 20 20" fill="none" class="settings-topbar__icon">
-							<path d="M8.325 2.317a1.75 1.75 0 0 1 3.35 0A7.504 7.504 0 0 1 13.5 3.6a1.75 1.75 0 0 1 2.372 2.372 7.504 7.504 0 0 1 1.283 1.825 1.75 1.75 0 0 1 0 3.35 7.504 7.504 0 0 1-1.283 1.825A1.75 1.75 0 0 1 13.5 15.4a7.504 7.504 0 0 1-1.825 1.283 1.75 1.75 0 0 1-3.35 0A7.504 7.504 0 0 1 6.5 15.4a1.75 1.75 0 0 1-2.372-2.372A7.504 7.504 0 0 1 2.845 11.2a1.75 1.75 0 0 1 0-3.35A7.504 7.504 0 0 1 4.128 6.025 1.75 1.75 0 0 1 6.5 3.653a7.504 7.504 0 0 1 1.825-1.336z" stroke="#181d27" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							<circle cx="10" cy="10" r="2.5" stroke="#181d27" stroke-width="1.5" />
+							<path d="M8.325 2.317a1.75 1.75 0 0 1 3.35 0A7.504 7.504 0 0 1 13.5 3.6a1.75 1.75 0 0 1 2.372 2.372 7.504 7.504 0 0 1 1.283 1.825 1.75 1.75 0 0 1 0 3.35 7.504 7.504 0 0 1-1.283 1.825A1.75 1.75 0 0 1 13.5 15.4a7.504 7.504 0 0 1-1.825 1.283 1.75 1.75 0 0 1-3.35 0A7.504 7.504 0 0 1 6.5 15.4a1.75 1.75 0 0 1-2.372-2.372A7.504 7.504 0 0 1 2.845 11.2a1.75 1.75 0 0 1 0-3.35A7.504 7.504 0 0 1 4.128 6.025 1.75 1.75 0 0 1 6.5 3.653a7.504 7.504 0 0 1 1.825-1.336z" stroke="var(--page-title-color)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+							<circle cx="10" cy="10" r="2.5" stroke="var(--page-title-color)" stroke-width="1.5" />
 						</svg>
 						<h1 class="settings-topbar__title-h1">Settings</h1>
 					</div>
@@ -152,7 +152,7 @@
 											<!-- Need to mention they might need modal to change email/phone -->
 											<div class="settings-form-row__label">Email & Phone</div>
 											<div class="settings-form-row__content">
-												<p style="font-size:13px; color:#535862;">Manage these in the Security & Access section below.</p>
+												<p style="font-size:13px; color:var(--text-secondary);">Manage these in the Security & Access section below.</p>
 											</div>
 										</div>
 										<div class="settings-morph-actions">
@@ -388,7 +388,7 @@
 										Email
 									</div>
 									<div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
-										<span style="font-weight:500; color:#181d27; font-size:14px;" id="settings-security-email-text">Loading...</span>
+										<span style="font-weight:500; color:var(--page-title-color); font-size:14px;" id="settings-security-email-text">Loading...</span>
 										<span id="settings-email-verified" class="settings-badge settings-badge--loading"></span>
 									</div>
 									<button class="settings-btn settings-btn--primary" onclick="openChangeEmailModal()">Change Email</button>
@@ -428,12 +428,12 @@
 											<span class="settings-security-row__status-icon"><svg  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
 											Active Sessions
 										</div>
-										<div style="font-size:13px; color:#535862; padding-left:26px;">Devices currently logged in to your account</div>
+										<div style="font-size:13px; color:var(--text-secondary); padding-left:26px;">Devices currently logged in to your account</div>
 									</div>
 									<div style="flex:1;"></div>
 								</div>
 								<!-- Sessions list — full width -->
-								<div id="settings-sessions-list" style="padding: 0 32px 24px; display:flex; flex-direction:column; gap:8px; border-bottom:1px solid #eaecf0;">
+								<div id="settings-sessions-list" style="padding: 0 32px 24px; display:flex; flex-direction:column; gap:8px; border-bottom:1px solid var(--card-border-color);">
 									<div class="settings-session-card"><div class="settings-session-card__meta">Loading sessions...</div></div>
 								</div>
 
@@ -450,7 +450,7 @@
 									</div>
 								</div>
 								<!-- OAuth list — full width -->
-								<div id="settings-oauth-list" style="padding: 0 32px 24px; display:flex; flex-direction:column; gap:8px; border-bottom:1px solid #eaecf0;">
+								<div id="settings-oauth-list" style="padding: 0 32px 24px; display:flex; flex-direction:column; gap:8px; border-bottom:1px solid var(--card-border-color);">
 									<div class="settings-oauth-card"><span style="color:#98a2b3; font-size:13px;">Loading accounts...</span></div>
 								</div>
 
@@ -464,42 +464,42 @@
 											<span style="font-weight: 500; font-size: 14px; color: #414651;">Legal Documents</span>
 										</div>
 										<div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
-											<span style="color: #181d27; font-weight: 500; font-size: 13px;" id="settings-terms-version">Loading...</span>
-											<span style="color: #535862; font-size: 12px;" id="settings-terms-date">Latest version</span>
+											<span style="color: var(--page-title-color); font-weight: 500; font-size: 13px;" id="settings-terms-version">Loading...</span>
+											<span style="color: var(--text-secondary); font-size: 12px;" id="settings-terms-date">Latest version</span>
 										</div>
 									</div>
 									
 									<!-- List of files -->
 									<div style="display:flex; flex-direction:column; gap:8px;">
 										
-										<a href="/privacy-policy" target="_blank" class="settings-legal-link" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid #eaecf0; border-radius:8px; text-decoration:none; background:#fff;">
+										<a href="/privacy-policy" target="_blank" class="settings-legal-link" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid var(--card-border-color); border-radius:8px; text-decoration:none; background:#fff;">
 											<div style="display:flex; align-items:center; gap:12px;">
 												<svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-												<span style="font-size:14px; font-weight:500; color:#181d27;">Privacy Policy</span>
+												<span style="font-size:14px; font-weight:500; color:var(--page-title-color);">Privacy Policy</span>
 											</div>
 											<svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 										</a>
 
-										<a href="/terms" target="_blank" class="settings-legal-link" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid #eaecf0; border-radius:8px; text-decoration:none; background:#fff;">
+										<a href="/terms" target="_blank" class="settings-legal-link" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid var(--card-border-color); border-radius:8px; text-decoration:none; background:#fff;">
 											<div style="display:flex; align-items:center; gap:12px;">
 												<svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-												<span style="font-size:14px; font-weight:500; color:#181d27;">Terms of Use</span>
+												<span style="font-size:14px; font-weight:500; color:var(--page-title-color);">Terms of Use</span>
 											</div>
 											<svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 										</a>
 
-										<a href="/legal/risks" target="_blank" class="settings-legal-link" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid #eaecf0; border-radius:8px; text-decoration:none; background:#fff;">
+										<a href="/legal/risks" target="_blank" class="settings-legal-link" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid var(--card-border-color); border-radius:8px; text-decoration:none; background:#fff;">
 											<div style="display:flex; align-items:center; gap:12px;">
 												<svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-												<span style="font-size:14px; font-weight:500; color:#181d27;">Key Risks</span>
+												<span style="font-size:14px; font-weight:500; color:var(--page-title-color);">Key Risks</span>
 											</div>
 											<svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 										</a>
 
-										<a href="/cookies" target="_blank" class="settings-legal-link" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid #eaecf0; border-radius:8px; text-decoration:none; background:#fff;">
+										<a href="/cookies" target="_blank" class="settings-legal-link" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid var(--card-border-color); border-radius:8px; text-decoration:none; background:#fff;">
 											<div style="display:flex; align-items:center; gap:12px;">
 												<svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-												<span style="font-size:14px; font-weight:500; color:#181d27;">Cookie Notice</span>
+												<span style="font-size:14px; font-weight:500; color:var(--page-title-color);">Cookie Notice</span>
 											</div>
 											<svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 										</a>
@@ -514,7 +514,7 @@
 									</div>
 									<div style="flex:1; font-size:13px; color:#B42318; margin-left:12px;">Permanent and irreversible actions</div>
 									<div style="display:flex; gap:12px;">
-										<button class="settings-btn" style="background:#fff; color:#98a2b3; border:1px solid #eaecf0; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:600; font-family:'TT Norms Pro',sans-serif; cursor:not-allowed;" disabled>Export My Data (Coming Soon)</button>
+										<button class="settings-btn" style="background:#fff; color:#98a2b3; border:1px solid var(--card-border-color); border-radius:8px; padding:8px 16px; font-size:14px; font-weight:600; font-family:'TT Norms Pro',sans-serif; cursor:not-allowed;" disabled>Export My Data (Coming Soon)</button>
 										<a href="/account-deletion" class="settings-btn" style="background:#D92D20; color:#fff; border:1px solid #D92D20; border-radius:8px; padding:8px 16px; font-size:14px; font-weight:600; font-family:'TT Norms Pro',sans-serif; text-decoration:none; display:inline-flex; align-items:center; cursor:pointer;">Delete Account</a>
 									</div>
 								</div>
@@ -537,7 +537,7 @@
 											<span class="settings-security-row__status-icon"><svg  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
 											Localization
 										</div>
-										<div style="font-size:13px; color:#535862; padding-left:26px;">Timezone, language and currency</div>
+										<div style="font-size:13px; color:var(--text-secondary); padding-left:26px;">Timezone, language and currency</div>
 									</div>
 								</div>
 
@@ -652,7 +652,7 @@
 											<span class="settings-security-row__status-icon"><svg  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
 											Notifications
 										</div>
-										<div style="font-size:13px; color:#535862; padding-left:26px;">Choose how you want to be notified</div>
+										<div style="font-size:13px; color:var(--text-secondary); padding-left:26px;">Choose how you want to be notified</div>
 									</div>
 								</div>
 
@@ -661,7 +661,7 @@
 										<span class="settings-security-row__status-icon"><svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg></span>
 										Email Alerts
 									</div>
-									<div style="flex:1; font-size:13px; color:#535862; margin-left:12px;">Receive newsletters &amp; tips</div>
+									<div style="flex:1; font-size:13px; color:var(--text-secondary); margin-left:12px;">Receive newsletters &amp; tips</div>
 									<label class="settings-toggle-switch">
 										<input type="checkbox" id="settings-notify-email">
 										<span class="settings-toggle-slider"></span>
@@ -673,7 +673,7 @@
 										<span class="settings-security-row__status-icon"><svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
 										Push Notifications
 									</div>
-									<div style="flex:1; font-size:13px; color:#535862; margin-left:12px;">Browser push notifications</div>
+									<div style="flex:1; font-size:13px; color:var(--text-secondary); margin-left:12px;">Browser push notifications</div>
 									<label class="settings-toggle-switch">
 										<input type="checkbox" id="settings-notify-push">
 										<span class="settings-toggle-slider"></span>
@@ -702,7 +702,7 @@
 										<span class="settings-security-row__status-icon"><svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
 										Show on Leaderboard
 									</div>
-									<div style="flex:1; font-size:13px; color:#535862; margin-left:12px;">Appear in the public leaderboard rankings</div>
+									<div style="flex:1; font-size:13px; color:var(--text-secondary); margin-left:12px;">Appear in the public leaderboard rankings</div>
 									<label class="settings-toggle-switch">
 										<input type="checkbox" id="settings-lb-visible">
 										<span class="settings-toggle-slider"></span>
@@ -714,7 +714,7 @@
 										<span class="settings-security-row__status-icon"><svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
 										Show Avatar
 									</div>
-									<div style="flex:1; font-size:13px; color:#535862; margin-left:12px;">Display your profile picture on the leaderboard</div>
+									<div style="flex:1; font-size:13px; color:var(--text-secondary); margin-left:12px;">Display your profile picture on the leaderboard</div>
 									<label class="settings-toggle-switch">
 										<input type="checkbox" id="settings-lb-avatar">
 										<span class="settings-toggle-slider"></span>
@@ -767,8 +767,8 @@
 							</div>
 
 							<div class="settings-learn-header">
-								<h3 style="font-size: 18px; font-weight: 600; color: #181D27; margin: 0; font-family: 'TT Norms Pro', sans-serif;">Learn with POOOL</h3>
-								<a href="/blog" class="settings-learn-see-all">See All<svg  width="16" height="16" viewBox="0 0 24 24" fill="none" style="margin-left:4px;"><path d="M9 18l6-6-6-6" stroke="#181D27" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
+								<h3 style="font-size: 18px; font-weight: 600; color: var(--page-title-color); margin: 0; font-family: 'TT Norms Pro', sans-serif;">Learn with POOOL</h3>
+								<a href="/blog" class="settings-learn-see-all">See All<svg  width="16" height="16" viewBox="0 0 24 24" fill="none" style="margin-left:4px;"><path d="M9 18l6-6-6-6" stroke="var(--page-title-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
 							</div>
 							<div class="settings-learn-grid" style="grid-template-columns: repeat(3, 1fr); gap:16px;">
 								<!-- Re-using existing blog card HTML structure -->
@@ -817,7 +817,7 @@
 		<div class="settings-modal-overlay ds-modal-overlay" id="modal-add-card" style="display:none" role="dialog" aria-modal="true">
 			<div class="settings-modal ds-modal" style="max-width:460px;">
 				<h3 class="settings-modal__title">Add Card</h3>
-				<p style="font-size:13px; color:#535862; margin:0 0 20px;">Add your credit or debit card details.</p>
+				<p style="font-size:13px; color:var(--text-secondary); margin:0 0 20px;">Add your credit or debit card details.</p>
 				<form id="settings-add-card-form">
 					<div class="settings-form-row" style="margin-bottom:16px;"><label class="settings-label">Cardholder Name <span style="color:#d92d20">*</span></label><input type="text" class="settings-input ds-input" id="settings-card-holder" placeholder="John Doe" required></div>
 					<div class="settings-form-row" style="margin-bottom:16px;"><label class="settings-label">Card Number <span style="color:#d92d20">*</span></label><input type="text" class="settings-input ds-input" id="settings-card-number" placeholder="4242 4242 4242 4242" maxlength="19" inputmode="numeric" required></div>
@@ -838,7 +838,7 @@
 		<div class="settings-modal-overlay ds-modal-overlay" id="modal-add-bank" style="display:none" role="dialog" aria-modal="true">
 			<div class="settings-modal ds-modal" style="max-width:520px;">
 				<h3 class="settings-modal__title">Add Bank Account</h3>
-				<p style="font-size:13px; color:#535862; margin:0 0 20px;">Your details are stored securely and used only for withdrawals.</p>
+				<p style="font-size:13px; color:var(--text-secondary); margin:0 0 20px;">Your details are stored securely and used only for withdrawals.</p>
 				<form id="settings-add-bank-form">
 					<input type="hidden" id="settings-bank-system" name="bank_system" value="swift">
 					<div class="settings-form-row" style="margin-bottom:16px;"><label class="settings-label">Account Holder Name <span style="color:#d92d20">*</span></label><input type="text" class="settings-input ds-input" id="settings-bank-holder" name="account_holder_name" placeholder="Full legal name" required></div>

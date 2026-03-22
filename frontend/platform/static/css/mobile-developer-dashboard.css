@@ -47,7 +47,7 @@
     font-weight: 700 !important;
     font-size: 24px !important;
     line-height: 32px !important;
-    color: #181d27 !important;
+    color: var(--page-title-color) !important;
     margin: 0 0 16px 0 !important;
   }
 
@@ -78,7 +78,7 @@
     /* Base/White */
     background: #ffffff;
     /* Gray/200 */
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     /* Shadows/shadow-xs */
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
     border-radius: 12px;
@@ -103,7 +103,7 @@
     /* Base/White */
     background: #ffffff;
     /* Gray/200 */
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     /* Shadows/shadow-xs */
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
     border-radius: 12px;
@@ -155,7 +155,7 @@
     height: auto !important;
     min-height: 436px;
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
     border-radius: 12px;
     margin: 75px 0px 75px;
@@ -192,7 +192,7 @@
     font-weight: 700 !important;
     font-size: 24px !important;
     line-height: 32px !important;
-    color: #181d27 !important;
+    color: var(--page-title-color) !important;
     margin: 0 !important;
     flex: none;
     order: 0;
@@ -233,7 +233,7 @@
     min-height: 38px;
     height: auto;
     background: #fafafa;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 8px;
     overflow-x: auto;
     overflow-y: visible;
@@ -341,7 +341,7 @@
     font-weight: 600;
     font-size: 18px;
     line-height: 28px;
-    color: #181d27;
+    color: var(--page-title-color);
     flex: none;
     order: 0;
     flex-grow: 0;
@@ -396,7 +396,7 @@
     font-size: 12px !important;
     line-height: 18px;
     text-align: right;
-    color: #535862;
+    color: var(--text-secondary);
     width: 40px;
     height: 18px;
   }
@@ -448,7 +448,7 @@
     font-size: 12px !important;
     line-height: 18px;
     text-align: right;
-    color: #535862;
+    color: var(--text-secondary);
     flex: none;
     flex-grow: 0;
   }
@@ -474,7 +474,7 @@
     margin-left: 0;
     margin-right: -16px;
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-right: none;
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
     border-radius: 12px 0 0 12px;

@@ -16,6 +16,7 @@ pub struct SettingsResponse {
     pub role: String,
     pub language: String,
     pub currency: String,
+    pub annual_income_cents: Option<i64>,
     pub avatar_url: Option<String>,
     pub address_line_1: Option<String>,
     pub address_line_2: Option<String>,
@@ -98,6 +99,7 @@ pub struct UpdateProfileForm {
     pub phone_number: Option<String>,
     pub country: Option<String>,
     pub timezone: Option<String>,
+    pub annual_income_cents: Option<i64>,
     // Extended fields
     pub date_of_birth: Option<String>, // YYYY-MM-DD
     pub nationality: Option<String>,
@@ -161,4 +163,13 @@ pub struct ChangePasswordForm {
 #[derive(Debug, Deserialize)]
 pub struct ChangePhoneForm {
     pub new_phone: String,
+}
+
+// ─── Request: GDPR Account Deletion ───────────────────────────
+
+/// Form data for GDPR selective account deletion (Art. 17).
+/// Requires current password for verification.
+#[derive(Debug, Deserialize)]
+pub struct DeleteAccountForm {
+    pub current_password: String,
 }

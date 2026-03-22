@@ -31,7 +31,7 @@
   top: 0;
   margin: 0 auto;
   background: #ffffff;
-  border-bottom: 1px solid #e9eaeb;
+  border-bottom: 1px solid var(--table-border-color);
   z-index: 1000;
 }
 
@@ -91,7 +91,7 @@
 }
 
 .mobile-header__icon-btn:active {
-  background: #e9eaeb;
+  background: var(--table-border-color);
 }
 
 /* Icon Styling */

@@ -78,7 +78,7 @@
 
 .ds-modal__header--bordered {
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  border-bottom: 1px solid var(--table-border-color, var(--table-border-color));
 }
 
 .ds-modal__title {
@@ -115,7 +115,7 @@
 }
 
 .ds-modal__close:hover {
-  color: #344054;
+  color: var(--body-color);
   background: #F2F4F7;
 }
 
@@ -145,7 +145,7 @@
 }
 
 .ds-modal__footer--bordered {
-  border-top: 1px solid var(--table-border-color, #E9EAEB);
+  border-top: 1px solid var(--table-border-color, var(--table-border-color));
   padding-top: 20px;
 }
 

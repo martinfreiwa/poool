@@ -118,7 +118,7 @@
   width: 240px;
   height: 144px;
   /* Gray/200 */
-  background: #e9eaeb;
+  background: var(--table-border-color);
   border-radius: 6px;
   position: relative;
   z-index: 2;
@@ -189,7 +189,7 @@
   min-width: 54px;
   white-space: nowrap;
   /* Gray/600 */
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 /* Action button */

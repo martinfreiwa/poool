@@ -1,25 +1,26 @@
 {% set title="Asset Trading V3" %}
 {% set extra_css=['marketplace-trading-v3', 'marketplace-orderbook'] %}
-{% set extra_js=['marketplace-event-bus', 'marketplace-websocket', 'marketplace-orderbook', 'marketplace-trading', 'marketplace-trading-v3'] %}
+{% set extra_js=['marketplace-event-bus', 'marketplace-websocket', 'marketplace-orderbook', 'marketplace-chart', 'marketplace-p2p', 'marketplace-trading', 'marketplace-trading-v3'] %}
 {% set body_class="tv3-body fouc-guard" %}
 {% set external_scripts=['https://cdn.jsdelivr.net/npm/apexcharts'] %}
 
 {% include "components/head.html" %}
 
 <body class="{{ body_class }}">
+    <a class="tv3-skip-link" href="#tv3-main-content">Skip to main content</a>
     {% include 'components/mobile-navigation.html' ignore missing %}
 
     <div class="tv3-wrapper">
         <!-- Sidebar -->
-        <nav class="tv3-sidebar">
+        <nav class="tv3-sidebar" aria-label="Main navigation">
             {% include 'components/sidebar.html' ignore missing %}
         </nav>
 
         <!-- Main Content -->
         <main class="tv3-main">
-            <div class="tv3-page">
+            <div class="tv3-page" id="tv3-main-content" role="main">
                 <!-- Breadcrumbs -->
-                <nav class="tv3-breadcrumbs">
+                <nav class="tv3-breadcrumbs" aria-label="Breadcrumb">
                     <a href="/marketplace" class="tv3-bc-link">Marketplace</a>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 12L10 8L6 4" stroke="#D5D7DA" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     <a href="/marketplace-secondary" class="tv3-bc-link">Trading</a>
@@ -119,12 +120,17 @@
                 <div class="tv3-layout-grid">
                     <div class="tv3-layout-main">
                     <!-- 12-Month Price Chart -->
-                    <section class="tv3-panel tv3-chart-panel">
+                    <section class="tv3-panel tv3-chart-panel" aria-label="Price chart">
                         <div class="tv3-detail-header">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                            <h3>12-Month Price History</h3>
+                            <h3>Price Chart</h3>
                         </div>
                         <div class="tv3-chart" id="tv3-chart"></div>
+                    </section>
+
+                    <!-- P2P Offers Section -->
+                    <section class="tv3-panel tv3-p2p-panel" aria-label="Peer-to-peer offers">
+                        <div id="tv3-p2p-container"></div>
                     </section>
 
                 <!-- ═══════════════════════════════════════
@@ -666,7 +672,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Extract asset_id from URL query param or data attribute
             var params = new URLSearchParams(window.location.search);
-            var assetId = params.get('asset_id') || params.get('id');
+            var assetId = params.get('asset_id') || params.get('id') || params.get('asset');
 
             // If we have a real asset UUID, initialize live trading
             if (assetId && assetId.match(/^[0-9a-f-]{36}$/i)) {
@@ -674,8 +680,20 @@
                 if (window.MarketTrading) {
                     window.MarketTrading.init(assetId);
                 }
+                // Initialize candlestick chart
+                if (window.MarketChart) {
+                    window.MarketChart.init('tv3-chart', assetId);
+                }
+                // Initialize P2P offers panel
+                if (window.MarketP2P) {
+                    window.MarketP2P.init('tv3-p2p-container', assetId);
+                }
             } else {
                 console.log('[Trading] Demo mode — using mock data');
+                // Still init chart with mock data in demo mode
+                if (window.MarketChart) {
+                    window.MarketChart.init('tv3-chart', null);
+                }
             }
         });
     </script>

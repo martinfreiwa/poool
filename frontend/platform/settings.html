@@ -66,26 +66,26 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 				</div>
 
 				<!-- ═══ MY DETAILS Panel ═══ -->
-				<div class="settings-panel" id="panel-mydetails" role="tabpanel" aria-labelledby="tab-mydetails">
+				<div class="ds-card settings-panel" id="panel-mydetails" role="tabpanel" aria-labelledby="tab-mydetails">
 					<div class="settings-section-header">
 						<div class="settings-section-header__text">
-							<h2 style="display:flex;align-items:center;gap:12px;">Personal info <span id="settings-kyc-status" class="settings-badge settings-badge--loading"></span></h2>
+							<h2 style="display:flex;align-items:center;gap:12px;">Personal info <span id="settings-kyc-status" class="ds-badge settings-badge settings-badge--loading"></span></h2>
 							<p>Update your photo and personal details here.</p>
 						</div>
 						<div class="settings-section-header__actions">
-							<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary btn-cancel-profile">Cancel</button>
-							<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary btn-save-profile">Save</button>
+							<button class="ds-btn ds-btn--secondary btn-cancel-profile">Cancel</button>
+							<button class="ds-btn ds-btn--primary btn-save-profile">Save</button>
 						</div>
 					</div>
 
 					<!-- Profile Completeness Indicator -->
-					<div class="settings-form-row" style="background: #F9FAFB; padding: 16px; border-radius: 8px; border: 1px solid #EAECF0;">
+					<div class="settings-form-row" style="background: #F9FAFB; padding: 16px; border-radius: 8px; border: 1px solid var(--card-border-color);">
 						<div class="settings-form-row__content" style="width: 100%;">
 							<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
 								<span style="font-weight: 500; color: #101828; font-size: 14px;">Profile Completeness</span>
 								<span id="profile-completeness-text" style="font-weight: 600; color: #2E2EF9; font-size: 14px;">0%</span>
 							</div>
-							<div style="width: 100%; height: 8px; background: #EAECF0; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+							<div style="width: 100%; height: 8px; background: var(--card-border-color); border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
 								<div id="profile-completeness-bar" style="width: 0%; height: 100%; background: #2E2EF9; border-radius: 4px; transition: width 0.3s ease;"></div>
 							</div>
 							<div id="profile-completeness-hint" style="font-size: 13px; color: #475467;">Fill in all your details to complete your profile.</div>
@@ -97,7 +97,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 						<div class="settings-form-row__label">
 							Your photo *
 							<span
-								style="font-weight:400;color:#535862;font-size:13px;margin-top:4px;display:block;">This
+								style="font-weight:400;color:var(--text-secondary);font-size:13px;margin-top:4px;display:block;">This
 								will be displayed on your profile.</span>
 						</div>
 						<div class="settings-photo-current">
@@ -133,9 +133,9 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 						<div class="settings-form-row__label">Name *</div>
 						<div class="settings-form-row__content">
 							<div class="settings-name-inputs">
-								<input id="settings-first-name" type="text" class="settings-input" value=""
+								<input id="settings-first-name" type="text" class="ds-input" value=""
 									placeholder="First name" maxlength="100">
-								<input id="settings-last-name" type="text" class="settings-input" value=""
+								<input id="settings-last-name" type="text" class="ds-input" value=""
 									placeholder="Last name" maxlength="100">
 							</div>
 						</div>
@@ -153,7 +153,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 										stroke="#717680" stroke-width="1.33" stroke-linecap="round"
 										stroke-linejoin="round" />
 								</svg>
-								<input id="settings-email" type="email" class="settings-input settings-input--with-icon"
+								<input id="settings-email" type="email" class="ds-input settings-input--with-icon"
 									value="" placeholder="Email address">
 							</div>
 						</div>
@@ -173,7 +173,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 									<path d="M8 11.3333H8.00667" stroke="#717680" stroke-width="1.33"
 										stroke-linecap="round" stroke-linejoin="round" />
 								</svg>
-								<input id="settings-phone" type="tel" class="settings-input settings-input--with-icon"
+								<input id="settings-phone" type="tel" class="ds-input settings-input--with-icon"
 									value="" placeholder="Phone number" minlength="7" maxlength="20">
 							</div>
 						</div>
@@ -191,7 +191,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 										stroke="#717680" stroke-width="1.33" stroke-linecap="round"
 										stroke-linejoin="round" />
 								</svg>
-								<select class="settings-select" id="settings-role">
+								<select class="ds-select" id="settings-role">
 									<option value="investor" selected>Investor</option>
 									<option value="developer">Developer</option>
 									<option value="admin">Admin</option>
@@ -218,7 +218,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 										stroke-linejoin="round" />
 									<circle cx="8" cy="6.66667" r="2" stroke="#717680" stroke-width="1.33" />
 								</svg>
-								<select class="settings-select" id="settings-country">
+								<select class="ds-select" id="settings-country">
 									<option value="" disabled>Select a country</option>
 									<option value="AF">Afghanistan</option>
 									<option value="AL">Albania</option>
@@ -448,7 +448,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 									<path d="M8 4V8L10.6667 9.33333" stroke="#717680" stroke-width="1.33"
 										stroke-linecap="round" stroke-linejoin="round" />
 								</svg>
-								<select class="settings-select" id="settings-timezone">
+								<select class="ds-select" id="settings-timezone">
 									<optgroup label="Americas">
 										<option value="Pacific/Honolulu">(UTC-10:00) Hawaii</option>
 										<option value="America/Anchorage">(UTC-09:00) Alaska</option>
@@ -550,11 +550,11 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 						<div class="settings-form-row__label">Identity Info</div>
 						<div class="settings-form-row__content">
 							<div class="settings-name-inputs">
-								<input id="settings-dob" type="date" class="settings-input" title="Date of Birth (YYYY-MM-DD)">
-								<input id="settings-nationality" type="text" class="settings-input" placeholder="Nationality (e.g. DEU, USA)" maxlength="50">
+								<input id="settings-dob" type="date" class="ds-input" title="Date of Birth (YYYY-MM-DD)">
+								<input id="settings-nationality" type="text" class="ds-input" placeholder="Nationality (e.g. DEU, USA)" maxlength="50">
 							</div>
 							<div class="settings-input-wrapper" style="margin-top: 12px;">
-								<input id="settings-tax-id" type="text" class="settings-input" placeholder="Tax ID / SSN" maxlength="50">
+								<input id="settings-tax-id" type="text" class="ds-input" placeholder="Tax ID / SSN" maxlength="50">
 							</div>
 						</div>
 					</div>
@@ -564,26 +564,46 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 						<div class="settings-form-row__label">Residential Address</div>
 						<div class="settings-form-row__content">
 							<div class="settings-input-wrapper" style="margin-bottom: 12px;">
-								<input id="settings-address-1" type="text" class="settings-input" placeholder="Address Line 1" autocomplete="address-line1" maxlength="255">
+								<input id="settings-address-1" type="text" class="ds-input" placeholder="Address Line 1" autocomplete="address-line1" maxlength="255">
 							</div>
 							<div class="settings-input-wrapper" style="margin-bottom: 12px;">
-								<input id="settings-address-2" type="text" class="settings-input" placeholder="Address Line 2 (Optional)" autocomplete="address-line2" maxlength="255">
+								<input id="settings-address-2" type="text" class="ds-input" placeholder="Address Line 2 (Optional)" autocomplete="address-line2" maxlength="255">
 							</div>
 							<div class="settings-name-inputs" style="margin-bottom: 12px;">
-								<input id="settings-city" type="text" class="settings-input" placeholder="City" autocomplete="address-level2" maxlength="100">
-								<input id="settings-state" type="text" class="settings-input" placeholder="State/Province" autocomplete="address-level1" maxlength="100">
+								<input id="settings-city" type="text" class="ds-input" placeholder="City" autocomplete="address-level2" maxlength="100">
+								<input id="settings-state" type="text" class="ds-input" placeholder="State/Province" autocomplete="address-level1" maxlength="100">
 							</div>
 							<div class="settings-input-wrapper">
-								<input id="settings-postal" type="text" class="settings-input" placeholder="Postal Code" autocomplete="postal-code" maxlength="50">
+								<input id="settings-postal" type="text" class="ds-input" placeholder="Postal Code" autocomplete="postal-code" maxlength="50">
 							</div>
 						</div>
 					</div>
 
 					<!-- Financial Overview -->
 					<div class="settings-form-row">
-						<div class="settings-form-row__label">Financial Overview</div>
+						<div class="settings-form-row__label">
+							Financial Info
+							<span style="font-weight:400;color:var(--text-secondary);font-size:13px;margin-top:4px;display:block;">Used to calculate your annual investment limit.</span>
+						</div>
 						<div class="settings-form-row__content">
-							<div style="background: #F9FAFB; padding: 16px; border-radius: 8px; border: 1px solid #EAECF0;">
+							<div class="settings-input-wrapper">
+								<span class="settings-input-prefix">$</span>
+								<input id="settings-annual-income" type="number" class="ds-input settings-input--with-prefix" placeholder="Annual Gross Income (USD)" min="0" step="1000">
+							</div>
+							<p style="font-size: 12px; color: #667085; margin-top: 8px;">
+								<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="vertical-align: middle; margin-right: 4px;">
+									<circle cx="6" cy="6" r="5" stroke="#667085" stroke-width="1"/>
+									<path d="M6 8V6M6 4H6.01" stroke="#667085" stroke-width="1.5" stroke-linecap="round"/>
+								</svg>
+								Legal Limit: 5% of income if ≤ $50k, 10% if > $50k. (Min: $2,500)
+							</p>
+						</div>
+					</div>
+
+					<div class="settings-form-row">
+						<div class="settings-form-row__label">Limit Status</div>
+						<div class="settings-form-row__content">
+							<div style="background: #F9FAFB; padding: 16px; border-radius: 8px; border: 1px solid var(--card-border-color);">
 								<div style="display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #E4E7EC; padding-bottom: 12px;">
 									<span style="color: #475467;">Annual Investment Limit</span>
 									<span id="settings-investment-limit" style="font-weight: 500; color: #101828;">Loading...</span>
@@ -605,11 +625,11 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 						<div class="settings-form-row__label">Rewards & Tier</div>
 						<div class="settings-form-row__content">
 							<div style="display: flex; gap: 16px;">
-								<div style="flex: 1; background: #F9FAFB; padding: 16px; border-radius: 8px; border: 1px solid #EAECF0;">
+								<div style="flex: 1; background: #F9FAFB; padding: 16px; border-radius: 8px; border: 1px solid var(--card-border-color);">
 									<div style="font-size: 13px; color: #475467; margin-bottom: 4px;">Current Tier</div>
 									<div id="settings-tier-name" style="font-weight: 600; font-size: 16px; color: #2E2EF9;">Loading...</div>
 								</div>
-								<div style="flex: 1; background: #F9FAFB; padding: 16px; border-radius: 8px; border: 1px solid #EAECF0;">
+								<div style="flex: 1; background: #F9FAFB; padding: 16px; border-radius: 8px; border: 1px solid var(--card-border-color);">
 									<div style="font-size: 13px; color: #475467; margin-bottom: 4px;">My Referral Code</div>
 									<div id="settings-referral-code" style="font-weight: 600; font-size: 16px; color: #101828;">Loading...</div>
 								</div>
@@ -619,13 +639,13 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 
 					<!-- Footer actions -->
 					<div class="settings-footer-actions">
-						<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" id="btn-cancel-profile">Cancel</button>
-						<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="btn-save-profile">Save</button>
+						<button class="ds-btn ds-btn--secondary" id="btn-cancel-profile">Cancel</button>
+						<button class="ds-btn ds-btn--primary" id="btn-save-profile">Save</button>
 					</div>
 				</div>
 
 				<!-- ═══ PREFERENCES Panel ═══ -->
-				<div class="settings-panel" id="panel-preferences" role="tabpanel" aria-labelledby="tab-preferences">
+				<div class="ds-card settings-panel" id="panel-preferences" role="tabpanel" aria-labelledby="tab-preferences">
 					<div class="settings-section-header">
 						<div class="settings-section-header__text">
 							<h2>Preferences</h2>
@@ -649,7 +669,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 									<path d="M6 9H8.66667" stroke="#717680" stroke-width="1.33" stroke-linecap="round"
 										stroke-linejoin="round" />
 								</svg>
-								<select class="settings-select" id="settings-language">
+								<select class="ds-select" id="settings-language">
 									<option value="en" data-icon="🇬🇧" selected>English</option>
 									<option value="de" data-icon="🇩🇪">Deutsch</option>
 									<option value="fr" data-icon="🇫🇷">Français</option>
@@ -687,7 +707,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 										stroke="#717680" stroke-width="1.33" stroke-linecap="round"
 										stroke-linejoin="round" />
 								</svg>
-								<select class="settings-select" id="settings-currency">
+								<select class="ds-select" id="settings-currency">
 									<option value="USD" data-icon="🇺🇸" selected>United States Dollar</option>
 									<option value="EUR" data-icon="🇪🇺">Euro</option>
 									<option value="GBP" data-icon="🇬🇧">British Pound</option>
@@ -705,21 +725,21 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 
 					<!-- Footer actions -->
 					<div class="settings-footer-actions">
-							<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" id="btn-cancel-preferences">Cancel</button>
-							<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="btn-save-preferences">Save</button>
+							<button class="ds-btn ds-btn--secondary" id="btn-cancel-preferences">Cancel</button>
+							<button class="ds-btn ds-btn--primary" id="btn-save-preferences">Save</button>
 					</div>
 				</div>
 
 				<!-- ═══ NOTIFICATIONS Panel ═══ -->
-				<div class="settings-panel" id="panel-notifications" role="tabpanel" aria-labelledby="tab-notifications">
+				<div class="ds-card settings-panel" id="panel-notifications" role="tabpanel" aria-labelledby="tab-notifications">
 					<div class="settings-section-header">
 						<div class="settings-section-header__text">
 							<h2>Notifications</h2>
 							<p>Manage how you receive alerts and updates.</p>
 						</div>
 						<div class="settings-section-header__actions">
-							<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" id="btn-cancel-notifications">Cancel</button>
-							<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="btn-save-notifications">Save</button>
+							<button class="ds-btn ds-btn--secondary" id="btn-cancel-notifications">Cancel</button>
+							<button class="ds-btn ds-btn--primary" id="btn-save-notifications">Save</button>
 						</div>
 					</div>
 					
@@ -749,7 +769,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 				</div>
 
 				<!-- ═══ SECURITY Panel ═══ -->
-				<div class="settings-panel" id="panel-security" role="tabpanel" aria-labelledby="tab-security">
+				<div class="ds-card settings-panel" id="panel-security" role="tabpanel" aria-labelledby="tab-security">
 					<div class="settings-section-header">
 						<div class="settings-section-header__text">
 							<h2>Security &amp; Privacy</h2>
@@ -838,12 +858,12 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 						</div>
 						<div class="settings-security-row__field" style="display: flex; align-items: center; justify-content: space-between;">
 							<div style="display: flex; align-items: center; gap: 12px; flex: 1; max-width: 400px;">
-								<input type="email" class="settings-input" id="settings-security-email" readonly
-									style="background:#F9FAFB;color:#535862;" placeholder="Loading...">
-								<span id="settings-email-verified" class="settings-badge settings-badge--loading" style="white-space: nowrap;"></span>
+								<input type="email" class="ds-input" id="settings-security-email" readonly
+									style="background:#F9FAFB;color:var(--text-secondary);" placeholder="Loading...">
+								<span id="settings-email-verified" class="ds-badge settings-badge settings-badge--loading" style="white-space: nowrap;"></span>
 							</div>
 							<div class="settings-security-row__actions">
-								<button class="settings-security-row__btn btn-change-email" id="btn-change-email">Change Email</button>
+								<button class="ds-btn ds-btn--secondary ds-btn--sm btn-change-email" id="btn-change-email">Change Email</button>
 							</div>
 						</div>
 					</div>
@@ -860,7 +880,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 							Password
 						</div>
 						<div class="settings-security-row__field">
-							<input type="password" class="settings-input settings-input--password"
+							<input type="password" class="ds-input settings-input--password"
 								value="••••••••••••••••••••••" readonly style="background:#F9FAFB;">
 							<div class="settings-security-row__actions">
 									<button class="ds-btn ds-btn--secondary ds-btn--sm btn-change-password" id="btn-change-password">Change Password</button>
@@ -880,10 +900,10 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 							Phone number
 						</div>
 						<div class="settings-security-row__field">
-							<input type="tel" class="settings-input" id="settings-security-phone" readonly
-								style="background:#F9FAFB;color:#535862;" placeholder="Loading...">
+							<input type="tel" class="ds-input" id="settings-security-phone" readonly
+								style="background:#F9FAFB;color:var(--text-secondary);" placeholder="Loading...">
 							<div class="settings-security-row__actions">
-								<button class="settings-security-row__btn btn-change-phone" id="btn-change-phone">Change Phone number</button>
+								<button class="ds-btn ds-btn--secondary ds-btn--sm btn-change-phone" id="btn-change-phone">Change Phone number</button>
 							</div>
 						</div>
 					</div>
@@ -901,10 +921,10 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 						</div>
 						<div class="settings-security-row__field" style="display: flex; align-items: center; justify-content: space-between;">
 							<div style="display: flex; align-items: center; gap: 12px; flex: 1; max-width: 400px;">
-								<span id="settings-kyc-detail-badge" class="settings-badge settings-badge--loading" style="white-space: nowrap;"></span>
+								<span id="settings-kyc-detail-badge" class="ds-badge settings-badge settings-badge--loading" style="white-space: nowrap;"></span>
 							</div>
 							<div class="settings-security-row__actions">
-								<a href="/kyc" id="settings-kyc-action-btn" class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary">Verification status</a>
+								<a href="/kyc" id="settings-kyc-action-btn" class="ds-btn ds-btn--secondary">Verification status</a>
 							</div>
 						</div>
 					</div>
@@ -927,11 +947,11 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 						</div>
 						<div class="settings-security-row__field" style="display: flex; align-items: center; justify-content: space-between;">
 							<div style="display: flex; align-items: center; gap: 12px; flex: 1; max-width: 400px;">
-								<span id="settings-2fa-badge" class="settings-badge settings-badge--loading" style="white-space: nowrap;"></span>
+								<span id="settings-2fa-badge" class="ds-badge settings-badge settings-badge--loading" style="white-space: nowrap;"></span>
 							</div>
 							<div class="settings-security-row__actions" id="settings-2fa-actions">
 								<!-- Dynamically populated -->
-								<a href="/auth/2fa/setup" class="ds-btn ds-btn--primary settings-btn settings-btn--primary">Enable 2FA</a>
+								<a href="/auth/2fa/setup" class="ds-btn ds-btn--primary">Enable 2FA</a>
 							</div>
 						</div>
 					</div>
@@ -1009,22 +1029,22 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 					</div>
 
 					<!-- Account Management -->
-					<div class="settings-security-row" style="margin-top: 32px; border-top: 1px solid #E9EAEB; padding-top: 24px;">
+					<div class="settings-security-row" style="margin-top: 32px; border-top: 1px solid var(--table-border-color); padding-top: 24px;">
 						<div class="settings-security-row__status" style="color: #D92D20;">
 							<span class="settings-security-row__status-icon"><svg  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D92D20" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6"/></svg></span>
 							Danger Zone
 						</div>
 						<div class="settings-security-row__field">
 							<div style="display: flex; gap: 12px; flex-wrap: wrap;">
-								<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" id="btn-export-data">Export My Data</button>
-								<a href="/account-deletion" class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary" style="color: #D92D20; border-color: #FDA29B;">Delete Account</a>
+								<button class="ds-btn ds-btn--secondary" id="btn-export-data">Export My Data</button>
+								<a href="/account-deletion" class="ds-btn ds-btn--secondary" style="color: #D92D20; border-color: #FDA29B;">Delete Account</a>
 							</div>
 						</div>
 					</div>
 				</div>
 
 				<!-- ═══ MORE Panel ═══ -->
-				<div class="settings-panel active" id="panel-more" role="tabpanel" aria-labelledby="tab-more">
+				<div class="ds-card settings-panel active" id="panel-more" role="tabpanel" aria-labelledby="tab-more">
 					<div class="settings-section-header">
 						<div class="settings-section-header__text">
 							<h2>Info & Learning</h2>
@@ -1144,11 +1164,11 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 
 					<div class="settings-learn-header">
 						<h3
-							style="font-size: 20px; font-weight: 600; color: #181D27; margin: 0; font-family: 'TT Norms Pro', sans-serif;">
+							style="font-size: 20px; font-weight: 600; color: var(--page-title-color); margin: 0; font-family: 'TT Norms Pro', sans-serif;">
 							Learn with POOOL</h3>
 						<a href="/blog" class="settings-learn-see-all">See All
 							<svg  width="16" height="16" viewBox="0 0 24 24" fill="none" style="margin-left:4px;">
-								<path d="M9 18l6-6-6-6" stroke="#181D27" stroke-width="2" stroke-linecap="round"
+								<path d="M9 18l6-6-6-6" stroke="var(--page-title-color)" stroke-width="2" stroke-linecap="round"
 									stroke-linejoin="round" />
 							</svg>
 						</a>
@@ -1169,7 +1189,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 								<span>Real Estate 101: What's in it for Beginners?</span>
 								<svg  width="24" height="24" viewBox="0 0 24 24" fill="none"
 									style="flex-shrink: 0; margin-top: 2px;">
-									<path d="M7 17L17 7M17 7H7M17 7V17" stroke="#181D27" stroke-width="2"
+									<path d="M7 17L17 7M17 7H7M17 7V17" stroke="var(--page-title-color)" stroke-width="2"
 										stroke-linecap="round" stroke-linejoin="round" />
 								</svg>
 							</div>
@@ -1199,7 +1219,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 								<span>Fractional Ownership: What you need to know</span>
 								<svg  width="24" height="24" viewBox="0 0 24 24" fill="none"
 									style="flex-shrink: 0; margin-top: 2px;">
-									<path d="M7 17L17 7M17 7H7M17 7V17" stroke="#181D27" stroke-width="2"
+									<path d="M7 17L17 7M17 7H7M17 7V17" stroke="var(--page-title-color)" stroke-width="2"
 										stroke-linecap="round" stroke-linejoin="round" />
 								</svg>
 							</div>
@@ -1229,7 +1249,7 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 								<span>What is Bali Real Estate Investing?</span>
 								<svg  width="24" height="24" viewBox="0 0 24 24" fill="none"
 									style="flex-shrink: 0; margin-top: 2px;">
-									<path d="M7 17L17 7M17 7H7M17 7V17" stroke="#181D27" stroke-width="2"
+									<path d="M7 17L17 7M17 7H7M17 7V17" stroke="var(--page-title-color)" stroke-width="2"
 										stroke-linecap="round" stroke-linejoin="round" />
 								</svg>
 							</div>
@@ -1264,16 +1284,16 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 				<div class="settings-modal__error" id="modal-email-error"></div>
 				<div class="settings-form-row">
 					<label class="settings-label" for="modal-new-email">New email address</label>
-					<input type="email" class="settings-input" id="modal-new-email" placeholder="name@example.com">
+					<input type="email" class="ds-input" id="modal-new-email" placeholder="name@example.com">
 				</div>
 				<div class="settings-form-row">
 					<label class="settings-label" for="modal-email-password">Current password</label>
-					<input type="password" class="settings-input" id="modal-email-password"
+					<input type="password" class="ds-input" id="modal-email-password"
 						placeholder="Enter your password">
 				</div>
 				<div class="settings-modal__actions">
-					<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary btn-close-email-modal">Cancel</button>
-					<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="modal-email-submit-btn">Save</button>
+					<button class="ds-btn ds-btn--secondary btn-close-email-modal">Cancel</button>
+					<button class="ds-btn ds-btn--primary" id="modal-email-submit-btn">Save</button>
 				</div>
 			</div>
 		</div>
@@ -1286,23 +1306,23 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 				<div class="settings-modal__error" id="modal-password-error"></div>
 				<div class="settings-form-row">
 					<label class="settings-label" for="modal-current-password">Current password</label>
-					<input type="password" class="settings-input" id="modal-current-password"
+					<input type="password" class="ds-input" id="modal-current-password"
 						placeholder="Enter current password">
 				</div>
 				<div class="settings-form-row">
 					<label class="settings-label" for="modal-new-password">New password</label>
-					<input type="password" class="settings-input" id="modal-new-password"
+					<input type="password" class="ds-input" id="modal-new-password"
 						placeholder="Min. 8 characters">
 				</div>
 				<div class="settings-form-row">
 					<label class="settings-label" for="modal-confirm-password">Confirm new password</label>
-					<input type="password" class="settings-input" id="modal-confirm-password"
+					<input type="password" class="ds-input" id="modal-confirm-password"
 						placeholder="Re-enter new password">
 				</div>
 				<div class="settings-modal__actions">
-					<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary"
+					<button class="ds-btn ds-btn--secondary"
 						onclick="closeModal('modal-change-password')">Cancel</button>
-					<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="modal-password-submit"
+					<button class="ds-btn ds-btn--primary" id="modal-password-submit"
 						onclick="submitChangePassword()">Save</button>
 				</div>
 			</div>
@@ -1316,12 +1336,12 @@ preferences, and security options.", extra_css=['settings'], extra_js=['htmx-ini
 				<div class="settings-modal__error" id="modal-phone-error"></div>
 				<div class="settings-form-row">
 					<label class="settings-label" for="modal-new-phone">New phone number</label>
-					<input type="tel" class="settings-input" id="modal-new-phone" placeholder="+1 234 567 8900">
+					<input type="tel" class="ds-input" id="modal-new-phone" placeholder="+1 234 567 8900">
 				</div>
 				<div class="settings-modal__actions">
-					<button class="ds-btn ds-btn--secondary settings-btn settings-btn--secondary"
+					<button class="ds-btn ds-btn--secondary"
 						onclick="closeModal('modal-change-phone')">Cancel</button>
-					<button class="ds-btn ds-btn--primary settings-btn settings-btn--primary" id="modal-phone-submit"
+					<button class="ds-btn ds-btn--primary" id="modal-phone-submit"
 						onclick="submitChangePhone()">Save</button>
 				</div>
 			</div>

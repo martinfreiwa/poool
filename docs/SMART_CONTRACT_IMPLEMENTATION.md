@@ -88,11 +88,11 @@ Since POOOL uses a traditional Web2 session-based auth (no MetaMask login by def
 
 ## 5. Smart Contract Architecture & The Identity Agent
 
-Your Solidity contracts should be structured as follows:
+Your Solidity contracts should be structured using the **Factory and Clones Pattern (EIP-1167)** to ensure strict legal isolation (one distinct smart contract per SPV/asset), while remaining gas-efficient:
 
-1.  **IdentityRegistry:** A central contract storing whitelist statuses. Your backend (via an admin wallet) calls `registerIdentity(walletAddress)` when a user passes Didit.me KYC.
-2.  **AssetFactory:** A contract deployed once by POOOL. When a new property is funded, the admin calls `deployAsset()`.
-3.  **AssetToken (ERC-3643):** The actual fractional token for a property. It queries the `IdentityRegistry` before allowing any `transfer()`.
+1.  **IdentityRegistry (Whitelist):** A single central contract storing all KYC whitelist statuses. All individual property contracts will reference this master registry before allowing any `transfer()`. This prevents having to re-whitelist a user 100 times for 100 different properties.
+2.  **AssetToken Implementation:** A core logic contract (ERC-1155 or ERC-3643 compatible) that enforces the 80% max-ownership limits and calls out to the `IdentityRegistry`. This is deployed only once.
+3.  **AssetFactory:** A master factory contract deployed by POOOL. When a new property is onboarded, the backend calls `deployAsset()` on this Factory. The Factory uses EIP-1167 Minimal Proxies to instantly clone the `AssetToken Implementation` and deploy a **brand new, isolated smart contract address** for that specific property.
 
 ## 6. Backend Integration (Rust / Alloy)
 

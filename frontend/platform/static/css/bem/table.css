@@ -34,7 +34,7 @@
   gap: 2px;
   height: 36px;
   background: #fafafa;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
 }
 
@@ -89,7 +89,7 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch; /* Modified from flex-start to ensure children take full width */
   padding: 0px;
   isolation: isolate;
   width: 100%;
@@ -97,7 +97,7 @@
   min-height: 476px;
   /* Minimum height for empty state */
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
   border-radius: 12px;
   overflow: hidden;
@@ -112,7 +112,7 @@
   padding: 0px;
   width: 100%;
   background: #fafafa;
-  border-bottom: 1px solid #e9eaeb;
+  border-bottom: 1px solid var(--table-border-color);
   height: 44px;
 }
 
@@ -185,15 +185,42 @@
   background: #ffffff;
   display: flex;
   flex-direction: column;
+  width: 100%; /* Ensure full width */
+  flex: 1; /* Take up all remaining space in container to allow vertical centering in empty state */
 }
 
 .table__row {
   display: flex;
   flex-direction: row;
   align-items: center;
-  border-bottom: 1px solid #e9eaeb;
+  border-bottom: 1px solid var(--table-border-color);
   height: 72px;
   /* Exact height from design reference */
+  width: 100%; /* Ensure full width */
+}
+
+/* Empty data row (used when no results found) */
+.table__row--empty {
+  height: auto;
+  min-height: 400px;
+  width: 100% !important;
+  flex: 1; /* Fill the whole body height */
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-bottom: none !important;
+}
+
+/* Centering wrapper for empty state content */
+.table__row--empty .ds-table-empty {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 64px 24px !important;
+  text-align: center !important;
 }
 
 .table__row:hover {
@@ -253,7 +280,7 @@
   font-weight: 600;
   font-size: 12px;
   line-height: 18px;
-  color: #181d27;
+  color: var(--page-title-color);
   max-width: 143px;
 }
 
@@ -269,7 +296,7 @@
   font-weight: 600;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 /* Cell with Change Indicator */
@@ -338,7 +365,7 @@
   font-size: 12px;
   line-height: 18px;
   text-align: right;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 .table__progress-bar {
@@ -478,7 +505,7 @@
   align-items: center;
   gap: 16px;
   padding: 16px;
-  border-top: 1px solid #e9eaeb;
+  border-top: 1px solid var(--table-border-color);
 }
 
 .table__pagination-btn {
@@ -490,7 +517,7 @@
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -717,7 +744,7 @@
 }
 
 .table__cell--property .portfolio-assets-property-name {
-  color: #181d27;
+  color: var(--page-title-color);
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -759,7 +786,7 @@
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .table__cell--status .wallet-transaction-status-badge {
@@ -802,7 +829,7 @@
   font-weight: 500;
   font-size: 12px;
   line-height: 18px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 /* Completed Status */
@@ -851,7 +878,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 .table__cell--amount {
@@ -867,7 +894,7 @@
 }
 
 .table__cell--amount .amount-negative {
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .table__cell--actions .wallet-transaction-action-btn {
@@ -923,7 +950,7 @@
   height: 104px;
   left: 24px;
   top: 0px;
-  background: #e9eaeb;
+  background: var(--table-border-color);
   border-radius: 50%;
 }
 
@@ -1029,7 +1056,7 @@
   font-size: 16px;
   line-height: 24px;
   text-align: center;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .wallet-transactions-empty-message {
@@ -1041,7 +1068,7 @@
   font-size: 14px;
   line-height: 20px;
   text-align: center;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 /* Wallet footer styles */

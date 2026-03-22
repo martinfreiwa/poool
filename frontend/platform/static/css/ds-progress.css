@@ -113,14 +113,14 @@
     font-family: var(--font-family, 'TT Norms Pro', sans-serif);
     font-size: 13px;
     font-weight: 500;
-    color: #535862;
+    color: var(--text-secondary);
 }
 
 .ds-progress-label__value {
     font-family: var(--font-family, 'TT Norms Pro', sans-serif);
     font-size: 13px;
     font-weight: 600;
-    color: #181D27;
+    color: var(--page-title-color);
 }
 
 

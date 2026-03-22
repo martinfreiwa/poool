@@ -216,6 +216,8 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M2-BE.5** | Image Upload | Upload bis zu 4 Bilder pro Post via GCS, Validierung (Dateityp, Größe <5MB) | `❌` | - | `backend/src/community/` |
 | **M2-BE.6** | Admin Moderation API | `GET /api/admin/community/reports` + `POST .../action` — Reports bearbeiten, Posts verstecken/löschen | `❌` | - | `backend/src/admin/` |
 | **M2-BE.7** | Post Rate Limiting | Redis-basiert: max 5 Posts/Stunde, Duplicate-Detection | `❌` | - | `backend/src/community/` |
+| **M2-BE.8** | New-User Sandbox & URL Filter | Enforce rule: Users under Level 2 cannot post URLs. Regex detection for "guaranteed return" variations auto-flags posts. | `❌` | - | `backend/src/community/` |
+| **M2-BE.9** | Asset Velocity Monitor | Background worker monitoring post velocity. If >5 mentions of an asset in 10 mins, alert Admins (Pump & Dump protection). | `❌` | - | `backend/src/community/` |
 
 ### M2-FE: Frontend (Platform)
 
@@ -224,6 +226,7 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M2-FE.1** | "Create Post" Component | Post-Erstellungs-UI: Textarea, Bild-Upload, Post-Type Selector | `❌` | `frontend/platform/static/js/` |
 | **M2-FE.2** | Post Report Button | "Report" Flag auf jedem Post, Report-Reason Modal | `❌` | `frontend/platform/static/js/` |
 | **M2-FE.3** | Disclaimer Banner | Automatischer Disclaimer unter Investment-bezogenen Posts (CSS + JS) | `❌` | `frontend/platform/static/css/` |
+| **M2-FE.4** | Trending Assets Widget | Sidebar widget showing top 3 most-discussed assets in the last 24h, linking to trading page. | `❌` | `frontend/platform/static/js/` |
 
 ### M2-ADMIN: Admin Dashboard (+4 Seiten → gesamt 6)
 
@@ -272,6 +275,7 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M3-BE.4** | Profile Edit | `PUT /api/community/profile` — Bio bearbeiten | `❌` | - | `backend/src/community/` |
 | **M3-BE.5** | Badge Worker | Background-Worker: alle 6h Badges berechnen (Core-DB Investments + Community-DB Stats) | `❌` | - | `backend/src/community/` |
 | **M3-BE.6** | Milestone Posts (Auto) | System-generierte Posts: "🎉 Sarah hat ihr 5. Investment getätigt!" | `❌` | - | `backend/src/community/` |
+| **M3-BE.7** | Dynamic Asset-Owner Tags | Cross-DB check: If post content contains asset name, query Core DB to append `[Verified Owner]` tag if holding balance > 0. | `❌` | - | `backend/src/community/` |
 
 ### M3-FE: Frontend (Platform)
 
@@ -281,6 +285,7 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M3-FE.2** | User Profile Modal | Click auf Username → Modal mit Bio, Badges, Posts, Follow-Button | `❌` | `frontend/platform/static/js/` |
 | **M3-FE.3** | Feed Toggle | "All Posts" / "Following" Toggle im Feed | `❌` | `frontend/platform/static/js/` |
 | **M3-FE.4** | Badge Display | Badges auf Profilen und neben Usernamen in Posts | `❌` | `frontend/platform/static/css/` |
+| **M3-FE.5** | First-Time Onboarding UI | "Welcome" checklist modal encouraging users to set a bio, leave a comment, and earn their first 50 XP. | `❌` | `frontend/platform/static/js/` |
 
 ### M3-ADMIN: Admin Dashboard (+2 Seiten → gesamt 8)
 
@@ -367,6 +372,8 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M5-BE.3** | Admin AMA Management | AMA erstellen, Fragen beantworten, Status ändern | `❌` | - | `backend/src/admin/` |
 | **M5-BE.4** | Challenges API | Challenges anzeigen, beitreten, Progress (braucht Modul 4) | `❌` | - | `backend/src/community/` |
 | **M5-BE.5** | Notification System | Community-Events → In-App Notifications | `❌` | - | `backend/src/community/` |
+| **M5-BE.6** | Async Digest Worker | Background Tokio task: compile "Top in your Circle" weekly email via SendGrid for users inactive >3 days. | `❌` | - | `backend/src/community/` |
+| **M5-BE.7** | SSR Post & Review Pages | Refactor `/community/post/{id}` and `/community/reviews/{id}` to be SSR MiniJinja templates for Google SEO indexing. | `❌` | - | `backend/src/community/` |
 
 ### M5-FE: Frontend (Platform)
 
@@ -481,6 +488,25 @@ ADMIN-DASHBOARD (+2 = 12 Seiten — KOMPLETT):
   ✅ /admin/community/amas — AMAs erstellen & verwalten
   ✅ /admin/community/challenges — Challenges erstellen & verwalten
 ```
+
+---
+
+## 🚀 MODULE 6: Advanced Engagement (Future Expansions)
+
+**Ziel:** Tiefergehende Social-Features und Bettermode-ähnliche Funktionalität.
+**Voraussetzung:** Modul 5 `✅ DONE`
+**Geschätzte Dauer:** Offen (Phase 3 des Masterplans)
+
+Diese Features erweitern das Kern-System um professionelle Community-Builder-Tools:
+
+| ID | Task | Description | Status | 
+|:---|:---|:---|:---|
+| **M6-FEAT.1** | Spaces / Sub-Communities | Eigene Channels erstellen (z.B. "Cocoa Farm Investors", "Beginners") anstatt nur eines globalen Feeds. | `❌` |
+| **M6-FEAT.2** | Ideation / Feedback Boards | Ein spezielles Board wo User Feature-Requests für die POOOL-Plattform einreichen und upvoten können. | `❌` |
+| **M6-FEAT.3** | Rich Media Embeds | Unterstützung für YouTube, Loom und Figma Embeds in Posts (erfordert strikte CSP und Sandbox-Sicherheit). | `❌` |
+| **M6-FEAT.4** | Global Member Directory | Ein durchsuchbares Verzeichnis aller Community-Nutzer mit Filtern für Interessen und Locations. | `❌` |
+| **M6-FEAT.5** | Direct Messaging (DMs) | 1-to-1 Chats zwischen Usern (streng reguliert per Follow-Verification zur Scam-Prävention). | `❌` |
+| **M6-FEAT.6** | Event RSVPs & Calendars | Ein Kalender-System für Live-AMAs, Webinare und Offline-Meetups inkl. RSVP-Tracking. | `❌` |
 
 ---
 

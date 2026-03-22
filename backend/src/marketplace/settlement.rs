@@ -42,7 +42,7 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
         // Block-wait for the next match event (1s timeout for heartbeat)
         let event_json = match orderbook::pop_match_from_queue(redis, 1).await {
             Ok(Some(json)) => json,
-            Ok(None) => continue,  // Timeout — no events, loop back
+            Ok(None) => continue, // Timeout — no events, loop back
             Err(e) => {
                 tracing::error!("Failed to pop from match queue: {}", e);
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -82,10 +82,7 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                 );
             }
             Err(e) => {
-                tracing::error!(
-                    "❌ Settlement FAILED: {} — re-queuing event for retry",
-                    e
-                );
+                tracing::error!("❌ Settlement FAILED: {} — re-queuing event for retry", e);
                 sentry::capture_message(
                     &format!(
                         "Settlement failed: asset={}, price={}, qty={}: {}",
@@ -98,9 +95,7 @@ pub async fn run_settlement_worker(redis: &RedisPool, pool: &PgPool) {
                 );
 
                 // Re-queue the event for retry (push back to the queue)
-                if let Err(re_err) =
-                    orderbook::push_match_to_queue(redis, &event_json).await
-                {
+                if let Err(re_err) = orderbook::push_match_to_queue(redis, &event_json).await {
                     tracing::error!(
                         "🔴 CRITICAL: Failed to re-queue match event: {} — MATCH MAY BE LOST",
                         re_err
@@ -405,7 +400,7 @@ mod tests {
         let fee = super::super::models::calculate_fee_cents(total, 500);
         let proceeds = total.saturating_sub(fee);
 
-        assert_eq!(fee, 5000);       // $50.00 fee
+        assert_eq!(fee, 5000); // $50.00 fee
         assert_eq!(proceeds, 95000); // $950.00 to seller
         assert_eq!(fee + proceeds, total); // Conservation: fee + proceeds = total
     }

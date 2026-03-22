@@ -8,10 +8,10 @@
     --tv3-bg: #fafafa;
     --tv3-surface: #ffffff;
     --tv3-surface-el: #f8f9fc;
-    --tv3-text: #181d27;
-    --tv3-text-sec: #535862;
+    --tv3-text: var(--page-title-color);
+    --tv3-text-sec: var(--text-secondary);
     --tv3-text-muted: #9ca3af;
-    --tv3-border: #e9eaeb;
+    --tv3-border: var(--table-border-color);
     --tv3-border-strong: #d1d5db;
     --tv3-hover: #f8f9fc;
     
@@ -453,8 +453,8 @@ body.tv3-body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 32px 0;
-    margin-bottom: 24px;
+    padding: 20px 0;
+    margin-bottom: 16px;
     border-top: 1px solid var(--tv3-border);
     border-bottom: 1px solid var(--tv3-border);
     transition: all 0.3s ease;
@@ -486,8 +486,8 @@ body.tv3-body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 32px 0;
-    margin-bottom: 24px;
+    padding: 20px 0;
+    margin-bottom: 16px;
     border-top: 1px solid var(--tv3-border);
     border-bottom: 1px solid var(--tv3-border);
 }
@@ -519,7 +519,7 @@ body.tv3-body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px 0;
+    padding: 16px 0;
     margin-bottom: 0;
 }
 .tv3-shares-field .tv3-market-info-label {
@@ -592,8 +592,8 @@ body.tv3-body {
 .tv3-field-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
 .tv3-order-summary {
-    padding: 16px 0;
-    margin-bottom: 24px;
+    padding: 12px 0;
+    margin-bottom: 16px;
     border-top: 1px solid var(--tv3-border);
 }
 .tv3-sum-row {
@@ -1114,10 +1114,14 @@ body.tv3-body {
 .tv3-faq-q:hover { color: var(--tv3-blue); }
 .tv3-faq-icon {
     flex-shrink: 0;
-    transition: transform 0.3s;
+    transition: transform 0.3s ease, color 0.3s ease;
+    color: var(--tv3-blue);
+    stroke-width: 2.5px;
 }
 .tv3-faq-item.open .tv3-faq-icon {
     transform: rotate(45deg);
+    color: var(--tv3-text-sec);
+    stroke-width: 2px;
 }
 .tv3-faq-a {
     max-height: 0;
@@ -1437,7 +1441,7 @@ body.tv3-body {
 }
 .tv3-calc-y-axis-divider {
     flex: 1; height: 1px;
-    border-bottom: 1px dashed #E9EAEB;
+    border-bottom: 1px dashed var(--table-border-color);
 }
 .tv3-calc-x-axis {
     display: flex; justify-content: space-around;
@@ -1483,7 +1487,7 @@ body.tv3-body {
 .tv3-calc-bar-tooltip {
     position: absolute; bottom: 100%; left: 50%;
     transform: translateX(-50%) translateY(0);
-    background: #181D27; color: #fff;
+    background: var(--page-title-color); color: #fff;
     border-radius: 10px; padding: 12px 16px;
     font-size: 12px; white-space: nowrap;
     opacity: 0; visibility: hidden;
@@ -1568,7 +1572,7 @@ body.tv3-body {
 .tv3-calc-help-tooltip {
     display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
     transform: translateX(-50%);
-    background: #181D27; border-radius: 8px; padding: 10px 14px;
+    background: var(--page-title-color); border-radius: 8px; padding: 10px 14px;
     z-index: 10; white-space: normal; width: 220px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
@@ -1603,7 +1607,7 @@ body.tv3-body {
     color: #717680; transition: all 0.2s ease;
 }
 .tv3-doc-tab.active {
-    background: #CCFF00; color: #0000FF;
+    background: var(--btn-primary-bg, #0000FF); color: #FFFFFF;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 .tv3-doc-tab:not(.active):hover {
@@ -1769,7 +1773,7 @@ body.tv3-body {
 }
 
 .my-order-qty {
-    color: #535862;
+    color: var(--text-secondary);
 }
 
 .my-order-status {
@@ -1817,7 +1821,7 @@ body.tv3-body {
 .trade-price--ask { color: #ef4444; }
 
 .trade-qty {
-    color: #535862;
+    color: var(--text-secondary);
     text-align: center;
 }
 
@@ -1841,7 +1845,7 @@ body.tv3-body {
     font-weight: 600;
     font-family: var(--tv3-font);
     color: #fff;
-    background: #181D27;
+    background: var(--page-title-color);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
     transform: translateX(120%);
     transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1855,5 +1859,184 @@ body.tv3-body {
 .trade-toast--success { background: #166534; }
 .trade-toast--error { background: #991b1b; }
 .trade-toast--warning { background: #92400e; }
-.trade-toast--info { background: #181D27; }
+.trade-toast--info { background: var(--page-title-color); }
+
+/* ═══════════════════════════════════════
+   ACCESSIBILITY (Task 5.11)
+   ═══════════════════════════════════════ */
+
+/* Focus-visible outline for keyboard navigation */
+.tv3-submit-btn:focus-visible,
+.tv3-toggle-btn:focus-visible,
+.tv3-mode-btn:focus-visible,
+.my-order-cancel:focus-visible,
+.chart-interval-btn:focus-visible,
+.p2p-btn:focus-visible,
+.p2p-tab:focus-visible,
+.tv3-sheet-close:focus-visible,
+.mp-sec__filter-btn:focus-visible,
+.mp-sec__footer-btn:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #0000FF;
+    outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    .ws-indicator--connecting,
+    .ws-indicator--reconnecting {
+        animation: none;
+    }
+    .trade-toast {
+        transition: none;
+        transform: translateX(0);
+    }
+    .p2p-modal-overlay { animation: none; }
+    .p2p-modal { animation: none; }
+}
+
+/* Skip to content link (hidden unless focused) */
+.tv3-skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    z-index: 99999;
+    padding: 8px 16px;
+    background: #0000FF;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: top 0.2s;
+}
+.tv3-skip-link:focus {
+    top: 0;
+}
+
+/* Screen reader only text */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE: ORDERBOOK + NEW COMPONENTS
+   (Task 5.12)
+   ═══════════════════════════════════════ */
+
+/* Tablet: stack chart and P2P side by side */
+@media (max-width: 1100px) {
+    .ob-container {
+        font-size: 11px;
+    }
+    .my-order-row {
+        grid-template-columns: 40px 1fr 1fr 60px 28px;
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+    .trade-row {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+}
+
+/* Mobile: full width everything */
+@media (max-width: 768px) {
+    /* Orderbook */
+    .ob-container {
+        font-size: 11px;
+        max-height: 300px;
+    }
+    .my-order-row {
+        grid-template-columns: 40px 1fr 60px 28px;
+        gap: 4px;
+        font-size: 11px;
+    }
+    .my-order-status {
+        display: none;
+    }
+    .trade-row {
+        font-size: 11px;
+    }
+
+    /* Chart: reduce height on mobile */
+    .tv3-chart {
+        min-height: 200px;
+    }
+    .chart-toolbar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+    }
+    .chart-summary {
+        font-size: 11px !important;
+        gap: 10px !important;
+    }
+
+    /* P2P cards: single column */
+    .p2p-card-body {
+        grid-template-columns: 1fr !important;
+    }
+    .p2p-actions {
+        flex-wrap: wrap;
+    }
+    .p2p-modal {
+        width: 95vw !important;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    .p2p-form-row {
+        flex-direction: column !important;
+        gap: 0 !important;
+    }
+
+    /* Toast: full width on mobile */
+    .trade-toast {
+        left: 16px;
+        right: 16px;
+        max-width: none;
+        transform: translateY(-120%);
+    }
+    .trade-toast.show {
+        transform: translateY(0);
+    }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+    .tv3-social-proof {
+        gap: 8px;
+        padding: 10px 12px;
+    }
+    .tv3-sp-item {
+        flex: 1;
+        min-width: 60px;
+    }
+    .tv3-sp-sep {
+        display: none;
+    }
+    .chart-interval-btn {
+        padding: 3px 8px !important;
+        font-size: 11px !important;
+    }
+    .p2p-panel-header {
+        flex-wrap: wrap;
+    }
+}
 

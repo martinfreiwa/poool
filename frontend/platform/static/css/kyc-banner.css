@@ -228,7 +228,7 @@ body[data-profile="developer"] .kyc-banner-btn-primary .kyc-banner-btn-text {
   width: 124px;
   height: 44px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
   flex: none;
   order: 1;

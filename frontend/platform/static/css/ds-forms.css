@@ -117,7 +117,7 @@
 .ds-form-label {
   font-size: 14px;
   font-weight: 500;
-  color: #344054;
+  color: var(--body-color);
   line-height: 20px;
 }
 
@@ -192,6 +192,6 @@
 
 .ds-checkbox-label {
   font-size: 14px;
-  color: #344054;
+  color: var(--body-color);
   user-select: none;
 }

@@ -558,8 +558,10 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     let mut mobile_items_html = String::new();
     let mut summary_items_html = String::new();
     let mut total_cents: i64 = 0;
+    let mut primary_items: Vec<(String, i64, i64)> = Vec::new(); // (Title, Price, Tokens)
 
     use sqlx::Row;
+
 
     for (idx, row) in rows.iter().enumerate() {
         let ci_id: Uuid = row.get("id");
@@ -572,8 +574,9 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         let location_country: Option<String> = row.get("location_country");
         let _asset_type: String = row.get("asset_type");
         let annual_yield_bps: Option<i32> = row.get("annual_yield_bps");
-        let _funding_status: String = row.get("funding_status");
+        let funding_status: String = row.get("funding_status");
         let tokens_available: i32 = row.get("tokens_available");
+
         let tokens_total: i32 = row.get("tokens_total");
         let image_url: Option<String> = row.get("image_url");
         let bedrooms: Option<i32> = row.get("bedrooms");
@@ -584,7 +587,12 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         let item_total = tokens_qty as i64 * token_price_cents;
         total_cents += item_total;
 
+        if funding_status == "funding_open" || funding_status == "funding_in_progress" {
+            primary_items.push((title.clone(), token_price_cents, tokens_qty as i64));
+        }
+
         // Build per-item summary line for the Order Summary card
+
         let truncated_title = if title.len() > 30 {
             format!("{}…", &title[..29])
         } else {
@@ -941,7 +949,80 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     let item_count = rows.len();
     let subtotal_idr = format_idr(total_cents);
 
+    // KFS Logic for Primary Offerings
+    let mut kfs_checkbox_html = String::new();
+    let mut kfs_modal_html = String::new();
+
+    if !primary_items.is_empty() {
+        let mut primary_list_html = String::new();
+        for (p_title, _price, _qty) in primary_items {
+            primary_list_html.push_str(&format!("<li><strong style=\"color:#101828;\">{}</strong><br/><span style=\"color:#475467; font-size:13px;\">Primary Offering — Subject to funding targets.</span></li>", p_title));
+        }
+
+        kfs_checkbox_html = r#"
+            <div class="cart-terms" id="cart-kfs-row" style="margin-top: 8px;">
+                <input type="checkbox" id="cart-kfs-checkbox" onchange="cartTermsChanged()" />
+                <label for="cart-kfs-checkbox">
+                    I have read and acknowledged the 
+                    <a href="javascript:void(0)" onclick="openKFSModal(event)">Key Facts Statement (KFS)</a>
+                </label>
+            </div>
+        "#.to_string();
+
+        kfs_modal_html = format!(r#"
+            <!-- KFS Modal -->
+            <div id="kfs-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; opacity:0; transition:opacity 0.3s ease;">
+                <div style="background:#fff; border-radius:12px; width:90%; max-width:500px; padding:24px; box-shadow:0 12px 24px rgba(0,0,0,0.1); transform:translateY(20px); transition:transform 0.3s ease;" id="kfs-modal-content">
+                    <h3 style="margin:0 0 16px 0; font-family:'TT Norms Pro', sans-serif; font-size:20px; color:#101828;">Key Facts Statement (KFS)</h3>
+                    <p style="font-size:14px; color:#475467; line-height:1.5;">You are purchasing shares in <strong>Primary Offerings</strong>. Please acknowledge the following risks and conditions before proceeding:</p>
+                    
+                    <ul style="margin:16px 0; padding-left:20px; line-height:1.6; font-size:14px; display:flex; flex-direction:column; gap:8px;">
+                        {list}
+                    </ul>
+
+                    <div style="background:#FEF0C7; border:1px solid #DC6803; border-radius:8px; padding:12px; margin-bottom:24px;">
+                        <h4 style="margin:0 0 4px 0; color:#B54708; font-size:13px;">Escrow & Refund Policy</h4>
+                        <p style="margin:0; font-size:12px; color:#B54708; line-height:1.4;">Primary offering funds will be held in a regulated escrow account. If the minimum funding target is not met by the campaign deadline, this purchase will be automatically aborted and your funds will be fully refunded to your POOOL wallet.</p>
+                    </div>
+
+                    <div style="display:flex; justify-content:flex-end; gap:12px;">
+                        <button onclick="closeKFSModal()" style="padding:10px 16px; border:1px solid #D0D5DD; background:#fff; border-radius:8px; cursor:pointer; font-weight:600; font-family:'TT Norms Pro';">Cancel</button>
+                        <button onclick="acceptKFSModal()" style="padding:10px 16px; border:none; background:var(--primary-color, #0000FF); color:#fff; border-radius:8px; cursor:pointer; font-weight:600; font-family:'TT Norms Pro';">Acknowledge & Accept</button>
+                    </div>
+                </div>
+            </div>
+            <script>
+                function openKFSModal(e) {{
+                    e.preventDefault();
+                    const modal = document.getElementById('kfs-modal');
+                    const content = document.getElementById('kfs-modal-content');
+                    modal.style.display = 'flex';
+                    // Trigger reflow
+                    void modal.offsetWidth;
+                    modal.style.opacity = '1';
+                    content.style.transform = 'translateY(0)';
+                }}
+                function closeKFSModal() {{
+                    const modal = document.getElementById('kfs-modal');
+                    const content = document.getElementById('kfs-modal-content');
+                    modal.style.opacity = '0';
+                    content.style.transform = 'translateY(20px)';
+                    setTimeout(() => {{ modal.style.display = 'none'; }}, 300);
+                }}
+                function acceptKFSModal() {{
+                    const cb = document.getElementById('cart-kfs-checkbox');
+                    if(cb) {{
+                        cb.checked = true;
+                        cartTermsChanged();
+                    }}
+                    closeKFSModal();
+                }}
+            </script>
+        "#, list = primary_list_html);
+    }
+
     let summary_html = format!(
+
         r##"<div id="cart-page-summary" class="cart-page-summary">
             <!-- Proceed to Payment Summary Box -->
             <div class="cart-summary-container" id="payment-summary-box" style="{payment_vis}">
@@ -1011,12 +1092,14 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                         <a href="/privacy-policy" target="_blank">Privacy Policy</a>
                     </label>
                 </div>
+                {kfs_checkbox}
 
                 <!-- CTA Button -->
+
                 <div class="cart-summary-actions">
                     <a href="/checkout" id="cart-proceed-btn" class="proceed-payment-btn proceed-payment-btn--disabled" style="background:var(--primary-color, #0000FF);" onclick="return cartProceed(event)">
-                        <span class="button-text" style="color:#62F7A4;">Proceed to Checkout</span>
-                        <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#62F7A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span class="button-text" style="color:#98FB96;">Proceed to Checkout</span>
+                        <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#98FB96" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </a>
                 </div>
                 <script>
@@ -1029,8 +1112,11 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                   }})();
                   function cartTermsChanged() {{
                     var checked = document.getElementById('cart-terms-checkbox').checked;
+                    var kfsEl = document.getElementById('cart-kfs-checkbox');
+                    var kfsChecked = kfsEl ? kfsEl.checked : true;
                     var btn = document.getElementById('cart-proceed-btn');
-                    if (checked) {{
+
+                    if (checked && kfsChecked) {{
                       btn.classList.remove('proceed-payment-btn--disabled');
                       sessionStorage.setItem('terms_accepted', '1');
                     }} else {{
@@ -1040,25 +1126,32 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                   }}
                   function cartProceed(e) {{
                     var checked = document.getElementById('cart-terms-checkbox').checked;
-                    if (!checked) {{
+                    var kfsEl = document.getElementById('cart-kfs-checkbox');
+                    var kfsChecked = kfsEl ? kfsEl.checked : true;
+
+                    if (!checked || !kfsChecked) {{
                       e.preventDefault();
                       var termsRow = document.getElementById('cart-terms-row');
-                      if (termsRow) {{
-                        termsRow.style.outline = '2px solid #F04438';
-                        termsRow.style.borderRadius = '8px';
-                        termsRow.style.padding = '8px';
-                        termsRow.style.background = '#FEF3F2';
-                        termsRow.style.animation = 'none';
-                        termsRow.offsetHeight; // force reflow
-                        termsRow.style.animation = 'cart-shake 0.4s ease';
+                      var kfsRow = document.getElementById('cart-kfs-row');
+                      var rowToShake = (!kfsChecked && checked && kfsRow) ? kfsRow : termsRow;
+
+                      if (rowToShake) {{
+                        rowToShake.style.outline = '2px solid #F04438';
+                        rowToShake.style.borderRadius = '8px';
+                        rowToShake.style.padding = '8px';
+                        rowToShake.style.background = '#FEF3F2';
+                        rowToShake.style.animation = 'none';
+                        rowToShake.offsetHeight; // force reflow
+                        rowToShake.style.animation = 'cart-shake 0.4s ease';
                         setTimeout(function() {{
-                          termsRow.style.outline = '';
-                          termsRow.style.borderRadius = '';
-                          termsRow.style.padding = '';
-                          termsRow.style.background = '';
-                          termsRow.style.animation = '';
+                          rowToShake.style.outline = '';
+                          rowToShake.style.borderRadius = '';
+                          rowToShake.style.padding = '';
+                          rowToShake.style.background = '';
+                          rowToShake.style.animation = '';
                         }}, 2000);
                       }}
+
                       return false;
                     }}
                     return true;
@@ -1123,7 +1216,9 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         total = total_display,
         subtotal_idr = subtotal_idr,
         total_idr = idr_display,
+        kfs_checkbox = kfs_checkbox_html,
     );
+
 
     // Build the items container (left column) with "Add More" ghost card at the bottom
     let populated_content = format!(
@@ -1167,10 +1262,11 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                 <span class="cart-support-card__desc">Our team is here. <a href="/support" class="cart-support-card__link">Contact support</a> or call <strong>+62 361 123 456</strong></span>
             </div>
         </div>
-        </div></div>{summary}
+        </div></div>{summary}{kfs_modal}
         <!-- Empty Cart State -->"##,
         items_html = cart_items_html,
         summary = summary_html,
+        kfs_modal = kfs_modal_html,
     );
 
     // Replace the entire cart content section between the two known anchors

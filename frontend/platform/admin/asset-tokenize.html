@@ -3,11 +3,11 @@
 
 <head>
   <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
-    <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tokenize Asset | Admin | POOOL</title>
-  <meta name="description" content="POOOL Admin — Deploy an ERC-3643 smart contract for an approved asset on Base Network." />
+  <meta name="description" content="POOOL Admin — Tokenize an approved asset on the POOOLProperty1155 smart contract (Polygon)." />
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
@@ -20,187 +20,72 @@
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
   <style>
-    /* ─── Tokenize Page specific ─── */
-    .preflight-checklist {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-
+    .preflight-checklist { display: flex; flex-direction: column; gap: 0; }
     .preflight-item {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--admin-border);
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px; border-bottom: 1px solid var(--admin-border);
     }
-    .preflight-item:last-child {
-      border-bottom: none;
-    }
-
+    .preflight-item:last-child { border-bottom: none; }
     .preflight-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .preflight-icon--pass {
-      background: rgba(16, 185, 129, 0.12);
-      color: #10b981;
-    }
-    .preflight-icon--fail {
-      background: rgba(239, 68, 68, 0.12);
-      color: #ef4444;
-    }
-    .preflight-icon--warn {
-      background: rgba(251, 191, 36, 0.12);
-      color: #f59e0b;
-    }
-
-    .preflight-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--admin-text-primary);
-    }
-    .preflight-sublabel {
-      font-size: 12px;
-      color: var(--admin-text-muted);
-      margin-top: 2px;
-    }
-
+    .preflight-icon--pass { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .preflight-icon--fail { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+    .preflight-label { font-size: 14px; font-weight: 600; color: var(--admin-text-primary); }
+    .preflight-sublabel { font-size: 12px; color: var(--admin-text-muted); margin-top: 2px; }
     .deploy-button-area {
-      text-align: center;
-      padding: 40px 20px;
+      text-align: center; padding: 40px 20px;
       border: 2px dashed var(--admin-border);
       border-radius: var(--admin-radius-lg);
-      background: var(--admin-bg);
-      margin-top: 24px;
+      background: var(--admin-bg); margin-top: 24px;
     }
-
     .deploy-btn-main {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 16px 40px;
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 40px; font-size: 16px; font-weight: 700; color: #fff;
       background: linear-gradient(135deg, var(--admin-accent), #6366f1);
-      border: none;
-      border-radius: var(--admin-radius-lg);
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+      border: none; border-radius: var(--admin-radius-lg); cursor: pointer;
+      transition: all 0.2s; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
     }
-    .deploy-btn-main:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-    }
-    .deploy-btn-main:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-
+    .deploy-btn-main:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4); }
+    .deploy-btn-main:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
     .deploy-result {
-      margin-top: 24px;
-      padding: 20px 24px;
+      margin-top: 24px; padding: 20px 24px;
       background: rgba(16, 185, 129, 0.06);
       border: 1px solid rgba(16, 185, 129, 0.2);
       border-radius: var(--admin-radius-lg);
     }
-
     .deploy-result-address {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 14px;
-      color: var(--admin-accent);
-      word-break: break-all;
-      background: var(--admin-bg);
-      padding: 10px 14px;
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px;
+      color: var(--admin-accent); word-break: break-all;
+      background: var(--admin-bg); padding: 10px 14px;
       border-radius: var(--admin-radius-md);
-      border: 1px solid var(--admin-border);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 8px;
+      border: 1px solid var(--admin-border); margin-top: 8px;
     }
-
-    .asset-summary-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
+    .asset-summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
     .asset-summary-item {
-      padding: 16px;
-      background: var(--admin-bg);
-      border: 1px solid var(--admin-border);
-      border-radius: var(--admin-radius-md);
+      padding: 16px; background: var(--admin-bg);
+      border: 1px solid var(--admin-border); border-radius: var(--admin-radius-md);
     }
-
     .asset-summary-item .label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--admin-text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 6px;
+      font-size: 11px; font-weight: 600; color: var(--admin-text-muted);
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
     }
-
-    .asset-summary-item .value {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--admin-text-primary);
-    }
-
-    .status-timeline {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      margin-bottom: 24px;
-    }
-
-    .timeline-step {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .timeline-step--done {
-      color: var(--admin-success);
-    }
-    .timeline-step--active {
-      color: var(--admin-accent);
-      background: rgba(99, 102, 241, 0.08);
-      border-radius: 20px;
-    }
-    .timeline-step--pending {
-      color: var(--admin-text-muted);
-    }
-
-    .timeline-arrow {
-      color: var(--admin-text-muted);
-      font-size: 12px;
-      margin: 0 4px;
-    }
+    .asset-summary-item .value { font-size: 18px; font-weight: 700; color: var(--admin-text-primary); }
+    .status-timeline { display: flex; align-items: center; gap: 0; margin-bottom: 24px; }
+    .timeline-step { display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 12px; font-weight: 600; }
+    .timeline-step--done { color: var(--admin-success); }
+    .timeline-step--active { color: var(--admin-accent); background: rgba(99, 102, 241, 0.08); border-radius: 20px; }
+    .timeline-step--pending { color: var(--admin-text-muted); }
+    .timeline-arrow { color: var(--admin-text-muted); font-size: 12px; margin: 0 4px; }
   </style>
 </head>
 
 <body class="admin-body dom-ready">
   <div class="admin-wrapper">
-    <!-- Sidebar Placeholder -->
     <div id="admin-sidebar-placeholder"></div>
     <script src="/static/js/admin-sidebar-loader.js"></script>
 
-    <!-- ===== MAIN CONTENT ===== -->
     <main class="admin-main">
       <header class="admin-topbar">
         <div class="admin-topbar-left">
@@ -209,7 +94,7 @@
             <span class="separator">›</span>
             <a href="/admin/assets">Assets</a>
             <span class="separator">›</span>
-            <a href="/admin/asset-details?id=demo">Villa Mallorca</a>
+            <a id="breadcrumb-asset-name" href="#">Loading…</a>
             <span class="separator">›</span>
             <span class="current">Tokenize</span>
           </nav>
@@ -227,9 +112,9 @@
       <div class="admin-content">
         <!-- Page Header -->
         <div class="admin-page-header">
-          <h1 class="admin-page-title">Tokenize: Villa Mallorca</h1>
+          <h1 id="page-title" class="admin-page-title">Tokenize Asset</h1>
           <p class="admin-page-subtitle">
-            Deploy an ERC-3643 compliant security token smart contract on Base Network
+            Deploy an ERC-1155 asset token on the POOOLProperty1155 contract (Polygon)
           </p>
         </div>
 
@@ -245,12 +130,12 @@
             Approved
           </div>
           <span class="timeline-arrow">→</span>
-          <div class="timeline-step timeline-step--active">
+          <div class="timeline-step timeline-step--active" id="timeline-tokenize">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6" /><path d="M8 5v3l2 2" /></svg>
             Tokenize & Deploy
           </div>
           <span class="timeline-arrow">→</span>
-          <div class="timeline-step timeline-step--pending">
+          <div class="timeline-step timeline-step--pending" id="timeline-live">
             Live on Marketplace
           </div>
         </div>
@@ -259,183 +144,45 @@
         <div class="asset-summary-grid">
           <div class="asset-summary-item">
             <div class="label">Asset Valuation</div>
-            <div class="value">€300,000</div>
+            <div class="value" id="summary-valuation">—</div>
           </div>
           <div class="asset-summary-item">
             <div class="label">Token Price</div>
-            <div class="value">€100.00</div>
+            <div class="value" id="summary-price">—</div>
           </div>
           <div class="asset-summary-item">
             <div class="label">Total Token Supply</div>
-            <div class="value">3,000</div>
-          </div>
-          <div class="asset-summary-item">
-            <div class="label">Token Symbol</div>
-            <div class="value">POOL-MAL</div>
-          </div>
-          <div class="asset-summary-item">
-            <div class="label">Expected Yield</div>
-            <div class="value" style="color: var(--admin-success);">8.2%</div>
+            <div class="value" id="summary-supply">—</div>
           </div>
           <div class="asset-summary-item">
             <div class="label">Network</div>
-            <div class="value" style="display: flex; align-items: center; gap: 8px;">
-              Base
-              <span class="admin-badge admin-badge--info" style="font-size: 10px;">Mainnet</span>
-            </div>
+            <div class="value" id="summary-network" style="display: flex; align-items: center; gap: 8px;">—</div>
           </div>
         </div>
 
         <!-- Pre-Flight Checklist -->
-        <div class="admin-card" style="margin-bottom: 24px;">
+        <div class="admin-card" id="checklist-card" style="margin-bottom: 24px;">
           <div style="padding: 16px 20px; border-bottom: 1px solid var(--admin-border);">
-            <h3 style="font-size: 15px; font-weight: 700; margin: 0;">
-              Pre-Flight Checklist
-            </h3>
+            <h3 style="font-size: 15px; font-weight: 700; margin: 0;">Pre-Flight Checklist</h3>
             <p style="font-size: 12px; color: var(--admin-text-muted); margin: 4px 0 0;">
-              All items must pass before the smart contract can be deployed.
+              All items must pass before the asset can be tokenized on-chain.
             </p>
           </div>
-          <div class="preflight-checklist">
-            <!-- Check 1: IPFS Document -->
-            <div class="preflight-item">
-              <div class="preflight-icon preflight-icon--pass">
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" /></svg>
-              </div>
-              <div style="flex: 1;">
-                <div class="preflight-label">SPV Document on IPFS</div>
-                <div class="preflight-sublabel">
-                  The operating agreement PDF has been uploaded to IPFS via Pinata and pinned permanently.
-                </div>
-              </div>
-              <span style="font-family: 'SF Mono', monospace; font-size: 11px; color: var(--admin-text-muted); background: var(--admin-bg); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--admin-border);">
-                QmX7b2...9fKz
-              </span>
-            </div>
-            <!-- Check 2: Token Supply -->
-            <div class="preflight-item">
-              <div class="preflight-icon preflight-icon--pass">
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" /></svg>
-              </div>
-              <div style="flex: 1;">
-                <div class="preflight-label">Token Supply & Price Defined</div>
-                <div class="preflight-sublabel">
-                  3,000 tokens at €100.00 each = €300,000 total valuation.
-                </div>
-              </div>
-              <span class="admin-badge admin-badge--success">Valid</span>
-            </div>
-            <!-- Check 3: Gas Balance -->
-            <div class="preflight-item">
-              <div class="preflight-icon preflight-icon--pass">
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" /></svg>
-              </div>
-              <div style="flex: 1;">
-                <div class="preflight-label">Deployer Wallet Gas Balance</div>
-                <div class="preflight-sublabel">
-                  0.0847 ETH available (~$211). Estimated deployment cost: ~0.003 ETH (~$7.50).
-                </div>
-              </div>
-              <span class="admin-badge admin-badge--success">Sufficient</span>
-            </div>
-            <!-- Check 4: Identity Registry -->
-            <div class="preflight-item">
-              <div class="preflight-icon preflight-icon--pass">
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" /></svg>
-              </div>
-              <div style="flex: 1;">
-                <div class="preflight-label">Identity Registry Connected</div>
-                <div class="preflight-sublabel">
-                  The ERC-3643 IdentityRegistry contract is deployed and linked. Only KYC-verified wallets can receive tokens.
-                </div>
-              </div>
-              <span style="font-family: 'SF Mono', monospace; font-size: 11px; color: var(--admin-text-muted); background: var(--admin-bg); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--admin-border);">
-                0xIDR...7890
-              </span>
-            </div>
-            <!-- Check 5: Legal Approval -->
-            <div class="preflight-item">
-              <div class="preflight-icon preflight-icon--pass">
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" /></svg>
-              </div>
-              <div style="flex: 1;">
-                <div class="preflight-label">Admin Approval</div>
-                <div class="preflight-sublabel">
-                  Asset has been reviewed and approved by an administrator on Mar 12, 2026.
-                </div>
-              </div>
-              <span class="admin-badge admin-badge--success">Approved</span>
+          <div class="preflight-checklist" id="checklist">
+            <div class="preflight-item" style="justify-content: center; padding: 40px; color: var(--admin-text-muted);">
+              Loading pre-flight checks…
             </div>
           </div>
         </div>
 
         <!-- Deploy Button Area -->
-        <div class="deploy-button-area">
-          <div style="margin-bottom: 16px;">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--admin-accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <p style="font-size: 14px; color: var(--admin-text-secondary); margin: 0 0 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
-            Deploying will create an <strong>ERC-3643 compliant smart contract</strong> on the Base Mainnet blockchain.
-            This action is permanent and cannot be undone. All 3,000 tokens will be minted to the POOOL Treasury wallet.
-          </p>
-          <button class="deploy-btn-main">
-            🚀 Tokenize & Go Live — Deploy Smart Contract
-          </button>
-          <p style="font-size: 11px; color: var(--admin-text-muted); margin: 12px 0 0;">
-            Estimated gas cost: ~0.003 ETH (~$7.50) · Deployment time: ~2 seconds on Base
-          </p>
-        </div>
-
-        <!-- Deploy Result (shown after successful deployment) -->
-        <div class="deploy-result" style="margin-top: 24px;">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-            <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#10b981" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" /></svg>
-            <span style="font-size: 16px; font-weight: 700; color: #10b981;">Smart Contract Deployed Successfully!</span>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div>
-              <span style="font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Contract Address</span>
-              <div class="deploy-result-address">
-                0xABC123456789abcdef0123456789ABCDEF012345
-                <button style="background: none; border: 1px solid var(--admin-border); border-radius: 4px; padding: 4px 6px; cursor: pointer; color: var(--admin-text-muted); flex-shrink: 0;" title="Copy">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
-                    <rect x="5" y="5" width="9" height="9" rx="1.5" />
-                    <path d="M5 11H3.5A1.5 1.5 0 012 9.5v-7A1.5 1.5 0 013.5 1h7A1.5 1.5 0 0112 2.5V5" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div>
-              <span style="font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Transaction Hash</span>
-              <div class="deploy-result-address">
-                0x4f8e2a...3b9c7d
-                <a href="https://basescan.org/tx/0x4f8e2a3b9c7d" target="_blank" style="flex-shrink: 0; color: var(--admin-accent); font-size: 12px; text-decoration: none;">
-                  View ↗
-                </a>
-              </div>
-            </div>
-          </div>
-          <div style="margin-top: 16px; display: flex; gap: 8px;">
-            <a href="https://basescan.org/address/0xABC123456789abcdef0123456789ABCDEF012345" target="_blank" class="admin-btn admin-btn--primary">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
-                <path d="M12 9v4a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1h4" />
-                <path d="M9 2h5v5" />
-                <path d="M6 10L14 2" />
-              </svg>
-              View on Basescan
-            </a>
-            <a href="/admin/blockchain-treasury" class="admin-btn admin-btn--secondary">
-              Go to Blockchain Treasury →
-            </a>
-          </div>
+        <div class="deploy-button-area" id="deploy-area">
+          <div style="color: var(--admin-text-muted); padding: 20px;">Loading…</div>
         </div>
       </div>
     </main>
   </div>
+  <script src="/static/js/admin-asset-tokenize.js"></script>
 </body>
 
 </html>

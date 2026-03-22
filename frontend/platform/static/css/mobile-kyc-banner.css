@@ -118,7 +118,7 @@
   line-height: 20px;
 
   /* Gray/900 */
-  color: #181d27;
+  color: var(--page-title-color);
 
   flex: none;
   order: 0;

@@ -6,9 +6,9 @@
 /* ─── CSS Variables ────────────────────────────── */
 :root {
     --support-bg: #ffffff;
-    --support-border: #e9eaeb;
-    --support-text: #181d27;
-    --support-muted: #535862;
+    --support-border: var(--table-border-color);
+    --support-text: var(--page-title-color);
+    --support-muted: var(--text-secondary);
     --support-accent: var(--primary-color);
     --support-accent-light: #f4f4ff;
 }
@@ -49,7 +49,7 @@
     font-size: 36px;
     line-height: 44px;
     letter-spacing: -0.02em;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
 }
 
@@ -57,7 +57,7 @@
     font-family: var(--font-family, "TT Norms Pro", sans-serif);
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
     margin: 0;
     padding-left: 44px;
     /* 32px icon + 12px gap */
@@ -65,7 +65,7 @@
 
 .support-divider {
     border: none;
-    border-top: 1px solid #eaecf0;
+    border-top: 1px solid var(--card-border-color);
     margin: 0 0 24px 0;
 }
 
@@ -80,7 +80,7 @@
 .support-stat-card {
     flex: 1;
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 12px;
     padding: 20px 24px;
     display: flex;
@@ -116,7 +116,7 @@
     font-size: 28px;
     line-height: 36px;
     letter-spacing: -0.02em;
-    color: #181d27;
+    color: var(--page-title-color);
 }
 
 .support-stat-label {
@@ -130,7 +130,7 @@
 /* ─── Cards ────────────────────────────────────── */
 .support-form-card {
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 12px;
     padding: 24px;
 }
@@ -143,7 +143,7 @@
     font-size: 16px;
     font-weight: 600;
     line-height: 24px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0 0 20px 0;
 }
 
@@ -167,7 +167,7 @@
 .support-form-group label {
     font-size: 14px;
     font-weight: 500;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
 }
 
@@ -270,12 +270,12 @@
 }
 
 .drop-zone:hover {
-    border-color: var(--primary-color, #2E2EF9);
+    border-color: var(--primary-color);
     background: #f8f8ff;
 }
 
 .drop-zone.drag-over {
-    border-color: var(--primary-color, #2E2EF9);
+    border-color: var(--primary-color);
     background: #f0f0ff;
     border-style: solid;
 }
@@ -298,12 +298,12 @@
 
 .drop-zone-text {
     font-size: 14px;
-    color: #535862;
+    color: var(--text-secondary);
     font-family: var(--font-family, "TT Norms Pro", sans-serif);
 }
 
 .drop-zone-text strong {
-    color: var(--primary-color, #2E2EF9);
+    color: var(--primary-color);
 }
 
 .drop-zone-hint {
@@ -317,7 +317,7 @@
     justify-content: center;
     gap: 8px;
     font-size: 13px;
-    color: #344054;
+    color: var(--body-color);
     margin-top: 8px;
 }
 
@@ -349,7 +349,7 @@
 .faq-suggestion-header {
     font-weight: 600;
     font-size: 13px;
-    color: #344054;
+    color: var(--body-color);
     margin-bottom: 6px;
 }
 
@@ -380,7 +380,7 @@
     font-size: 12px;
     font-weight: 600;
     border-radius: 20px;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     background: transparent;
     color: #717680;
     cursor: pointer;
@@ -404,10 +404,10 @@
     width: 100%;
     padding: 10px 14px;
     font-size: 14px;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 8px;
     background: #ffffff;
-    color: #181d27;
+    color: var(--page-title-color);
     font-family: var(--font-family, "TT Norms Pro", sans-serif);
     margin-bottom: 16px;
     box-sizing: border-box;
@@ -422,7 +422,7 @@
 
 /* ─── FAQ Items ────────────────────────────────── */
 .faq-item {
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 8px;
     margin-bottom: 8px;
     overflow: hidden;
@@ -438,7 +438,7 @@
     border: none;
     font-size: 14px;
     font-weight: 600;
-    color: #181d27;
+    color: var(--page-title-color);
     cursor: pointer;
     text-align: left;
     font-family: var(--font-family, "TT Norms Pro", sans-serif);
@@ -468,7 +468,7 @@
 .faq-answer p,
 .faq-answer div {
     font-size: 13px;
-    color: #535862;
+    color: var(--text-secondary);
     line-height: 1.7;
     padding-bottom: 14px;
     margin: 0;
@@ -477,7 +477,7 @@
 /* ─── Existing Tickets Section ─────────────────── */
 .support-tickets-card {
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 12px;
     padding: 24px;
 }
@@ -495,7 +495,7 @@
     font-size: 13px;
     font-weight: 500;
     border-radius: 8px;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     background: transparent;
     color: #717680;
     cursor: pointer;
@@ -518,7 +518,7 @@
 /* ─── Ticket Cards ─────────────────────────────── */
 .support-ticket-card {
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 8px;
     margin-bottom: 12px;
     padding: 16px;
@@ -615,7 +615,7 @@
     font-family: inherit;
     font-size: 16px;
     font-weight: 600;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
 }
 
@@ -632,7 +632,7 @@
     padding: 2px 8px;
     border-radius: 12px;
     background: #f2f4f7;
-    color: #344054;
+    color: var(--body-color);
 }
 
 .ticket-status--open {
@@ -674,13 +674,13 @@
 .ticket-card-detail.open {
     max-height: 2000px;
     margin-top: 16px;
-    border-top: 1px solid #e9eaeb;
+    border-top: 1px solid var(--table-border-color);
     padding-top: 16px;
 }
 
 .ticket-card-message {
     font-size: 14px;
-    color: #535862;
+    color: var(--text-secondary);
     line-height: 1.5;
     margin-bottom: 16px;
 }
@@ -688,7 +688,7 @@
 .ticket-replies h4 {
     font-size: 14px;
     font-weight: 600;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0 0 12px 0;
 }
 
@@ -712,7 +712,7 @@
 .reply-author {
     font-size: 12px;
     font-weight: 600;
-    color: #344054;
+    color: var(--body-color);
 }
 
 .reply-date {
@@ -722,7 +722,7 @@
 
 .reply-body {
     font-size: 14px;
-    color: #535862;
+    color: var(--text-secondary);
     line-height: 1.5;
 }
 
@@ -743,7 +743,7 @@
     border-radius: 4px;
     font-size: 12px;
     text-decoration: none;
-    color: #535862;
+    color: var(--text-secondary);
     transition: background 0.15s;
 }
 
@@ -775,7 +775,7 @@
     width: 100%;
     padding: 10px 14px;
     font-size: 14px;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 8px;
     resize: vertical;
     font-family: inherit;
@@ -804,8 +804,8 @@
 .ticket-reopen-btn {
     padding: 8px 16px;
     background: #ffffff;
-    color: #344054;
-    border: 1px solid #e9eaeb;
+    color: var(--body-color);
+    border: 1px solid var(--table-border-color);
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;

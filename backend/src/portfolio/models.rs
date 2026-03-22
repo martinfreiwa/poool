@@ -16,7 +16,11 @@ pub struct InvestmentItem {
     pub status: String,
     pub payout_expected_at: Option<String>,
     pub purchased_at: String,
+    pub is_within_48h: bool,
+    pub chain_contract_address: Option<String>,
+    pub chain_tx_hash: Option<String>,
 }
+
 
 #[derive(Serialize)]
 pub struct AnnualLimit {

@@ -34,7 +34,7 @@
   font-weight: 700;
   font-size: 20px;
   line-height: 30px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -84,7 +84,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   margin: 0;
   text-align: left;
 }

@@ -86,7 +86,7 @@
     top: 0 !important;
 
     background: #ffffff !important;
-    border: 1px solid #e9eaeb !important;
+    border: 1px solid var(--table-border-color) !important;
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
     border-radius: 32px !important;
   }
@@ -143,7 +143,7 @@
     font-weight: 700 !important;
     font-size: 24px !important;
     line-height: 32px !important;
-    color: #181d27 !important;
+    color: var(--page-title-color) !important;
     width: auto !important;
     height: 32px !important;
     margin: 0 !important;

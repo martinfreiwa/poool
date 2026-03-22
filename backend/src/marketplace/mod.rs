@@ -11,13 +11,14 @@
 /// - `background.rs`  — Background workers (order expiry, Redis sync, price snapshots)
 /// - `websocket.rs`   — Real-time WebSocket server (orderbook, trades, ticker)
 ///
-/// Future files:
 /// - `p2p.rs`         — P2P/OTC offer system
 /// - `charts.rs`      — Candlestick aggregation
 pub mod background;
+pub mod charts;
 pub mod matching;
 pub mod models;
 pub mod orderbook;
+pub mod p2p;
 pub mod routes;
 pub mod service;
 pub mod settlement;
@@ -35,20 +36,17 @@ pub fn router() -> Router<AppState> {
     use routes::*;
     Router::new()
         // ── Public Read APIs ────────────────────────────────
-        .route(
-            "/api/marketplace/:asset_id/orderbook",
-            get(api_orderbook),
-        )
-        .route(
-            "/api/marketplace/:asset_id/trades",
-            get(api_recent_trades),
-        )
+        .route("/api/marketplace/:asset_id/orderbook", get(api_orderbook))
+        .route("/api/marketplace/:asset_id/trades", get(api_recent_trades))
         .route("/api/marketplace/:asset_id/ticker", get(api_ticker))
-        // ── WebSocket (real-time market data) ────────────────
+        // ── Candlestick Chart API ────────────────────────────
+        .route("/api/marketplace/:asset_id/candles", get(api_candles))
         .route(
-            "/ws/market/:asset_id",
-            get(websocket::ws_market_handler),
+            "/api/marketplace/:asset_id/chart-summary",
+            get(api_chart_summary),
         )
+        // ── WebSocket (real-time market data) ────────────────
+        .route("/ws/market/:asset_id", get(websocket::ws_market_handler))
         // ── Authenticated Trading APIs ──────────────────────
         .route("/api/marketplace/orders", post(api_submit_order))
         .route("/api/marketplace/orders/mine", get(api_my_orders))
@@ -56,4 +54,23 @@ pub fn router() -> Router<AppState> {
             "/api/marketplace/orders/:order_id",
             delete(api_cancel_order),
         )
+        // ── P2P/OTC Offer APIs ──────────────────────────────
+        .route("/api/marketplace/p2p/offers", post(api_create_p2p_offer))
+        .route(
+            "/api/marketplace/p2p/offers/incoming",
+            get(api_incoming_offers),
+        )
+        .route(
+            "/api/marketplace/p2p/offers/outgoing",
+            get(api_outgoing_offers),
+        )
+        .route(
+            "/api/marketplace/p2p/offers/:offer_id/respond",
+            post(api_respond_p2p_offer),
+        )
+        .route(
+            "/api/marketplace/p2p/offers/:offer_id",
+            delete(api_cancel_p2p_offer),
+        )
+        .route("/api/marketplace/:asset_id/p2p", get(api_asset_p2p_offers))
 }

@@ -11,10 +11,17 @@
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
   <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/bundle.css" />
 </head>
 
-<body class="admin-body">
+<body class="admin-body dom-ready">
   <div class="admin-wrapper">
     <div id="admin-sidebar-placeholder"></div>
     <script src="/static/js/admin-sidebar-loader.js"></script>
@@ -35,61 +42,91 @@
 
       <div class="admin-content">
         <div class="admin-page-header">
-          <h1 class="admin-page-title">Compliance & Trading Rules</h1>
-          <p class="admin-page-subtitle">Configure trading limits, KYC tier requirements, and compliance rules</p>
+          <h1 class="admin-page-title">Compliance & OJK Reports</h1>
+          <p class="admin-page-subtitle">Generate regulatory reports and access Travel-Rule datasets required by OJK and Bappebti.</p>
         </div>
 
-        <!-- Trading Limits -->
-        <div class="admin-card" style="margin-bottom:20px;">
-          <div class="admin-card-header">
-            <h3 class="admin-card-title">Trading Limits by KYC Tier</h3>
-          </div>
-          <div class="admin-card-body admin-card-body--flush">
-            <table class="admin-table" id="limits-table">
-              <thead>
-                <tr>
-                  <th>KYC Tier</th>
-                  <th style="text-align:right">Daily Buy Limit</th>
-                  <th style="text-align:right">Daily Sell Limit</th>
-                  <th style="text-align:right">Max Order Size</th>
-                  <th style="text-align:right">Max Single Holding %</th>
-                  <th>Can Trade P2P</th>
-                  <th style="text-align:center">Edit</th>
-                </tr>
-              </thead>
-              <tbody id="limits-body">
-                <!-- Filled by JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 24px;">
 
-        <!-- Global Rules -->
-        <div class="admin-card" style="margin-bottom:20px;">
-          <div class="admin-card-header">
-            <h3 class="admin-card-title">Global Compliance Rules</h3>
-          </div>
-          <div class="admin-card-body" id="rules-body">
-            <!-- Filled by JS -->
-          </div>
-        </div>
-
-        <!-- Kill Switch -->
-        <div class="admin-card" style="border-color: var(--admin-danger);">
-          <div class="admin-card-header">
-            <h3 class="admin-card-title" style="color:var(--admin-danger);">⚠️ Emergency Controls</h3>
-          </div>
-          <div class="admin-card-body">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;">
-              <div>
-                <div style="font-size:15px; font-weight:700; color:var(--admin-text-primary);">Kill Switch — Halt All Trading</div>
-                <div style="font-size:13px; color:var(--admin-text-muted); margin-top:4px;">Immediately stops order matching, cancels all pending orders, and notifies all connected users.</div>
+          <!-- OJK Quarterly Report -->
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">OJK Quarterly Report</h3>
+            </div>
+            <div class="admin-card-body">
+              <p style="color: var(--admin-text-muted); font-size: 14px; margin-bottom: 20px;">
+                Required by OJK Regulation 27/2024. Contains gross trading volume (cents), registered users, and system incidents for the specified quarter.
+              </p>
+              
+              <div style="margin-bottom: 20px;">
+                <label style="display:block; font-size:13px; font-weight:600; margin-bottom:8px;">Reporting Period</label>
+                <select id="ojk-quarter" class="admin-input" style="width: 100%;">
+                  <option value="2026-Q1" selected>Q1 2026 (Jan - Mar)</option>
+                  <option value="2025-Q4">Q4 2025 (Oct - Dec)</option>
+                  <option value="2025-Q3">Q3 2025 (Jul - Sep)</option>
+                  <option value="2025-Q2">Q2 2025 (Apr - Jun)</option>
+                </select>
               </div>
-              <button class="admin-btn admin-btn--danger" id="btn-kill-switch" style="padding:12px 32px; font-size:15px; font-weight:700;">
-                🛑 HALT TRADING
+
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <button class="admin-btn admin-btn--primary" id="btn-export-ojk">
+                  <span class="icon" style="font-size:16px;">⬇️</span> Download CSV
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- AML Travel Rule Export -->
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">AML / Travel-Rule Data</h3>
+            </div>
+            <div class="admin-card-body">
+              <p style="color: var(--admin-text-muted); font-size: 14px; margin-bottom: 20px;">
+                Export raw peer-to-peer and marketplace trade data. Includes originating and beneficiary identities required under FATF Recommendation 16.
+              </p>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div>
+                  <label style="display:block; font-size:13px; font-weight:600; margin-bottom:8px;">Start Date</label>
+                  <input type="date" id="aml-start" class="admin-input" style="width: 100%;" />
+                </div>
+                <div>
+                  <label style="display:block; font-size:13px; font-weight:600; margin-bottom:8px;">End Date</label>
+                  <input type="date" id="aml-end" class="admin-input" style="width: 100%;" />
+                </div>
+              </div>
+
+              <button class="admin-btn admin-btn--outline" id="btn-export-aml">
+                 <span class="icon" style="font-size:16px;">⬇️</span> Export Complete Dataset (CSV)
               </button>
             </div>
           </div>
+
+          <!-- Tax Returns (User Data) -->
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Tax & Fiscal Exports</h3>
+            </div>
+            <div class="admin-card-body">
+              <p style="color: var(--admin-text-muted); font-size: 14px; margin-bottom: 20px;">
+                Summarizes annual capital gains, realized dividend yields, and withholding taxes per individual entity. Used for fiscal year reporting.
+              </p>
+
+              <div style="margin-bottom: 20px;">
+                <label style="display:block; font-size:13px; font-weight:600; margin-bottom:8px;">Fiscal Year</label>
+                <select id="tax-year" class="admin-input" style="width: 100%;">
+                  <option value="2025" selected>2025</option>
+                  <option value="2024">2024</option>
+                </select>
+              </div>
+
+              <button class="admin-btn admin-btn--outline" id="btn-export-tax">
+                 <span class="icon" style="font-size:16px;">⬇️</span> Export Fiscal Data (CSV)
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
     </main>

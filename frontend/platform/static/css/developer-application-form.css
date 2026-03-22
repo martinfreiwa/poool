@@ -56,7 +56,7 @@
   font-size: 24px;
   line-height: 32px;
   letter-spacing: -0.02em;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 /* ===========================
@@ -68,7 +68,7 @@
   max-width: 1096px;
   margin: 0 0 16px 0;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
   border-radius: 12px;
   padding: 32px;
@@ -79,7 +79,7 @@
   font-weight: 700;
   font-size: 24px;
   line-height: 32px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0 0 24px 0;
 }
 
@@ -157,7 +157,7 @@
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
-  color: #181d27;
+  color: var(--page-title-color);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -305,7 +305,7 @@
   gap: 6px;
   height: 44px;
   background: #ffffff;
-  border: 2px solid #e9eaeb;
+  border: 2px solid var(--table-border-color);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -338,13 +338,13 @@
   font-weight: 600;
   font-size: 14px;
   line-height: 20px;
-  color: #62F7A4;
+  color: #98FB96;
 }
 
 .form-next-btn svg path,
 .form-next-btn svg polyline,
 .form-next-btn svg line {
-  stroke: #62F7A4;
+  stroke: #98FB96;
 }
 
 .form-next-btn:hover {

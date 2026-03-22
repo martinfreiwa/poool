@@ -103,9 +103,9 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
           </div>
 
           <!-- Confirm Payment Button (below order summary) -->
-          <button type="button" class="proceed-payment-btn" id="checkout-confirm-btn" style="background:var(--primary-color, #0000FF);">
-            <span class="button-text" style="color:#62F7A4;">Confirm Payment</span>
-            <svg  class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="#62F7A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <button type="button" class="ds-btn ds-btn--primary ds-btn--lg" id="checkout-confirm-btn" style="width: 100%; gap: 8px;">
+            <span class="button-text">Confirm Payment</span>
+            <svg  class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span class="spinner"></span>
           </button>
         </div>
@@ -643,7 +643,7 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
         document.querySelectorAll(".payment-method-option").forEach(function (el) {
           el.classList.remove("selected");
           var icons = el.querySelectorAll("svg path");
-          icons.forEach(function (icon) { icon.setAttribute("stroke", "#535862"); });
+          icons.forEach(function (icon) { icon.setAttribute("stroke", "var(--text-secondary)"); });
         });
 
         var selectedEl = document.getElementById("pm-" + method);

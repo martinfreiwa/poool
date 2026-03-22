@@ -154,6 +154,17 @@ function updateCompletenessBanner() {
 }
 
 /**
+ * Helper: set read-only value with placeholder styling
+ */
+function setReadValue(elementId, value, placeholder = 'Not provided') {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const isEmpty = !value || value.trim() === '';
+    el.innerText = isEmpty ? placeholder : value;
+    el.classList.toggle('settings-read-value--empty', isEmpty);
+}
+
+/**
  * Populates the UI for Profile (Identity & Contact)
  */
 function populateProfileData(profile) {
@@ -165,10 +176,10 @@ function populateProfileData(profile) {
 
     // Core Profile (Read)
     const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-    document.getElementById('read-name').innerText = fullName || 'Not provided';
-    document.getElementById('read-email').innerText = profile.email || 'Not provided'; // Actually from auth, but using placeholder
-    document.getElementById('read-phone').innerText = profile.phone_number || 'Not provided';
-    
+    setReadValue('read-name', fullName);
+    setReadValue('read-email', profile.email);
+    setReadValue('read-phone', profile.phone_number);
+
     const readEmailSecurity = document.getElementById('settings-security-email-text');
     if(readEmailSecurity) readEmailSecurity.innerText = profile.email || 'user@example.com';
 
@@ -178,7 +189,7 @@ function populateProfileData(profile) {
 
     // Address (Read)
     let addrParts = [profile.address_line_1 || profile.address_line1, profile.address_line_2 || profile.address_line2, profile.city, profile.state_province, profile.postal_code, profile.country].filter(Boolean);
-    document.getElementById('read-full-address').innerText = addrParts.length > 0 ? addrParts.join(', ') : 'Not provided';
+    setReadValue('read-full-address', addrParts.length > 0 ? addrParts.join(', ') : '');
 
     // Address (Edit)
     document.getElementById('edit-address-1').value = profile.address_line_1 || profile.address_line1 || '';
@@ -191,9 +202,9 @@ function populateProfileData(profile) {
     }
 
     // Identity Vault (Read)
-    document.getElementById('read-dob').innerText = profile.date_of_birth || 'Not provided';
-    document.getElementById('read-nationality').innerText = profile.nationality || 'Not provided';
-    document.getElementById('read-tax-id').innerText = profile.tax_id ? '•••• ' + profile.tax_id.slice(-4) : 'Not provided'; // Masking
+    setReadValue('read-dob', profile.date_of_birth);
+    setReadValue('read-nationality', profile.nationality);
+    setReadValue('read-tax-id', profile.tax_id ? '•••• ' + profile.tax_id.slice(-4) : '');
 
     // Identity Vault (Edit)
     document.getElementById('edit-dob').value = profile.date_of_birth || '';
@@ -518,16 +529,17 @@ function initMorphForms() {
                     if (result && result.success !== false) {
                         // Re-sync read views
                         if(group.id === 'morph-core-profile') {
-                            document.getElementById('read-name').innerText = `${document.getElementById('edit-first-name').value} ${document.getElementById('edit-last-name').value}`.trim() || 'Not provided';
+                            const savedName = `${document.getElementById('edit-first-name').value} ${document.getElementById('edit-last-name').value}`.trim();
+                            setReadValue('read-name', savedName);
                         } else if (group.id === 'morph-address') {
                             const parts = [document.getElementById('edit-address-1').value, document.getElementById('edit-city').value, document.getElementById('edit-postal').value, document.getElementById('edit-country') ? document.getElementById('edit-country').value : ''].filter(Boolean);
-                            document.getElementById('read-full-address').innerText = parts.length > 0 ? parts.join(', ') : 'Not provided';
+                            setReadValue('read-full-address', parts.length > 0 ? parts.join(', ') : '');
                         } else {
-                            document.getElementById('read-dob').innerText = document.getElementById('edit-dob').value || 'Not provided';
+                            setReadValue('read-dob', document.getElementById('edit-dob').value);
                             const natVal = document.getElementById('edit-nationality').value;
-                            document.getElementById('read-nationality').innerText = natVal || 'Not provided';
+                            setReadValue('read-nationality', natVal);
                             const txid = document.getElementById('edit-tax-id').value;
-                            document.getElementById('read-tax-id').innerText = txid ? '•••• ' + txid.slice(-4) : 'Not provided';
+                            setReadValue('read-tax-id', txid ? '•••• ' + txid.slice(-4) : '');
                         }
                         // Merge saved fields into cached profile and recalculate completeness
                         Object.assign(_cachedProfile, payload);

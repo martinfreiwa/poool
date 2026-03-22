@@ -133,7 +133,7 @@
           const btn = document.getElementById("gdpr-submit");
           const errBox = document.getElementById("gdpr-error");
           btn.disabled = true;
-          btn.textContent = "Submitting…";
+          btn.textContent = "Processing…";
           errBox.style.display = "none";
           errBox.textContent = "";
 
@@ -143,6 +143,38 @@
           const name = formData.get("full_name");
           const details = formData.get("details");
 
+          // For data access & portability — instant download
+          if (reqType === "access" || reqType === "portability") {
+            try {
+              const resp = await fetch("/api/settings/export-data");
+              if (resp.ok) {
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "poool_data_export.json";
+                a.click();
+                URL.revokeObjectURL(url);
+
+                document.getElementById("gdpr-form").style.display = "none";
+                document.getElementById("gdpr-success").classList.add("shown");
+              } else {
+                const errData = await resp.json().catch(() => ({}));
+                errBox.textContent = errData.error || "Failed to export data. Please try again.";
+                errBox.style.display = "block";
+                btn.disabled = false;
+                btn.textContent = "Submit request";
+              }
+            } catch (err) {
+              errBox.textContent = "Network error. Please try again.";
+              errBox.style.display = "block";
+              btn.disabled = false;
+              btn.textContent = "Submit request";
+            }
+            return;
+          }
+
+          // For rectification & erasure — create support ticket
           const payload = {
             subject: `GDPR Data Request (${reqType})`,
             message: `Name: ${name}\nEmail: ${email}\nDetails: ${details}`,

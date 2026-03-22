@@ -33,7 +33,7 @@
 .community-tab-nav {
   display: flex;
   gap: 0;
-  border-bottom: 2px solid #EAECF0;
+  border-bottom: 2px solid var(--card-border-color);
   margin-bottom: 24px;
 }
 
@@ -55,7 +55,7 @@ button.community-tab-btn {
 }
 
 button.community-tab-btn:hover {
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 button.community-tab-btn.active {
@@ -509,7 +509,7 @@ button.community-tab-btn.active {
   padding: 3px 8px;
   border-radius: 12px;
   background: #F2F4F7;
-  color: #344054;
+  color: var(--body-color);
 }
 
 .profile-badge--gold { background: #FFFAEB; color: #B54708; }
@@ -725,7 +725,7 @@ button.community-tab-btn.active {
   border-radius: 20px;
   border: 1px solid #D0D5DD;
   background: #fff;
-  color: #344054;
+  color: var(--body-color);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -936,7 +936,7 @@ button.community-tab-btn.active {
 
 .circle-challenge-progress-bar {
   height: 8px;
-  background: #EAECF0;
+  background: var(--card-border-color);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 6px;
@@ -952,7 +952,7 @@ button.community-tab-btn.active {
 .circle-challenge-progress-text {
   font-size: 12px;
   font-weight: 600;
-  color: #344054;
+  color: var(--body-color);
 }
 
 .circle-challenge-deadline {
@@ -965,7 +965,7 @@ button.community-tab-btn.active {
 }
 
 .circle-leaderboard {
-  border-top: 1px solid #EAECF0;
+  border-top: 1px solid var(--card-border-color);
   padding-top: 16px;
 }
 
@@ -1171,7 +1171,7 @@ button.community-tab-btn.active {
 .reviews-bar-track {
   flex: 1;
   height: 8px;
-  background: #EAECF0;
+  background: var(--card-border-color);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -1185,7 +1185,7 @@ button.community-tab-btn.active {
 .reviews-bar-count {
   font-size: 12px;
   font-weight: 600;
-  color: #344054;
+  color: var(--body-color);
   width: 30px;
   text-align: right;
   flex-shrink: 0;

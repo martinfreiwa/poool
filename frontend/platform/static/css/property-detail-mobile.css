@@ -399,7 +399,7 @@
     min-height: 500px;
     margin: -28px 16px 67px 16px;
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
     border-radius: 16px;
     padding: 16px;
@@ -523,7 +523,7 @@
     font-size: 14px;
     line-height: 20px;
     text-align: center;
-    color: #535862;
+    color: var(--text-secondary);
     flex: none;
     order: 1;
     flex-grow: 0;
@@ -604,7 +604,7 @@
     font-weight: 500;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
   }
 
   .mobile-loading-bar .available-text-wrapper {
@@ -619,7 +619,7 @@
     font-weight: 500;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
   }
 
   .mobile-loading-bar .help-icon {
@@ -660,7 +660,7 @@
     font-weight: 500;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
   }
 
   .mobile-investors .price-per-sqm-badge {
@@ -772,7 +772,7 @@
     font-weight: 400;
     font-size: 16px;
     line-height: 24px;
-    color: #181d27;
+    color: var(--page-title-color);
   }
 
   .mobile-investment .input-field {
@@ -789,7 +789,7 @@
     font-weight: 500;
     font-size: 18px;
     line-height: 28px;
-    color: #181d27;
+    color: var(--page-title-color);
   }
 
   .mobile-investment .add-to-cart-btn {
@@ -885,7 +885,7 @@
     font-weight: 700;
     font-size: 24px;
     line-height: 32px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
   }
 
@@ -986,7 +986,7 @@
     font-weight: 700;
     font-size: 16px;
     line-height: 24px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
     width: 100%;
     word-wrap: break-word;
@@ -998,7 +998,7 @@
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
     margin: 0;
     width: 100%;
     word-wrap: break-word;
@@ -1031,7 +1031,7 @@
     font-weight: 700;
     font-size: 20px;
     line-height: 30px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
   }
 
@@ -1063,7 +1063,7 @@
     width: 226px;
     flex-shrink: 0;
     height: 122px;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 12px;
     position: relative;
     background: white;
@@ -1186,7 +1186,7 @@
     font-weight: 700;
     font-size: 20px;
     line-height: 30px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 75px 0 12px 0;
   }
 
@@ -1254,7 +1254,7 @@
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -1284,7 +1284,7 @@
     font-weight: 700;
     font-size: 20px;
     line-height: 30px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
   }
 
@@ -1316,7 +1316,7 @@
     font-weight: 700;
     font-size: 20px;
     line-height: 30px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0 0 8px 0;
   }
 
@@ -1326,7 +1326,7 @@
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -1340,7 +1340,7 @@
     width: 48px;
     height: 48px;
     background: #fafafa;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 24px;
     display: flex;
     align-items: center;
@@ -1368,7 +1368,7 @@
     font-weight: 700;
     font-size: 16px;
     line-height: 24px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0 0 8px 0;
   }
 
@@ -1378,14 +1378,14 @@
     font-weight: 400;
     font-size: 12px;
     line-height: 18px;
-    color: #535862;
+    color: var(--text-secondary);
     margin: 0;
   }
 
   .section-divider {
     width: 100%;
     height: 1px;
-    background: #e9eaeb;
+    background: var(--table-border-color);
   }
 
   /* Mobile Funding Timeline Section */
@@ -1415,14 +1415,14 @@
     font-weight: 700;
     font-size: 20px;
     line-height: 30px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
   }
 
   .timeline-divider {
     width: 311px;
     height: 1px;
-    background: #e9eaeb;
+    background: var(--table-border-color);
     margin-bottom: 20px;
   }
 
@@ -1450,7 +1450,7 @@
     width: 24px;
     height: 24px;
     background: #ffffff;
-    border: 1.5px solid #e9eaeb;
+    border: 1.5px solid var(--table-border-color);
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -1484,7 +1484,7 @@
   .connector-line {
     width: 2px;
     height: 84px;
-    background: #e9eaeb;
+    background: var(--table-border-color);
     border-radius: 2px;
     margin-top: 4px;
     position: relative;
@@ -1511,7 +1511,7 @@
     font-weight: 700;
     font-size: 14px;
     line-height: 20px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0 0 8px 0;
   }
 
@@ -1521,7 +1521,7 @@
     font-weight: 500;
     font-size: 12px;
     line-height: 18px;
-    color: #535862;
+    color: var(--text-secondary);
     display: block;
     margin-bottom: 8px;
   }
@@ -1532,7 +1532,7 @@
     font-weight: 400;
     font-size: 12px;
     line-height: 18px;
-    color: #535862;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -1587,7 +1587,7 @@
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%) translateY(-8px);
-    background: #181d27;
+    background: var(--page-title-color);
     color: #ffffff;
     padding: 12px 16px;
     border-radius: 6px;
@@ -1630,7 +1630,7 @@
     left: 50%;
     transform: translateX(-50%);
     border: 6px solid transparent;
-    border-top-color: #181d27;
+    border-top-color: var(--page-title-color);
   }
 
   /* Show tooltip on click for mobile */

@@ -12,7 +12,7 @@
   width: 669px;
   height: 174px;
   background: var(--card-bg, #ffffff);
-  border: 1px solid var(--card-border-color, #e9eaeb);
+  border: 1px solid var(--card-border-color, var(--table-border-color));
   border-radius: var(--card-border-radius, 12px);
 }
 
@@ -81,7 +81,7 @@
   font-weight: 700;
   font-size: 14px;
   line-height: 20px;
-  color: #181d27;
+  color: var(--page-title-color);
   flex: none;
   order: 0;
   flex-grow: 0;
@@ -232,7 +232,7 @@
   align-items: center;
   width: 38px;
   height: 36px;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
   background: white;
   cursor: pointer;
@@ -274,7 +274,7 @@
 .quantity-display {
   font-size: 16px;
   font-weight: 600;
-  color: #181d27;
+  color: var(--page-title-color);
   min-width: 20px;
   text-align: center;
 }
@@ -290,7 +290,7 @@
   min-width: 143px;
   width: auto;
   height: 36px;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
   background: white;
   flex: none;
@@ -319,7 +319,7 @@
   font-size: 18px;
   line-height: 28px;
   text-align: center;
-  color: #181d27;
+  color: var(--page-title-color);
   white-space: nowrap;
   flex: none;
   order: 0;
@@ -373,7 +373,7 @@
   font-size: 12px;
   line-height: 18px;
   text-align: right;
-  color: #535862;
+  color: var(--text-secondary);
   flex: none;
   order: 1;
   flex-grow: 0;
@@ -406,7 +406,7 @@
   gap: 4px;
   width: 89px;
   height: 30px;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 8px;
   background: white;
   flex: none;

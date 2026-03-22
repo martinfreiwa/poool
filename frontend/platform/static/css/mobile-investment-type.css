@@ -28,7 +28,7 @@
     font-weight: 700;
     font-size: 20px;
     line-height: 30px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
   }
 
@@ -70,7 +70,7 @@
     font-weight: 700;
     font-size: 20px;
     line-height: 30px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
   }
 
@@ -80,7 +80,7 @@
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -100,7 +100,7 @@
     top: 0;
     bottom: 0;
     background: #fafafa;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 24px;
   }
 
@@ -114,7 +114,7 @@
     height: 32px;
     left: 8px;
     top: 8px;
-    background: #535862;
+    background: var(--text-secondary);
     border-radius: 99px;
   }
 
@@ -152,7 +152,7 @@
     font-weight: 700;
     font-size: 16px;
     line-height: 24px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 0;
   }
 
@@ -162,7 +162,7 @@
     font-weight: 400;
     font-size: 12px;
     line-height: 18px;
-    color: #535862;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -170,6 +170,6 @@
   .mobile-strategy-divider {
     width: 100%;
     height: 1px;
-    background: #e9eaeb;
+    background: var(--table-border-color);
   }
 }

@@ -678,7 +678,7 @@
   <script>
     function openVirtualTour() {
       var toast = document.createElement('div');
-      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181D27;color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--page-title-color);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
       toast.textContent = 'Virtual tour coming soon!';
       document.body.appendChild(toast);
       setTimeout(function() { toast.remove(); }, 3000);

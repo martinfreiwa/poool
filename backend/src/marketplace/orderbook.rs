@@ -157,10 +157,7 @@ pub async fn insert_member(
 }
 
 /// Push a match event JSON string onto the settlement queue.
-pub async fn push_match_to_queue(
-    redis: &RedisPool,
-    event_json: &str,
-) -> Result<(), AppError> {
+pub async fn push_match_to_queue(redis: &RedisPool, event_json: &str) -> Result<(), AppError> {
     let mut conn = redis
         .get()
         .await
@@ -483,10 +480,7 @@ pub async fn is_order_locked(redis: &RedisPool, order_id: Uuid) -> Result<bool, 
 /// Check if an idempotency key has already been processed.
 ///
 /// Returns `Some(cached_response)` if the key was found, `None` otherwise.
-pub async fn check_idempotency(
-    redis: &RedisPool,
-    key: &str,
-) -> Result<Option<String>, AppError> {
+pub async fn check_idempotency(redis: &RedisPool, key: &str) -> Result<Option<String>, AppError> {
     let mut conn = redis
         .get()
         .await
@@ -504,11 +498,7 @@ pub async fn check_idempotency(
 }
 
 /// Store an idempotency result with 24-hour TTL.
-pub async fn store_idempotency(
-    redis: &RedisPool,
-    key: &str,
-    result: &str,
-) -> Result<(), AppError> {
+pub async fn store_idempotency(redis: &RedisPool, key: &str, result: &str) -> Result<(), AppError> {
     let mut conn = redis
         .get()
         .await
@@ -545,7 +535,10 @@ pub async fn check_order_rate_limit(
         Ok(c) => c,
         Err(_) => {
             // Redis down → allow the request (fail-open for availability)
-            tracing::warn!("Rate limiter unavailable, allowing request for user {}", user_id);
+            tracing::warn!(
+                "Rate limiter unavailable, allowing request for user {}",
+                user_id
+            );
             return Ok(());
         }
     };
@@ -621,10 +614,7 @@ pub async fn rebuild_from_postgres(
         .unwrap_or_default();
 
     for key in ask_keys.iter().chain(bid_keys.iter()) {
-        let _: Result<i32, _> = redis::cmd("DEL")
-            .arg(key)
-            .query_async(&mut *conn)
-            .await;
+        let _: Result<i32, _> = redis::cmd("DEL").arg(key).query_async(&mut *conn).await;
     }
 
     // 2. Load all active orders from PostgreSQL
@@ -659,10 +649,7 @@ pub async fn rebuild_from_postgres(
 /// but are missing from Redis, and re-inserts them.
 ///
 /// Returns the number of orders that were re-inserted.
-pub async fn sync_with_postgres(
-    redis: &RedisPool,
-    pool: &sqlx::PgPool,
-) -> Result<u32, AppError> {
+pub async fn sync_with_postgres(redis: &RedisPool, pool: &sqlx::PgPool) -> Result<u32, AppError> {
     // Load all active orders from DB
     let db_orders = sqlx::query_as::<_, MarketOrder>(
         "SELECT * FROM market_orders WHERE status IN ('open', 'partially_filled')",

@@ -10,6 +10,9 @@ pub mod approvals;
 pub mod assets;
 /// Module
 pub mod audit;
+/// Blockchain administration — tokenization, treasury, emergency controls.
+#[allow(missing_docs)]
+pub mod blockchain;
 /// Compose all admin-domain routes into a single mountable [`Router`].
 ///
 /// Covers:
@@ -32,6 +35,9 @@ pub mod legal;
 pub mod marketplace;
 /// Module
 pub mod notifications;
+/// Primary Offering Escrow Management module
+pub mod primary_escrow;
+
 /// Module
 pub mod orders;
 /// Module
@@ -60,6 +66,7 @@ pub mod withdrawals;
 pub use approvals::*;
 pub use assets::*;
 pub use audit::*;
+pub use blockchain::*;
 pub use dashboard::*;
 pub use deposits::*;
 pub use developer_projects::*;
@@ -139,6 +146,17 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/support-ticket", get(page_admin_generic))
         .route("/admin/approvals.html", get(page_admin_generic))
         .route("/admin/approvals", get(page_admin_generic))
+        // ── Admin Blockchain Pages ───────────────────────────────
+        .route("/admin/asset-tokenize.html", get(page_admin_generic))
+        .route("/admin/asset-tokenize", get(page_admin_generic))
+        .route("/admin/blockchain-treasury.html", get(page_admin_generic))
+        .route("/admin/blockchain-treasury", get(page_admin_generic))
+        .route("/admin/blockchain-contracts.html", get(page_admin_generic))
+        .route("/admin/blockchain-contracts", get(page_admin_generic))
+        .route("/admin/blockchain-contract-detail.html", get(page_admin_generic))
+        .route("/admin/blockchain-contract-detail", get(page_admin_generic))
+        .route("/admin/blockchain-sync.html", get(page_admin_generic))
+        .route("/admin/blockchain-sync", get(page_admin_generic))
         // ── Admin Marketplace Pages ──────────────────────────────
         .route("/admin/marketplace/", get(page_admin_generic))
         .route("/admin/marketplace/index.html", get(page_admin_generic))
@@ -150,7 +168,18 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/marketplace/orders", get(page_admin_generic))
         .route("/admin/marketplace/approvals.html", get(page_admin_generic))
         .route("/admin/marketplace/approvals", get(page_admin_generic))
-        .route("/admin/marketplace/reconciliation.html", get(page_admin_generic))
+        .route(
+            "/admin/marketplace/primary-escrow.html",
+            get(page_admin_generic),
+        )
+        .route(
+            "/admin/marketplace/primary-escrow",
+            get(page_admin_generic),
+        )
+        .route(
+            "/admin/marketplace/reconciliation.html",
+            get(page_admin_generic),
+        )
         .route("/admin/marketplace/reconciliation", get(page_admin_generic))
         .route("/admin/marketplace/fees.html", get(page_admin_generic))
         .route("/admin/marketplace/fees", get(page_admin_generic))
@@ -162,7 +191,10 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/marketplace/analytics", get(page_admin_generic))
         .route("/admin/marketplace/alerts.html", get(page_admin_generic))
         .route("/admin/marketplace/alerts", get(page_admin_generic))
-        .route("/admin/marketplace/compliance.html", get(page_admin_generic))
+        .route(
+            "/admin/marketplace/compliance.html",
+            get(page_admin_generic),
+        )
         .route("/admin/marketplace/compliance", get(page_admin_generic))
         // ── JSON API ─────────────────────────────────────────────
         .route("/api/admin/stats/overview", get(api_admin_stats_overview))
@@ -346,7 +378,7 @@ pub fn router() -> axum::Router<AppState> {
         )
         // System
         .route("/api/admin/system", get(api_admin_system))
-        // Dividends
+        // Dividends (legacy)
         .route(
             "/api/admin/dividends/calculate",
             post(api_admin_dividends_calculate),
@@ -354,6 +386,27 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/dividends/process",
             post(api_admin_dividends_process),
+        )
+        // Dividend Distributions (Phase 9 — full lifecycle)
+        .route(
+            "/api/admin/dividends/distributions",
+            get(api_admin_dividends_list).post(api_admin_dividends_create_distribution),
+        )
+        .route(
+            "/api/admin/dividends/distributions/:dist_id",
+            get(api_admin_dividends_distribution_detail),
+        )
+        .route(
+            "/api/admin/dividends/distributions/:dist_id/approve",
+            post(api_admin_dividends_approve_distribution),
+        )
+        .route(
+            "/api/admin/dividends/distributions/:dist_id/execute",
+            post(api_admin_dividends_execute_distribution),
+        )
+        .route(
+            "/api/admin/dividends/distributions/:dist_id/cancel",
+            post(api_admin_dividends_cancel_distribution),
         )
         // Emails
         .route("/api/admin/emails", get(api_admin_emails))
@@ -426,6 +479,10 @@ pub fn router() -> axum::Router<AppState> {
         .route("/api/admin/storage", get(api_admin_storage))
         // ── Admin Marketplace APIs ───────────────────────────────
         .route(
+            "/api/admin/primary-escrow",
+            get(primary_escrow::api_admin_primary_escrow_list),
+        )
+        .route(
             "/api/admin/marketplace/stats",
             get(marketplace::api_admin_marketplace_stats),
         )
@@ -464,6 +521,19 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/marketplace/reconciliation",
             get(marketplace::api_admin_marketplace_reconciliation),
+        )
+        // ── 6A.13: Compliance & OJK APIs ─────────────────────────
+        .route(
+            "/api/admin/marketplace/compliance/ojk-report",
+            get(marketplace::api_admin_marketplace_compliance_ojk),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/travel-rule",
+            get(marketplace::api_admin_marketplace_compliance_travel_rule),
+        )
+        .route(
+            "/api/admin/marketplace/compliance/tax-export",
+            get(marketplace::api_admin_marketplace_compliance_tax),
         )
         // ── 6A.7: Pending Approvals ──────────────────────────────
         .route(
@@ -508,5 +578,50 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/marketplace/settings",
             get(marketplace::api_admin_marketplace_settings)
                 .post(marketplace::api_admin_marketplace_save_settings),
+        )
+        // ── Blockchain Treasury & Tokenization ───────────────────
+        .route(
+            "/api/admin/blockchain/treasury",
+            get(blockchain::api_admin_blockchain_treasury),
+        )
+        .route(
+            "/api/admin/blockchain/contracts/:address/detail",
+            get(blockchain::api_admin_blockchain_clone_detail),
+        )
+        .route(
+            "/api/admin/blockchain/tokenize/:asset_id",
+            get(blockchain::api_admin_blockchain_tokenize_check)
+                .post(blockchain::api_admin_blockchain_tokenize),
+        )
+        .route(
+            "/api/admin/blockchain/pause",
+            post(blockchain::api_admin_blockchain_pause),
+        )
+        .route(
+            "/api/admin/blockchain/unpause",
+            post(blockchain::api_admin_blockchain_unpause),
+        )
+        // ── Blockchain Sync & Health (8C.5) ──────────────────────────
+        .route(
+            "/api/admin/blockchain/sync",
+            get(blockchain::api_admin_blockchain_sync_status),
+        )
+        .route(
+            "/api/admin/blockchain/force-kyc-sync/:user_id",
+            post(blockchain::api_admin_blockchain_force_kyc_sync),
+        )
+        // ── Per-Clone Pause/Unpause (8C.4 SPV Isolation) ─────────────
+        .route(
+            "/api/admin/blockchain/contracts/:address/pause",
+            post(blockchain::api_admin_blockchain_pause_clone),
+        )
+        .route(
+            "/api/admin/blockchain/contracts/:address/unpause",
+            post(blockchain::api_admin_blockchain_unpause_clone),
+        )
+        // ── IPFS: Pin metadata to Pinata ─────────────────────────────
+        .route(
+            "/api/admin/blockchain/pin-metadata/:asset_id",
+            post(blockchain::api_admin_blockchain_pin_metadata),
         )
 }

@@ -198,7 +198,7 @@
 | **User Details** | `/admin/user-details` | ✅ OK | — |
 | **Assets List** | `/admin/assets` | ✅ OK | — |
 | **Asset Details** | `/admin/asset-details` | ✅ OK | — |
-| **Asset Tokenize** | `/admin/asset-tokenize` | ❌ Not Implemented | Blockchain logic missing |
+| **Asset Tokenize** | `/admin/asset-tokenize` | ✅ OK | Wired to blockchain.rs API; deploys EIP-1167 clone |
 | **Change Requests** | `/admin/asset-change-requests` | ✅ OK | Revision workflow enhanced and tested |
 | **Dev Submissions** | `/admin/developer-submissions` | ✅ OK | — |
 | **Submission Review** | `/admin/developer-submission-review` | ✅ OK | — |
@@ -221,7 +221,10 @@
 | **Admins** | `/admin/admins` | ✅ OK | — |
 | **Roles** | `/admin/roles` | ✅ OK | — |
 | **Storage** | `/admin/storage` | ✅ OK | Real SQL aggregations with GCS cost estimates |
-| **Blockchain Treasury** | `/admin/blockchain-treasury` | ❌ Not Implemented | — |
+| **Blockchain Treasury** | `/admin/blockchain-treasury` | ✅ OK | Wired to API; settlement wallet, network status, batch history |
+| **Blockchain Contracts** | `/admin/blockchain-contracts` | ✅ OK | Live EIP-1167 clone list; KPI cards; table from `chain_contract_address` |
+| **Contract Detail** | `/admin/blockchain-contract-detail` | ✅ OK | Per-clone drill-down; pause/unpause; holder list from `onchain_balances` |
+| **Web3 Sync & Health** | `/admin/blockchain-sync` | ✅ OK | Indexer KPIs, settlement stats, KYC whitelist queue, Force Sync, terminal report |
 
 ---
 
@@ -334,6 +337,124 @@ The following bugs were found during a deep security and logic audit of the admi
 | `tests/test_security_audit.py` | Security audit test suite (8 test categories) |
 
 ---
+### [P1] — Reconciliation code used `unwrap_or` on non-Option types
+- **File:** `backend/src/main.rs` (lines 363-366)
+- **What was wrong:** `row.tokens_total.unwrap_or(0)` and `row.tokens_available.unwrap_or(0)` called on `i32` (not `Option<i32>`), and `row.title.as_deref().unwrap_or("unknown")` called on `String` (not `Option<String>`). Prevented compilation.
+- **What I did:** Removed unnecessary `unwrap_or`/`as_deref` calls. Kept `row.total_owned.unwrap_or(0)` since it IS `Option<i32>`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
 
-*Last Updated: 2026-03-18 02:10 ICT*
+### [P2] — Admin routes with trailing slashes return 404
+- **File:** `backend/src/admin/pages.rs`
+- **What was wrong:** The generic admin page handler mapped `/admin/marketplace/` to `/admin/marketplace/.html` instead of `/admin/marketplace/index.html` causing a 404 error.
+- **What I did:** Added a check for `relative.ends_with('/')` to correctly append `index.html`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
 
+---
+
+### [P2] — Cart/Checkout buttons used off-brand color `#62F7A4`
+- **File:** `frontend/platform/cart.html`, `frontend/platform/checkout.html`
+- **What was wrong:** CTA buttons ("Browse Properties", "Confirm Payment") used inline `color:#62F7A4` which is not a design system token. The color had poor contrast on the blue background and failed accessibility guidelines.
+- **What I did:** Replaced with `.ds-btn.ds-btn--primary.ds-btn--lg` design system classes. SVG icons now use `stroke: currentColor` instead of hardcoded values.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P2] — Trading V3 document tabs used off-brand lime green `#CCFF00`
+- **File:** `frontend/platform/static/css/marketplace-trading-v3.css`
+- **What was wrong:** Active `.tv3-doc-tab` used `background: #CCFF00` (lime/chartreuse yellow), which is not part of the POOOL color system and clashed with the brand identity.
+- **What I did:** Changed to `background: var(--btn-primary-bg, #0000FF); color: #FFFFFF` — the standard brand pairing.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P2] — Orderbook stuck on "Connecting to orderbook..." permanently
+- **File:** `frontend/platform/static/js/marketplace-orderbook.js`, `frontend/platform/static/css/marketplace-orderbook.css`
+- **What was wrong:** The orderbook init showed a static "Connecting to orderbook…" message indefinitely when no WebSocket data arrived and the REST API returned empty.
+- **What I did:** Added a pulsing loading dot animation and a 5-second timeout that renders mock orderbook data so users see the layout instead of an infinite loading state.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P2] — Settings "Not provided" indistinguishable from real data
+- **File:** `frontend/platform/static/css/settings-2.css`, `frontend/platform/static/js/settings-2.js`
+- **What was wrong:** Placeholder text "Not provided" rendered in the same bold dark color as actual values, making empty fields look populated.
+- **What I did:** Added `.settings-read-value--empty` CSS class (muted grey, italic) and a `setReadValue()` helper that auto-applies it when a field value is empty.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P2] — Trading V3 trade widget excessive vertical spacing
+- **File:** `frontend/platform/static/css/marketplace-trading-v3.css`
+- **What was wrong:** The sticky order form had 32px padding on price display and 24px margins everywhere, pushing the Buy button unnecessarily far from inputs.
+- **What I did:** Reduced `.tv3-market-info` padding to 20px, `.tv3-shares-field` padding to 16px, `.tv3-order-summary` margin to 16px.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P2] — Marketplace/Portfolio showed "N/A" instead of em dash
+- **File:** `frontend/platform/marketplace.html`, `frontend/platform/static/js/portfolio-data.js`
+- **What was wrong:** Missing data fields displayed raw "N/A" text which looked unpolished and unfinished.
+- **What I did:** Replaced all user-facing "N/A" with em dash "—" for a cleaner, institutional appearance.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P2] — Cart dynamic HTML rendering used legacy `#62F7A4` color
+- **File:** `backend/src/cart/routes.rs`
+- **What was wrong:** The server-rendered template for checkout button was injecting inline styles with the low-contrast legacy `#62F7A4` green.
+- **What I did:** Changed `color` and `stroke` attributes to `#98FB96` for better visibility and brand consistency.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P2] — Sidebar search input persisted across pages
+- **File:** `frontend/platform/static/js/marketplace-search.js`
+- **What was wrong:** The search query inside the main sidebar wouldn't clear upon navigating away, creating a confusing UX.
+- **What I did:** Added an `else` block to explicitly clear the `filter-bar-search-input` value if there's no active query parameter.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P2] — Portfolio chart lacked Y-axis labels
+- **File:** `frontend/platform/static/js/portfolio-chart.js`, `frontend/platform/static/css/portfolio-chart.css`
+- **What was wrong:** The portfolio grid lines had no labels, making it impossible to read actual dollar values on the chart visually.
+- **What I did:** Added `.chart-y-axis-label` styles to safely overlap the grid lines, and added dynamic injection logic in JS to compute and format $K and $M labels based on the data range.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P2] — Marketplace filter placeholder contrast was low
+- **File:** `frontend/platform/static/css/marketplace.css`
+- **What was wrong:** Dropdown placeholders text color was a very light `#717680` which barely passed contrast checks.
+- **What I did:** Darkened `.dropdown-select` color to `#535862`, improving legibility of the "Filter by Location", etc. options.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P3] — FAQ accordion "+" icons not prominent
+- **File:** `frontend/platform/static/css/marketplace-trading-v3.css`
+- **What was wrong:** Accordion icons were thin and inherited text color, fading into the background.
+- **What I did:** Changed stroke width to 2.5px and color to primary blue by default to make them stand out as interactive elements.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+---
+
+### [P1] — Reconciliation code type mismatch (compilation failure - final resolution)
+- **File:** `backend/src/main.rs` (lines 367-370)
+- **What was wrong:** `sqlx::query!` returns `tokens_total` and `tokens_available` as `i32` (non-nullable) and `title` as `String`, not `Option`. Therefore `.unwrap_or(0)` on `i32` and `.as_deref()` on `String` are type errors, not valid calls. Only `total_owned` is actually `Option<i32>` due to the LEFT JOIN.
+- **What I did:** Removed `.unwrap_or(0)` from `tokens_total`/`tokens_available` and `.as_deref().unwrap_or("?")` from `title`. Used direct field access. Kept `.unwrap_or(0)` on `total_owned` which is genuinely nullable.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+---
+
+### [P1] — Missing `chrono::Datelike` import broke compilation
+- **File:** `backend/src/payments/service.rs`
+- **What was wrong:** `.year()` method called on `Utc::now()` without `use chrono::Datelike;` — the trait is required for the method but was not imported.
+- **What I did:** Changed `use chrono::Utc;` to `use chrono::{Datelike, Utc};`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+### [P1] — Investment limit check used `total_cents` before it was calculated
+- **File:** `backend/src/payments/service.rs` (checkout)
+- **What was wrong:** Phase 17.2 investment limit check at line ~392 referenced `total_cents` to compare against the user's available limit, but `total_cents` was not calculated until line ~420 (where cart items are iterated). This caused a compilation error (`not found in this scope`).
+- **What I did:** Moved the cart validation loop (which calculates `total_cents`) BEFORE the investment limit check, so the value exists when referenced.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-22
+
+---
+
+*Last Updated: 2026-03-22 17:30 ICT*

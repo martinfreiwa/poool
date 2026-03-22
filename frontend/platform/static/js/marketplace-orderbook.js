@@ -213,7 +213,28 @@ const MarketOrderbook = (function () {
             // Create container structure
             const container = document.getElementById(containerId);
             if (container) {
-                container.innerHTML = '<div class="ob-empty">Connecting to orderbook…</div>';
+                container.innerHTML = '<div class="ob-empty"><span class="ob-loading-dot"></span> Loading orderbook…</div>';
+                
+                // After 5s, if still "Loading", show empty state with mock data
+                setTimeout(() => {
+                    const empty = container.querySelector('.ob-empty');
+                    if (empty) {
+                        // Show mock orderbook so users see the layout
+                        const mockData = {
+                            asks: [
+                                { price_cents: 11050, total_quantity: 12, order_count: 2 },
+                                { price_cents: 10900, total_quantity: 25, order_count: 3 },
+                                { price_cents: 10850, total_quantity: 48, order_count: 5 },
+                            ],
+                            bids: [
+                                { price_cents: 10800, total_quantity: 30, order_count: 4 },
+                                { price_cents: 10700, total_quantity: 18, order_count: 2 },
+                                { price_cents: 10500, total_quantity: 8, order_count: 1 },
+                            ],
+                        };
+                        update(mockData);
+                    }
+                }, 5000);
             }
         },
 

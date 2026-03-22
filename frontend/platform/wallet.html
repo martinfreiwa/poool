@@ -20,14 +20,14 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             <h1 id="wallet-page-title" class="ds-page-header__title wallet-page-title">Wallet</h1>
           </div>
           <div id="wallet-header-actions" class="ds-page-header__actions wallet-header-actions">
-            <button id="deposit-btn" class="ds-btn ds-btn--primary wallet-header-btn wallet-header-btn--primary">
+            <button id="deposit-btn" class="ds-btn ds-btn--primary ">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="currentColor" stroke-width="1.66667"
                   stroke-linecap="round" stroke-linejoin="round" />
               </svg>
               <span>Deposit</span>
             </button>
-            <button id="withdraw-btn" class="ds-btn ds-btn--secondary wallet-header-btn wallet-header-btn--secondary">
+            <button id="withdraw-btn" class="ds-btn ds-btn--secondary ">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="currentColor" stroke-width="1.66667"
                   stroke-linecap="round" stroke-linejoin="round" />
@@ -66,7 +66,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <h3 class="state-title">Failed to load wallet</h3>
           <p class="state-desc">We couldn't fetch your wallet data. Please try again or contact support if the problem
             persists.</p>
-          <button class="retry-btn" onclick="location.reload()">Retry</button>
+          <button class="ds-btn ds-btn--primary" onclick="location.reload()">Retry</button>
         </div>
 
         <!-- 3. EMPTY STATE -->
@@ -78,14 +78,14 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           </svg>
           <h3 class="state-title">Your wallet is empty</h3>
           <p class="state-desc">Deposit funds to get started with investing on POOOL.</p>
-          <button id="empty-deposit-btn" class="retry-btn" onclick="openDepositModal()" style="cursor: pointer">Make a
+          <button id="empty-deposit-btn" class="ds-btn ds-btn--primary" onclick="openDepositModal()" style="cursor: pointer">Make a
             Deposit</button>
         </div>
 
         <!-- Desktop Content -->
         <div id="wallet-balances" class="wallet-balances wallet-balance-card-container">
           <div id="wallet-cash-balance" class="wallet-cash-balance">
-            <div id="wallet-balance-card-cash" class="wallet-balance-card">
+            <div id="wallet-balance-card-cash" class="ds-card wallet-balance-card">
               <div id="wallet-balance-card-cash-content" class="wallet-balance-card-content">
                 <div id="wallet-balance-card-cash-label" class="wallet-balance-card-label">
                   <span id="wallet-balance-card-cash-label-text" class="wallet-balance-card-label-text">Cash
@@ -97,7 +97,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             </div>
           </div>
           <div id="wallet-rewards-balance" class="wallet-rewards-balance">
-            <div id="wallet-balance-card-rewards" class="wallet-balance-card">
+            <div id="wallet-balance-card-rewards" class="ds-card wallet-balance-card">
               <div id="wallet-balance-card-rewards-content" class="wallet-balance-card-content">
                 <div id="wallet-balance-card-rewards-label" class="wallet-balance-card-label">
                   <span id="wallet-balance-card-rewards-label-text" class="wallet-balance-card-label-text">Rewards
@@ -223,7 +223,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                       <span class="{{ tx.amount_css }}">{{ tx.amount_prefix }} {{ tx.amount_display }}</span>
                     </div>
                     <div class="table__cell table__cell--actions">
-                      <button class="wallet-transaction-action-btn">
+                      <button class="ds-btn ds-btn--ghost">
                         View details
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M6 12L10 8L6 4" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
@@ -234,12 +234,9 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                   </div>
                   {% endfor %}
                   {% else %}
-                  <div class="table__row"
-                    style="justify-content: center; padding: 64px 24px; border-bottom: none; width: 100%;">
-                    <div
-                      style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 12px; text-align: center;">
-                      <div
-                        style="width: 48px; height: 48px; border-radius: 50%; background: #F2F4F7; border: 8px solid #F9FAFB; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+                  <div class="table__row--empty">
+                    <div class="ds-table-empty">
+                      <div class="ds-table-empty__icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2"
                           stroke-linecap="round" stroke-linejoin="round">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -249,9 +246,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                           <polyline points="10 9 9 9 8 9"></polyline>
                         </svg>
                       </div>
-                      <span style="color: #101828; font-size: 16px; font-weight: 600;">No transactions yet</span>
-                      <span style="color: #667085; font-size: 14px; max-width: 250px;">Your transactions will
-                        appear here once you make a deposit or withdraw.</span>
+                      <h3 class="ds-table-empty__title">No transactions yet</h3>
+                      <p class="ds-table-empty__description">Your transactions will appear here once you make a deposit or withdraw.</p>
                     </div>
                   </div>
                   {% endif %}
@@ -271,18 +267,17 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <div id="wallet-cards-section" class="wallet-cards-section">
             <div id="wallet-payment-cards-section" class="wallet-payment-section">
               <h3 id="wallet-payment-cards-title" class="wallet-payment-title">Cards</h3>
-              <div id="wallet-payment-cards-card" class="wallet-payment-card">
+              <div id="wallet-payment-cards-card" class="ds-card wallet-payment-card">
                 <div id="wallet-payment-cards-items" class="wallet-payment-items">
                   {{ cards_html | safe }}
                 </div>
-                <button id="wallet-payment-cards-add-button" class="wallet-payment-add-button"
+                <button id="wallet-payment-cards-add-button" class="ds-btn ds-btn--secondary ds-btn--full"
                   onclick="openCardModal()">
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 5V15M5 10H15" stroke="#000000" stroke-width="1.66667" stroke-linecap="round">
+                    <path d="M10 5V15M5 10H15" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round">
                     </path>
                   </svg>
-                  <span class="wallet-payment-add-text">Add new card</span>
-                  <span class="wallet-payment-add-spacer"></span>
+                  <span style="flex-grow: 1; text-align: left;">Add new card</span>
                   <img src="/static/images/visa.webp" alt="Visa" height="18" class="wallet-accepted-card-icon" />
                   <img src="/static/images/mastercard.svg" alt="Mastercard" height="18"
                     class="wallet-accepted-card-icon" />
@@ -293,17 +288,17 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <div id="wallet-banks-section" class="wallet-banks-section">
             <div id="wallet-payment-banks-section" class="wallet-payment-section">
               <h3 id="wallet-payment-banks-title" class="wallet-payment-title">Banks</h3>
-              <div id="wallet-payment-banks-card" class="wallet-payment-card">
+              <div id="wallet-payment-banks-card" class="ds-card wallet-payment-card">
                 <div id="wallet-payment-banks-items" class="wallet-payment-items">
                   {{ banks_html | safe }}
                 </div>
-                <button id="wallet-payment-banks-add-button" class="wallet-payment-add-button"
+                <button id="wallet-payment-banks-add-button" class="ds-btn ds-btn--secondary ds-btn--full"
                   onclick="openBankModal()">
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 5V15M5 10H15" stroke="#000000" stroke-width="1.66667" stroke-linecap="round">
+                    <path d="M10 5V15M5 10H15" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round">
                     </path>
                   </svg>
-                  <span class="wallet-payment-add-text">Add new bank</span>
+                  <span>Add new bank</span>
                 </button>
               </div>
             </div>
@@ -317,10 +312,10 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             <h2 class="mobile-cash-balance-card__amount">{{ cash_balance }}</h2>
           </div>
           <div class="mobile-cash-balance-card__actions">
-            <button class="mobile-cash-balance-card__button--primary">
+            <button class="ds-btn ds-btn--primary ds-btn--full">
               <span class="mobile-cash-balance-card__button-text--primary">Deposit</span>
             </button>
-            <button class="mobile-cash-balance-card__button--secondary">
+            <button class="ds-btn ds-btn--secondary ds-btn--full">
               <span class="mobile-cash-balance-card__button-text--secondary">Withdraw</span>
             </button>
           </div>
@@ -438,7 +433,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                         class="{{ tx.amount_css }}">{{
                         tx.amount_prefix }} {{ tx.amount_display }}</span></div>
                     <div class="table__cell table__cell--actions" style="width: 188px">
-                      <button class="wallet-transaction-action-btn">View details <svg width="16" height="16"
+                      <button class="ds-btn ds-btn--ghost">View details <svg width="16" height="16"
                           viewBox="0 0 16 16" fill="none">
                           <path d="M6 12L10 8L6 4" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
                             stroke-linejoin="round" />
@@ -447,14 +442,15 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                   </div>
                   {% endfor %}
                   {% else %}
-                  <div class="table__row" style="justify-content: center; padding: 48px 16px; border-bottom: none;">
-                    <div
-                      style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                      </svg>
-                      <span style="color: #101828; font-size: 14px; font-weight: 600;">No transactions yet</span>
+                  <div class="table__row--empty">
+                    <div class="ds-table-empty">
+                      <div class="ds-table-empty__icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#475467" stroke-width="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                      </div>
+                      <h3 class="ds-table-empty__title">No transactions yet</h3>
                     </div>
                   </div>
                   {% endif %}
@@ -462,7 +458,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               </div>
             </div>
             <div class="wallet-transactions-footer">
-              <button class="wallet-transactions-see-all" onclick="window.location.href='/transactions'">
+              <button class="ds-btn ds-btn--ghost" onclick="window.location.href='/transactions'">
                 See all transactions
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M6 12L10 8L6 4" stroke="#0000FF" stroke-width="1.5" stroke-linecap="round"
@@ -1130,14 +1126,14 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
       if (emptyDepositBtn) { emptyDepositBtn.addEventListener("click", openDepositModal); }
       const withdrawBtn = document.getElementById("withdraw-btn");
       if (withdrawBtn) { withdrawBtn.addEventListener("click", openWithdrawModal); withdrawBtn.removeAttribute("disabled"); withdrawBtn.style.cursor = "pointer"; }
-      document.querySelectorAll(".mobile-cash-balance-card__button--primary").forEach(btn => btn.addEventListener("click", openDepositModal));
-      document.querySelectorAll(".mobile-cash-balance-card__button--secondary").forEach(btn => btn.addEventListener("click", openWithdrawModal));
+      document.querySelectorAll(".ds-btn ds-btn--primary ds-btn--full").forEach(btn => btn.addEventListener("click", openDepositModal));
+      document.querySelectorAll(".ds-btn ds-btn--secondary ds-btn--full").forEach(btn => btn.addEventListener("click", openWithdrawModal));
       document.querySelectorAll("#wallet-payment-banks-add-button, .mobile-add-bank-button").forEach(btn => { btn.addEventListener("click", (e) => { e.preventDefault(); openBankModal(); }); });
-      document.querySelectorAll("#wallet-transactions-see-all").forEach(btn => { btn.addEventListener("click", () => { window.location.href = "/transactions"; }); });
+      document.querySelectorAll("#ds-btn ds-btn--ghost").forEach(btn => { btn.addEventListener("click", () => { window.location.href = "/transactions"; }); });
 
       // "View details" on each transaction row → navigate to /transactions
       document.body.addEventListener("click", function (e) {
-        var actionBtn = e.target.closest(".wallet-transaction-action-btn");
+        var actionBtn = e.target.closest(".ds-btn ds-btn--ghost");
         if (!actionBtn) return;
         var row = actionBtn.closest("[id^='wallet-transactions-row-']");
         var rowId = row && row.id ? row.id.replace("wallet-transactions-row-", "") : "";

@@ -10,7 +10,7 @@
   /* Base/White */
   background: #ffffff;
   /* Gray/200 */
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 16px;
   padding: 16px;
 

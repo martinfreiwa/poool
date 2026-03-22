@@ -71,24 +71,7 @@ body.kyc-hidden .wallet-main {
   gap: 10px;
 }
 
-.wallet-header-btn {
-  box-sizing: border-box;
-  display: inline-flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 10px 18px;
-  gap: 6px;
-  height: 40px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: var(--font-family, "TT Norms Pro", -apple-system, BlinkMacSystemFont, sans-serif);
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 20px;
-  transition: all 0.15s ease;
-  border: none;
-}
+
 
 .wallet-header-btn svg {
   width: 18px;
@@ -96,27 +79,13 @@ body.kyc-hidden .wallet-main {
   flex-shrink: 0;
 }
 
-.wallet-header-btn--primary {
-  background: var(--primary-color);
-  color: #ffffff;
-  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
-}
 
-.wallet-header-btn--primary:hover {
-  filter: brightness(0.9);
-}
 
-.wallet-header-btn--secondary {
-  background: #ffffff;
-  color: #344054;
-  border: 1px solid #d0d5dd;
-  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
-}
 
-.wallet-header-btn--secondary:hover {
-  background: #f8f9fc;
-  border-color: #b0b3b8;
-}
+
+
+
+
 
 .wallet-page-icon {
   width: 32px;
@@ -142,7 +111,7 @@ body.kyc-hidden .wallet-main {
   font-size: 36px;
   line-height: 44px;
   letter-spacing: -0.02em;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -177,7 +146,7 @@ body.kyc-hidden .wallet-main {
   /* Increased padding */
   gap: 16px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
   width: 100%;
   height: auto;
@@ -217,7 +186,7 @@ body.kyc-hidden .wallet-main {
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -234,7 +203,7 @@ body.kyc-hidden .wallet-main {
   font-size: 36px;
   line-height: 44px;
   letter-spacing: -0.02em;
-  color: #181d27;
+  color: var(--page-title-color);
   white-space: nowrap;
 }
 
@@ -248,59 +217,19 @@ body.kyc-hidden .wallet-main {
   flex-shrink: 0;
 }
 
-.wallet-balance-card-btn {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 8px 12px;
-  gap: 4px;
-  width: 94px;
-  height: 36px;
-  border-radius: 8px;
-  cursor: pointer;
-  align-self: stretch;
-}
 
-.wallet-balance-card-btn-primary {
-  background: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
-}
 
-.wallet-balance-card-btn-primary:hover {
-  filter: brightness(0.9);
-}
 
-.wallet-balance-card-btn-primary .wallet-balance-card-btn-text {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 20px;
-  color: #ffffff;
-}
 
-.wallet-balance-card-btn-secondary {
-  border: 1px solid #d0d5dd;
-  background: #ffffff;
-  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
-}
 
-.wallet-balance-card-btn-secondary:hover {
-  background: #f8f9fc;
-  border-color: #b0b3b8;
-}
 
-.wallet-balance-card-btn-secondary .wallet-balance-card-btn-text {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 20px;
-  color: #344054;
-}
+
+
+
+
+
+
+
 
 .wallet-balance-card-btn:disabled {
   opacity: 0.5;
@@ -355,7 +284,7 @@ body.kyc-hidden .wallet-main {
   font-weight: 700;
   font-size: 24px;
   line-height: 32px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 /* Transactions Table */
@@ -371,10 +300,7 @@ body.kyc-hidden .wallet-main {
   isolation: isolate;
   margin-top: 12px;
   width: 100%;
-  background: #ffffff;
-  border: 1px solid #e9eaeb;
-  box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
-  border-radius: 12px;
+  
 }
 
 /* Empty State */
@@ -408,7 +334,7 @@ body.kyc-hidden .wallet-main {
   height: 104px;
   left: 24px;
   top: 0px;
-  background: #e9eaeb;
+  background: var(--table-border-color);
   border-radius: 50%;
 }
 
@@ -500,7 +426,7 @@ body.kyc-hidden .wallet-main {
   font-size: 16px;
   line-height: 24px;
   text-align: center;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .wallet-transactions-empty-message {
@@ -510,7 +436,7 @@ body.kyc-hidden .wallet-main {
   font-size: 14px;
   line-height: 20px;
   text-align: center;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 /* Table with Data */
@@ -541,7 +467,7 @@ body.kyc-hidden .wallet-main {
   gap: 12px;
   height: var(--table-header-height, 44px);
   background: var(--table-header-bg, #FAFAFA);
-  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  border-bottom: 1px solid var(--table-border-color, var(--table-border-color));
 }
 
 .wallet-transactions-header-cell:nth-child(1) {
@@ -618,7 +544,7 @@ body.kyc-hidden .wallet-main {
   align-items: center;
   width: 100%;
   height: 72px;
-  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  border-bottom: 1px solid var(--table-border-color, var(--table-border-color));
 }
 
 .wallet-transaction-cell {
@@ -647,7 +573,7 @@ body.kyc-hidden .wallet-main {
   width: 40px;
   height: 40px;
   background: #f3f4f6;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -665,7 +591,7 @@ body.kyc-hidden .wallet-main {
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .wallet-transaction-status {
@@ -768,7 +694,7 @@ body.kyc-hidden .wallet-main {
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 .wallet-transaction-date {
@@ -793,7 +719,7 @@ body.kyc-hidden .wallet-main {
 }
 
 .amount-negative {
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .wallet-transaction-action {
@@ -831,7 +757,7 @@ body.kyc-hidden .wallet-main {
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #344054;
+  color: var(--body-color);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -925,7 +851,7 @@ body.kyc-hidden .wallet-main {
   font-weight: 700;
   font-size: 24px;
   line-height: 32px;
-  color: #181d27;
+  color: var(--page-title-color);
   align-self: stretch;
 }
 
@@ -949,7 +875,7 @@ body.kyc-hidden .wallet-main {
   width: auto;
   object-fit: contain;
   border-radius: 3px;
-  border: 1px solid #E9EAEB;
+  border: 1px solid var(--table-border-color);
 }
 
 .wallet-payment-add-spacer {
@@ -965,7 +891,7 @@ body.kyc-hidden .wallet-main {
   gap: 16px;
   min-height: 124px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
   align-self: stretch;
 }
@@ -1001,7 +927,7 @@ body.kyc-hidden .wallet-main {
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .wallet-payment-items {
@@ -1024,7 +950,7 @@ body.kyc-hidden .wallet-main {
   order: 0;
   align-self: stretch;
   flex-grow: 0;
-  border-bottom: 1px solid #E9EAEB;
+  border-bottom: 1px solid var(--table-border-color);
 }
 
 .wallet-payment-item:last-child {
@@ -1077,7 +1003,7 @@ body.kyc-hidden .wallet-main {
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   text-align: right;
   flex: none;
   order: 0;
@@ -1096,72 +1022,7 @@ body.kyc-hidden .wallet-main {
   flex-grow: 0;
 }
 
-.wallet-payment-add-button {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 8px 12px;
-  gap: 4px;
-  width: 100%;
-  height: 36px;
-  border: 1px solid #000000;
-  filter: drop-shadow(0px 1px 2px rgba(10, 13, 18, 0.05));
-  border-radius: 8px;
-  flex: none;
-  order: 1;
-  align-self: stretch;
-  flex-grow: 0;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
 
-.wallet-payment-add-text {
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 20px;
-  color: #000000;
-  flex: none;
-  order: 0;
-  flex-grow: 0;
-  white-space: nowrap;
-  transition: color 0.2s ease;
-}
-
-.wallet-payment-add-button svg {
-  width: 20px;
-  height: 20px;
-  flex: none;
-  order: 0;
-  flex-grow: 0;
-}
-
-.wallet-payment-add-button svg path {
-  stroke: #000000;
-  transition: stroke 0.2s ease;
-}
-
-.wallet-payment-add-button:hover {
-  border-color: var(--primary-color);
-  background: transparent;
-}
-
-.wallet-payment-add-button:hover .wallet-payment-add-text {
-  color: var(--primary-color);
-}
-
-.wallet-payment-add-button:hover svg path {
-  stroke: var(--primary-color);
-}
-
-.wallet-payment-add-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 /* ===========================
    Wallet-specific styles for BaseTable integration
@@ -1189,7 +1050,7 @@ body.kyc-hidden .wallet-main {
   width: 40px;
   height: 40px;
   background: #f3f4f6;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -1208,7 +1069,7 @@ body.kyc-hidden .wallet-main {
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 /* Status badge styling */
@@ -1276,7 +1137,7 @@ body.kyc-hidden .wallet-main {
 }
 
 .amount-negative {
-  color: #181d27;
+  color: var(--page-title-color);
   font-family: var(--font-family, "TT Norms Pro", sans-serif);
   font-weight: 600;
   font-size: 14px;
@@ -1300,7 +1161,7 @@ body.kyc-hidden .wallet-main {
 }
 
 .wallet-transaction-action-btn:hover {
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 /* ── Wallet Modals ───────────────────────────────────────────── */
@@ -1398,7 +1259,7 @@ body.kyc-hidden .wallet-main {
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
-  color: #344054;
+  color: var(--body-color);
   margin: 0;
 }
 
@@ -1495,7 +1356,7 @@ body.kyc-hidden .wallet-main {
   width: 100%;
   padding: 10px 18px;
   background: #f2f4f7;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--card-border-color);
   border-radius: 8px;
   font-family: var(--font-family, "TT Norms Pro", sans-serif);
   font-weight: 600;
@@ -1667,7 +1528,7 @@ body.kyc-hidden .wallet-main {
   padding: 80px 24px;
   text-align: center;
   background: #fff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
 }
 
@@ -1682,7 +1543,7 @@ body.kyc-hidden .wallet-main {
   font-family: var(--font-family, "TT Norms Pro", sans-serif);
   font-weight: 600;
   font-size: 16px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -1694,24 +1555,5 @@ body.kyc-hidden .wallet-main {
   margin: 0;
 }
 
-.retry-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 20px;
-  background: var(--primary-color);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-family: var(--font-family, "TT Norms Pro", sans-serif);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 4px;
-  text-decoration: none;
-  transition: background 0.15s;
-}
 
-.retry-btn:hover {
-  background: var(--primary-color);
-}
+

@@ -73,7 +73,7 @@
   font-weight: 700;
   font-size: 18px;
   line-height: 28px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -87,7 +87,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   margin: 0;
 }
 

@@ -16,7 +16,7 @@
   width: 100%;
   max-width: 1096px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
   border-radius: 12px;
   margin-bottom: 16px;
@@ -28,7 +28,7 @@
   font-weight: 700;
   font-size: 18px;
   line-height: 24px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -48,7 +48,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   margin: 0 0 4px 0;
   padding-left: 0;
 }
@@ -92,7 +92,7 @@
   width: 40px;
   height: 40px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   box-shadow:
     0px 1px 2px rgba(16, 24, 40, 0.05),
     inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
@@ -118,7 +118,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -145,7 +145,7 @@
   font-size: 12px;
   line-height: 18px;
   text-align: center;
-  color: #535862;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -173,7 +173,7 @@
   width: 100%;
   min-height: 72px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 12px;
   position: relative;
 }
@@ -220,7 +220,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 /* Progress Bar */
@@ -234,7 +234,7 @@
 .progress-bar {
   flex: 1;
   height: 8px;
-  background: #e9eaeb;
+  background: var(--table-border-color);
   border-radius: 4px;
   position: relative;
   overflow: hidden;
@@ -296,7 +296,7 @@
   width: 100%;
   max-width: 1096px;
   background: var(--accent-color);
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
   border-radius: 12px;
   margin-bottom: 16px;

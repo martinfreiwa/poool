@@ -53,10 +53,10 @@
     --mp-bg: #fafafa;
     --mp-surface: #ffffff;
     --mp-surface-elevated: #f8f9fa;
-    --mp-text-primary: #181d27;
+    --mp-text-primary: var(--page-title-color);
     --mp-text-secondary: #717680;
-    --mp-text-bright: #181d27;
-    --mp-border: #e9eaeb;
+    --mp-text-bright: var(--page-title-color);
+    --mp-border: var(--table-border-color);
     --mp-border-subtle: rgba(0,0,0,0.06);
     --mp-hover-bg: rgba(0,0,0,0.03);
     --mp-input-bg: #ffffff;
@@ -226,7 +226,7 @@ body.mp-secondary-body {
 
 .mp-sec__sort-select option {
     background: #ffffff;
-    color: #181d27;
+    color: var(--page-title-color);
 }
 
 /* === Filter Tabs — Pill style matching marketplace status-tabs === */

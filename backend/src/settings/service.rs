@@ -57,6 +57,7 @@ pub async fn get_settings(
                p.state_province,
                p.postal_code,
                p.tax_id,
+               p.annual_income_cents,
                k.status as kyc_status,
                COALESCE(s.email_notifications, TRUE) as email_notifications,
                COALESCE(s.push_notifications, TRUE) as push_notifications,
@@ -103,6 +104,7 @@ pub async fn get_settings(
         currency: row
             .try_get("currency")
             .unwrap_or_else(|_| "USD".to_string()),
+        annual_income_cents: row.try_get("annual_income_cents").ok(),
         avatar_url: row.try_get("avatar_url").unwrap_or_default(),
         email_verified: row.try_get("email_verified").unwrap_or(false),
         date_of_birth: row.try_get("date_of_birth").unwrap_or_default(),
@@ -295,10 +297,10 @@ pub async fn update_profile(
         r#"
         INSERT INTO user_profiles (user_id, first_name, last_name, phone_number, country,
             date_of_birth, nationality, address_line_1, address_line_2, city,
-            state_province, postal_code, tax_id)
+            state_province, postal_code, tax_id, annual_income_cents)
         VALUES ($1, $2, $3, $4, $5,
             $6::DATE, $7, $8, $9, $10,
-            $11, $12, $13)
+            $11, $12, $13, $14)
         ON CONFLICT (user_id) DO UPDATE SET
             first_name     = COALESCE(EXCLUDED.first_name, user_profiles.first_name),
             last_name      = COALESCE(EXCLUDED.last_name, user_profiles.last_name),
@@ -312,6 +314,7 @@ pub async fn update_profile(
             state_province = COALESCE(EXCLUDED.state_province, user_profiles.state_province),
             postal_code    = COALESCE(EXCLUDED.postal_code, user_profiles.postal_code),
             tax_id         = COALESCE(EXCLUDED.tax_id, user_profiles.tax_id),
+            annual_income_cents = COALESCE(EXCLUDED.annual_income_cents, user_profiles.annual_income_cents),
             updated_at     = NOW()
         "#,
     )
@@ -356,6 +359,7 @@ pub async fn update_profile(
             .as_deref()
             .filter(|s| !s.is_empty()),
     )
+    .bind(form.annual_income_cents)
     .execute(pool)
     .await?;
 
@@ -663,6 +667,413 @@ pub async fn disable_totp(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> 
     .bind(user_id)
     .execute(pool)
     .await?;
+
+    Ok(())
+}
+
+// ─── GDPR: Data Export (Art. 15/20) ────────────────────────────
+
+/// Export all user data as a JSON value for GDPR data portability.
+/// Returns a comprehensive JSON object containing all personal data.
+pub async fn export_user_data(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<serde_json::Value, AppError> {
+    use sqlx::Row;
+
+    // 1. User account
+    let user = sqlx::query(
+        r#"SELECT email, status, email_verified, avatar_url,
+                  TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at
+           FROM users WHERE id = $1"#,
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    let user_data = match user {
+        Some(r) => serde_json::json!({
+            "email": r.try_get::<Option<String>, _>("email").unwrap_or(None),
+            "status": r.try_get::<Option<String>, _>("status").unwrap_or(None),
+            "email_verified": r.try_get::<Option<bool>, _>("email_verified").unwrap_or(None),
+            "avatar_url": r.try_get::<Option<String>, _>("avatar_url").unwrap_or(None),
+            "created_at": r.try_get::<Option<String>, _>("created_at").unwrap_or(None),
+        }),
+        None => return Err(AppError::NotFound("User not found.".to_string())),
+    };
+
+    // 2. Profile
+    let profile = sqlx::query(
+        r#"SELECT first_name, last_name, phone_number, country, nationality,
+                  address_line_1, address_line_2, city, state_province, postal_code,
+                  TO_CHAR(date_of_birth, 'YYYY-MM-DD') as date_of_birth,
+                  tax_id, annual_income_cents
+           FROM user_profiles WHERE user_id = $1"#,
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    let profile_data = profile.map(|r| {
+        serde_json::json!({
+            "first_name": r.try_get::<Option<String>, _>("first_name").unwrap_or(None),
+            "last_name": r.try_get::<Option<String>, _>("last_name").unwrap_or(None),
+            "phone_number": r.try_get::<Option<String>, _>("phone_number").unwrap_or(None),
+            "country": r.try_get::<Option<String>, _>("country").unwrap_or(None),
+            "nationality": r.try_get::<Option<String>, _>("nationality").unwrap_or(None),
+            "address_line_1": r.try_get::<Option<String>, _>("address_line_1").unwrap_or(None),
+            "address_line_2": r.try_get::<Option<String>, _>("address_line_2").unwrap_or(None),
+            "city": r.try_get::<Option<String>, _>("city").unwrap_or(None),
+            "state_province": r.try_get::<Option<String>, _>("state_province").unwrap_or(None),
+            "postal_code": r.try_get::<Option<String>, _>("postal_code").unwrap_or(None),
+            "date_of_birth": r.try_get::<Option<String>, _>("date_of_birth").unwrap_or(None),
+            "tax_id": r.try_get::<Option<String>, _>("tax_id").unwrap_or(None),
+            "annual_income_cents": r.try_get::<Option<i64>, _>("annual_income_cents").unwrap_or(None),
+        })
+    });
+
+    // 3. Investments
+    let investments = sqlx::query(
+        r#"SELECT i.asset_id, a.title as asset_title, i.tokens_owned,
+                  i.purchase_value_cents, i.total_rental_cents, i.status,
+                  TO_CHAR(i.purchased_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as purchased_at
+           FROM investments i
+           JOIN assets a ON a.id = i.asset_id
+           WHERE i.user_id = $1 ORDER BY i.purchased_at DESC"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    let investments_data: Vec<serde_json::Value> = investments
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "asset_id": r.try_get::<Option<Uuid>, _>("asset_id").unwrap_or(None).map(|u| u.to_string()),
+                "asset_title": r.try_get::<Option<String>, _>("asset_title").unwrap_or(None),
+                "tokens_owned": r.try_get::<Option<i32>, _>("tokens_owned").unwrap_or(None),
+                "purchase_value_cents": r.try_get::<Option<i64>, _>("purchase_value_cents").unwrap_or(None),
+                "total_rental_cents": r.try_get::<Option<i64>, _>("total_rental_cents").unwrap_or(None),
+                "status": r.try_get::<Option<String>, _>("status").unwrap_or(None),
+                "purchased_at": r.try_get::<Option<String>, _>("purchased_at").unwrap_or(None),
+            })
+        })
+        .collect();
+
+    // 4. Wallet balances
+    let wallets = sqlx::query(
+        r#"SELECT wallet_type, currency, balance_cents
+           FROM wallets WHERE user_id = $1"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    let wallets_data: Vec<serde_json::Value> = wallets
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "wallet_type": r.try_get::<Option<String>, _>("wallet_type").unwrap_or(None),
+                "currency": r.try_get::<Option<String>, _>("currency").unwrap_or(None),
+                "balance_cents": r.try_get::<Option<i64>, _>("balance_cents").unwrap_or(None),
+            })
+        })
+        .collect();
+
+    // 5. Wallet transactions (last 1000)
+    let transactions = sqlx::query(
+        r#"SELECT wt.type, wt.status, wt.amount_cents, wt.currency, wt.description,
+                  TO_CHAR(wt.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at
+           FROM wallet_transactions wt
+           JOIN wallets w ON w.id = wt.wallet_id
+           WHERE w.user_id = $1
+           ORDER BY wt.created_at DESC LIMIT 1000"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    let transactions_data: Vec<serde_json::Value> = transactions
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "type": r.try_get::<Option<String>, _>("type").unwrap_or(None),
+                "status": r.try_get::<Option<String>, _>("status").unwrap_or(None),
+                "amount_cents": r.try_get::<Option<i64>, _>("amount_cents").unwrap_or(None),
+                "currency": r.try_get::<Option<String>, _>("currency").unwrap_or(None),
+                "description": r.try_get::<Option<String>, _>("description").unwrap_or(None),
+                "created_at": r.try_get::<Option<String>, _>("created_at").unwrap_or(None),
+            })
+        })
+        .collect();
+
+    // 6. Settings
+    let settings = sqlx::query(
+        r#"SELECT language, currency, timezone, email_notifications, push_notifications
+           FROM user_settings WHERE user_id = $1"#,
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    let settings_data = settings.map(|r| {
+        serde_json::json!({
+            "language": r.try_get::<Option<String>, _>("language").unwrap_or(None),
+            "currency": r.try_get::<Option<String>, _>("currency").unwrap_or(None),
+            "timezone": r.try_get::<Option<String>, _>("timezone").unwrap_or(None),
+            "email_notifications": r.try_get::<Option<bool>, _>("email_notifications").unwrap_or(None),
+            "push_notifications": r.try_get::<Option<bool>, _>("push_notifications").unwrap_or(None),
+        })
+    });
+
+    // 7. KYC records (anonymized — status only, no docs)
+    let kyc = sqlx::query(
+        r#"SELECT status, TO_CHAR(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at
+           FROM kyc_records WHERE user_id = $1 ORDER BY created_at DESC"#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    let kyc_data: Vec<serde_json::Value> = kyc
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "status": r.try_get::<Option<String>, _>("status").unwrap_or(None),
+                "created_at": r.try_get::<Option<String>, _>("created_at").unwrap_or(None),
+            })
+        })
+        .collect();
+
+    Ok(serde_json::json!({
+        "export_date": chrono::Utc::now().to_rfc3339(),
+        "user_id": user_id.to_string(),
+        "account": user_data,
+        "profile": profile_data,
+        "investments": investments_data,
+        "wallets": wallets_data,
+        "transactions": transactions_data,
+        "settings": settings_data,
+        "kyc_records": kyc_data,
+    }))
+}
+
+// ─── GDPR: Selective Account Deletion (Art. 17) ────────────────
+
+/// Selectively delete a user account per GDPR + financial regulations.
+///
+/// Per Masterplan §1.8 Q7:
+/// - ✅ DELETE: Personal profile data (name, address, phone), preferences, sessions
+/// - ✅ ANONYMIZE: User record (email→deleted hash, name→cleared)
+/// - ❌ KEEP: KYC records, wallet transactions, audit logs, investments (regulatory retention 5-10 years)
+///
+/// Requires password verification for security.
+pub async fn delete_account_selective(
+    pool: &PgPool,
+    user_id: Uuid,
+    current_password: &str,
+) -> Result<(), AppError> {
+    use sqlx::Row;
+
+    // 1. Verify the user exists and get their password hash
+    let user_row = sqlx::query("SELECT password_hash, email FROM users WHERE id = $1 AND status = 'active'")
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| AppError::NotFound("User not found or already deleted.".to_string()))?;
+
+    let password_hash: Option<String> = user_row.try_get("password_hash").unwrap_or(None);
+    let email: String = user_row.try_get("email").unwrap_or_default();
+
+    // For accounts with a password, verify it
+    if let Some(ref hash) = password_hash {
+        if !hash.is_empty() {
+            verify_password(current_password, hash)?;
+        }
+    }
+
+    // 2. Check for non-zero wallet balance — cannot delete with funds
+    let balance: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(balance_cents), 0)::bigint FROM wallets WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(0);
+
+    if balance > 0 {
+        return Err(AppError::BadRequest(
+            "Cannot delete account with remaining wallet balance. Please withdraw all funds first."
+                .to_string(),
+        ));
+    }
+
+    // 3. Check for active investments
+    let active_investments: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::bigint FROM investments WHERE user_id = $1 AND status IN ('funding_in_progress', 'active')",
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(0);
+
+    if active_investments > 0 {
+        return Err(AppError::BadRequest(
+            "Cannot delete account with active investments. Please wait for all investments to complete or cancel them first."
+                .to_string(),
+        ));
+    }
+
+    // 4. Generate anonymized identifier
+    let anon_hash = format!("deleted_{}", &user_id.to_string()[..8]);
+    let anon_email = format!("{}@deleted.poool.co", anon_hash);
+
+    // 5. Begin transaction for atomic deletion
+    let mut tx = pool.begin().await.map_err(|e| {
+        AppError::Internal(format!("Failed to start deletion transaction: {}", e))
+    })?;
+
+    // 5a. Anonymize user record — keep the row but clear all PII
+    sqlx::query(
+        r#"UPDATE users SET
+            email = $2,
+            password_hash = NULL,
+            avatar_url = NULL,
+            email_verified = FALSE,
+            status = 'deleted',
+            updated_at = NOW()
+           WHERE id = $1"#,
+    )
+    .bind(user_id)
+    .bind(&anon_email)
+    .execute(&mut *tx)
+    .await?;
+
+    // 5b. Clear all profile PII
+    sqlx::query(
+        r#"UPDATE user_profiles SET
+            first_name = NULL,
+            last_name = NULL,
+            phone_number = NULL,
+            address_line_1 = NULL,
+            address_line_2 = NULL,
+            city = NULL,
+            state_province = NULL,
+            postal_code = NULL,
+            tax_id = NULL,
+            nationality = NULL,
+            date_of_birth = NULL,
+            annual_income_cents = NULL,
+            updated_at = NOW()
+           WHERE user_id = $1"#,
+    )
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    // 5c. Delete all sessions (force logout)
+    sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5d. Delete user settings and preferences
+    sqlx::query("DELETE FROM user_settings WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5e. Delete leaderboard preferences
+    sqlx::query("DELETE FROM leaderboard_preferences WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5f. Delete notifications
+    sqlx::query("DELETE FROM notifications WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5g. Delete cart items
+    sqlx::query("DELETE FROM cart_items WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5h. Delete oauth accounts
+    sqlx::query("DELETE FROM oauth_accounts WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5i. Delete password reset tokens
+    sqlx::query("DELETE FROM password_reset_tokens WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5j. Delete referral codes
+    sqlx::query("DELETE FROM referral_codes WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5k. Delete user tiers
+    sqlx::query("DELETE FROM user_tiers WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5l. Delete user consents
+    sqlx::query("DELETE FROM user_consents WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5m. Anonymize support tickets (keep for audit, clear PII)
+    sqlx::query(
+        r#"UPDATE support_tickets SET
+            subject = 'Deleted user ticket',
+            user_email = $2
+           WHERE user_id = $1"#,
+    )
+    .bind(user_id)
+    .bind(&anon_email)
+    .execute(&mut *tx)
+    .await?;
+
+    // ── KEEP (regulatory): ──
+    // - kyc_records (5-10 year retention)
+    // - wallet_transactions (financial records)
+    // - investments (ownership records)
+    // - audit_logs (immutable by design)
+    // - orders / order_items (financial records)
+    // - dividend_payouts (financial records)
+    // - wallets (balance = 0, kept for reconciliation)
+
+    tx.commit().await.map_err(|e| {
+        AppError::Internal(format!("Failed to commit account deletion: {}", e))
+    })?;
+
+    // 6. Audit log the deletion (immutable record, best-effort after commit)
+    crate::common::audit::log(
+        pool,
+        Some(user_id),
+        &format!("account_deleted_gdpr:anonymized_to:{}", anon_email),
+        "user",
+        Some(user_id),
+        None,
+        None,
+    )
+    .await
+    .ok();
+
+    tracing::info!(
+        "GDPR account deletion completed for user {} (anonymized to {})",
+        user_id,
+        anon_email
+    );
 
     Ok(())
 }

@@ -33,7 +33,7 @@
     font-weight: 700;
     font-size: 24px;
     line-height: 32px;
-    color: #181d27;
+    color: var(--page-title-color);
     flex: none;
     order: 1;
     flex-grow: 0;
@@ -52,7 +52,7 @@
     height: 196px;
     margin: 0 0 24px 0;
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
     border-radius: 12px;
     transition: height 0.3s ease;
@@ -117,7 +117,7 @@
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
     flex: none;
     order: 0;
     flex-grow: 0;
@@ -153,7 +153,7 @@
     font-weight: 700;
     font-size: 30px;
     line-height: 38px;
-    color: #181d27;
+    color: var(--page-title-color);
     flex: none;
     order: 0;
     flex-grow: 0;
@@ -260,7 +260,7 @@
   }
 
   .mobile-chart-grid-line-bottom {
-    border-color: #e9eaeb;
+    border-color: var(--table-border-color);
   }
 
   /* Bar Chart */
@@ -316,7 +316,7 @@
     font-size: 12px;
     line-height: 18px;
     text-align: center;
-    color: #535862;
+    color: var(--text-secondary);
     flex: none;
   }
 
@@ -329,7 +329,7 @@
     font-weight: 700;
     font-size: 20px;
     line-height: 30px;
-    color: #181d27;
+    color: var(--page-title-color);
     margin: 50px 0 0px 0;
   }
 
@@ -356,7 +356,7 @@
     width: 100%;
     height: 108px;
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
     border-radius: 12px;
     flex: none;
@@ -452,7 +452,7 @@
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
     flex: none;
     order: 0;
     flex-grow: 0;
@@ -489,7 +489,7 @@
     font-weight: 600;
     font-size: 24px;
     line-height: 32px;
-    color: #181d27;
+    color: var(--page-title-color);
     flex: none;
     order: 0;
     flex-grow: 0;
@@ -548,7 +548,7 @@
     font-size: 14px;
     line-height: 20px;
     text-align: right;
-    color: #535862;
+    color: var(--text-secondary);
     flex: none;
     order: 1;
     flex-grow: 0;
@@ -651,7 +651,7 @@
     min-width: 157px;
     height: 144px;
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
     border-radius: 12px;
     flex: none;
@@ -686,7 +686,7 @@
     width: 40px;
     height: 40px;
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     box-shadow:
       0px 1px 2px rgba(16, 24, 40, 0.05),
       inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),
@@ -719,7 +719,7 @@
     font-weight: 400;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
     flex: 1;
   }
 
@@ -738,7 +738,7 @@
     font-size: 16px;
     line-height: 24px;
     text-align: right;
-    color: #181d27;
+    color: var(--page-title-color);
     flex: none;
     order: 2;
     flex-grow: 0;
@@ -749,7 +749,7 @@
     box-sizing: border-box;
     width: 100%;
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
     border-radius: 12px;
     overflow-x: auto;
@@ -789,7 +789,7 @@
     gap: 12px;
     height: 44px;
     background: #fafafa;
-    border-bottom: 1px solid #e9eaeb;
+    border-bottom: 1px solid var(--table-border-color);
     text-align: left;
     border-left: none;
     border-right: none;
@@ -842,7 +842,7 @@
     box-sizing: border-box;
     padding: 16px 24px;
     height: 72px;
-    border-bottom: 1px solid #e9eaeb;
+    border-bottom: 1px solid var(--table-border-color);
     border-left: none;
     border-right: none;
     border-top: none;
@@ -882,7 +882,7 @@
     font-weight: 600;
     font-size: 12px;
     line-height: 18px;
-    color: #181d27;
+    color: var(--page-title-color);
     display: block;
     white-space: nowrap;
     overflow: hidden;
@@ -896,7 +896,7 @@
     font-weight: 600;
     font-size: 12px;
     line-height: 18px;
-    color: #181d27;
+    color: var(--page-title-color);
     flex: none;
     order: 1;
     flex-grow: 0;
@@ -956,7 +956,7 @@
     font-weight: 600;
     font-size: 14px;
     line-height: 20px;
-    color: #535862;
+    color: var(--text-secondary);
   }
 
   /* Status Badges */
@@ -1040,7 +1040,7 @@
     height: 302px;
     padding: 24px 16px;
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
     border-radius: 12px;
     margin-bottom: 24px;
@@ -1073,7 +1073,7 @@
     height: 1px;
     left: -16px;
     bottom: -20px;
-    background: #e9eaeb;
+    background: var(--table-border-color);
   }
 
   /* Progress Section */
@@ -1157,7 +1157,7 @@
     font-weight: 400;
     font-size: 18px;
     line-height: 28px;
-    color: #535862;
+    color: var(--text-secondary);
     flex: 1;
   }
 

@@ -74,18 +74,16 @@ pub async fn create_order(
 
     // ── Rate limiting (Redis, non-fatal) ─────────────────────
     if let Some(redis) = redis {
-        if let Err(retry_after) =
-            orderbook::check_order_rate_limit(redis, user_id, 10, 60).await
-        {
+        if let Err(retry_after) = orderbook::check_order_rate_limit(redis, user_id, 10, 60).await {
             return Err(AppError::RateLimited(retry_after));
         }
     }
 
     // ── Determine price ──────────────────────────────────────
     let price_cents = match req.order_type.as_str() {
-        "limit" => req.price_cents.ok_or_else(|| {
-            AppError::BadRequest("Price is required for limit orders.".into())
-        })?,
+        "limit" => req
+            .price_cents
+            .ok_or_else(|| AppError::BadRequest("Price is required for limit orders.".into()))?,
         "market" => {
             // For market orders, use the best available price from the orderbook
             // or fall back to the last trade price.

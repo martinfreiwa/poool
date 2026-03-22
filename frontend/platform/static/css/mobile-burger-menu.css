@@ -154,7 +154,7 @@
 /* Notifications Badge - Green */
 .notifications-badge {
   background: #fafafa;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   color: #17b26a;
   min-width: 28px;
   height: 20px;
@@ -345,7 +345,7 @@
   right: 24px;
   height: 22px;
   background: #fafafa;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   border-radius: 16px;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
@@ -402,7 +402,7 @@
   width: 282px;
   flex: 0 0 auto;
   /* Footer should stick to bottom */
-  border-top: 1px solid #e9eaeb;
+  border-top: 1px solid var(--table-border-color);
   background: #ffffff;
   margin-top: auto;
   position: relative;
@@ -431,7 +431,7 @@
   width: calc(100% - 28px);
   height: 160px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
   border-radius: 12px;
 }
@@ -531,7 +531,7 @@
   font-weight: 400;
   font-size: 12px;
   line-height: 18px;
-  color: #535862;
+  color: var(--text-secondary);
   flex: none;
   order: 1;
   align-self: stretch;
@@ -679,7 +679,7 @@
 .mobile-burger-menu__featured-image {
   width: 202px;
   height: 94px;
-  background: #e9eaeb;
+  background: var(--table-border-color);
   border-radius: 6px;
   position: relative;
   overflow: hidden;
@@ -721,7 +721,7 @@
 }
 
 .mobile-burger-menu__featured-button--dismiss {
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 .mobile-burger-menu__featured-button--action {
@@ -741,7 +741,7 @@
   /* Ensure footer content is properly sized */
   height: 64px;
   background: #ffffff;
-  border: 1px solid #e9eaeb;
+  border: 1px solid var(--table-border-color);
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
   border-radius: 12px;
   cursor: pointer;
@@ -803,7 +803,7 @@
   font-weight: 600;
   font-size: 14px;
   line-height: 20px;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 .mobile-burger-menu__account-email {

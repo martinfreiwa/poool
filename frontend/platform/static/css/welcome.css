@@ -38,7 +38,7 @@
     width: 32px;
     height: 32px;
     background-color: #f2f4f7;
-    color: #344054;
+    color: var(--body-color);
     font-weight: 600;
     border-radius: 50%;
     flex-shrink: 0;

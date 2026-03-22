@@ -248,9 +248,15 @@ const PortfolioDataService = (function () {
                 totalRentalDisplay: formatCurrency(inv.total_rental_cents ?? 0),
                 statusCss,
                 statusLabel,
+                originalStatus: inv.status,
                 tokensOwned: inv.tokens_owned ?? 0,
+                id: inv.id,
+                isWithin48h: inv.is_within_48h ?? false,
+                chainContractAddress: inv.chain_contract_address || null,
+                chainTxHash: inv.chain_tx_hash || null,
             };
         });
+
 
         // ── Pie chart data ──
         const totalValue = raw.total_value_cents ?? 0;
@@ -286,9 +292,21 @@ const PortfolioDataService = (function () {
         };
     }
 
+    async function cancelInvestment(investmentId) {
+        const res = await fetch("/api/portfolio/cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ investment_id: investmentId })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Failed to cancel investment");
+        return json;
+    }
+
     // ─── Exports ──────────────────────────────────────────────────
     return {
         getPortfolioData,
+        cancelInvestment,
         // Expose helpers for unit testing
         formatCurrency,
         formatAmount,
@@ -298,3 +316,4 @@ const PortfolioDataService = (function () {
         mapInvestmentStatus,
     };
 })();
+

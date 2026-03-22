@@ -39,7 +39,7 @@
   font-weight: 600;
   font-size: 28px;
   line-height: 36px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0;
 }
 
@@ -72,7 +72,7 @@
   font-weight: 600;
   font-size: 20px;
   line-height: 28px;
-  color: #181d27;
+  color: var(--page-title-color);
   margin: 0 0 8px 0;
 }
 
@@ -82,7 +82,7 @@
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
-  color: #535862;
+  color: var(--text-secondary);
   margin: 0 0 32px 0;
   max-width: 350px;
 }

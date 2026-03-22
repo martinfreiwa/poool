@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Primary Escrow | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin — Track Primary Offering funding goals and Escrow pools." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/admin-marketplace.css" />
+  <script src="/static/js/user-data.js"></script>
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .escrow-card {
+      background: var(--admin-bg-card);
+      border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-lg);
+      padding: 24px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .escrow-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .escrow-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--admin-text-primary);
+      margin: 0 0 4px 0;
+    }
+    .escrow-id {
+      font-size: 12px;
+      color: var(--admin-text-muted);
+      font-family: monospace;
+    }
+    .escrow-badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-open {
+      background: rgba(43, 89, 255, 0.1);
+      color: var(--admin-primary);
+    }
+    .badge-progress {
+      background: rgba(245, 166, 35, 0.1);
+      color: var(--admin-warning);
+    }
+    .escrow-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      background: var(--admin-bg-secondary);
+      padding: 16px;
+      border-radius: var(--admin-radius-md);
+      border: 1px solid var(--admin-border);
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--admin-text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .stat-val {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--admin-text-primary);
+    }
+    .target-val {
+      font-size: 12px;
+      color: var(--admin-text-muted);
+      font-weight: 500;
+    }
+    .progress-track {
+      height: 8px;
+      background: var(--admin-border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--admin-primary);
+      transition: width 0.3s ease;
+    }
+    .progress-fill.success {
+      background: var(--admin-success);
+    }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--admin-text-muted);
+      margin-top: 4px;
+    }
+    .escrow-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding-top: 16px;
+      border-top: 1px solid var(--admin-border);
+    }
+  </style>
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="/static/js/admin-sidebar-loader.js"></script>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/marketplace/">Marketplace</a>
+            <span class="separator">›</span>
+            <span class="current">Primary Escrow</span>
+          </nav>
+        </div>
+        <div class="admin-topbar-right">
+          <div class="admin-health-indicators" title="System Health">
+            <span class="admin-health-dot admin-health-dot--ok"></span>
+            <span class="admin-health-dot admin-health-dot--ok"></span>
+          </div>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header">
+          <h1 class="admin-page-title">Primary Escrow Engine</h1>
+          <p class="admin-page-subtitle">Track Primary Offerings funding goals and Escrow pools in real-time.</p>
+        </div>
+
+        <div id="loading" style="text-align:center; padding: 40px; color: var(--admin-text-muted);">
+          Loading escrow data...
+        </div>
+
+        <div id="escrow-grid" style="display:none;"></div>
+
+        <div id="escrow-empty" style="display:none;">
+          <div class="admin-empty-state">
+            <div class="admin-empty-state-icon">🏦</div>
+            <div class="admin-empty-state-title">No Active Campaigns</div>
+            <div class="admin-empty-state-text">There are currently no active primary offerings holding escrow funds.</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/mp-toast.js"></script>
+  <script>
+    function formatMoney(cents) {
+      if (!cents) return "$0.00";
+      return "$" + (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function loadEscrow() {
+      try {
+        const res = await fetch('/api/admin/primary-escrow');
+        if (!res.ok) throw new Error('Failed to fetch data');
+        const data = await res.json();
+        
+        document.getElementById('loading').style.display = 'none';
+
+        if (!data || data.length === 0) {
+          document.getElementById('escrow-empty').style.display = 'block';
+          return;
+        }
+
+        const grid = document.getElementById('escrow-grid');
+        grid.style.display = 'block';
+        grid.innerHTML = '';
+
+        data.forEach(camp => {
+          const badgeCls = camp.funding_status === 'funding_open' ? 'badge-open' : 'badge-progress';
+          const badgeText = camp.funding_status.replace('_', ' ');
+          
+          let fillCls = 'progress-fill';
+          if (camp.progress_percent >= 100) fillCls += ' success';
+
+          const minTargetDesc = camp.target_min_cents > 0 ? `Soft Cap: ${formatMoney(camp.target_min_cents)}` : '';
+
+          const html = `
+            <div class="escrow-card">
+              <div class="escrow-header">
+                <div>
+                  <h3 class="escrow-title">${camp.title}</h3>
+                  <div class="escrow-id">${camp.asset_id}</div>
+                </div>
+                <div class="escrow-badge ${badgeCls}">${badgeText}</div>
+              </div>
+
+              <div>
+                <div class="progress-track">
+                  <div class="${fillCls}" style="width: ${Math.min(camp.progress_percent, 100)}%;"></div>
+                </div>
+                <div class="progress-meta">
+                  <span>${camp.progress_percent.toFixed(1)}% Funded</span>
+                  <span>${camp.tokens_total - camp.tokens_available} / ${camp.tokens_total} Tokens</span>
+                </div>
+              </div>
+
+              <div class="escrow-stats-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Current Escrow Balance</span>
+                  <span class="stat-val" style="color:var(--admin-primary)">${formatMoney(camp.current_escrow_cents)}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Funding Target</span>
+                  <span class="stat-val">${formatMoney(camp.target_total_cents)}</span>
+                  <span class="target-val">${minTargetDesc}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Escrow Agent</span>
+                  <span class="stat-val" style="font-size: 14px; font-weight:500;">${camp.escrow_agent}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Deadline</span>
+                  <span class="stat-val" style="font-size: 14px; font-weight:500;">${camp.funding_end_at || 'None'}</span>
+                </div>
+              </div>
+
+              <div class="escrow-footer">
+                <button class="admin-btn admin-btn--secondary" onclick="window.location.href='/admin/asset-details.html?id=${camp.asset_id}'">View Asset</button>
+                <button class="admin-btn admin-btn--primary" onclick="alert('Release functions will be enabled when notarization is complete.');">Close & Release Escrow</button>
+              </div>
+            </div>
+          `;
+          grid.insertAdjacentHTML('beforeend', html);
+        });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loading').innerText = 'Failed to load escrow data: ' + err.message;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadEscrow);
+  </script>
+</body>
+
+</html>

@@ -58,7 +58,7 @@
 .ds-divider {
   width: 100%;
   height: 1px;
-  background: var(--table-border-color, #E9EAEB);
+  background: var(--table-border-color, var(--table-border-color));
   border: none;
   margin: 0;
 }

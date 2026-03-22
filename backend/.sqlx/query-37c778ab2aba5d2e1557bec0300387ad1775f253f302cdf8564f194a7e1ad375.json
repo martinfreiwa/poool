@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO wallets (user_id, wallet_type, currency, balance_cents)\n                VALUES ($1, 'cash', 'USD', $2)\n                ON CONFLICT (user_id, wallet_type, currency) DO UPDATE\n                SET balance_cents = wallets.balance_cents + $2, updated_at = NOW()\n                RETURNING id\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "37c778ab2aba5d2e1557bec0300387ad1775f253f302cdf8564f194a7e1ad375"
+}

@@ -2,7 +2,7 @@
 ///
 /// All financial operations use PostgreSQL transactions with strict row locking
 /// to guarantee ACID compliance. No floats for money – everything in cents (BIGINT).
-use chrono::Utc;
+use chrono::{Datelike, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -405,6 +405,32 @@ pub async fn execute_checkout(
         items_count += tokens_qty;
     }
 
+    // 2.5 Check investment limits (Phase 17.2)
+    // Must come AFTER total_cents is calculated above.
+    let current_year = Utc::now().year();
+    let limit_info = sqlx::query!(
+        r#"
+        SELECT available_cents, annual_limit_cents, invested_12m_cents
+        FROM investment_limits
+        WHERE user_id = $1 AND limit_year = $2
+        "#,
+        user_id, current_year
+    )
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Limit check failed: {}", e))?;
+
+    if let Some(limit) = limit_info {
+        // available_cents is generated as (annual_limit_cents - invested_12m_cents)
+        if limit.available_cents.unwrap_or(0) < total_cents {
+            let available_usd = crate::common::currency::format_usd(limit.available_cents.unwrap_or(0));
+            return Err(format!(
+                "Order exceeds your annual investment limit. Available: {}. Please update your profile or contact support.",
+                available_usd
+            ));
+        }
+    }
+
     sentry::add_breadcrumb(sentry::Breadcrumb {
         category: Some("checkout".into()),
         message: Some(format!(
@@ -607,6 +633,15 @@ pub async fn execute_checkout(
         .await
         .map_err(|e| format!("Investment upsert failed: {}", e))?;
     }
+
+    // 7.5 Update investment limits (Phase 17.2)
+    sqlx::query!(
+        "UPDATE investment_limits SET invested_12m_cents = invested_12m_cents + $1, updated_at = NOW() WHERE user_id = $2 AND limit_year = $3",
+        total_cents, user_id, current_year
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| format!("Limit update failed: {}", e))?;
 
     // 8. Log wallet transaction (only if wallet used)
     if let Some(w_id) = wallet_id_used {

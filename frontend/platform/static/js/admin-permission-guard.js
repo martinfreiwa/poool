@@ -46,6 +46,7 @@
     "nav-orders": "orders.view",
     "nav-deposits": "deposits.confirm",
     "nav-treasury": "treasury.read",
+    "nav-blockchain": "treasury.read",
     "nav-dividends": "financials.payout.draft",
     "nav-rewards": "rewards.view",
     "nav-admins": "admins.manage",

@@ -90,7 +90,7 @@ html {
   font-size: 30px;
   line-height: 38px;
   text-align: center;
-  color: #181d27;
+  color: var(--page-title-color);
 }
 
 #supporting-text {
@@ -98,7 +98,7 @@ html {
   font-size: 16px;
   line-height: 24px;
   text-align: center;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 /* ─── Content Inner ───────────────────────────────────────────── */
@@ -192,7 +192,7 @@ html {
 #divider-right {
   flex: 1;
   height: 1px;
-  background: #e9eaeb;
+  background: var(--table-border-color);
 }
 
 #or-text {
@@ -200,7 +200,7 @@ html {
   font-size: 14px;
   line-height: 20px;
   text-align: center;
-  color: #535862;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
@@ -276,7 +276,7 @@ html {
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
-  color: #181d27;
+  color: var(--page-title-color);
   border: none;
   outline: none;
   background: transparent;
@@ -300,7 +300,7 @@ html {
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 
@@ -349,7 +349,7 @@ html {
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #535862;
+  color: var(--text-secondary);
 }
 
 #login-link {

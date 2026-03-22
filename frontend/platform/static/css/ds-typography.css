@@ -13,7 +13,7 @@
   font-size: 36px;
   font-weight: 700;
   line-height: 1.2;
-  color: var(--page-title-color, #181D27);
+  color: var(--page-title-color, var(--page-title-color));
   letter-spacing: -0.02em;
 }
 
@@ -23,7 +23,7 @@
   font-size: var(--page-title-font-size, 36px);
   font-weight: var(--page-title-font-weight, 700);
   line-height: var(--page-title-line-height, 1.2);
-  color: var(--page-title-color, #181D27);
+  color: var(--page-title-color, var(--page-title-color));
   letter-spacing: -0.02em;
 }
 
@@ -33,7 +33,7 @@
   font-size: 24px;
   font-weight: 700;
   line-height: 32px;
-  color: var(--page-title-color, #181D27);
+  color: var(--page-title-color, var(--page-title-color));
 }
 
 /* ── Heading MD (card titles — 18px) ────────────────────────────── */
@@ -42,7 +42,7 @@
   font-size: 18px;
   font-weight: 600;
   line-height: 28px;
-  color: var(--page-title-color, #181D27);
+  color: var(--page-title-color, var(--page-title-color));
 }
 
 /* ── Heading SM (sub-sections — 16px semibold) ──────────────────── */
@@ -51,7 +51,7 @@
   font-size: 16px;
   font-weight: 600;
   line-height: 24px;
-  color: var(--page-title-color, #181D27);
+  color: var(--page-title-color, var(--page-title-color));
 }
 
 /* ── Body (default text — 14px) ─────────────────────────────────── */
@@ -60,7 +60,7 @@
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
-  color: #344054;
+  color: var(--body-color);
 }
 
 .ds-text-body--medium {
@@ -77,7 +77,7 @@
   font-size: 16px;
   font-weight: 400;
   line-height: 24px;
-  color: #344054;
+  color: var(--body-color);
 }
 
 /* ── Caption / Small (labels, hints — 12/13px) ──────────────────── */
@@ -107,8 +107,8 @@
 }
 
 /* ── Color Modifiers ────────────────────────────────────────────── */
-.ds-text--primary   { color: var(--page-title-color, #181D27); }
-.ds-text--secondary { color: #535862; }
+.ds-text--primary   { color: var(--page-title-color, var(--page-title-color)); }
+.ds-text--secondary { color: var(--text-secondary); }
 .ds-text--muted     { color: #667085; }
 .ds-text--accent    { color: var(--primary-color, #0000FF); }
 .ds-text--success   { color: #027A48; }
@@ -124,7 +124,7 @@
 .ds-text-money {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  color: var(--page-title-color, #181D27);
+  color: var(--page-title-color, var(--page-title-color));
 }
 
 /* ── Truncation ─────────────────────────────────────────────────── */

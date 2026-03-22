@@ -114,11 +114,7 @@ async fn handle_ws_connection(mut socket: WebSocket, asset_id: Uuid, state: AppS
             };
 
             if let Ok(json) = serde_json::to_string(&msg) {
-                if socket
-                    .send(Message::Text(json.into()))
-                    .await
-                    .is_err()
-                {
+                if socket.send(Message::Text(json.into())).await.is_err() {
                     return; // Client disconnected immediately
                 }
             }

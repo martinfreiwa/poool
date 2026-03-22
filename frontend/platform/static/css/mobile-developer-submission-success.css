@@ -129,7 +129,7 @@
     margin: 0 auto !important;
     padding: 32px 16px !important;
     background: #ffffff !important;
-    border: 1px solid #e9eaeb !important;
+    border: 1px solid var(--table-border-color) !important;
     box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05) !important;
     border-radius: 16px !important;
     display: flex !important;

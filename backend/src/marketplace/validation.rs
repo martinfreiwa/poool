@@ -104,15 +104,14 @@ pub fn validate_order_fields(req: &SubmitOrderRequest) -> Result<(), AppError> {
 
 /// Check that the user has completed KYC verification.
 pub async fn check_kyc_verified(pool: &PgPool, user_id: Uuid) -> Result<(), OrderRejection> {
-    let is_verified: bool = sqlx::query_scalar(
-        "SELECT COALESCE(is_kyc_verified, false) FROM users WHERE id = $1",
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await
-    .ok()
-    .flatten()
-    .unwrap_or(false);
+    let is_verified: bool =
+        sqlx::query_scalar("SELECT COALESCE(is_kyc_verified, false) FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or(false);
 
     if !is_verified {
         return Err(OrderRejection::KycNotApproved);
@@ -125,10 +124,7 @@ pub async fn check_kyc_verified(pool: &PgPool, user_id: Uuid) -> Result<(), Orde
 ///
 /// An asset must be in `funding_status = 'funded'` and `published = true`
 /// to be tradable on the secondary market.
-pub async fn check_asset_tradable(
-    pool: &PgPool,
-    asset_id: Uuid,
-) -> Result<i32, OrderRejection> {
+pub async fn check_asset_tradable(pool: &PgPool, asset_id: Uuid) -> Result<i32, OrderRejection> {
     let row = sqlx::query!(
         r#"SELECT tokens_total, funding_status, published
            FROM assets
@@ -190,13 +186,12 @@ pub async fn check_idempotency_key(
         Err(_) => return Ok(()), // Invalid UUID already caught in field validation
     };
 
-    let exists: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM market_orders WHERE idempotency_key = $1)",
-    )
-    .bind(key)
-    .fetch_one(pool)
-    .await
-    .unwrap_or(false);
+    let exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM market_orders WHERE idempotency_key = $1)")
+            .bind(key)
+            .fetch_one(pool)
+            .await
+            .unwrap_or(false);
 
     if exists {
         return Err(OrderRejection::DuplicateIdempotencyKey);
@@ -407,10 +402,7 @@ pub struct ResolvedFees {
 /// 2. **Developer Deal** — per-developer fee agreement
 /// 3. **Asset-specific** — per-asset fee override
 /// 4. **Platform Default** — fallback (500/0 BPS taker/maker)
-pub async fn resolve_fees(
-    pool: &PgPool,
-    asset_id: Uuid,
-) -> Result<ResolvedFees, AppError> {
+pub async fn resolve_fees(pool: &PgPool, asset_id: Uuid) -> Result<ResolvedFees, AppError> {
     // 1. Check for active promotion (global or asset-specific)
     let promo = sqlx::query_as!(
         super::models::FeePromotion,

@@ -324,6 +324,34 @@
       xAxisContainer.innerHTML = xLabels.map(function (label) { return "<span>" + label + "</span>"; }).join("");
     }
 
+    // 4.5. Update Y-Axis labels
+    var gridLines = document.querySelectorAll(".grid-line");
+    if (gridLines.length > 0) {
+      var numLines = gridLines.length;
+      for (var yIdx = 0; yIdx < numLines; yIdx++) {
+        var pct = (numLines - 1 - yIdx) / (numLines - 1);
+        var valCents = minVal + (range * pct);
+        var valDollars = valCents / 100;
+        
+        var formatted = "";
+        if (Math.abs(valDollars) >= 1000000) {
+          formatted = "$" + (valDollars / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+        } else if (Math.abs(valDollars) >= 1000) {
+          formatted = "$" + (valDollars / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+        } else {
+          formatted = "$" + Math.round(valDollars);
+        }
+        
+        var labelEl = gridLines[yIdx].querySelector(".chart-y-axis-label");
+        if (!labelEl) {
+          labelEl = document.createElement("span");
+          labelEl.className = "chart-y-axis-label";
+          gridLines[yIdx].insertBefore(labelEl, gridLines[yIdx].firstChild);
+        }
+        labelEl.textContent = formatted;
+      }
+    }
+
     // 5. Add bar hover tooltip behavior
     setupBarTooltips();
   }

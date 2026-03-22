@@ -115,7 +115,7 @@
     font-family: var(--font-family, 'TT Norms Pro', -apple-system, BlinkMacSystemFont, sans-serif);
     font-size: 28px;
     font-weight: 700;
-    color: #181D27;
+    color: var(--page-title-color);
     margin: 0 0 10px;
     letter-spacing: -0.02em;
     line-height: 1.2;
@@ -140,7 +140,7 @@
 /* ── Base Card ───────────────────────────────────────────────── */
 .pip-card {
     background: #ffffff;
-    border: 1px solid #e9eaeb;
+    border: 1px solid var(--table-border-color);
     border-radius: 20px;
     padding: 24px;
     box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06),
@@ -172,14 +172,14 @@
 .pip-amount-display {
     text-align: center;
     padding: 24px 0;
-    border-bottom: 1px solid #eaecf0;
+    border-bottom: 1px solid var(--card-border-color);
     margin-bottom: 20px;
 }
 
 .pip-amount-display__value {
     font-size: 36px;
     font-weight: 700;
-    color: #181D27;
+    color: var(--page-title-color);
     margin: 0 0 6px;
     letter-spacing: -0.02em;
 }
@@ -212,7 +212,7 @@
 .pip-detail-row__value {
     font-size: 13px;
     font-weight: 600;
-    color: #181D27;
+    color: var(--page-title-color);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -258,7 +258,7 @@
 .pip-bank-ref-row__value {
     font-size: 14px;
     font-weight: 700;
-    color: #62F7A4;
+    color: #98FB96;
     letter-spacing: 0.5px;
     display: flex;
     align-items: center;
@@ -278,7 +278,7 @@
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.15s;
-    color: #62F7A4;
+    color: #98FB96;
 }
 
 .pip-bank-ref-row__copy:hover {
@@ -288,7 +288,7 @@
 
 .pip-bank-ref-row__copy.copied {
     background: rgba(255, 255, 255, 0.2);
-    border-color: #62F7A4;
+    border-color: #98FB96;
 }
 
 .pip-bank-warning {
@@ -337,7 +337,7 @@
     top: 38px;
     bottom: 0;
     width: 2px;
-    background: #e9eaeb;
+    background: var(--table-border-color);
 }
 
 .pip-progress-step--active:not(:last-child)::before {
@@ -379,7 +379,7 @@
 .pip-progress-step__title {
     font-size: 14px;
     font-weight: 600;
-    color: #181D27;
+    color: var(--page-title-color);
     margin: 0 0 2px;
 }
 
@@ -451,7 +451,7 @@
     align-items: flex-start;
     gap: 12px;
     background: #F9FAFB;
-    border: 1px solid #EAECF0;
+    border: 1px solid var(--card-border-color);
     border-radius: 12px;
     padding: 16px;
 }
@@ -464,7 +464,7 @@
     height: 36px;
     border-radius: 50%;
     background: var(--primary-color, #0000FF);
-    color: #62F7A4;
+    color: #98FB96;
     flex-shrink: 0;
 }
 
@@ -477,7 +477,7 @@
     font-family: var(--font-family, 'TT Norms Pro', sans-serif);
     font-size: 14px;
     font-weight: 600;
-    color: #181D27;
+    color: var(--page-title-color);
     margin: 0 0 2px;
 }
 
@@ -528,7 +528,7 @@
 
 .pip-btn--primary {
     background: var(--primary-color, #0000FF);
-    color: #62F7A4;
+    color: #98FB96;
 }
 
 .pip-btn--primary:hover {
@@ -546,8 +546,8 @@
 
 .pip-btn--secondary {
     background: #ffffff;
-    color: #181D27;
-    border: 1px solid #e9eaeb;
+    color: var(--page-title-color);
+    border: 1px solid var(--table-border-color);
     border-radius: 12px;
 }
 
@@ -614,7 +614,7 @@
 .pip-empty__title {
     font-size: 18px;
     font-weight: 700;
-    color: #181D27;
+    color: var(--page-title-color);
     margin: 0 0 8px;
 }
 

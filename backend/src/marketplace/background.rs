@@ -201,7 +201,10 @@ pub async fn run_redis_sync_worker(redis: &RedisPool, pool: &PgPool) {
         // Part 2: Find stale orders in Redis (no longer active in DB) and clean up
         match clean_stale_redis_orders(redis, pool).await {
             Ok(cleaned) if cleaned > 0 => {
-                tracing::warn!("🧹 Redis cleanup: removed {} stale orders from Redis", cleaned);
+                tracing::warn!(
+                    "🧹 Redis cleanup: removed {} stale orders from Redis",
+                    cleaned
+                );
             }
             Ok(_) => {}
             Err(e) => {
@@ -229,7 +232,9 @@ async fn clean_stale_redis_orders(redis: &RedisPool, pool: &PgPool) -> Result<u3
 
     for asset_id in &asset_ids {
         // Check asks
-        let asks = orderbook::get_asks(redis, *asset_id, 500).await.unwrap_or_default();
+        let asks = orderbook::get_asks(redis, *asset_id, 500)
+            .await
+            .unwrap_or_default();
         for ask in &asks {
             if is_order_stale(pool, ask.order_id).await {
                 if orderbook::remove_member(redis, *asset_id, "sell", &ask.raw_member)
@@ -242,7 +247,9 @@ async fn clean_stale_redis_orders(redis: &RedisPool, pool: &PgPool) -> Result<u3
         }
 
         // Check bids
-        let bids = orderbook::get_bids(redis, *asset_id, 500).await.unwrap_or_default();
+        let bids = orderbook::get_bids(redis, *asset_id, 500)
+            .await
+            .unwrap_or_default();
         for bid in &bids {
             if is_order_stale(pool, bid.order_id).await {
                 if orderbook::remove_member(redis, *asset_id, "buy", &bid.raw_member)
@@ -260,19 +267,18 @@ async fn clean_stale_redis_orders(redis: &RedisPool, pool: &PgPool) -> Result<u3
 
 /// Check if an order is no longer active in PostgreSQL.
 async fn is_order_stale(pool: &PgPool, order_id: uuid::Uuid) -> bool {
-    let status: Option<String> = sqlx::query_scalar(
-        "SELECT status FROM market_orders WHERE id = $1",
-    )
-    .bind(order_id)
-    .fetch_optional(pool)
-    .await
-    .ok()
-    .flatten();
+    let status: Option<String> =
+        sqlx::query_scalar("SELECT status FROM market_orders WHERE id = $1")
+            .bind(order_id)
+            .fetch_optional(pool)
+            .await
+            .ok()
+            .flatten();
 
     match status.as_deref() {
         Some("open") | Some("partially_filled") => false, // Still active
-        Some(_) => true,  // filled, cancelled, expired — stale in Redis
-        None => true,      // Order doesn't exist — definitely stale
+        Some(_) => true, // filled, cancelled, expired — stale in Redis
+        None => true,    // Order doesn't exist — definitely stale
     }
 }
 
@@ -387,8 +393,8 @@ mod tests {
     fn test_worker_intervals() {
         // Verify our interval constants make sense
         let expiry_interval = 3600u64; // 1 hour
-        let sync_interval = 300u64;     // 5 minutes
-        let price_interval = 300u64;    // 5 minutes
+        let sync_interval = 300u64; // 5 minutes
+        let price_interval = 300u64; // 5 minutes
 
         assert_eq!(expiry_interval, 60 * 60);
         assert_eq!(sync_interval, 5 * 60);
