@@ -45,24 +45,40 @@ pub struct DatabasePools {
 /// Build PgConnectOptions from a database URL.
 /// On Cloud Run, we auto-detect the Cloud SQL Unix socket under /cloudsql/.
 /// On local dev, we use a standard TCP connection from the DATABASE_URL.
+///
+/// When PgBouncer is enabled (PGBOUNCER_ENABLED=true), skip socket auto-detection
+/// because PgBouncer handles the upstream connection to Cloud SQL. The backend
+/// should connect to PgBouncer via TCP (127.0.0.1:6432).
 fn build_connect_options(database_url: &str) -> PgConnectOptions {
-    // Cloud Run + --add-cloudsql-instances mounts sockets at /cloudsql/<connection-name>
-    // The CLOUD_SQL_SOCKET_PATH env var can override the auto-detection.
-    let socket_dir = std::env::var("CLOUD_SQL_SOCKET_PATH").ok().or_else(|| {
-        let path = "/cloudsql";
-        if std::path::Path::new(path).exists() {
-            if let Ok(entries) = std::fs::read_dir(path) {
-                for entry in entries.flatten() {
-                    if entry.path().is_dir() {
-                        let p = entry.path().to_string_lossy().into_owned();
-                        tracing::info!("Auto-detected Cloud SQL socket dir: {}", p);
-                        return Some(p);
+    // If PgBouncer is enabled, the entrypoint.sh has already rewritten DATABASE_URL
+    // to point to 127.0.0.1:6432. We must NOT auto-detect the Cloud SQL socket
+    // or we'd bypass PgBouncer entirely, causing prepared statement conflicts.
+    let pgbouncer_enabled = std::env::var("PGBOUNCER_ENABLED")
+        .map(|v| v == "true")
+        .unwrap_or(false);
+
+    let socket_dir = if pgbouncer_enabled {
+        tracing::info!("PgBouncer enabled — skipping Cloud SQL socket auto-detection");
+        None
+    } else {
+        // Cloud Run + --add-cloudsql-instances mounts sockets at /cloudsql/<connection-name>
+        // The CLOUD_SQL_SOCKET_PATH env var can override the auto-detection.
+        std::env::var("CLOUD_SQL_SOCKET_PATH").ok().or_else(|| {
+            let path = "/cloudsql";
+            if std::path::Path::new(path).exists() {
+                if let Ok(entries) = std::fs::read_dir(path) {
+                    for entry in entries.flatten() {
+                        if entry.path().is_dir() {
+                            let p = entry.path().to_string_lossy().into_owned();
+                            tracing::info!("Auto-detected Cloud SQL socket dir: {}", p);
+                            return Some(p);
+                        }
                     }
                 }
             }
-        }
-        None
-    });
+            None
+        })
+    };
 
     if let Some(socket_path) = socket_dir {
         // Parse user/password/dbname from DATABASE_URL but switch to socket transport.
@@ -77,7 +93,7 @@ fn build_connect_options(database_url: &str) -> PgConnectOptions {
         // .socket() sets the host to the directory; sqlx will look for .s.PGSQL.5432 inside it
         base.socket(socket_path)
     } else {
-        // Standard TCP connection (local dev via DATABASE_URL)
+        // TCP connection — either local dev or PgBouncer proxy
         database_url
             .parse::<PgConnectOptions>()
             .expect("Invalid DATABASE_URL")
