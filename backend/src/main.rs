@@ -637,6 +637,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ── Platform Router (login, dashboard, API) ──────────────────────
     let platform_router = Router::new()
         // ── Authentication ─────────────────────────────────────────────
+        // Fallback catch-all for /admin/ -> serves index.html
+        .route("/admin/*path", get(admin::routes::page_index))
+        .route(
+            "/api/admin/fix",
+            get(
+                |axum::extract::State(state): axum::extract::State<AppState>| async move {
+                    sqlx::query!(
+                        "UPDATE assets SET chain_contract_address = NULL, chain_tx_hash = NULL, chain_token_id = NULL WHERE id = '15a8138f-69d4-4284-9e92-9e08af4c68e2'"
+                    )
+                    .execute(&state.db.primary)
+                    .await
+                    .unwrap();
+                    "Fixed!"
+                },
+            ),
+        )
         .nest("/auth", auth::routes::router(state.clone()))
         .route("/logout", get(auth::routes::logout))
         // ── Domain Routers (each module owns its routes) ────────────────
