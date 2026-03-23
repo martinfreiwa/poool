@@ -47,12 +47,16 @@ pub async fn api_orderbook(
 ) -> Result<impl IntoResponse, AppError> {
     let asset_id = resolve_asset_id(&state.db, &id_or_slug).await?;
 
-    let redis = state
-        .redis
-        .as_ref()
-        .ok_or_else(|| AppError::ServiceUnavailable("Redis not available".into()))?;
-
-    let mut snapshot = super::orderbook::get_orderbook_snapshot(redis, asset_id, None).await?;
+    let mut snapshot = match state.redis.as_ref() {
+        Some(redis) => match super::orderbook::get_orderbook_snapshot(redis, asset_id, None).await {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!("Redis orderbook unavailable ({}). Falling back to PostgreSQL.", e);
+                super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, None).await?
+            }
+        },
+        None => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, None).await?,
+    };
 
     // Fill last_price from trade_history
     let last_price: Option<i64> = sqlx::query_scalar(

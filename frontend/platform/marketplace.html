@@ -180,15 +180,15 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
                     {% if asset.image_urls and asset.image_urls | length > 0 %}
                       {% for img in asset.image_urls %}
                         {% if loop.index0 < 5 %}
-                        <div class="property-image {% if loop.index0 == 0 %}active{% endif %}"
-                          style="background-image: url('{{ img }}'); background-size: cover; background-position: center;"
-                          aria-label="{{ asset.title }}"></div>
+                        <img src="{{ img }}" loading="lazy" class="property-image {% if loop.index0 == 0 %}active{% endif %}"
+                          style="object-fit: cover; object-position: center;"
+                          alt="{{ asset.title }}">
                         {% endif %}
                       {% endfor %}
                     {% else %}
-                      <div class="property-image active"
-                        style="background-image: url('{{ asset.cover_image_url | default('/static/images/villa1.webp') }}'); background-size: cover; background-position: center;"
-                        aria-label="{{ asset.title }}"></div>
+                      <img src="{{ asset.cover_image_url | default('/static/images/villa1.webp') }}" loading="lazy" class="property-image active"
+                        style="object-fit: cover; object-position: center;"
+                        alt="{{ asset.title }}">
                     {% endif %}
                     
                     <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">

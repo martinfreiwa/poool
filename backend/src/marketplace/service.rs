@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 use super::models::{
     MarketOrder, OrderResponse, OrderSide, RecentTrade, SubmitOrderRequest, TickerResponse,
+    OrderbookSnapshot, PriceLevel
 };
 use super::{orderbook, validation};
 use crate::error::AppError;
@@ -674,6 +675,9 @@ pub async fn get_secondary_assets(pool: &PgPool) -> Result<Vec<super::models::Se
             a.bedrooms,
             a.funding_status,
             a.location_description,
+            a.occupancy_rate_bps,
+            a.lease_type,
+            a.property_type,
             ARRAY(
                 SELECT image_url 
                 FROM asset_images 
@@ -748,7 +752,7 @@ pub async fn get_secondary_assets(pool: &PgPool) -> Result<Vec<super::models::Se
             change24h,
             volume24h,
             roi: row.annual_yield_bps.unwrap_or(0) as f64 / 100.0,
-            occupancy: 95,
+            occupancy: (row.occupancy_rate_bps.unwrap_or(0) / 100) as i32,
             sell_orders,
             buy_interest,
             total_supply: row.tokens_total,
@@ -759,8 +763,70 @@ pub async fn get_secondary_assets(pool: &PgPool) -> Result<Vec<super::models::Se
             bedrooms: row.bedrooms,
             rent_status: Some(row.funding_status.clone()),
             location_desc: row.location_description,
+            lease_type: row.lease_type,
+            property_type: row.property_type,
         });
     }
 
     Ok(results)
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── ORDERBOOK FALLBACK (POSTGRESQL) ───────────────────────────
+// ═══════════════════════════════════════════════════════════════
+
+/// Build a full orderbook snapshot directly from PostgreSQL.
+/// Used as a fallback when Redis is unavailable.
+pub async fn get_orderbook_snapshot_from_db(
+    pool: &PgPool,
+    asset_id: Uuid,
+    depth: Option<usize>,
+) -> Result<OrderbookSnapshot, AppError> {
+    let limit = depth.unwrap_or(20) as i64;
+
+    // Asks: Lowest price first
+    let asks = sqlx::query_as!(
+        PriceLevel,
+        r#"SELECT price_cents, SUM(quantity - quantity_filled)::integer as "total_quantity!", COUNT(*)::integer as "order_count!"
+           FROM market_orders
+           WHERE asset_id = $1 AND side = 'sell' AND status IN ('open', 'partially_filled')
+           GROUP BY price_cents
+           ORDER BY price_cents ASC
+           LIMIT $2"#,
+        asset_id,
+        limit
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    // Bids: Highest price first
+    let bids = sqlx::query_as!(
+        PriceLevel,
+        r#"SELECT price_cents, SUM(quantity - quantity_filled)::integer as "total_quantity!", COUNT(*)::integer as "order_count!"
+           FROM market_orders
+           WHERE asset_id = $1 AND side = 'buy' AND status IN ('open', 'partially_filled')
+           GROUP BY price_cents
+           ORDER BY price_cents DESC
+           LIMIT $2"#,
+        asset_id,
+        limit
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    let spread = match (asks.first(), bids.first()) {
+        (Some(best_ask), Some(best_bid)) => Some(best_ask.price_cents - best_bid.price_cents),
+        _ => None,
+    };
+
+    Ok(OrderbookSnapshot {
+        asset_id,
+        bids,
+        asks,
+        spread_cents: spread,
+        last_price_cents: None, // Filled by caller
+        timestamp: Utc::now(),
+    })
 }

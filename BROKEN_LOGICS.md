@@ -848,3 +848,13 @@ These are ad-hoc fixes during feature implementation, documented inline.
   - Fixed `main.rs` admin report: `i.created_at` → `i.purchased_at`
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+
+### [P0] — Marketplace Unavailable When Redis Is Missing & WS Crash
+- **Files:** `backend/src/marketplace/routes.rs`, `backend/src/marketplace/websocket.rs`, `backend/src/marketplace/service.rs`
+- **What was wrong:** Production market page threw a 503 "Service temporarily unavailable: Redis not available", because `api_orderbook` hard-failed if `state.redis` was `None` instead of gracefully degrading to PostgreSQL. Furthermore, `ws_market_handler` tried to extract `Path<Uuid>` out of `id_or_slug`, failing with 400 Bad Request when users hit `/ws/market/grand-pavilion-ubud-estate` (slug), causing real-time market updates to break completely.
+- **What I did:** 
+  - Wrote a new `get_orderbook_snapshot_from_db` query in `marketplace/service.rs` (accounting for `quantity - quantity_filled`).
+  - Updated `api_orderbook`, `ws_market_handler`'s init snapshot, and `broadcast_orderbook_update` to gracefully fall back to PostgreSQL and local channel broadcasting if Redis isn't configured or goes down.
+  - Fixed `ws_market_handler` to properly accept `Path<String>` and resolve the asset ID via the DB asynchronously before upgrading the socket.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23

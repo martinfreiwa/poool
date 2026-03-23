@@ -34,6 +34,7 @@ use uuid::Uuid;
 use super::models::PriceLevel;
 use super::orderbook;
 use crate::auth::routes::AppState;
+use crate::error::AppError;
 
 // ═══════════════════════════════════════════════════════════════
 // ── CHANNEL MANAGEMENT ────────────────────────────────────────
@@ -84,10 +85,11 @@ async fn get_or_create_channel(asset_id: Uuid) -> broadcast::Sender<String> {
 /// to real-time updates for the specified asset.
 pub async fn ws_market_handler(
     ws: WebSocketUpgrade,
-    Path(asset_id): Path<Uuid>,
+    Path(id_or_slug): Path<String>,
     State(state): State<AppState>,
-) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_ws_connection(socket, asset_id, state))
+) -> Result<impl IntoResponse, AppError> {
+    let asset_id = super::routes::resolve_asset_id(&state.db, &id_or_slug).await?;
+    Ok(ws.on_upgrade(move |socket| handle_ws_connection(socket, asset_id, state)))
 }
 
 /// Handle a single WebSocket connection lifecycle.
@@ -102,21 +104,32 @@ async fn handle_ws_connection(mut socket: WebSocket, asset_id: Uuid, state: AppS
     let tx = get_or_create_channel(asset_id).await;
     let mut rx = tx.subscribe();
 
-    // Send initial orderbook snapshot so the client renders immediately
-    if let Some(ref redis) = state.redis {
-        if let Ok(snapshot) = orderbook::get_orderbook_snapshot(redis, asset_id, Some(20)).await {
-            let msg = WsMessage::OrderbookUpdate {
-                event: "orderbook_update".to_string(),
-                asset_id: asset_id.to_string(),
-                bids: snapshot.bids,
-                asks: snapshot.asks,
-                spread_cents: snapshot.spread_cents,
-            };
-
-            if let Ok(json) = serde_json::to_string(&msg) {
-                if socket.send(Message::Text(json.into())).await.is_err() {
-                    return; // Client disconnected immediately
+    // Helper to get orderbook snapshot handling Redis fallback
+    let get_snapshot = |asset_id, state: AppState| async move {
+        match state.redis.as_ref() {
+            Some(redis) => {
+                match orderbook::get_orderbook_snapshot(redis, asset_id, Some(20)).await {
+                    Ok(s) => Ok(s),
+                    Err(_) => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await,
                 }
+            }
+            None => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await,
+        }
+    };
+
+    // Send initial orderbook snapshot so the client renders immediately
+    if let Ok(snapshot) = get_snapshot(asset_id, state.clone()).await {
+        let msg = WsMessage::OrderbookUpdate {
+            event: "orderbook_update".to_string(),
+            asset_id: asset_id.to_string(),
+            bids: snapshot.bids,
+            asks: snapshot.asks,
+            spread_cents: snapshot.spread_cents,
+        };
+
+        if let Ok(json) = serde_json::to_string(&msg) {
+            if socket.send(Message::Text(json.into())).await.is_err() {
+                return; // Client disconnected immediately
             }
         }
     }
@@ -139,18 +152,16 @@ async fn handle_ws_connection(mut socket: WebSocket, asset_id: Uuid, state: AppS
                         // Client fell behind — they missed `n` messages.
                         // Send them a fresh snapshot instead.
                         tracing::warn!("WS client lagged by {} messages for asset {}", n, asset_id);
-                        if let Some(ref redis) = state.redis {
-                            if let Ok(snapshot) = orderbook::get_orderbook_snapshot(redis, asset_id, Some(20)).await {
-                                let msg = WsMessage::OrderbookUpdate {
-                                    event: "orderbook_update".to_string(),
-                                    asset_id: asset_id.to_string(),
-                                    bids: snapshot.bids,
-                                    asks: snapshot.asks,
-                                    spread_cents: snapshot.spread_cents,
-                                };
-                                if let Ok(json) = serde_json::to_string(&msg) {
-                                    let _ = socket.send(Message::Text(json.into())).await;
-                                }
+                        if let Ok(snapshot) = get_snapshot(asset_id, state.clone()).await {
+                            let msg = WsMessage::OrderbookUpdate {
+                                event: "orderbook_update".to_string(),
+                                asset_id: asset_id.to_string(),
+                                bids: snapshot.bids,
+                                asks: snapshot.asks,
+                                spread_cents: snapshot.spread_cents,
+                            };
+                            if let Ok(json) = serde_json::to_string(&msg) {
+                                let _ = socket.send(Message::Text(json.into())).await;
                             }
                         }
                     }
@@ -197,18 +208,30 @@ async fn handle_ws_connection(mut socket: WebSocket, asset_id: Uuid, state: AppS
 /// 1. Local broadcast channel (this instance's clients)
 /// 2. Redis Pub/Sub (other Cloud Run instances)
 pub async fn broadcast_orderbook_update(state: &AppState, asset_id: Uuid) {
-    if let Some(ref redis) = state.redis {
-        if let Ok(snapshot) = orderbook::get_orderbook_snapshot(redis, asset_id, Some(20)).await {
-            let msg = WsMessage::OrderbookUpdate {
-                event: "orderbook_update".to_string(),
-                asset_id: asset_id.to_string(),
-                bids: snapshot.bids,
-                asks: snapshot.asks,
-                spread_cents: snapshot.spread_cents,
-            };
+    let snapshot_res = match state.redis.as_ref() {
+        Some(redis) => {
+            match orderbook::get_orderbook_snapshot(redis, asset_id, Some(20)).await {
+                Ok(s) => Ok(s),
+                Err(_) => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await,
+            }
+        }
+        None => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await,
+    };
 
-            if let Ok(json) = serde_json::to_string(&msg) {
+    if let Ok(snapshot) = snapshot_res {
+        let msg = WsMessage::OrderbookUpdate {
+            event: "orderbook_update".to_string(),
+            asset_id: asset_id.to_string(),
+            bids: snapshot.bids,
+            asks: snapshot.asks,
+            spread_cents: snapshot.spread_cents,
+        };
+
+        if let Ok(json) = serde_json::to_string(&msg) {
+            if let Some(ref redis) = state.redis {
                 send_to_local_and_pubsub(redis, asset_id, &json).await;
+            } else {
+                send_to_local(asset_id, &json).await;
             }
         }
     }

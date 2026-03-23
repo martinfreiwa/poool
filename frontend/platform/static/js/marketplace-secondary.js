@@ -66,7 +66,7 @@
         const hasMultiple = images.length > 1;
 
         const imagesHTML = images.map((img, i) =>
-            `<div class="mp-sec__card-image ${i === 0 ? 'active' : ''}" style="background-image: url('${img}');" aria-label="${asset.name}"></div>`
+            `<img src="${img}" class="mp-sec__card-image ${i === 0 ? 'active' : ''}" style="object-fit: cover; object-position: center;" alt="${asset.name}" loading="lazy">`
         ).join('');
 
         let navHTML = '';
@@ -85,8 +85,10 @@
         ).join('');
 
         // Badges matching primary marketplace style
+        const typeText = (asset.leaseType ? asset.leaseType.charAt(0).toUpperCase() + asset.leaseType.slice(1).toLowerCase() : 'Standard') + ' Leasehold';
+        
         const typeBadge = `<div class="mp-sec__badge mp-sec__badge--type">
-            <span class="mp-sec__badge-text">Standard Leasehold</span>
+            <span class="mp-sec__badge-text">${typeText}</span>
         </div>`;
 
         const statusBadge = `<div class="mp-sec__badge mp-sec__badge--status">
@@ -376,6 +378,15 @@
         const sortBy = document.getElementById('mp-sort').value;
 
         let assets = [...MOCK_ASSETS];
+        
+        // Status Filter (Available / Funded)
+        if (currentStatus === 'available') {
+            // "Available" means either has secondary sell orders OR is still in primary funding
+            assets = assets.filter(a => a.sellOrders > 0 || a.rentStatus !== 'funded');
+        } else if (currentStatus === 'funded') {
+            // "Funded" means it is fully funded and has NO active sell orders (passive portfolio assets)
+            assets = assets.filter(a => a.sellOrders === 0 && a.rentStatus === 'funded');
+        }
 
         // Search filter
         if (query) {

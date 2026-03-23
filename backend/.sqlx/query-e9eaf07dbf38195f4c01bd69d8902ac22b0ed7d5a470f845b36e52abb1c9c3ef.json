@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            a.id,\n            a.slug,\n            a.title,\n            a.asset_type,\n            COALESCE(a.location_city, '') as \"location_city!\",\n            COALESCE(a.location_country, '') as \"location_country!\",\n            a.token_price_cents,\n            a.tokens_total,\n            a.annual_yield_bps,\n            a.description,\n            a.total_value_cents,\n            a.land_size_sqm,\n            a.bedrooms,\n            a.funding_status,\n            a.location_description,\n            ARRAY(\n                SELECT image_url \n                FROM asset_images \n                WHERE asset_id = a.id \n                ORDER BY is_cover DESC, created_at ASC\n            ) AS \"image_urls!\"\n        FROM assets a\n        WHERE a.published = true\n          AND a.asset_type != 'commodity'\n          AND a.funding_status IN ('funded', 'funding_in_progress', 'funding_open')\n        ",
+  "query": "\n        SELECT\n            a.id,\n            a.slug,\n            a.title,\n            a.asset_type,\n            COALESCE(a.location_city, '') as \"location_city!\",\n            COALESCE(a.location_country, '') as \"location_country!\",\n            a.token_price_cents,\n            a.tokens_total,\n            a.annual_yield_bps,\n            a.description,\n            a.total_value_cents,\n            a.land_size_sqm,\n            a.bedrooms,\n            a.funding_status,\n            a.location_description,\n            a.occupancy_rate_bps,\n            a.lease_type,\n            a.property_type,\n            ARRAY(\n                SELECT image_url \n                FROM asset_images \n                WHERE asset_id = a.id \n                ORDER BY is_cover DESC, created_at ASC\n            ) AS \"image_urls!\"\n        FROM assets a\n        WHERE a.published = true\n          AND a.asset_type != 'commodity'\n          AND a.funding_status IN ('funded', 'funding_in_progress', 'funding_open')\n        ",
   "describe": {
     "columns": [
       {
@@ -80,6 +80,21 @@
       },
       {
         "ordinal": 15,
+        "name": "occupancy_rate_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 16,
+        "name": "lease_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "property_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
         "name": "image_urls!",
         "type_info": "VarcharArray"
       }
@@ -103,8 +118,11 @@
       true,
       false,
       true,
+      true,
+      true,
+      true,
       null
     ]
   },
-  "hash": "f121f01c48dd3cef4030d3cdeff6ef82ee855fdb56fb39343c6c088b1504e69d"
+  "hash": "e9eaf07dbf38195f4c01bd69d8902ac22b0ed7d5a470f845b36e52abb1c9c3ef"
 }

@@ -864,4 +864,6 @@ pub struct SecondaryAsset {
     pub bedrooms: Option<i32>,
     pub rent_status: Option<String>,
     pub location_desc: Option<String>,
+    pub lease_type: Option<String>,
+    pub property_type: Option<String>,
 }

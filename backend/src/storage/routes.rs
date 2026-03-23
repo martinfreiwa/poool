@@ -1129,7 +1129,7 @@ pub async fn proxy_gcs_image(
                 (axum::http::header::CONTENT_TYPE, content_type),
                 (
                     axum::http::header::CACHE_CONTROL,
-                    "public, max-age=3600, s-maxage=3600".to_string(),
+                    "public, max-age=31536000, immutable".to_string(),
                 ),
             ];
             (headers, data).into_response()
