@@ -311,20 +311,20 @@ pub async fn api_admin_marketplace_recent_trades(
         SELECT
             t.id,
             t.asset_id,
-            a.name AS asset_name,
-            t.buyer_id,
-            t.seller_id,
+            a.title AS asset_name,
+            t.buyer_user_id AS buyer_id,
+            t.seller_user_id AS seller_id,
             bu.email AS buyer_email,
             su.email AS seller_email,
             t.price_cents,
             t.quantity,
-            (t.price_cents * t.quantity::BIGINT) AS total_cents,
+            COALESCE(t.total_cents, t.price_cents * t.quantity::BIGINT) AS total_cents,
             COALESCE(t.fee_cents, 0) AS fee_cents,
             t.executed_at
         FROM trade_history t
         LEFT JOIN assets a ON a.id = t.asset_id
-        LEFT JOIN users bu ON bu.id = t.buyer_id
-        LEFT JOIN users su ON su.id = t.seller_id
+        LEFT JOIN users bu ON bu.id = t.buyer_user_id
+        LEFT JOIN users su ON su.id = t.seller_user_id
         ORDER BY t.executed_at DESC
         LIMIT 50
         "#,
@@ -386,20 +386,20 @@ pub async fn api_admin_marketplace_trades(
         SELECT
             t.id,
             t.asset_id,
-            a.name AS asset_name,
-            t.buyer_id,
-            t.seller_id,
+            a.title AS asset_name,
+            t.buyer_user_id AS buyer_id,
+            t.seller_user_id AS seller_id,
             bu.email AS buyer_email,
             su.email AS seller_email,
             t.price_cents,
             t.quantity,
-            (t.price_cents * t.quantity::BIGINT) AS total_cents,
+            COALESCE(t.total_cents, t.price_cents * t.quantity::BIGINT) AS total_cents,
             COALESCE(t.fee_cents, 0) AS fee_cents,
             t.executed_at
         FROM trade_history t
         LEFT JOIN assets a ON a.id = t.asset_id
-        LEFT JOIN users bu ON bu.id = t.buyer_id
-        LEFT JOIN users su ON su.id = t.seller_id
+        LEFT JOIN users bu ON bu.id = t.buyer_user_id
+        LEFT JOIN users su ON su.id = t.seller_user_id
         WHERE {}
         ORDER BY t.executed_at DESC
         LIMIT {} OFFSET {}
@@ -459,7 +459,7 @@ pub async fn api_admin_marketplace_orders(
             o.user_id,
             u.email AS user_email,
             o.asset_id,
-            a.name AS asset_name,
+            a.title AS asset_name,
             o.side,
             o.order_type,
             o.price_cents,
@@ -556,12 +556,15 @@ pub async fn api_admin_marketplace_order_cancel(
         let remaining = (qty - filled) as i64;
         if side == "buy" && remaining > 0 {
             let refund_cents = remaining * price_cents;
-            sqlx::query("UPDATE users SET balance_cents = balance_cents + $1 WHERE id = $2")
-                .bind(refund_cents)
-                .bind(user_id)
-                .execute(&mut *tx)
-                .await
-                .map_err(ApiError::Database)?;
+            sqlx::query(
+                "UPDATE wallets SET held_balance_cents = GREATEST(held_balance_cents - $1, 0), updated_at = NOW() \
+                 WHERE user_id = $2 AND wallet_type = 'cash' AND currency = 'USD'",
+            )
+            .bind(refund_cents)
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
         }
     }
 
@@ -820,7 +823,7 @@ pub async fn api_admin_marketplace_reconciliation(
 
     // Cash balance check
     let total_user_balances: i64 = sqlx::query_scalar::<_, i64>(
-        "SELECT COALESCE(SUM(balance_cents), 0)::BIGINT FROM users WHERE balance_cents > 0",
+        "SELECT COALESCE(SUM(balance_cents), 0)::BIGINT FROM wallets WHERE wallet_type = 'cash' AND balance_cents > 0",
     )
     .fetch_one(db)
     .await
@@ -834,17 +837,17 @@ pub async fn api_admin_marketplace_reconciliation(
     .await
     .unwrap_or(0);
 
-    // Token integrity: are there mismatches between total_supply and sum(holdings)?
+    // Token integrity: are there mismatches between tokens_total and sum(investments)?
     let token_mismatches: i64 = sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*)::BIGINT FROM (
-            SELECT a.id, a.total_supply,
-                   COALESCE(SUM(th.quantity), 0) AS held
+            SELECT a.id, a.tokens_total,
+                   COALESCE(SUM(i.tokens_owned), 0) AS held
             FROM assets a
-            LEFT JOIN token_holdings th ON th.asset_id = a.id
-            WHERE a.total_supply IS NOT NULL
-            GROUP BY a.id, a.total_supply
-            HAVING COALESCE(SUM(th.quantity), 0) != a.total_supply
+            LEFT JOIN investments i ON i.asset_id = a.id AND i.status != 'exited'
+            WHERE a.tokens_total IS NOT NULL
+            GROUP BY a.id, a.tokens_total
+            HAVING COALESCE(SUM(i.tokens_owned), 0) > a.tokens_total
         ) mismatches
         "#,
     )

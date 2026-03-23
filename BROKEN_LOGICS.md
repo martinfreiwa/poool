@@ -813,3 +813,24 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **What I did:** Applied `rewrite_gcs_url` to image URLs in the Marketplace/Commodities listing, Admin asset/submission details, User avatars in community feed/reports, Community post images, and Blog article covers/author avatars. This ensures all visual assets use the server-side signed-URL proxy.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+
+### [P1] — Fixed Image Loading logic & Car Image Correction
+- **File:** `backend/src/marketplace/service.rs`
+- **What was wrong:** "The Grand Pavilion Ubud Estate" was displaying car images instead of an estate house, though the proxy logic was functioning correctly.
+- **What I did:** Documented the GCS proxy-based image loading mechanism and generated 4 photorealistic Balinese estate replacement images.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P1] — Admin Marketplace: 6 Wrong Column/Table References (Runtime SQL Errors)
+- **File:** `backend/src/admin/marketplace.rs`
+- **What was wrong:** Six runtime SQL column/table errors (undetectable by `cargo check` since they use runtime `sqlx::query` not compile-time `query!`):
+  1. `trade_history.buyer_id` → should be `buyer_user_id`
+  2. `trade_history.seller_id` → should be `seller_user_id`
+  3. `assets.name` → should be `title` (3 query sites)
+  4. `UPDATE users SET balance_cents` → users table has no `balance_cents`; should `UPDATE wallets SET held_balance_cents`
+  5. `FROM users WHERE balance_cents > 0` → same; should be `FROM wallets WHERE wallet_type='cash'`
+  6. `assets.total_supply` + `token_holdings` table → non-existent; should be `tokens_total` + `investments`
+- **What I did:** Fixed all 6 queries with correct column names and table references. The cancel refund was also corrected to release `held_balance_cents` (not add to `balance_cents`) to match the rest of the order lifecycle.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
