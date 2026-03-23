@@ -588,3 +588,100 @@ The following bugs were found during a deep security and logic audit of the admi
 - **What I did:** Refactored HTML/CSS to use `dashboard-tokens.css` variables, `ds-card`, `ds-table`, `ds-input`, `ds-select`, and `ds-text-money`, and replaced custom hex values.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+
+### [P2] — Community notifications tab completely blank
+- **File:** `frontend/platform/community.html`
+- **What was wrong:** The `#community-notifications-tab` `div` had an inline `style="display: none;"` explicitly hiding the tab content instead of leveraging the `.hidden` class like the rest of the UI. Also a stray `</div>` prematurely closed the layout container, breaking the layout.
+- **What I did:** Removed the stray `</div>` tag and replaced `style="display: none;"` with the `hidden` class on the notifications tab wrapper.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P1] — Community API `get_my_notifications` fails with 500
+- **File:** `backend/src/community/notifications.rs`, `backend/src/community/routes.rs`
+- **What was wrong:** The SQL query used `LEFT JOIN community_profiles cp` to select `cp.display_name`, but `community_profiles` does not contain `display_name` (names live in the core `user_profiles` schema). This caused a Postgres query error, turning into a 500 Internal Server error on the `/api/community/notifications` route. Additionally, backend pagination ignored the `offset` parameter, breaking "Load More".
+- **What I did:** Changed the SQL to not join `community_profiles` and populated `actor_name` and `actor_avatar` manually using `user_bridge::get_users_info_batch`. Updated the handler to parse and pass `offset`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Community notifications missing properties access
+- **File:** `frontend/platform/community.html`
+- **What was wrong:** The Alpine frontend expected `actor_avatar_url`, `actor_display_name` and `action_link` variables, but the backend structs map to `actor_avatar`, `actor_name` and `link_url`.
+- **What I did:** Updated the Alpine component's bindings to correctly refer to the exact variable names implemented by the rust macro logic.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P1] — Missing `credentials: 'same-origin'` in Community Users admin 401 Unauthorized
+- **File:** `frontend/platform/admin/community/users.html`, `frontend/platform/admin/community/user-detail.html`
+- **What was wrong:** The admin frontend pages made `fetch('/api/admin/community/users')` API calls to endpoints protected by the `AdminUser` extractor, but did not attach the session cookie with `credentials: 'same-origin'`. This caused it to be treated as unauthenticated (401) on production, showing "Failed to load users".
+- **What I did:** Added `credentials: 'same-origin'` to all `fetch` GET and POST calls inside both community admin JS logic blocks.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P1] — GCS images return 403 Forbidden on production
+- **File:** `backend/src/storage/service.rs`, `backend/src/storage/routes.rs`, `backend/src/storage/mod.rs`, `backend/src/assets/models.rs`, `backend/src/developer/service.rs`, `backend/src/developer/routes.rs`, `backend/src/cart/routes.rs`, `backend/src/payments/routes.rs`, `backend/src/portfolio/service.rs`
+- **What was wrong:** `upload_public()` returned direct GCS URLs (`https://storage.googleapis.com/bucket/path`) which require the bucket to have `allUsers` as `objectViewer` in IAM. When the bucket was not configured with public IAM, all images returned 403. This affected property images, avatars, and all uploaded assets.
+- **What I did:** Created a server-side proxy endpoint (`GET /api/proxy/gcs/:bucket/*path`) that generates short-lived signed URLs on the fly. Changed `upload_public()` to return proxy paths instead of direct GCS URLs. Added `rewrite_gcs_url()` helper to convert legacy DB-stored direct GCS URLs to proxy paths. Applied the rewrite to all image-serving code paths: marketplace (`PropertyDisplayData::from_asset`, `CommodityDisplayData::from_asset`), developer dashboard/assets, cart, checkout, and portfolio.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P1] — Community Feed API returns 500 on startup due to failed schema migration
+- **File:** `database/community/013_moderation.sql`, `database/community/018_community_audit_log.sql`
+- **What was wrong:** The community database migration `013_moderation.sql` failed because it attempted a cross-database foreign key (`REFERENCES users(id)`), which prevented subsequent migrations from running. As a result, the `is_locked`, `content_tags`, and `link_preview` columns were missing from the `posts` table, causing the `SELECT p.*` query in the `/api/community/feed` endpoint to fail during row mapping, throwing a 500 error. The `018` migration was also not idempotent on indices.
+- **What I did:** Fixed the FK in `013_moderation.sql` to reference `community_profiles(user_id)` within the same database, and added `IF NOT EXISTS` to indices in `018_community_audit_log.sql`. Restarted the backend to successfully apply migrations, resolving the 500 error and allowing the announcements feed to load correctly on the admin dashboard.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P1] — Route /api/admin/community/posts returned 500 and weekly_digest_worker ambiguous SQL column
+- **File:** `backend/src/community/background.rs`
+- **What was wrong:** The admin posts list showed "Failed to load posts". The root cause was twofold: the developer's server had been running stale code for 7 hours which returned a 500 "Community Database is offline", and `weekly_digest_worker` was crashing every iteration due to an ambiguous `updated_at` column reference.
+- **What I did:** Fixed the ambiguous `updated_at` to use `created_at` in the user sessions subquery, removed experimental routing code, verified `/api/admin/community/posts` is now healthy and returning 200, and restarted the server.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Cart platform fee displayed as 0.00 and excluded from total
+- **File:** `backend/src/cart/routes.rs`, `frontend/platform/static/js/cart.js`
+- **What was wrong:** The cart summary hardcoded the platform fee as `USD 0.00` and excluded it from the total. JavaScript calculate functions also set the fee to `0` instead of reading the `platform_fee_percent` database configuration.
+- **What I did:** Queried `platform_fee_percent` from `platform_settings` upon cart render, calculated the fee natively on the backend, included the fee in the `total_display`, formatting both USD and IDR values. Passed `data-fee-pct` down to the DOM. Updated `cart.js` to read this value and dynamically recalculate the subtotal, fee, and total across all UI fields.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Cart asset progress bar did not reflect user's selected quantity
+- **File:** `backend/src/cart/routes.rs`
+- **What was wrong:** The `funded_pct` logic ignored the tokens the user had added to their cart. This caused the progress bar to show `0% FUNDED` despite having 99 shares in the cart if the asset had zero prior sales. The mobile progress bar was also missing `id` attributes required for Javascript mutation.
+- **What I did:** Added `tokens_qty` into the `sold_tokens` formula to correctly display the user's investment share locally in the cart. Added HTML `id`s to the mobile progress layout container so `cart.js` handles quantity changes gracefully on mobile viewport.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P0] — Checkout ignored platform fee (Financial)
+- **File:** `backend/src/payments/service.rs` (`execute_checkout`)
+- **What was wrong:** The checkout logic calculated `total_cents` as just the sum of the cart items' asset prices, entirely ignoring the `platform_fee_percent`. This resulted in the user not being deducted the fee from their wallet, the invoice lacking the fee addition, and the platform fee wallet not receiving the credit.
+- **What I did:** Restructured the calculation so `subtotal_cents` gets the item sum, then fetched `platform_fee_percent` from the database to compute `fee_cents`, and stored `grand_total_cents`. Corrected wallet deductions to pull `grand_total_cents`, updated `orders` and `invoices` row insertions to store the final combined total, and added an `UPDATE wallets SET balance_cents = balance_cents + fee_cents` entry for the `platform_fee` wallet.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+### [P2] — Order details modal not implemented
+- **File:** `backend/src/admin/orders.rs`, `frontend/platform/admin/orders.html`, `frontend/platform/static/js/admin-orders.js`
+- **What was wrong:** Admins could not view detailed transaction info (items, invoice, wallet txs) for orders on the admin page.
+- **What I did:** Implemented `GET /api/admin/orders/:id` backend endpoint, added modal HTML to `orders.html`, and updated `admin-orders.js` to make order numbers clickable and render the detail modal with rich information.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+### [P2] — Fallback image path incorrect and missing image constraints
+- **File:** `backend/src/cart/routes.rs`, `backend/src/developer/routes.rs`, `backend/src/admin/submissions.rs`
+- **What was wrong:** Fallback image path was broken leading to missing image UI, and there were no strict checks enforcing an image when an asset is submitted or approved.
+- **What I did:** Fixed the fallback image path in the cart render and added validation checks to block submitting/approving an asset if it has no images.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+
+### [P2] — GCS image visibility fix across platform
+- **File:** `backend/src/storage/service.rs`, `backend/src/storage/routes.rs`, `backend/src/assets/routes.rs`, `backend/src/developer/routes.rs`
+- **What was wrong:** Platform returned direct GCS URLs (`https://storage.googleapis.com/...`) which require public bucket access. Organizational policies blocked making the bucket public, causing 403 errors and gray placeholders.
+- **What I did:** Implemented a GCS proxy endpoint (`/api/proxy/gcs/`) that generates short-lived signed URLs. Applied `rewrite_gcs_url` to all relevant API and SSR routes (marketplace, developer, draft assets). Updated developer draft detail/list routes and manual HTML tab handlers.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P1] — Villa listing images updated
+- **File:** `platform.poool.app` (API side)
+- **What was wrong:** The $1M villa listing had outdated/inconsistent images (18 images total, some were duplicates or low quality).
+- **What I did:** Generated 8 new photorealistic and consistent images. Removed all old 18 images and uploaded the 8 new ones. Set the first image as the cover. Verified via production API.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23

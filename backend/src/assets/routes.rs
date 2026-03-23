@@ -609,7 +609,7 @@ pub async fn api_marketplace_tab(
             let active = if i == 0 { " active" } else { "" };
             images_html.push_str(&format!(
                 r#"<div class="property-image{}" style="background-image: url('{}'); background-size: cover; background-position: center;"></div>"#,
-                active, html_escape(url)
+                active, html_escape(&crate::storage::service::rewrite_gcs_url(url))
             ));
             dots_html.push_str(&format!(r#"<div class="property-dot{}"></div>"#, active));
         }
@@ -912,7 +912,7 @@ pub async fn api_commodities_tab(
             let active = if i == 0 { " active" } else { "" };
             images_html.push_str(&format!(
                 r#"<div class="property-image{}" style="background-image: url('{}'); background-size: cover; background-position: center;"></div>"#,
-                active, html_escape(url)
+                active, html_escape(&crate::storage::service::rewrite_gcs_url(url))
             ));
             dots_html.push_str(&format!(r#"<div class="property-dot{}"></div>"#, active));
         }

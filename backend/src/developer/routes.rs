@@ -568,7 +568,10 @@ pub async fn api_developer_asset_detail(
             "net_income_cents": f.4, "occupancy_rate_bps": f.5
         })).collect::<Vec<_>>(),
         "documents": docs.iter().map(|d| serde_json::json!({"document_type": d.0, "title": d.1, "file_size": d.2, "id": d.3})).collect::<Vec<_>>(),
-        "images": images.iter().map(|i| serde_json::json!({"url": i.0, "is_cover": i.1, "sort_order": i.2})).collect::<Vec<_>>(),
+        "images": images.iter().map(|i| {
+            let url = crate::storage::service::rewrite_gcs_url(&i.0);
+            serde_json::json!({"url": url, "is_cover": i.1, "sort_order": i.2})
+        }).collect::<Vec<_>>(),
         "milestones": milestones.iter().map(|m| serde_json::json!({"title": m.0, "description": m.1, "month_index": m.2, "is_completed": m.3})).collect::<Vec<_>>(),
         "orders": orders.iter().map(|o| serde_json::json!({
             "order_number": o.0, "user_email": o.1, "tokens": o.2,
@@ -920,7 +923,7 @@ pub async fn api_developer_get_draft(
         "token_price_cents": row.get::<Option<i64>, _>("token_price_cents"),
         "tokens_total": row.get::<Option<i32>, _>("tokens_total"),
         "amenities": row.get::<Option<serde_json::Value>, _>("amenities"),
-        "images": images.iter().map(|i| serde_json::json!({"id": i.0, "url": i.1, "is_cover": i.2, "sort_order": i.3})).collect::<Vec<_>>(),
+        "images": images.iter().map(|i| serde_json::json!({"id": i.0, "url": crate::storage::service::rewrite_gcs_url(&i.1), "is_cover": i.2, "sort_order": i.3})).collect::<Vec<_>>(),
         "documents": documents.iter().map(|d| serde_json::json!({"id": d.0, "document_type": d.1, "title": d.2, "file_size": d.3})).collect::<Vec<_>>(),
     }))
     .into_response()
@@ -976,7 +979,7 @@ pub async fn api_developer_list_drafts(
                 "revision_notes": row.get::<Option<String>, _>("revision_notes"),
                 "updated_at": row.get::<String, _>("updated_at"),
                 "created_at": row.get::<String, _>("created_at"),
-                "cover_image_url": row.get::<Option<String>, _>("cover_image_url"),
+                "cover_image_url": row.get::<Option<String>, _>("cover_image_url").map(|u| crate::storage::service::rewrite_gcs_url(&u)),
             })
         })
         .collect();
@@ -1036,6 +1039,20 @@ pub async fn api_developer_submit_draft(
         tracing::error!("Failed to begin transaction: {e}");
         AppError::Internal("Database error".to_string())
     })?;
+
+    // Ensure the asset has at least one image uploaded before allowing submission
+    let image_count: i64 = sqlx::query_scalar("SELECT COUNT(*)::bigint FROM asset_images WHERE asset_id = $1")
+        .bind(id)
+        .fetch_one(&mut *tx)
+        .await
+        .unwrap_or(0);
+
+    if image_count == 0 {
+        let _ = tx.rollback().await;
+        return Err(AppError::BadRequest(
+            "You must upload at least one image before submitting the asset for review.".to_string(),
+        ));
+    }
 
     // Update asset submission_step to 5 (submitted)
     sqlx::query("UPDATE assets SET submission_step = 5, updated_at = NOW() WHERE id = $1")
