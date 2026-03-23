@@ -103,34 +103,29 @@ pub async fn create_order(
             .price_cents
             .ok_or_else(|| AppError::BadRequest("Price is required for limit orders.".into()))?,
         "market" => {
-            // For market orders, use the best available price from the orderbook
-            // or fall back to the last trade price.
-            // For now, market orders require a Redis orderbook.
+            // For market orders, use the best available price from the orderbook.
+            // Priority: Redis (if available) -> Database (fallback)
             if let Some(redis) = redis {
-                match side {
-                    OrderSide::Buy => {
-                        // Buyer wants the best (lowest) ask
-                        let best = orderbook::best_ask(redis, asset_uuid).await?;
-                        best.map(|b| b.price_cents).ok_or_else(|| {
-                            AppError::OrderRejected(
-                                "No sell orders available. Try a limit order instead.".into(),
-                            )
-                        })?
-                    }
-                    OrderSide::Sell => {
-                        // Seller wants the best (highest) bid
-                        let best = orderbook::best_bid(redis, asset_uuid).await?;
-                        best.map(|b| b.price_cents).ok_or_else(|| {
-                            AppError::OrderRejected(
-                                "No buy orders available. Try a limit order instead.".into(),
-                            )
-                        })?
+                let best = match side {
+                    OrderSide::Buy => orderbook::best_ask(redis, asset_uuid).await.map(|o| o.map(|o| o.price_cents)),
+                    OrderSide::Sell => orderbook::best_bid(redis, asset_uuid).await.map(|o| o.map(|o| o.price_cents)),
+                };
+                
+                match best {
+                    Ok(Some(price)) => price,
+                    Ok(None) => return Err(AppError::OrderRejected(format!(
+                        "No {} orders available. Try a limit order instead.",
+                        if side == OrderSide::Buy { "sell" } else { "buy" }
+                    ))),
+                    Err(e) => {
+                        tracing::warn!("Redis best-price lookup failed ({}). Falling back to Database.", e);
+                        // Fall through to DB fallback
+                        get_best_price_from_db(pool, asset_uuid, side).await?
                     }
                 }
             } else {
-                return Err(AppError::ServiceUnavailable(
-                    "Market orders require the orderbook service.".into(),
-                ));
+                // No Redis configured — use database fallback
+                get_best_price_from_db(pool, asset_uuid, side).await?
             }
         }
         _ => {
@@ -829,5 +824,36 @@ pub async fn get_orderbook_snapshot_from_db(
         spread_cents: spread,
         last_price_cents: None, // Filled by caller
         timestamp: Utc::now(),
+    })
+}
+
+/// Helper to get the best bid/ask from the database when Redis is unavailable.
+pub async fn get_best_price_from_db(
+    pool: &PgPool,
+    asset_id: Uuid,
+    side: OrderSide,
+) -> Result<i64, AppError> {
+    let opposing_side = match side {
+        OrderSide::Buy => "sell",
+        OrderSide::Sell => "buy",
+    };
+
+    let price: Option<i64> = sqlx::query_scalar(
+        &format!(
+            "SELECT price_cents FROM market_orders WHERE asset_id = $1 AND side = $2 AND status IN ('open', 'partially_filled') ORDER BY price_cents {} LIMIT 1",
+            if opposing_side == "sell" { "ASC" } else { "DESC" }
+        )
+    )
+    .bind(asset_id)
+    .bind(opposing_side)
+    .fetch_optional(pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    price.ok_or_else(|| {
+        AppError::OrderRejected(format!(
+            "No {} orders available. Try a limit order instead.",
+            opposing_side
+        ))
     })
 }
