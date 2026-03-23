@@ -104,14 +104,10 @@ pub fn validate_order_fields(req: &SubmitOrderRequest) -> Result<(), AppError> {
 
 /// Check that the user has completed KYC verification.
 pub async fn check_kyc_verified(pool: &PgPool, user_id: Uuid) -> Result<(), OrderRejection> {
-    let is_verified: bool =
-        sqlx::query_scalar("SELECT COALESCE(is_kyc_verified, false) FROM users WHERE id = $1")
-            .bind(user_id)
-            .fetch_optional(pool)
-            .await
-            .ok()
-            .flatten()
-            .unwrap_or(false);
+    let is_verified = match crate::kyc::service::get_kyc_status(pool, user_id).await {
+        Ok(res) => res.status == "approved",
+        Err(_) => false,
+    };
 
     if !is_verified {
         return Err(OrderRejection::KycNotApproved);

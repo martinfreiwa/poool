@@ -654,6 +654,13 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
 
+### [P1] — KYC Verification check in Marketplace referenced non-existent column
+- **File:** `backend/src/marketplace/validation.rs`
+- **What was wrong:** The `check_kyc_verified` function was querying `is_kyc_verified` from the `users` table, but that column does not exist in the schema. This caused all trade requests to be rejected with "KYC verification is required to trade" because the code defaulted to `false` when the SQL query failed.
+- **What I did:** Updated the query to check for `status = 'approved'` in the `kyc_records` table, which is the correct source of truth for KYC status.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
 ### [P1] — Villa listing images updated
 - **File:** `platform.poool.app` (API side)
 - **What was wrong:** The $1M villa listing had outdated/inconsistent images (18 images total, some were duplicates or low quality).
