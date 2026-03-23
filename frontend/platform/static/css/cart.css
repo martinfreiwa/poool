@@ -992,6 +992,7 @@
   border-radius: 12px;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
   transition: box-shadow 0.2s, border-color 0.2s;
 }
 
@@ -1148,7 +1149,9 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .cart-item-card__stats {
@@ -1186,8 +1189,9 @@
 .cart-item-card__price-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .cart-item-card__price {
@@ -1286,6 +1290,7 @@
   background: var(--primary-color, #0000FF);
   border-radius: 3px;
   transition: width 0.3s ease;
+  min-width: 2px;
 }
 
 .cart-item-card__progress-label {

@@ -350,12 +350,12 @@ body.tv3-body {
    Generic Panel
    ═══════════════════════════════════════ */
 .tv3-panel {
-    background: var(--tv3-surface);
-    border-radius: var(--tv3-radius);
-    border: 1px solid var(--tv3-border);
-    box-shadow: var(--tv3-shadow);
-    padding: 32px;
-    margin-bottom: 0;
+    background: transparent;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 48px;
 }
 
 .tv3-panel-title {
@@ -374,8 +374,14 @@ body.tv3-body {
     margin-bottom: 0;
 }
 
+.tv3-layout-sidebar .tv3-panel,
 .tv3-trade-widget .tv3-panel {
+    background: var(--tv3-surface);
+    border-radius: var(--tv3-radius);
+    border: 1px solid var(--tv3-border);
+    box-shadow: var(--tv3-shadow);
     padding: 28px;
+    margin-bottom: 24px;
 }
 
 .tv3-trade-widget .tv3-panel-title {
@@ -632,12 +638,12 @@ body.tv3-body {
    3. SECTIONS
    ═══════════════════════════════════════ */
 .tv3-section {
-    background: var(--tv3-surface);
-    border-radius: var(--tv3-radius);
-    border: 1px solid var(--tv3-border);
-    box-shadow: var(--tv3-shadow);
-    padding: 32px;
-    margin-bottom: 0;
+    background: transparent;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 48px;
 }
 
 .tv3-section-header {
@@ -666,27 +672,42 @@ body.tv3-body {
 .tv3-info-badge {
     display: flex; gap: 14px;
     align-items: flex-start;
-    padding: 16px;
-    background: var(--tv3-surface-el);
-    border: 1px solid var(--tv3-border);
-    border-radius: var(--tv3-radius-sm);
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: none;
+    cursor: default;
+}
+.tv3-info-badge:hover {
+    transform: translateY(-2px);
 }
 .tv3-info-badge-icon {
-    width: 44px; height: 44px;
-    border-radius: 10px;
-    background: #fff;
+    width: 36px; height: 36px;
+    border-radius: 0;
+    background: transparent;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
-    border: 1px solid var(--tv3-border);
+    border: none;
+    box-shadow: none;
+    color: var(--tv3-text);
+    transition: all 0.3s ease;
 }
-.tv3-info-badge-icon img { border-radius: 6px; }
+.tv3-info-badge:hover .tv3-info-badge-icon {
+    color: var(--tv3-blue);
+}
 .tv3-info-badge-text h4 {
-    font-size: 14px; font-weight: 600;
+    font-size: 15px; font-weight: 700;
     color: var(--tv3-text);
     margin: 0 0 4px;
+    transition: color 0.3s ease;
+}
+.tv3-info-badge:hover .tv3-info-badge-text h4 {
+    color: var(--tv3-blue);
 }
 .tv3-info-badge-text p {
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.5;
     color: var(--tv3-text-muted);
     margin: 0;
@@ -703,11 +724,16 @@ body.tv3-body {
 }
 
 .tv3-detail-header {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px;
+}
+.tv3-detail-header > img,
+.tv3-detail-header > svg {
+    filter: brightness(0) invert(8%) sepia(21%) saturate(984%) hue-rotate(174deg) brightness(89%) contrast(90%);
 }
 .tv3-detail-header h3 {
-    font-size: 16px; font-weight: 700; margin: 0;
+    font-size: 24px; font-weight: 700; margin: 0;
+    line-height: 32px;
     color: var(--tv3-text);
 }
 
@@ -868,9 +894,10 @@ body.tv3-body {
     justify-content: space-between;
     align-items: center;
     padding: 12px 14px;
-    background: var(--tv3-surface-el);
-    border: 1px solid var(--tv3-border);
-    border-radius: var(--tv3-radius-sm);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid var(--tv3-border);
     transition: background 0.2s;
 }
 .tv3-doc-item:hover { background: rgba(0,0,0,0.02); }
@@ -897,11 +924,11 @@ body.tv3-body {
    10. RISK
    ═══════════════════════════════════════ */
 .tv3-risk-panel {
-    border-color: var(--tv3-red-border);
+    border-color: transparent;
 }
 .tv3-risk-text {
-    font-size: 13px;
-    line-height: 1.7;
+    font-size: 14px;
+    line-height: 1.5;
     color: var(--tv3-text-sec);
     margin: 0;
 }
@@ -1607,7 +1634,7 @@ body.tv3-body {
     color: #717680; transition: all 0.2s ease;
 }
 .tv3-doc-tab.active {
-    background: var(--btn-primary-bg, #0000FF); color: #FFFFFF;
+    background: var(--mp-green, #03FF88); color: #000000;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 .tv3-doc-tab:not(.active):hover {

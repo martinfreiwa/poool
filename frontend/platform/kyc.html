@@ -29,19 +29,20 @@ include "components/head.html" %}{% endwith %}
     <main class="ds-main kyc-main">
       <div class="kyc-container">
 
-        <!-- Page Header -->
-        <div class="kyc-page-header">
-          <div class="kyc-title-wrapper">
-            <div class="kyc-page-icon">
-              <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        <!-- Page Header — uses ds-page-header system -->
+        <div class="ds-page-header">
+          <div class="ds-page-header__title-row">
+            <div class="ds-page-header__icon poool-icon-custom">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </div>
-            <h1 class="kyc-title">Identity Verification</h1>
+            <div>
+              <h1 class="ds-page-header__title">Identity Verification</h1>
+              <p class="kyc-subtitle" x-text="getStatusMessage()"></p>
+            </div>
           </div>
-          <p class="kyc-subtitle" x-text="getStatusMessage()"></p>
         </div>
 
         <!-- Content Wrapper -->
@@ -50,70 +51,35 @@ include "components/head.html" %}{% endwith %}
           <!-- Step Indicator (manual flow only) -->
           <template x-if="!supportsRedirect && canStartVerification()">
             <div class="kyc-stepper-bar">
-              <div class="kyc-step" :class="step >= 1 ? 'active' : ''">
-                <div class="kyc-step-circle">
-                  <span x-show="step > 1">
-                    <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </span>
-                  <span x-show="step <= 1">1</span>
+              <template x-for="(s, i) in stepperSteps" :key="i">
+                <div style="display:contents">
+                  <div class="kyc-step" :class="getStepperClass(i + 1)">
+                    <div class="kyc-step-circle">
+                      <span x-show="step > i + 1">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                      <span x-show="step <= i + 1" x-text="i + 1"></span>
+                    </div>
+                    <span class="kyc-step-label" x-text="s"></span>
+                  </div>
+                  <div x-show="i < stepperSteps.length - 1" class="kyc-step-connector" :class="step > i + 1 ? 'active' : ''"></div>
                 </div>
-                <span class="kyc-step-label">Personal Info</span>
-              </div>
-              <div class="kyc-step-connector" :class="step >= 2 ? 'active' : ''"></div>
-              <div class="kyc-step" :class="step >= 2 ? 'active' : ''">
-                <div class="kyc-step-circle">
-                  <span x-show="step > 2">
-                    <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </span>
-                  <span x-show="step <= 2">2</span>
-                </div>
-                <span class="kyc-step-label">Additional Details</span>
-              </div>
-              <div class="kyc-step-connector" :class="step >= 3 ? 'active' : ''"></div>
-              <div class="kyc-step" :class="step >= 3 ? 'active' : ''">
-                <div class="kyc-step-circle">
-                  <span x-show="step > 3">
-                    <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </span>
-                  <span x-show="step <= 3">3</span>
-                </div>
-                <span class="kyc-step-label">Address</span>
-              </div>
-              <div class="kyc-step-connector" :class="step >= 4 ? 'active' : ''"></div>
-              <div class="kyc-step" :class="step >= 4 ? 'active' : ''">
-                <div class="kyc-step-circle">
-                  <span x-show="step > 4">
-                    <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </span>
-                  <span x-show="step <= 4">4</span>
-                </div>
-                <span class="kyc-step-label">Identity Doc</span>
-              </div>
-              <div class="kyc-step-connector" :class="step >= 5 ? 'active' : ''"></div>
-              <div class="kyc-step" :class="step >= 5 ? 'active' : ''">
-                <div class="kyc-step-circle">5</div>
-                <span class="kyc-step-label">Review & Submit</span>
-              </div>
+              </template>
             </div>
           </template>
 
           <!-- Main Content Card -->
-          <div class="kyc-card ds-card">
+          <div class="ds-card kyc-card kyc-fade-enter">
 
-          <!-- LOADING STATE -->
+            <!-- LOADING STATE -->
             <template x-if="status === 'loading'">
               <div class="kyc-center-state">
-                <div class="kyc-status-icon kyc-status-icon--start" style="animation: pulse 1.5s ease-in-out infinite;">
-                  <svg  width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <div class="kyc-status-icon kyc-status-icon--start kyc-pulse">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="var(--btn-primary-bg)" />
                   </svg>
                 </div>
                 <h2 class="kyc-state-title">Loading...</h2>
@@ -125,15 +91,22 @@ include "components/head.html" %}{% endwith %}
             <template x-if="status === 'error'">
               <div class="kyc-center-state">
                 <div class="kyc-status-icon kyc-status-icon--rejected">
-                  <svg  width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b42318" stroke-width="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" stroke="var(--badge-danger-color)" />
+                    <line x1="12" y1="8" x2="12" y2="12" stroke="var(--badge-danger-color)" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" stroke="var(--badge-danger-color)" />
                   </svg>
                 </div>
                 <h2 class="kyc-state-title">Connection Error</h2>
                 <p class="kyc-state-desc">Unable to check your verification status. Please try refreshing the page.</p>
-                <button class="kyc-btn-primary full-width-btn" onclick="window.location.reload()">Refresh Page</button>
+                <button id="kyc-refresh-btn" class="ds-btn ds-btn--primary ds-btn--lg ds-btn--full" onclick="window.location.reload()">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
+                  Refresh Page
+                </button>
               </div>
             </template>
 
@@ -144,139 +117,203 @@ include "components/head.html" %}{% endwith %}
                 <template x-if="supportsRedirect">
                   <div class="kyc-center-state">
                     <div class="kyc-status-icon kyc-status-icon--start">
-                      <svg  width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="var(--btn-primary-bg)" />
                       </svg>
                     </div>
                     <h2 class="kyc-state-title">Verify Your Identity</h2>
                     <p class="kyc-state-desc">
                       You'll be redirected to our secure partner <strong x-text="getProviderLabel()"></strong> to
-                      complete
-                      your identity check. Have your ID document ready — it takes under 2 minutes.
+                      complete your identity check. Have your ID document ready — it takes under 2 minutes.
                     </p>
+
                     <div class="kyc-checklist">
+                      <div class="kyc-checklist__title">What you'll need</div>
                       <div class="kyc-check-item">
-                        <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2.5">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
+                        <div class="kyc-check-icon">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-greeny-green, #03FF88)" stroke-width="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
                         <span>Takes less than 2 minutes</span>
                       </div>
                       <div class="kyc-check-item">
-                        <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2.5">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
+                        <div class="kyc-check-icon">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-greeny-green, #03FF88)" stroke-width="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
                         <span>Bank-grade encryption</span>
                       </div>
                       <div class="kyc-check-item">
-                        <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2.5">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
+                        <div class="kyc-check-icon">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-greeny-green, #03FF88)" stroke-width="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
                         <span>Required to start investing</span>
                       </div>
                     </div>
+
                     <div class="kyc-form-group" style="max-width:400px;width:100%;">
-                      <label class="kyc-form-label">Document Type</label>
-                      <select x-model="formData.documentType" class="kyc-select ds-select">
+                      <label class="kyc-form-label" for="kyc-doc-type-redirect">Document Type</label>
+                      <select id="kyc-doc-type-redirect" x-model="formData.documentType" class="ds-select">
                         <option value="passport">Passport</option>
                         <option value="national_id">National ID</option>
                         <option value="driving_license">Driver's License</option>
                       </select>
                     </div>
-                    <button class="kyc-btn-primary full-width-btn" @click="submitKyc()" :disabled="submitting">
-                      <span x-show="!submitting">
-                        <svg  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+
+                    <button id="kyc-start-verification-btn" class="ds-btn ds-btn--primary ds-btn--lg ds-btn--full" @click="submitKyc()" :disabled="submitting">
+                      <span x-show="!submitting" style="display:flex;align-items:center;gap:8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M5 12h14M12 5l7 7-7 7" />
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                         </svg>
                         Start Verification
                       </span>
                       <span x-show="submitting">Connecting...</span>
                     </button>
+
+                    <div class="kyc-security-note">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                      <span>Your data is encrypted and never shared with third parties</span>
+                    </div>
                   </div>
                 </template>
 
                 <!-- Manual Flow -->
                 <template x-if="!supportsRedirect">
                   <div>
-                    <!-- Step 1 -->
-                    <div x-show="step === 1">
+                    <!-- Step 1: Personal Info -->
+                    <div x-show="step === 1" x-transition:enter="kyc-fade-enter">
                       <h2 class="kyc-step-title">Personal Information</h2>
                       <p class="kyc-step-desc">Please enter your details exactly as they appear on your
                         government-issued ID.</p>
                       <div class="kyc-form-row">
                         <div class="kyc-form-group">
-                          <label class="kyc-form-label">First Name</label>
-                          <input type="text" x-model="formData.firstName" class="kyc-input ds-input" placeholder="e.g. John" />
+                          <label class="kyc-form-label" for="kyc-first-name">First Name</label>
+                          <input id="kyc-first-name" type="text" x-model="formData.firstName" class="ds-input"
+                            :class="validation.firstName ? 'has-error' : ''" placeholder="e.g. John" />
+                          <span class="kyc-field-error" x-show="validation.firstName" x-text="validation.firstName"></span>
                         </div>
                         <div class="kyc-form-group">
-                          <label class="kyc-form-label">Last Name</label>
-                          <input type="text" x-model="formData.lastName" class="kyc-input ds-input" placeholder="e.g. Doe" />
+                          <label class="kyc-form-label" for="kyc-last-name">Last Name</label>
+                          <input id="kyc-last-name" type="text" x-model="formData.lastName" class="ds-input"
+                            :class="validation.lastName ? 'has-error' : ''" placeholder="e.g. Doe" />
+                          <span class="kyc-field-error" x-show="validation.lastName" x-text="validation.lastName"></span>
                         </div>
                       </div>
                       <div class="kyc-form-actions">
-                        <button class="kyc-btn-primary" @click="nextStep()">Continue</button>
+                        <button id="kyc-step1-next" class="ds-btn ds-btn--primary" @click="validateAndNext(1)">
+                          Continue
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
-                    <!-- Step 2 -->
-                    <div x-show="step === 2">
+
+                    <!-- Step 2: Additional Details -->
+                    <div x-show="step === 2" x-transition:enter="kyc-fade-enter">
                       <h2 class="kyc-step-title">Additional Details</h2>
                       <p class="kyc-step-desc">We need a few more details to verify your identity.</p>
                       <div class="kyc-form-row">
                         <div class="kyc-form-group">
-                          <label class="kyc-form-label">Date of Birth</label>
-                          <input type="date" x-model="formData.dob" class="kyc-input ds-input" />
+                          <label class="kyc-form-label" for="kyc-dob">Date of Birth</label>
+                          <input id="kyc-dob" type="date" x-model="formData.dob" class="ds-input"
+                            :class="validation.dob ? 'has-error' : ''" />
+                          <span class="kyc-field-error" x-show="validation.dob" x-text="validation.dob"></span>
                         </div>
                         <div class="kyc-form-group">
-                          <label class="kyc-form-label">Nationality</label>
-                          <input type="text" x-model="formData.nationality" class="kyc-input ds-input"
-                            placeholder="e.g. Germany" />
+                          <label class="kyc-form-label" for="kyc-nationality">Nationality</label>
+                          <input id="kyc-nationality" type="text" x-model="formData.nationality" class="ds-input"
+                            :class="validation.nationality ? 'has-error' : ''" placeholder="e.g. Germany" />
+                          <span class="kyc-field-error" x-show="validation.nationality" x-text="validation.nationality"></span>
                         </div>
                       </div>
                       <div class="kyc-form-actions space-between">
-                        <button class="kyc-btn-secondary" @click="prevStep()">Back</button>
-                        <button class="kyc-btn-primary" @click="nextStep()">Continue</button>
+                        <button id="kyc-step2-back" class="ds-btn ds-btn--ghost" @click="prevStep()">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6" />
+                          </svg>
+                          Back
+                        </button>
+                        <button id="kyc-step2-next" class="ds-btn ds-btn--primary" @click="validateAndNext(2)">
+                          Continue
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
-                    <!-- Step 3 -->
-                    <div x-show="step === 3">
+
+                    <!-- Step 3: Address -->
+                    <div x-show="step === 3" x-transition:enter="kyc-fade-enter">
                       <h2 class="kyc-step-title">Residential Address</h2>
                       <p class="kyc-step-desc">Please provide your current residential address.</p>
                       <div class="kyc-form-group">
-                        <label class="kyc-form-label">Address Line 1</label>
-                        <input type="text" x-model="formData.addressLine1" class="kyc-input ds-input"
-                          placeholder="Street address" />
+                        <label class="kyc-form-label" for="kyc-address">Address Line 1</label>
+                        <input id="kyc-address" type="text" x-model="formData.addressLine1" class="ds-input"
+                          :class="validation.addressLine1 ? 'has-error' : ''" placeholder="Street address" />
+                        <span class="kyc-field-error" x-show="validation.addressLine1" x-text="validation.addressLine1"></span>
                       </div>
-                      <div class="kyc-form-group">
-                        <label class="kyc-form-label">City</label>
-                        <input type="text" x-model="formData.city" class="kyc-input ds-input" placeholder="City" />
+                      <div class="kyc-form-row">
+                        <div class="kyc-form-group">
+                          <label class="kyc-form-label" for="kyc-city">City</label>
+                          <input id="kyc-city" type="text" x-model="formData.city" class="ds-input"
+                            :class="validation.city ? 'has-error' : ''" placeholder="City" />
+                          <span class="kyc-field-error" x-show="validation.city" x-text="validation.city"></span>
+                        </div>
+                        <div class="kyc-form-group">
+                          <label class="kyc-form-label" for="kyc-country">Country</label>
+                          <input id="kyc-country" type="text" x-model="formData.country" class="ds-input"
+                            :class="validation.country ? 'has-error' : ''" placeholder="Country" />
+                          <span class="kyc-field-error" x-show="validation.country" x-text="validation.country"></span>
+                        </div>
                       </div>
                       <div class="kyc-form-actions space-between">
-                        <button class="kyc-btn-secondary" @click="prevStep()">Back</button>
-                        <button class="kyc-btn-primary" @click="nextStep()">Continue</button>
+                        <button id="kyc-step3-back" class="ds-btn ds-btn--ghost" @click="prevStep()">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6" />
+                          </svg>
+                          Back
+                        </button>
+                        <button id="kyc-step3-next" class="ds-btn ds-btn--primary" @click="validateAndNext(3)">
+                          Continue
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
+
                     <!-- Step 4: Document Upload -->
-                    <div x-show="step === 4">
+                    <div x-show="step === 4" x-transition:enter="kyc-fade-enter">
                       <h2 class="kyc-step-title">Identity Document</h2>
                       <p class="kyc-step-desc">Please upload a clear photo or scan of your government-issued ID.</p>
 
                       <div class="kyc-form-group">
-                        <label class="kyc-form-label">Document Type</label>
-                        <select x-model="formData.documentType" class="kyc-select ds-select">
+                        <label class="kyc-form-label" for="kyc-doc-type">Document Type</label>
+                        <select id="kyc-doc-type" x-model="formData.documentType" class="ds-select">
                           <option value="passport">Passport</option>
                           <option value="national_id">National ID</option>
                           <option value="driving_licence">Driver's License</option>
                         </select>
                       </div>
 
-                      <div class="kyc-upload-container" :class="formData.documentId ? 'has-file' : ''"
+                      <div class="kyc-upload-container" :class="[formData.documentId ? 'has-file' : '', dragActive ? 'drag-active' : '']"
                         @dragover.prevent="dragActive = true" @dragleave.prevent="dragActive = false"
                         @drop.prevent="handleDocDrop($event)">
 
                         <template x-if="!formData.documentId">
                           <div class="kyc-upload-placeholder">
                             <div class="kyc-upload-icon">
-                              <svg  width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                               </svg>
@@ -287,7 +324,7 @@ include "components/head.html" %}{% endwith %}
                                 <input type="file" @change="handleDocSelect($event)" class="hidden"
                                   accept="image/*,application/pdf">
                               </label>
-                              <span>or drag and drop</span>
+                              <span> or drag and drop</span>
                             </div>
                             <p class="kyc-upload-hint">PNG, JPG or PDF (max. 10MB)</p>
                           </div>
@@ -297,7 +334,7 @@ include "components/head.html" %}{% endwith %}
                           <div class="kyc-uploaded-file">
                             <div class="kyc-file-info">
                               <div class="kyc-file-icon">
-                                <svg  width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#027A48"
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--badge-success-color, #027A48)"
                                   stroke-width="2">
                                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                                   <polyline points="14 2 14 8 20 8" />
@@ -305,11 +342,11 @@ include "components/head.html" %}{% endwith %}
                               </div>
                               <div class="kyc-file-details">
                                 <span class="kyc-file-name" x-text="formData.documentName"></span>
-                                <span class="kyc-file-status">✓ Uploaded successfully</span>
+                                <span class="kyc-file-status">Uploaded successfully</span>
                               </div>
                             </div>
-                            <button class="kyc-file-remove" @click="removeDocument()">
-                              <svg  width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            <button id="kyc-remove-doc" class="kyc-file-remove" @click="removeDocument()" aria-label="Remove document">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <path
                                   d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -319,44 +356,120 @@ include "components/head.html" %}{% endwith %}
                         </template>
 
                         <div class="kyc-upload-progress" x-show="uploading">
-                          <div class="kyc-progress-bar ds-progress ds-progress--sm">
-                            <div class="kyc-progress-fill ds-progress__fill" :style="'width: ' + uploadProgress + '%'"></div>
+                          <div class="kyc-progress-bar">
+                            <div class="kyc-progress-fill" :style="'width: ' + uploadProgress + '%'"></div>
                           </div>
                           <span x-text="uploadProgress + '%'"></span>
                         </div>
                       </div>
 
+                      <span class="kyc-field-error" x-show="validation.documentId" x-text="validation.documentId" style="margin-top:-12px;display:block;margin-bottom:12px;"></span>
+
                       <div class="kyc-form-actions space-between">
-                        <button class="kyc-btn-secondary" @click="prevStep()">Back</button>
-                        <button class="kyc-btn-primary" @click="nextStep()"
-                          :disabled="!formData.documentId || uploading">Continue</button>
+                        <button id="kyc-step4-back" class="ds-btn ds-btn--ghost" @click="prevStep()">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6" />
+                          </svg>
+                          Back
+                        </button>
+                        <button id="kyc-step4-next" class="ds-btn ds-btn--primary" @click="validateAndNext(4)"
+                          :disabled="uploading">
+                          Continue
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
-                    <!-- Step 5 -->
-                    <div x-show="step === 5">
+
+                    <!-- Step 5: Review & Submit -->
+                    <div x-show="step === 5" x-transition:enter="kyc-fade-enter">
                       <h2 class="kyc-step-title">Review & Submit</h2>
                       <p class="kyc-step-desc">Please confirm all details are correct before submitting.</p>
+
                       <div class="kyc-review-box">
-                        <div class="kyc-review-row">
-                          <span class="kyc-review-label">Full Name</span>
-                          <span class="kyc-review-value" x-text="formData.firstName + ' ' + formData.lastName"></span>
+                        <!-- Personal Information -->
+                        <div class="kyc-review-section">
+                          <h3 class="kyc-review-section-title">Personal Information</h3>
+                          <div class="kyc-review-row">
+                            <span class="kyc-review-label">Full Name</span>
+                            <span class="kyc-review-value" x-text="formData.firstName + ' ' + formData.lastName"></span>
+                          </div>
+                          <div class="kyc-review-row">
+                            <span class="kyc-review-label">Date of Birth</span>
+                            <span class="kyc-review-value" x-text="formatDate(formData.dob)"></span>
+                          </div>
+                          <div class="kyc-review-row">
+                            <span class="kyc-review-label">Nationality</span>
+                            <span class="kyc-review-value" x-text="formData.nationality"></span>
+                          </div>
                         </div>
-                        <div class="kyc-review-row">
-                          <span class="kyc-review-label">Nationality</span>
-                          <span class="kyc-review-value" x-text="formData.nationality"></span>
+
+                        <!-- Address -->
+                        <div class="kyc-review-section">
+                          <h3 class="kyc-review-section-title">Residential Address</h3>
+                          <div class="kyc-review-row">
+                            <span class="kyc-review-label">Address</span>
+                            <span class="kyc-review-value" x-text="formData.addressLine1"></span>
+                          </div>
+                          <div class="kyc-review-row">
+                            <span class="kyc-review-label">City</span>
+                            <span class="kyc-review-value" x-text="formData.city"></span>
+                          </div>
+                          <div class="kyc-review-row">
+                            <span class="kyc-review-label">Country</span>
+                            <span class="kyc-review-value" x-text="formData.country"></span>
+                          </div>
                         </div>
-                        <div class="kyc-review-row">
-                          <span class="kyc-review-label">City</span>
-                          <span class="kyc-review-value" x-text="formData.city"></span>
+
+                        <!-- Document -->
+                        <div class="kyc-review-section">
+                          <h3 class="kyc-review-section-title">Identity Document</h3>
+                          <div class="kyc-review-row">
+                            <span class="kyc-review-label">Document Type</span>
+                            <span class="kyc-review-value" x-text="getDocumentTypeLabel()"></span>
+                          </div>
+                          <div class="kyc-review-doc" x-show="formData.documentId">
+                            <div class="kyc-file-icon">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--badge-success-color, #027A48)" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                              </svg>
+                            </div>
+                            <div class="kyc-file-details">
+                              <span class="kyc-review-doc-name" x-text="formData.documentName"></span>
+                              <span class="kyc-review-doc-status">Uploaded successfully</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
+
                       <div class="kyc-form-actions space-between">
-                        <button class="kyc-btn-secondary" @click="prevStep()">Back</button>
-                        <button class="kyc-btn-primary" @click="submitKyc()"
-                          :disabled="submitting || !formData.documentId">
-                          <span x-show="!submitting">Submit for Review</span>
+                        <button id="kyc-step5-back" class="ds-btn ds-btn--ghost" @click="prevStep()">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6" />
+                          </svg>
+                          Back
+                        </button>
+                        <button id="kyc-submit-btn" class="ds-btn ds-btn--primary" @click="submitKyc()"
+                          :disabled="submitting">
+                          <span x-show="!submitting" style="display:flex;align-items:center;gap:8px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                              <polyline points="22 4 12 14.01 9 11.01" />
+                            </svg>
+                            Submit for Review
+                          </span>
                           <span x-show="submitting">Submitting...</span>
                         </button>
+                      </div>
+
+                      <div class="kyc-security-note">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        <span>Your data is encrypted and stored securely</span>
                       </div>
                     </div>
                   </div>
@@ -364,12 +477,13 @@ include "components/head.html" %}{% endwith %}
               </div>
             </template>
 
-            <!-- IN REVIEW STATE (actually submitted to provider) -->
+            <!-- IN REVIEW STATE -->
             <template x-if="status === 'in_review'">
               <div class="kyc-center-state">
                 <div class="kyc-status-icon kyc-status-icon--pending">
-                  <svg  width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b54708" stroke-width="2">
-                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="var(--badge-warning-color, #B54708)" />
                   </svg>
                 </div>
                 <h2 class="kyc-state-title">Under Review</h2>
@@ -378,15 +492,20 @@ include "components/head.html" %}{% endwith %}
                   email once it's complete.
                 </p>
                 <div class="kyc-info-banner">
-                  <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10" />
                     <line x1="12" y1="8" x2="12" y2="12" />
                     <line x1="12" y1="16" x2="12.01" y2="16" />
                   </svg>
                   Verification typically completes within 24 hours
                 </div>
-                <button class="kyc-btn-secondary" onclick="window.location.href='/marketplace'">Back to
-                  Marketplace</button>
+                <button id="kyc-back-to-marketplace" class="ds-btn ds-btn--secondary ds-btn--lg ds-btn--full" onclick="window.location.href='/marketplace'">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
+                  Back to Marketplace
+                </button>
               </div>
             </template>
 
@@ -394,8 +513,9 @@ include "components/head.html" %}{% endwith %}
             <template x-if="status === 'approved'">
               <div class="kyc-center-state">
                 <div class="kyc-status-icon kyc-status-icon--success">
-                  <svg  width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#027a48" stroke-width="3">
-                    <path d="M5 13l4 4L19 7" />
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 13l4 4L19 7" stroke="var(--badge-success-color, #027A48)" />
                   </svg>
                 </div>
                 <h2 class="kyc-state-title">Verified Successfully</h2>
@@ -405,26 +525,32 @@ include "components/head.html" %}{% endwith %}
                 </p>
                 <div class="kyc-success-highlights">
                   <div class="kyc-highlight-item">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <div class="kyc-check-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-greeny-green, #03FF88)" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
                     <span>Full marketplace access unlocked</span>
                   </div>
                   <div class="kyc-highlight-item">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <div class="kyc-check-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-greeny-green, #03FF88)" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
                     <span>Investment limits lifted</span>
                   </div>
                   <div class="kyc-highlight-item">
-                    <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <div class="kyc-check-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand-greeny-green, #03FF88)" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </div>
                     <span>Withdrawal privileges enabled</span>
                   </div>
                 </div>
-                <button class="kyc-btn-primary full-width-btn" onclick="window.location.href='/marketplace'">
-                  <svg  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                <button id="kyc-go-to-marketplace" class="ds-btn ds-btn--primary ds-btn--lg ds-btn--full" onclick="window.location.href='/marketplace'">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                     <polyline points="9 22 9 12 15 12 15 22" />
@@ -434,14 +560,15 @@ include "components/head.html" %}{% endwith %}
               </div>
             </template>
 
-            <!-- REJECTED STATE -->
+            <!-- REJECTED / EXPIRED STATE -->
             <template x-if="status === 'rejected' || status === 'expired'">
               <div class="kyc-center-state">
                 <div class="kyc-status-icon kyc-status-icon--rejected">
-                  <svg  width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b42318" stroke-width="2.5">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="15" y1="9" x2="9" y2="15" />
-                    <line x1="9" y1="9" x2="15" y2="15" />
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" stroke="var(--badge-danger-color, #B42318)" />
+                    <line x1="15" y1="9" x2="9" y2="15" stroke="var(--badge-danger-color, #B42318)" />
+                    <line x1="9" y1="9" x2="15" y2="15" stroke="var(--badge-danger-color, #B42318)" />
                   </svg>
                 </div>
                 <h2 class="kyc-state-title"
@@ -449,29 +576,34 @@ include "components/head.html" %}{% endwith %}
                 <p class="kyc-state-desc"
                   x-text="status === 'expired' ? 'Your verification has expired. Please submit new documents.' : 'Your previous verification was rejected. Please try again with valid documents.'">
                 </p>
-                <button class="kyc-btn-primary full-width-btn" @click="status = 'not_started'">
+                <button id="kyc-try-again" class="ds-btn ds-btn--primary ds-btn--lg ds-btn--full" @click="resetForm()">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="1 4 1 10 7 10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                  </svg>
                   Try Again
                 </button>
               </div>
             </template>
 
-            <!-- FALLBACK STATE — catches any unhandled status value -->
+            <!-- FALLBACK STATE -->
             <template x-if="status !== 'loading' && status !== 'error' && status !== 'in_review' && status !== 'approved' && status !== 'rejected' && status !== 'expired' && !canStartVerification()">
               <div class="kyc-center-state">
                 <div class="kyc-status-icon kyc-status-icon--start">
-                  <svg  width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="var(--btn-primary-bg)" />
                   </svg>
                 </div>
                 <h2 class="kyc-state-title">Identity Verification</h2>
                 <p class="kyc-state-desc">
                   Something went wrong loading the verification form. Please refresh the page to try again.
                 </p>
-                <button class="kyc-btn-primary full-width-btn" onclick="window.location.reload()">Refresh Page</button>
+                <button id="kyc-fallback-refresh" class="ds-btn ds-btn--primary ds-btn--lg ds-btn--full" onclick="window.location.reload()">Refresh Page</button>
               </div>
             </template>
 
-          </div><!-- end .kyc-card -->
+          </div><!-- end .ds-card .kyc-card -->
         </div><!-- end .kyc-content-wrapper -->
       </div><!-- end .kyc-container -->
     </main>

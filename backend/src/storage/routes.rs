@@ -1114,14 +1114,28 @@ pub async fn download_asset_document(
 
 // ─── Proxy Endpoint for Public URLs ────────────────────────
 /// GET /api/proxy/gcs/:bucket/*path
-/// Proxies a previously generated public URL using a short-lived signed URL, bypassing 403 blocks.
+///
+/// Downloads the object from GCS and streams the raw bytes to the client.
+/// This avoids the need for `iam.serviceAccounts.signBlob` permission
+/// that signed URL generation requires. Only `storage.objects.get` is needed.
+///
+/// Responses are cached for 1 hour via Cache-Control headers.
 pub async fn proxy_gcs_image(
     axum::extract::Path((bucket, object_path)): axum::extract::Path<(String, String)>,
 ) -> axum::response::Response {
-    match super::service::generate_signed_url(&bucket, &object_path, 60).await {
-        Ok(signed_url) => axum::response::Redirect::temporary(&signed_url).into_response(),
+    match super::service::download_object(&bucket, &object_path).await {
+        Ok((content_type, data)) => {
+            let headers = [
+                (axum::http::header::CONTENT_TYPE, content_type),
+                (
+                    axum::http::header::CACHE_CONTROL,
+                    "public, max-age=3600, s-maxage=3600".to_string(),
+                ),
+            ];
+            (headers, data).into_response()
+        }
         Err(e) => {
-            tracing::error!("Failed to generate signed url for proxy: {}", e);
+            tracing::error!("GCS proxy failed for {}/{}: {}", bucket, object_path, e);
             (StatusCode::INTERNAL_SERVER_ERROR, "Image failed to load").into_response()
         }
     }

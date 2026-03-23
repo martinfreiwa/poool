@@ -9,14 +9,16 @@
  */
 document.addEventListener("alpine:init", () => {
   Alpine.data("kycForm", () => ({
-    status: "loading", // not_started, pending, in_review, approved, rejected, expired
+    status: "loading",
     step: 1,
     submitting: false,
     uploading: false,
     uploadProgress: 0,
     dragActive: false,
-    provider: "manual", // "didit", "sumsub", or "manual"
-    supportsRedirect: false, // true if the provider uses redirect-based verification
+    provider: "manual",
+    supportsRedirect: false,
+    validation: {},
+    stepperSteps: ["Personal Info", "Additional Details", "Address", "Identity Doc", "Review & Submit"],
     formData: {
       firstName: "",
       lastName: "",
@@ -32,63 +34,48 @@ document.addEventListener("alpine:init", () => {
     },
 
     async initKyc() {
-      console.log("[KYC] initKyc() starting...");
-
-      // Check if we're returning from provider redirect using localStorage instead of query params
-      // This solves strict URL matching issues with Didit's dashboard.
+      // Check if returning from provider redirect
       if (localStorage.getItem("poool_kyc_pending") === "true") {
         localStorage.removeItem("poool_kyc_pending");
         this.status = "in_review";
-        console.log("[KYC] Returned from provider redirect (detected via localStorage), status=in_review");
         return;
       }
 
       // 1. Fetch current KYC status
       try {
         const statusResp = await fetch("/api/kyc/status");
-        console.log("[KYC] /api/kyc/status response:", statusResp.status);
         if (statusResp.ok) {
           const data = await statusResp.json();
-          console.log("[KYC] Status data:", JSON.stringify(data));
           this.status = data.status || "not_started";
           if (data.provider) this.provider = data.provider;
         } else if (statusResp.status === 401) {
-          // Not authenticated — redirect to login
           window.location.href = "/auth/login";
           return;
         } else {
-          console.warn("[KYC] Status API returned:", statusResp.status);
           this.status = "not_started";
         }
       } catch (err) {
-        console.error("[KYC] Status fetch failed:", err);
-        if (typeof Sentry !== 'undefined') Sentry.captureException(err);
+        if (typeof Sentry !== "undefined") Sentry.captureException(err);
         this.status = "not_started";
       }
 
-      // 2. Detect the active provider (separate try/catch so status is preserved)
+      // 2. Detect the active provider
       try {
         const providerResp = await fetch("/api/kyc/provider");
-        console.log("[KYC] /api/kyc/provider response:", providerResp.status);
         if (providerResp.ok) {
           const pdata = await providerResp.json();
-          console.log("[KYC] Provider data:", JSON.stringify(pdata));
           this.provider = pdata.provider || "manual";
           this.supportsRedirect = pdata.supports_redirect || false;
         }
       } catch (err) {
-        console.error("[KYC] Provider fetch failed:", err);
-        // Don't change status — the status fetch already set it
+        // Provider fetch failed — keep manual default
       }
-
-      console.log("[KYC] Final state: status=%s, provider=%s, supportsRedirect=%s",
-        this.status, this.provider, this.supportsRedirect);
     },
 
     getStatusMessage() {
       switch (this.status) {
         case "not_started":
-        case "pending":  // session opened but not yet submitted
+        case "pending":
           return "Please complete the steps below to verify your identity.";
         case "in_review":
           return "Your verification is currently under review.";
@@ -103,17 +90,15 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    /** Whether the user can start a new verification. */
     canStartVerification() {
       return (
         this.status === "not_started" ||
-        this.status === "pending" ||   // stale session — backend will clean it up
+        this.status === "pending" ||
         this.status === "rejected" ||
         this.status === "expired"
       );
     },
 
-    /** Get the label for the provider badge. */
     getProviderLabel() {
       const labels = {
         didit: "Didit",
@@ -121,6 +106,30 @@ document.addEventListener("alpine:init", () => {
         manual: "Manual Review",
       };
       return labels[this.provider] || this.provider;
+    },
+
+    getDocumentTypeLabel() {
+      const labels = {
+        passport: "Passport",
+        national_id: "National ID",
+        driving_licence: "Driver's License",
+        driving_license: "Driver's License",
+      };
+      return labels[this.formData.documentType] || this.formData.documentType;
+    },
+
+    formatDate(dateStr) {
+      if (!dateStr) return "—";
+      try {
+        const d = new Date(dateStr + "T00:00:00");
+        return d.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+      } catch {
+        return dateStr;
+      }
     },
 
     getStepperClass(stepNumber) {
@@ -132,12 +141,64 @@ document.addEventListener("alpine:init", () => {
     nextStep() {
       if (this.step < 5) {
         this.step++;
+        this.validation = {};
       }
     },
 
     prevStep() {
       if (this.step > 1) {
         this.step--;
+        this.validation = {};
+      }
+    },
+
+    resetForm() {
+      this.status = "not_started";
+      this.step = 1;
+      this.validation = {};
+      this.formData = {
+        firstName: "",
+        lastName: "",
+        dob: "",
+        nationality: "",
+        addressLine1: "",
+        city: "",
+        country: "",
+        documentType: "passport",
+        documentId: null,
+        documentName: null,
+        isPep: false,
+      };
+    },
+
+    /** Validate current step fields, then advance. */
+    validateAndNext(currentStep) {
+      const errors = {};
+
+      if (currentStep === 1) {
+        if (!this.formData.firstName.trim()) errors.firstName = "First name is required";
+        if (!this.formData.lastName.trim()) errors.lastName = "Last name is required";
+      }
+
+      if (currentStep === 2) {
+        if (!this.formData.dob) errors.dob = "Date of birth is required";
+        if (!this.formData.nationality.trim()) errors.nationality = "Nationality is required";
+      }
+
+      if (currentStep === 3) {
+        if (!this.formData.addressLine1.trim()) errors.addressLine1 = "Address is required";
+        if (!this.formData.city.trim()) errors.city = "City is required";
+        if (!this.formData.country.trim()) errors.country = "Country is required";
+      }
+
+      if (currentStep === 4) {
+        if (!this.formData.documentId) errors.documentId = "Please upload your identity document";
+      }
+
+      this.validation = errors;
+
+      if (Object.keys(errors).length === 0) {
+        this.nextStep();
       }
     },
 
@@ -157,40 +218,66 @@ document.addEventListener("alpine:init", () => {
       }
     },
 
-    /** Upload document to GCS. */
+    /** Upload document to GCS with real progress tracking. */
     async uploadDocument(file) {
       if (file.size > 10 * 1024 * 1024) {
-        alert("File too large. Max 10MB.");
+        if (typeof showPooolToast === "function") {
+          showPooolToast("File too large", "Maximum file size is 10MB.", "error");
+        }
         return;
       }
 
       this.uploading = true;
       this.uploadProgress = 0;
+      this.validation.documentId = "";
 
       const formData = new FormData();
       formData.append("file", file);
       formData.append("document_type", this.formData.documentType);
 
       try {
-        const response = await fetch("/api/upload/kyc", {
-          method: "POST",
-          body: formData,
+        const xhr = new XMLHttpRequest();
+
+        const uploadPromise = new Promise((resolve, reject) => {
+          xhr.upload.addEventListener("progress", (e) => {
+            if (e.lengthComputable) {
+              this.uploadProgress = Math.round((e.loaded / e.total) * 100);
+            }
+          });
+
+          xhr.addEventListener("load", () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(JSON.parse(xhr.responseText));
+            } else {
+              try {
+                const err = JSON.parse(xhr.responseText);
+                reject(new Error(err.error || "Upload failed"));
+              } catch {
+                reject(new Error("Upload failed"));
+              }
+            }
+          });
+
+          xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+          xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          this.formData.documentId = data.document_id;
-          this.formData.documentName = file.name;
-        } else {
-          const err = await response.json().catch(() => ({}));
-          alert(err.error || "Failed to upload document.");
+        xhr.open("POST", "/api/upload/kyc");
+        xhr.send(formData);
+
+        const data = await uploadPromise;
+        this.formData.documentId = data.document_id;
+        this.formData.documentName = file.name;
+
+        if (typeof showPooolToast === "function") {
+          showPooolToast("Uploaded", "Document uploaded successfully.", "success");
         }
       } catch (err) {
-        console.error("Upload failed:", err);
-        alert("Network error during upload.");
+        if (typeof showPooolToast === "function") {
+          showPooolToast("Upload failed", err.message || "Please try again.", "error");
+        }
       } finally {
         this.uploading = false;
-        this.uploadProgress = 100;
       }
     },
 
@@ -198,22 +285,18 @@ document.addEventListener("alpine:init", () => {
     removeDocument() {
       this.formData.documentId = null;
       this.formData.documentName = null;
+      this.uploadProgress = 0;
     },
 
     /**
      * Initiate KYC verification.
-     *
-     * For redirect providers (Didit/Sumsub):
-     *   Calls POST /api/kyc/initiate → gets a verification_url → redirects.
-     *
-     * For manual provider:
-     *   Calls POST /api/kyc/submit (legacy flow with form data).
      */
     async submitKyc() {
       this.submitting = true;
+      this.validation = {};
       try {
         if (this.supportsRedirect) {
-          // === Redirect-based flow (Didit / Sumsub) ===
+          // Redirect-based flow (Didit / Sumsub)
           const response = await fetch("/api/kyc/initiate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -225,30 +308,26 @@ document.addEventListener("alpine:init", () => {
           if (response.ok) {
             const data = await response.json();
             if (data.verification_url) {
-              // Set flag so we know they are returning from Didit
               localStorage.setItem("poool_kyc_pending", "true");
-              // Redirect user to the provider verification page
               window.location.href = data.verification_url;
               return;
             }
-            // Fallback: no URL means manual-like flow
             this.status = "pending";
+            if (typeof showPooolToast === "function") {
+              showPooolToast("Submitted", "Your verification is being processed.", "success");
+            }
           } else {
             const err = await response.json().catch(() => ({}));
             if (response.status === 409) {
-              // Already pending or approved
-              this.status = err.error?.includes("approved")
-                ? "approved"
-                : "pending";
+              this.status = err.error?.includes("approved") ? "approved" : "pending";
               return;
             }
-            alert(
-              err.error ||
-              "Failed to start KYC verification. Please try again.",
-            );
+            if (typeof showPooolToast === "function") {
+              showPooolToast("Error", err.error || "Failed to start verification.", "error");
+            }
           }
         } else {
-          // === Manual submission flow ===
+          // Manual submission flow
           const payload = {
             first_name: this.formData.firstName,
             last_name: this.formData.lastName,
@@ -270,22 +349,21 @@ document.addEventListener("alpine:init", () => {
 
           if (response.ok) {
             this.status = "pending";
-            if (window.showNotification) {
-              window.showNotification(
-                "Success",
-                "KYC application submitted successfully",
-                "success",
-              );
+            if (typeof showPooolToast === "function") {
+              showPooolToast("Submitted", "KYC application submitted successfully.", "success");
             }
           } else {
-            const errorResponse = await response.text();
-            alert("Failed to submit KYC. Please try again.");
+            const err = await response.json().catch(() => ({}));
+            if (typeof showPooolToast === "function") {
+              showPooolToast("Error", err.error || "Failed to submit KYC. Please try again.", "error");
+            }
           }
         }
       } catch (err) {
-        console.error("KYC submission failed:", err);
-        if (typeof Sentry !== 'undefined') Sentry.captureException(err);
-        alert("Failed to connect to the server.");
+        if (typeof Sentry !== "undefined") Sentry.captureException(err);
+        if (typeof showPooolToast === "function") {
+          showPooolToast("Connection Error", "Unable to reach the server. Please try again.", "error");
+        }
       } finally {
         this.submitting = false;
       }

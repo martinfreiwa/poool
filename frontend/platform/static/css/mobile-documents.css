@@ -82,14 +82,14 @@
 
 /* Active Tab */
 .mobile-documents-tab.active {
-  background: #98FB96 !important;
+  background: var(--mp-green, #03FF88) !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 24px;
 }
 
 .mobile-documents-tab.active .tab-text {
-  color: #0000FF !important;
+  color: #000000 !important;
   font-weight: 700;
 }
 

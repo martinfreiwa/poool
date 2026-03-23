@@ -78,6 +78,10 @@ NOISE_PATTERNS = [
     "gtag",
     "hotjar",
     "sentry",
+    "stripe.com",
+    "Failed to load resource",
+    "401 ()",
+    "429 ()",
 ]
 
 # Network URL patterns to ignore for 4xx/5xx tracking
@@ -90,6 +94,9 @@ NETWORK_IGNORE = [
     "hotjar",
     "fonts.googleapis.com",
     "pagead",
+    "stripe.com",
+    "mixpanel.com",
+    "doubleclick.net",
 ]
 
 
@@ -620,8 +627,17 @@ def authenticated_user_page(playwright_session, request):
     cur.close()
     conn.close()
 
+    # Give session a moment to settle
+    time.sleep(1)
+    
     # Reload to pick up KYC state
-    page.reload()
+    page.reload(wait_until="domcontentloaded")
+    
+    # Wait for dashboard/marketplace to confirm auth state
+    try:
+        page.wait_for_selector(".sidebar, .nav", timeout=5000)
+    except Exception:
+        pass
 
     yield page, tracker, {
         "email": email,

@@ -10,6 +10,8 @@
 ///     gcloud auth application-default login
 use google_cloud_storage::client::{Client, ClientConfig};
 use google_cloud_storage::http::objects::delete::DeleteObjectRequest;
+use google_cloud_storage::http::objects::download::Range;
+use google_cloud_storage::http::objects::get::GetObjectRequest;
 use google_cloud_storage::http::objects::upload::{Media, UploadObjectRequest, UploadType};
 use google_cloud_storage::sign::SignedURLOptions;
 
@@ -130,6 +132,43 @@ pub async fn delete_object(bucket: &str, object_path: &str) -> Result<(), AppErr
     Ok(())
 }
 
+/// Download an object's raw bytes from GCS.
+///
+/// Returns `(content_type, bytes)`. Uses standard ADC auth which only
+/// requires `storage.objects.get` — no signing / `signBlob` permission needed.
+pub async fn download_object(
+    bucket: &str,
+    object_path: &str,
+) -> Result<(String, Vec<u8>), AppError> {
+    let client = build_client().await?;
+
+    // Fetch object metadata first to get content_type
+    let meta = client
+        .get_object(&GetObjectRequest {
+            bucket: bucket.to_string(),
+            object: object_path.to_string(),
+            ..Default::default()
+        })
+        .await
+        .map_err(|e| AppError::NotFound(format!("GCS object not found: {}", e)))?;
+
+    let content_type = meta.content_type.unwrap_or_else(|| "application/octet-stream".to_string());
+
+    // Download the bytes
+    let data = client
+        .download_object(
+            &GetObjectRequest {
+                bucket: bucket.to_string(),
+                object: object_path.to_string(),
+                ..Default::default()
+            },
+            &Range::default(),
+        )
+        .await
+        .map_err(|e| AppError::Internal(format!("GCS download failed: {}", e)))?;
+
+    Ok((content_type, data))
+}
 // ─── GcsService Struct (for Admin/other modules) ────────────────
 pub struct GcsService {
     bucket: String,

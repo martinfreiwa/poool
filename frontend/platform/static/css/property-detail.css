@@ -3963,7 +3963,7 @@ body.youtube-modal-active {
 }
 
 .financial-tab.active {
-  background: #98FB96 !important;
+  background: var(--mp-green, #03FF88) !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 24px;
@@ -3989,8 +3989,8 @@ body.youtube-modal-active {
 }
 
 .financial-tab.active .tab-text {
-  /* Brand/600 */
-  color: #0000FF !important;
+  /* Text color for active (on green) */
+  color: #000000 !important;
   font-weight: 700;
 }
 
@@ -4626,7 +4626,7 @@ body.youtube-modal-active {
 
 /* Active Tab */
 .documents-tab.active {
-  background: #98FB96 !important;
+  background: var(--mp-green, #03FF88) !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 24px;
@@ -4650,8 +4650,8 @@ body.youtube-modal-active {
   line-height: 24px;
   /* identical to box height, or 150% */
 
-  /* Brand/600 */
-  color: #0000FF !important;
+  /* Text color for active (on green) */
+  color: #000000 !important;
   font-weight: 700;
 }
 

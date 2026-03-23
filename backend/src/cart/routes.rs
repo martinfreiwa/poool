@@ -669,7 +669,13 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         let funded_pct = if total_tokens_f64 > 0.0 {
             // Include tokens in cart to show the user's contribution to funding
             let sold_tokens = total_tokens_f64 - available_tokens_f64 + tokens_qty as f64;
-            ((sold_tokens / total_tokens_f64) * 100.0).min(100.0) as i32
+            let raw_pct = ((sold_tokens / total_tokens_f64) * 100.0).min(100.0);
+            // Show at least 1% if user has shares in cart (avoid misleading 0%)
+            if raw_pct > 0.0 && (raw_pct as i32) == 0 {
+                1
+            } else {
+                raw_pct as i32
+            }
         } else {
             0
         };
@@ -732,7 +738,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             r##"<div id="cart-item-{idx}" class="cart-item-card" data-cart-id="{cart_id}">
                 <div class="cart-item-card__image-wrapper">
                     <a href="/property/{slug}">
-                        <img class="cart-item-card__image" src="{image_url}" alt="{title}">
+                        <img class="cart-item-card__image" src="{image_url}" alt="{title}" onerror="this.onerror=null;this.style.display='none';this.parentElement.innerHTML='<div style=&quot;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f2f4f7;border-radius:10px;&quot;><svg width=&quot;32&quot; height=&quot;32&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#98a2b3&quot; stroke-width=&quot;1.5&quot;><rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;18&quot; height=&quot;18&quot; rx=&quot;2&quot;/><circle cx=&quot;8.5&quot; cy=&quot;8.5&quot; r=&quot;1.5&quot;/><path d=&quot;m21 15-5-5L5 21&quot;/></svg></div>';">
                     </a>
                 </div>
                 <div class="cart-item-card__body">
@@ -856,7 +862,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             r##"<div class="mobile-cart-item-card" data-cart-id="{cart_id}">
                 <div class="mobile-cart-item-info">
                     <div class="mobile-cart-item-header">
-                        <a href="/property/{slug}"><img src="{image_url}" class="mobile-cart-item-image" alt="{title}" style="object-fit:cover;"></a>
+                        <a href="/property/{slug}"><img src="{image_url}" class="mobile-cart-item-image" alt="{title}" style="object-fit:cover;" onerror="this.onerror=null;this.style.display='none';this.parentElement.innerHTML='<div style=&quot;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f2f4f7;border-radius:8px;&quot;><svg width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;#98a2b3&quot; stroke-width=&quot;1.5&quot;><rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;18&quot; height=&quot;18&quot; rx=&quot;2&quot;/><circle cx=&quot;8.5&quot; cy=&quot;8.5&quot; r=&quot;1.5&quot;/><path d=&quot;m21 15-5-5L5 21&quot;/></svg></div>';"></a>
                         <div class="mobile-cart-item-details">
                             <a href="/property/{slug}" style="text-decoration:none;"><div class="mobile-cart-item-title">{title}</div></a>
                             {mobile_property_details}
@@ -931,7 +937,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             available_tokens = tokens_available,
             total_tokens = tokens_total,
             funded_pct = funded_pct,
-            image_url = image_url.as_deref().unwrap_or("/static/images/portfolio_asset_details/Property image.webp"),
+            image_url = crate::storage::service::rewrite_gcs_url(image_url.as_deref().unwrap_or("/static/images/portfolio_asset_details/Property image.webp")),
             mobile_property_details = mobile_property_details,
         ));
     }

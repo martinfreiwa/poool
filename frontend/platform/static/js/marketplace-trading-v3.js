@@ -397,7 +397,7 @@
                 bedrooms: rawAsset.bedrooms || 0,
                 rentStatus: rawAsset.rentStatus || 'N/A',
                 platformFee: rawAsset.propertyValue ? (rawAsset.propertyValue / 100) * 0.05 : 0,
-                images: rawAsset.images && rawAsset.images.length > 0 ? rawAsset.images : ['/images/villa1.webp'],
+                images: rawAsset.images && rawAsset.images.length > 0 ? rawAsset.images : ['/static/images/villa1.webp'],
                 sellOrders: rawAsset.sellOrders > 0 ? [{ tokens: rawAsset.sellOrders, price: rawAsset.price / 100 }] : [],
                 buyBids: rawAsset.buy_interest > 0 ? [{ tokens: rawAsset.buy_interest, price: rawAsset.price / 100 }] : [],
                 locationDesc: rawAsset.locationDesc || ''

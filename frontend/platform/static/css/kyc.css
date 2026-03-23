@@ -1,7 +1,7 @@
 /* ============================================================
-   KYC / Identity Verification – Page Styles
-   Mirrors the wallet/rewards page layout pattern exactly
-   Brand colors: Blue #0000FF | Accent #03FF88 | Dark #08232F
+   KYC / Identity Verification — Page Styles
+   Aligned with DESIGN.md "Wealth Terminal" design system
+   All colors via dashboard-tokens.css variables
    ============================================================ */
 
 /* ── Page Layout ── */
@@ -9,20 +9,20 @@
   display: flex;
   width: 100%;
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--content-bg);
 }
 
 .kyc-sidebar {
-  width: 256px;
+  width: var(--sidebar-width, 256px);
   flex-shrink: 0;
 }
 
 .kyc-main {
-  width: calc(100% - 256px);
+  width: calc(100% - var(--sidebar-width, 256px));
   min-height: 100vh;
-  margin-left: 256px;
-  padding: 40px 32px 64px 32px;
-  background: #f5f5f5;
+  margin-left: var(--sidebar-width, 256px);
+  padding: var(--page-padding-top, 48px) var(--page-padding-x, 32px) 64px;
+  background: var(--content-bg);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -34,63 +34,31 @@
   max-width: 780px;
 }
 
-/* ── Page Header ── */
-.kyc-page-header {
-  margin-bottom: 28px;
-}
-
-.kyc-title-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-
-.kyc-page-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: #0000FF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  flex-shrink: 0;
-}
-
-.kyc-title {
-  font-family: 'TT Norms Pro', sans-serif;
-  font-weight: 700;
-  font-size: 30px;
-  line-height: 38px;
-  letter-spacing: -0.02em;
-  color: var(--page-title-color);
-  margin: 0;
-}
-
+/* ── Subtitle (below page header title) ── */
 .kyc-subtitle {
-  font-size: 16px;
-  color: var(--text-secondary);
-  margin: 0;
-  padding-left: 52px;
+  font-family: var(--font-family);
+  font-size: var(--page-subtitle-font-size, 15px);
+  color: var(--page-subtitle-color, #475467);
+  margin: 4px 0 0;
+  line-height: 1.5;
 }
 
 /* ── Content Wrapper ── */
 .kyc-content-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--section-gap, 24px);
 }
 
 /* ── Step Progress Bar ── */
 .kyc-stepper-bar {
   display: flex;
   align-items: center;
-  background: #ffffff;
-  border: 1px solid var(--table-border-color);
-  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border-color);
+  border-radius: var(--card-border-radius, 12px);
   padding: 20px 24px;
-  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+  box-shadow: var(--card-shadow);
 }
 
 .kyc-step {
@@ -105,9 +73,9 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 2px solid #d0d5dd;
-  background: #ffffff;
-  color: #717680;
+  border: 2px solid var(--input-border-color);
+  background: var(--card-bg);
+  color: var(--table-header-color);
   font-size: 13px;
   font-weight: 600;
   display: flex;
@@ -116,16 +84,22 @@
   transition: all 0.2s ease;
 }
 
+.kyc-step.completed .kyc-step-circle {
+  background: var(--brand-greeny-green, #03FF88);
+  border-color: var(--brand-greeny-green, #03FF88);
+  color: #08232F;
+}
+
 .kyc-step.active .kyc-step-circle {
-  background: #0000FF;
-  border-color: #0000FF;
-  color: #ffffff;
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-color);
 }
 
 .kyc-step-label {
   font-size: 12px;
   font-weight: 500;
-  color: #717680;
+  color: var(--table-header-color);
   text-align: center;
   white-space: nowrap;
 }
@@ -145,16 +119,12 @@
 }
 
 .kyc-step-connector.active {
-  background: #0000FF;
+  background: var(--btn-primary-bg);
 }
 
 /* ── Main KYC Card ── */
 .kyc-card {
-  background: #ffffff;
-  border: 1px solid var(--table-border-color);
-  border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+  padding: 48px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -167,7 +137,7 @@
   text-align: center;
   max-width: 520px;
   margin: 0 auto;
-  padding: 24px 0;
+  padding: 16px 0;
   gap: 0;
 }
 
@@ -183,27 +153,27 @@
 }
 
 .kyc-status-icon--start {
-  background: rgba(0, 0, 255, 0.08);
-  border: 1px solid rgba(0, 0, 255, 0.2);
+  background: rgba(0, 0, 255, 0.06);
+  border: 1px solid rgba(0, 0, 255, 0.15);
 }
 
 .kyc-status-icon--success {
-  background: rgba(3, 255, 136, 0.1);
-  border: 1px solid rgba(3, 255, 136, 0.3);
+  background: rgba(3, 255, 136, 0.08);
+  border: 1px solid rgba(3, 255, 136, 0.25);
 }
 
 .kyc-status-icon--pending {
-  background: #fffaeb;
-  border: 1px solid #fec84b;
+  background: var(--badge-warning-bg, #FFFAEB);
+  border: 1px solid #FEC84B;
 }
 
 .kyc-status-icon--rejected {
-  background: #fff1f0;
-  border: 1px solid #fca5a5;
+  background: var(--badge-danger-bg, #FEF3F2);
+  border: 1px solid #FEE4E2;
 }
 
 .kyc-state-title {
-  font-family: 'TT Norms Pro', sans-serif;
+  font-family: var(--font-family);
   font-weight: 700;
   font-size: 24px;
   line-height: 32px;
@@ -212,9 +182,9 @@
 }
 
 .kyc-state-desc {
-  font-size: 15px;
+  font-size: var(--page-subtitle-font-size, 15px);
   line-height: 1.65;
-  color: var(--text-secondary);
+  color: var(--page-subtitle-color, #475467);
   margin: 0 0 28px;
 }
 
@@ -222,36 +192,56 @@
 .kyc-checklist {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   text-align: left;
-  background: #f9fafb;
+  background: var(--card-bg);
   border: 1px solid var(--table-border-color);
-  border-radius: 10px;
-  padding: 16px 20px;
+  border-radius: var(--card-border-radius, 12px);
+  padding: 20px 24px;
   margin-bottom: 28px;
   width: 100%;
   box-sizing: border-box;
 }
 
+.kyc-checklist__title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--table-header-color);
+  margin-bottom: 4px;
+}
+
 .kyc-check-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 14px;
+  gap: 12px;
+  font-size: var(--body-font-size, 14px);
   font-weight: 500;
   color: var(--body-color);
+}
+
+.kyc-check-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(3, 255, 136, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 /* ── Success Highlights (approved state) ── */
 .kyc-success-highlights {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   text-align: left;
-  background: rgba(3, 255, 136, 0.05);
+  background: var(--card-bg);
   border: 1px solid rgba(3, 255, 136, 0.2);
-  border-radius: 10px;
-  padding: 16px 20px;
+  border-radius: var(--card-border-radius, 12px);
+  padding: 20px 24px;
   margin-bottom: 28px;
   width: 100%;
   box-sizing: border-box;
@@ -260,8 +250,8 @@
 .kyc-highlight-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 14px;
+  gap: 12px;
+  font-size: var(--body-font-size, 14px);
   font-weight: 500;
   color: var(--body-color);
 }
@@ -270,12 +260,12 @@
 .kyc-info-banner {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #f0f4f8;
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 14px;
+  gap: 10px;
+  background: var(--banner-bg);
+  border: 1px solid rgba(0, 0, 255, 0.1);
+  border-radius: var(--input-border-radius, 8px);
+  padding: 14px 16px;
+  font-size: var(--body-font-size, 14px);
   color: var(--body-color);
   font-weight: 500;
   margin-bottom: 24px;
@@ -286,15 +276,16 @@
 
 /* ── Form Elements ── */
 .kyc-step-title {
-  font-size: 20px;
+  font-family: var(--font-family);
+  font-size: var(--section-title-font-size, 20px);
   font-weight: 600;
   color: var(--page-title-color);
   margin: 0 0 8px;
 }
 
 .kyc-step-desc {
-  font-size: 14px;
-  color: var(--text-secondary);
+  font-size: var(--body-font-size, 14px);
+  color: var(--page-subtitle-color, #475467);
   margin: 0 0 24px;
   line-height: 1.55;
 }
@@ -314,54 +305,68 @@
 }
 
 .kyc-form-label {
-  font-size: 14px;
+  font-size: var(--label-font-size, 14px);
   font-weight: 500;
-  color: var(--body-color);
+  color: var(--label-color, #475467);
 }
 
-.kyc-input,
-.kyc-select {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
-  font-size: 15px;
-  font-family: 'TT Norms Pro', sans-serif;
-  color: #101828;
-  background: #ffffff;
-  box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
+/* ── Validation States ── */
+.ds-input.has-error,
+.ds-select.has-error {
+  border-color: var(--badge-danger-color, #D92D20);
+  box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.08);
 }
 
-.kyc-input::placeholder {
-  color: #9BABB8;
+.kyc-field-error {
+  font-size: 13px;
+  color: var(--badge-danger-color, #D92D20);
+  line-height: 1.4;
+  margin-top: 2px;
 }
 
-.kyc-input:focus,
-.kyc-select:focus {
-  outline: none;
-  border-color: #0000FF;
-  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
+.ds-input.is-valid,
+.ds-select.is-valid {
+  border-color: var(--badge-success-color, #027A48);
 }
 
 /* ── Review Box ── */
 .kyc-review-box {
-  background: #f9fafb;
+  background: var(--content-bg, #FAFAFA);
   border: 1px solid var(--table-border-color);
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: var(--card-border-radius, 12px);
+  padding: 24px;
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
+}
+
+.kyc-review-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--table-border-color);
+}
+
+.kyc-review-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.kyc-review-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--table-header-color);
+  margin: 0 0 12px;
 }
 
 .kyc-review-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--table-border-color);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--card-border-color);
 }
 
 .kyc-review-row:last-child {
@@ -374,15 +379,39 @@
 }
 
 .kyc-review-label {
-  font-size: 14px;
-  color: var(--text-secondary);
-  font-weight: 500;
+  font-size: var(--body-font-size, 14px);
+  color: var(--page-subtitle-color, #475467);
+  font-weight: 400;
 }
 
 .kyc-review-value {
-  font-size: 14px;
+  font-size: var(--body-font-size, 14px);
   color: var(--page-title-color);
   font-weight: 600;
+}
+
+/* ── Review Document Preview ── */
+.kyc-review-doc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(3, 255, 136, 0.04);
+  border: 1px solid rgba(3, 255, 136, 0.15);
+  border-radius: var(--input-border-radius, 8px);
+  margin-top: 10px;
+}
+
+.kyc-review-doc-name {
+  font-size: var(--body-font-size, 14px);
+  font-weight: 600;
+  color: var(--page-title-color);
+}
+
+.kyc-review-doc-status {
+  font-size: 12px;
+  color: var(--badge-success-color, #027A48);
+  font-weight: 500;
 }
 
 /* ── Action Buttons ── */
@@ -399,64 +428,191 @@
   justify-content: space-between;
 }
 
-.kyc-btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: #0000FF;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-family: 'TT Norms Pro', sans-serif;
-  font-weight: 600;
+/* ── Upload Container ── */
+.kyc-upload-container {
+  border: 2px dashed var(--input-border-color);
+  border-radius: var(--card-border-radius, 12px);
+  padding: 36px;
+  text-align: center;
+  transition: border-color 0.2s ease, background 0.2s ease;
   cursor: pointer;
-  text-decoration: none;
-  transition: filter 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
-  white-space: nowrap;
+  margin-bottom: 20px;
 }
 
-.kyc-btn-primary:hover:not(:disabled) {
-  filter: brightness(0.88);
+.kyc-upload-container.drag-active {
+  border-color: var(--btn-primary-bg);
+  background: rgba(0, 0, 255, 0.02);
 }
 
-.kyc-btn-primary:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.kyc-upload-container.has-file {
+  border-style: solid;
+  border-color: var(--badge-success-color, #027A48);
+  background: rgba(3, 255, 136, 0.02);
+  cursor: default;
 }
 
-.kyc-btn-primary.full-width-btn {
-  width: 100%;
-  padding: 12px 20px;
-  font-size: 16px;
+.kyc-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
-.kyc-btn-secondary {
-  display: inline-flex;
+.kyc-upload-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(0, 0, 255, 0.06);
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: #ffffff;
+  color: var(--btn-primary-bg);
+}
+
+.kyc-upload-text {
+  font-size: var(--body-font-size, 14px);
   color: var(--body-color);
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
-  font-size: 15px;
-  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.kyc-upload-link {
+  color: var(--btn-primary-bg);
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease;
-  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
-  white-space: nowrap;
 }
 
-.kyc-btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #b0b7c3;
+.kyc-upload-link:hover {
+  text-decoration: underline;
+}
+
+.kyc-upload-link input[type="file"] {
+  display: none;
+}
+
+.kyc-upload-hint {
+  font-size: 12px;
+  color: var(--page-subtitle-color, #475467);
+  margin: 0;
+}
+
+/* ── Uploaded File ── */
+.kyc-uploaded-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.kyc-file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kyc-file-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--input-border-radius, 8px);
+  background: rgba(3, 255, 136, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kyc-file-details {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 2px;
+}
+
+.kyc-file-name {
+  font-size: var(--body-font-size, 14px);
+  font-weight: 600;
+  color: var(--page-title-color);
+}
+
+.kyc-file-status {
+  font-size: 12px;
+  color: var(--badge-success-color, #027A48);
+  font-weight: 500;
+}
+
+.kyc-file-remove {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--page-subtitle-color, #475467);
+  border-radius: var(--input-border-radius, 8px);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.kyc-file-remove:hover {
+  background: var(--badge-danger-bg, #FEF3F2);
+  color: var(--btn-danger-bg, #D92D20);
+}
+
+/* ── Upload Progress ── */
+.kyc-upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--page-subtitle-color, #475467);
+  font-weight: 600;
+}
+
+.kyc-progress-bar {
+  flex: 1;
+  height: var(--progress-sm-height, 6px);
+  background: var(--progress-track-bg, #D5D7DA);
+  border-radius: var(--progress-border-radius, 30px);
+  overflow: hidden;
+}
+
+.kyc-progress-fill {
+  height: 100%;
+  background: var(--progress-fill-bg);
+  border-radius: var(--progress-border-radius, 30px);
+  transition: width 0.6s ease;
+}
+
+/* ── Animations ── */
+.kyc-fade-enter {
+  animation: kycFadeIn 0.25s ease-out;
+}
+
+@keyframes kycFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kycPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.kyc-pulse {
+  animation: kycPulse 1.5s ease-in-out infinite;
+}
+
+/* ── Security Notice ── */
+.kyc-security-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--page-subtitle-color, #475467);
+  margin-top: 20px;
+  justify-content: center;
 }
 
 /* ── Responsive ── */
@@ -497,7 +653,23 @@
     padding-left: 0;
   }
 
-  .kyc-title {
-    font-size: 22px;
+  .kyc-upload-container {
+    padding: 24px 16px;
+  }
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .kyc-fade-enter {
+    animation-duration: 0.01ms;
+  }
+  .kyc-pulse {
+    animation-duration: 0.01ms;
+  }
+  .kyc-step-circle,
+  .kyc-step-connector,
+  .kyc-progress-fill,
+  .kyc-file-remove {
+    transition-duration: 0.01ms;
   }
 }
