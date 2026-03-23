@@ -1,0 +1,355 @@
+    Checking poool-backend v0.1.0 (/Users/martin/Projects/poool/backend)
+warning: unused import: `redis::AsyncCommands`
+   --> src/community/user_bridge.rs:160:21
+    |
+160 |                 use redis::AsyncCommands;
+    |                     ^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `is_completed` is never read
+  --> src/community/challenges.rs:97:13
+   |
+97 |             is_completed = true;
+   |             ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `only_following_user_id`
+   --> src/community/routes.rs:260:9
+    |
+260 |     let only_following_user_id: Option<Uuid> = None; // not constrained by following
+    |         ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_only_following_user_id`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `user`
+    --> src/community/routes.rs:1721:9
+     |
+1721 |     let user = middleware::get_current_user(&jar, &state.db).await;
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_user`
+
+warning: unused variable: `q`
+    --> src/community/routes.rs:2510:26
+     |
+2510 |     axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+     |                          ^ help: if this is intentional, prefix it with an underscore: `_q`
+
+warning: unused variable: `core_pool`
+  --> src/community/background.rs:18:42
+   |
+18 | async fn check_velocity(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+   |                                          ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_core_pool`
+
+warning: field `avatar_url` is never read
+    --> src/main.rs:2020:9
+     |
+2016 |     struct PostOgData {
+     |            ---------- field in this struct
+...
+2020 |         avatar_url: Option<String>,
+     |         ^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `address` and `transaction_hash` are never read
+  --> src/blockchain/event_indexer.rs:49:5
+   |
+47 | struct EthLog {
+   |        ------ fields in this struct
+48 |     /// Contract address (0x-prefixed, lowercase)
+49 |     address: String,
+   |     ^^^^^^^
+...
+57 |     transaction_hash: String,
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = note: `EthLog` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: function `serve_protected_with_context` is never used
+  --> src/common/routes_helper.rs:47:14
+   |
+47 | pub async fn serve_protected_with_context<T: serde::Serialize>(
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `AnnouncementCategory` is never constructed
+ --> src/community/models.rs:6:12
+  |
+6 | pub struct AnnouncementCategory {
+  |            ^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `AnnouncementDisplay` is never constructed
+  --> src/community/models.rs:76:12
+   |
+76 | pub struct AnnouncementDisplay {
+   |            ^^^^^^^^^^^^^^^^^^^
+
+warning: field `reason` is never read
+    --> src/community/routes.rs:1397:9
+     |
+1396 | pub struct HideCommentPayload {
+     |            ------------------ field in this struct
+1397 |     pub reason: Option<String>,
+     |         ^^^^^^
+
+warning: variants `CreatePost`, `CreateComment`, `GiveReaction`, `MarketInsightPost`, and `ReviewPost` are never constructed
+   --> src/community/xp.rs:437:5
+    |
+436 | pub enum GatedFeature {
+    |          ------------ variants in this enum
+437 |     CreatePost,          // Level 1 (anyone)
+    |     ^^^^^^^^^^
+438 |     CreateComment,       // Level 1
+    |     ^^^^^^^^^^^^^
+439 |     GiveReaction,        // Level 1
+    |     ^^^^^^^^^^^^
+...
+442 |     MarketInsightPost,   // Level 3
+    |     ^^^^^^^^^^^^^^^^^
+443 |     ReviewPost,          // Level 4
+    |     ^^^^^^^^^^
+
+warning: function `get_question_count` is never used
+   --> src/community/amas.rs:362:14
+    |
+362 | pub async fn get_question_count(pool: &PgPool, ama_id: Uuid) -> Result<i64, AppError> {
+    |              ^^^^^^^^^^^^^^^^^^
+
+warning: fields `id` and `chain_metadata_uri` are never read
+   --> src/ipfs/metadata.rs:157:5
+    |
+156 | struct AssetRow {
+    |        -------- fields in this struct
+157 |     id: uuid::Uuid,
+    |     ^^
+...
+178 |     chain_metadata_uri: Option<String>,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `AssetRow` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `gateway_url` is never read
+  --> src/ipfs/service.rs:27:9
+   |
+21 | pub struct PinataConfig {
+   |            ------------ field in this struct
+...
+27 |     pub gateway_url: String,
+   |         ^^^^^^^^^^^
+   |
+   = note: `PinataConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: struct `PinJsonRequest` is never constructed
+  --> src/ipfs/service.rs:56:8
+   |
+56 | struct PinJsonRequest {
+   |        ^^^^^^^^^^^^^^
+
+warning: struct `PinataMetadata` is never constructed
+  --> src/ipfs/service.rs:67:8
+   |
+67 | struct PinataMetadata {
+   |        ^^^^^^^^^^^^^^
+
+warning: struct `PinataOptions` is never constructed
+  --> src/ipfs/service.rs:78:8
+   |
+78 | struct PinataOptions {
+   |        ^^^^^^^^^^^^^
+
+warning: variant `SerializationError` is never constructed
+   --> src/ipfs/service.rs:108:5
+    |
+100 | pub enum IpfsError {
+    |          --------- variant in this enum
+...
+108 |     SerializationError(String),
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `IpfsError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: function `pin_file` is never used
+   --> src/ipfs/service.rs:199:14
+    |
+199 | pub async fn pin_file(
+    |              ^^^^^^^^
+
+warning: enum `OrderType` is never used
+  --> src/marketplace/models.rs:56:10
+   |
+56 | pub enum OrderType {
+   |          ^^^^^^^^^
+
+warning: method `as_str` is never used
+  --> src/marketplace/models.rs:65:12
+   |
+63 | impl OrderType {
+   | -------------- method in this implementation
+64 |     /// Convert to the DB-compatible string value.
+65 |     pub fn as_str(&self) -> &'static str {
+   |            ^^^^^^
+
+warning: methods `is_filled`, `total_value_cents`, and `remaining_value_cents` are never used
+   --> src/marketplace/models.rs:140:12
+    |
+133 | impl MarketOrder {
+    | ---------------- methods in this implementation
+...
+140 |     pub fn is_filled(&self) -> bool {
+    |            ^^^^^^^^^
+...
+162 |     pub fn total_value_cents(&self) -> i64 {
+    |            ^^^^^^^^^^^^^^^^^
+...
+167 |     pub fn remaining_value_cents(&self) -> i64 {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `TradeRecord` is never constructed
+   --> src/marketplace/models.rs:176:12
+    |
+176 | pub struct TradeRecord {
+    |            ^^^^^^^^^^^
+
+warning: fields `current_pct` and `requested_pct` are never read
+   --> src/marketplace/models.rs:502:9
+    |
+500 |     ConcentrationLimit {
+    |     ------------------ fields in this variant
+501 |         /// Current ownership percentage.
+502 |         current_pct: f64,
+    |         ^^^^^^^^^^^
+503 |         /// Requested additional percentage.
+504 |         requested_pct: f64,
+    |         ^^^^^^^^^^^^^
+    |
+    = note: `OrderRejection` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: fields `order_pct` and `order_value_cents` are never read
+   --> src/marketplace/models.rs:511:9
+    |
+509 |     RequiresAdminReview {
+    |     ------------------- fields in this variant
+510 |         /// Order percentage of total supply.
+511 |         order_pct: f64,
+    |         ^^^^^^^^^
+512 |         /// Order total value in cents.
+513 |         order_value_cents: i64,
+    |         ^^^^^^^^^^^^^^^^^
+    |
+    = note: `OrderRejection` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `actual_cents` is never read
+   --> src/marketplace/models.rs:520:9
+    |
+516 |     BelowMinimum {
+    |     ------------ field in this variant
+...
+520 |         actual_cents: i64,
+    |         ^^^^^^^^^^^^
+    |
+    = note: `OrderRejection` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `current` is never read
+   --> src/marketplace/models.rs:537:9
+    |
+533 |     TooManyOpenOrders {
+    |     ----------------- field in this variant
+...
+537 |         current: i32,
+    |         ^^^^^^^
+    |
+    = note: `OrderRejection` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: variants `TwoFactorRequired` and `RateLimited` are never constructed
+   --> src/marketplace/models.rs:542:5
+    |
+484 | pub enum OrderRejection {
+    |          -------------- variants in this enum
+...
+542 |     TwoFactorRequired,
+    |     ^^^^^^^^^^^^^^^^^
+543 |     /// Rate limit exceeded.
+544 |     RateLimited {
+    |     ^^^^^^^^^^^
+    |
+    = note: `OrderRejection` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: constant `IDEMPOTENCY_PREFIX` is never used
+  --> src/marketplace/orderbook.rs:32:7
+   |
+32 | const IDEMPOTENCY_PREFIX: &str = "idempotency:";
+   |       ^^^^^^^^^^^^^^^^^^
+
+warning: function `check_idempotency` is never used
+   --> src/marketplace/orderbook.rs:483:14
+    |
+483 | pub async fn check_idempotency(redis: &RedisPool, key: &str) -> Result<Option<String>, AppError> {
+    |              ^^^^^^^^^^^^^^^^^
+
+warning: function `store_idempotency` is never used
+   --> src/marketplace/orderbook.rs:501:14
+    |
+501 | pub async fn store_idempotency(redis: &RedisPool, key: &str, result: &str) -> Result<(), AppError> {
+    |              ^^^^^^^^^^^^^^^^^
+
+warning: function `expire_stale_offers` is never used
+   --> src/marketplace/p2p.rs:663:14
+    |
+663 | pub async fn expire_stale_offers(pool: &PgPool) -> Result<u64, AppError> {
+    |              ^^^^^^^^^^^^^^^^^^^
+
+warning: function `broadcast_orderbook_update` is never used
+   --> src/marketplace/websocket.rs:210:14
+    |
+210 | pub async fn broadcast_orderbook_update(state: &AppState, asset_id: Uuid) {
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `broadcast_trade` is never used
+   --> src/marketplace/websocket.rs:243:14
+    |
+243 | pub async fn broadcast_trade(
+    |              ^^^^^^^^^^^^^^^
+
+warning: function `broadcast_ticker` is never used
+   --> src/marketplace/websocket.rs:271:14
+    |
+271 | pub async fn broadcast_ticker(
+    |              ^^^^^^^^^^^^^^^^
+
+warning: function `send_to_local` is never used
+   --> src/marketplace/websocket.rs:296:10
+    |
+296 | async fn send_to_local(asset_id: Uuid, json: &str) {
+    |          ^^^^^^^^^^^^^
+
+warning: function `send_to_local_and_pubsub` is never used
+   --> src/marketplace/websocket.rs:305:10
+    |
+305 | async fn send_to_local_and_pubsub(redis: &RedisPool, asset_id: Uuid, json: &str) {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: variants `Trade` and `TickerUpdate` are never constructed
+   --> src/marketplace/websocket.rs:403:5
+    |
+392 | pub enum WsMessage {
+    |          --------- variants in this enum
+...
+403 |     Trade {
+    |     ^^^^^
+...
+414 |     TickerUpdate {
+    |     ^^^^^^^^^^^^
+    |
+    = note: `WsMessage` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: function `rewrite_gcs_url_opt` is never used
+   --> src/storage/service.rs:299:8
+    |
+299 | pub fn rewrite_gcs_url_opt(url: Option<&str>) -> Option<String> {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: `poool-backend` (bin "poool-backend") generated 41 warnings (run `cargo fix --bin "poool-backend" -p poool-backend` to apply 4 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12.02s
+warning: the following packages contain code that will be rejected by a future version of Rust: redis v0.24.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`

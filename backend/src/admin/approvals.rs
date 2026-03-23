@@ -199,21 +199,7 @@ pub async fn api_admin_approvals_approve(
         return Err(ApiError::Forbidden("Four-Eyes violation: You cannot approve your own request. A different administrator must approve.".to_string()));
     }
 
-    // Check expiry
-    let expires_at: Option<chrono::DateTime<chrono::Utc>> = row.get("expires_at");
-    if let Some(exp) = expires_at {
-        if exp < chrono::Utc::now() {
-            let _ =
-                sqlx::query("UPDATE admin_approval_requests SET status = 'expired' WHERE id = $1")
-                    .bind(uid)
-                    .execute(&state.db)
-                    .await;
-            return Err(ApiError::NotFound(
-                "This approval request has expired.".to_string(),
-            ));
-        }
-    }
-
+    // Check expiry removed: Requests remain pending indefinitely until acted upon.
     let action_type: String = row
         .get::<Option<String>, _>("action_type")
         .unwrap_or_default();

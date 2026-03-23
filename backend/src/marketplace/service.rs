@@ -74,7 +74,7 @@ pub async fn create_order(
         .await
         .map_err(|r| r.into_app_error())?;
 
-    let total_tokens = validation::check_asset_tradable(pool, asset_uuid)
+    let total_tokens = validation::check_asset_tradable(pool, asset_uuid, user_id)
         .await
         .map_err(|r| r.into_app_error())?;
 
@@ -765,6 +765,7 @@ pub async fn get_secondary_assets(pool: &PgPool) -> Result<Vec<super::models::Se
             location_desc: row.location_description,
             lease_type: row.lease_type,
             property_type: row.property_type,
+            funding_status: row.funding_status,
         });
     }
 

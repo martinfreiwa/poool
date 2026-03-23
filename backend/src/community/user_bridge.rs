@@ -10,6 +10,25 @@ pub struct UserBridgeInfo {
     pub avatar_url: Option<String>,
 }
 
+/// Helper to build the display name dynamically if `display_name` is null.
+fn build_display_name(
+    display_name: Option<String>,
+    first_name: Option<String>,
+    last_name: Option<String>,
+    email: String,
+) -> String {
+    if let Some(dn) = display_name.filter(|s| !s.trim().is_empty()) {
+        return dn;
+    }
+    let first = first_name.unwrap_or_default();
+    let last = last_name.unwrap_or_default();
+    if first.is_empty() && last.is_empty() {
+        email.split('@').next().unwrap_or("User").to_string()
+    } else {
+        format!("{} {}", first, last).trim().to_string()
+    }
+}
+
 /// Fetches basic user information (Name + Avatar) from the Core DB.
 /// Used to enrich community posts and comments on the fly.
 /// FIX-F9: Caches in Redis for 5 minutes.
@@ -36,7 +55,7 @@ pub async fn get_user_info(
     // 2. Fallback to Core DB
     let row = sqlx::query!(
         r#"
-        SELECT u.id as "id!", up.display_name, u.avatar_url 
+        SELECT u.id as "id!", u.email, up.display_name, up.first_name, up.last_name, u.avatar_url 
         FROM users u
         LEFT JOIN user_profiles up ON u.id = up.user_id
         WHERE u.id = $1
@@ -50,9 +69,7 @@ pub async fn get_user_info(
         Some(r) => {
             let info = UserBridgeInfo {
                 user_id: r.id,
-                display_name: r
-                    .display_name
-                    .unwrap_or_else(|| "Anonymous User".to_string()),
+                display_name: build_display_name(r.display_name, r.first_name, r.last_name, r.email),
                 avatar_url: r.avatar_url.map(|u| crate::storage::service::rewrite_gcs_url(&u)),
             };
 
@@ -126,7 +143,7 @@ pub async fn get_users_info_batch(
     if !missing_ids.is_empty() {
         let rows = sqlx::query!(
             r#"
-            SELECT u.id as "id!", up.display_name, u.avatar_url 
+            SELECT u.id as "id!", u.email, up.display_name, up.first_name, up.last_name, u.avatar_url 
             FROM users u
             LEFT JOIN user_profiles up ON u.id = up.user_id
             WHERE u.id = ANY($1)
@@ -145,7 +162,7 @@ pub async fn get_users_info_batch(
                 for r in &rows {
                     let info = UserBridgeInfo {
                         user_id: r.id,
-                        display_name: r.display_name.clone().unwrap_or_else(|| "Anonymous User".to_string()),
+                        display_name: build_display_name(r.display_name.clone(), r.first_name.clone(), r.last_name.clone(), r.email.clone()),
                         avatar_url: r.avatar_url.clone().map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                     };
                     result_map.insert(r.id, info.clone());
@@ -159,7 +176,7 @@ pub async fn get_users_info_batch(
                 for r in rows {
                     let info = UserBridgeInfo {
                         user_id: r.id,
-                        display_name: r.display_name.unwrap_or_else(|| "Anonymous User".to_string()),
+                        display_name: build_display_name(r.display_name, r.first_name, r.last_name, r.email),
                         avatar_url: r.avatar_url.map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                     };
                     result_map.insert(r.id, info);
@@ -169,7 +186,7 @@ pub async fn get_users_info_batch(
             for r in rows {
                 let info = UserBridgeInfo {
                     user_id: r.id,
-                    display_name: r.display_name.unwrap_or_else(|| "Anonymous User".to_string()),
+                    display_name: build_display_name(r.display_name, r.first_name, r.last_name, r.email),
                     avatar_url: r.avatar_url.map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                 };
                 result_map.insert(r.id, info);

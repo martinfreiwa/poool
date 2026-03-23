@@ -44,12 +44,10 @@
       const rejected = allApprovals.filter(
         (a) => a.status === "rejected",
       ).length;
-      const expired = allApprovals.filter((a) => a.status === "expired").length;
 
       setEl("kpi-pending", pending);
       setEl("kpi-approved", approved);
       setEl("kpi-rejected", rejected);
-      setEl("kpi-expired", expired);
 
       // Pending badge in sidebar
       const badge = document.getElementById("approvals-badge");
@@ -87,9 +85,6 @@
     container.innerHTML = filtered
       .map((a) => {
         const sc = statusConfig(a.status);
-        const isExpirable = a.status === "pending" && a.expires_at;
-        const timeLeft = isExpirable ? getTimeLeft(a.expires_at) : null;
-
         return `
                 <div class="approval-card" data-id="${esc(a.id)}">
                     <div class="approval-card__header">
@@ -98,8 +93,7 @@
                             <span class="approval-card__entity">${esc(a.entity_type)} ${a.entity_id ? `<code>${esc(a.entity_id.substring(0, 8))}…</code>` : ""}</span>
                         </div>
                         <div class="approval-card__right">
-                            <span class="approval-status-badge" style="background:${sc.bg};color:${sc.color};">${sc.label}</span>
-                            ${timeLeft ? `<span class="approval-card__expiry" title="Expires: ${a.expires_at}">⏳ ${timeLeft}</span>` : ""}
+                            <span class="approval-status-badge admin-badge--${sc.badgeClass}">${sc.label}</span>
                         </div>
                     </div>
 
@@ -126,8 +120,11 @@
                         ${a.payload
             ? `
                         <details class="approval-card__payload">
-                            <summary>View Payload</summary>
-                            <pre>${JSON.stringify(a.payload, null, 2)}</pre>
+                            <summary class="approval-card__payload-header">
+                                <span>View Payload</span>
+                                <button type="button" class="approval-btn--copy" onclick="window._copyPayload(event, '${esc(a.id)}')">Copy JSON</button>
+                            </summary>
+                            <pre id="payload-${esc(a.id)}">${JSON.stringify(a.payload, null, 2)}</pre>
                         </details>`
             : ""
           }
@@ -141,7 +138,7 @@
           }
                     </div>
 
-                    ${a.status === "pending" && timeLeft !== "Expired"
+                    ${a.status === "pending"
             ? `
                     <div class="approval-card__actions">
                         <button class="approval-btn approval-btn--approve" onclick="window._approveRequest('${esc(a.id)}')">
@@ -151,9 +148,7 @@
                             ❌ Reject
                         </button>
                     </div>`
-            : (a.status === "pending" && timeLeft === "Expired" 
-                ? `<div class="approval-card__actions" style="color:var(--admin-danger); font-size:12px; font-weight:600;">Request has expired.</div>` 
-                : "")
+            : ""
           }
                 </div>
             `;
@@ -197,7 +192,7 @@
     }
   };
 
-  window._rejectRequest = async function (id) {
+    window._rejectRequest = async function (id) {
     const reason = prompt("Rejection reason (required):");
     if (!reason) return;
 
@@ -220,6 +215,18 @@
       if (typeof Sentry !== 'undefined') Sentry.captureException(e);
       showToast("Network error.", "error");
     }
+  };
+
+  window._copyPayload = function (e, id) {
+    e.preventDefault();
+    const pre = document.getElementById(`payload-${id}`);
+    if (!pre) return;
+    navigator.clipboard.writeText(pre.textContent).then(() => {
+      showToast("JSON Payload copied to clipboard", "success");
+    }).catch(err => {
+      console.error("Could not copy text: ", err);
+      showToast("Failed to copy payload.", "error");
+    });
   };
 
   async function handleNewRequest(e) {
@@ -287,22 +294,11 @@
 
   function statusConfig(status) {
     const m = {
-      pending: { bg: "#fef3c7", color: "#d97706", label: "Pending" },
-      approved: { bg: "#dcfce7", color: "#16a34a", label: "Approved" },
-      rejected: { bg: "#fee2e2", color: "#dc2626", label: "Rejected" },
-      expired: { bg: "#f3f4f6", color: "#6b7280", label: "Expired" },
+      pending: { bg: "#fef3c7", color: "#d97706", label: "Pending", badgeClass: "warning" },
+      approved: { bg: "#dcfce7", color: "#16a34a", label: "Approved", badgeClass: "success" },
+      rejected: { bg: "#fee2e2", color: "#dc2626", label: "Rejected", badgeClass: "danger" },
     };
     return m[status] || m.pending;
-  }
-
-  function getTimeLeft(expiresAt) {
-    const now = new Date();
-    const exp = new Date(expiresAt);
-    const diff = exp - now;
-    if (diff <= 0) return "Expired";
-    const hours = Math.floor(diff / 3600000);
-    const mins = Math.floor((diff % 3600000) / 60000);
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   }
 
   function formatDate(iso) {

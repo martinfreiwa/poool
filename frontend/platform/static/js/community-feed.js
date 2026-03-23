@@ -263,9 +263,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = document.createElement('div');
         body.className = 'feed-post-body';
 
-        // UX.4: Render content with clickable hashtags
+        // UX.4: Render content with clickable hashtags OR HTML for announcements
         const contentP = document.createElement('p');
-        renderContentWithHashtags(contentP, p.content);
+        if (p.post_type === 'announcement') {
+            contentP.innerHTML = p.content; // Content is sanitized by the backend
+        } else {
+            renderContentWithHashtags(contentP, p.content);
+        }
         body.appendChild(contentP);
 
         // Images (URLs are server-controlled GCS paths)

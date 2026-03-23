@@ -587,7 +587,7 @@ impl OrderRejection {
             Self::InvalidQuantity => "Quantity must be at least 1 token".into(),
             Self::InvalidPrice => "Price must be greater than $0.00".into(),
             Self::AssetNotTradable => {
-                "This asset is currently not available for trading".into()
+                "This asset is currently in its primary funding phase and cannot yet be traded on the secondary market. Please review our <a href='/terms' target='_blank' style='text-decoration:underline'>Terms of Use</a>".into()
             }
             Self::KycNotApproved => "KYC verification is required to trade".into(),
             Self::SelfTradeBlocked => "You cannot trade against your own orders".into(),
@@ -866,4 +866,5 @@ pub struct SecondaryAsset {
     pub location_desc: Option<String>,
     pub lease_type: Option<String>,
     pub property_type: Option<String>,
+    pub funding_status: String,
 }

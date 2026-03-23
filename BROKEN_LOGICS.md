@@ -671,29 +671,29 @@ These are ad-hoc fixes during feature implementation, documented inline.
 ### [P2] — Profile API 404 in Community
 - **File:** `frontend/platform/community.html`
 - **What was wrong:** `/api/community/profile/me` 404s, preventing current user's profile load
-- **What I did:** Logged for future fix.
-- **Status:** 🔴 Unresolved
+- **What I did:** The backend `ensure_community_profile` now correctly resolves the profile instead of failing on 404.
+- **Status:** ✅ Resolved
 - **Date:** 2026-03-23
 
 ### [P2] — Anonymous Post Attribution
 - **File:** `frontend/platform/community.html`
 - **What was wrong:** New posts are displayed from 'Anonymous User' due to API failure.
-- **What I did:** Logged for future fix.
-- **Status:** 🔴 Unresolved
+- **What I did:** Updated `user_bridge::get_users_info_batch` and `get_user_info` to correctly generate the fallback name from `first_name`, `last_name`, or `email` when `display_name` is NULL, instead of coercing it to "Anonymous User".
+- **Status:** ✅ Resolved
 - **Date:** 2026-03-23
 
 ### [P2] — Raw HTML in Announcements
 - **File:** `frontend/platform/community.html`
 - **What was wrong:** Pinned announcement renders raw HTML tags.
-- **What I did:** Logged for future fix.
-- **Status:** 🔴 Unresolved
+- **What I did:** Modified `community-feed.js` to render announcements using `innerHTML` instead of `textContent` as the backend correctly sanitizes HTML for announcements.
+- **Status:** ✅ Resolved
 - **Date:** 2026-03-23
 
 ### [P2] — Broken Edit Profile Link
 - **File:** `frontend/platform/community.html`
 - **What was wrong:** Edit profile button links to asset application.
-- **What I did:** Logged for future fix.
-- **Status:** 🔴 Unresolved
+- **What I did:** Fixed the `onclick` attribute in `community.html` on the "Edit profile" button from `/developer/apply` back to `/settings?tab=profile`.
+- **Status:** ✅ Resolved
 - **Date:** 2026-03-23
 
 

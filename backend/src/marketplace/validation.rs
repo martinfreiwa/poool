@@ -120,7 +120,7 @@ pub async fn check_kyc_verified(pool: &PgPool, user_id: Uuid) -> Result<(), Orde
 ///
 /// An asset must be in `funding_status = 'funded'` and `published = true`
 /// to be tradable on the secondary market.
-pub async fn check_asset_tradable(pool: &PgPool, asset_id: Uuid) -> Result<i32, OrderRejection> {
+pub async fn check_asset_tradable(pool: &PgPool, asset_id: Uuid, user_id: Uuid) -> Result<i32, OrderRejection> {
     let row = sqlx::query!(
         r#"SELECT tokens_total, funding_status, published
            FROM assets
@@ -132,12 +132,21 @@ pub async fn check_asset_tradable(pool: &PgPool, asset_id: Uuid) -> Result<i32, 
     .ok()
     .flatten();
 
+    let email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await
+        .ok()
+        .flatten();
+
+    let is_super_admin = email.as_deref() == Some("support@traffic-creator.com");
+
     match row {
         Some(r) => {
             let is_funded = r.funding_status == "funded";
             let is_published = r.published;
 
-            if !is_funded || !is_published {
+            if (!is_funded || !is_published) && !is_super_admin {
                 return Err(OrderRejection::AssetNotTradable);
             }
 

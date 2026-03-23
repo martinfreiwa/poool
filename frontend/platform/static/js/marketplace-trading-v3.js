@@ -27,7 +27,7 @@
         const toast = document.createElement('div');
         toast.className = 'tv3-toast tv3-toast--' + type;
         toast.setAttribute('role', 'alert');
-        toast.textContent = message;
+        toast.innerHTML = message;
         Object.assign(toast.style, {
             position: 'fixed', bottom: '24px', right: '24px', zIndex: '10000',
             padding: '12px 20px', borderRadius: '10px', fontWeight: '600', fontSize: '14px',
@@ -261,6 +261,8 @@
 
     // ── Update Summary ──
     function updateSummary() {
+        if (!currentAsset) return;
+
         const qty = parseInt(document.getElementById('tv3-qty').value) || 0;
         const price = getActivePrice();
         const subtotal = qty * price;
@@ -276,13 +278,20 @@
         const action = currentSide === 'buy' ? 'Buy' : 'Sell';
         const shareText = qty === 1 ? 'Share' : 'Shares';
         btn.textContent = action + ' ' + qty + ' ' + shareText + ' · ' + fmt(total);
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.style.fontSize = ''; // Reset font size
     }
 
     // ── Set Buy/Sell Side ──
     function setSide(side) {
         currentSide = side;
-        document.getElementById('tv3-toggle-buy').classList.toggle('active', side === 'buy');
-        document.getElementById('tv3-toggle-sell').classList.toggle('active', side === 'sell');
+        const btnBuyToggle = document.getElementById('tv3-toggle-buy');
+        const btnSellToggle = document.getElementById('tv3-toggle-sell');
+        
+        if (btnBuyToggle) btnBuyToggle.classList.toggle('active', side === 'buy');
+        if (btnSellToggle) btnSellToggle.classList.toggle('active', side === 'sell');
 
         const btn = document.getElementById('tv3-submit-btn');
         btn.className = side === 'buy'
@@ -369,7 +378,7 @@
             const res = await fetch('/api/marketplace/secondary/assets');
             if (!res.ok) throw new Error('API fetch failed');
             const secondaryAssets = await res.json();
-            const rawAsset = secondaryAssets.find(a => a.slug === slug) || secondaryAssets[0];
+            const rawAsset = secondaryAssets.find(a => a.slug === slug);
             
             if (!rawAsset) {
                 document.getElementById('tv3-title').textContent = 'Asset Not Found';
@@ -400,7 +409,8 @@
                 images: rawAsset.images && rawAsset.images.length > 0 ? rawAsset.images : ['/static/images/villa1.webp'],
                 sellOrders: rawAsset.sellOrders > 0 ? [{ tokens: rawAsset.sellOrders, price: rawAsset.price / 100 }] : [],
                 buyBids: rawAsset.buy_interest > 0 ? [{ tokens: rawAsset.buy_interest, price: rawAsset.price / 100 }] : [],
-                locationDesc: rawAsset.locationDesc || ''
+                locationDesc: rawAsset.locationDesc || '',
+                fundingStatus: rawAsset.fundingStatus
             };
             
             // Assign to global
