@@ -52,6 +52,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/marketplace/orders", post(api_submit_order))
         .route("/api/marketplace/orders/mine", get(api_my_orders))
         .route("/api/marketplace/trades/mine", get(api_my_trades))
+        .route("/api/marketplace/tax-export", get(api_export_tax_report))
         .route(
             "/api/marketplace/orders/:order_id",
             delete(api_cancel_order),

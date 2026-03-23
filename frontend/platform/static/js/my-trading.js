@@ -156,7 +156,7 @@
             return `
                 <tr>
                     <td style="font-weight:500;">
-                        <a href="/market/${a.asset_slug}" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:8px;">
+                        <a href="/marketplace-trading-v3?asset=${a.asset_slug}" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:8px;">
                             ${a.cover_image ? `<img src="${a.cover_image}" alt="cover" style="width:32px; height:32px; border-radius:4px; object-fit:cover;">` : `<div style="width:32px; height:32px; border-radius:4px; background:var(--myt-bg-tertiary);"></div>`}
                             ${a.asset_title}
                         </a>
@@ -168,7 +168,7 @@
                     <td><span class="${yieldCls}">${yieldPct}%</span></td>
                     <td><span class="myt__status myt__status--${a.status.toLowerCase()}">${a.status}</span></td>
                     <td>
-                        <a href="/market/${a.asset_slug}" class="myt__action-btn myt__action-btn--outline" style="padding: 4px 8px; font-size: 12px; height:auto;">Trade</a>
+                        <a href="/marketplace-trading-v3?asset=${a.asset_slug}" class="myt__action-btn myt__action-btn--outline" style="padding: 4px 8px; font-size: 12px; height:auto;">Trade</a>
                     </td>
                 </tr>
             `;
@@ -263,19 +263,51 @@
             });
         }
         if (downloadBtn) {
-            downloadBtn.addEventListener('click', () => {
-                downloadBtn.innerHTML = '✓ Report Downloaded';
-                downloadBtn.style.background = '#16a34a';
+            downloadBtn.addEventListener('click', async () => {
+                const year = document.getElementById('tax-year').value;
+                const format = document.getElementById('tax-format').value;
+                
+                downloadBtn.innerHTML = 'Generating...';
                 downloadBtn.disabled = true;
-                setTimeout(() => {
-                    if (modal) modal.style.display = 'none';
+                
+                try {
+                    const response = await fetch(`/api/marketplace/tax-export?year=${year}&format=${format}`);
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        alert('Failed to generate report: ' + errText);
+                        throw new Error('Export failed');
+                    }
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `tax_report_${year}.${format === 'pdf' ? 'pdf' : 'csv'}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    downloadBtn.innerHTML = '✓ Report Downloaded';
+                    downloadBtn.style.background = '#16a34a';
+                    
+                    setTimeout(() => {
+                        if (modal) modal.style.display = 'none';
+                        downloadBtn.innerHTML = `
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download Report
+                        `;
+                        downloadBtn.style.background = '';
+                        downloadBtn.disabled = false;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Export Error:', err);
                     downloadBtn.innerHTML = `
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         Download Report
                     `;
-                    downloadBtn.style.background = '';
                     downloadBtn.disabled = false;
-                }, 2000);
+                }
             });
         }
     }

@@ -179,6 +179,101 @@ pub async fn api_my_trades(
     Ok(Json(trades))
 }
 
+#[derive(serde::Deserialize)]
+pub struct TaxExportQuery {
+    pub year: i32,
+    pub format: String,
+}
+
+/// GET /api/marketplace/tax-export
+///
+/// Download tax report (trade history with P&L) for the authenticated user.
+pub async fn api_export_tax_report(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Query(query): Query<TaxExportQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Authentication required.".into()))?;
+
+    // Export logic - using trade history dump for the requested year
+    let trades = sqlx::query!(
+        r#"
+        SELECT 
+            TO_CHAR(t.executed_at, 'YYYY-MM-DD HH24:MI:SS') as "executed_at_str!", 
+            a.title as "asset_name!",
+            t.price_cents, 
+            t.quantity, 
+            t.total_cents, 
+            t.fee_cents, 
+            t.buyer_user_id, 
+            t.seller_user_id
+        FROM trade_history t
+        JOIN assets a ON t.asset_id = a.id
+        WHERE (t.buyer_user_id = $1 OR t.seller_user_id = $1)
+        AND EXTRACT(YEAR FROM t.executed_at) = $2
+        ORDER BY t.executed_at ASC
+        "#,
+        user.id,
+        query.year as f64
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(AppError::Database)?;
+
+    let mut csv_data = String::from("Date,Asset Name,Side,Price,Quantity,Gross Total,Fee,Net Total\n");
+    for t in trades {
+        let is_buyer = t.buyer_user_id == user.id;
+        let side = if is_buyer { "BUY" } else { "SELL" };
+        let date_str = t.executed_at_str;
+        
+        let price = t.price_cents as f64 / 100.0;
+        let gross = t.total_cents.unwrap_or(0) as f64 / 100.0;
+        let fee = t.fee_cents as f64 / 100.0;
+        
+        // Let's assume the user paid the fee whether buying or selling (simplification matching frontend logic)
+        let net = if is_buyer { gross + fee } else { gross - fee };
+
+        // Escape commas in asset names (e.g. "Villa, Bali")
+        let safe_asset_name = if t.asset_name.contains(',') {
+            format!("\"{}\"", t.asset_name)
+        } else {
+            t.asset_name
+        };
+
+        csv_data.push_str(&format!(
+            "{},{},{},${:.2},{},${:.2},${:.2},${:.2}\n",
+            date_str,
+            safe_asset_name,
+            side,
+            price,
+            t.quantity,
+            gross,
+            fee,
+            net
+        ));
+    }
+
+    let is_pdf = query.format.to_lowercase() == "pdf";
+    // NOTE: True PDF generation requires an external crate. For now, returning CSV data universally.
+    let content_type = if is_pdf { "text/csv" } else { "text/csv" };
+    let filename = if is_pdf { format!("tax_report_{}.csv", query.year) } else { format!("tax_report_{}.csv", query.year) };
+
+    use axum::http::header;
+
+    Ok((
+        [
+            (header::CONTENT_TYPE, content_type.to_string()),
+            (
+                header::CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{}\"", filename),
+            ),
+        ],
+        csv_data,
+    ))
+}
+
 /// DELETE /api/marketplace/orders/:order_id
 ///
 /// Cancel an open order. Requires authentication. The order must
