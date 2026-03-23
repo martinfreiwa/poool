@@ -349,7 +349,7 @@
   font-family: var(--font-family);
   font-size: 28px;
   font-weight: 700;
-  color: #0000FF;
+  color: var(--btn-primary-bg);
 }
 
 .lb-yr-right {
@@ -445,7 +445,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: #d0d5dd;
+  background: var(--input-border-color);
   border-radius: 10px;
   transition: all 0.2s ease;
 }
@@ -608,7 +608,7 @@
 }
 
 .lb-table .rank-cell.top-3 {
-  color: #0000FF;
+  color: var(--btn-primary-bg);
   font-size: 16px;
 }
 
@@ -666,7 +666,7 @@
 
 .lb-score-bar-cell .score-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #0000FF, #7A5AF8);
+  background: linear-gradient(90deg, var(--btn-primary-bg), #7A5AF8);
   border-radius: 3px;
   transition: width 0.4s ease;
 }
@@ -723,7 +723,7 @@
   align-items: center;
   justify-content: space-between;
   font-size: 11px;
-  color: #d0d5dd;
+  color: var(--input-border-color);
   margin-bottom: 6px;
 }
 

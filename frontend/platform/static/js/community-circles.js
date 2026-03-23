@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div style="background:linear-gradient(135deg,#0a0b2e,#1a1b4b);border-radius:24px;padding:48px;text-align:center;max-width:400px;animation:bounceIn 0.5s ease;">
                 <div style="font-size:64px;margin-bottom:16px;animation:float 2s ease-in-out infinite;">🎉</div>
                 <h2 style="font-size:28px;font-weight:700;color:#fff;margin:0 0 8px;">Level Up!</h2>
-                <p style="font-size:18px;color:#03FF88;font-weight:600;margin:0 0 8px;">Level ${level} — ${name}</p>
+                <p style="font-size:18px;color:var(--btn-primary-bg, #0000FF);font-weight:600;margin:0 0 8px;">Level ${level} — ${name}</p>
                 <p style="font-size:14px;color:#98a2b3;margin:0 0 24px;">Keep investing and engaging to reach new heights!</p>
                 <button onclick="this.closest('div').parentElement.remove()" class="ds-btn ds-btn--primary">Awesome! 🚀</button>
             </div>

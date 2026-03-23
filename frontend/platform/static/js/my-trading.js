@@ -5,40 +5,11 @@
 (function () {
     'use strict';
 
-    // ── Mock Data ──────────────────────────────────────────────
-    const MOCK_ORDERS = [
-        { id: 'ORD-9842', asset: 'Bali Villa Canggu #12', side: 'buy', price: 10200, qty: 5, filled: 0, fee: 255, status: 'open', created: '2026-03-20T10:14:00Z' },
-        { id: 'ORD-9838', asset: 'Dubai Marina Tower #7', side: 'sell', price: 15500, qty: 10, filled: 3, fee: 232, status: 'partial', created: '2026-03-19T16:42:00Z' },
-        { id: 'ORD-9835', asset: 'Lisbon Alfama Loft', side: 'buy', price: 9300, qty: 8, filled: 0, fee: 372, status: 'open', created: '2026-03-19T09:20:00Z' },
-    ];
-
-    const MOCK_INTERESTS = [
-        { asset: 'Berlin Mitte Penthouse', price: 13500, qty: 3, fee: 2025, holdersNotified: 4, expires: '2026-03-27', status: 'pending' },
-    ];
-
-    const MOCK_TRADES = [
-        { date: '2026-03-18', asset: 'Bali Villa Canggu #12', side: 'buy', price: 10100, qty: 5, total: 50500, fee: 2525, net: 53025, pl: null },
-        { date: '2026-03-15', asset: 'Vienna City Apartment A3', side: 'sell', price: 8800, qty: 10, total: 88000, fee: 4400, net: 83600, pl: 3600 },
-        { date: '2026-03-12', asset: 'Dubai Marina Tower #7', side: 'buy', price: 14800, qty: 3, total: 44400, fee: 2220, net: 46620, pl: null },
-        { date: '2026-03-10', asset: 'Lisbon Alfama Loft', side: 'sell', price: 9500, qty: 12, total: 114000, fee: 5700, net: 108300, pl: 8400 },
-        { date: '2026-03-08', asset: 'Singapore Shophouse #42', side: 'buy', price: 21500, qty: 2, total: 43000, fee: 2150, net: 45150, pl: null },
-        { date: '2026-03-05', asset: 'Bali Ubud Retreat #5', side: 'sell', price: 6300, qty: 15, total: 94500, fee: 4725, net: 89775, pl: -1500 },
-        { date: '2026-03-02', asset: 'Bali Villa Canggu #12', side: 'buy', price: 9800, qty: 8, total: 78400, fee: 3920, net: 82320, pl: null },
-        { date: '2026-02-28', asset: 'Vienna City Apartment A3', side: 'buy', price: 8450, qty: 10, total: 84500, fee: 4225, net: 88725, pl: null },
-        { date: '2026-02-25', asset: 'Dubai Marina Tower #7', side: 'sell', price: 15200, qty: 5, total: 76000, fee: 3800, net: 72200, pl: 2000 },
-        { date: '2026-02-20', asset: 'Lisbon Alfama Loft', side: 'buy', price: 8800, qty: 12, total: 105600, fee: 5280, net: 110880, pl: null },
-        { date: '2026-02-15', asset: 'Bali Ubud Retreat #5', side: 'buy', price: 6400, qty: 15, total: 96000, fee: 4800, net: 100800, pl: null },
-        { date: '2026-02-10', asset: 'Singapore Shophouse #42', side: 'sell', price: 22000, qty: 3, total: 66000, fee: 3300, net: 62700, pl: 4500 },
-    ];
-
-    const MOCK_P2P_INCOMING = [
-        { from: 'Investor #87', asset: 'Bali Villa Canggu #12', side: 'buy_from', price: 10800, qty: 3, message: 'Interested in a quick trade at premium.', time: '2h ago' },
-        { from: 'Investor #142', asset: 'Dubai Marina Tower #7', side: 'buy_from', price: 15000, qty: 5, message: '', time: '1d ago' },
-    ];
-
-    const MOCK_P2P_OUTGOING = [
-        { to: 'Investor #55', asset: 'Singapore Shophouse #42', side: 'sell_to', price: 21800, qty: 2, status: 'pending', time: '3h ago' },
-    ];
+    let MOCK_ORDERS = [];
+    let MOCK_INTERESTS = [];
+    let MOCK_TRADES = [];
+    let MOCK_P2P_INCOMING = [];
+    let MOCK_P2P_OUTGOING = [];
 
     // ── Formatters ─────────────────────────────────────────────
     function formatUSD(cents) {
@@ -62,7 +33,7 @@
 
         tbody.innerHTML = MOCK_ORDERS.map(o => `
             <tr>
-                <td style="font-weight:500; font-family:monospace; font-size:12px;">${o.id}</td>
+                <td style="font-weight:500; font-family:monospace; font-size:12px;">${o.id.substring(0, 8)}</td>
                 <td>${o.asset}</td>
                 <td class="myt__side-${o.side}">${o.side.toUpperCase()}</td>
                 <td>${formatUSD(o.price)}</td>
@@ -70,8 +41,8 @@
                 <td>${o.filled}/${o.qty}</td>
                 <td>${formatUSD(o.fee)}</td>
                 <td><span class="myt__status myt__status--${o.status}">${o.status}</span></td>
-                <td style="font-size:12px; color:var(--myt-text-sec);">${formatDate(o.created)} ${formatTime(o.created)}</td>
-                <td><button class="myt__cancel-btn">Cancel</button></td>
+                <td style="font-size:12px; color:var(--myt-text-sec);">${formatDate(o.createdAt)} ${formatTime(o.createdAt)}</td>
+                <td><button class="myt__cancel-btn" onclick="cancelOrder('${o.id}')">Cancel</button></td>
             </tr>
         `).join('');
     }
@@ -137,13 +108,13 @@
                     <div class="myt__p2p-info">
                         <div class="myt__p2p-title">${p.from} wants to buy from you</div>
                         <div class="myt__p2p-details">
-                            <strong>${p.asset}</strong> · ${p.qty} shares @ ${formatUSD(p.price)} · ${p.time}
+                                <strong>${p.asset_id}</strong> · ${p.quantity} shares @ ${formatUSD(p.price_cents)} · <span style="font-size: 11px;">${formatDate(p.created_at)}</span>
                             ${p.message ? '<br><em>"' + p.message + '"</em>' : ''}
                         </div>
                     </div>
                     <div class="myt__p2p-actions">
-                        <button class="myt__p2p-accept">Accept</button>
-                        <button class="myt__p2p-decline">Decline</button>
+                        <button class="myt__p2p-accept" onclick="respondP2POffer('${p.id}', 'accept')">Accept</button>
+                        <button class="myt__p2p-decline" onclick="respondP2POffer('${p.id}', 'decline')">Decline</button>
                     </div>
                 </div>
             `).join('');
@@ -153,13 +124,13 @@
             outgoing.innerHTML = MOCK_P2P_OUTGOING.map(p => `
                 <div class="myt__p2p-card">
                     <div class="myt__p2p-info">
-                        <div class="myt__p2p-title">You offered to sell to ${p.to}</div>
+                        <div class="myt__p2p-title">You offered to sell to target user</div>
                         <div class="myt__p2p-details">
-                            <strong>${p.asset}</strong> · ${p.qty} shares @ ${formatUSD(p.price)} · <span class="myt__status myt__status--${p.status}">${p.status}</span> · ${p.time}
+                            <strong>${p.asset_id}</strong> · ${p.quantity} shares @ ${formatUSD(p.price_cents)} · <span class="myt__status myt__status--${p.status}">${p.status}</span> · <span style="font-size:11px;">${formatDate(p.created_at)}</span>
                         </div>
                     </div>
                     <div class="myt__p2p-actions">
-                        <button class="myt__cancel-btn">Withdraw</button>
+                        <button class="myt__cancel-btn" onclick="cancelP2POffer('${p.id}')">Withdraw</button>
                     </div>
                 </div>
             `).join('');
@@ -215,12 +186,81 @@
         }
     }
 
+    // ── Fetching Data ──────────────────────────────────────────
+    async function fetchAllData() {
+        try {
+            const [ordersRes, tradesRes, incomingRes, outgoingRes] = await Promise.all([
+                fetch('/api/marketplace/orders/mine'),
+                fetch('/api/marketplace/trades/mine'),
+                fetch('/api/marketplace/p2p/offers/incoming'),
+                fetch('/api/marketplace/p2p/offers/outgoing')
+            ]);
+            
+            if (ordersRes.ok) MOCK_ORDERS = await ordersRes.json();
+            if (tradesRes.ok) MOCK_TRADES = await tradesRes.json();
+            if (incomingRes.ok) MOCK_P2P_INCOMING = await incomingRes.json();
+            if (outgoingRes.ok) MOCK_P2P_OUTGOING = await outgoingRes.json();
+
+            renderOpenOrders();
+            renderBuyInterests();
+            renderTradeHistory();
+            renderP2POffers();
+        } catch (err) {
+            console.error('Failed to load dashboard data:', err);
+        }
+    }
+
+    // ── Actions ────────────────────────────────────────────────
+    window.cancelOrder = async function(id) {
+        if (!confirm('Cancel this order?')) return;
+        try {
+            const res = await fetch(`/api/marketplace/orders/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert('Order cancelled');
+                fetchAllData();
+            } else {
+                const text = await res.text();
+                alert('Failed to cancel: ' + text);
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    window.respondP2POffer = async function(id, action) {
+        if (!confirm(`Are you sure you want to ${action} this offer?`)) return;
+        try {
+            const res = await fetch(`/api/marketplace/p2p/offers/${id}/respond`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: action })
+            });
+
+            if (res.ok) {
+                alert('Offer ' + action + 'ed');
+                fetchAllData();
+            } else {
+                const text = await res.text();
+                alert('Failed: ' + text);
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    window.cancelP2POffer = async function(id) {
+        if (!confirm('Withdraw this offer?')) return;
+        try {
+            const res = await fetch(`/api/marketplace/p2p/offers/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert('Offer withdrawn');
+                fetchAllData();
+            } else {
+                const text = await res.text();
+                alert('Failed: ' + text);
+            }
+        } catch (e) { console.error(e); }
+    };
+
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
-        renderOpenOrders();
-        renderBuyInterests();
-        renderTradeHistory();
-        renderP2POffers();
+        fetchAllData();
         initTabs();
         initTaxExport();
     });

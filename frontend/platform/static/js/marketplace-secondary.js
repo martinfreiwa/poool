@@ -5,145 +5,9 @@
 (function () {
     'use strict';
 
-    // ── Mock Assets with image URLs ──
-    const MOCK_ASSETS = [
-        {
-            slug: 'bali-villa-canggu-12',
-            name: 'Bali Villa Canggu #12',
-            type: 'Villa',
-            location: 'Canggu, Bali',
-            country: 'ID',
-            images: ['/static/images/villa1.webp', '/static/images/villa1_2.webp', '/static/images/villa1_3.webp'],
-            price: 10500,
-            change24h: 2.3,
-            volume24h: 1243000,
-            roi: 12.4,
-            occupancy: 87,
-            sellOrders: 3,
-            buyInterest: 1,
-            totalSupply: 1000,
-            sparkline: generateSparkData(365, 102, 105, true),
-        },
-        {
-            slug: 'vienna-apartment-a3',
-            name: 'Vienna City Apartment A3',
-            type: 'Apartment',
-            location: 'Vienna, Austria',
-            country: 'AT',
-            images: ['/static/images/villa2_1.webp', '/static/images/villa2_2.webp'],
-            price: 8750,
-            change24h: -1.1,
-            volume24h: 876500,
-            roi: 8.2,
-            occupancy: 95,
-            sellOrders: 2,
-            buyInterest: 0,
-            totalSupply: 500,
-            sparkline: generateSparkData(365, 90, 87.5, false),
-        },
-        {
-            slug: 'dubai-marina-tower-7',
-            name: 'Dubai Marina Tower #7',
-            type: 'Commercial',
-            location: 'Dubai, UAE',
-            country: 'AE',
-            images: ['/static/images/villa3_1.webp', '/static/images/villa3_2.webp'],
-            price: 15200,
-            change24h: 0.8,
-            volume24h: 2310000,
-            roi: 15.1,
-            occupancy: 92,
-            sellOrders: 5,
-            buyInterest: 3,
-            totalSupply: 2000,
-            sparkline: generateSparkData(365, 150, 152, true),
-        },
-        {
-            slug: 'bali-ubud-retreat-5',
-            name: 'Bali Ubud Retreat #5',
-            type: 'Villa',
-            location: 'Ubud, Bali',
-            country: 'ID',
-            images: ['/static/images/villa4_1.webp', '/static/images/villa4_2.webp'],
-            price: 6200,
-            change24h: -0.4,
-            volume24h: 540000,
-            roi: 9.8,
-            occupancy: 72,
-            sellOrders: 1,
-            buyInterest: 0,
-            totalSupply: 400,
-            sparkline: generateSparkData(365, 63, 62, false),
-        },
-        {
-            slug: 'lisbon-alfama-loft',
-            name: 'Lisbon Alfama Loft',
-            type: 'Residential',
-            location: 'Lisbon, Portugal',
-            country: 'PT',
-            images: ['/static/images/villa5.webp', '/static/images/villa6.webp'],
-            price: 9400,
-            change24h: 3.7,
-            volume24h: 1890000,
-            roi: 11.3,
-            occupancy: 89,
-            sellOrders: 4,
-            buyInterest: 2,
-            totalSupply: 600,
-            sparkline: generateSparkData(365, 90, 94, true),
-        },
-        {
-            slug: 'singapore-shophouse-42',
-            name: 'Singapore Shophouse #42',
-            type: 'Commercial',
-            location: 'Singapore',
-            country: 'SG',
-            images: ['/static/images/villa8.webp', '/static/images/villa1_4.webp'],
-            price: 22000,
-            change24h: 1.2,
-            volume24h: 3120000,
-            roi: 7.5,
-            occupancy: 100,
-            sellOrders: 2,
-            buyInterest: 5,
-            totalSupply: 1500,
-            sparkline: generateSparkData(365, 217, 220, true),
-        },
-        {
-            slug: 'berlin-mitte-penthouse',
-            name: 'Berlin Mitte Penthouse',
-            type: 'Residential',
-            location: 'Berlin, Germany',
-            country: 'DE',
-            images: ['/static/images/villa6.webp'],
-            price: 13500,
-            change24h: 0,
-            volume24h: 0,
-            roi: 6.8,
-            occupancy: 100,
-            sellOrders: 0,
-            buyInterest: 2,
-            totalSupply: 800,
-            sparkline: generateSparkData(365, 135, 135, true),
-        },
-        {
-            slug: 'tokyo-shibuya-micro',
-            name: 'Tokyo Shibuya Micro-Unit',
-            type: 'Apartment',
-            location: 'Tokyo, Japan',
-            country: 'JP',
-            images: ['/static/images/villa3_1.webp'],
-            price: 4800,
-            change24h: 0,
-            volume24h: 0,
-            roi: 5.2,
-            occupancy: 98,
-            sellOrders: 0,
-            buyInterest: 0,
-            totalSupply: 300,
-            sparkline: generateSparkData(365, 48, 48, false),
-        },
-    ];
+    // ── Assets Data ──
+    let MOCK_ASSETS = [];
+
 
     let currentFilter = 'all';
     let currentStatus = 'available';
@@ -196,10 +60,12 @@
 
     // ── Build image gallery HTML ──
     function buildGalleryHTML(asset) {
-        const images = asset.images || ['/static/images/villa1.webp'];
+        let images = asset.images || ['/static/images/villa1.webp'];
+        // Limit to 5 images for preview
+        images = images.slice(0, 5);
         const hasMultiple = images.length > 1;
 
-        let imagesHTML = images.map((img, i) =>
+        const imagesHTML = images.map((img, i) =>
             `<div class="mp-sec__card-image ${i === 0 ? 'active' : ''}" style="background-image: url('${img}');" aria-label="${asset.name}"></div>`
         ).join('');
 
@@ -214,9 +80,18 @@
                 </button>`;
         }
 
-        let dotsHTML = images.map((_, i) =>
-            `<div class="mp-sec__card-dot ${i === 0 ? 'active' : ''}"></div>`
+        const dotsHTML = images.map((_, i) =>
+            `<div class="mp-sec__card-dot ${i === 0 ? 'active' : ''}" data-image-index="${i}"></div>`
         ).join('');
+
+        // Badges matching primary marketplace style
+        const typeBadge = `<div class="mp-sec__badge mp-sec__badge--type">
+            <span class="mp-sec__badge-text">Standard Leasehold</span>
+        </div>`;
+
+        const statusBadge = `<div class="mp-sec__badge mp-sec__badge--status">
+            <span class="mp-sec__badge-text">${asset.sellOrders > 0 ? 'Secondary' : 'Funded'}</span>
+        </div>`;
 
         return `
             <div class="mp-sec__card-gallery">
@@ -225,7 +100,10 @@
                     ${navHTML}
                     <div class="mp-sec__card-dots">${dotsHTML}</div>
                 </div>
-                <span class="mp-sec__card-badge-overlay">${asset.type}</span>
+                <div class="mp-sec__badge-row">
+                    ${typeBadge}
+                    ${statusBadge}
+                </div>
                 ${getStatusOverlay(asset)}
             </div>`;
     }
@@ -240,7 +118,6 @@
 
         const card = document.createElement('div');
         card.className = 'mp-sec__card';
-        if (!hasOffers) card.classList.add('mp-sec__card--no-offers');
         card.dataset.name = asset.name.toLowerCase();
         card.dataset.price = asset.price;
         card.dataset.volume = asset.volume24h;
@@ -249,29 +126,26 @@
         card.dataset.sellOrders = asset.sellOrders;
         card.dataset.buyInterest = asset.buyInterest;
 
-        // Footer CTA — full-width button
-        const footerCTA = hasOffers
-            ? `<a href="/marketplace-trading-v3?asset=${asset.slug}" class="mp-sec__footer-btn mp-sec__footer-btn--trade" onclick="event.stopPropagation();">
-                    View Property
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-               </a>`
-            : `<button class="mp-sec__footer-btn mp-sec__footer-btn--interest" data-asset-slug="${asset.slug}" data-asset-name="${asset.name}" onclick="event.stopPropagation();">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14l-7 7-7-7"/><path d="M12 3v18"/></svg>
-                    Place Buy Interest
-               </button>`;
-
+        // No footer button to match normal marketplace style
         card.innerHTML = `
             ${buildGalleryHTML(asset)}
             <div class="mp-sec__card-content">
                 <div class="mp-sec__card-meta">
+                    ${asset.bedrooms > 0 ? `
                     <div class="mp-sec__card-meta-item">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <span>${asset.location}</span>
+                        <img src="/static/images/Bed.svg" alt="Beds" width="16" height="16">
+                        <span>${asset.bedrooms}</span>
+                    </div>
+                    <div class="mp-sec__card-meta-divider"></div>
+                    ` : ''}
+                    <div class="mp-sec__card-meta-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        <span>${asset.sellOrders > 0 ? 'Available' : 'Funded'}</span>
                     </div>
                     <div class="mp-sec__card-meta-divider"></div>
                     <div class="mp-sec__card-meta-item">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        <span>Secondary</span>
+                        <img src="/static/images/${asset.country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="${asset.country}">
+                        <span>${asset.location}</span>
                     </div>
                 </div>
                 <h3 class="mp-sec__card-title">${asset.name}</h3>
@@ -304,23 +178,16 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
                 <span>12m Chart</span>
             </button>
-            <div class="mp-sec__card-footer">
-                ${footerCTA}
-            </div>
         `;
 
         card.addEventListener('click', () => {
-            if (hasOffers) {
-                const url = `/marketplace-trading-v3?asset=${asset.slug}`;
-                // Tag elements for View Transitions API morph
-                const gallery = card.querySelector('.mp-sec__card-gallery');
-                if (gallery) gallery.style.viewTransitionName = 'tv3-hero-img';
-                const title = card.querySelector('.mp-sec__card-title');
-                if (title) title.style.viewTransitionName = 'tv3-title';
-                window.location.href = url;
-            } else {
-                openBuyInterestModal(asset);
-            }
+            const url = `/marketplace-trading-v3?asset=${asset.slug}`;
+            // Tag elements for View Transitions API morph
+            const gallery = card.querySelector('.mp-sec__card-gallery');
+            if (gallery) gallery.style.viewTransitionName = 'tv3-hero-img';
+            const title = card.querySelector('.mp-sec__card-title');
+            if (title) title.style.viewTransitionName = 'tv3-title';
+            window.location.href = url;
         });
 
         return { card, sparkId, sparkData: asset.sparkline, isPositive };
@@ -584,7 +451,16 @@
     }
 
     // ── Init ──
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const res = await fetch('/api/marketplace/secondary/assets');
+            if (res.ok) {
+                MOCK_ASSETS = await res.json();
+            }
+        } catch (err) {
+            console.error('Failed to fetch secondary assets', err);
+        }
+        
         filterAndSort();
 
         // Search + Sort

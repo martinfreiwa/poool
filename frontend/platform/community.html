@@ -7,54 +7,6 @@ include
 
 
 
-<!-- Custom POOOL Icon Styles -->
-<style>
-  .poool-icon-custom {
-    background-color: var(--btn-primary-bg, #0000FF) !important;
-    stroke: #03FF88 !important;
-    border-radius: 8px !important;
-    padding: 6px !important;
-    flex-shrink: 0;
-    width: 28px !important;
-    height: 28px !important;
-    box-sizing: border-box !important;
-  }
-
-  .poool-icon-custom path,
-  .poool-icon-custom circle,
-  .poool-icon-custom rect,
-  .poool-icon-custom polyline,
-  .poool-icon-custom line,
-  .poool-icon-custom polygon {
-    stroke: #03FF88 !important;
-  }
-
-  /* Make the page header icon slightly bigger */
-  .ds-page-header__icon.poool-icon-custom {
-    width: 44px !important;
-    height: 44px !important;
-    padding: 9px !important;
-    border-radius: 10px !important;
-  }
-
-  /* Keep small buttons small */
-  .ann-filter-btn .poool-icon-custom,
-  button .poool-icon-custom {
-    width: 18px !important;
-    height: 18px !important;
-    padding: 3px !important;
-    border-radius: 4px !important;
-  }
-
-  /* Hide the default background from original classes */
-  .ann-icon,
-  .circle-stat-icon {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-</style>
-
 
 
 <body id="community-body" class="fouc-guard">
@@ -75,9 +27,8 @@ include
             <!---->
             <h1 class="ds-page-header__title community-title">Community</h1>
           </div>
-          <div class="community-demo-badge">
-            <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div style="background:#F2F4F7; color:#475467; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:6px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -142,7 +93,7 @@ include
           </button>
           <button type="button" class="community-tab-btn" data-tab="community-saved-tab"
             onclick="switchCommunityTab(this); if(window.loadSavedPosts) loadSavedPosts();">
-            🔖 Saved
+            Saved
           </button>
         </div>
 
@@ -290,15 +241,15 @@ include
             <div class="community-feed">
 
               <!-- Feed Toggle (M3-FE.3) -->
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
-                <div style="display:flex; gap:12px; flex: 1; min-width: 200px;">
-                  <button type="button" class="ds-btn ds-btn--primary" id="feed-btn-all" onclick="setFeedMode('all')" style="flex:1;">All Posts</button>
-                  <button type="button" class="ds-btn ds-btn--secondary" id="feed-btn-following" onclick="setFeedMode('following')" style="flex:1;">Following</button>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+                <div style="display:flex; gap:8px; flex: 1; min-width: 200px;">
+                  <button type="button" class="feed-toggle-btn active" id="feed-btn-all" onclick="setFeedMode('all')">All Posts</button>
+                  <button type="button" class="feed-toggle-btn" id="feed-btn-following" onclick="setFeedMode('following')">Following</button>
                 </div>
                 <!-- Sort Toggle -->
                 <div style="display:flex; gap:8px;">
-                    <button type="button" class="ds-btn ds-btn--primary ds-btn--sm" id="sort-btn-fresh" onclick="setSortMode('fresh')">✨ Fresh</button>
-                    <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="sort-btn-hot" onclick="setSortMode('hot')">🔥 Hot</button>
+                    <button type="button" class="feed-toggle-btn active" id="sort-btn-fresh" onclick="setSortMode('fresh')">Fresh</button>
+                    <button type="button" class="feed-toggle-btn" id="sort-btn-hot" onclick="setSortMode('hot')">Hot</button>
                 </div>
               </div>
 
@@ -309,8 +260,8 @@ include
                   <div class="create-post-input">Share an insight, tip, or investment story...</div>
                   <div class="create-post-actions">
                     <button class="create-post-action-btn">
-                      <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                         <circle cx="8.5" cy="8.5" r="1.5" />
                         <polyline points="21 15 16 10 5 21" />
@@ -318,8 +269,8 @@ include
                       Photo
                     </button>
                     <button class="create-post-action-btn">
-                      <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="20" x2="18" y2="10" />
                         <line x1="12" y1="20" x2="12" y2="4" />
                         <line x1="6" y1="20" x2="6" y2="14" />
@@ -327,8 +278,8 @@ include
                       Market Insight
                     </button>
                     <button class="create-post-action-btn">
-                      <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                         <polygon
                           points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                       </svg>
@@ -346,51 +297,51 @@ include
               <!-- My Profile Card -->
               <div class="community-profile-card">
                 <div class="profile-card-header">
-                  <div class="profile-card-avatar-circle">M</div>
+                  <div id="my-profile-avatar-circle" class="profile-card-avatar-circle">M</div>
                   <div class="profile-card-info">
-                    <span class="profile-card-name">Martin F.</span>
-                    <div class="profile-card-bio">Sustainable investor • Long-term holder 🌱</div>
+                    <span id="my-profile-name" class="profile-card-name">Martin F.</span>
+                    <div id="my-profile-bio" class="profile-card-bio">Sustainable investor • Long-term holder 🌱</div>
                   </div>
                 </div>
                 <div class="profile-card-stats">
-                  <div class="profile-stat"><span class="profile-stat-value">12</span><span
+                  <div class="profile-stat"><span id="my-profile-posts" class="profile-stat-value">12</span><span
                       class="profile-stat-label">Posts</span></div>
-                  <div class="profile-stat"><span class="profile-stat-value">148</span><span
+                  <div class="profile-stat"><span id="my-profile-followers" class="profile-stat-value">148</span><span
                       class="profile-stat-label">Followers</span></div>
-                  <div class="profile-stat"><span class="profile-stat-value">52</span><span
+                  <div class="profile-stat"><span id="my-profile-following" class="profile-stat-value">52</span><span
                       class="profile-stat-label">Following</span></div>
                 </div>
                 <div class="profile-card-badges">
-                  <span class="profile-badge profile-badge--gold">🏆 Gold Tier</span>
-                  <span class="profile-badge profile-badge--verified">✅ KYC Verified</span>
-                  <span class="profile-badge profile-badge--investor">🌍 Diversified</span>
-                  <span class="profile-badge">🤝 Connector</span>
+                  <span class="profile-badge profile-badge--gold">Gold Tier</span>
+                  <span class="profile-badge profile-badge--verified">KYC Verified</span>
+                  <span class="profile-badge profile-badge--investor">Diversified</span>
+                  <span class="profile-badge">Connector</span>
                 </div>
-                <button class="ds-btn ds-btn--secondary profile-edit-btn">Edit Profile</button>
+                <button id="my-profile-edit-btn" onclick="window.location.href='/settings?tab=profile'" class="ds-btn ds-btn--ghost profile-edit-btn" style="border:1px solid #EAECF0; background:#F9FAFB; color:#344054; cursor:pointer;">Edit Profile</button>
               </div>
 
               <!-- Trending Commodities -->
               <div class="community-trending-card" id="trending-assets-widget">
                 <div class="trending-card-title">
-                  <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
-                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
                     <polyline points="16 7 22 7 22 13" />
                   </svg>
                   Trending This Week
                 </div>
                 <div id="trending-assets-container">
-                  <div style="padding: 20px; text-align: center; color: #667085; font-size: 13px;">
+                  <div style="padding: 16px; text-align: center; color: #98A2B3; font-size: 13px;">
                     Loading trending assets...
                   </div>
                 </div>
               </div>
 
-              <!-- UX.4: Trending Hashtags -->
+              <!-- Trending Tags -->
               <div class="community-hashtags-card">
                 <div class="hashtag-trending-title">
-                  <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
-                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="4" y1="9" x2="20" y2="9"></line>
                     <line x1="4" y1="15" x2="20" y2="15"></line>
                     <line x1="10" y1="3" x2="8" y2="21"></line>
@@ -405,29 +356,10 @@ include
                 </div>
               </div>
 
-              <!-- Trending Hashtags (UX.4) -->
-              <div class="community-trending-card" id="trending-hashtags-widget">
-                <div class="trending-card-title">
-                  <svg class="poool-icon-custom" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
-                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="4" y1="9" x2="20" y2="9" />
-                    <line x1="4" y1="15" x2="20" y2="15" />
-                    <line x1="10" y1="3" x2="8" y2="21" />
-                    <line x1="16" y1="3" x2="14" y2="21" />
-                  </svg>
-                  Trending Hashtags
-                </div>
-                <div id="trending-hashtags-container">
-                  <div style="padding: 16px; text-align: center; color: #667085; font-size: 13px;">
-                    Loading hashtags...
-                  </div>
-                </div>
-              </div>
-
               <!-- Upcoming AMA -->
               <div class="community-ama-card">
                 <div class="ama-card-label">
-                  <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 6v6l4 2" />
@@ -437,7 +369,7 @@ include
                 <div class="ama-card-title">Understanding Cocoa Supply Chains</div>
                 <div class="ama-card-expert">with Dr. Ana Suarez — Agricultural Economist</div>
                 <div class="ama-card-datetime">
-                  <svg class="poool-icon-custom" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                     <line x1="16" y1="2" x2="16" y2="6" />
@@ -447,8 +379,8 @@ include
                   March 20, 2026 — 7:00 PM CET
                 </div>
                 <div class="ama-card-actions">
-                  <button class="ama-btn ama-btn--primary">Set Reminder</button>
-                  <button class="ama-btn ama-btn--ghost">23 Questions</button>
+                  <button class="ama-btn ama-btn--primary" onclick="alert('✅ Reminder set! We will notify you when this AMA starts.')">Set Reminder</button>
+                  <button class="ama-btn ama-btn--ghost" onclick="const feedTab = document.querySelector('[data-tab=community-ama-tab]'); if(feedTab) switchCommunityTab(feedTab);">23 Questions</button>
                 </div>
               </div>
 
@@ -458,19 +390,19 @@ include
                 <div class="follow-item">
                   <div class="follow-item-avatar">EW</div>
                   <div class="follow-item-info"><span class="follow-item-name">Emma W.</span><span
-                      class="follow-item-tag">🌱 Sustainable Investor</span></div><button
-                    class="follow-btn">Follow</button>
+                      class="follow-item-tag">🌱 Sustainable Investor</span></div>
+                  <button class="follow-btn" onclick="this.textContent = this.textContent === 'Follow' ? 'Following' : 'Follow'; this.classList.toggle('active');">Follow</button>
                 </div>
                 <div class="follow-item">
                   <div class="follow-item-avatar">JR</div>
                   <div class="follow-item-info"><span class="follow-item-name">James R.</span><span
-                      class="follow-item-tag">📈 Growth Seeker • Premium</span></div><button
-                    class="follow-btn">Follow</button>
+                      class="follow-item-tag">📈 Growth Seeker • Premium</span></div>
+                  <button class="follow-btn" onclick="this.textContent = this.textContent === 'Follow' ? 'Following' : 'Follow'; this.classList.toggle('active');">Follow</button>
                 </div>
                 <div class="follow-item">
                   <div class="follow-item-avatar">LM</div>
                   <div class="follow-item-info"><span class="follow-item-name">Lisa M.</span><span
-                      class="follow-item-tag">🔬 Research-driven</span></div><button class="follow-btn">Follow</button>
+                      class="follow-item-tag">🔬 Research-driven</span></div><button class="follow-btn" onclick="this.textContent = this.textContent === 'Follow' ? 'Following' : 'Follow'; this.classList.toggle('active');">Follow</button>
                 </div>
               </div>
             </div>
@@ -493,7 +425,7 @@ include
             <!-- Pinned Announcement -->
             <div class="ann-card ann-card--pinned">
               <div class="ann-card-pin">
-                <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="12" y1="17" x2="12" y2="22" />
                   <path
@@ -503,7 +435,7 @@ include
               </div>
               <div class="ann-card-header">
                 <div class="ann-icon ann-icon--commodity">
-                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
@@ -526,7 +458,7 @@ include
             <div class="ann-card">
               <div class="ann-card-header">
                 <div class="ann-icon ann-icon--dividend">
-                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="1" x2="12" y2="23" />
                     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -550,7 +482,7 @@ include
             <div class="ann-card">
               <div class="ann-card-header">
                 <div class="ann-icon ann-icon--platform">
-                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="3" />
                     <path
@@ -575,7 +507,7 @@ include
             <div class="ann-card">
               <div class="ann-card-header">
                 <div class="ann-icon ann-icon--market">
-                  <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
                     <polyline points="16 7 22 7 22 13" />
@@ -872,7 +804,7 @@ include
               <div id="ama-hero-desc" class="ds-text-body" style="color:var(--text-secondary);margin-top:8px;line-height:1.5;"></div>
               <div class="ama-hero-meta" style="margin-top:16px;">
                 <span id="ama-hero-date" class="ama-hero-date">
-                  <svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88"
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                     <line x1="16" y1="2" x2="16" y2="6" />
@@ -1036,8 +968,8 @@ include
             <!-- Header -->
             <div class="notif-header">
               <div class="notif-header__left">
-                <div class="notif-header__icon poool-icon-custom">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="notif-header__icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                   </svg>
@@ -1256,7 +1188,7 @@ include
         <div id="community-saved-tab" class="community-tab-panel hidden">
           <div class="community-content-layout" style="display: block; max-width: 800px;">
             <div style="margin-bottom: 24px;">
-              <h2 class="ds-text-xl" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">🔖 Saved Posts</h2>
+              <h2 class="ds-text-xl" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">Saved Posts</h2>
               <p class="ds-text-body" style="color:var(--text-secondary); margin: 0;">Posts you've bookmarked for later.</p>
             </div>
             <div id="saved-posts-container" class="community-feed"></div>
@@ -1455,6 +1387,46 @@ include
     </main>
   </div>
 
+        <!-- Edit Community Profile Modal (UX.15) -->
+        <div id="edit-profile-modal" class="ds-modal" style="display: none;">
+          <div class="ds-modal__backdrop" onclick="document.getElementById('edit-profile-modal').style.display='none'"></div>
+          <div class="ds-modal__content" style="max-width: 480px;">
+            <div class="ds-modal__header">
+              <h3 class="ds-modal__title">Edit Community Profile</h3>
+              <button type="button" class="ds-modal__close" onclick="document.getElementById('edit-profile-modal').style.display='none'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="ds-modal__body">
+              <p style="font-size: 14px; color: #667085; margin-bottom: 20px;">
+                Your community profile is visible to other members. Let them know what interests you.
+              </p>
+              
+              <div class="ds-form-group" style="margin-bottom: 24px;">
+                <label class="ds-label" for="edit-profile-bio-input">Bio</label>
+                <textarea id="edit-profile-bio-input" class="ds-input" rows="4" maxlength="300" placeholder="Sustainable investor • Long-term holder 🌱"></textarea>
+                <div style="font-size: 12px; color: #667085; margin-top: 4px; text-align: right;">
+                  Max 300 characters
+                </div>
+              </div>
+
+              <div style="padding: 12px; background: #F9FAFB; border-radius: 8px; border: 1px solid #EAECF0;">
+                <p style="font-size: 13px; color: #344054; margin: 0;">
+                  Looking to change your name or avatar?
+                  <a href="/settings" style="color: var(--btn-primary-bg); font-weight: 600; text-decoration: none;">Account Settings →</a>
+                </p>
+              </div>
+            </div>
+            <div class="ds-modal__footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
+              <button type="button" class="ds-btn ds-btn--secondary" onclick="document.getElementById('edit-profile-modal').style.display='none'">Cancel</button>
+              <button type="button" class="ds-btn ds-btn--primary" id="save-profile-btn">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
   <!-- ==============================================
        First-Time Onboarding Modal (M3-FE.5)
        ============================================== -->
@@ -1462,7 +1434,7 @@ include
     <div class="modal-content" style="max-width: 480px; padding: 32px; border-radius: 16px; background: #fff; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
       <div style="text-align:center; margin-bottom: 24px;">
         <div style="font-size: 48px; margin-bottom: 12px;">👋</div>
-        <h2 style="font-size: 24px; font-weight: 700; color: #101828; margin: 0 0 8px 0; font-family: 'Outfit', sans-serif;">Welcome to the POOOL Community!</h2>
+        <h2 style="font-size: 22px; font-weight: 700; color: #101828; margin: 0 0 8px 0; font-family: var(--font-family);">Welcome to the POOOL Community!</h2>
         <p style="font-size: 15px; color: #667085; margin: 0; line-height: 1.5;">Connect with other investors, learn from market experts, and grow your portfolio together.</p>
       </div>
 
@@ -1470,7 +1442,7 @@ include
         <h3 style="font-size: 14px; font-weight: 600; color: #344054; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px;">Your First Steps <span style="font-weight:normal; color:#98A2B3; text-transform:none; float:right;">Earn 50 XP!</span></h3>
         
         <div style="display:flex; align-items:flex-start; margin-bottom: 16px;">
-          <input type="checkbox" id="ob-bio" disabled style="margin-top: 4px; accent-color: #03FF88;">
+          <input type="checkbox" id="ob-bio" disabled style="margin-top: 4px; accent-color: var(--btn-primary-bg, #0000FF);">
           <label style="margin-left: 12px;">
             <div style="font-weight: 500; color: #101828; font-size: 15px; margin-bottom: 4px;">Complete your Profile</div>
             <div style="font-size: 13px; color: #667085;">Add a short bio so others know what you invest in.</div>
@@ -1478,7 +1450,7 @@ include
         </div>
 
         <div style="display:flex; align-items:flex-start;">
-          <input type="checkbox" id="ob-post" disabled style="margin-top: 4px; accent-color: #03FF88;">
+          <input type="checkbox" id="ob-post" disabled style="margin-top: 4px; accent-color: var(--btn-primary-bg, #0000FF);">
           <label style="margin-left: 12px;">
             <div style="font-weight: 500; color: #101828; font-size: 15px; margin-bottom: 4px;">Make your first post or comment</div>
             <div style="font-size: 13px; color: #667085;">Say hello, ask a question, or share an insight.</div>

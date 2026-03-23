@@ -22,4 +22,5 @@ pub fn router() -> Router<AppState> {
         .route("/property/:slug", get(page_property))
         .route("/commodity", get(page_commodity))
         .route("/commodity/:slug", get(page_commodity))
+        .route("/api/assets/search", get(api_asset_search))
 }

@@ -1,9 +1,11 @@
 use axum::{
     extract::{Path, Query, State},
     response::{Html, IntoResponse, Redirect},
+    Json,
 };
 use axum_extra::extract::CookieJar;
 use minijinja::context;
+use serde::Serialize;
 use std::collections::HashMap;
 
 use super::models::{MarketplaceAsset, PropertyDisplayData};
@@ -605,13 +607,16 @@ pub async fn api_marketplace_tab(
             &image_urls
         };
 
-        for (i, url) in urls.iter().enumerate() {
+        for (i, url) in urls.iter().take(5).enumerate() {
             let active = if i == 0 { " active" } else { "" };
             images_html.push_str(&format!(
                 r#"<div class="property-image{}" style="background-image: url('{}'); background-size: cover; background-position: center;"></div>"#,
                 active, html_escape(&crate::storage::service::rewrite_gcs_url(url))
             ));
-            dots_html.push_str(&format!(r#"<div class="property-dot{}"></div>"#, active));
+            dots_html.push_str(&format!(
+                r#"<div class="property-dot{}" data-property-id="{}" data-image-index="{}"></div>"#,
+                active, slug, i
+            ));
         }
 
         html.push_str(&format!(
@@ -908,13 +913,16 @@ pub async fn api_commodities_tab(
             &image_urls
         };
 
-        for (i, url) in urls.iter().enumerate() {
+        for (i, url) in urls.iter().take(5).enumerate() {
             let active = if i == 0 { " active" } else { "" };
             images_html.push_str(&format!(
                 r#"<div class="property-image{}" style="background-image: url('{}'); background-size: cover; background-position: center;"></div>"#,
                 active, html_escape(&crate::storage::service::rewrite_gcs_url(url))
             ));
-            dots_html.push_str(&format!(r#"<div class="property-dot{}"></div>"#, active));
+            dots_html.push_str(&format!(
+                r#"<div class="property-dot{}" data-property-id="{}" data-image-index="{}"></div>"#,
+                active, slug, i
+            ));
         }
 
         html.push_str(&format!(
@@ -998,6 +1006,63 @@ pub async fn api_commodities_tab(
 
     html.push_str("</div></div>");
     Html(html).into_response()
+}
+
+#[derive(Serialize)]
+pub struct SearchResult {
+    pub title: String,
+    pub subtitle: String,
+    pub url: String,
+    pub icon: String,
+}
+
+pub async fn api_asset_search(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> impl IntoResponse {
+    if !crate::auth::middleware::is_authenticated(&jar, &state.db).await {
+        return (axum::http::StatusCode::UNAUTHORIZED, "Unauthorized").into_response();
+    }
+
+    let q = params.get("q").cloned().unwrap_or_default().to_lowercase();
+    if q.len() < 2 {
+        return Json(Vec::<SearchResult>::new()).into_response();
+    }
+
+    let search_query = format!("%{}%", q);
+    let assets = sqlx::query!(
+        r#"
+        SELECT title, slug, asset_type, location_city, location_country
+        FROM assets
+        WHERE published = true
+          AND (LOWER(title) LIKE $1 OR LOWER(location_city) LIKE $1 OR LOWER(location_country) LIKE $1 OR LOWER(slug) LIKE $1)
+        ORDER BY featured DESC, created_at DESC
+        LIMIT 8
+        "#,
+        search_query
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let results: Vec<SearchResult> = assets.into_iter().map(|a| {
+        let icon = if a.asset_type == "commodity" { "🌽" } else { "🏠" };
+        let url = if a.asset_type == "commodity" { 
+            format!("/commodity/{}", a.slug)
+        } else {
+            format!("/property/{}", a.slug)
+        };
+
+        SearchResult {
+            title: a.title,
+            subtitle: format!("{} · {}, {}", a.asset_type, a.location_city.unwrap_or_default(), a.location_country.unwrap_or_default()),
+            url,
+            icon: icon.to_string(),
+        }
+    }).collect();
+
+    Json(results).into_response()
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

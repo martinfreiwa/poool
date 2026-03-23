@@ -5,147 +5,7 @@
     'use strict';
 
     // ── Mock Asset Data ──
-    const ASSETS = {
-        'bali-villa-canggu-12': {
-            slug: 'bali-villa-canggu-12',
-            name: 'Bali Villa Canggu #12',
-            type: 'Villa',
-            location: 'Canggu, Bali, Indonesia',
-            country: 'Indonesia',
-            city: 'Bali',
-            description: 'Contemporary villa steps from Echo Beach, Canggu\'s most popular surf break. Fully furnished with a private pool, modern kitchen, and outdoor living area. Currently rented and professionally managed with consistent monthly rental yield.',
-            tokenPrice: 105.00,
-            annualYield: 12.4,
-            projectedReturn: 18.5,
-            netReturn: 9.2,
-            occupancy: 87,
-            totalSupply: 1000,
-            propertyValue: 350000,
-            priceSqm: 2734,
-            landSize: '128 m²',
-            bedrooms: 4,
-            rentStatus: 'Rented',
-            platformFee: 17500,
-            fiveYearReturn: 121,
-            images: [
-                '/images/villa1.webp',
-                '/images/villa1_2.webp',
-                '/images/villa1_3.webp',
-                '/images/villa1_4.webp',
-            ],
-            sellOrders: [
-                { seller: 'Investor_A2', tokens: 15, price: 108.50 },
-                { seller: 'Investor_C7', tokens: 8, price: 110.00 },
-                { seller: 'Investor_F1', tokens: 25, price: 112.00 },
-            ],
-            buyBids: [
-                { buyer: 'Investor_D4', tokens: 20, price: 103.00 },
-                { buyer: 'Investor_B9', tokens: 10, price: 101.50 },
-            ],
-            locationDesc: 'Canggu is one of Bali\'s fastest-growing areas, known for its world-class surf breaks, vibrant food scene, and thriving digital nomad community. The area offers excellent rental returns due to high demand from both tourists and long-term residents.',
-        },
-        'vienna-apartment-a3': {
-            slug: 'vienna-apartment-a3',
-            name: 'Vienna City Apartment A3',
-            type: 'Apartment',
-            location: 'Vienna, Austria',
-            country: 'Austria',
-            city: 'Vienna',
-            description: 'Central Vienna apartment near Stephansplatz. Premium location with stable long-term rental income. Professionally managed with full documentation and high occupancy.',
-            tokenPrice: 87.50,
-            annualYield: 8.2,
-            projectedReturn: 14.1,
-            netReturn: 6.1,
-            occupancy: 95,
-            totalSupply: 500,
-            propertyValue: 180000,
-            priceSqm: 3200,
-            landSize: '56 m²',
-            bedrooms: 2,
-            rentStatus: 'Rented',
-            platformFee: 9000,
-            fiveYearReturn: 84,
-            images: ['/images/villa2_1.webp', '/images/villa2_2.webp'],
-            sellOrders: [
-                { seller: 'Investor_E3', tokens: 5, price: 89.00 },
-                { seller: 'Investor_G2', tokens: 12, price: 90.50 },
-            ],
-            buyBids: [],
-            locationDesc: 'Vienna consistently ranks among the world\'s most livable cities. The central location near Stephansplatz offers excellent public transport connections and proximity to major cultural attractions.',
-        },
-        'dubai-marina-tower-7': {
-            slug: 'dubai-marina-tower-7',
-            name: 'Dubai Marina Tower #7',
-            type: 'Commercial',
-            location: 'Dubai, UAE',
-            country: 'UAE',
-            city: 'Dubai',
-            description: 'Premium commercial unit in Dubai Marina with high-yield rental income. Fully occupied by a multinational corporate tenant on a 5-year lease with annual rent escalation.',
-            tokenPrice: 152.00,
-            annualYield: 15.1,
-            projectedReturn: 22.3,
-            netReturn: 11.8,
-            occupancy: 92,
-            totalSupply: 2000,
-            propertyValue: 980000,
-            priceSqm: 5440,
-            landSize: '180 m²',
-            bedrooms: 0,
-            rentStatus: 'Leased (Corporate)',
-            platformFee: 49000,
-            fiveYearReturn: 152,
-            images: ['/images/villa3_1.webp', '/images/villa3_2.webp'],
-            sellOrders: [
-                { seller: 'Investor_H1', tokens: 30, price: 155.00 },
-                { seller: 'Investor_K4', tokens: 10, price: 156.50 },
-                { seller: 'Investor_J8', tokens: 50, price: 158.00 },
-                { seller: 'Investor_L2', tokens: 15, price: 160.00 },
-                { seller: 'Investor_M6', tokens: 5, price: 165.00 },
-            ],
-            buyBids: [
-                { buyer: 'Investor_N3', tokens: 25, price: 150.00 },
-                { buyer: 'Investor_P7', tokens: 40, price: 148.50 },
-                { buyer: 'Investor_Q1', tokens: 10, price: 147.00 },
-            ],
-            locationDesc: 'Dubai Marina is one of the most sought-after commercial and residential districts in the UAE, offering premium waterfront views, world-class amenities, and excellent connectivity.',
-        },
-        'jimbaran-sunset-villa': {
-            slug: 'jimbaran-sunset-villa',
-            name: 'Jimbaran Sunset Villa',
-            type: 'Villa',
-            location: 'Jimbaran, Bali, Indonesia',
-            country: 'Indonesia',
-            city: 'Bali',
-            description: 'Stunning 4-bedroom villa with panoramic sunset views over Jimbaran Bay. Experience true Balinese luxury with a private infinity pool, tropical gardens, and walking distance to the beach. Professionally managed with proven high rental occupancy.',
-            tokenPrice: 125.00,
-            annualYield: 14.2,
-            projectedReturn: 21.5,
-            netReturn: 10.8,
-            occupancy: 92,
-            totalSupply: 1200,
-            propertyValue: 450000,
-            priceSqm: 3100,
-            landSize: '240 m²',
-            bedrooms: 4,
-            rentStatus: 'Rented',
-            platformFee: 22500,
-            images: [
-                '/images/jimbaran_sunset_hero.webp',
-                '/images/jimbaran_sunset_pool.webp',
-                '/images/jimbaran_sunset_living.webp',
-                '/images/jimbaran_sunset_terrace.webp',
-                '/images/jimbaran_sunset_master.webp',
-            ],
-            sellOrders: [
-                { seller: 'Investor_X1', tokens: 10, price: 128.00 },
-                { seller: 'Investor_Y3', tokens: 5, price: 130.00 },
-            ],
-            buyBids: [
-                { buyer: 'Investor_Z5', tokens: 15, price: 122.00 },
-            ],
-            locationDesc: 'Jimbaran is world-famous for its sunset seafood grills on the beach and pristine white sand. The area is home to Bali\'s most exclusive resorts, ensuring stable high-end rental demand.',
-        },
-    };
+    const ASSETS = {};
 
     const DEFAULT_SLUG = 'bali-villa-canggu-12';
 
@@ -158,6 +18,29 @@
     }
     function fmtInt(val) {
         return 'USD ' + val.toLocaleString('en-US');
+    }
+
+    // ── Toast Notification ──
+    function showTradeToast(message, type) {
+        const existing = document.querySelector('.tv3-toast');
+        if (existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.className = 'tv3-toast tv3-toast--' + type;
+        toast.setAttribute('role', 'alert');
+        toast.textContent = message;
+        Object.assign(toast.style, {
+            position: 'fixed', bottom: '24px', right: '24px', zIndex: '10000',
+            padding: '12px 20px', borderRadius: '10px', fontWeight: '600', fontSize: '14px',
+            color: '#fff', boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+            background: type === 'success' ? '#00c896' : type === 'error' ? '#ef4444' : '#f59e0b',
+            opacity: '0', transform: 'translateY(12px)', transition: 'all 0.3s ease'
+        });
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; });
+        setTimeout(() => {
+            toast.style.opacity = '0'; toast.style.transform = 'translateY(12px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
     }
 
     // ── Generate 12-month daily price data ──
@@ -478,10 +361,55 @@
     }
 
     // ── Init ──
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         const slug = getAssetSlug();
-        const asset = ASSETS[slug] || ASSETS[DEFAULT_SLUG];
-        currentAsset = asset;
+
+        let asset;
+        try {
+            const res = await fetch('/api/marketplace/secondary/assets');
+            if (!res.ok) throw new Error('API fetch failed');
+            const secondaryAssets = await res.json();
+            const rawAsset = secondaryAssets.find(a => a.slug === slug) || secondaryAssets[0];
+            
+            if (!rawAsset) {
+                document.getElementById('tv3-title').textContent = 'Asset Not Found';
+                return;
+            }
+
+            // Map backend structure to UI standard
+            asset = {
+                slug: rawAsset.slug,
+                name: rawAsset.name,
+                type: rawAsset.type,
+                location: rawAsset.location + (rawAsset.country ? ', ' + rawAsset.country : ''),
+                country: rawAsset.country || 'N/A',
+                city: rawAsset.location || 'N/A',
+                description: rawAsset.description || 'No description available for this property.',
+                tokenPrice: rawAsset.price / 100,
+                annualYield: rawAsset.roi,
+                projectedReturn: (rawAsset.roi * 1.5).toFixed(1),
+                netReturn: (rawAsset.roi * 0.75).toFixed(1),
+                occupancy: rawAsset.occupancy || 100,
+                totalSupply: rawAsset.totalSupply,
+                propertyValue: rawAsset.propertyValue ? rawAsset.propertyValue / 100 : 0,
+                priceSqm: rawAsset.propertyValue && rawAsset.landSize ? Math.round((rawAsset.propertyValue / 100) / parseFloat(rawAsset.landSize || '100')) : 0,
+                landSize: rawAsset.landSize || 'N/A',
+                bedrooms: rawAsset.bedrooms || 0,
+                rentStatus: rawAsset.rentStatus || 'N/A',
+                platformFee: rawAsset.propertyValue ? (rawAsset.propertyValue / 100) * 0.05 : 0,
+                images: rawAsset.images && rawAsset.images.length > 0 ? rawAsset.images : ['/images/villa1.webp'],
+                sellOrders: rawAsset.sellOrders > 0 ? [{ tokens: rawAsset.sellOrders, price: rawAsset.price / 100 }] : [],
+                buyBids: rawAsset.buy_interest > 0 ? [{ tokens: rawAsset.buy_interest, price: rawAsset.price / 100 }] : [],
+                locationDesc: rawAsset.locationDesc || ''
+            };
+            
+            // Assign to global
+            currentAsset = asset;
+        } catch (e) {
+            console.error('Failed to load asset details:', e);
+            document.getElementById('tv3-title').textContent = 'Error Loading Asset';
+            return;
+        }
 
         populateHero(asset);
         populateDetails(asset);
@@ -540,15 +468,65 @@
             });
         });
 
-        // Submit
-        document.getElementById('tv3-order-form').addEventListener('submit', e => {
+        // Submit — real API call
+        document.getElementById('tv3-order-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('tv3-submit-btn');
             const orig = btn.textContent;
-            btn.textContent = '✓ Order Placed Successfully';
+            btn.textContent = 'Placing Order…';
             btn.disabled = true;
             btn.style.opacity = '0.7';
-            setTimeout(() => { btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1'; }, 2500);
+
+            const qty = parseInt(document.getElementById('tv3-qty').value) || 0;
+            if (qty <= 0) {
+                showTradeToast('Please enter a valid quantity', 'error');
+                btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
+                return;
+            }
+
+            const orderType = priceMode === 'market' ? 'market' : 'limit';
+            const data = getMarketData(currentAsset, currentSide);
+            let priceCents = null;
+            if (orderType === 'limit') {
+                const priceVal = parseFloat(document.getElementById('tv3-price').value);
+                if (!priceVal || priceVal <= 0) {
+                    showTradeToast('Please enter a valid price', 'error');
+                    btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
+                    return;
+                }
+                priceCents = Math.round(priceVal * 100);
+            } else {
+                priceCents = Math.round(data.bestPrice * 100);
+            }
+
+            try {
+                const res = await fetch('/api/marketplace/orders', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (typeof getCsrfToken === 'function' ? getCsrfToken() : '') },
+                    body: JSON.stringify({
+                        asset_id: asset.slug,
+                        side: currentSide,
+                        order_type: orderType,
+                        price_cents: priceCents,
+                        quantity: qty,
+                        idempotency_key: crypto.randomUUID()
+                    })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    btn.textContent = '✓ Order Placed Successfully';
+                    showTradeToast(result.message || 'Order placed successfully!', 'success');
+                    setTimeout(() => { btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1'; }, 2500);
+                } else {
+                    showTradeToast(result.error || 'Order failed', 'error');
+                    btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
+                }
+            } catch (err) {
+                console.error('Order submission failed:', err);
+                showTradeToast('Network error — please try again', 'error');
+                btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
+            }
         });
 
         // ══ MOBILE BOTTOM SHEET ══
@@ -595,11 +573,47 @@
             sheetSell.classList.add('active'); sheetBuy.classList.remove('active');
             if (sheetSubmit) { sheetSubmit.textContent = 'Place Sell Order'; sheetSubmit.className = 'tv3-submit-btn tv3-submit-btn--sell'; }
         });
-        if (sheetSubmit) sheetSubmit.addEventListener('click', () => {
+        if (sheetSubmit) sheetSubmit.addEventListener('click', async () => {
             const orig = sheetSubmit.textContent;
-            sheetSubmit.textContent = '✓ Order Placed';
+            sheetSubmit.textContent = 'Placing…';
             sheetSubmit.disabled = true;
-            setTimeout(() => { sheetSubmit.textContent = orig; sheetSubmit.disabled = false; closeSheet(); }, 2000);
+
+            const sheetSide = sheetBuy?.classList.contains('active') ? 'buy' : 'sell';
+            const qty = parseInt(sheetQty?.value) || 0;
+            const priceVal = parseFloat(sheetPrice?.value) || 0;
+            if (qty <= 0 || priceVal <= 0) {
+                showTradeToast('Enter valid price and quantity', 'error');
+                sheetSubmit.textContent = orig; sheetSubmit.disabled = false;
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/marketplace/orders', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (typeof getCsrfToken === 'function' ? getCsrfToken() : '') },
+                    body: JSON.stringify({
+                        asset_id: asset.slug,
+                        side: sheetSide,
+                        order_type: 'limit',
+                        price_cents: Math.round(priceVal * 100),
+                        quantity: qty,
+                        idempotency_key: crypto.randomUUID()
+                    })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    sheetSubmit.textContent = '✓ Order Placed';
+                    showTradeToast(result.message || 'Order placed!', 'success');
+                    setTimeout(() => { sheetSubmit.textContent = orig; sheetSubmit.disabled = false; closeSheet(); }, 2000);
+                } else {
+                    showTradeToast(result.error || 'Order failed', 'error');
+                    sheetSubmit.textContent = orig; sheetSubmit.disabled = false;
+                }
+            } catch (err) {
+                showTradeToast('Network error', 'error');
+                sheetSubmit.textContent = orig; sheetSubmit.disabled = false;
+            }
         });
 
         // ── Staggered Load Animations ──

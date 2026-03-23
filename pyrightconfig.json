@@ -1,0 +1,8 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "include": ["tests"],
+  "extraPaths": ["tests/e2e"],
+  "reportMissingImports": "warning"
+}

@@ -29,7 +29,7 @@ def test_full_user_journey(authenticated_user_page):
     Sign Up -> KYC (handled by fixture) -> Deposit (handled by fixture giving $10k)
     -> Buy an asset -> Sell an asset -> Withdraw funds
     """
-    page, current_user = authenticated_user_page
+    page, tracker, current_user = authenticated_user_page
     
     # 1. Verify Deposit / Initial Balance on Wallet page
     page.goto(f"{BASE_URL}/wallet")

@@ -112,8 +112,22 @@ pub struct MarketOrder {
     pub expires_at: Option<DateTime<Utc>>,
     /// When the order was created.
     pub created_at: DateTime<Utc>,
-    /// Last update timestamp.
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MyOrderResponse {
+    pub id: String,
+    pub asset: String,
+    pub asset_id: Uuid,
+    pub side: String,
+    pub price_cents: i64,
+    pub qty: i32,
+    pub filled: i32,
+    pub fee: i64,
+    pub status: String,
+    pub created_at: DateTime<Utc>,
 }
 
 impl MarketOrder {
@@ -284,10 +298,10 @@ pub struct FeePromotion {
 // ═══════════════════════════════════════════════════════════════
 
 /// Request body for submitting a new order.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct SubmitOrderRequest {
-    /// The asset to trade.
-    pub asset_id: Uuid,
+    /// The asset to trade (UUID or slug).
+    pub asset_id: String,
     /// Order side: "buy" or "sell".
     pub side: String,
     /// Order type: "limit" or "market".
@@ -823,4 +837,31 @@ mod tests {
             updated_at: Utc::now(),
         }
     }
+}
+
+/// JSON payload for an asset listed on the secondary marketplace.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SecondaryAsset {
+    pub slug: String,
+    pub name: String,
+    pub r#type: String,
+    pub location: String,
+    pub country: String,
+    pub images: Vec<String>,
+    pub price: i64,
+    pub change24h: f64,
+    pub volume24h: i64,
+    pub roi: f64,
+    pub occupancy: i32,
+    pub sell_orders: i64,
+    pub buy_interest: i64,
+    pub total_supply: i32,
+    pub sparkline: Vec<f64>,
+    pub description: Option<String>,
+    pub property_value: i64,
+    pub land_size: Option<String>,
+    pub bedrooms: Option<i32>,
+    pub rent_status: Option<String>,
+    pub location_desc: Option<String>,
 }

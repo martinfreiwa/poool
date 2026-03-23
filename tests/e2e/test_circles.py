@@ -5,7 +5,7 @@ import os
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 
 def test_circles_list(authenticated_user_page):
-    page, current_user = authenticated_user_page
+    page, tracker, current_user = authenticated_user_page
     
     # Go to circles page
     page.goto(f"{BASE_URL}/community/circles")
@@ -32,7 +32,7 @@ def test_circles_list(authenticated_user_page):
         expect(empty_state.first).to_be_visible()
 
 def test_create_circle_modal(authenticated_user_page):
-    page, current_user = authenticated_user_page
+    page, tracker, current_user = authenticated_user_page
     
     page.goto(f"{BASE_URL}/community/circles")
     page.wait_for_load_state("networkidle")

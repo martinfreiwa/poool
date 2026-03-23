@@ -18,6 +18,21 @@ use super::{models, service, validation};
 use crate::auth::routes::AppState;
 use crate::error::AppError;
 
+use sqlx::PgPool;
+
+pub async fn resolve_asset_id(pool: &PgPool, id_or_slug: &str) -> Result<Uuid, AppError> {
+    if let Ok(uuid) = Uuid::parse_str(id_or_slug) {
+        Ok(uuid)
+    } else {
+        let asset_id: Option<Uuid> = sqlx::query_scalar("SELECT id FROM assets WHERE slug = $1")
+            .bind(id_or_slug)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::Database)?;
+        asset_id.ok_or_else(|| AppError::NotFound("Asset not found".into()))
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ── PUBLIC READ APIs ──────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
@@ -28,8 +43,10 @@ use crate::error::AppError;
 /// Public — no authentication required.
 pub async fn api_orderbook(
     State(state): State<AppState>,
-    Path(asset_id): Path<Uuid>,
+    Path(id_or_slug): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
+    let asset_id = resolve_asset_id(&state.db, &id_or_slug).await?;
+
     let redis = state
         .redis
         .as_ref()
@@ -58,8 +75,10 @@ pub async fn api_orderbook(
 /// Public — no authentication required.
 pub async fn api_recent_trades(
     State(state): State<AppState>,
-    Path(asset_id): Path<Uuid>,
+    Path(id_or_slug): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
+    let asset_id = resolve_asset_id(&state.db, &id_or_slug).await?;
+
     let trades = service::get_recent_trades(&state.db, asset_id, 50).await?;
     Ok(Json(trades))
 }
@@ -70,10 +89,23 @@ pub async fn api_recent_trades(
 /// Public — no authentication required.
 pub async fn api_ticker(
     State(state): State<AppState>,
-    Path(asset_id): Path<Uuid>,
+    Path(id_or_slug): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
+    let asset_id = resolve_asset_id(&state.db, &id_or_slug).await?;
+
     let ticker = service::get_ticker(&state.db, asset_id).await?;
     Ok(Json(ticker))
+}
+
+/// GET /api/marketplace/secondary/assets
+///
+/// Returns all assets currently available on the secondary market.
+/// Public — no authentication required.
+pub async fn api_secondary_assets(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let assets = service::get_secondary_assets(&state.db).await?;
+    Ok(Json(assets))
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -128,6 +160,21 @@ pub async fn api_my_orders(
     Ok(Json(orders))
 }
 
+/// GET /api/marketplace/trades/mine
+///
+/// Get the authenticated user's trade history.
+pub async fn api_my_trades(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> Result<impl IntoResponse, AppError> {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Authentication required.".into()))?;
+
+    let trades = service::get_user_trades_history(&state.db, user.id).await?;
+    Ok(Json(trades))
+}
+
 /// DELETE /api/marketplace/orders/:order_id
 ///
 /// Cancel an open order. Requires authentication. The order must
@@ -159,10 +206,12 @@ pub async fn api_cancel_order(
 /// Returns OHLCV candlestick data for charting.
 pub async fn api_candles(
     State(state): State<AppState>,
-    Path(asset_id): Path<Uuid>,
+    Path(id_or_slug): Path<String>,
     Query(query): Query<super::charts::CandleQuery>,
 ) -> Result<impl IntoResponse, AppError> {
+    let asset_id = resolve_asset_id(&state.db, &id_or_slug).await?;
     let response = super::charts::get_candles(&state.db, asset_id, query).await?;
+
     Ok(Json(response))
 }
 
@@ -171,8 +220,10 @@ pub async fn api_candles(
 /// Returns 24h chart summary (last price, high, low, volume, change).
 pub async fn api_chart_summary(
     State(state): State<AppState>,
-    Path(asset_id): Path<Uuid>,
+    Path(id_or_slug): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
+    let asset_id = resolve_asset_id(&state.db, &id_or_slug).await?;
+
     let summary = super::charts::get_chart_summary(&state.db, asset_id).await?;
     Ok(Json(summary))
 }
@@ -265,8 +316,10 @@ pub async fn api_outgoing_offers(
 /// Get pending P2P offers for a specific asset (public).
 pub async fn api_asset_p2p_offers(
     State(state): State<AppState>,
-    Path(asset_id): Path<Uuid>,
+    Path(id_or_slug): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
+    let asset_id = resolve_asset_id(&state.db, &id_or_slug).await?;
+
     let offers = super::p2p::get_asset_offers(&state.db, asset_id).await?;
     Ok(Json(offers))
 }

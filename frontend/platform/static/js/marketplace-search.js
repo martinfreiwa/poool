@@ -364,13 +364,13 @@
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       initMarketplaceSearch();
-      initSidebarSearch();
+      // initSidebarSearch();
     });
   } else {
     // Small delay to ensure HTML is fully parsed
     setTimeout(function () {
       initMarketplaceSearch();
-      initSidebarSearch();
+      // initSidebarSearch(); // Disabled in favor of global-search.js
     }, 150);
   }
 
@@ -378,7 +378,7 @@
   document.addEventListener("htmx:afterSwap", function () {
     setTimeout(function () {
       initMarketplaceSearch();
-      initSidebarSearch();
+      // initSidebarSearch();
     }, 200);
   });
 })();

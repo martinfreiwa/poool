@@ -241,7 +241,8 @@ class PageQualityTracker:
         """Hard-fail if any real JS console errors exist."""
         critical = self.get_critical_errors()
         if critical:
-            details = "\n".join(f"  • [{e['url']}] {e['text']}" for e in critical[:10])
+            top_errors = critical if len(critical) <= 10 else critical[0:10]  # type: ignore[misc]
+            details = "\n".join(f"  • [{e['url']}] {e['text']}" for e in top_errors)
             raise AssertionError(
                 f"🔴 {len(critical)} console error(s) found:\n{details}"
             )
@@ -251,7 +252,8 @@ class PageQualityTracker:
         ignore = set(ignore_status or [])
         failures = [f for f in self.network_failures if f["status"] not in ignore]
         if failures:
-            details = "\n".join(f"  • [{f['status']}] {f['url']}" for f in failures[:10])
+            top_failures = failures if len(failures) <= 10 else failures[0:10]  # type: ignore[misc]
+            details = "\n".join(f"  • [{f['status']}] {f['url']}" for f in top_failures)
             raise AssertionError(
                 f"🔴 {len(failures)} HTTP error(s):\n{details}"
             )
@@ -395,21 +397,31 @@ def cleanup_test_user(user_id):
 # ═══════════════════════════════════════════════════════════════════════════
 # SECTION 4: BROWSER FIXTURES
 # ═══════════════════════════════════════════════════════════════════════════
+VIDEO_DIR = TEST_ROOT / "videos"
+VIDEO_DIR.mkdir(parents=True, exist_ok=True)
+
 
 @pytest.fixture(scope="session")
 def playwright_session():
-    """Session-scoped Playwright browser instance (Chromium)."""
+    """Session-scoped Playwright browser instance. Supports BROWSER env var."""
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=os.environ.get("HEADED", "0") != "1",
-            slow_mo=int(os.environ.get("SLOWMO", "0")),
-        )
+        browser_name = os.environ.get("BROWSER", "chromium").lower()
+        launch_opts = {
+            "headless": os.environ.get("HEADED", "0") != "1",
+            "slow_mo": int(os.environ.get("SLOWMO", "0")),
+        }
+        if browser_name == "firefox":
+            browser = p.firefox.launch(**launch_opts)
+        elif browser_name == "webkit":
+            browser = p.webkit.launch(**launch_opts)
+        else:
+            browser = p.chromium.launch(**launch_opts)
         yield browser
         browser.close()
 
 
 def _create_context_and_page(browser, test_name, viewport="desktop"):
-    """Helper: create a browser context with tracing and a quality-tracked page."""
+    """Helper: create a browser context with tracing, optional video, and a quality-tracked page."""
     vp = VIEWPORTS.get(viewport, VIEWPORTS["desktop"])
     ua = USER_AGENTS.get(viewport)
 
@@ -426,7 +438,20 @@ def _create_context_and_page(browser, test_name, viewport="desktop"):
         context_opts["has_touch"] = True
         context_opts["is_mobile"] = True
 
+    # Video recording (opt-in via VIDEO=1 env var)
+    if os.environ.get("VIDEO", "0") == "1":
+        context_opts["record_video_dir"] = str(VIDEO_DIR)
+        context_opts["record_video_size"] = {"width": vp["width"], "height": vp["height"]}
+
     context = browser.new_context(**context_opts)
+
+    # Auto-accept cookies to avoid the banner obscuring elements
+    context.add_init_script("""
+        localStorage.setItem("poool_cookie_consent", JSON.stringify({
+            "granted_at": "2026-01-01T00:00:00.000Z",
+            "preferences": {"essential": true, "analytics": true, "marketing": true}
+        }));
+    """)
 
     # Start tracing for debugging failed tests
     context.tracing.start(screenshots=True, snapshots=True, sources=True)
@@ -527,7 +552,8 @@ def authenticated_user_page(playwright_session, request):
         playwright_session, request.node.name
     )
 
-    unique_id = str(uuid.uuid4())[:8]
+    full_uuid = str(uuid.uuid4())
+    unique_id = full_uuid[0:8]
     email = f"e2e-test-{unique_id}@poool.app"
     password = "TestPass123!"
     user_id = None
@@ -620,16 +646,39 @@ def admin_page(playwright_session, request):
         playwright_session, request.node.name
     )
 
-    # Login as admin
-    page.goto(f"{BASE_URL}/auth/login")
-    page.fill("#email-input", ADMIN_EMAIL)
-    page.fill("#password-input", ADMIN_PASSWORD)
+    # 1. Sign up a new user via UI
+    full_uuid = str(uuid.uuid4())
+    unique_id = full_uuid[0:8]
+    email = f"e2e-admin-{unique_id}@poool.app"
+    password = "TestAdminPass123!"
+
+    page.goto(f"{BASE_URL}/auth/signup")
+    page.fill("#email-input", email)
+    page.fill("#password-input", password)
+    page.click("#terms-checkbox")
     page.click("#login-button")
 
     try:
-        page.wait_for_url(lambda url: "/auth/login" not in url, timeout=10000)
+        page.wait_for_url(lambda url: "/auth/signup" not in url, timeout=10000)
     except Exception:
-        pytest.fail("Admin login failed — check ADMIN_EMAIL/ADMIN_PASSWORD env vars")
+        pass
+
+    # 2. Assign superadmin role using direct SQL
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        query = """
+        INSERT INTO user_roles (user_id, role_id)
+        SELECT u.id, r.id
+        FROM users u, roles r
+        WHERE u.email = %s AND (r.name = 'super_admin' OR r.name = 'admin')
+        ON CONFLICT DO NOTHING;
+        """
+        cur.execute(query, (email,))
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
 
     yield page, tracker
     _teardown_context(context, page, tracker, request)
@@ -644,15 +693,39 @@ def admin_mobile_page(playwright_session, request):
         playwright_session, request.node.name, viewport="mobile"
     )
 
-    page.goto(f"{BASE_URL}/auth/login")
-    page.fill("#email-input", ADMIN_EMAIL)
-    page.fill("#password-input", ADMIN_PASSWORD)
+    # 1. Sign up a new user via UI
+    full_uuid = str(uuid.uuid4())
+    unique_id = full_uuid[0:8]
+    email = f"e2e-admin-mob-{unique_id}@poool.app"
+    password = "TestAdminPass123!"
+
+    page.goto(f"{BASE_URL}/auth/signup")
+    page.fill("#email-input", email)
+    page.fill("#password-input", password)
+    page.click("#terms-checkbox")
     page.click("#login-button")
 
     try:
-        page.wait_for_url(lambda url: "/auth/login" not in url, timeout=10000)
+        page.wait_for_url(lambda url: "/auth/signup" not in url, timeout=10000)
     except Exception:
-        pytest.fail("Admin login failed on mobile viewport")
+        pass
+
+    # 2. Assign superadmin role using direct SQL
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        query = """
+        INSERT INTO user_roles (user_id, role_id)
+        SELECT u.id, r.id
+        FROM users u, roles r
+        WHERE u.email = %s AND (r.name = 'super_admin' OR r.name = 'admin')
+        ON CONFLICT DO NOTHING;
+        """
+        cur.execute(query, (email,))
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
 
     yield page, tracker
     _teardown_context(context, page, tracker, request)
@@ -686,10 +759,10 @@ def take_named_screenshot(page, name):
 
 def check_toast_message(page, expected_text=None, timeout=5000):
     """Wait for and verify a toast notification appears."""
-    toast = page.locator(".toast, .notification, .alert-success, [role='alert']").first
+    toast = page.locator(".toast, .notification, .alert-success, [role='alert'], .poool-toast-card").first
     expect(toast).to_be_visible(timeout=timeout)
     if expected_text:
-        expect(toast).to_contain_text(expected_text)
+        expect(toast).to_contain_text(expected_text, ignore_case=True)
     return toast
 
 

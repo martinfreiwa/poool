@@ -1,39 +1,18 @@
 import pytest
 import os
 import psycopg2
-from playwright.sync_api import sync_playwright, expect
+from playwright.sync_api import expect
 
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 DB_URL = os.environ.get("DATABASE_URL", "postgres://martin@localhost/poool")
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "test@poool.app")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "TestPass123!")
 
-@pytest.fixture(scope="session")
-def admin_page():
-    """Returns an authenticated admin page."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(viewport={'width': 1280, 'height': 800})
-        page = context.new_page()
-        
-        # Login
-        page.goto(f"{BASE_URL}/auth/login")
-        page.fill("#email-input", ADMIN_EMAIL)
-        page.fill("#password-input", ADMIN_PASSWORD)
-        page.click("#login-button")
-        
-        # Wait for redirect
-        page.wait_for_function("window.location.pathname !== '/auth/login'", timeout=10000)
-        
-        yield page
-        browser.close()
-
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def test_user_email():
     """Fetches a real user email from the database for testing search."""
     conn = psycopg2.connect(DB_URL)
     cur = conn.cursor()
-    cur.execute("SELECT email FROM users WHERE email != %s LIMIT 1", (ADMIN_EMAIL,))
+    # Don't pick superadmins to avoid messing up other tests
+    cur.execute("SELECT u.email FROM users u LEFT JOIN user_roles ur ON u.id = ur.user_id LEFT JOIN roles r ON ur.role_id = r.id WHERE r.name IS DISTINCT FROM 'super_admin' AND r.name IS DISTINCT FROM 'admin' LIMIT 1")
     email = cur.fetchone()[0]
     cur.close()
     conn.close()
@@ -41,69 +20,85 @@ def test_user_email():
 
 def test_user_search(admin_page, test_user_email):
     """Verifies that searching for a user by email works."""
-    admin_page.goto(f"{BASE_URL}/admin/users.html")
+    page, tracker = admin_page
+    page.goto(f"{BASE_URL}/admin/users.html")
     
     # Wait for table to load by checking for checkboxes (means data is rendered)
-    expect(admin_page.locator(".user-checkbox").first).to_be_visible(timeout=10000)
+    expect(page.locator(".user-checkbox").first).to_be_visible(timeout=10000)
     
-    # Input search
-    admin_page.fill("#user-search-input", test_user_email)
+    # Input search (this filters client-side, no network request)
+    page.fill("#user-search-input", test_user_email)
     
-    # Debounce is 300ms, wait a bit
-    admin_page.wait_for_timeout(1000)
+    # Wait for the client-side debounce and DOM update
+    # The list is updated by JavaScript, so wait for the row count to change or cell text to match
+    rows = page.locator("#users-table-body tr")
+    expect(rows).not_to_have_count(0, timeout=5000)
+    expect(rows.first).to_contain_text(test_user_email, timeout=5000)
     
     # Verify the table only shows our user
-    rows = admin_page.locator("#users-table-body tr")
-    count = rows.count()
-    if count > 0:
-        # Check if the email is present in the first row
-        expect(rows.first).to_contain_text(test_user_email)
-    else:
-        pytest.fail(f"User with email {test_user_email} not found in search results")
+    rows = page.locator("#users-table-body tr")
+
+    
+    tracker.assert_no_critical_errors()
 
 def test_user_status_filter(admin_page):
     """Verifies that filtering by status works."""
-    admin_page.goto(f"{BASE_URL}/admin/users.html")
-    expect(admin_page.locator(".user-checkbox").first).to_be_visible(timeout=10000)
+    page, tracker = admin_page
+    page.goto(f"{BASE_URL}/admin/users.html")
+    expect(page.locator(".user-checkbox").first).to_be_visible(timeout=10000)
     
     # Filter by suspended (force=True since the select is hidden by custom poool-dropdown)
-    admin_page.select_option("#filter-status", "suspended", force=True)
-    admin_page.wait_for_timeout(1000)
+    # This is also client-side filtering
+    page.select_option("#filter-status", "suspended", force=True)
     
-    # Check if all visible users are suspended
-    rows = admin_page.locator("#users-table-body tr")
-    for i in range(rows.count()):
-        # Check if the row contains "Suspended" badge
-        expect(rows.nth(i)).to_contain_text("Suspended")
+    # Wait for the filter to apply (DOM change)
+    page.wait_for_timeout(500)
+    
+    # Depending on data, there might or might not be suspended users.
+    # We will just verify the response is good to avoid flakes on blank DBs.
+    rows = page.locator("#users-table-body tr")
+    if rows.count() > 0:
+        for i in range(rows.count()):
+            expect(rows.nth(i)).to_contain_text("Suspended")
+            
+    tracker.assert_no_critical_errors()
 
 def test_toggle_user_status(admin_page, test_user_email):
     """Verifies that suspending and activating a user works."""
-    admin_page.goto(f"{BASE_URL}/admin/users.html")
-    admin_page.fill("#user-search-input", test_user_email)
-    admin_page.wait_for_timeout(1000)
+    page, tracker = admin_page
+    page.goto(f"{BASE_URL}/admin/users.html")
     
-    # Get initial status
-    row = admin_page.locator("#users-table-body tr").first
+    # Client-side search to isolate the row
+    page.fill("#user-search-input", test_user_email)
+    
+    # Wait for the search outcome
+    row = page.locator("#users-table-body tr").first
+    expect(row).to_contain_text(test_user_email, timeout=5000)
     status_cell = row.locator("td:nth-child(6)") # Status column
-    initial_status = status_cell.inner_text().lower()
+    expect(status_cell).to_be_visible()
+    initial_status_text = status_cell.inner_text().strip()
     
     # Click toggle button (Action column is last)
     toggle_btn = row.locator("td:nth-child(8) button").last
     
-    # Handle the confirmation dialog
-    admin_page.once("dialog", lambda dialog: dialog.accept())
-    toggle_btn.click()
+    # Handle the custom pooolConfirm dialog by clicking its confirm button
+    with page.expect_response("**/api/admin/users/**/status") as response_info:
+        toggle_btn.click()
+        page.locator("#pc-confirm").click()
     
-    # Wait for reload
-    admin_page.wait_for_timeout(2000)
+    response = response_info.value
+    assert response.ok
     
     # Verify status changed
-    new_status = status_cell.inner_text().lower()
-    assert initial_status != new_status
+    expect(status_cell).not_to_have_text(initial_status_text, timeout=5000)
     
     # Cleanup: Toggle back
-    admin_page.once("dialog", lambda dialog: dialog.accept())
-    toggle_btn.click()
-    admin_page.wait_for_timeout(2000)
-    final_status = status_cell.inner_text().lower()
-    assert final_status == initial_status
+    with page.expect_response("**/api/admin/users/**/status") as response_info:
+        toggle_btn.click()
+        page.locator("#pc-confirm").click()
+        
+    response = response_info.value
+    assert response.ok
+    
+    expect(status_cell).to_have_text(initial_status_text, timeout=5000)
+    tracker.assert_no_critical_errors()

@@ -574,14 +574,18 @@
           </button>
           <div class="mobile-gallery-scroll" id="mobileGalleryScroll">
             {% for img_url in asset.image_urls | default([]) %}
-            <div class="mobile-gallery-slide" data-index="{{ loop.index0 }}">
-              <img src="{{ img_url }}" alt="{{ asset.title }}" class="mobile-gallery-img gallery-clickable" loading="{% if loop.index0 == 0 %}eager{% else %}lazy{% endif %}" data-lightbox-index="{{ loop.index0 }}" />
-            </div>
+              {% if loop.index0 < 5 %}
+              <div class="mobile-gallery-slide" data-index="{{ loop.index0 }}">
+                <img src="{{ img_url }}" alt="{{ asset.title }}" class="mobile-gallery-img gallery-clickable" loading="{% if loop.index0 == 0 %}eager{% else %}lazy{% endif %}" data-lightbox-index="{{ loop.index0 }}" />
+              </div>
+              {% endif %}
             {% endfor %}
           </div>
           <div class="mobile-gallery-indicators" id="mobileGalleryIndicators">
             {% for img_url in asset.image_urls | default([]) %}
-            <span class="mobile-gallery-dot gallery-dot-clickable {% if loop.index0 == 0 %}active{% endif %}" data-slide-index="{{ loop.index0 }}"></span>
+              {% if loop.index0 < 5 %}
+              <span class="mobile-gallery-dot gallery-dot-clickable {% if loop.index0 == 0 %}active{% endif %}" data-slide-index="{{ loop.index0 }}"></span>
+              {% endif %}
             {% endfor %}
           </div>
         </div>

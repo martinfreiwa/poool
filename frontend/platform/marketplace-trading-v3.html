@@ -674,8 +674,8 @@
             var params = new URLSearchParams(window.location.search);
             var assetId = params.get('asset_id') || params.get('id') || params.get('asset');
 
-            // If we have a real asset UUID, initialize live trading
-            if (assetId && assetId.match(/^[0-9a-f-]{36}$/i)) {
+            // If we have an asset ID or slug, initialize live trading
+            if (assetId) {
                 console.log('[Trading] Live mode — asset:', assetId);
                 if (window.MarketTrading) {
                     window.MarketTrading.init(assetId);

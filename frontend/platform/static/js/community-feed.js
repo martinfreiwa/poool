@@ -110,11 +110,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnFollowing = document.getElementById('feed-btn-following');
         
         if (mode === 'all') {
-            btnAll.className = 'ds-btn ds-btn--primary';
-            btnFollowing.className = 'ds-btn ds-btn--secondary';
+            btnAll.className = 'feed-toggle-btn active';
+            btnFollowing.className = 'feed-toggle-btn';
         } else {
-            btnAll.className = 'ds-btn ds-btn--secondary';
-            btnFollowing.className = 'ds-btn ds-btn--primary';
+            btnAll.className = 'feed-toggle-btn';
+            btnFollowing.className = 'feed-toggle-btn active';
         }
         
         loadFeed();
@@ -127,11 +127,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (btnFresh && btnHot) {
             if (mode === 'fresh') {
-                btnFresh.className = 'ds-btn ds-btn--primary ds-btn--sm';
-                btnHot.className = 'ds-btn ds-btn--secondary ds-btn--sm';
+                btnFresh.className = 'feed-toggle-btn active';
+                btnHot.className = 'feed-toggle-btn';
             } else {
-                btnFresh.className = 'ds-btn ds-btn--secondary ds-btn--sm';
-                btnHot.className = 'ds-btn ds-btn--primary ds-btn--sm';
+                btnFresh.className = 'feed-toggle-btn';
+                btnHot.className = 'feed-toggle-btn active';
             }
         }
         
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (p.verified_owner) {
             const ownerBadge = document.createElement('span');
             ownerBadge.className = 'feed-post-badge';
-            ownerBadge.style.cssText = 'background:#F0FDF4;color:#027A48;border:1px solid #D1FADF;margin-left:6px;font-size:11px;';
+            ownerBadge.style.cssText = 'background:#F2F4F7;color:#475467;border:1px solid #EAECF0;margin-left:6px;font-size:11px;';
             ownerBadge.textContent = 'Verified Owner';
             nameSpan.appendChild(ownerBadge);
         }
@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (p.is_pinned) {
             const pinnedBadge = document.createElement('span');
             pinnedBadge.className = 'feed-post-badge';
-            pinnedBadge.style.cssText = 'background:#FFF0ED;color:#DC6803;border:1px solid #FFD8CF;';
+            pinnedBadge.style.cssText = 'background:#F2F4F7;color:#475467;border:1px solid #EAECF0;';
             pinnedBadge.textContent = 'Pinned';
             header.appendChild(pinnedBadge);
         }
@@ -246,13 +246,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (p.post_type === 'market_insight') {
             const typeBadge = document.createElement('span');
             typeBadge.className = 'feed-post-badge';
-            typeBadge.style.cssText = 'background:#F0FDF4;color:#027A48;border:1px solid #D1FADF;margin-left:8px;';
+            typeBadge.style.cssText = 'background:#F2F4F7;color:#475467;margin-left:8px;border:1px solid #EAECF0;';
             typeBadge.textContent = 'Market Insight';
             header.appendChild(typeBadge);
         } else if (p.post_type === 'review') {
             const typeBadge = document.createElement('span');
             typeBadge.className = 'feed-post-badge';
-            typeBadge.style.cssText = 'background:#FFF9C4;color:#F57F17;border:1px solid #FFF59D;margin-left:8px;';
+            typeBadge.style.cssText = 'background:#F2F4F7;color:#475467;margin-left:8px;border:1px solid #EAECF0;';
             typeBadge.textContent = 'Review';
             header.appendChild(typeBadge);
         }
@@ -352,17 +352,26 @@ document.addEventListener('DOMContentLoaded', () => {
         reactions.className = 'feed-post-reactions';
 
         const reactionTypes = [
-            { emoji: '🔥', type: 'fire', count: p.reaction_count || 0 },
-            { emoji: '💡', type: 'idea', count: 0 },
-            { emoji: '👏', type: 'clap', count: 0 },
+            { 
+               icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>',
+               type: 'like', 
+               count: p.reaction_count || 0 
+            },
+            { 
+               icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>', 
+               type: 'comment', 
+               count: p.comment_count || 0 
+            },
+            { 
+               icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>', 
+               type: 'share', 
+               count: 0 
+            },
         ];
         reactionTypes.forEach(r => {
             const btn = document.createElement('button');
             btn.className = 'feed-reaction-btn';
-            btn.textContent = r.emoji + ' ';
-            const countSpan = document.createElement('span');
-            countSpan.textContent = r.count;
-            btn.appendChild(countSpan);
+            btn.innerHTML = r.icon + '<span style="margin-left:6px">' + r.count + '</span>';
             btn.addEventListener('click', () => toggleReaction(p.id, btn, r.type));
             reactions.appendChild(btn);
         });
@@ -969,12 +978,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Hashtag header banner
             const banner = document.createElement('div');
-            banner.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: linear-gradient(135deg, rgba(3,255,136,0.08), rgba(3,255,136,0.02)); border: 1px solid rgba(3,255,136,0.2); border-radius: 12px; margin-bottom: 20px;';
+            banner.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: #EEF4FF; border: 1px solid #D1E0FF; border-radius: 12px; margin-bottom: 20px;';
 
             const bannerLeft = document.createElement('div');
             bannerLeft.style.cssText = 'display: flex; align-items: center; gap: 12px;';
             const hashIcon = document.createElement('div');
-            hashIcon.style.cssText = 'width: 40px; height: 40px; border-radius: 10px; background: rgba(3,255,136,0.15); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #03FF88;';
+            hashIcon.style.cssText = 'width: 40px; height: 40px; border-radius: 10px; background: #D1E0FF; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: var(--btn-primary-bg, #0000FF);';
             hashIcon.textContent = '#';
             bannerLeft.appendChild(hashIcon);
 
@@ -1026,32 +1035,66 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('poool_community_onboarding_dismissed', 'true');
     };
 
-    async function checkOnboarding() {
-        if (localStorage.getItem('poool_community_onboarding_dismissed') === 'true') {
+    async function updateMyProfileCard(profile, retryCount = 0) {
+        // Elements from community.html
+        const nameEl = document.getElementById('my-profile-name');
+        const bioEl = document.getElementById('my-profile-bio');
+        const postEl = document.getElementById('my-profile-posts');
+        const folEl = document.getElementById('my-profile-followers');
+        const fngEl = document.getElementById('my-profile-following');
+        const avatarEl = document.getElementById('my-profile-avatar-circle');
+
+        if (!window.__POOOL_USER && retryCount < 10) {
+            // Give user-data.js a moment to finish its /api/me fetch
+            setTimeout(() => updateMyProfileCard(profile, retryCount + 1), 200);
             return;
         }
 
+        if (nameEl && window.__POOOL_USER) {
+            nameEl.textContent = window.__POOOL_USER.name || "User";
+        }
+        if (avatarEl && window.__POOOL_USER) {
+            avatarEl.textContent = (window.__POOOL_USER.name || "U")[0].toUpperCase();
+        }
+        if (bioEl) {
+            bioEl.textContent = profile.bio || "No bio yet • Start your journey 🌱";
+        }
+        if (postEl) postEl.textContent = profile.post_count || 0;
+        if (folEl) folEl.textContent = profile.follower_count || 0;
+        if (fngEl) fngEl.textContent = profile.following_count || 0;
+    }
+
+    async function checkOnboarding() {
         try {
             const res = await fetch('/api/community/profile/me', { credentials: 'same-origin' });
             if (!res.ok) return;
 
             const profile = await res.json();
+
+            // Snyc the profile card on the right
+            updateMyProfileCard(profile);
             
+            if (localStorage.getItem('poool_community_onboarding_dismissed') === 'true') {
+                return;
+            }
+
             // Checking if they need onboarding (XP concept)
             const hasBio = !!profile.bio;
             const hasPosts = profile.post_count > 0;
 
             if (!hasBio || !hasPosts) {
-                document.getElementById('ob-bio').checked = hasBio;
-                document.getElementById('ob-post').checked = hasPosts;
+                const bioCB = document.getElementById('ob-bio');
+                const postCB = document.getElementById('ob-post');
+                if (bioCB) bioCB.checked = hasBio;
+                if (postCB) postCB.checked = hasPosts;
                 
-                document.getElementById('onboarding-modal').style.display = 'flex';
+                const modal = document.getElementById('onboarding-modal');
+                if (modal) modal.style.display = 'flex';
             } else {
-                // If they completed it but never dismissed modal, we can silently dismiss
                 localStorage.setItem('poool_community_onboarding_dismissed', 'true');
             }
         } catch (e) {
-            console.error("Failed to check onboarding status", e);
+            console.error("Failed to check onboarding/profile status", e);
         }
     }
 
@@ -1074,9 +1117,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const link = document.createElement('span');
                 link.className = 'hashtag-tag';
                 link.textContent = part;
-                link.style.cssText = 'color: #03FF88; font-weight: 600; cursor: pointer; background: rgba(3,255,136,0.08); padding: 1px 5px; border-radius: 4px; transition: background 0.2s;';
-                link.addEventListener('mouseover', () => link.style.background = 'rgba(3,255,136,0.18)');
-                link.addEventListener('mouseout', () => link.style.background = 'rgba(3,255,136,0.08)');
+                link.style.cssText = 'color: var(--btn-primary-bg, #0000FF); font-weight: 600; cursor: pointer; transition: opacity 0.2s;';
+                link.addEventListener('mouseover', () => link.style.opacity = '0.7');
+                link.addEventListener('mouseout', () => link.style.opacity = '1');
                 link.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const tag = part.substring(1).toLowerCase();
@@ -1120,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!data.posts || data.posts.length === 0) {
                 feedContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px;">
                     <div style="font-size: 24px; margin-bottom: 12px;">#️⃣</div>
-                    <div style="font-size: 16px; font-weight: 600; color: #101828; margin-bottom: 4px;">No posts with <span style="color: #03FF88;">#${escapeAttr(tag)}</span></div>
+                    <div style="font-size: 16px; font-weight: 600; color: #101828; margin-bottom: 4px;">No posts with <span style="color: var(--btn-primary-bg, #0000FF);">#${escapeAttr(tag)}</span></div>
                     <div style="font-size: 14px; color: #667085; margin-bottom: 16px;">Be the first to use this hashtag!</div>
                     <button class="ds-btn ds-btn--secondary" onclick="loadFeedFromGlobal()">← Back to Feed</button>
                 </div>`;
@@ -1138,7 +1181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             headerDiv.appendChild(backBtn);
 
             const tagLabel = document.createElement('h3');
-            tagLabel.style.cssText = 'font-size: 18px; font-weight: 700; color: #03FF88; margin: 0;';
+            tagLabel.style.cssText = 'font-size: 18px; font-weight: 700; color: var(--btn-primary-bg, #0000FF); margin: 0;';
             tagLabel.textContent = `#${data.tag}`;
             headerDiv.appendChild(tagLabel);
 
@@ -1484,6 +1527,71 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             container.appendChild(row);
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // UX.15: EDIT COMMUNITY PROFILE
+    // ═══════════════════════════════════════════════════════════════
+
+    const editProfileBtn = document.getElementById('my-profile-edit-btn');
+    const editProfileModal = document.getElementById('edit-profile-modal');
+    const saveProfileBtn = document.getElementById('save-profile-btn');
+    const bioInput = document.getElementById('edit-profile-bio-input');
+
+    if (editProfileBtn) {
+        editProfileBtn.addEventListener('click', async () => {
+            // Load current profile data first
+            try {
+                const res = await fetch('/api/community/profile/me', { credentials: 'same-origin' });
+                if (res.ok) {
+                    const profile = await res.json();
+                    if (bioInput) bioInput.value = profile.bio || '';
+                }
+                if (editProfileModal) editProfileModal.style.display = 'flex';
+            } catch (e) {
+                console.error("Failed to load profile for editing", e);
+                if (editProfileModal) editProfileModal.style.display = 'flex';
+            }
+        });
+    }
+
+    if (saveProfileBtn) {
+        saveProfileBtn.addEventListener('click', async () => {
+            const bio = bioInput ? bioInput.value : '';
+            
+            saveProfileBtn.disabled = true;
+            const originalText = saveProfileBtn.textContent;
+            saveProfileBtn.textContent = 'Saving...';
+
+            try {
+                const res = await fetch('/api/community/profile', {
+                    method: 'PUT',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bio: bio })
+                });
+
+                if (res.ok) {
+                    if (editProfileModal) editProfileModal.style.display = 'none';
+                    // Refresh the profile card and onboarding if visible
+                    const profileRes = await fetch('/api/community/profile/me', { credentials: 'same-origin' });
+                    if (profileRes.ok) {
+                        const profile = await profileRes.json();
+                        updateMyProfileCard(profile);
+                    }
+                    if (window.showToast) window.showToast('Profile updated successfully!', 'success');
+                } else {
+                    const err = await res.text();
+                    alert('Failed to update profile: ' + err);
+                }
+            } catch (e) {
+                console.error('Profile update failed:', e);
+                alert('An error occurred while updating your profile.');
+            } finally {
+                saveProfileBtn.disabled = false;
+                saveProfileBtn.textContent = originalText;
+            }
         });
     }
 

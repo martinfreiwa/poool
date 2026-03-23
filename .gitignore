@@ -64,3 +64,19 @@ frontend/platform/static/css/bundle.css
 
 # Test SQL build artifacts
 test_sql/
+
+# Virtual environment
+.venv/
+venv/
+
+# E2E Test artifacts (generated at runtime)
+tests/e2e/screenshots/
+tests/e2e/traces/
+tests/e2e/reports/
+tests/e2e/videos/
+tests/**/test-results/
+
+# Playwright
+playwright-report/
+test-results/
+

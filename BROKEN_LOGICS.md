@@ -703,3 +703,51 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **What I did:** Changed the provider string to `"open.er-api.com"` for accurate history logging on orders.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+
+### [P2] — E2E Tests Cookie Banner Blocker
+- **File:** `tests/e2e/conftest.py`
+- **What was wrong:** The cookie banner pops up and blocks Playwright clicks, causing E2E tests to fail.
+- **What I did:** Added a `context.add_init_script` to prepopulate `localStorage` with `poool_cookie_consent` accepted before page load, bypassing the banner completely.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Admin E2E Tests Authentication State
+- **File:** `tests/e2e/conftest.py`
+- **What was wrong:** Admin E2E tests failed because they assumed the hardcoded `admin@poool.app` user existed without registering them, causing tests to crash if the database was clean.
+- **What I did:** Rewrote `admin_page` to dynamically sign up a unique E2E admin user and use SQL to inject the `super_admin` role directly into the `user_roles` table.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Settings Tests Element Visibility
+- **File:** `tests/e2e/test_settings.py`
+- **What was wrong:** Refactored settings inputs to hidden backing `select` inputs broken by a custom dropdown wrapper (`poool-dropdown.js`), preventing automatic testing interactions.
+- **What I did:** Forced select selection onto the hidden elements using `force=True` and emitted DOM `change` events directly using JavaScript evaluation to satisfy the custom script listeners.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Custom Dropdown state out-of-sync with hidden select
+- **File:** `frontend/platform/static/js/poool-dropdown.js`
+- **What was wrong:** When external JavaScript updated the `.value` of a native `<select>` element that had been converted to a `PooolDropdown`, the visual state of the custom dropdown remained unchanged. This caused UI/data discrepancy in admin pages and E2E tests.
+- **What I did:** Added a 'change' event listener to the native select in `fromSelect()` that calls `dropdown.setValue()` when triggered. Added `_isSyncing` guards to prevent infinite event loops between the custom dropdown and the native select.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Admin Support E2E race condition
+- **File:** `tests/e2e/test_admin_support.py`
+- **What was wrong:** The test checked for status values immediately after page reload, failing because the async `loadTicket()` fetch had not yet returned and updated the DOM.
+- **What I did:** Switched from direct `input_value()` assertion to Playwright's `expect().to_have_value()` which handles the waiting automatically.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+### [P1] — Community Profile 404 for new users
+- **File:** `backend/src/community/service.rs`
+- **What was wrong:** New users who hadn't interacted with the community yet would see a 404 error on `/api/community/profile/me`, which also broke the "My Profile" sidebar card and prevented posting.
+- **What I did:** Implemented `ensure_community_profile` which is called on profile lookup or post creation to automatically upsert the missing DB record.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Community Sidebar Profile Card Hardcoded
+- **File:** `frontend/platform/static/js/community-feed.js`, `frontend/platform/community.html`
+- **What was wrong:** The profile card on the right side of the community feed was hardcoded to "Martin F." and a placeholder bio.
+- **What I did:** Added unique IDs to the HTML elements and implemented `updateMyProfileCard` in the feed script to dynamically inject the real name and community stats (posts, followers) from the API.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23

@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT title, slug, asset_type, location_city, location_country\n        FROM assets\n        WHERE published = true\n          AND (LOWER(title) LIKE $1 OR LOWER(location_city) LIKE $1 OR LOWER(location_country) LIKE $1 OR LOWER(slug) LIKE $1)\n        ORDER BY featured DESC, created_at DESC\n        LIMIT 8\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "slug",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "asset_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "location_city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "location_country",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "d5a752241f5ec3ac40f2b0d631ec210181ce9663e739c640338152615bec4249"
+}

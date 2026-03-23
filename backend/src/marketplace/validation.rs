@@ -490,7 +490,7 @@ mod tests {
     #[test]
     fn test_validate_valid_limit_order() {
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "buy".into(),
             order_type: "limit".into(),
             price_cents: Some(10000),
@@ -503,7 +503,7 @@ mod tests {
     #[test]
     fn test_validate_valid_market_order() {
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "sell".into(),
             order_type: "market".into(),
             price_cents: None,
@@ -516,7 +516,7 @@ mod tests {
     #[test]
     fn test_validate_invalid_side() {
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "hold".into(),
             order_type: "limit".into(),
             price_cents: Some(10000),
@@ -529,7 +529,7 @@ mod tests {
     #[test]
     fn test_validate_invalid_order_type() {
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "buy".into(),
             order_type: "stop_loss".into(),
             price_cents: Some(10000),
@@ -542,7 +542,7 @@ mod tests {
     #[test]
     fn test_validate_zero_quantity() {
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "buy".into(),
             order_type: "limit".into(),
             price_cents: Some(10000),
@@ -555,7 +555,7 @@ mod tests {
     #[test]
     fn test_validate_negative_quantity() {
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "buy".into(),
             order_type: "limit".into(),
             price_cents: Some(10000),
@@ -568,7 +568,7 @@ mod tests {
     #[test]
     fn test_validate_limit_order_missing_price() {
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "buy".into(),
             order_type: "limit".into(),
             price_cents: None,
@@ -581,7 +581,7 @@ mod tests {
     #[test]
     fn test_validate_limit_order_zero_price() {
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "buy".into(),
             order_type: "limit".into(),
             price_cents: Some(0),
@@ -594,7 +594,7 @@ mod tests {
     #[test]
     fn test_validate_limit_order_negative_price() {
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "buy".into(),
             order_type: "limit".into(),
             price_cents: Some(-100),
@@ -608,7 +608,7 @@ mod tests {
     fn test_validate_below_minimum_order_value() {
         // 1 token * $0.05 = $0.05 — below $10 minimum
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "buy".into(),
             order_type: "limit".into(),
             price_cents: Some(5),
@@ -621,7 +621,7 @@ mod tests {
     #[test]
     fn test_validate_invalid_idempotency_key() {
         let req = SubmitOrderRequest {
-            asset_id: Uuid::new_v4(),
+            asset_id: Uuid::new_v4().to_string(),
             side: "buy".into(),
             order_type: "limit".into(),
             price_cents: Some(10000),

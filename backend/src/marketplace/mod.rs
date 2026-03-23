@@ -36,6 +36,7 @@ pub fn router() -> Router<AppState> {
     use routes::*;
     Router::new()
         // ── Public Read APIs ────────────────────────────────
+        .route("/api/marketplace/secondary/assets", get(api_secondary_assets))
         .route("/api/marketplace/:asset_id/orderbook", get(api_orderbook))
         .route("/api/marketplace/:asset_id/trades", get(api_recent_trades))
         .route("/api/marketplace/:asset_id/ticker", get(api_ticker))
@@ -50,6 +51,7 @@ pub fn router() -> Router<AppState> {
         // ── Authenticated Trading APIs ──────────────────────
         .route("/api/marketplace/orders", post(api_submit_order))
         .route("/api/marketplace/orders/mine", get(api_my_orders))
+        .route("/api/marketplace/trades/mine", get(api_my_trades))
         .route(
             "/api/marketplace/orders/:order_id",
             delete(api_cancel_order),

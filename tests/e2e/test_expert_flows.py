@@ -28,8 +28,8 @@ class TestExpertAuthAndSettings:
 
     def test_anonymize_leaderboard(self, authenticated_user_page):
         """Test enabling Leaderboard Anonymity and checking if it saves and reflects appropriately."""
-        page, user = authenticated_user_page
-        
+        page, tracker, user = authenticated_user_page
+
         # Go to settings Security tab where we added Leaderboard Privacy
         page.goto(f"{BASE_URL}/developer/settings")
         page.wait_for_load_state("networkidle")
@@ -83,7 +83,7 @@ class TestExpertAuthAndSettings:
 
     def test_change_email_and_password_modals(self, authenticated_user_page):
         """Expert check verifying modal dialog boundaries and correct change operations."""
-        page, user = authenticated_user_page
+        page, tracker, user = authenticated_user_page
         
         page.goto(f"{BASE_URL}/developer/settings")
         page.click("#tab-security")
@@ -107,7 +107,7 @@ class TestExpertDataGridAndUI:
     """Expert E2E Suite: Testing Table Sorts, Global Searches, Plus/Minus Buttons, Loading bars."""
     
     def test_marketplace_table_and_interactions(self, authenticated_user_page):
-        page, user = authenticated_user_page
+        page, tracker, user = authenticated_user_page
         
         page.goto(f"{BASE_URL}/marketplace")
         page.wait_for_load_state("networkidle")
@@ -129,7 +129,7 @@ class TestExpertDataGridAndUI:
             
     def test_plus_minus_cart_interaction(self, authenticated_user_page):
         """Verifies exactly what the plus/minus quantities do dynamically."""
-        page, user = authenticated_user_page
+        page, tracker, user = authenticated_user_page
         
         page.goto(f"{BASE_URL}/cart")
         page.wait_for_load_state("networkidle")

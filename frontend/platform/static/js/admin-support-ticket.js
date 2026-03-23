@@ -230,9 +230,19 @@ async function renderTicket() {
     }
 
     // Set selects
-    document.getElementById("sel-status").value = t.status || "open";
-    document.getElementById("sel-priority").value = t.priority || "normal";
-    document.getElementById("sel-assignee").value = t.assigned_to || "";
+    const sStatus = document.getElementById("sel-status");
+    const sPriority = document.getElementById("sel-priority");
+    const sAssignee = document.getElementById("sel-assignee");
+    if (sStatus) sStatus.value = t.status || "open";
+    if (sPriority) sPriority.value = t.priority || "normal";
+    if (sAssignee) sAssignee.value = t.assigned_to || "";
+    
+    // Sync with custom dropdowns if initialized
+    [sStatus, sPriority, sAssignee].forEach(select => {
+      if (select && select.parentNode && select.parentNode._pooolDropdown) {
+        select.parentNode._pooolDropdown.setValue(select.value);
+      }
+    });
 
     // Render Thread
     const threadEl = document.getElementById("ticket-thread");

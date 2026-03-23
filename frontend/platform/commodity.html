@@ -3763,7 +3763,7 @@
             </svg></button
           ><!-- Images container -->
           <div class="mobile-gallery-scroll" id="mobileGalleryScroll">
-            {% for img_url in asset.image_urls %}
+            {% for img_url in asset.image_urls[:5] %}
             <div class="mobile-gallery-slide" data-index="{{ loop.index0 }}">
               <img
                 src="{{ img_url }}"
@@ -3777,7 +3777,7 @@
           </div>
           <!-- Gallery indicators -->
           <div class="mobile-gallery-indicators" id="mobileGalleryIndicators">
-            {% for img_url in asset.image_urls %}
+            {% for img_url in asset.image_urls[:5] %}
             <span
               class="mobile-gallery-dot gallery-dot-clickable{% if loop.index0 == 0 %} active{% endif %}"
               data-slide-index="{{ loop.index0 }}"

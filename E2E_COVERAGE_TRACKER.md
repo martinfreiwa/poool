@@ -55,6 +55,7 @@ All screens a regular investor or issuer can see are rigidly tracked below. Cros
 | **F-2.10** | `/rewards/:code`, `/r/:code` | Referral Landing | 🖥️📱 | ⚪ Planned | Cookie set + redirect to signup. |
 | **F-2.11** | `/tier` | Tier Info Page | 🖥️📱 | ⚪ Planned | User tier level display. |
 | **F-2.12** | `/my-trading` → `my-trading.html` | Open Orders Panel | 🖥️📱 | ⚪ Planned | Unfulfilled maker/taker positions. |
+| **F-2.13** | `/api/marketplace/trades/mine` | Trade History API | 🖥️📱 | ⚪ Planned | Display settled user trades on My Trading. |
 
 ### 2.3 Marketplace & Asset Discovery
 | Flow ID | Target Route / HTML File | Feature Scope | Viewports | Status | Action Items |
@@ -67,7 +68,7 @@ All screens a regular investor or issuer can see are rigidly tracked below. Cros
 | **F-3.06** | `/property/{slug}` → `property.html` | Asset Detail (RE) | 🖥️📱 | ⚠️ Flaky | 5 tabs (Overview/Financials/Docs/Location/Reviews). |
 | **F-3.07** | `/commodity/{slug}` → `commodity.html` | Asset Detail (Alt) | 🖥️📱 | ⚪ Planned | Non-real-estate overrides. |
 | **F-3.08** | `/cart` → `cart.html` | Shopping Basket | 🖥️📱 | ⚠️ Flaky | Missing cart expiration logic. |
-| **F-3.09** | `/checkout` → `checkout.html` | Checkout Engine | 🖥️📱 | ⚪ Planned | Fee calculation, wallet deduction. |
+| **F-3.09** | `/checkout` → `checkout.html` | Checkout Engine | 🖥️📱 | ⚪ Planned | Platform fee calculation, wallet deduction. |
 | **F-3.10** | `/payment-in-progress` → `payment-in-progress.html` | Pending Gate | 🖥️📱 | ⚪ Planned | 3D-Secure / bank transfer wait state. |
 | **F-3.11** | `/payment-success` → `payment-success.html` | Post-Purchase | 🖥️📱 | ⚪ Planned | Redirect + success render. |
 | **F-3.12** | `/ws/market/:asset_id` | WebSocket Feed | 🖥️ | ⚪ Planned | Real-time orderbook/trade stream. |
@@ -75,6 +76,8 @@ All screens a regular investor or issuer can see are rigidly tracked below. Cros
 | **F-3.14** | `/api/marketplace/:id/candles` | Candlestick API | 🖥️ | ⚪ Planned | OHLCV data validation. |
 | **F-3.15** | `/api/marketplace/orders` (POST) | Submit Order | 🖥️ | ⚪ Planned | Limit/market order placement. |
 | **F-3.16** | `/api/marketplace/p2p/offers` | P2P Offers (CRUD) | 🖥️ | ⚪ Planned | Create/cancel/respond to P2P offers. |
+| **F-3.17** | `/api/assets/search` | Global Asset Search | 🖥️📱 | ⚪ Planned | Sidebar auto-complete filtering exclusively for assets. |
+| **F-3.18** | `/property/{slug}` Gallery | Secure Image Galleries| 🖥️📱 | ⚪ Planned | Validate GCS signed URL generation and carousel indicators. |
 
 ### 2.4 Developer (Issuer) Dashboard
 | Flow ID | Target Route / HTML File | Feature Scope | Viewports | Status | Action Items |
@@ -142,6 +145,8 @@ All screens a regular investor or issuer can see are rigidly tracked below. Cros
 | **F-6.21** | `/api/community/assets/:id/reviews` | Property Reviews | 🖥️📱 | ⚪ Planned | Star rating + text review. |
 | **F-6.22** | `/api/community/appeals` | Ban Appeals | 🖥️📱 | ⚪ Planned | User submits appeal to admin. |
 | **F-6.23** | `/leaderboard` → `leaderboard.html` | Public Ranks | 🖥️📱 | ⚪ Planned | Anonymized users = "Hidden". |
+| **F-6.24** | `/api/community/profile/me` (Auto) | Auto-Onboarding | 🖥️📱 | ⚪ Planned | Ensure profile creation on first hit. |
+| **F-6.25** | `community.html` Sidebar Card | Dynamic Profile Card | 🖥️📱 | ⚪ Planned | Verify name/bio/stats injection. |
 
 ### 2.7 Blog
 | Flow ID | Target Route / HTML File | Feature Scope | Viewports | Status | Action Items |
@@ -259,7 +264,7 @@ Cross-referenced against **61 admin HTML files** and **100+ admin API endpoints*
 | Flow ID | Target Route / HTML File | Feature Scope | Viewports | Status | Action Items |
 |---|---|---|---|---|---|
 | **A-7.01** | `/admin/support.html` | Ticket Inbox | 🖥️ | ⚪ Planned | Assign, prioritize, bulk ops. |
-| **A-7.02** | `/admin/support-ticket.html` | Chat Thread | 🖥️ | ⚪ Planned | Reply, update status. |
+| **A-7.02** | `/admin/support-ticket.html` | Chat Thread | 🖥️ | ✅ Solid | Reply, sync UI, update status. |
 | **A-7.03** | `/admin/notifications.html` | Push to Users | 🖥️ | ⚪ Planned | Broadcast notifications. |
 | **A-7.04** | `/admin/email-marketing.html` | Email Campaigns | 🖥️ | ⚪ Planned | Template CRUD + campaign send. |
 
@@ -295,11 +300,11 @@ Cross-referenced against **61 admin HTML files** and **100+ admin API endpoints*
 | Section | Total Flows | ✅ Solid | ⚠️ Flaky | ⚪ Planned |
 |---|---|---|---|---|
 | 2.1 Auth & Recovery | 14 | 0 | 2 | 12 |
-| 2.2 Portfolio & Wallet | 13 | 0 | 0 | 13 |
-| 2.3 Marketplace | 16 | 1 | 2 | 13 |
+| 2.2 Portfolio & Wallet | 14 | 0 | 0 | 14 |
+| 2.3 Marketplace | 18 | 1 | 2 | 15 |
 | 2.4 Developer Dashboard | 12 | 0 | 0 | 12 |
 | 2.5 Settings & Utility | 20 | 1 | 1 | 18 |
-| 2.6 Community | 23 | 0 | 0 | 23 |
+| 2.6 Community | 25 | 0 | 0 | 25 |
 | 2.7 Blog | 3 | 0 | 0 | 3 |
 | 2.8 Legal Pages | 7 | 0 | 0 | 7 |
 | 3.1 Admin Core | 8 | 0 | 0 | 8 |
@@ -308,49 +313,134 @@ Cross-referenced against **61 admin HTML files** and **100+ admin API endpoints*
 | 3.4 Admin Assets | 8 | 0 | 0 | 8 |
 | 3.5 Admin Marketplace | 15 | 0 | 0 | 15 |
 | 3.6 Admin Community | 16 | 0 | 0 | 16 |
-| 3.7 Admin Support | 4 | 0 | 0 | 4 |
+| 3.7 Admin Support | 4 | 1 | 0 | 3 |
 | 3.8 Admin API-Only | 9 | 0 | 0 | 9 |
-| **TOTAL** | **186** | **2** | **6** | **178** |
+| **TOTAL** | **191** | **3** | **6** | **182** |
 
 ---
 
 ## 6. Automatic Quality Checks (Built Into Every Test)
-Every test fixture (`quality_page`, `authenticated_user_page`, `admin_page`) automatically includes the `PageQualityTracker` which performs these checks **without any extra code in individual tests**:
+Every test fixture (`quality_page`, `authenticated_user_page`, `admin_page`, `mobile_page`, `tablet_page`) automatically includes the `PageQualityTracker` and post-test hooks.
 
 ### 6.1 What Gets Monitored Automatically
-| Check | How It Works | What Breaks the Test |
+| # | Check | How It Works | Auto-Fail? |
+|---|---|---|---|
+| 1 | **Console Errors** | `page.on("console")` captures ALL `console.error` | ✅ via `.assert_no_critical_errors()` |
+| 2 | **Uncaught JS Exceptions** | `page.on("pageerror")` catches unhandled throws | ✅ Always critical |
+| 3 | **Console Warnings** | `page.on("console")` captures `console.warn` | ❌ Logged only |
+| 4 | **HTTP 4xx/5xx** | `page.on("response")` tracks every response | ✅ via `.assert_no_network_failures()` |
+| 5 | **Resource Load Failures** | `page.on("requestfailed")` — DNS/CORS/network | ❌ Logged for review |
+| 6 | **Server 500 on Navigate** | `tracker.navigate_and_check()` checks status | ✅ Immediate fail |
+| 7 | **Unexpected Login Redirect** | Detects auth-redirect to `/auth/login` | ✅ Immediate fail |
+| 8 | **Blank Page Detection** | `assert_page_loaded()` — body has ≥ 10 chars | ✅ Immediate fail |
+| 9 | **Broken Images** | `assert_no_broken_images()` — `naturalWidth === 0` | ✅ On demand |
+| 10 | **Basic A11y** | `assert_basic_a11y()` — title, lang, h1, duplicate IDs | ✅ On demand |
+| 11 | **Page Load Time** | `time.time()` delta per URL | ❌ Logged in report |
+| 12 | **Screenshot on Failure** | `pytest_runtest_makereport` hook | Auto-saved `FAIL_*.png` |
+| 13 | **Playwright Trace** | `context.tracing.start()` — screenshots+snapshots+sources | Auto-saved `FAIL_*.zip` |
+| 14 | **JSON Quality Report** | Full report per test | Auto-saved `*.json` |
+
+### 6.2 Pre-Flight Checks
+| Check | What It Does |
+|---|---|
+| **Backend Health Gate** | Session-scoped. Hits `/health` 3x before ANY test runs. If backend is down → `pytest.exit()` immediately. |
+| **Directory Setup** | Auto-creates `screenshots/`, `reports/`, `traces/` dirs. |
+
+### 6.3 Available Fixtures
+| Fixture | Viewport | Auth | Yields |
+|---|---|---|---|
+| `quality_page` | 1280×800 Desktop | ❌ Anonymous | `(page, tracker)` |
+| `mobile_page` | 375×812 iPhone | ❌ Anonymous | `(page, tracker)` |
+| `tablet_page` | 768×1024 iPad | ❌ Anonymous | `(page, tracker)` |
+| `authenticated_user_page` | 1280×800 Desktop | ✅ Fresh user (KYC+$10k) | `(page, tracker, user_ctx)` |
+| `admin_page` | 1280×800 Desktop | ✅ Admin login | `(page, tracker)` |
+| `admin_mobile_page` | 375×812 iPhone | ✅ Admin login | `(page, tracker)` |
+
+### 6.4 Context Configuration
+| Setting | Value | Why |
 |---|---|---|
-| **Console Errors** | `page.on("console")` captures ALL `console.error` messages | `.assert_no_critical_errors()` fails if uncaught JS exceptions exist |
-| **Console Warnings** | `page.on("console")` captures `console.warn` messages | Logged in report; doesn't fail test unless explicitly checked |
-| **Uncaught Exceptions** | `page.on("pageerror")` catches unhandled JS errors/throws | Always recorded as critical — auto-fails |
-| **Network Failures (4xx/5xx)** | `page.on("response")` tracks every HTTP response | `.assert_no_network_failures()` fails on any 4xx/5xx response |
-| **Resource Load Failures** | `page.on("requestfailed")` catches DNS/CORS/network errors | Logged in report; available for assertions |
-| **Page Load Verification** | `tracker.navigate_and_check(url)` records load time | Fails if HTTP 500+ or unexpected redirect to login |
-| **Blank Page Detection** | `.assert_page_loaded()` checks `body` has ≥ 5 chars of text | Fails if page renders blank/empty |
-| **Page Load Time** | `time.time()` delta measured per navigation | Logged in JSON report; can set performance thresholds |
-| **Screenshot on Failure** | `pytest_runtest_makereport` hook detects failures | Auto-saved to `tests/e2e/screenshots/FAIL_*.png` |
-| **Quality Report** | Full JSON report generated after each test | Saved to `tests/e2e/reports/*.json` |
+| `locale` | `en-US` | Consistent date/number formatting |
+| `timezone_id` | `Asia/Jakarta` | POOOL is Indonesia-based |
+| `ignore_https_errors` | `true` | Local/staging certs |
+| `has_touch` | `true` (mobile/tablet) | Touch events on mobile |
+| `is_mobile` | `true` (mobile) | Mobile CSS media queries |
+| `user_agent` | iPhone/iPad string | Realistic device emulation |
+| Tracing | screenshots+snapshots+sources | Full trace on failure |
 
-### 6.2 How Tests Use This
+### 6.5 Reusable Helper Functions
 ```python
-# EXAMPLE: Basic page load health test
-def test_marketplace_loads(quality_page):
-    page, tracker = quality_page
-    tracker.navigate_and_check(f"{BASE_URL}/marketplace")
-
-    # These assertions run AUTOMATICALLY:
-    tracker.assert_page_loaded()         # Not blank
-    tracker.assert_no_critical_errors()  # No JS exceptions
-    tracker.assert_no_network_failures() # No 4xx/5xx
-
-    # Page-specific assertions
-    expect(page.get_by_role("heading", name="Marketplace")).to_be_visible()
+# Available in any test via: from conftest import ...
+wait_for_api_response(page, "**/api/wallet/balance", action_fn=lambda: page.click("#refresh"))
+take_named_screenshot(page, "marketplace_loaded")
+check_toast_message(page, "Settings saved")
+fill_and_submit_form(page, {"#first-name": "John", "#email": "john@test.com"}, "#btn-save")
+intercept_api_call(page, "**/api/wallet/balance", {"balance_cents": 5000})
+verify_table_has_data(page, "#users-table", min_rows=3)
+verify_modal_opens_and_closes(page, "#btn-details", ".modal")
 ```
 
-### 6.3 Noise Filtering
-The tracker intelligently filters noise so tests don't false-flag on:
+### 6.6 Noise Filtering
+The tracker filters known noise patterns from asserting failures:
 - `favicon.ico` 404s
-- Ad blocker `ERR_BLOCKED_BY_CLIENT` errors
+- Ad blocker `ERR_BLOCKED_BY_CLIENT`
 - Chrome `ResizeObserver loop` warnings
-- Third-party analytics/Sentry/Google Tag failures
-- Third-party cookie warnings
+- Third-party: Sentry, Google Analytics, GTM, Hotjar
+- `Failed to decode downloaded font`
+- `third-party cookie` warnings
+- DevTools messages, HMR updates
+
+### 6.7 Installed Packages
+| Package | Purpose |
+|---|---|
+| `pytest>=8.0` | Test runner |
+| `pytest-playwright>=0.5.0` | Browser automation |
+| `pytest-base-url>=2.0` | Configurable base URL |
+| `pytest-html>=4.0` | HTML test report |
+| `pytest-xdist>=3.5` | Parallel test execution |
+| `pytest-rerunfailures>=14.0` | Auto-retry flaky tests |
+| `pytest-timeout>=2.3` | Per-test timeout (60s default) |
+| `psycopg2-binary>=2.9` | Database assertions |
+
+### 6.8 Test Markers
+```bash
+pytest -m smoke       # Quick page-load health (< 5s each)
+pytest -m admin       # Admin dashboard flows
+pytest -m marketplace # Trading and asset flows
+pytest -m financial   # Monetary value tests (CRITICAL)
+pytest -m mobile      # Mobile viewport tests
+pytest -m "not slow"  # Skip tests > 15s
+```
+
+### 6.9 Running Tests
+```bash
+# Activate venv first
+source .venv/bin/activate
+
+# All E2E tests (headless)
+pytest tests/e2e/ -v
+
+# All tests with HTML report
+pytest tests/e2e/ --html=tests/e2e/reports/report.html
+
+# Only smoke tests
+pytest tests/e2e/ -m smoke -v
+
+# With visible browser (debugging)
+HEADED=1 pytest tests/e2e/test_marketplace.py -v
+
+# Slow motion debugging (500ms per action)
+HEADED=1 SLOWMO=500 pytest tests/e2e/test_settings.py -v
+
+# Parallel execution (4 workers)
+pytest tests/e2e/ -n 4
+
+# Retry flaky tests
+pytest tests/e2e/ --reruns=2 --reruns-delay=1
+
+# Against staging
+BASE_URL=https://platform.poool.app pytest tests/e2e/ -m smoke
+
+# View Playwright traces (after failure)
+npx playwright show-trace tests/e2e/traces/FAIL_*.zip
+```
+

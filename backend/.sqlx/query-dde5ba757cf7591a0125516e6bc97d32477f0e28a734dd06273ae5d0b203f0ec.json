@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            t.id, \n            t.executed_at, \n            a.title as asset_name,\n            t.buyer_user_id,\n            t.seller_user_id,\n            t.price_cents,\n            t.quantity,\n            t.fee_cents\n        FROM trade_history t\n        JOIN assets a ON t.asset_id = a.id\n        WHERE t.buyer_user_id = $1 OR t.seller_user_id = $1\n        ORDER BY t.executed_at DESC\n        LIMIT 100\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "executed_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "asset_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "buyer_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "seller_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "price_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "fee_cents",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "dde5ba757cf7591a0125516e6bc97d32477f0e28a734dd06273ae5d0b203f0ec"
+}

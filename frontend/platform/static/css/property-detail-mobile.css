@@ -139,11 +139,12 @@
   }
 
   .mobile-gallery-dot.active {
-    width: 10px;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(255, 255, 255, 1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    width: 20px;
+    height: 8px;
+    border-radius: 4px;
+    background: #03FF88;
+    border: none;
+    box-shadow: 0 2px 4px rgba(3, 255, 136, 0.3);
   }
 
   .mobile-gallery-dot:hover:not(.active) {

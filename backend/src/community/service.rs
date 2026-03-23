@@ -2,6 +2,19 @@ use crate::community::models::{Post, ContentReport};
 use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
+/// Ensures a community profile exists for a user.
+pub async fn ensure_community_profile<'a, E>(executor: E, user_id: Uuid) -> Result<(), AppError> 
+where 
+    E: sqlx::Executor<'a, Database = sqlx::Postgres>
+{
+    sqlx::query(
+        "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING"
+    )
+    .bind(user_id)
+    .execute(executor)
+    .await?;
+    Ok(())
+}
 
 /// Gets the chronological feed, paginated.
 pub async fn get_community_feed(
@@ -281,6 +294,9 @@ pub async fn create_user_post(
     }
 
     let mut tx = pool.begin().await?;
+
+    // Ensure user has a community profile (M2-BE.1)
+    ensure_community_profile(&mut *tx, user_id).await?;
 
     // Moderate content
     let mod_result = crate::community::moderation::moderate_content(&req.content, is_high_level_user);
@@ -687,6 +703,9 @@ pub async fn is_following(pool: &PgPool, follower: Uuid, following: Uuid) -> Res
 }
 
 pub async fn get_user_profile(pool: &PgPool, user_id: Uuid) -> Result<UserProfileDisplay, AppError> {
+    // Ensure profile exists (Auto-Onboarding Fix)
+    ensure_community_profile(pool, user_id).await?;
+
     use sqlx::Row;
     let row = sqlx::query(
         "SELECT bio, follower_count, following_count, post_count 

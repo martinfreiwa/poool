@@ -354,7 +354,7 @@ body.mp-secondary-body {
     flex-direction: column;
     align-items: flex-start;
     width: 344px;
-    min-height: 480px;
+    min-height: 440px;
     background: var(--mp-surface);
     border: 1px solid var(--mp-border);
     border-radius: var(--mp-card-radius);
@@ -387,13 +387,8 @@ body.mp-secondary-body {
     opacity: 1 !important;
 }
 
-/* Card with no offers — subtle dashed border */
+/* Card with no offers — match normal marketplace style */
 .mp-sec__card--no-offers {
-    border-style: dashed;
-    border-color: rgba(0,0,0,0.12);
-}
-
-.mp-sec__card--no-offers:hover {
     border-style: solid;
     border-color: var(--mp-border);
 }
@@ -468,74 +463,91 @@ body.mp-secondary-body {
 .mp-sec__card-dots {
     position: absolute;
     width: auto;
-    max-width: 80px;
+    max-width: 120px;
     height: 8px;
     left: 50%;
     transform: translateX(-50%);
     bottom: 12px;
     display: flex;
-    gap: 4px;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
     z-index: 2;
 }
 
 .mp-sec__card-dot {
     box-sizing: border-box;
-    width: 8px;
-    height: 8px;
-    border: 1px solid #999;
+    width: 6px;
+    height: 6px;
+    border: none;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.7);
-    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.5);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.mp-sec__card-dot:hover {
+    background: rgba(255, 255, 255, 0.9);
 }
 
 .mp-sec__card-dot.active {
-    background: #333;
-    border-color: #333;
+    background: #03FF88; /* Brand Signal Green */
+    width: 20px;
+    box-shadow: 0 1px 3px rgba(3, 255, 136, 0.3);
 }
 
-/* Badge overlay on image */
-.mp-sec__card-badge-overlay {
-    box-sizing: border-box;
+/* Badge system matching primary marketplace */
+.mp-sec__badge-row {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.mp-sec__badge {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 6px 12px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     display: flex;
     align-items: center;
-    padding: 5px 12px 5px 10px;
     gap: 6px;
-    position: absolute;
-    height: 32px;
-    left: 16px;
-    top: 16px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-    z-index: 2;
-    font-family: var(--mp-font);
-    font-weight: 600;
-    font-size: 13px;
-    color: #3538CD;
-    white-space: nowrap;
 }
 
-/* Status badge on image (top right) */
-.mp-sec__card-status-overlay {
-    position: absolute;
-    right: 16px;
-    top: 16px;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
-    font-size: 12px;
-    font-weight: 600;
+.mp-sec__badge-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #3538CD;
     font-family: var(--mp-font);
-    border-radius: 20px;
-    z-index: 2;
+    line-height: normal;
+}
+
+/* Status overlay (top-right status) */
+.mp-sec__card-status-overlay {
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-    white-space: nowrap;
+    padding: 6px 12px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--mp-text-secondary);
+    z-index: 10;
 }
 
 .mp-sec__card-status-overlay--active {
@@ -591,7 +603,7 @@ body.mp-secondary-body {
 .mp-sec__card-content {
     display: flex;
     flex-direction: column;
-    padding: 16px;
+    padding: 16px 16px 24px;
     gap: 12px;
     width: 100%;
     box-sizing: border-box;
@@ -610,9 +622,9 @@ body.mp-secondary-body {
 .mp-sec__card-meta-item {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     color: #414651;
     white-space: nowrap;
 }
@@ -632,10 +644,10 @@ body.mp-secondary-body {
 
 .mp-sec__card-meta-divider {
     width: 1px;
-    height: 16px;
+    height: 12px;
     background: #d5d7da;
     flex-shrink: 0;
-    margin: 0 8px;
+    margin: 0 10px;
 }
 
 /* Card title */
@@ -783,61 +795,14 @@ body.mp-secondary-body {
     transform: rotate(180deg);
 }
 
-/* === Card Footer — Full-Width CTA === */
-.mp-sec__card-footer {
-    display: flex;
-    width: 100%;
-    box-sizing: border-box;
-    margin-top: auto;
-}
+/* Unused footer styles (button removed) */
+.mp-sec__card-footer { display: none; }
+.mp-sec__footer-btn { display: none; }
+.mp-sec__footer-btn--trade { display: none; }
 
-/* Shared footer button base */
-.mp-sec__footer-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 14px 20px;
-    font-size: 15px;
-    font-weight: 700;
-    font-family: var(--mp-font);
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    line-height: 22px;
-    border-radius: 0 0 var(--mp-card-radius) var(--mp-card-radius);
-}
-
-/* Trade button — solid blue */
-.mp-sec__footer-btn--trade {
-    color: #fff;
-    background: var(--mp-blue);
-}
-
-.mp-sec__footer-btn--trade:hover {
-    background: #0000cc;
-}
-
-.mp-sec__footer-btn--trade svg {
-    transition: transform 0.2s;
-}
-
-.mp-sec__footer-btn--trade:hover svg {
-    transform: translateX(3px);
-}
-
-/* Buy Interest button — outlined blue */
+/* Buy Interest button — (Removed from UI per user request) */
 .mp-sec__footer-btn--interest {
-    color: var(--mp-blue);
-    background: var(--mp-blue-soft);
-    border-top: 1px solid rgba(0,0,255,0.1);
-}
-
-.mp-sec__footer-btn--interest:hover {
-    background: var(--mp-blue);
-    color: #fff;
+    display: none;
 }
 
 /* === Empty State === */

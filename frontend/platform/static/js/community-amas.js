@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Answer (if answered)
                     if (q.answer) {
                         const answerDiv = document.createElement('div');
-                        answerDiv.style.cssText = 'margin-top:12px;padding:12px 16px;background:#F0FDF4;border-radius:8px;border-left:3px solid #03FF88;';
+                        answerDiv.style.cssText = 'margin-top:12px;padding:12px 16px;background:#EEF4FF;border-radius:8px;border-left:3px solid var(--btn-primary-bg, #0000FF);';
                         const answerLabel = document.createElement('div');
                         answerLabel.style.cssText = 'font-size:11px;font-weight:700;color:#027A48;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;';
                         answerLabel.textContent = '💬 Expert Answer';

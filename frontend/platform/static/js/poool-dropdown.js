@@ -504,11 +504,22 @@
       const dropdown = new PooolDropdown(wrapper, {
         ...options,
         onChange: (value, text) => {
+          if (selectEl._isSyncing) return;
           // Sync with hidden select
+          selectEl._isSyncing = true;
           selectEl.value = value;
           selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+          selectEl._isSyncing = false;
           if (options.onChange) options.onChange(value, text);
         },
+      });
+
+      // Sync back from select if it's changed by external JS
+      selectEl.addEventListener("change", (e) => {
+        if (selectEl._isSyncing) return;
+        selectEl._isSyncing = true;
+        dropdown.setValue(selectEl.value);
+        selectEl._isSyncing = false;
       });
 
       return dropdown;

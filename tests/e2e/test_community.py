@@ -5,7 +5,7 @@ import os
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 
 def test_community_feed_load(authenticated_user_page):
-    page, current_user = authenticated_user_page
+    page, tracker, current_user = authenticated_user_page
     
     # Navigate to the community feed
     page.goto(f"{BASE_URL}/community/feed")
@@ -25,7 +25,7 @@ def test_community_feed_load(authenticated_user_page):
             expect(post_textarea).to_have_value("")
 
 def test_community_announcements(authenticated_user_page):
-    page, current_user = authenticated_user_page
+    page, tracker, current_user = authenticated_user_page
     
     # Navigate to the community announcements
     page.goto(f"{BASE_URL}/community/announcements")

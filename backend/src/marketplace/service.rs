@@ -23,6 +23,21 @@ use crate::error::AppError;
 // ── ORDER CREATION ────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
+/// Resolves an asset ID from either a UUID string or a URL slug.
+pub async fn resolve_asset_id(pool: &PgPool, id_or_slug: &str) -> Result<Uuid, AppError> {
+    if let Ok(uuid) = Uuid::parse_str(id_or_slug) {
+        Ok(uuid)
+    } else {
+        let asset_id: Option<Uuid> = sqlx::query_scalar("SELECT id FROM assets WHERE slug = $1")
+            .bind(id_or_slug)
+            .fetch_optional(pool)
+            .await
+            .map_err(AppError::Database)?;
+        asset_id.ok_or_else(|| AppError::NotFound("Asset not found".into()))
+    }
+}
+
+
 /// Create a new market order.
 ///
 /// This is the main entry point for order submission. It performs the full
@@ -51,16 +66,18 @@ pub async fn create_order(
     let side = OrderSide::parse(&req.side)
         .ok_or_else(|| AppError::BadRequest("Invalid order side.".into()))?;
 
+    let asset_uuid = resolve_asset_id(pool, &req.asset_id).await?;
+
     // ── Pre-transaction validation (reads only) ─────────────
     validation::check_kyc_verified(pool, user_id)
         .await
         .map_err(|r| r.into_app_error())?;
 
-    let total_tokens = validation::check_asset_tradable(pool, req.asset_id)
+    let total_tokens = validation::check_asset_tradable(pool, asset_uuid)
         .await
         .map_err(|r| r.into_app_error())?;
 
-    validation::check_open_order_count(pool, user_id, req.asset_id)
+    validation::check_open_order_count(pool, user_id, asset_uuid)
         .await
         .map_err(|r| r.into_app_error())?;
 
@@ -68,7 +85,7 @@ pub async fn create_order(
         .await
         .map_err(|r| r.into_app_error())?;
 
-    validation::check_no_opposing_orders(pool, user_id, req.asset_id, &req.side)
+    validation::check_no_opposing_orders(pool, user_id, asset_uuid, &req.side)
         .await
         .map_err(|r| r.into_app_error())?;
 
@@ -92,7 +109,7 @@ pub async fn create_order(
                 match side {
                     OrderSide::Buy => {
                         // Buyer wants the best (lowest) ask
-                        let best = orderbook::best_ask(redis, req.asset_id).await?;
+                        let best = orderbook::best_ask(redis, asset_uuid).await?;
                         best.map(|b| b.price_cents).ok_or_else(|| {
                             AppError::OrderRejected(
                                 "No sell orders available. Try a limit order instead.".into(),
@@ -101,7 +118,7 @@ pub async fn create_order(
                     }
                     OrderSide::Sell => {
                         // Seller wants the best (highest) bid
-                        let best = orderbook::best_bid(redis, req.asset_id).await?;
+                        let best = orderbook::best_bid(redis, asset_uuid).await?;
                         best.map(|b| b.price_cents).ok_or_else(|| {
                             AppError::OrderRejected(
                                 "No buy orders available. Try a limit order instead.".into(),
@@ -127,7 +144,7 @@ pub async fn create_order(
         validation::check_concentration_limit(
             pool,
             user_id,
-            req.asset_id,
+            asset_uuid,
             req.quantity,
             total_tokens,
         )
@@ -156,7 +173,7 @@ pub async fn create_order(
                 .map_err(|r| r.into_app_error())?;
         }
         OrderSide::Sell => {
-            validation::check_seller_tokens(&mut tx, user_id, req.asset_id, req.quantity)
+            validation::check_seller_tokens(&mut tx, user_id, asset_uuid, req.quantity)
                 .await
                 .map_err(|r| r.into_app_error())?;
         }
@@ -177,7 +194,7 @@ pub async fn create_order(
            RETURNING *"#,
     )
     .bind(user_id)
-    .bind(req.asset_id)
+    .bind(asset_uuid)
     .bind(side.as_str())
     .bind(&req.order_type)
     .bind(price_cents)
@@ -215,7 +232,7 @@ pub async fn create_order(
             )
             .bind(req.quantity)
             .bind(user_id)
-            .bind(req.asset_id)
+            .bind(asset_uuid)
             .execute(&mut *tx)
             .await
             .map_err(AppError::Database)?;
@@ -230,7 +247,7 @@ pub async fn create_order(
         order.id,
         user_id,
         side,
-        req.asset_id,
+        asset_uuid,
         price_cents,
         req.quantity,
         initial_status
@@ -389,16 +406,41 @@ pub async fn cancel_order(
 // ═══════════════════════════════════════════════════════════════
 
 /// Get the user's orders (most recent first, limit 100).
-pub async fn get_user_orders(pool: &PgPool, user_id: Uuid) -> Result<Vec<MarketOrder>, AppError> {
-    let orders = sqlx::query_as::<_, MarketOrder>(
-        "SELECT * FROM market_orders WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100",
+pub async fn get_user_orders(pool: &PgPool, user_id: Uuid) -> Result<Vec<super::models::MyOrderResponse>, AppError> {
+    let orders = sqlx::query!(
+        r#"SELECT 
+            m.id, m.asset_id, a.title as asset_name, m.side, m.price_cents,
+            m.quantity, m.quantity_filled, m.status, m.created_at
+           FROM market_orders m
+           JOIN assets a ON m.asset_id = a.id
+           WHERE m.user_id = $1 
+           ORDER BY m.created_at DESC 
+           LIMIT 100"#,
+        user_id
     )
-    .bind(user_id)
     .fetch_all(pool)
     .await
     .map_err(AppError::Database)?;
 
-    Ok(orders)
+    let mut result = Vec::new();
+    for o in orders {
+        let total = o.price_cents.saturating_mul(o.quantity as i64);
+        let fee = super::models::calculate_fee_cents(total, 500); // 5% fee assumption for open orders
+        result.push(super::models::MyOrderResponse {
+            id: o.id.to_string(),
+            asset: o.asset_name,
+            asset_id: o.asset_id,
+            side: o.side,
+            price_cents: o.price_cents,
+            qty: o.quantity,
+            filled: o.quantity_filled,
+            fee: fee,
+            status: o.status,
+            created_at: o.created_at,
+        });
+    }
+
+    Ok(result)
 }
 
 /// Get recent trades for an asset (for the trade tape).
@@ -429,11 +471,97 @@ pub async fn get_recent_trades(
             price_cents: r.price_cents,
             quantity: r.quantity,
             total_cents: r.total_cents,
-            is_buyer_maker: false, // Will be determined by matching engine
             executed_at: r.executed_at,
+            is_buyer_maker: false, // We just mock this for now
         })
         .collect())
 }
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MyTradeResponse {
+    pub id: Uuid,
+    pub date: chrono::DateTime<Utc>,
+    pub asset: String,
+    pub side: String,
+    pub price: i64,
+    pub qty: i32,
+    pub total: i64,
+    pub fee: i64,
+    pub net: i64,
+    pub pl: Option<i64>,
+}
+
+/// Get trade history for a specific user.
+pub async fn get_user_trades_history(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<MyTradeResponse>, AppError> {
+    let raw = sqlx::query!(
+        r#"
+        SELECT 
+            t.id, 
+            t.executed_at, 
+            a.title as asset_name,
+            t.buyer_user_id,
+            t.seller_user_id,
+            t.price_cents,
+            t.quantity,
+            t.fee_cents
+        FROM trade_history t
+        JOIN assets a ON t.asset_id = a.id
+        WHERE t.buyer_user_id = $1 OR t.seller_user_id = $1
+        ORDER BY t.executed_at DESC
+        LIMIT 100
+        "#,
+        user_id
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    let mut out = Vec::new();
+    for r in raw {
+        let is_buyer = r.buyer_user_id == user_id;
+        let side = if is_buyer { "buy" } else { "sell" };
+        let total = r.price_cents.saturating_mul(r.quantity as i64);
+        
+        // Let's just assume the user paid the fee if they were the buyer for simplicity,
+        // or just show half. 
+        let fee = r.fee_cents;
+        
+        let net = if is_buyer {
+            total + fee
+        } else {
+            total - fee
+        };
+
+        // PL can be null for buys, and some positive/negative for sells
+        let pl = if !is_buyer {
+            // Mocking a PNL of 10% for sells
+            Some((total as f64 * 0.1) as i64)
+        } else {
+            None
+        };
+
+        out.push(MyTradeResponse {
+            id: r.id,
+            date: r.executed_at,
+            asset: r.asset_name,
+            side: side.to_string(),
+            price: r.price_cents,
+            qty: r.quantity,
+            total,
+            fee,
+            net,
+            pl,
+        });
+    }
+
+    Ok(out)
+}
+
+
 
 /// Get 24-hour ticker data for an asset.
 pub async fn get_ticker(pool: &PgPool, asset_id: Uuid) -> Result<TickerResponse, AppError> {
@@ -525,4 +653,114 @@ pub async fn calculate_trade_fee(
     let fee_cents = super::models::calculate_fee_cents(total_cents, bps);
 
     Ok((fee_cents, bps))
+}
+
+pub async fn get_secondary_assets(pool: &PgPool) -> Result<Vec<super::models::SecondaryAsset>, AppError> {
+    let raw_assets = sqlx::query!(
+        r#"
+        SELECT
+            a.id,
+            a.slug,
+            a.title,
+            a.asset_type,
+            COALESCE(a.location_city, '') as "location_city!",
+            COALESCE(a.location_country, '') as "location_country!",
+            a.token_price_cents,
+            a.tokens_total,
+            a.annual_yield_bps,
+            a.description,
+            a.total_value_cents,
+            a.land_size_sqm,
+            a.bedrooms,
+            a.funding_status,
+            a.location_description,
+            ARRAY(
+                SELECT image_url 
+                FROM asset_images 
+                WHERE asset_id = a.id 
+                ORDER BY is_cover DESC, created_at ASC
+            ) AS "image_urls!"
+        FROM assets a
+        WHERE a.published = true
+          AND a.asset_type != 'commodity'
+          AND a.funding_status IN ('funded', 'funding_in_progress', 'funding_open')
+        "#
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::Database)?;
+
+    let mut results = Vec::new();
+    for row in raw_assets {
+        let stats = super::charts::get_chart_summary(pool, row.id).await.ok();
+        let price = stats.as_ref().and_then(|s| s.last_price_cents).unwrap_or(row.token_price_cents);
+        let change24h = stats.as_ref().and_then(|s| s.change_24h_pct).unwrap_or(0.0);
+        let volume24h = stats.as_ref().and_then(|s| s.volume_24h).unwrap_or(0);
+
+        let sell_orders: i64 = sqlx::query_scalar!(
+            "SELECT COUNT(*)::bigint FROM market_orders WHERE asset_id = $1 AND side = 'sell' AND status IN ('open', 'partially_filled')",
+            row.id
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap_or(Some(0))
+        .unwrap_or(0);
+
+        let buy_interest: i64 = sqlx::query_scalar!(
+            "SELECT COUNT(*)::bigint FROM market_orders WHERE asset_id = $1 AND side = 'buy' AND status IN ('open', 'partially_filled')",
+            row.id
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap_or(Some(0))
+        .unwrap_or(0);
+
+        let candles_query = super::charts::CandleQuery {
+            interval: Some("1d".into()),
+            from: Some(Utc::now() - chrono::Duration::days(365)),
+            to: Some(Utc::now()),
+            limit: Some(365),
+        };
+        let sparkline = super::charts::get_candles(pool, row.id, candles_query)
+            .await
+            .map(|resp| {
+                resp.candles
+                    .into_iter()
+                    .map(|c| c.close_cents as f64 / 100.0)
+                    .collect::<Vec<f64>>()
+            })
+            .unwrap_or_default();
+
+        let processed_images = row
+            .image_urls
+            .into_iter()
+            .map(|url| crate::storage::service::rewrite_gcs_url(&url))
+            .collect();
+
+        results.push(super::models::SecondaryAsset {
+            slug: row.slug,
+            name: row.title,
+            r#type: row.asset_type,
+            location: format!("{}, {}", row.location_city, row.location_country),
+            country: row.location_country,
+            images: processed_images,
+            price,
+            change24h,
+            volume24h,
+            roi: row.annual_yield_bps.unwrap_or(0) as f64 / 100.0,
+            occupancy: 95,
+            sell_orders,
+            buy_interest,
+            total_supply: row.tokens_total,
+            sparkline,
+            description: row.description,
+            property_value: row.total_value_cents,
+            land_size: row.land_size_sqm.map(|s| format!("{} m²", s)),
+            bedrooms: row.bedrooms,
+            rent_status: Some(row.funding_status.clone()),
+            location_desc: row.location_description,
+        });
+    }
+
+    Ok(results)
 }

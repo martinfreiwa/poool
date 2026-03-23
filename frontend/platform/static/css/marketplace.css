@@ -921,36 +921,38 @@
 .property-dots {
   position: absolute;
   width: auto;
-  max-width: 80px;
+  max-width: 120px;
   height: 8px;
   left: 50%;
   transform: translateX(-50%);
   bottom: 12px;
   display: flex;
-  gap: 4px;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
   z-index: 2;
 }
 
 .property-dot {
   box-sizing: border-box;
-  width: 8px;
-  height: 8px;
-  border: 1px solid #999999;
+  width: 6px;
+  height: 6px;
+  border: none;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.7);
-  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  box-shadow: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .property-dot:hover {
-  background: rgba(100, 100, 100, 0.8);
-  border-color: #666666;
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .property-dot.active {
-  background: #333333;
-  border: 1px solid #333333;
+  background: #03FF88; /* Brand Signal Green */
+  width: 20px;
+  box-shadow: 0 1px 3px rgba(3, 255, 136, 0.3);
 }
 
 /* Property Type Badge on Image */

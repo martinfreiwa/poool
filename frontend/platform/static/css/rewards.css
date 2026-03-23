@@ -6,7 +6,7 @@
   min-height: 100vh;
   margin-left: 256px;
   padding: 48px 24px 64px 24px;
-  background: #fafafa;
+  background: var(--content-bg);
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -45,7 +45,7 @@
   min-height: 100vh;
   margin-left: 256px;
   padding: 48px 24px 64px 24px;
-  background: #fafafa;
+  background: var(--content-bg);
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -134,8 +134,8 @@
 }
 
 .rewards-tab-btn.active {
-  color: var(--primary-color, #0000FF);
-  border-bottom-color: var(--primary-color, #0000FF);
+  color: var(--primary-color, var(--btn-primary-bg));
+  border-bottom-color: var(--primary-color, var(--btn-primary-bg));
 }
 
 /* --- Tab Panel Content --- */
@@ -156,7 +156,7 @@
 }
 
 .breadcrumbs a {
-  color: #475467;
+  color: var(--label-color);
   text-decoration: none;
   font-weight: 500;
 }
@@ -219,7 +219,7 @@
 .summary-label {
   font-size: 14px;
   font-weight: 500;
-  color: #475467;
+  color: var(--label-color);
 }
 
 .summary-amount {
@@ -287,7 +287,7 @@
 .balance-label {
   font-size: 14px;
   font-weight: 500;
-  color: #475467;
+  color: var(--label-color);
 }
 
 .balance-amount {
@@ -461,7 +461,7 @@
 .tp-label {
   font-size: 12px;
   font-weight: 500;
-  color: #475467;
+  color: var(--label-color);
   margin-left: auto;
 }
 
@@ -470,7 +470,7 @@
 }
 
 .text-gray {
-  color: #475467 !important;
+  color: var(--label-color) !important;
 }
 
 .text-blue {
@@ -502,7 +502,7 @@
 .tp-hint {
   font-size: 14px;
   text-align: center;
-  color: #475467;
+  color: var(--label-color);
 }
 
 /* --- Refer and Earn Card --- */
@@ -536,7 +536,7 @@
 
 .refer-text {
   font-size: 14px;
-  color: #475467;
+  color: var(--label-color);
   margin: 0 0 16px 0;
   line-height: 1.5;
 }
@@ -591,7 +591,7 @@
 }
 
 .refer-input-wrapper:focus-within {
-  border-color: var(--primary-color, #0000FF);
+  border-color: var(--primary-color, var(--btn-primary-bg));
   box-shadow: 0px 0px 0px 3px rgba(0, 0, 255, 0.08);
 }
 
@@ -686,9 +686,9 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #d0d5dd;
+  background: var(--input-border-color);
   border: 2px solid #ffffff;
-  box-shadow: 0 0 0 2px #d0d5dd;
+  box-shadow: 0 0 0 2px var(--input-border-color);
   position: absolute;
   left: 24px;
   top: 28px;
@@ -828,7 +828,7 @@
 
 .stepper-item.inactive .stepper-body h4,
 .stepper-item.inactive .stepper-body p {
-  color: #475467;
+  color: var(--label-color);
 }
 
 /* --- Tooltip Styles --- */
@@ -978,7 +978,7 @@
 .empty-icon {
   width: 48px;
   height: 48px;
-  color: #475467;
+  color: var(--label-color);
   margin-bottom: 16px;
 }
 
@@ -991,7 +991,7 @@
 
 .state-desc {
   font-size: 14px;
-  color: #475467;
+  color: var(--label-color);
   margin: 0 0 24px 0;
   max-width: 400px;
 }
@@ -1098,7 +1098,7 @@
 .metric-card-title {
   font-size: 14px;
   font-weight: 500;
-  color: #475467;
+  color: var(--label-color);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1119,7 +1119,7 @@
 }
 
 .metric-card-trend.positive {
-  color: var(--brand-greeny-green, #03FF88);
+  color: var(--brand-greeny-green, var(--brand-greeny-green, #03FF88));
 }
 
 .metric-card-trend.neutral {
@@ -1203,7 +1203,7 @@
   text-align: left;
   padding: 12px 16px;
   font-weight: 500;
-  color: #475467;
+  color: var(--label-color);
   border-bottom: 1px solid var(--card-border-color);
   font-size: 12px;
   text-transform: uppercase;
@@ -1240,7 +1240,7 @@
 
 .campaign-subid-badge.direct {
   background: #f2f4f7;
-  color: #475467;
+  color: var(--label-color);
 }
 
 .campaign-cvr {
@@ -1380,14 +1380,14 @@
 }
 
 .chart-date-field input[type="date"]:focus {
-  border-color: var(--primary-color, #0000FF);
+  border-color: var(--primary-color, var(--btn-primary-bg));
   box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
 }
 
 .chart-date-apply-btn {
   width: 100%;
   padding: 8px 16px;
-  background: var(--primary-color, #0000FF);
+  background: var(--primary-color, var(--btn-primary-bg));
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -1399,7 +1399,7 @@
 }
 
 .chart-date-apply-btn:hover {
-  background: #0000cc;
+  background: var(--btn-primary-hover-bg);
 }
 
 /* Chart container body */
@@ -1453,7 +1453,7 @@
 }
 
 #campaign-subid-input:focus {
-  border-color: var(--primary-color, #0000FF);
+  border-color: var(--primary-color, var(--btn-primary-bg));
   box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
 }
 
@@ -1500,7 +1500,7 @@
 }
 
 .social-btn-link:hover {
-  color: #0000FF;
+  color: var(--btn-primary-bg);
 }
 
 .social-btn-link svg {
@@ -1566,7 +1566,7 @@
 }
 
 #campaign-search-input:focus {
-  border-color: var(--primary-color, #0000FF);
+  border-color: var(--primary-color, var(--btn-primary-bg));
   box-shadow: 0px 0px 0px 3px rgba(0, 0, 255, 0.08);
 }
 
@@ -1594,7 +1594,7 @@
 
 #campaign-export-btn:hover {
   background: #f9fafb;
-  border-color: #d0d5dd;
+  border-color: var(--input-border-color);
 }
 
 /* Sortable header icons */
@@ -1650,7 +1650,7 @@
 
 .marketing-section-desc {
   font-size: 14px;
-  color: #475467;
+  color: var(--label-color);
   margin: 0 0 20px 0;
   line-height: 1.5;
 }
@@ -1708,7 +1708,7 @@
 
 .marketing-asset-card:hover {
   box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
-  border-color: #d0d5dd;
+  border-color: var(--input-border-color);
 }
 
 .marketing-asset-preview {
@@ -1779,7 +1779,7 @@
   font-size: 14px;
   font-weight: 600;
   font-family: 'TT Norms Pro', sans-serif;
-  color: var(--primary-color, #0000FF);
+  color: var(--primary-color, var(--btn-primary-bg));
   text-decoration: none;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -1804,7 +1804,7 @@
   font-size: 13px;
   font-weight: 500;
   font-family: 'TT Norms Pro', sans-serif;
-  color: var(--primary-color, #0000FF);
+  color: var(--primary-color, var(--btn-primary-bg));
   cursor: pointer;
   transition: all 0.15s ease;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
@@ -1812,7 +1812,7 @@
 
 .marketing-copy-btn:hover {
   background: #f8f9fc;
-  border-color: #d0d5dd;
+  border-color: var(--input-border-color);
 }
 
 /* --- Brand Colors --- */
@@ -1998,7 +1998,7 @@
   font-size: 14px;
   color: #101828;
   padding: 10px 14px;
-  border: 1px solid #d0d5dd;
+  border: 1px solid var(--input-border-color);
   border-radius: 8px;
   background: #ffffff;
   outline: none;
@@ -2009,7 +2009,7 @@
 
 .commissions-input:focus,
 .commissions-select:focus {
-  border-color: var(--primary-color, #0000FF);
+  border-color: var(--primary-color, var(--btn-primary-bg));
   box-shadow: 0px 0px 0px 3px rgba(0, 0, 255, 0.08);
 }
 
@@ -2031,7 +2031,7 @@
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
-  background: var(--primary-color, #0000FF);
+  background: var(--primary-color, var(--btn-primary-bg));
   border: none;
   border-radius: 8px;
   padding: 10px 24px;
@@ -2057,7 +2057,7 @@
   align-items: center;
   gap: 8px;
   background: #ffffff;
-  border: 1px solid #d0d5dd;
+  border: 1px solid var(--input-border-color);
   border-radius: 8px;
   padding: 8px 14px;
 }
@@ -2092,7 +2092,7 @@
 .commissions-table thead th {
   font-size: 12px;
   font-weight: 600;
-  color: var(--primary-color, #0000FF);
+  color: var(--primary-color, var(--btn-primary-bg));
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 12px 16px;
@@ -2153,7 +2153,7 @@
   font-weight: 500;
   color: var(--body-color);
   background: #ffffff;
-  border: 1px solid #d0d5dd;
+  border: 1px solid var(--input-border-color);
   border-radius: 8px;
   padding: 6px 12px;
   cursor: pointer;

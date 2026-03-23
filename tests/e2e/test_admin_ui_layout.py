@@ -1,14 +1,14 @@
 import pytest
 import os
 import psycopg2
-from playwright.sync_api import sync_playwright, expect
+from playwright.sync_api import expect
 
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 DB_URL = os.environ.get("DATABASE_URL", "postgres://martin@localhost/poool")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "test@poool.app")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "TestPass123!")
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def user_id():
     """Fetches a real user ID from the database for testing."""
     conn = psycopg2.connect(DB_URL)
@@ -19,36 +19,19 @@ def user_id():
     conn.close()
     return uid
 
-@pytest.fixture(scope="session")
-def browser_context():
-    """Initializes a Playwright browser context."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(viewport={'width': 1280, 'height': 800})
-        yield context
-        browser.close()
-
-def test_admin_full_workflow(browser_context, user_id):
+@pytest.mark.admin
+def test_admin_full_workflow(admin_page, user_id):
     """
     Verifies the full admin workflow:
-    1. Login as admin
+    1. Login as admin (done via fixture)
     2. Navigate to User Details
     3. Verify Sidebar and UI components are rendered (JS execution)
     4. Test Profile Edit Modal layout (No overlaps)
     5. Perform successful profile update
     """
-    page = browser_context.new_page()
+    page, tracker = admin_page
     
-    # 1. Login
-    page.goto(f"{BASE_URL}/auth/login")
-    page.fill("#email-input", ADMIN_EMAIL)
-    page.fill("#password-input", ADMIN_PASSWORD)
-    page.click("#login-button")
-    
-    # Wait for redirect
-    page.wait_for_function("window.location.pathname !== '/auth/login'", timeout=10000)
-    
-    # 2. Go to User Details
+    # 2. Go to User Details (Already authenticated by fixture)
     page.goto(f"{BASE_URL}/admin/user-details.html?id={user_id}")
     
     # Verify User Content and JS-rendered Sidebar

@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Pinned badge (static HTML, safe)
                 let pinnedHtml = '';
                 if (p.is_pinned) {
-                    pinnedHtml = `<div class="ann-card-pin"><svg class="poool-icon-custom" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" /></svg>Pinned</div>`;
+                    pinnedHtml = `<div class="ann-card-pin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" /></svg>Pinned</div>`;
                 }
 
                 // Build the header and footer as static HTML (no user content)
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${pinnedHtml}
                     <div class="ann-card-header">
                         <div class="ann-icon ${iconClass}">
-                            <svg class="poool-icon-custom" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 ${iconContent}
                             </svg>
                         </div>
