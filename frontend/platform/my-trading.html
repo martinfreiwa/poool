@@ -84,6 +84,10 @@
                     Buy Interests
                     <span class="myt__tab-count" id="tab-count-interests">1</span>
                 </button>
+                <button class="myt__tab" data-tab="my-assets">
+                    My Assets
+                    <span class="myt__tab-count" id="tab-count-assets">0</span>
+                </button>
                 <button class="myt__tab" data-tab="trade-history">
                     Trade History
                 </button>
@@ -135,6 +139,29 @@
                             </tr>
                         </thead>
                         <tbody id="buy-interests-body">
+                            <!-- JS fills this -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab: My Assets -->
+            <div class="myt__tab-content" id="tab-my-assets">
+                <div class="myt__card">
+                    <table class="myt__table">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Tokens Owned</th>
+                                <th>Total Invested</th>
+                                <th>Current Value</th>
+                                <th>P/L</th>
+                                <th>Yield</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="my-assets-body">
                             <!-- JS fills this -->
                         </tbody>
                     </table>

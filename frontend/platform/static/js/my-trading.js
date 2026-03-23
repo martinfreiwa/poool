@@ -10,6 +10,7 @@
     let MOCK_TRADES = [];
     let MOCK_P2P_INCOMING = [];
     let MOCK_P2P_OUTGOING = [];
+    let PORTFOLIO_ASSETS = [];
 
     // ── Formatters ─────────────────────────────────────────────
     function formatUSD(cents) {
@@ -29,14 +30,22 @@
     // ── Render Open Orders ─────────────────────────────────────
     function renderOpenOrders() {
         const tbody = document.getElementById('open-orders-body');
+        const countBadge = document.getElementById('tab-count-orders');
         if (!tbody) return;
+
+        if (countBadge) countBadge.innerText = MOCK_ORDERS.length;
+
+        if (MOCK_ORDERS.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 32px; color: var(--myt-text-sec);">No open orders.</td></tr>`;
+            return;
+        }
 
         tbody.innerHTML = MOCK_ORDERS.map(o => `
             <tr>
                 <td style="font-weight:500; font-family:monospace; font-size:12px;">${o.id.substring(0, 8)}</td>
                 <td>${o.asset}</td>
                 <td class="myt__side-${o.side}">${o.side.toUpperCase()}</td>
-                <td>${formatUSD(o.price)}</td>
+                <td>${formatUSD(o.priceCents)}</td>
                 <td>${o.qty}</td>
                 <td>${o.filled}/${o.qty}</td>
                 <td>${formatUSD(o.fee)}</td>
@@ -50,7 +59,15 @@
     // ── Render Buy Interests ───────────────────────────────────
     function renderBuyInterests() {
         const tbody = document.getElementById('buy-interests-body');
+        const countBadge = document.getElementById('tab-count-interests');
         if (!tbody) return;
+
+        if (countBadge) countBadge.innerText = MOCK_INTERESTS.length;
+
+        if (MOCK_INTERESTS.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 32px; color: var(--myt-text-sec);">No buy interests found.</td></tr>`;
+            return;
+        }
 
         tbody.innerHTML = MOCK_INTERESTS.map(bi => {
             const total = bi.price * bi.qty + bi.fee;
@@ -72,7 +89,21 @@
     // ── Render Trade History ───────────────────────────────────
     function renderTradeHistory() {
         const tbody = document.getElementById('trade-history-body');
+        const summary = document.getElementById('trade-summary');
+        
         if (!tbody) return;
+
+        if (summary) {
+            const netPl = MOCK_TRADES.reduce((sum, t) => sum + (t.pl || 0), 0);
+            const cls = netPl >= 0 ? 'myt__pnl--positive' : 'myt__pnl--negative';
+            const prefix = netPl >= 0 ? '+' : '';
+            summary.innerHTML = `Net P/L: <strong class="myt__pnl ${cls}">${prefix}${formatUSD(Math.abs(netPl))}</strong>`;
+        }
+
+        if (MOCK_TRADES.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 32px; color: var(--myt-text-sec);">No trade history found.</td></tr>`;
+            return;
+        }
 
         tbody.innerHTML = MOCK_TRADES.map(t => {
             let plHtml = '—';
@@ -97,43 +128,106 @@
         }).join('');
     }
 
+    // ── Render My Assets ─────────────────────────────────────
+    function renderMyAssets() {
+        const tbody = document.getElementById('my-assets-body');
+        const countBadge = document.getElementById('tab-count-assets');
+        
+        if (!tbody) return;
+        
+        if (countBadge) {
+            countBadge.innerText = PORTFOLIO_ASSETS.length;
+        }
+
+        if (PORTFOLIO_ASSETS.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 32px; color: var(--myt-text-sec);">No purchased assets found.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = PORTFOLIO_ASSETS.map(a => {
+            const pl = a.current_value_cents - a.purchase_value_cents;
+            const cls = pl >= 0 ? 'myt__pnl--positive' : 'myt__pnl--negative';
+            const prefix = pl >= 0 ? '+' : '';
+            const plHtml = `<span class="myt__pnl ${cls}">${prefix}${formatUSD(Math.abs(pl))}</span>`;
+            
+            const yieldPct = (a.appreciation_pct_bps / 100).toFixed(2);
+            const yieldCls = yieldPct >= 0 ? 'myt__pnl--positive' : 'myt__pnl--negative';
+            
+            return `
+                <tr>
+                    <td style="font-weight:500;">
+                        <a href="/market/${a.asset_slug}" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:8px;">
+                            ${a.cover_image ? `<img src="${a.cover_image}" alt="cover" style="width:32px; height:32px; border-radius:4px; object-fit:cover;">` : `<div style="width:32px; height:32px; border-radius:4px; background:var(--myt-bg-tertiary);"></div>`}
+                            ${a.asset_title}
+                        </a>
+                    </td>
+                    <td>${a.tokens_owned}</td>
+                    <td>${formatUSD(a.purchase_value_cents)}</td>
+                    <td>${formatUSD(a.current_value_cents)}</td>
+                    <td>${plHtml}</td>
+                    <td><span class="${yieldCls}">${yieldPct}%</span></td>
+                    <td><span class="myt__status myt__status--${a.status.toLowerCase()}">${a.status}</span></td>
+                    <td>
+                        <a href="/market/${a.asset_slug}" class="myt__action-btn myt__action-btn--outline" style="padding: 4px 8px; font-size: 12px; height:auto;">Trade</a>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
     // ── Render P2P Offers ──────────────────────────────────────
     function renderP2POffers() {
         const incoming = document.getElementById('p2p-incoming');
         const outgoing = document.getElementById('p2p-outgoing');
+        const countBadge = document.getElementById('tab-count-p2p');
+
+        const pendingIncoming = MOCK_P2P_INCOMING.filter(p => p.status === 'pending');
+        if (countBadge) countBadge.innerText = pendingIncoming.length;
 
         if (incoming) {
-            incoming.innerHTML = MOCK_P2P_INCOMING.map(p => `
-                <div class="myt__p2p-card">
-                    <div class="myt__p2p-info">
-                        <div class="myt__p2p-title">${p.from} wants to buy from you</div>
-                        <div class="myt__p2p-details">
-                                <strong>${p.asset_id}</strong> · ${p.quantity} shares @ ${formatUSD(p.price_cents)} · <span style="font-size: 11px;">${formatDate(p.created_at)}</span>
-                            ${p.message ? '<br><em>"' + p.message + '"</em>' : ''}
+            if (MOCK_P2P_INCOMING.length === 0) {
+                incoming.innerHTML = `<div style="text-align:center; padding: 32px; color: var(--myt-text-sec);">No incoming offers.</div>`;
+            } else {
+                incoming.innerHTML = MOCK_P2P_INCOMING.map(p => `
+                    <div class="myt__p2p-card">
+                        <div class="myt__p2p-info">
+                            <div class="myt__p2p-title">User ${p.maker_user_id.substring(0,8)} wants to buy from you</div>
+                            <div class="myt__p2p-details">
+                                    <strong>Asset ${p.asset_id.substring(0,8)}</strong> · ${p.quantity} shares @ ${formatUSD(p.price_cents)} · <span class="myt__status myt__status--${p.status}">${p.status}</span> · <span style="font-size: 11px;">${formatDate(p.created_at)}</span>
+                                ${p.message ? '<br><em>"' + p.message + '"</em>' : ''}
+                            </div>
                         </div>
+                        ${p.status === 'pending' ? `
+                        <div class="myt__p2p-actions">
+                            <button class="myt__p2p-accept" onclick="respondP2POffer('${p.id}', 'accept')">Accept</button>
+                            <button class="myt__p2p-decline" onclick="respondP2POffer('${p.id}', 'decline')">Decline</button>
+                        </div>
+                        ` : ''}
                     </div>
-                    <div class="myt__p2p-actions">
-                        <button class="myt__p2p-accept" onclick="respondP2POffer('${p.id}', 'accept')">Accept</button>
-                        <button class="myt__p2p-decline" onclick="respondP2POffer('${p.id}', 'decline')">Decline</button>
-                    </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
         }
 
         if (outgoing) {
-            outgoing.innerHTML = MOCK_P2P_OUTGOING.map(p => `
-                <div class="myt__p2p-card">
-                    <div class="myt__p2p-info">
-                        <div class="myt__p2p-title">You offered to sell to target user</div>
-                        <div class="myt__p2p-details">
-                            <strong>${p.asset_id}</strong> · ${p.quantity} shares @ ${formatUSD(p.price_cents)} · <span class="myt__status myt__status--${p.status}">${p.status}</span> · <span style="font-size:11px;">${formatDate(p.created_at)}</span>
+            if (MOCK_P2P_OUTGOING.length === 0) {
+                outgoing.innerHTML = `<div style="text-align:center; padding: 32px; color: var(--myt-text-sec);">No sent offers.</div>`;
+            } else {
+                outgoing.innerHTML = MOCK_P2P_OUTGOING.map(p => `
+                    <div class="myt__p2p-card">
+                        <div class="myt__p2p-info">
+                            <div class="myt__p2p-title">You offered to sell to User ${p.taker_user_id.substring(0,8)}</div>
+                            <div class="myt__p2p-details">
+                                <strong>Asset ${p.asset_id.substring(0,8)}</strong> · ${p.quantity} shares @ ${formatUSD(p.price_cents)} · <span class="myt__status myt__status--${p.status}">${p.status}</span> · <span style="font-size:11px;">${formatDate(p.created_at)}</span>
+                            </div>
                         </div>
+                        ${p.status === 'pending' ? `
+                        <div class="myt__p2p-actions">
+                            <button class="myt__cancel-btn" onclick="cancelP2POffer('${p.id}')">Withdraw</button>
+                        </div>
+                        ` : ''}
                     </div>
-                    <div class="myt__p2p-actions">
-                        <button class="myt__cancel-btn" onclick="cancelP2POffer('${p.id}')">Withdraw</button>
-                    </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
         }
     }
 
@@ -186,25 +280,53 @@
         }
     }
 
+    function renderSummaryCards() {
+        const spanOpen = document.getElementById('summary-open-orders');
+        const spanTrades = document.getElementById('summary-trades');
+        const spanFees = document.getElementById('summary-fees');
+        const spanInterests = document.getElementById('summary-interests');
+
+        if (spanOpen) {
+            spanOpen.innerText = MOCK_ORDERS.filter(o => ['open', 'partially_filled', 'pending_review'].includes(o.status)).length;
+        }
+        if (spanTrades) {
+            spanTrades.innerText = MOCK_TRADES.length;
+        }
+        if (spanFees) {
+            const totalFees = MOCK_TRADES.reduce((sum, t) => sum + (t.fee || 0), 0);
+            spanFees.innerText = formatUSD(totalFees);
+        }
+        if (spanInterests) {
+            spanInterests.innerText = MOCK_INTERESTS.length;
+        }
+    }
+
     // ── Fetching Data ──────────────────────────────────────────
     async function fetchAllData() {
         try {
-            const [ordersRes, tradesRes, incomingRes, outgoingRes] = await Promise.all([
+            const [ordersRes, tradesRes, incomingRes, outgoingRes, portfolioRes] = await Promise.all([
                 fetch('/api/marketplace/orders/mine'),
                 fetch('/api/marketplace/trades/mine'),
                 fetch('/api/marketplace/p2p/offers/incoming'),
-                fetch('/api/marketplace/p2p/offers/outgoing')
+                fetch('/api/marketplace/p2p/offers/outgoing'),
+                fetch('/api/portfolio')
             ]);
             
             if (ordersRes.ok) MOCK_ORDERS = await ordersRes.json();
             if (tradesRes.ok) MOCK_TRADES = await tradesRes.json();
             if (incomingRes.ok) MOCK_P2P_INCOMING = await incomingRes.json();
             if (outgoingRes.ok) MOCK_P2P_OUTGOING = await outgoingRes.json();
+            if (portfolioRes.ok) {
+                const p = await portfolioRes.json();
+                PORTFOLIO_ASSETS = p.investments || [];
+            }
 
             renderOpenOrders();
             renderBuyInterests();
             renderTradeHistory();
             renderP2POffers();
+            renderMyAssets();
+            renderSummaryCards();
         } catch (err) {
             console.error('Failed to load dashboard data:', err);
         }

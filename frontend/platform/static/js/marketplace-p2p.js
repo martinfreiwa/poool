@@ -213,8 +213,15 @@ const MarketP2P = (function () {
   async function loadIncomingOffers(container) {
     const result = await getIncoming();
     if (!result.ok) {
-      container.innerHTML =
-        '<div class="p2p-empty">Unable to load offers</div>';
+      container.innerHTML = `
+        <div class="p2p-empty">
+          <div class="p2p-empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <div class="p2p-empty-title">Unable to load offers</div>
+          <div class="p2p-empty-subtitle">${result.error || "Please try again later."}</div>
+        </div>
+      `;
       return;
     }
 
@@ -223,8 +230,15 @@ const MarketP2P = (function () {
       : result.data;
 
     if (!filtered.length) {
-      container.innerHTML =
-        '<div class="p2p-empty">No incoming offers</div>';
+      container.innerHTML = `
+        <div class="p2p-empty">
+          <div class="p2p-empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path></svg>
+          </div>
+          <div class="p2p-empty-title">No incoming offers</div>
+          <div class="p2p-empty-subtitle">When other investors send you an offer, it will appear here.</div>
+        </div>
+      `;
       return;
     }
 
@@ -237,8 +251,15 @@ const MarketP2P = (function () {
   async function loadOutgoingOffers(container) {
     const result = await getOutgoing();
     if (!result.ok) {
-      container.innerHTML =
-        '<div class="p2p-empty">Unable to load offers</div>';
+      container.innerHTML = `
+        <div class="p2p-empty">
+          <div class="p2p-empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <div class="p2p-empty-title">Unable to load offers</div>
+          <div class="p2p-empty-subtitle">${result.error || "Please try again later."}</div>
+        </div>
+      `;
       return;
     }
 
@@ -247,8 +268,15 @@ const MarketP2P = (function () {
       : result.data;
 
     if (!filtered.length) {
-      container.innerHTML =
-        '<div class="p2p-empty">No outgoing offers</div>';
+      container.innerHTML = `
+        <div class="p2p-empty">
+          <div class="p2p-empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </div>
+          <div class="p2p-empty-title">No outgoing offers</div>
+          <div class="p2p-empty-subtitle">Offers you send to other investors will appear here.</div>
+        </div>
+      `;
       return;
     }
 
@@ -588,177 +616,207 @@ const MarketP2P = (function () {
     const style = document.createElement("style");
     style.id = "p2p-styles";
     style.textContent = `
-      .p2p-panel { margin-top: 16px; }
+      .p2p-panel { margin-top: 16px; margin-bottom: 24px; }
       .p2p-panel-header {
         display: flex; align-items: center; gap: 10px;
         margin-bottom: 12px;
       }
       .p2p-panel-header h3 {
-        font-size: 15px; font-weight: 600; color: #e1e3e6;
-        margin: 0; flex: 1;
+        font-size: 18px; font-weight: 700; color: var(--page-title-color, #181D27);
+        margin: 0; flex: 1; letter-spacing: -0.01em;
       }
       .p2p-badge {
-        background: #ef4444; color: white; font-size: 11px; font-weight: 700;
+        background: #D92D20; color: white; font-size: 11px; font-weight: 700;
         min-width: 18px; height: 18px; border-radius: 9px;
         display: inline-flex; align-items: center; justify-content: center;
         padding: 0 5px;
       }
       .p2p-tabs {
-        display: flex; gap: 0; margin-bottom: 12px;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        display: flex; gap: 32px; margin-bottom: 16px;
+        border-bottom: 1px solid var(--card-border-color, #E5E7EB);
       }
       .p2p-tab {
-        padding: 8px 16px; font-size: 13px; cursor: pointer;
-        background: none; border: none; color: #7a7f87;
-        border-bottom: 2px solid transparent; transition: all 0.2s;
-        font-family: inherit;
+        padding: 8px 0; font-size: 14px; cursor: pointer;
+        background: none; border: none; color: var(--text-secondary, #667085);
+        border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s;
+        font-family: inherit; margin-bottom: -1px; font-weight: 500;
       }
-      .p2p-tab:hover { color: #e1e3e6; }
+      .p2p-tab:hover { color: var(--page-title-color, #181D27); }
       .p2p-tab.active {
-        color: #00c896; border-bottom-color: #00c896;
+        color: var(--page-title-color, #1B2559); border-bottom-color: var(--page-title-color, #1B2559);
+        font-weight: 600;
       }
       .p2p-tab-count {
-        font-size: 11px; background: rgba(0,200,150,0.15);
-        color: #00c896; border-radius: 8px; padding: 1px 6px;
-        margin-left: 4px;
+        font-size: 11px; background: rgba(0, 0, 255, 0.08); /* Using Brand blue tint */
+        color: #0000FF; border-radius: 8px; padding: 2px 6px;
+        margin-left: 4px; font-weight: 600;
       }
 
       .p2p-card {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 10px; padding: 12px 14px;
-        margin-bottom: 8px; transition: border-color 0.2s;
+        background: var(--card-bg, #FFFFFF);
+        border: 1px solid var(--card-border-color, #E5E7EB);
+        border-radius: 12px; padding: 16px 20px;
+        margin-bottom: 12px; transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05);
       }
-      .p2p-card:hover { border-color: rgba(255,255,255,0.15); }
+      .p2p-card:hover { 
+        border-color: #D0D5DD; transform: translateY(-2px); 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
+      }
       .p2p-card-header {
-        display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+        display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
       }
       .p2p-side {
-        font-size: 11px; font-weight: 700; padding: 2px 8px;
-        border-radius: 4px; text-transform: uppercase;
+        font-size: 11px; font-weight: 700; padding: 3px 8px;
+        border-radius: 6px; text-transform: uppercase; letter-spacing: 0.02em;
       }
-      .p2p-side--buy { background: rgba(0,200,150,0.12); color: #00c896; }
-      .p2p-side--sell { background: rgba(239,68,68,0.12); color: #ef4444; }
-      .p2p-time { font-size: 11px; color: #7a7f87; margin-left: auto; }
-      .p2p-card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
-      .p2p-detail { display: flex; justify-content: space-between; }
-      .p2p-label { font-size: 12px; color: #7a7f87; }
-      .p2p-value { font-size: 12px; color: #e1e3e6; font-weight: 500; }
-      .p2p-total { font-weight: 600; color: #ffffff; }
-      .p2p-expiry { color: #f59e0b; }
+      .p2p-side--buy { background: rgba(3, 255, 136, 0.15); color: #027A48; } /* Using wealth terminal success colors */
+      .p2p-side--sell { background: #FEF3F2; color: #B42318; border: 1px solid #FEE4E2; }
+      .p2p-time { font-size: 12px; color: var(--text-secondary, #535862); margin-left: auto; }
+      
+      .p2p-card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+      .p2p-detail { display: flex; justify-content: space-between; align-items: center; }
+      .p2p-label { font-size: 13px; color: var(--text-secondary, #535862); }
+      .p2p-value { font-size: 14px; color: var(--page-title-color, #181D27); font-weight: 500; }
+      .p2p-total { font-weight: 600; font-variant-numeric: tabular-nums; }
+      .p2p-expiry { color: #B54708; font-weight: 500; }
       .p2p-message {
-        grid-column: 1 / -1; font-size: 12px; color: #a0a4ab;
-        font-style: italic; margin-top: 4px;
-        padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05);
+        grid-column: 1 / -1; font-size: 13px; color: var(--text-secondary, #535862);
+        font-style: italic; margin-top: 8px;
+        padding-top: 8px; border-top: 1px solid var(--card-border-color, #E5E7EB);
       }
 
       .p2p-actions {
-        display: flex; gap: 6px; margin-top: 10px;
-        padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);
+        display: flex; gap: 8px; margin-top: 12px;
+        padding-top: 12px; border-top: 1px solid var(--card-border-color, #E5E7EB);
       }
       .p2p-btn {
-        padding: 6px 14px; border-radius: 6px; border: none;
-        font-size: 12px; font-weight: 600; cursor: pointer;
-        transition: all 0.2s; font-family: inherit;
+        padding: 8px 16px; border-radius: 8px; border: none;
+        font-size: 13px; font-weight: 600; cursor: pointer;
+        transition: all 0.15s ease; font-family: inherit;
+        display: inline-flex; align-items: center; justify-content: center;
       }
       .p2p-btn:disabled { opacity: 0.5; cursor: not-allowed; }
       .p2p-btn--accept {
-        background: rgba(0,200,150,0.15); color: #00c896;
+        background: var(--btn-primary-bg, #0000FF); color: var(--btn-primary-color, #98FB96);
       }
       .p2p-btn--accept:hover:not(:disabled) {
-        background: rgba(0,200,150,0.25);
+        background: var(--btn-primary-hover-bg, #0000CC);
       }
       .p2p-btn--decline {
-        background: rgba(239,68,68,0.1); color: #ef4444;
+        background: var(--btn-danger-bg, #D92D20); color: var(--btn-danger-color, #FFFFFF);
       }
       .p2p-btn--decline:hover:not(:disabled) {
-        background: rgba(239,68,68,0.2);
+        background: var(--btn-danger-hover-bg, #B42318);
       }
       .p2p-btn--counter {
-        background: rgba(129,140,248,0.1); color: #818cf8;
+        background: transparent; border: 1px solid var(--input-border-color, #D0D5DD); color: var(--body-color, #344054);
       }
       .p2p-btn--counter:hover:not(:disabled) {
-        background: rgba(129,140,248,0.2);
+        background: var(--btn-ghost-hover-bg, #F2F4F7);
       }
       .p2p-btn--cancel {
-        background: rgba(122,127,135,0.15); color: #7a7f87;
+        background: transparent; color: var(--text-secondary, #667085);
       }
       .p2p-btn--cancel:hover:not(:disabled) {
-        background: rgba(122,127,135,0.25); color: #e1e3e6;
+        background: var(--btn-ghost-hover-bg, #F2F4F7); color: var(--page-title-color, #181D27);
       }
       .p2p-btn--new {
-        background: rgba(0,200,150,0.1); color: #00c896;
-        padding: 5px 12px; font-size: 12px;
+        background: var(--btn-primary-bg, #0000FF); color: var(--btn-primary-color, #98FB96);
+        padding: 6px 14px; font-size: 13px; border-radius: 8px;
+        height: 32px;
       }
-      .p2p-btn--new:hover { background: rgba(0,200,150,0.2); }
+      .p2p-btn--new:hover { background: var(--btn-primary-hover-bg, #0000CC); transform: translateY(-1px); }
+      
+      /* Submit button explicitly on modals */
       .p2p-btn--submit {
-        width: 100%; background: #00c896; color: white;
-        padding: 10px; font-size: 14px; border-radius: 8px;
-        margin-top: 8px;
+        width: 100%; background: var(--btn-primary-bg, #0000FF); color: var(--btn-primary-color, #98FB96);
+        padding: 12px; font-size: 15px; border-radius: 8px;
+        margin-top: 16px;
       }
-      .p2p-btn--submit:hover:not(:disabled) { background: #00b085; }
+      .p2p-btn--submit:hover:not(:disabled) { background: var(--btn-primary-hover-bg, #0000CC); transform: translateY(-1px); }
 
+      /* Empty states redesign */
       .p2p-empty {
-        text-align: center; color: #7a7f87; padding: 24px;
-        font-size: 13px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; padding: 48px 24px;
+        background: var(--card-bg, #FFFFFF); border: 1px dashed var(--card-border-color, #E5E7EB);
+        border-radius: 12px; margin-top: 8px;
       }
-      .p2p-loading {
-        text-align: center; color: #7a7f87; padding: 24px;
-        font-size: 13px;
+      .p2p-empty-icon {
+        width: 48px; height: 48px; border-radius: 50%;
+        background: var(--btn-ghost-hover-bg, #F2F4F7);
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 16px; color: var(--text-secondary, #535862);
+      }
+      .p2p-empty-icon svg { width: 24px; height: 24px; }
+      .p2p-empty-title {
+        font-size: 15px; font-weight: 600; color: var(--page-title-color, #181D27); margin-bottom: 4px;
+      }
+      .p2p-empty-subtitle {
+        font-size: 14px; color: var(--text-secondary, #535862);
       }
 
-      /* ── Modal ── */
+      .p2p-loading {
+        text-align: center; color: var(--text-secondary, #667085); padding: 32px;
+        font-size: 14px;
+      }
+
+      /* ── Modal (following Wealth Terminal styles) ── */
       .p2p-modal-overlay {
-        position: fixed; inset: 0; z-index: 9999;
-        background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+        position: fixed; inset: 0; z-index: 10000; /* Over sidebar */
+        background: rgba(52, 64, 84, 0.6); backdrop-filter: blur(6px);
         display: flex; align-items: center; justify-content: center;
-        animation: p2p-fade-in 0.2s ease;
+        animation: p2p-fade-in 0.2s ease-out;
       }
       @keyframes p2p-fade-in { from { opacity: 0; } to { opacity: 1; } }
       .p2p-modal {
-        background: #1a1d23; border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 14px; width: 420px; max-width: 95vw;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        animation: p2p-slide-up 0.25s ease;
+        background: var(--card-bg, #FFFFFF); 
+        border: 1px solid var(--card-border-color, #E5E7EB);
+        border-radius: 16px; width: 420px; max-width: 95vw;
+        box-shadow: 0px 8px 8px -4px rgba(16, 24, 40, 0.03), 0px 20px 24px -4px rgba(16, 24, 40, 0.08); /* Wealth Terminal modal shadow */
+        animation: p2p-slide-up 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       }
       @keyframes p2p-slide-up {
-        from { transform: translateY(20px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
+        from { transform: translateY(-12px) scale(0.97); opacity: 0; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
       }
       .p2p-modal-header {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08);
+        padding: 20px 24px; border-bottom: 1px solid var(--card-border-color, #E5E7EB);
       }
       .p2p-modal-header h3 {
-        font-size: 16px; font-weight: 600; color: #e1e3e6; margin: 0;
+        font-size: 18px; font-weight: 700; color: var(--page-title-color, #181D27); margin: 0;
       }
       .p2p-modal-close {
-        background: none; border: none; color: #7a7f87;
-        font-size: 18px; cursor: pointer; padding: 4px 8px;
+        background: none; border: none; color: var(--text-secondary, #535862);
+        font-size: 18px; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;
         border-radius: 6px; transition: all 0.2s;
       }
-      .p2p-modal-close:hover { background: rgba(255,255,255,0.05); color: #e1e3e6; }
-      .p2p-modal-body { padding: 16px 20px; }
-      .p2p-form-group { margin-bottom: 12px; }
+      .p2p-modal-close:hover { background: var(--btn-ghost-hover-bg, #F2F4F7); color: var(--page-title-color, #181D27); }
+      .p2p-modal-body { padding: 24px; }
+      .p2p-form-group { margin-bottom: 16px; }
       .p2p-form-group label {
-        display: block; font-size: 12px; color: #7a7f87;
-        margin-bottom: 4px; font-weight: 500;
+        display: block; font-size: 14px; color: var(--label-color, #475467);
+        margin-bottom: 6px; font-weight: 500;
       }
       .p2p-form-group input, .p2p-form-group textarea, .p2p-form-group select {
-        width: 100%; padding: 8px 12px; border-radius: 8px;
-        border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
-        color: #e1e3e6; font-size: 13px; font-family: inherit;
-        transition: border-color 0.2s; box-sizing: border-box;
+        width: 100%; padding: 10px 14px; border-radius: 8px; height: 44px;
+        border: 1px solid var(--input-border-color, #D0D5DD); background: var(--input-bg, #FFFFFF);
+        color: var(--input-text-color, #101828); font-size: 14px; font-family: inherit;
+        transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box;
       }
+      .p2p-form-group textarea { height: auto; min-height: 80px; resize: vertical; }
       .p2p-form-group input:focus, .p2p-form-group textarea:focus, .p2p-form-group select:focus {
-        outline: none; border-color: #00c896;
+        outline: none; border-color: var(--input-border-focus, #0000FF);
+        box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08); /* Wealth Terminal focus ring */
       }
-      .p2p-form-row { display: flex; gap: 12px; }
+      .p2p-form-row { display: flex; gap: 16px; }
       .p2p-form-row .p2p-form-group { flex: 1; }
       .p2p-form-summary {
-        text-align: center; font-size: 16px; font-weight: 600;
-        color: #e1e3e6; padding: 8px; margin-top: 4px;
-        border-radius: 8px; background: rgba(255,255,255,0.03);
+        text-align: center; font-size: 18px; font-weight: 700;
+        color: var(--page-title-color, #181D27); padding: 12px; margin-top: 8px;
+        border-radius: 8px; background: var(--content-bg, #FAFAFA); border: 1px solid var(--card-border-color, #E5E7EB);
       }
     `;
     document.head.appendChild(style);
