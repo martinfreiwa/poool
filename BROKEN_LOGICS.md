@@ -751,3 +751,24 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **What I did:** Added unique IDs to the HTML elements and implemented `updateMyProfileCard` in the feed script to dynamically inject the real name and community stats (posts, followers) from the API.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+
+### [P2] — Cart images broken and no graceful fallback
+- **File:** `backend/src/cart/routes.rs`
+- **What was wrong:** Cart item images showed a broken image icon when the image URL failed to load (404/403). Additionally, the mobile cart template was NOT calling `rewrite_gcs_url()` on the image URL while the desktop version was, causing broken images specifically on mobile for GCS-hosted images.
+- **What I did:** Added `onerror` handler on both desktop and mobile `<img>` tags that replaces the broken image with a clean SVG placeholder. Fixed the mobile template to use `rewrite_gcs_url()` consistently with the desktop template.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Cart funding bar shows 0% despite having shares in cart
+- **File:** `backend/src/cart/routes.rs`
+- **What was wrong:** When `tokens_total` is large (e.g., 24000) and the user has only a few tokens in cart (e.g., 4), the funded percentage calculated to 0.017% which truncated to 0% as i32. This made the progress bar appear completely empty and misleading.
+- **What I did:** Added a minimum 1% floor when `raw_pct > 0.0` but `(raw_pct as i32) == 0`, so the bar always shows at least a sliver when the user has shares selected.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Cart quantity controls (+/- buttons) overflow card bounds
+- **File:** `frontend/platform/static/css/cart.css`
+- **What was wrong:** The `.cart-item-card__bottom-row` didn't wrap and the price controls had no min-width constraint, causing the `+` button to extend beyond the card boundary on narrower viewports.
+- **What I did:** Added `flex-wrap: wrap` and `min-width: 0` to the bottom row, reduced gaps slightly, and added `min-width: 2px` to the progress fill for tiny percentages.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23

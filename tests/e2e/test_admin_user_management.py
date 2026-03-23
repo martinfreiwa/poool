@@ -12,14 +12,20 @@ def test_user_email():
     """Fetches a real user email from the database for testing search."""
     conn = psycopg2.connect(DB_URL)
     cur = conn.cursor()
-    # Don't pick superadmins to avoid messing up other tests
+    # Pick a recent non-admin user (admin table loads recent first, client-side search only works on loaded rows)
     cur.execute(
-        "SELECT u.email FROM users u LEFT JOIN user_roles ur ON u.id = ur.user_id LEFT JOIN roles r ON ur.role_id = r.id WHERE r.name IS DISTINCT FROM 'super_admin' AND r.name IS DISTINCT FROM 'admin' LIMIT 1"
+        "SELECT u.email FROM users u "
+        "LEFT JOIN user_roles ur ON u.id = ur.user_id "
+        "LEFT JOIN roles r ON ur.role_id = r.id "
+        "WHERE r.name IS DISTINCT FROM 'super_admin' AND r.name IS DISTINCT FROM 'admin' "
+        "ORDER BY u.created_at DESC LIMIT 1"
     )
-    email = cur.fetchone()[0]
+    row = cur.fetchone()
     cur.close()
     conn.close()
-    return email
+    if not row:
+        pytest.skip("No non-admin users available for testing")
+    return row[0]
 
 
 def test_user_search(admin_page, test_user_email):

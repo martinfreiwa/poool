@@ -92,12 +92,15 @@ function handleQuantityChange(button) {
 
   // Update Progress Bar
   if (totalTokens > 0) {
-    const diffQty = newQty - currentQty;
-    const newSoldTokens = totalTokens - availableTokens + diffQty;
-    const newPct = Math.min(
+    // Use full newQty (not diff) to match server-side formula:
+    // sold_tokens = total - available + cart_qty
+    const newSoldTokens = totalTokens - availableTokens + newQty;
+    let newPct = Math.min(
       100,
       Math.max(0, Math.round((newSoldTokens / totalTokens) * 100)),
     );
+    // Show at least 1% if user has shares (avoid misleading 0%)
+    if (newPct === 0 && newQty > 0) newPct = 1;
 
     const progressFill = document.getElementById(`${itemId}-progress`);
     if (progressFill) progressFill.style.width = `${newPct}%`;
@@ -168,10 +171,12 @@ function handleQuantityInput(input) {
     // Determine the original currentQty saved to calculate difference
     // Without storing it globally, we use a naive diff from original availability assuming single edit, or just show updated funded ratio
     const newSoldTokens = totalTokens - availableTokens + newQty;
-    const newPct = Math.min(
+    let newPct = Math.min(
       100,
       Math.max(0, Math.round((newSoldTokens / totalTokens) * 100)),
     );
+    // Show at least 1% if user has shares (avoid misleading 0%)
+    if (newPct === 0 && newQty > 0) newPct = 1;
 
     const progressFill = document.getElementById(`${itemId}-progress`);
     if (progressFill) progressFill.style.width = `${newPct}%`;

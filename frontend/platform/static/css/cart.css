@@ -992,7 +992,6 @@
   border-radius: 12px;
   width: 100%;
   min-width: 0;
-  overflow: hidden;
   transition: box-shadow 0.2s, border-color 0.2s;
 }
 
