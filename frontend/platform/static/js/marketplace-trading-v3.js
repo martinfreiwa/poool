@@ -9,6 +9,8 @@
 
     const DEFAULT_SLUG = 'bali-villa-canggu-12';
 
+    let currentUserEmail = null;
+
     function getAssetSlug() {
         return new URLSearchParams(window.location.search).get('asset') || DEFAULT_SLUG;
     }
@@ -275,13 +277,24 @@
 
         // Update submit button text
         const btn = document.getElementById('tv3-submit-btn');
-        const action = currentSide === 'buy' ? 'Buy' : 'Sell';
-        const shareText = qty === 1 ? 'Share' : 'Shares';
-        btn.textContent = action + ' ' + qty + ' ' + shareText + ' · ' + fmt(total);
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.style.cursor = 'pointer';
-        btn.style.fontSize = ''; // Reset font size
+        const isFunded = currentAsset.fundingStatus === 'funded';
+        const isAdmin = currentUserEmail === 'support@traffic-creator.com';
+
+        if (!isFunded && !isAdmin) {
+            btn.textContent = 'Trading unavailable: Asset is not yet fully funded';
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            btn.style.fontSize = '12px';
+        } else {
+            const action = currentSide === 'buy' ? 'Buy' : 'Sell';
+            const shareText = qty === 1 ? 'Share' : 'Shares';
+            btn.textContent = action + ' ' + qty + ' ' + shareText + ' · ' + fmt(total);
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.style.fontSize = ''; // Reset font size
+        }
     }
 
     // ── Set Buy/Sell Side ──
@@ -372,6 +385,17 @@
     // ── Init ──
     document.addEventListener('DOMContentLoaded', async () => {
         const slug = getAssetSlug();
+
+        // Check user identity
+        try {
+            const res = await fetch('/api/me');
+            if (res.ok) {
+                const data = await res.json();
+                currentUserEmail = data.email || data.user?.email;
+            }
+        } catch (e) {
+            console.warn('Could not fetch user profile:', e);
+        }
 
         let asset;
         try {

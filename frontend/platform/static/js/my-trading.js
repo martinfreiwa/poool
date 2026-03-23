@@ -11,6 +11,7 @@
     let MOCK_P2P_INCOMING = [];
     let MOCK_P2P_OUTGOING = [];
     let PORTFOLIO_ASSETS = [];
+    let currentUserEmail = null;
 
     // ── Formatters ─────────────────────────────────────────────
     function formatUSD(cents) {
@@ -168,7 +169,10 @@
                     <td><span class="${yieldCls}">${yieldPct}%</span></td>
                     <td><span class="myt__status myt__status--${a.status.toLowerCase()}">${a.status}</span></td>
                     <td>
-                        <a href="/marketplace-trading-v3?asset=${a.asset_slug}" class="myt__action-btn myt__action-btn--outline" style="padding: 4px 8px; font-size: 12px; height:auto;">Trade</a>
+                        ${(a.funding_status === 'funded' || currentUserEmail === 'support@traffic-creator.com') 
+                            ? `<a href="/marketplace-trading-v3?asset=${a.asset_slug}" class="myt__action-btn myt__action-btn--outline" style="padding: 4px 8px; font-size: 12px; height:auto;">Trade</a>`
+                            : `<span class="myt__action-btn myt__action-btn--outline" style="padding: 4px 8px; font-size: 11px; height:auto; opacity:0.5; cursor:not-allowed; background:#f2f4f7; border-color:#d0d5dd; color:#667085;" title="This asset is currently in its primary funding phase and cannot yet be traded.">Not Tradable</span>`
+                        }
                     </td>
                 </tr>
             `;
@@ -271,6 +275,24 @@
                 downloadBtn.disabled = true;
                 
                 try {
+                    // PDF: open branded print-ready page in new tab
+                    if (format === 'pdf') {
+                        window.open(`/tax-report?year=${year}&format=pdf`, '_blank');
+                        downloadBtn.innerHTML = '✓ Report Opened';
+                        downloadBtn.style.background = '#16a34a';
+                        setTimeout(() => {
+                            if (modal) modal.style.display = 'none';
+                            downloadBtn.innerHTML = `
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Download Report
+                            `;
+                            downloadBtn.style.background = '';
+                            downloadBtn.disabled = false;
+                        }, 2000);
+                        return;
+                    }
+
+                    // CSV: fetch and download directly
                     const response = await fetch(`/api/marketplace/tax-export?year=${year}&format=${format}`);
                     if (!response.ok) {
                         const errText = await response.text();
@@ -282,7 +304,7 @@
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `tax_report_${year}.${format === 'pdf' ? 'pdf' : 'csv'}`;
+                    a.download = `tax_report_${year}.csv`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -336,13 +358,19 @@
     // ── Fetching Data ──────────────────────────────────────────
     async function fetchAllData() {
         try {
-            const [ordersRes, tradesRes, incomingRes, outgoingRes, portfolioRes] = await Promise.all([
+            const [ordersRes, tradesRes, incomingRes, outgoingRes, portfolioRes, userRes] = await Promise.all([
                 fetch('/api/marketplace/orders/mine'),
                 fetch('/api/marketplace/trades/mine'),
                 fetch('/api/marketplace/p2p/offers/incoming'),
                 fetch('/api/marketplace/p2p/offers/outgoing'),
-                fetch('/api/portfolio')
+                fetch('/api/portfolio'),
+                fetch('/api/me')
             ]);
+            
+            if (userRes && userRes.ok) {
+                const userData = await userRes.json();
+                currentUserEmail = userData.email || userData.user?.email;
+            }
             
             if (ordersRes.ok) MOCK_ORDERS = await ordersRes.json();
             if (tradesRes.ok) MOCK_TRADES = await tradesRes.json();

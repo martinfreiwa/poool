@@ -82,6 +82,9 @@ async function initLoadData() {
 
         // Load leaderboard preferences
         loadLeaderboardPreferences(data);
+        
+        // Load community profile data
+        loadCommunityProfile();
 
         document.getElementById('settings-loading-skeleton').classList.add('hidden');
         document.getElementById('settings-content').classList.remove('hidden');
@@ -1049,6 +1052,19 @@ function loadLeaderboardPreferences(data) {
     if (nEl) nEl.value = data.lb_display_name || '';
 }
 
+async function loadCommunityProfile() {
+    try {
+        const res = await fetch('/api/community/profile/me', { credentials: 'same-origin' });
+        if (res.ok) {
+            const profile = await res.json();
+            const bioInput = document.getElementById('settings-community-bio');
+            if (bioInput) bioInput.value = profile.bio || '';
+        }
+    } catch (e) {
+        console.error("Failed to load community profile", e);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const lbBtn = document.getElementById('save-leaderboard-btn');
     if (lbBtn) {
@@ -1062,16 +1078,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     display_name: document.getElementById('settings-lb-display-name')?.value || '',
                 };
                 const result = await SettingsDataService.saveLeaderboard(body);
-                if (result && result.success !== false) {
-                    showToast('Leaderboard settings saved', 'success');
+                
+                const bio = document.getElementById('settings-community-bio')?.value || '';
+                const bioRes = await fetch('/api/community/profile', {
+                    method: 'PUT',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bio: bio })
+                });
+
+                if (result && result.success !== false && bioRes.ok) {
+                    showToast('Settings saved successfully', 'success');
                 } else {
-                    showToast(result?.message || 'Failed to save leaderboard settings', 'error');
+                    showToast(result?.message || 'Failed to save settings', 'error');
                 }
             } catch (e) {
                 showToast('Network error', 'error');
             }
             lbBtn.disabled = false;
-            lbBtn.textContent = 'Save Leaderboard Settings';
+            lbBtn.textContent = 'Save Settings';
         });
     }
 

@@ -317,7 +317,7 @@ include
                   <span class="profile-badge profile-badge--investor">Diversified</span>
                   <span class="profile-badge">Connector</span>
                 </div>
-                <button id="my-profile-edit-btn" class="ds-btn ds-btn--ghost profile-edit-btn" style="border:1px solid #EAECF0; background:#F9FAFB; color:#344054; cursor:pointer;">Edit Profile</button>
+                <a href="/settings#section-leaderboard" class="ds-btn ds-btn--ghost profile-edit-btn" style="border:1px solid #EAECF0; background:#F9FAFB; color:#344054; cursor:pointer; text-decoration: none; display: flex; justify-content: center; align-items: center;">Edit Profile</a>
               </div>
 
               <!-- Trending Commodities -->
@@ -1387,45 +1387,6 @@ include
     </main>
   </div>
 
-        <!-- Edit Community Profile Modal (UX.15) -->
-        <div id="edit-profile-modal" class="ds-modal" style="display: none;">
-          <div class="ds-modal__backdrop" onclick="document.getElementById('edit-profile-modal').style.display='none'"></div>
-          <div class="ds-modal__content" style="max-width: 480px;">
-            <div class="ds-modal__header">
-              <h3 class="ds-modal__title">Edit Community Profile</h3>
-              <button type="button" class="ds-modal__close" onclick="document.getElementById('edit-profile-modal').style.display='none'">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-            <div class="ds-modal__body">
-              <p style="font-size: 14px; color: #667085; margin-bottom: 20px;">
-                Your community profile is visible to other members. Let them know what interests you.
-              </p>
-              
-              <div class="ds-form-group" style="margin-bottom: 24px;">
-                <label class="ds-label" for="edit-profile-bio-input">Bio</label>
-                <textarea id="edit-profile-bio-input" class="ds-input" rows="4" maxlength="300" placeholder="Sustainable investor • Long-term holder 🌱"></textarea>
-                <div style="font-size: 12px; color: #667085; margin-top: 4px; text-align: right;">
-                  Max 300 characters
-                </div>
-              </div>
-
-              <div style="padding: 12px; background: #F9FAFB; border-radius: 8px; border: 1px solid #EAECF0;">
-                <p style="font-size: 13px; color: #344054; margin: 0;">
-                  Looking to change your name or avatar?
-                  <a href="/settings" style="color: var(--btn-primary-bg); font-weight: 600; text-decoration: none;">Account Settings →</a>
-                </p>
-              </div>
-            </div>
-            <div class="ds-modal__footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
-              <button type="button" class="ds-btn ds-btn--secondary" onclick="document.getElementById('edit-profile-modal').style.display='none'">Cancel</button>
-              <button type="button" class="ds-btn ds-btn--primary" id="save-profile-btn">Save Changes</button>
-            </div>
-          </div>
-        </div>
 
   <!-- ==============================================
        First-Time Onboarding Modal (M3-FE.5)

@@ -274,6 +274,165 @@ pub async fn api_export_tax_report(
     ))
 }
 
+/// GET /tax-report?year=2026
+///
+/// Render the tax report as a branded HTML page (for Print → Save as PDF).
+/// Loads company settings, user profile, and trade history.
+pub async fn page_tax_report_pdf(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Query(query): Query<TaxExportQuery>,
+) -> axum::response::Response {
+    use axum::response::{Html, Redirect};
+    use sqlx::Row;
+
+    let user = match crate::auth::middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => return Redirect::to("/auth/login").into_response(),
+    };
+    let year = query.year;
+
+    // ── Load company settings ────────────────────────────────
+    let setting_rows = sqlx::query("SELECT key, value FROM platform_settings WHERE key LIKE 'company_%' OR key IN ('platform_name', 'support_email')")
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default();
+
+    let mut settings = std::collections::HashMap::<String, String>::new();
+    for row in &setting_rows {
+        let k: String = row.get("key");
+        let v: String = row.get("value");
+        settings.insert(k, v);
+    }
+
+    // ── Load user profile ────────────────────────────────────
+    let profile = sqlx::query!(
+        r#"
+        SELECT 
+            COALESCE(up.first_name, '') as "first_name!",
+            COALESCE(up.last_name, '') as "last_name!",
+            COALESCE(up.address_line_1, '') as "address!",
+            COALESCE(up.city, '') as "city!",
+            COALESCE(up.postal_code, '') as "postal!",
+            COALESCE(up.country, '') as "country!",
+            COALESCE(up.phone_number, '') as "phone!",
+            COALESCE(up.tax_id, '') as "tax_id!"
+        FROM user_profiles up
+        WHERE up.user_id = $1
+        "#,
+        user.id
+    )
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None);
+
+    let user_name = match &profile {
+        Some(p) if !p.first_name.is_empty() => format!("{} {}", p.first_name, p.last_name),
+        _ => user.email.clone(),
+    };
+
+    // ── Load trade history ───────────────────────────────────
+    let trades = sqlx::query!(
+        r#"
+        SELECT 
+            TO_CHAR(t.executed_at, 'YYYY-MM-DD') as "date!",
+            a.title as "asset_name!",
+            t.price_cents,
+            t.quantity,
+            t.total_cents,
+            t.fee_cents,
+            t.buyer_user_id,
+            t.seller_user_id
+        FROM trade_history t
+        JOIN assets a ON t.asset_id = a.id
+        WHERE (t.buyer_user_id = $1 OR t.seller_user_id = $1)
+        AND EXTRACT(YEAR FROM t.executed_at) = $2
+        ORDER BY t.executed_at ASC
+        "#,
+        user.id,
+        year as f64
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    // ── Compute summary totals ───────────────────────────────
+    let mut total_volume_cents: i64 = 0;
+    let mut total_fees_cents: i64 = 0;
+    let mut total_net_cents: i64 = 0;
+
+    let mut trade_rows: Vec<serde_json::Value> = Vec::new();
+    for t in &trades {
+        let is_buyer = t.buyer_user_id == user.id;
+        let side = if is_buyer { "BUY" } else { "SELL" };
+        let gross_cents = t.total_cents.unwrap_or(0);
+        let fee_cents = t.fee_cents;
+        let net_cents = if is_buyer { gross_cents + fee_cents } else { gross_cents - fee_cents };
+
+        total_volume_cents += gross_cents;
+        total_fees_cents += fee_cents;
+        total_net_cents += net_cents;
+
+        trade_rows.push(serde_json::json!({
+            "date": t.date,
+            "asset_name": t.asset_name,
+            "side": side,
+            "price": format!("${:.2}", t.price_cents as f64 / 100.0),
+            "quantity": t.quantity,
+            "gross": format!("${:.2}", gross_cents as f64 / 100.0),
+            "fee": format!("${:.2}", fee_cents as f64 / 100.0),
+            "net": format!("${:.2}", net_cents as f64 / 100.0),
+        }));
+    }
+
+    let now = chrono::Utc::now();
+    let doc_number = format!("TAX-{}-{}", year, now.format("%Y%m%d%H%M"));
+
+    let context = serde_json::json!({
+        // Company details
+        "company_name": settings.get("company_legal_name").unwrap_or(&"PT POOOL Finance Indonesia".to_string()),
+        "company_address": settings.get("company_address").unwrap_or(&"".to_string()),
+        "company_city": settings.get("company_city").unwrap_or(&"".to_string()),
+        "company_postal": settings.get("company_postal").unwrap_or(&"".to_string()),
+        "company_country": settings.get("company_country").unwrap_or(&"Indonesia".to_string()),
+        "company_npwp": settings.get("company_npwp").unwrap_or(&"".to_string()),
+        "company_nib": settings.get("company_nib").unwrap_or(&"".to_string()),
+        "company_ojk_license": settings.get("company_ojk_license").unwrap_or(&"".to_string()),
+        "company_email": settings.get("support_email").unwrap_or(&"support@poool.finance".to_string()),
+        "company_phone": settings.get("company_phone").unwrap_or(&"".to_string()),
+        "company_website": settings.get("company_website").unwrap_or(&"https://poool.finance".to_string()),
+        // Document metadata
+        "doc_title": "Tax Report / Laporan Pajak",
+        "doc_number": doc_number,
+        "doc_date": now.format("%d %B %Y").to_string(),
+        "doc_period": format!("January – December {}", year),
+        "generated_at": now.format("%Y-%m-%d %H:%M UTC").to_string(),
+        "currency": "USD",
+        // User details
+        "user_name": user_name,
+        "user_email": user.email,
+        "user_id": user.id.to_string(),
+        "user_address": profile.as_ref().map(|p| p.address.clone()).unwrap_or_default(),
+        "user_city": profile.as_ref().map(|p| p.city.clone()).unwrap_or_default(),
+        "user_postal": profile.as_ref().map(|p| p.postal.clone()).unwrap_or_default(),
+        "user_country": profile.as_ref().map(|p| p.country.clone()).unwrap_or_default(),
+        "user_npwp": profile.as_ref().map(|p| p.tax_id.clone()).unwrap_or_default(),
+        "user_phone": profile.as_ref().map(|p| p.phone.clone()).unwrap_or_default(),
+        // Summary
+        "tax_year": year,
+        "total_trades": trades.len(),
+        "total_volume": format!("${:.2}", total_volume_cents as f64 / 100.0),
+        "total_fees": format!("${:.2}", total_fees_cents as f64 / 100.0),
+        "total_net": format!("${:.2}", total_net_cents as f64 / 100.0),
+        "net_pl": format!("${:.2}", total_net_cents as f64 / 100.0),
+        "net_pl_positive": total_net_cents >= 0,
+        // Trade data
+        "trades": trade_rows,
+    });
+
+    crate::common::routes_helper::serve_protected_with_context(jar, &state, "templates/pdf-tax-report.html", context).await
+}
+
 /// DELETE /api/marketplace/orders/:order_id
 ///
 /// Cancel an open order. Requires authentication. The order must

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ doc_title | default("Document") }} — POOOL Finance</title>
+  <link rel="stylesheet" href="/static/css/fonts.css">
+  <link rel="stylesheet" href="/static/css/pdf-export.css">
+</head>
+<body class="pdf-body">
+  <div class="pdf-doc">
+
+    <!-- ═══════════════════════════════════════════════════════
+         HEADER — Logo + Company Info + Document Title
+         ═══════════════════════════════════════════════════════ -->
+    <header class="pdf-header">
+      <div class="pdf-header__brand">
+        <img src="/static/images/logo-pool.svg" alt="POOOL" class="pdf-header__logo">
+        <div class="pdf-header__company-details">
+          <strong>{{ company_name | default("PT POOOL Finance Indonesia") }}</strong><br>
+          {% if company_address %}{{ company_address }}<br>{% endif %}
+          {% if company_city %}{{ company_city }}{% if company_postal %} {{ company_postal }}{% endif %}{% if company_country %}, {{ company_country }}{% endif %}<br>{% endif %}
+          {% if company_npwp %}NPWP: {{ company_npwp }}<br>{% endif %}
+          {% if company_nib %}NIB: {{ company_nib }}<br>{% endif %}
+          {% if company_email %}{{ company_email }}{% endif %}
+          {% if company_phone %} &middot; {{ company_phone }}{% endif %}
+          {% if company_website %} &middot; {{ company_website }}{% endif %}
+        </div>
+      </div>
+
+      <div class="pdf-header__doc-info">
+        <div class="pdf-header__doc-title">{{ doc_title | default("Document") }}</div>
+        {% if doc_number %}<div class="pdf-header__doc-number">No. {{ doc_number }}</div>{% endif %}
+        <div class="pdf-header__doc-date">{{ doc_date | default("—") }}</div>
+        {% if doc_period %}<div class="pdf-header__doc-number">Period: {{ doc_period }}</div>{% endif %}
+      </div>
+    </header>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         PARTIES — Issuer (POOOL) + Recipient (User/Investor)
+         ═══════════════════════════════════════════════════════ -->
+    <div class="pdf-parties">
+      <!-- Company / Issuer -->
+      <div class="pdf-party">
+        <div class="pdf-party__label">Penerbit / Issued By</div>
+        <div class="pdf-party__name">{{ company_name | default("PT POOOL Finance Indonesia") }}</div>
+        <div class="pdf-party__detail">
+          {% if company_address %}{{ company_address }}<br>{% endif %}
+          {% if company_city %}{{ company_city }}{% if company_postal %} {{ company_postal }}{% endif %}<br>{% endif %}
+          {% if company_npwp %}<strong>NPWP:</strong> {{ company_npwp }}<br>{% endif %}
+          {% if company_nib %}<strong>NIB:</strong> {{ company_nib }}<br>{% endif %}
+          {% if company_ojk_license %}<strong>OJK License:</strong> {{ company_ojk_license }}{% endif %}
+        </div>
+      </div>
+
+      <!-- User / Recipient -->
+      <div class="pdf-party">
+        <div class="pdf-party__label">Penerima / Issued To</div>
+        <div class="pdf-party__name">{{ user_name | default("—") }}</div>
+        <div class="pdf-party__detail">
+          {% if user_email %}<strong>Email:</strong> {{ user_email }}<br>{% endif %}
+          {% if user_address %}{{ user_address }}<br>{% endif %}
+          {% if user_city %}{{ user_city }}{% if user_postal %} {{ user_postal }}{% endif %}{% if user_country %}, {{ user_country }}{% endif %}<br>{% endif %}
+          {% if user_npwp %}<strong>NPWP:</strong> {{ user_npwp }}<br>{% endif %}
+          {% if user_nik %}<strong>NIK:</strong> {{ user_nik }}<br>{% endif %}
+          {% if user_phone %}<strong>Phone:</strong> {{ user_phone }}<br>{% endif %}
+          <strong>Account ID:</strong> {{ user_id | default("—") }}
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         CONTENT BLOCK — Injected by specific report type
+         Each report type extends this template by filling the
+         `content` block with its own summary cards + tables.
+         ═══════════════════════════════════════════════════════ -->
+    {% block content %}
+    <!-- Default placeholder — override in child templates -->
+    <div class="pdf-section-title">Report Content</div>
+    <p style="color: #535862; font-size: 9pt;">No data provided.</p>
+    {% endblock %}
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         NOTES & DISCLAIMERS
+         ═══════════════════════════════════════════════════════ -->
+    {% if notes %}
+    <div class="pdf-notes">
+      <div class="pdf-notes__title">Notes / Catatan</div>
+      {{ notes }}
+    </div>
+    {% endif %}
+
+    <div class="pdf-notes pdf-mt-md">
+      <div class="pdf-notes__title">Disclaimer</div>
+      This document is generated electronically by {{ company_name | default("PT POOOL Finance Indonesia") }}
+      and is valid without signature. This document is intended solely for the named recipient
+      and contains confidential information. All monetary values are displayed in
+      {{ currency | default("USD") }}. Data accuracy is based on records as of the generation date.
+      <br><br>
+      Dokumen ini dihasilkan secara elektronik oleh {{ company_name | default("PT POOOL Finance Indonesia") }}
+      dan sah tanpa tanda tangan. Dokumen ini ditujukan hanya untuk penerima yang disebutkan
+      dan berisi informasi rahasia.
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════════════════
+         FOOTER — Confidentiality, generated timestamp, page
+         ═══════════════════════════════════════════════════════ -->
+    <footer class="pdf-footer">
+      <div class="pdf-footer__left">
+        <span class="pdf-footer__confidential">Confidential — {{ company_name | default("PT POOOL Finance Indonesia") }}</span>
+        <span class="pdf-footer__generated">Generated: {{ generated_at | default("—") }}</span>
+      </div>
+      <div class="pdf-footer__right">
+        <span class="pdf-footer__page">{{ doc_title | default("Document") }}</span>
+      </div>
+    </footer>
+
+  </div><!-- /.pdf-doc -->
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       PRINT BAR — Visible on screen, hidden in print
+       ═══════════════════════════════════════════════════════ -->
+  <div class="pdf-print-bar pdf-no-print">
+    <button class="pdf-print-bar__btn pdf-print-bar__btn--ghost" onclick="window.history.back()">← Back</button>
+    <button class="pdf-print-bar__btn pdf-print-bar__btn--primary" onclick="window.print()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 6px;"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Download / Print as PDF
+    </button>
+  </div>
+
+</body>
+</html>

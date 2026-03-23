@@ -1,0 +1,467 @@
+/*
+ * ══════════════════════════════════════════════════════════════
+ * PDF Export Template — "The Wealth Terminal" Print Design
+ * ══════════════════════════════════════════════════════════════
+ *
+ * Aligned with DESIGN.md tokens. Used for all printable/PDF
+ * documents: Tax Reports, Dividend Statements, Account Statements,
+ * Transaction Confirmations, etc.
+ *
+ * Usage: Include this CSS on any HTML page rendered as a PDF.
+ *        Print via window.print() or server-side headless browser.
+ */
+
+/* ── Reset & Page Setup ──────────────────────────────────── */
+@page {
+  size: A4;
+  margin: 20mm 18mm 24mm 18mm;
+}
+
+@media print {
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pdf-no-print { display: none !important; }
+  .pdf-page-break { page-break-before: always; }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body.pdf-body {
+  font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 10pt;
+  line-height: 1.5;
+  color: #344054;              /* --body-color */
+  background: #FFFFFF;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   DOCUMENT WRAPPER
+   ══════════════════════════════════════════════════════════════ */
+.pdf-doc {
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 0;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   HEADER — Logo + Company + Document Title
+   ══════════════════════════════════════════════════════════════ */
+.pdf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 16pt;
+  border-bottom: 2px solid #0000FF;   /* Electric Blue brand line */
+  margin-bottom: 20pt;
+}
+
+.pdf-header__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 6pt;
+}
+
+.pdf-header__logo {
+  height: 32pt;
+  width: auto;
+}
+
+.pdf-header__company-details {
+  font-size: 7.5pt;
+  line-height: 1.5;
+  color: #535862;              /* --text-secondary */
+}
+
+.pdf-header__company-details strong {
+  color: #181D27;              /* --page-title-color */
+  font-weight: 700;
+}
+
+.pdf-header__doc-info {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 3pt;
+}
+
+.pdf-header__doc-title {
+  font-size: 16pt;
+  font-weight: 700;
+  color: #181D27;              /* --page-title-color */
+  letter-spacing: -0.02em;     /* Tight Headlines rule */
+}
+
+.pdf-header__doc-number {
+  font-size: 8pt;
+  color: #535862;
+  font-weight: 400;
+}
+
+.pdf-header__doc-date {
+  font-size: 9pt;
+  color: #344054;
+  font-weight: 500;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   PARTIES — Issuer (Company) + Recipient (User)
+   ══════════════════════════════════════════════════════════════ */
+.pdf-parties {
+  display: flex;
+  justify-content: space-between;
+  gap: 24pt;
+  margin-bottom: 20pt;
+}
+
+.pdf-party {
+  flex: 1;
+  padding: 12pt 14pt;
+  border: 1px solid #E5E7EB;  /* --card-border-color */
+  border-radius: 8pt;
+  background: #FAFAFA;        /* --content-bg canvas */
+}
+
+.pdf-party__label {
+  font-size: 7pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #717680;              /* --table-header-color */
+  margin-bottom: 6pt;
+}
+
+.pdf-party__name {
+  font-size: 11pt;
+  font-weight: 700;
+  color: #181D27;
+  margin-bottom: 4pt;
+}
+
+.pdf-party__detail {
+  font-size: 8.5pt;
+  line-height: 1.6;
+  color: #535862;
+}
+
+.pdf-party__detail strong {
+  color: #344054;
+  font-weight: 600;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   SECTION TITLES
+   ══════════════════════════════════════════════════════════════ */
+.pdf-section-title {
+  font-size: 12pt;
+  font-weight: 700;
+  color: #181D27;
+  margin-top: 20pt;
+  margin-bottom: 10pt;
+  padding-bottom: 6pt;
+  border-bottom: 1px solid #E9EAEB;  /* --table-border-color */
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   SUMMARY GRID — Key-value stat cards
+   ══════════════════════════════════════════════════════════════ */
+.pdf-summary-grid {
+  display: flex;
+  gap: 12pt;
+  margin-bottom: 16pt;
+}
+
+.pdf-summary-card {
+  flex: 1;
+  padding: 10pt 12pt;
+  border: 1px solid #E5E7EB;
+  border-radius: 8pt;
+  background: #FFFFFF;
+}
+
+.pdf-summary-card__label {
+  font-size: 7pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #717680;
+  margin-bottom: 4pt;
+}
+
+.pdf-summary-card__value {
+  font-size: 14pt;
+  font-weight: 700;
+  color: #181D27;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdf-summary-card__value--positive {
+  color: #027A48;              /* --success text */
+}
+
+.pdf-summary-card__value--negative {
+  color: #B42318;              /* --danger text */
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   DATA TABLE
+   ══════════════════════════════════════════════════════════════ */
+.pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8.5pt;
+  margin-bottom: 16pt;
+}
+
+.pdf-table thead {
+  background: #FAFAFA;        /* --table-header-bg */
+}
+
+.pdf-table th {
+  font-size: 7pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #717680;              /* --table-header-color */
+  padding: 8pt 10pt;
+  text-align: left;
+  border-bottom: 1px solid #E9EAEB;
+}
+
+.pdf-table th.text-right,
+.pdf-table td.text-right {
+  text-align: right;
+}
+
+.pdf-table td {
+  padding: 7pt 10pt;
+  border-bottom: 1px solid #F2F4F7;
+  color: #344054;
+  vertical-align: top;
+}
+
+.pdf-table tbody tr:last-child td {
+  border-bottom: 1px solid #E9EAEB;
+}
+
+.pdf-table .pdf-money {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  text-align: right;
+}
+
+.pdf-table .pdf-badge {
+  display: inline-block;
+  padding: 2pt 6pt;
+  border-radius: 10pt;
+  font-size: 7pt;
+  font-weight: 500;
+}
+
+.pdf-badge--buy {
+  background: #EEF4FF;
+  color: #1B2559;
+}
+
+.pdf-badge--sell {
+  background: #FEF3F2;
+  color: #B42318;
+}
+
+.pdf-badge--success {
+  background: #ECFDF3;
+  color: #027A48;
+}
+
+.pdf-badge--warning {
+  background: #FFFAEB;
+  color: #B54708;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   TOTALS ROW — Emphasized bottom row
+   ══════════════════════════════════════════════════════════════ */
+.pdf-table tfoot {
+  background: #FAFAFA;
+}
+
+.pdf-table tfoot td {
+  font-weight: 700;
+  color: #181D27;
+  padding: 9pt 10pt;
+  border-top: 2px solid #E9EAEB;
+  border-bottom: none;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   NOTES & DISCLAIMERS
+   ══════════════════════════════════════════════════════════════ */
+.pdf-notes {
+  margin-top: 20pt;
+  padding: 10pt 14pt;
+  background: #FAFAFA;
+  border: 1px solid #E5E7EB;
+  border-radius: 8pt;
+  font-size: 7.5pt;
+  color: #535862;
+  line-height: 1.6;
+}
+
+.pdf-notes__title {
+  font-size: 8pt;
+  font-weight: 700;
+  color: #181D27;
+  margin-bottom: 4pt;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   FOOTER — Page number, confidentiality, generated date
+   ══════════════════════════════════════════════════════════════ */
+.pdf-footer {
+  margin-top: 28pt;
+  padding-top: 12pt;
+  border-top: 1px solid #E9EAEB;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 7pt;
+  color: #717680;
+}
+
+.pdf-footer__left {
+  display: flex;
+  flex-direction: column;
+  gap: 2pt;
+}
+
+.pdf-footer__confidential {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #535862;
+}
+
+.pdf-footer__generated {
+  font-weight: 400;
+}
+
+.pdf-footer__right {
+  text-align: right;
+}
+
+.pdf-footer__page {
+  font-weight: 500;
+  color: #535862;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ══════════════════════════════════════════════════════════════ */
+.pdf-text-muted    { color: #717680; }
+.pdf-text-primary  { color: #181D27; }
+.pdf-text-accent   { color: #0000FF; }
+.pdf-text-success  { color: #027A48; }
+.pdf-text-danger   { color: #B42318; }
+
+.pdf-text-right    { text-align: right; }
+.pdf-text-center   { text-align: center; }
+
+.pdf-mt-sm  { margin-top: 8pt; }
+.pdf-mt-md  { margin-top: 16pt; }
+.pdf-mt-lg  { margin-top: 24pt; }
+.pdf-mb-sm  { margin-bottom: 8pt; }
+.pdf-mb-md  { margin-bottom: 16pt; }
+
+.pdf-divider {
+  border: none;
+  border-top: 1px solid #E9EAEB;
+  margin: 16pt 0;
+}
+
+/* Indonesian legal stamp area */
+.pdf-stamp-area {
+  margin-top: 24pt;
+  display: flex;
+  justify-content: space-between;
+  gap: 24pt;
+}
+
+.pdf-stamp-box {
+  flex: 1;
+  text-align: center;
+  padding-top: 8pt;
+}
+
+.pdf-stamp-box__line {
+  margin-top: 48pt;
+  border-top: 1px solid #344054;
+  padding-top: 4pt;
+  font-size: 8pt;
+  color: #535862;
+}
+
+.pdf-stamp-box__label {
+  font-size: 7pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #717680;
+  margin-bottom: 4pt;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   PRINT BUTTON (hidden in print)
+   ══════════════════════════════════════════════════════════════ */
+.pdf-print-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #181D27;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  z-index: 10000;
+}
+
+.pdf-print-bar__btn {
+  padding: 10px 28px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pdf-print-bar__btn--primary {
+  background: #0000FF;
+  color: #98FB96;
+}
+.pdf-print-bar__btn--primary:hover {
+  background: #0000CC;
+}
+
+.pdf-print-bar__btn--ghost {
+  background: transparent;
+  color: #FFFFFF;
+  border: 1px solid #535862;
+}
+.pdf-print-bar__btn--ghost:hover {
+  background: #344054;
+}
+
+@media print {
+  .pdf-print-bar { display: none !important; }
+}

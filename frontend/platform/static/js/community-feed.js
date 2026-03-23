@@ -1538,65 +1538,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // UX.15: EDIT COMMUNITY PROFILE
     // ═══════════════════════════════════════════════════════════════
 
-    const editProfileBtn = document.getElementById('my-profile-edit-btn');
-    const editProfileModal = document.getElementById('edit-profile-modal');
-    const saveProfileBtn = document.getElementById('save-profile-btn');
-    const bioInput = document.getElementById('edit-profile-bio-input');
 
-    if (editProfileBtn) {
-        editProfileBtn.addEventListener('click', async () => {
-            // Load current profile data first
-            try {
-                const res = await fetch('/api/community/profile/me', { credentials: 'same-origin' });
-                if (res.ok) {
-                    const profile = await res.json();
-                    if (bioInput) bioInput.value = profile.bio || '';
-                }
-                if (editProfileModal) editProfileModal.style.display = 'flex';
-            } catch (e) {
-                console.error("Failed to load profile for editing", e);
-                if (editProfileModal) editProfileModal.style.display = 'flex';
-            }
-        });
-    }
-
-    if (saveProfileBtn) {
-        saveProfileBtn.addEventListener('click', async () => {
-            const bio = bioInput ? bioInput.value : '';
-            
-            saveProfileBtn.disabled = true;
-            const originalText = saveProfileBtn.textContent;
-            saveProfileBtn.textContent = 'Saving...';
-
-            try {
-                const res = await fetch('/api/community/profile', {
-                    method: 'PUT',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bio: bio })
-                });
-
-                if (res.ok) {
-                    if (editProfileModal) editProfileModal.style.display = 'none';
-                    // Refresh the profile card and onboarding if visible
-                    const profileRes = await fetch('/api/community/profile/me', { credentials: 'same-origin' });
-                    if (profileRes.ok) {
-                        const profile = await profileRes.json();
-                        updateMyProfileCard(profile);
-                    }
-                    if (window.showToast) window.showToast('Profile updated successfully!', 'success');
-                } else {
-                    const err = await res.text();
-                    alert('Failed to update profile: ' + err);
-                }
-            } catch (e) {
-                console.error('Profile update failed:', e);
-                alert('An error occurred while updating your profile.');
-            } finally {
-                saveProfileBtn.disabled = false;
-                saveProfileBtn.textContent = originalText;
-            }
-        });
-    }
 
 });

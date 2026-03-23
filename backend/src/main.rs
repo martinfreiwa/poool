@@ -689,6 +689,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/marketplace-trading-v3", get(page_marketplace_trading_v3))
         .route("/marketplace-secondary", get(page_marketplace_secondary))
         .route("/my-trading", get(page_my_trading))
+        .route("/tax-report", get(marketplace::routes::page_tax_report_pdf))
         // ── Static file serving & fallbacks ───────────────────────────
         .route("/", get(handle_root))
         .nest_service("/en", ServeDir::new("../frontend/www/en"))

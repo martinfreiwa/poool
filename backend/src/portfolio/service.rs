@@ -34,7 +34,8 @@ pub async fn get_portfolio(
             COALESCE(a.occupancy_rate_bps, 0) AS occupancy_rate_bps,
             COALESCE(a.annual_yield_bps, 0) AS annual_yield_bps,
             a.chain_contract_address,
-            a.chain_tx_hash
+            a.chain_tx_hash,
+            a.funding_status
         FROM investments i
         JOIN assets a ON a.id = i.asset_id
         WHERE i.user_id = $1
@@ -66,6 +67,7 @@ pub async fn get_portfolio(
         let appreciation_pct_bps: i32 = r.get("appreciation_pct_bps");
 
         let status: String = r.get("status");
+        let funding_status: String = r.get("funding_status");
         let payout_expected_at: Option<chrono::DateTime<chrono::Utc>> = r.get("payout_expected_at");
         let purchased_at: chrono::DateTime<chrono::Utc> = r.get("purchased_at");
         let occupancy_rate_bps: i32 = r.get("occupancy_rate_bps");
@@ -92,6 +94,7 @@ pub async fn get_portfolio(
             appreciation_pct_bps,
 
             status,
+            funding_status,
             payout_expected_at: payout_expected_at.map(|t| t.to_rfc3339()),
             purchased_at: purchased_at.to_rfc3339(),
             is_within_48h: (chrono::Utc::now().signed_duration_since(purchased_at))

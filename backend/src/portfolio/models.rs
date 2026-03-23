@@ -14,6 +14,7 @@ pub struct InvestmentItem {
     pub total_rental_cents: i64,
     pub appreciation_pct_bps: i32,
     pub status: String,
+    pub funding_status: String,
     pub payout_expected_at: Option<String>,
     pub purchased_at: String,
     pub is_within_48h: bool,

@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            COALESCE(up.first_name, '') as \"first_name!\",\n            COALESCE(up.last_name, '') as \"last_name!\",\n            COALESCE(up.address_line_1, '') as \"address!\",\n            COALESCE(up.city, '') as \"city!\",\n            COALESCE(up.postal_code, '') as \"postal!\",\n            COALESCE(up.country, '') as \"country!\",\n            COALESCE(up.phone_number, '') as \"phone!\",\n            COALESCE(up.tax_id, '') as \"tax_id!\"\n        FROM user_profiles up\n        WHERE up.user_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "first_name!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "last_name!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "address!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "city!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "postal!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "country!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "phone!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "tax_id!",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "a94d44268998adcf0765976f73e8e216fc59809f6eb58597fa1ea2f4d0ed3ac5"
+}

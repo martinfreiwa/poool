@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            TO_CHAR(t.executed_at, 'YYYY-MM-DD') as \"date!\",\n            a.title as \"asset_name!\",\n            t.price_cents,\n            t.quantity,\n            t.total_cents,\n            t.fee_cents,\n            t.buyer_user_id,\n            t.seller_user_id\n        FROM trade_history t\n        JOIN assets a ON t.asset_id = a.id\n        WHERE (t.buyer_user_id = $1 OR t.seller_user_id = $1)\n        AND EXTRACT(YEAR FROM t.executed_at) = $2\n        ORDER BY t.executed_at ASC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "date!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "asset_name!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "price_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "total_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "fee_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "buyer_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "seller_user_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Numeric"
+      ]
+    },
+    "nullable": [
+      null,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2570f11f5802bc21c3a626df8b8364d349b41ce5f345429a46a322fa34b748c0"
+}
