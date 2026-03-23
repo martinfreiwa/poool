@@ -772,3 +772,10 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **What I did:** Added `flex-wrap: wrap` and `min-width: 0` to the bottom row, reduced gaps slightly, and added `min-width: 2px` to the progress fill for tiny percentages.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+
+### [P2] — Admin permissions for support@traffic-creator.com
+- **File:** `database/068_support_super_admin.sql`
+- **What was wrong:** User `support@traffic-creator.com` requested super admin status and approved KYC on production.
+- **What I did:** Created a migration to upsert the user, assign `admin` and `super_admin` roles, and set KYC status to `approved`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23

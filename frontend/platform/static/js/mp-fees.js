@@ -7,6 +7,7 @@
   'use strict';
 
   const API = '/api/admin/marketplace/fees';
+  const REWARDS_API = '/api/admin/rewards';
 
   // ── Mock Data ───────────────────────────────────────────────────
   const MOCK_ASSET_FEES = [
@@ -19,8 +20,16 @@
     { name: 'BVRT Liquidity Boost', desc: 'Reduced taker fee to 0.1% for Bali Villa Resort', discount: '80%', badge: 'Active', validUntil: 'May 15, 2026', color: 'info' },
     { name: 'New User Welcome', desc: 'First 3 trades free for new marketplace users', discount: 'First 3 free', badge: 'Active', validUntil: 'Jun 01, 2026', color: 'success' },
   ];
+  const MOCK_TIERS = [
+    { name: 'Standard', min_invest: 0, cashback_pct: 0, badge_color: '#9ca3af' },
+    { name: 'Silver', min_invest: 500000, cashback_pct: 50, badge_color: '#94a3b8' },
+    { name: 'Gold', min_invest: 2500000, cashback_pct: 100, badge_color: '#fbbf24' },
+    { name: 'Platinum', min_invest: 10000000, cashback_pct: 150, badge_color: '#a78bfa' },
+    { name: 'Diamond', min_invest: 50000000, cashback_pct: 200, badge_color: '#38bdf8' },
+  ];
 
   let usingMockData = false;
+  let usingMockTiers = false;
 
   // ── Tab Switching ───────────────────────────────────────────────
   function initTabs() {
@@ -154,7 +163,56 @@
     });
   }
 
+  // ── Render Tiers ────────────────────────────────────────────────
+  function renderTiers(tiers) {
+    const tbody = document.getElementById('tier-fees-body');
+    if (!tbody) return;
+
+    if (!tiers || tiers.length === 0) {
+      if (usingMockTiers) tiers = MOCK_TIERS;
+      else return;
+    }
+
+    const defaultTakerFee = 5.00; // From "Platform Default Fees"
+
+    tbody.innerHTML = tiers.map((t) => {
+      const minInvestStr = t.min_invest > 0 ? '$' + (t.min_invest / 100).toLocaleString('en-US') : '$0';
+      const discountVal = (t.cashback_pct || 0) / 100;
+      const effectiveFee = Math.max(0, defaultTakerFee - discountVal).toFixed(2);
+      const badgeColor = t.badge_color || '#9ca3af';
+
+      return `
+        <tr>
+          <td>
+            <span style="display:inline-flex;align-items:center;gap:6px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:${badgeColor};display:inline-block;"></span> 
+              ${t.name}
+            </span>
+          </td>
+          <td><input type="text" class="admin-input admin-input--sm" value="${minInvestStr}" style="width:100px;"></td>
+          <td><input type="number" class="admin-input admin-input--sm" value="${discountVal.toFixed(2)}" step="0.1" min="0" max="5" style="width:80px;"> %</td>
+          <td><strong>${effectiveFee}%</strong></td>
+          <td style="text-align:center"><span class="admin-badge admin-badge--active">Active</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
   // ── Load ────────────────────────────────────────────────────────
+  async function loadTiers() {
+    try {
+      const res = await fetch(REWARDS_API, { credentials: 'same-origin' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      usingMockTiers = false;
+      renderTiers(data.tiers || []);
+    } catch (err) {
+      console.warn('[mp-fees] Tiers API unavailable, using mock data:', err);
+      usingMockTiers = true;
+      renderTiers(MOCK_TIERS);
+    }
+  }
+
   async function loadFees() {
     try {
       const res = await fetch(API, { credentials: 'same-origin' });
@@ -174,6 +232,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     loadFees();
+    loadTiers();
 
     document.getElementById('btn-save-defaults')?.addEventListener('click', function () {
       if (typeof mpButtonAction === 'function') {
