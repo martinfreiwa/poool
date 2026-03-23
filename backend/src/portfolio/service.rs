@@ -84,7 +84,7 @@ pub async fn get_portfolio(
             asset_id,
             asset_title,
             asset_slug,
-            cover_image,
+            cover_image: cover_image.map(|u| crate::storage::service::rewrite_gcs_url(&u)),
             tokens_owned,
             purchase_value_cents,
             current_value_cents,

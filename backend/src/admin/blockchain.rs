@@ -398,9 +398,9 @@ pub async fn api_admin_blockchain_tokenize(
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let pool = &state.db;
 
-    // 1. Verify asset exists and is not already tokenized
-    let asset = sqlx::query_as::<_, (uuid::Uuid, String, i32, Option<String>)>(
-        "SELECT id, title, tokens_total, chain_token_id FROM assets WHERE id = $1",
+    // 1. Verify asset exists, is approved, has price/supply, and not already tokenized
+    let asset = sqlx::query_as::<_, (uuid::Uuid, String, i32, i64, bool, Option<String>)>(
+        "SELECT id, title, tokens_total, token_price_cents, published, chain_token_id FROM assets WHERE id = $1",
     )
     .bind(asset_id)
     .fetch_optional(pool)
@@ -408,9 +408,27 @@ pub async fn api_admin_blockchain_tokenize(
     .map_err(|e| ApiError::Internal(format!("DB error: {}", e)))?
     .ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
 
-    if asset.3.is_some() {
+    if asset.5.is_some() {
         return Err(ApiError::BadRequest(
             "Asset is already tokenized on-chain".to_string(),
+        ));
+    }
+    
+    if !asset.4 { // published (approved)
+        return Err(ApiError::BadRequest(
+            "Asset must be approved and published before tokenization".to_string(),
+        ));
+    }
+    
+    if asset.2 <= 0 { // tokens_total
+        return Err(ApiError::BadRequest(
+            "Asset must have a token supply greater than 0".to_string(),
+        ));
+    }
+    
+    if asset.3 <= 0 { // token_price_cents
+        return Err(ApiError::BadRequest(
+            "Asset must have a token price greater than 0".to_string(),
         ));
     }
 

@@ -101,9 +101,9 @@
       { label: 'Asset Approved & Published', sub: 'Asset must be approved by an admin before tokenization.', pass: checks.asset_approved },
       { label: 'Token Supply Defined', sub: `${data.tokens_total.toLocaleString()} tokens configured.`, pass: checks.has_token_supply },
       { label: 'Token Price Set', sub: `Price: ${(data.token_price_cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} per token.`, pass: checks.has_price },
-      { label: 'Not Already Tokenized', sub: 'Asset must not have an existing on-chain token ID.', pass: checks.not_already_tokenized },
     ];
 
+    // Show pre-flight checks
     list.innerHTML = items.map(item => `
       <div class="preflight-item">
         <div class="preflight-icon preflight-icon--${item.pass ? 'pass' : 'fail'}">
@@ -118,6 +118,23 @@
         <span class="admin-badge admin-badge--${item.pass ? 'success' : 'danger'}">${item.pass ? 'Pass' : 'Fail'}</span>
       </div>
     `).join('');
+
+    // Tokenization status — separate, prominent status indicator
+    const isTokenized = !checks.not_already_tokenized;
+    list.innerHTML += `
+      <div class="preflight-item" style="border-top: 1px solid var(--admin-border); margin-top: 8px; padding-top: 16px;">
+        <div class="preflight-icon preflight-icon--${isTokenized ? 'pass' : 'fail'}">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            ${isTokenized ? '<path d="M3 8l3.5 3.5L13 4" />' : '<path d="M4 4l8 8M12 4l-8 8" />'}
+          </svg>
+        </div>
+        <div style="flex: 1;">
+          <div class="preflight-label">${isTokenized ? 'Tokenized' : 'Not Tokenized'}</div>
+          <div class="preflight-sublabel">${isTokenized ? 'Asset has an on-chain token ID.' : 'Asset has not been deployed on-chain yet.'}</div>
+        </div>
+        <span class="admin-badge admin-badge--${isTokenized ? 'success' : 'danger'}">${isTokenized ? 'Deployed' : 'Pending'}</span>
+      </div>
+    `;
   }
 
   function renderAlreadyTokenized(data) {

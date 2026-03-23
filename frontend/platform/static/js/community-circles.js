@@ -177,11 +177,24 @@ document.addEventListener('DOMContentLoaded', function () {
         container.innerHTML = html || '<div style="text-align:center;padding:16px;color:#667085;">No members yet</div>';
     }
 
-    // ─── Load Circle Leaderboard ─────────────────────────────────
+    // ─── Load Circle Leaderboard ─────────────────────────────────────
+
+    let myJoinRequestCircleIds = new Set(); // circle IDs where I have a pending request
+
+    async function loadMyJoinRequests() {
+        try {
+            const res = await fetch('/api/community/circles/requests/mine');
+            if (!res.ok) return;
+            const data = await res.json();
+            myJoinRequestCircleIds = new Set((data.requests || []).map(r => r.circle_id));
+        } catch (e) { /* non-critical */ }
+    }
 
     async function loadCircleLeaderboard() {
         const container = document.getElementById('circle-leaderboard-list');
         try {
+            await loadMyJoinRequests();
+
             const res = await fetch('/api/community/circles/leaderboard');
             if (!res.ok) return;
             const data = await res.json();
@@ -196,15 +209,34 @@ document.addEventListener('DOMContentLoaded', function () {
             let html = '';
             circles.forEach((c, i) => {
                 const medal = medals[i] || `#${i + 1}`;
+                const isPrivate = !c.is_public;
+                const privacyBadge = isPrivate
+                    ? '<span style="font-size:10px;background:#F2F4F7;color:#667085;padding:1px 6px;border-radius:4px;margin-left:4px;">🔒 Private</span>'
+                    : '<span style="font-size:10px;background:#ECFDF3;color:#027A48;padding:1px 6px;border-radius:4px;margin-left:4px;">🌐 Public</span>';
+
+                let actionBtn = '';
+                if (isPrivate) {
+                    if (myJoinRequestCircleIds.has(c.id)) {
+                        actionBtn = `<span style="font-size:12px;color:#667085;background:#F2F4F7;padding:4px 10px;border-radius:6px;">⏳ Pending</span>`;
+                    } else {
+                        actionBtn = `<button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="handleRequestJoinCircle('${c.id}')" style="font-size:12px;">🔒 Request</button>`;
+                    }
+                } else {
+                    actionBtn = `<button class="ds-btn ds-btn--primary ds-btn--sm" onclick="handleJoinCircle('${c.id}')" style="font-size:12px;">Join</button>`;
+                }
+
                 html += `
-                <div class="circle-lb-item" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--card-border-color);">
+                <div class="circle-lb-item" style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--card-border-color);">
                     <span style="font-size:18px;min-width:28px;text-align:center;">${medal}</span>
                     <span style="font-size:18px;">${c.avatar_emoji || '🟢'}</span>
                     <div style="flex:1;">
-                        <div style="font-size:14px;font-weight:600;color:#101828;">${c.name}</div>
+                        <div style="font-size:14px;font-weight:600;color:var(--text-primary);">${c.name} ${privacyBadge}</div>
                         <div style="font-size:11px;color:#667085;">${c.member_count} members · Lv.${c.level}</div>
                     </div>
-                    <span style="font-size:14px;font-weight:700;color:#0000FF;">${(c.total_xp || 0).toLocaleString()} XP</span>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                        <span style="font-size:14px;font-weight:700;color:var(--primary-color);">${(c.total_xp || 0).toLocaleString()} XP</span>
+                        ${actionBtn}
+                    </div>
                 </div>`;
             });
             container.innerHTML = html;
@@ -306,8 +338,108 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    window.openCircleSettings = function () {
-        alert('Circle settings coming soon! Use the create flow to configure your circle.');
+    window.openCircleSettings = async function () {
+        try {
+            const res = await fetch('/api/community/circles/me', { credentials: 'same-origin' });
+            if (!res.ok) { alert('Could not load circle data.'); return; }
+            const data = await res.json();
+            if (!data.circle) { alert('You are not in a circle.'); return; }
+
+            const c = data.circle;
+            window._currentCircleId = c.id;
+
+            // Pre-fill fields
+            document.getElementById('settings-circle-name').value = c.name || '';
+            document.getElementById('settings-circle-desc').value = c.description || '';
+            document.getElementById('settings-circle-emoji').value = c.avatar_emoji || '🟢';
+            
+            // Set toggle state
+            const isPublic = !!c.is_public;
+            const checkbox = document.getElementById('settings-circle-public');
+            checkbox.checked = isPublic;
+            const track = document.getElementById('settings-toggle-track');
+            track.style.backgroundColor = isPublic ? '#0000FF' : '#D0D5DD';
+            const knob = track.querySelector('span');
+            if (knob) knob.style.transform = isPublic ? 'translateX(20px)' : 'translateX(0)';
+
+            // Show modal
+            document.getElementById('circle-settings-modal').style.display = 'flex';
+        } catch (e) {
+            console.error('Failed to open circle settings', e);
+            alert('Error loading settings: ' + e.message);
+        }
+    };
+
+    window.handleSaveCircleSettings = async function () {
+        const circleId = window._currentCircleId;
+        if (!circleId) { alert('No circle selected'); return; }
+
+        const name = document.getElementById('settings-circle-name').value.trim();
+        if (!name) { alert('Circle name is required.'); return; }
+
+        const description = document.getElementById('settings-circle-desc').value.trim();
+        const emoji = document.getElementById('settings-circle-emoji').value.trim() || '🟢';
+        const isPublic = document.getElementById('settings-circle-public').checked;
+
+        const saveBtn = document.getElementById('settings-save-btn');
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = 'Saving...';
+        saveBtn.disabled = true;
+
+        try {
+            // Update name/description/emoji
+            const updateRes = await fetch(`/api/community/circles/${circleId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ name, description: description || null, emoji })
+            });
+            if (!updateRes.ok) {
+                const err = await updateRes.text();
+                throw new Error(err);
+            }
+
+            // Update privacy
+            const privacyRes = await fetch(`/api/community/circles/${circleId}/privacy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ is_public: isPublic })
+            });
+            if (!privacyRes.ok) {
+                const err = await privacyRes.text();
+                throw new Error(err);
+            }
+
+            // Close modal and reload data
+            document.getElementById('circle-settings-modal').style.display = 'none';
+            if (typeof window.loadCirclesAndXp === 'function') window.loadCirclesAndXp();
+        } catch (e) {
+            alert('Failed to save settings: ' + e.message);
+        } finally {
+            saveBtn.textContent = originalText;
+            saveBtn.disabled = false;
+        }
+    };
+
+    window.handleDeleteCircle = async function () {
+        const circleId = window._currentCircleId;
+        if (!circleId) return;
+
+        try {
+            const res = await fetch(`/api/community/circles/${circleId}`, {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            });
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err);
+            }
+            document.getElementById('circle-settings-modal').style.display = 'none';
+            if (typeof window.loadCirclesAndXp === 'function') window.loadCirclesAndXp();
+        } catch (e) {
+            alert('Failed to delete circle: ' + e.message);
+        }
     };
 
     window.copyInviteLink = function () {
@@ -337,6 +469,83 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => overlay.remove(), 10000);
     }
 
+    // ─── Join Requests (for owners/admins) ──────────────────────────
+
+    async function loadPendingJoinRequests() {
+        const myCircleRes = await fetch('/api/community/circles/me');
+        if (!myCircleRes.ok) return;
+        const myData = await myCircleRes.json();
+        if (!myData.circle) return;
+
+        const circleId = myData.circle.id;
+        // Check if I'm owner or admin
+        const me = myData.members.find(m => m.role === 'owner' || m.role === 'admin');
+        if (!me) return;
+
+        try {
+            const res = await fetch(`/api/community/circles/${circleId}/requests`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const requests = data.requests || [];
+
+            const section = document.getElementById('pending-requests-section');
+            const container = document.getElementById('requests-list');
+            const badge = document.getElementById('requests-count-badge');
+
+            if (requests.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            badge.textContent = requests.length + ' pending';
+
+            let html = '';
+            for (const req of requests) {
+                const date = new Date(req.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                html += `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--card-border-color);">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div style="width:36px;height:36px;border-radius:50%;background:#EEF4FF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#2E90FA;">
+                            ${(req.user_name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <div style="font-size:14px;font-weight:500;color:#101828;">${req.user_name || 'Unknown User'}</div>
+                            <div style="font-size:12px;color:#667085;">Requested ${date}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="ds-btn ds-btn--primary ds-btn--sm" onclick="handleApproveRequest('${req.id}')">✓ Approve</button>
+                        <button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="handleDeclineRequest('${req.id}')" style="color:#F04438;">✗ Decline</button>
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+        } catch (e) {
+            console.error('Failed to load join requests', e);
+        }
+    }
+
+    window.handleApproveRequest = async function (requestId) {
+        try {
+            const res = await fetch(`/api/community/circles/requests/${requestId}/approve`, { method: 'POST' });
+            if (!res.ok) throw new Error(await res.text());
+            loadAll();
+        } catch (e) {
+            alert('Failed to approve: ' + e.message);
+        }
+    };
+
+    window.handleDeclineRequest = async function (requestId) {
+        try {
+            const res = await fetch(`/api/community/circles/requests/${requestId}/decline`, { method: 'POST' });
+            if (!res.ok) throw new Error(await res.text());
+            loadAll();
+        } catch (e) {
+            alert('Failed to decline: ' + e.message);
+        }
+    };
+
     // ─── Init ────────────────────────────────────────────────────
 
     function loadAll() {
@@ -345,7 +554,9 @@ document.addEventListener('DOMContentLoaded', function () {
         loadXpHistory();
         loadCircleLeaderboard();
         loadPendingInvites();
+        loadPendingJoinRequests();
     }
+
 
     // Only load when the tab becomes visible
     const circleTabBtn = document.querySelector('[data-tab="community-circle-tab"]');

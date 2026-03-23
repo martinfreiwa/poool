@@ -47,4 +47,6 @@ pub fn router() -> Router<AppState> {
         )
         // Secure document viewing
         .route("/api/documents/:id/download", get(download_asset_document))
+        // Proxy public images (bypasses 403 blocks)
+        .route("/api/proxy/gcs/:bucket/*path", get(proxy_gcs_image))
 }

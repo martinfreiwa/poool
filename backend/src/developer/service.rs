@@ -3,6 +3,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::models::*;
+use crate::storage::service::rewrite_gcs_url;
 
 /// Format cents as a compact USD string: $138.4k, $1.5M, $250, etc.
 fn format_usd_compact(cents: i64) -> String {
@@ -393,9 +394,9 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
                 index: idx + 1,
                 id: row.id.to_string(),
                 title: row.title,
-                cover_image_url: row
+                cover_image_url: rewrite_gcs_url(&row
                     .cover_image_url
-                    .unwrap_or_else(|| "/images/villa1.webp".to_string()),
+                    .unwrap_or_else(|| "/images/villa1.webp".to_string())),
                 total_sales_display: format_usd_compact(row.total_sales_cents),
                 total_sales_cents: row.total_sales_cents,
                 sales_change_pct: 0.0,

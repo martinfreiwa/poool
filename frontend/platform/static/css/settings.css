@@ -694,8 +694,6 @@
   max-width: 512px;
 }
 
-.settings-security-row__field 
-
 .settings-security-row__actions {
   display: flex;
   justify-content: flex-end;

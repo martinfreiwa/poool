@@ -390,7 +390,7 @@ pub async fn execute_checkout(
     }
 
     // 2. Validate availability and calculate total
-    let mut total_cents: i64 = 0;
+    let mut subtotal_cents: i64 = 0;
     let mut items_count: i32 = 0;
 
     for item in &cart_items {
@@ -401,12 +401,12 @@ pub async fn execute_checkout(
                 title, tokens_qty, tokens_avail
             ));
         }
-        total_cents += *asset_price * (*tokens_qty as i64);
+        subtotal_cents += *asset_price * (*tokens_qty as i64);
         items_count += tokens_qty;
     }
 
     // 2.5 Check investment limits (Phase 17.2)
-    // Must come AFTER total_cents is calculated above.
+    // Must come AFTER subtotal_cents is calculated above.
     let current_year = Utc::now().year();
     let limit_info = sqlx::query!(
         r#"
@@ -423,7 +423,7 @@ pub async fn execute_checkout(
 
     if let Some(limit) = limit_info {
         // available_cents is generated as (annual_limit_cents - invested_12m_cents)
-        if limit.available_cents.unwrap_or(0) < total_cents {
+        if limit.available_cents.unwrap_or(0) < subtotal_cents {
             let available_usd =
                 crate::common::currency::format_usd(limit.available_cents.unwrap_or(0));
             return Err(format!(
@@ -436,13 +436,26 @@ pub async fn execute_checkout(
     sentry::add_breadcrumb(sentry::Breadcrumb {
         category: Some("checkout".into()),
         message: Some(format!(
-            "Cart validated: {} items, total={}",
+            "Cart validated: {} items, subtotal={}",
             items_count,
-            crate::common::currency::format_usd(total_cents)
+            crate::common::currency::format_usd(subtotal_cents)
         )),
         level: sentry::Level::Info,
         ..Default::default()
     });
+
+    // 2.8 Calculate platform fee
+    let platform_fee_pct: f64 = sqlx::query_scalar(
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'"
+    )
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| format!("Platform fee config lookup failed: {}", e))?
+    .and_then(|v: String| v.parse().ok())
+    .unwrap_or(0.0);
+
+    let fee_cents = ((subtotal_cents as f64) * (platform_fee_pct / 100.0)).ceil() as i64;
+    let grand_total_cents = subtotal_cents + fee_cents;
 
     // 3. Handle FX if payment currency differs from asset currency (USD)
     // Phase 1.10: Uses Decimal arithmetic to avoid IEEE754 rounding errors
@@ -450,13 +463,13 @@ pub async fn execute_checkout(
     {
         use rust_decimal::prelude::ToPrimitive;
         let rate = fx_rate.unwrap_or_else(default_idr_rate);
-        // Decimal math: (total_cents * rate) / 100 = IDR whole amount
-        let total_dec = Decimal::from(total_cents);
+        // Decimal math: (grand_total_cents * rate) / 100 = IDR whole amount
+        let total_dec = Decimal::from(grand_total_cents);
         let idr_total_dec = (total_dec * rate) / Decimal::from(100);
         let idr_total = idr_total_dec.to_i64().unwrap_or(0);
         (idr_total, Some(rate))
     } else {
-        (total_cents, None)
+        (grand_total_cents, None)
     };
 
     let mut wallet_id_used = None;
@@ -540,10 +553,10 @@ pub async fn execute_checkout(
     // 6. Create order
     let fx_rate_decimal = fx_rate_applied;
     let fx_provider = if fx_rate_applied.is_some() {
-        Some("hardcoded")
+        Some("open.er-api.com")
     } else {
         None
-    }; // Assuming "hardcoded" for now
+    };
 
     let order_id: Uuid = sqlx::query_scalar(
         r#"
@@ -554,7 +567,7 @@ pub async fn execute_checkout(
     )
     .bind(user_id)
     .bind(&order_number)
-    .bind(total_cents)
+    .bind(grand_total_cents)
     .bind(payment_currency) // e.g. IDR
     .bind("USD")
     .bind(fx_rate_decimal)
@@ -639,7 +652,7 @@ pub async fn execute_checkout(
     // 7.5 Update investment limits (Phase 17.2)
     sqlx::query!(
         "UPDATE investment_limits SET invested_12m_cents = invested_12m_cents + $1, updated_at = NOW() WHERE user_id = $2 AND limit_year = $3",
-        total_cents, user_id, current_year
+        subtotal_cents, user_id, current_year
     )
     .execute(&mut *tx)
     .await
@@ -662,6 +675,18 @@ pub async fn execute_checkout(
         .map_err(|e| format!("Wallet TX log failed: {}", e))?;
     }
 
+    // 8.5 Credit platform fee wallet (if fee exists and payment method is wallet)
+    if fee_cents > 0 && payment_method == "wallet" {
+        sqlx::query(
+            "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW()
+             WHERE wallet_type = 'platform_fee' AND currency = 'USD'"
+        )
+        .bind(fee_cents)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| format!("Platform fee wallet credit failed: {}", e))?;
+    }
+
     // 9. Clear cart
     sqlx::query("DELETE FROM cart_items WHERE user_id = $1")
         .bind(user_id)
@@ -674,13 +699,14 @@ pub async fn execute_checkout(
     sqlx::query(
         r#"
         INSERT INTO invoices (invoice_number, order_id, user_id, subtotal_cents, total_cents, currency, status)
-        VALUES ($1, $2, $3, $4, $4, $5, 'issued')
+        VALUES ($1, $2, $3, $4, $5, $6, 'issued')
         "#,
     )
     .bind(&invoice_number)
     .bind(order_id)
     .bind(user_id)
-    .bind(total_cents)
+    .bind(subtotal_cents)
+    .bind(grand_total_cents)
     .bind("USD")
     .execute(&mut *tx)
     .await
@@ -725,7 +751,7 @@ pub async fn execute_checkout(
         message: Some(format!(
             "Checkout complete: order={} total={}",
             order_number,
-            crate::common::currency::format_usd(total_cents)
+            crate::common::currency::format_usd(grand_total_cents)
         )),
         level: sentry::Level::Info,
         ..Default::default()
@@ -734,7 +760,7 @@ pub async fn execute_checkout(
     Ok(CheckoutResult {
         order_id,
         order_number,
-        total_cents,
+        total_cents: grand_total_cents,
         currency: "USD".to_string(),
         items_purchased: items_count,
         invoice_number: Some(invoice_number),

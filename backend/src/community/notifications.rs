@@ -56,30 +56,48 @@ pub async fn notify_user(
 
 /// Helper method to fetch notifications for the current user
 pub async fn get_my_notifications(
-    pool: &PgPool,
+    c_pool: &PgPool,
+    core_pool: &PgPool,
+    redis: Option<&deadpool_redis::Pool>,
     user_id: Uuid,
     limit: i64,
+    offset: i64,
 ) -> Result<Vec<Notification>, AppError> {
     let limit = limit.clamp(1, 100);
+    let offset = offset.max(0);
 
-    let rows = sqlx::query_as::<_, Notification>(
+    let mut rows = sqlx::query_as::<_, Notification>(
         r#"
         SELECT 
             n.id, n.user_id, n.actor_id,
             n.type, n.entity_id, n.content, n.link_url, n.is_read, n.created_at,
-            cp.display_name AS actor_name,
-            cp.avatar_url AS actor_avatar
+            NULL AS actor_name,
+            NULL AS actor_avatar
         FROM notifications n
-        LEFT JOIN community_profiles cp ON cp.user_id = n.actor_id
         WHERE n.user_id = $1
         ORDER BY n.created_at DESC
-        LIMIT $2
+        LIMIT $2 OFFSET $3
         "#
     )
     .bind(user_id)
     .bind(limit)
-    .fetch_all(pool)
+    .bind(offset)
+    .fetch_all(c_pool)
     .await?;
+
+    let actor_ids: Vec<Uuid> = rows.iter().filter_map(|r| r.actor_id).collect();
+    if !actor_ids.is_empty() {
+        if let Ok(users) = crate::community::user_bridge::get_users_info_batch(core_pool, redis, &actor_ids).await {
+            for row in &mut rows {
+                if let Some(aid) = row.actor_id {
+                    if let Some(info) = users.get(&aid) {
+                        row.actor_name = Some(info.display_name.clone());
+                        row.actor_avatar = info.avatar_url.clone();
+                    }
+                }
+            }
+        }
+    }
 
     Ok(rows)
 }

@@ -78,6 +78,19 @@ pub async fn api_admin_submission_approve(
 ) -> Result<axum::response::Response, ApiError> {
     let uid = ApiError::parse_uuid(&asset_id)?;
 
+    // Ensure the asset has at least one image uploaded before allowing approval
+    let image_count: i64 = sqlx::query_scalar("SELECT COUNT(*)::bigint FROM asset_images WHERE asset_id = $1")
+        .bind(uid)
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(0);
+
+    if image_count == 0 {
+        return Err(ApiError::BadRequest(
+            "Cannot approve an asset that has no images. Please ensure the developer uploads at least one image.".to_string(),
+        ));
+    }
+
     let result = sqlx::query(
         "UPDATE assets SET published = TRUE, funding_status = CASE WHEN funding_status IN ('funded', 'exited') THEN funding_status ELSE 'funding_open' END, updated_at = NOW() WHERE id = $1"
     )

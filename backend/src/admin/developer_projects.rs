@@ -948,3 +948,78 @@ pub async fn api_admin_project_notes_create(
         _ => unreachable!(),
     }
 }
+
+// ==============================================================================
+// Compliance Checklist Persistence
+// ==============================================================================
+
+/// GET /api/admin/developer-projects/:id/checklist — retrieve saved checklist state
+pub async fn api_admin_project_checklist_get(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(project_id): axum::extract::Path<String>,
+) -> Result<axum::response::Response, ApiError> {
+    let pid = ApiError::parse_uuid(&project_id)?;
+
+    let checklist: Option<serde_json::Value> = sqlx::query_scalar(
+        "SELECT COALESCE(compliance_checklist, '{}'::jsonb) FROM developer_projects WHERE id = $1",
+    )
+    .bind(pid)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to fetch checklist for project {project_id}: {e}");
+        ApiError::Internal("Database error".to_string())
+    })?;
+
+    match checklist {
+        Some(cl) => Ok(Json(serde_json::json!({ "checklist": cl })).into_response()),
+        None => Err(ApiError::NotFound("Project not found".to_string())),
+    }
+}
+
+/// PUT /api/admin/developer-projects/:id/checklist — persist checklist state
+/// Payload: { "checklist": { "chk-kyc": true, "chk-legal": false, ... } }
+pub async fn api_admin_project_checklist_save(
+    _admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(project_id): axum::extract::Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<axum::response::Response, ApiError> {
+    let pid = ApiError::parse_uuid(&project_id)?;
+
+    let checklist = body
+        .get("checklist")
+        .cloned()
+        .unwrap_or(serde_json::json!({}));
+
+    // Validate it's an object
+    if !checklist.is_object() {
+        return Err(ApiError::BadRequest(
+            "checklist must be a JSON object".to_string(),
+        ));
+    }
+
+    let result = sqlx::query(
+        "UPDATE developer_projects SET compliance_checklist = $2, updated_at = NOW() WHERE id = $1",
+    )
+    .bind(pid)
+    .bind(&checklist)
+    .execute(&state.db)
+    .await;
+
+    match result {
+        Ok(r) if r.rows_affected() == 0 => {
+            Err(ApiError::NotFound("Project not found".to_string()))
+        }
+        Ok(_) => Ok(Json(serde_json::json!({
+            "status": "saved",
+            "checklist": checklist
+        }))
+        .into_response()),
+        Err(e) => {
+            tracing::error!("Failed to save checklist for project {project_id}: {e}");
+            Err(ApiError::Internal("Failed to save checklist".to_string()))
+        }
+    }
+}

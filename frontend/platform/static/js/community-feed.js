@@ -263,8 +263,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = document.createElement('div');
         body.className = 'feed-post-body';
 
+        // UX.4: Render content with clickable hashtags
         const contentP = document.createElement('p');
-        contentP.textContent = p.content; // SAFE: textContent — the core XSS fix
+        renderContentWithHashtags(contentP, p.content);
         body.appendChild(contentP);
 
         // Images (URLs are server-controlled GCS paths)
@@ -335,6 +336,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         postEl.appendChild(body);
 
+        // ─── UX.11: Poll Rendering ───
+        const pollContainer = document.createElement('div');
+        pollContainer.id = `poll-container-${p.id}`;
+        postEl.appendChild(pollContainer);
+        // Fetch poll data asynchronously
+        loadPollForPost(p.id, pollContainer);
+
         // ─── Engagement ───
         const engagement = document.createElement('div');
         engagement.className = 'feed-post-engagement';
@@ -368,6 +376,15 @@ document.addEventListener('DOMContentLoaded', () => {
         stats.textContent = `${p.reaction_count || 0} reactions · ${p.comment_count || 0} comments`;
         stats.addEventListener('click', () => toggleComments(p.id));
 
+        // UX.6: Bookmark button
+        const bookmarkBtn = document.createElement('button');
+        bookmarkBtn.className = 'feed-bookmark-btn';
+        bookmarkBtn.title = 'Save Post';
+        bookmarkBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>';
+        bookmarkBtn.addEventListener('click', () => toggleBookmark(p.id, bookmarkBtn));
+        // Check initial bookmark status
+        checkBookmarkStatus(p.id, bookmarkBtn);
+
         const reportBtn = document.createElement('button');
         reportBtn.className = 'ds-btn ds-btn--ghost ds-btn--sm';
         reportBtn.title = 'Report Post';
@@ -376,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reportBtn.addEventListener('click', () => openReportModal(p.id));
 
         statsRow.appendChild(stats);
+        statsRow.appendChild(bookmarkBtn);
         statsRow.appendChild(reportBtn);
         engagement.appendChild(reactions);
         engagement.appendChild(statsRow);
@@ -799,8 +817,26 @@ document.addEventListener('DOMContentLoaded', () => {
             post_type: postType,
             content: content,
             asset_id: null,
-            image_urls: window.postImageUrls.length > 0 ? window.postImageUrls : null
+            image_urls: window.postImageUrls.length > 0 ? window.postImageUrls : null,
+            // UX.11: Poll data
+            poll_question: null,
+            poll_options: null,
+            poll_expires_hours: null,
         };
+
+        // Add poll if enabled
+        if (window.pollEnabled) {
+            const pollQ = document.getElementById('poll-question-input');
+            const pollExpiry = document.getElementById('poll-expiry-select');
+            if (pollQ && pollQ.value.trim()) {
+                const validOptions = window.pollOptions.filter(o => o.trim() !== '');
+                if (validOptions.length >= 2) {
+                    requestBody.poll_question = pollQ.value.trim();
+                    requestBody.poll_options = validOptions;
+                    requestBody.poll_expires_hours = pollExpiry ? parseInt(pollExpiry.value) || null : null;
+                }
+            }
+        }
         
         const submitBtn = document.getElementById('submit-post-btn');
         const oldText = submitBtn.innerText;
@@ -913,6 +949,77 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load trending assets on initialization
     loadTrendingAssets();
 
+    // ─── UX.4: HASHTAG FEED FILTER ──────────────────────────────
+    let currentHashtagFilter = null;
+
+    async function loadHashtagFeed(tag) {
+        currentHashtagFilter = tag;
+        const feedContainer = document.getElementById('community-feed-container');
+        if (!feedContainer) return;
+
+        // Show a "viewing hashtag" banner at the top
+        renderSkeleton();
+
+        try {
+            const res = await fetch(`/api/community/hashtags/${encodeURIComponent(tag)}`, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Failed to load hashtag feed');
+            const data = await res.json();
+
+            feedContainer.innerHTML = '';
+
+            // Hashtag header banner
+            const banner = document.createElement('div');
+            banner.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: linear-gradient(135deg, rgba(3,255,136,0.08), rgba(3,255,136,0.02)); border: 1px solid rgba(3,255,136,0.2); border-radius: 12px; margin-bottom: 20px;';
+
+            const bannerLeft = document.createElement('div');
+            bannerLeft.style.cssText = 'display: flex; align-items: center; gap: 12px;';
+            const hashIcon = document.createElement('div');
+            hashIcon.style.cssText = 'width: 40px; height: 40px; border-radius: 10px; background: rgba(3,255,136,0.15); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #03FF88;';
+            hashIcon.textContent = '#';
+            bannerLeft.appendChild(hashIcon);
+
+            const bannerText = document.createElement('div');
+            const tagTitle = document.createElement('div');
+            tagTitle.style.cssText = 'font-size: 18px; font-weight: 700; color: #101828;';
+            tagTitle.textContent = '#' + tag;
+            bannerText.appendChild(tagTitle);
+            const tagCount = document.createElement('div');
+            tagCount.style.cssText = 'font-size: 13px; color: #667085;';
+            tagCount.textContent = `${data.posts ? data.posts.length : 0} posts`;
+            bannerText.appendChild(tagCount);
+            bannerLeft.appendChild(bannerText);
+            banner.appendChild(bannerLeft);
+
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'ds-btn ds-btn--secondary ds-btn--sm';
+            clearBtn.textContent = '✕ Clear Filter';
+            clearBtn.addEventListener('click', () => {
+                currentHashtagFilter = null;
+                loadFeed();
+            });
+            banner.appendChild(clearBtn);
+            feedContainer.appendChild(banner);
+
+            if (!data.posts || data.posts.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.cssText = 'text-align: center; padding: 40px; color: #667085;';
+                empty.textContent = 'No posts found with this hashtag yet.';
+                feedContainer.appendChild(empty);
+                return;
+            }
+
+            for (const p of data.posts) {
+                feedContainer.appendChild(buildPostElement(p));
+            }
+        } catch (e) {
+            console.error(e);
+            feedContainer.innerHTML = '<div style="padding: 24px; color: #D92D20; text-align: center;">Failed to load posts for this hashtag.</div>';
+        }
+    }
+
+    // Expose for external usage
+    window.loadHashtagFeed = loadHashtagFeed;
+
     // Onboarding logic
     window.closeOnboardingModal = function() {
         document.getElementById('onboarding-modal').style.display = 'none';
@@ -949,5 +1056,435 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     checkOnboarding();
+
+    // ═══════════════════════════════════════════════════════════════
+    // UX.4: HASHTAG CONTENT RENDERING
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * UX.3 + UX.4: Render text content with clickable #hashtags and @mentions.
+     * Uses safe DOM construction — textContent for plain text, createElement for links.
+     */
+    function renderContentWithHashtags(container, text) {
+        if (!text) return;
+        // Split by hashtag AND mention patterns, preserving delimiters
+        const parts = text.split(/(#[\w\u00C0-\u024F]+|@[\w\u00C0-\u024F_-]+)/g);
+        parts.forEach(part => {
+            if (part.match(/^#[\w\u00C0-\u024F]+$/)) {
+                const link = document.createElement('span');
+                link.className = 'hashtag-tag';
+                link.textContent = part;
+                link.style.cssText = 'color: #03FF88; font-weight: 600; cursor: pointer; background: rgba(3,255,136,0.08); padding: 1px 5px; border-radius: 4px; transition: background 0.2s;';
+                link.addEventListener('mouseover', () => link.style.background = 'rgba(3,255,136,0.18)');
+                link.addEventListener('mouseout', () => link.style.background = 'rgba(3,255,136,0.08)');
+                link.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const tag = part.substring(1).toLowerCase();
+                    filterByHashtag(tag);
+                });
+                container.appendChild(link);
+            } else if (part.match(/^@[\w\u00C0-\u024F_-]+$/)) {
+                const link = document.createElement('span');
+                link.className = 'mention-tag';
+                link.textContent = part;
+                link.style.cssText = 'color: #7F56D9; font-weight: 600; cursor: pointer; transition: opacity 0.2s;';
+                link.addEventListener('mouseover', () => link.style.opacity = '0.7');
+                link.addEventListener('mouseout', () => link.style.opacity = '1');
+                link.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const mention = part.substring(1);
+                    window.location.href = `/community?search=${encodeURIComponent(mention)}`;
+                });
+                container.appendChild(link);
+            } else {
+                const textNode = document.createTextNode(part);
+                container.appendChild(textNode);
+            }
+        });
+    }
+
+    window.filterByHashtag = async function(tag) {
+        const feedContainer = document.getElementById('community-feed-container');
+        if (!feedContainer) return;
+
+        // Show loading
+        feedContainer.innerHTML = `<div style="text-align: center; padding: 24px; color: #667085;">
+            Loading posts for <strong>#${escapeAttr(tag)}</strong>...
+        </div>`;
+
+        try {
+            const res = await fetch(`/api/community/hashtags/${encodeURIComponent(tag)}`, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Failed to fetch');
+            const data = await res.json();
+
+            if (!data.posts || data.posts.length === 0) {
+                feedContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 24px; margin-bottom: 12px;">#️⃣</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #101828; margin-bottom: 4px;">No posts with <span style="color: #03FF88;">#${escapeAttr(tag)}</span></div>
+                    <div style="font-size: 14px; color: #667085; margin-bottom: 16px;">Be the first to use this hashtag!</div>
+                    <button class="ds-btn ds-btn--secondary" onclick="loadFeedFromGlobal()">← Back to Feed</button>
+                </div>`;
+                return;
+            }
+
+            // Add header with back button
+            feedContainer.innerHTML = '';
+            const headerDiv = document.createElement('div');
+            headerDiv.style.cssText = 'display: flex; align-items: center; gap: 12px; margin-bottom: 20px;';
+            const backBtn = document.createElement('button');
+            backBtn.className = 'ds-btn ds-btn--secondary ds-btn--sm';
+            backBtn.textContent = '← Back';
+            backBtn.addEventListener('click', () => loadFeed());
+            headerDiv.appendChild(backBtn);
+
+            const tagLabel = document.createElement('h3');
+            tagLabel.style.cssText = 'font-size: 18px; font-weight: 700; color: #03FF88; margin: 0;';
+            tagLabel.textContent = `#${data.tag}`;
+            headerDiv.appendChild(tagLabel);
+
+            const countLabel = document.createElement('span');
+            countLabel.style.cssText = 'font-size: 13px; color: #667085;';
+            countLabel.textContent = `${data.posts.length} posts`;
+            headerDiv.appendChild(countLabel);
+
+            feedContainer.appendChild(headerDiv);
+
+            for (const p of data.posts) {
+                const postEl = buildPostElement(p);
+                feedContainer.appendChild(postEl);
+            }
+        } catch (e) {
+            console.error(e);
+            feedContainer.innerHTML = `<div style="padding: 24px; color: #D92D20; text-align: center;">Failed to load hashtag posts. <button class="ds-btn ds-btn--secondary" onclick="loadFeedFromGlobal()">Back to Feed</button></div>`;
+        }
+    };
+
+    window.loadFeedFromGlobal = function() {
+        loadFeed();
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // UX.6: BOOKMARK FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════
+
+    async function checkBookmarkStatus(postId, btn) {
+        try {
+            const res = await fetch(`/api/community/posts/${postId}/bookmark/status`, { credentials: 'same-origin' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.bookmarked) {
+                    btn.classList.add('bookmarked');
+                    btn.title = 'Remove Bookmark';
+                }
+            }
+        } catch (e) {
+            // Silently fail — non-critical
+        }
+    }
+
+    window.toggleBookmark = async function(postId, btn) {
+        // Optimistic toggle
+        const wasBookmarked = btn.classList.contains('bookmarked');
+        btn.classList.toggle('bookmarked');
+        btn.title = wasBookmarked ? 'Save Post' : 'Remove Bookmark';
+
+        try {
+            const res = await fetch(`/api/community/posts/${postId}/bookmark`, {
+                method: 'POST',
+                credentials: 'same-origin',
+            });
+            if (!res.ok) throw new Error('Failed');
+            const data = await res.json();
+            // Sync with server state
+            if (data.bookmarked) {
+                btn.classList.add('bookmarked');
+                btn.title = 'Remove Bookmark';
+            } else {
+                btn.classList.remove('bookmarked');
+                btn.title = 'Save Post';
+            }
+        } catch (e) {
+            // Revert on failure
+            if (wasBookmarked) {
+                btn.classList.add('bookmarked');
+                btn.title = 'Remove Bookmark';
+            } else {
+                btn.classList.remove('bookmarked');
+                btn.title = 'Save Post';
+            }
+        }
+    };
+
+    // Load Saved Posts (for Saved tab)
+    window.loadSavedPosts = async function() {
+        const container = document.getElementById('saved-posts-container');
+        if (!container) return;
+
+        container.innerHTML = '<div style="text-align: center; padding: 24px; color: #667085;">Loading saved posts...</div>';
+
+        try {
+            const res = await fetch('/api/community/bookmarks', { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Failed to load');
+            const posts = await res.json();
+
+            if (posts.length === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 32px; margin-bottom: 12px;">🔖</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #101828; margin-bottom: 4px;">No saved posts yet</div>
+                    <div style="font-size: 14px; color: #667085;">Click the bookmark icon on any post to save it for later.</div>
+                </div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            for (const p of posts) {
+                const postEl = buildPostElement(p);
+                container.appendChild(postEl);
+            }
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<div style="padding: 24px; color: #D92D20; text-align: center;">Failed to load saved posts.</div>';
+        }
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // UX.11: POLL FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════
+
+    async function loadPollForPost(postId, container) {
+        try {
+            const res = await fetch(`/api/community/posts/${postId}/poll`, { credentials: 'same-origin' });
+            if (!res.ok) return;
+            const poll = await res.json();
+            if (!poll || !poll.options) return;
+            renderPoll(postId, poll, container);
+        } catch (e) {
+            // No poll for this post — that's fine
+        }
+    }
+
+    function renderPoll(postId, poll, container) {
+        container.innerHTML = '';
+
+        const card = document.createElement('div');
+        card.className = 'poll-card';
+
+        const question = document.createElement('div');
+        question.className = 'poll-question';
+        question.textContent = poll.question;
+        card.appendChild(question);
+
+        const optionsWrap = document.createElement('div');
+
+        poll.options.forEach(opt => {
+            const optEl = document.createElement('div');
+            optEl.className = 'poll-option' + (opt.user_voted ? ' voted' : '');
+
+            // Percentage bar
+            const bar = document.createElement('div');
+            bar.className = 'poll-option-bar';
+            bar.style.width = (poll.has_voted || poll.is_expired) ? `${opt.percentage}%` : '0%';
+
+            // Content
+            const content = document.createElement('div');
+            content.className = 'poll-option-content';
+
+            const labelDiv = document.createElement('div');
+            labelDiv.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+
+            const check = document.createElement('div');
+            check.className = 'poll-option-check';
+
+            const label = document.createElement('span');
+            label.className = 'poll-option-label';
+            label.textContent = opt.label;
+
+            labelDiv.appendChild(check);
+            labelDiv.appendChild(label);
+
+            const statsDiv = document.createElement('div');
+            statsDiv.className = 'poll-option-stats';
+            if (poll.has_voted || poll.is_expired) {
+                statsDiv.textContent = `${opt.percentage}%`;
+            }
+
+            content.appendChild(labelDiv);
+            content.appendChild(statsDiv);
+            optEl.appendChild(bar);
+            optEl.appendChild(content);
+
+            if (!poll.is_expired) {
+                optEl.addEventListener('click', () => voteOnPoll(postId, opt.id, container));
+            }
+
+            optionsWrap.appendChild(optEl);
+        });
+
+        card.appendChild(optionsWrap);
+
+        // Meta: vote count + expiry
+        const meta = document.createElement('div');
+        meta.className = 'poll-meta';
+
+        const votesSpan = document.createElement('span');
+        votesSpan.textContent = `📊 ${poll.total_votes} vote${poll.total_votes !== 1 ? 's' : ''}`;
+        meta.appendChild(votesSpan);
+
+        if (poll.is_expired) {
+            const expiredSpan = document.createElement('span');
+            expiredSpan.style.color = '#D92D20';
+            expiredSpan.textContent = '⏰ Poll ended';
+            meta.appendChild(expiredSpan);
+        } else if (poll.expires_at) {
+            const expiresSpan = document.createElement('span');
+            const expiresDate = new Date(poll.expires_at);
+            const hoursLeft = Math.max(0, Math.ceil((expiresDate - new Date()) / 3600000));
+            expiresSpan.textContent = hoursLeft > 24 ? `${Math.ceil(hoursLeft / 24)}d left` : `${hoursLeft}h left`;
+            meta.appendChild(expiresSpan);
+        }
+
+        card.appendChild(meta);
+        container.appendChild(card);
+    }
+
+    async function voteOnPoll(postId, optionId, container) {
+        try {
+            const res = await fetch(`/api/community/posts/${postId}/poll/vote`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ option_id: optionId })
+            });
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err);
+            }
+
+            // Reload poll to show results
+            const pollRes = await fetch(`/api/community/posts/${postId}/poll`, { credentials: 'same-origin' });
+            if (pollRes.ok) {
+                const poll = await pollRes.json();
+                if (poll) {
+                    renderPoll(postId, poll, container);
+                }
+            }
+        } catch (e) {
+            console.error('Vote failed:', e);
+            alert('Failed to vote: ' + e.message);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // UX.4: TRENDING HASHTAGS SIDEBAR
+    // ═══════════════════════════════════════════════════════════════
+
+    async function loadTrendingHashtags() {
+        const container = document.getElementById('trending-hashtags-container');
+        if (!container) return;
+
+        try {
+            const res = await fetch('/api/community/hashtags/trending', { credentials: 'same-origin' });
+            if (!res.ok) return;
+            const hashtags = await res.json();
+
+            if (!hashtags || hashtags.length === 0) {
+                container.innerHTML = '<div style="font-size: 13px; color: #98A2B3; text-align: center; padding: 12px;">No trending hashtags yet.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            hashtags.slice(0, 8).forEach(h => {
+                const item = document.createElement('div');
+                item.className = 'hashtag-trending-item';
+                item.addEventListener('click', () => {
+                    // Switch to feed tab and filter
+                    const feedTab = document.querySelector('.community-tab-btn[data-tab="community-feed-tab"]');
+                    if (feedTab) switchCommunityTab(feedTab);
+                    filterByHashtag(h.tag);
+                });
+
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'hashtag-trending-tag';
+                tagSpan.textContent = `#${h.tag}`;
+
+                const countSpan = document.createElement('span');
+                countSpan.className = 'hashtag-trending-count';
+                countSpan.textContent = `${h.post_count} post${h.post_count !== 1 ? 's' : ''}`;
+
+                item.appendChild(tagSpan);
+                item.appendChild(countSpan);
+                container.appendChild(item);
+            });
+        } catch (e) {
+            console.error('Failed to load trending hashtags:', e);
+        }
+    }
+
+    loadTrendingHashtags();
+
+    // ═══════════════════════════════════════════════════════════════
+    // UX.11: POLL CREATOR IN POST MODAL
+    // ═══════════════════════════════════════════════════════════════
+
+    window.pollOptions = ['', ''];
+    window.pollEnabled = false;
+
+    window.togglePollCreator = function() {
+        window.pollEnabled = !window.pollEnabled;
+        const creator = document.getElementById('poll-creator');
+        if (creator) {
+            creator.style.display = window.pollEnabled ? 'block' : 'none';
+        }
+        const toggleBtn = document.getElementById('poll-toggle-btn');
+        if (toggleBtn) {
+            toggleBtn.classList.toggle('active', window.pollEnabled);
+        }
+    };
+
+    window.addPollOption = function() {
+        if (window.pollOptions.length >= 10) return;
+        window.pollOptions.push('');
+        renderPollInputs();
+    };
+
+    window.removePollOption = function(index) {
+        if (window.pollOptions.length <= 2) return;
+        window.pollOptions.splice(index, 1);
+        renderPollInputs();
+    };
+
+    window.updatePollOption = function(index, value) {
+        window.pollOptions[index] = value;
+    };
+
+    function renderPollInputs() {
+        const container = document.getElementById('poll-options-inputs');
+        if (!container) return;
+
+        container.innerHTML = '';
+        window.pollOptions.forEach((opt, i) => {
+            const row = document.createElement('div');
+            row.className = 'poll-option-input-row';
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = `Option ${i + 1}`;
+            input.maxLength = 200;
+            input.value = opt;
+            input.addEventListener('input', (e) => updatePollOption(i, e.target.value));
+
+            row.appendChild(input);
+
+            if (window.pollOptions.length > 2) {
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.textContent = '✕';
+                removeBtn.addEventListener('click', () => removePollOption(i));
+                row.appendChild(removeBtn);
+            }
+
+            container.appendChild(row);
+        });
+    }
 
 });

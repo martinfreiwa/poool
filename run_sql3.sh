@@ -1,0 +1,9 @@
+#!/bin/bash
+gcloud run jobs create db-fix-job3 \
+  --image=gcr.io/google.com/cloudsdktool/google-cloud-cli:slim \
+  --command="bash" \
+  --args="-c","apt-get update && apt-get install -y postgresql-client && PGPASSWORD='Tasse3765!poool' psql -h /cloudsql/my-project-35266-489713:europe-west1:poool-db -U postgres -d poool -c \"UPDATE assets SET chain_contract_address = NULL WHERE id = '15a8138f-69d4-4284-9e92-9e08af4c68e2'; UPDATE assets SET chain_tx_hash = NULL WHERE id = '15a8138f-69d4-4284-9e92-9e08af4c68e2'; UPDATE assets SET chain_token_id = NULL WHERE id = '15a8138f-69d4-4284-9e92-9e08af4c68e2';\"" \
+  --set-cloudsql-instances=my-project-35266-489713:europe-west1:poool-db \
+  --region=europe-west1 \
+  --project=my-project-35266-489713 \
+  --execute-now

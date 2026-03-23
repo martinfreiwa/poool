@@ -92,7 +92,7 @@
     async function loadUsers() {
         const tbody = document.getElementById('users-table');
         try {
-            const res = await fetch('/api/admin/community/users');
+            const res = await fetch('/api/admin/community/users', { credentials: 'same-origin' });
             if(res.ok) {
                 const users = await res.json();
                 
@@ -168,6 +168,7 @@
             const res = await fetch(`/api/admin/community/users/${userId}/ban`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({ reason: reason, is_banned: isBan })
             });
             if (res.ok) {

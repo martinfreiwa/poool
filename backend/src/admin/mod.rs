@@ -311,8 +311,17 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/developer-projects/:id/review",
             post(api_admin_developer_project_review),
         )
+        .route(
+            "/api/admin/developer-projects/:id/notes",
+            get(api_admin_project_notes_list).post(api_admin_project_notes_create),
+        )
+        .route(
+            "/api/admin/developer-projects/:id/checklist",
+            get(api_admin_project_checklist_get).put(api_admin_project_checklist_save),
+        )
         // Orders (read only; approve/reject are in payments::router())
         .route("/api/admin/orders", get(api_admin_orders))
+        .route("/api/admin/orders/:id", get(api_admin_order_detail))
         // Investments
         .route("/api/admin/investments", get(api_admin_investments))
         // Assets

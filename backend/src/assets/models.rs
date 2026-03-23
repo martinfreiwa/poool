@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+use crate::storage::service::rewrite_gcs_url;
+
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct MarketplaceAsset {
     pub id: Uuid,
@@ -156,11 +158,12 @@ impl PropertyDisplayData {
             bedrooms: asset.bedrooms,
             lease_type: asset.lease_type.clone(),
             term_months: asset.term_months,
-            image_urls: asset.image_urls.clone().unwrap_or_default(),
+            image_urls: asset.image_urls.clone().unwrap_or_default()
+                .into_iter().map(|u| rewrite_gcs_url(&u)).collect(),
             cover_image_url: asset
                 .image_urls
                 .as_ref()
-                .and_then(|urls| urls.first().cloned()),
+                .and_then(|urls| urls.first().map(|u| rewrite_gcs_url(u))),
             funding_status: asset.funding_status.clone(),
             google_maps_url: asset.google_maps_url.clone(),
             video_url: asset.video_url.clone(),
@@ -434,11 +437,12 @@ impl CommodityDisplayData {
             asset_type: asset.asset_type.clone(),
             location_city: asset.location_city.clone(),
             location_country: asset.location_country.clone(),
-            image_urls: asset.image_urls.clone().unwrap_or_default(),
+            image_urls: asset.image_urls.clone().unwrap_or_default()
+                .into_iter().map(|u| rewrite_gcs_url(&u)).collect(),
             cover_image_url: asset
                 .image_urls
                 .as_ref()
-                .and_then(|urls| urls.first().cloned()),
+                .and_then(|urls| urls.first().map(|u| rewrite_gcs_url(u))),
             funding_status: asset.funding_status.clone(),
             google_maps_url: asset.google_maps_url.clone(),
             video_url: asset.video_url.clone(),

@@ -49,8 +49,10 @@ pub async fn upload_public(
         .await
         .map_err(|e| AppError::Internal(format!("GCS upload failed: {}", e)))?;
 
-    // Public URL pattern for uniform-access buckets with public IAM
-    let url = format!("https://storage.googleapis.com/{}/{}", bucket, object_path);
+    // Return proxy URL — the /api/proxy/gcs/:bucket/*path endpoint generates
+    // short-lived signed URLs, which avoids 403 Forbidden when the bucket lacks
+    // allUsers viewer permission.
+    let url = format!("/api/proxy/gcs/{}/{}", bucket, object_path);
     Ok(url)
 }
 
@@ -239,6 +241,24 @@ pub fn validate_asset_doc_mime(mime: &str) -> Result<(), AppError> {
             "Only JPEG, PNG, WebP, PDF, DOC, DOCX, and ZIP files are accepted.".to_string(),
         )),
     }
+}
+
+// ─── URL rewriting ─────────────────────────────────────────────
+/// Rewrite a stored image/asset URL so that old direct GCS links
+/// (`https://storage.googleapis.com/bucket/path`) become proxy
+/// paths (`/api/proxy/gcs/bucket/path`). URLs that are already
+/// proxy paths or relative paths are returned unchanged.
+pub fn rewrite_gcs_url(url: &str) -> String {
+    if url.starts_with("https://storage.googleapis.com/") {
+        url.replacen("https://storage.googleapis.com/", "/api/proxy/gcs/", 1)
+    } else {
+        url.to_string()
+    }
+}
+
+/// Same as [`rewrite_gcs_url`] but works on `Option<String>`.
+pub fn rewrite_gcs_url_opt(url: Option<&str>) -> Option<String> {
+    url.map(|u| rewrite_gcs_url(u))
 }
 
 /// Validate MIME types for asset image uploads (property photos).

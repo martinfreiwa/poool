@@ -339,7 +339,7 @@ async fn run_weekly_digest(_c_pool: &PgPool, core_pool: &PgPool) -> Result<(), c
         WHERE u.status = 'active'
           AND COALESCE(s.email_notifications, true) = true
           AND u.id NOT IN (
-              SELECT user_id FROM user_sessions WHERE updated_at > NOW() - INTERVAL '7 days'
+              SELECT user_id FROM user_sessions WHERE created_at > NOW() - INTERVAL '7 days'
           )
           LIMIT 100
         "#

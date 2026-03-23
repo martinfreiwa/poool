@@ -89,7 +89,7 @@
 
     async function loadUserDetail(userId) {
         try {
-            const res = await fetch(`/api/admin/community/users/${userId}/detail`);
+            const res = await fetch(`/api/admin/community/users/${userId}/detail`, { credentials: 'same-origin' });
             if(res.ok) {
                 const data = await res.json();
                 renderDetail(userId, data);
@@ -281,6 +281,7 @@
             const res = await fetch(`/api/admin/community/users/${userId}/warn`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({ reason })
             });
             if (res.ok) {
@@ -302,6 +303,7 @@
             const res = await fetch(`/api/admin/community/users/${userId}/mod-notes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({ notes: newNotes })
             });
             if (res.ok) {
@@ -332,6 +334,7 @@
             const res = await fetch(`/api/admin/community/users/${userId}/mute`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({ hours })
             });
             if (res.ok) {
@@ -359,6 +362,7 @@
             const res = await fetch(`/api/admin/community/users/${userId}/ban`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({ is_banned: !isBanned, reason: reason })
             });
             if (res.ok) {
@@ -379,6 +383,7 @@
             const res = await fetch(`/api/admin/community/users/${userId}/shadowban`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify({ is_shadowbanned: !isShadowbanned })
             });
             if (res.ok) {

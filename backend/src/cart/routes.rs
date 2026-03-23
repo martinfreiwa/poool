@@ -432,7 +432,7 @@ pub async fn api_cart(jar: CookieJar, State(state): State<AppState>) -> axum::re
                         bathrooms: r.get("bathrooms"),
                         building_size_sqm: r.get("building_size_sqm"),
                         land_size_sqm: r.get("land_size_sqm"),
-                        cover_image_url: r.get("cover_image_url"),
+                        cover_image_url: r.get::<Option<String>, _>("cover_image_url").map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                     }
                 })
                 .collect();
@@ -553,6 +553,17 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         return Html(empty_html).into_response();
     }
 
+    // ── Read platform fee percentage from platform_settings ──
+    let platform_fee_pct: f64 = sqlx::query_scalar(
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'"
+    )
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v: String| v.parse::<f64>().ok())
+    .unwrap_or(0.0); // Default to 0 if not configured
+
     // Build populated cart HTML
     let mut cart_items_html = String::new();
     let mut mobile_items_html = String::new();
@@ -656,8 +667,9 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         let available_tokens_f64 = tokens_available as f64;
 
         let funded_pct = if total_tokens_f64 > 0.0 {
-            let sold_tokens = total_tokens_f64 - available_tokens_f64;
-            ((sold_tokens / total_tokens_f64) * 100.0) as i32
+            // Include tokens in cart to show the user's contribution to funding
+            let sold_tokens = total_tokens_f64 - available_tokens_f64 + tokens_qty as f64;
+            ((sold_tokens / total_tokens_f64) * 100.0).min(100.0) as i32
         } else {
             0
         };
@@ -825,7 +837,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             available_tokens = tokens_available,
             total_tokens = tokens_total,
             funded_pct = funded_pct,
-            image_url = image_url.as_deref().unwrap_or("/static/images/Portfolio asset details/Property image.png"),
+            image_url = crate::storage::service::rewrite_gcs_url(image_url.as_deref().unwrap_or("/static/images/portfolio_asset_details/Property image.webp")),
             property_details = property_details_html,
         ));
 
@@ -865,9 +877,9 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                 <div class="mobile-cart-controls-section">
                     <div class="mobile-cart-loading-bar" style="margin-top: 10px; width: 100%;">
                         <div class="progress-container" style="flex: 1; height: 6px; background: #EAECF0; border-radius: 3px; position: relative;">
-                            <div style="width: {funded_pct}%; background: #0000FF; border-radius: 3px; position: absolute; left: 0; top: 0; height: 100%;"></div>
+                            <div id="cart-item-mobile-{idx}-progress" style="width: {funded_pct}%; background: #0000FF; border-radius: 3px; position: absolute; left: 0; top: 0; height: 100%;"></div>
                         </div>
-                        <span style="font-size: 12px; color: #535862;">{funded_pct}% funded</span>
+                        <span id="cart-item-mobile-{idx}-funded-text" style="font-size: 12px; color: #535862;">{funded_pct}% funded</span>
                     </div>
 
                     <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
@@ -919,14 +931,25 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             available_tokens = tokens_available,
             total_tokens = tokens_total,
             funded_pct = funded_pct,
-            image_url = image_url.as_deref().unwrap_or("/static/images/Portfolio asset details/Property image.png"),
+            image_url = image_url.as_deref().unwrap_or("/static/images/portfolio_asset_details/Property image.webp"),
             mobile_property_details = mobile_property_details,
         ));
     }
 
-    let total_display = format_cart_usd(total_cents);
+    // ── Calculate platform fee (integer cents, no floats for money) ──
+    // fee_cents = subtotal_cents * fee_pct / 100 (rounded down)
+    let fee_cents: i64 = if platform_fee_pct > 0.0 {
+        ((total_cents as f64) * platform_fee_pct / 100.0).round() as i64
+    } else {
+        0
+    };
+    let grand_total_cents = total_cents + fee_cents;
 
-    let idr_display = format_idr(total_cents);
+    let total_display = format_cart_usd(grand_total_cents);
+    let fee_display = format_cart_usd(fee_cents);
+    let fee_idr_display = format_idr(fee_cents);
+
+    let idr_display = format_idr(grand_total_cents);
 
     // Compute dynamic rewards banner text
     // Pre-calculate KYC status on backend to avoid frontend flicker
@@ -1026,7 +1049,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     let summary_html = format!(
         r##"<div id="cart-page-summary" class="cart-page-summary">
             <!-- Proceed to Payment Summary Box -->
-            <div class="cart-summary-container" id="payment-summary-box" style="{payment_vis}">
+            <div class="cart-summary-container" id="payment-summary-box" data-fee-pct="{fee_pct_raw}" style="{payment_vis}">
                 <!-- Header: title + timer -->
                 <div class="cart-summary-top-row">
                     <h3 class="cart-summary-heading" style="margin:0;">Order Summary <span style="font-weight:400; font-size:14px; color:#717680;">({item_count} {item_label})</span></h3>
@@ -1051,10 +1074,10 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                         </div>
                     </div>
                     <div class="summary-line">
-                        <span class="summary-line-label">Platform Fee <img src="/static/images/help-circle.svg" class="help-icon-small" alt="Help" title="Standard platform transaction fee" /></span>
+                        <span class="summary-line-label">Platform Fee ({fee_pct_display}%) <img src="/static/images/help-circle.svg" class="help-icon-small" alt="Help" title="Standard platform transaction fee" /></span>
                         <div class="summary-line-values">
-                            <span class="summary-line-value" id="cart-fee-amount">USD 0.00</span>
-                            <span class="summary-line-idr">≈ Rp 0</span>
+                            <span class="summary-line-value" id="cart-fee-amount">{fee}</span>
+                            <span class="summary-line-idr" id="cart-fee-idr">≈ {fee_idr}</span>
                         </div>
                     </div>
                     <div class="summary-line">
@@ -1217,6 +1240,14 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         total = total_display,
         subtotal_idr = subtotal_idr,
         total_idr = idr_display,
+        fee = fee_display,
+        fee_idr = fee_idr_display,
+        fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
+            format!("{:.0}", platform_fee_pct)
+        } else {
+            format!("{:.1}", platform_fee_pct)
+        },
+        fee_pct_raw = platform_fee_pct,
         kfs_checkbox = kfs_checkbox_html,
     );
 
@@ -1291,7 +1322,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         </div>
         <!-- Mobile Empty Cart State -->
     "#,
-        mobile_items_html, total_display
+        mobile_items_html, format_cart_usd(grand_total_cents)
     );
     // Slicing out desktop empty state removes the original Cart Content
     // Slicing out desktop empty state removes the original Cart Content

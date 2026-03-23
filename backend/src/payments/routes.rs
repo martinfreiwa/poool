@@ -267,7 +267,7 @@ pub async fn checkout_page(
                 "token_price_cents": r.3, "total_cents": total, "title": r.4, "slug": r.5,
                 "location_city": r.6, "location_country": r.7, "short_description": r.8,
                 "asset_type": r.9, "annual_yield_bps": r.10, "funding_status": r.11,
-                "tokens_available": r.12, "cover_image_url": r.13
+                "tokens_available": r.12, "cover_image_url": r.13.as_ref().map(|u| crate::storage::service::rewrite_gcs_url(u))
             })
         })
         .collect();

@@ -427,6 +427,15 @@
       }
     }
 
+    // Leaderboard
+    const lbVisible = document.getElementById("settings-lb-visible");
+    const lbAvatar = document.getElementById("settings-lb-avatar");
+    const lbDisplayName = document.getElementById("settings-lb-display-name");
+
+    if (lbVisible) lbVisible.checked = !!data.lb_visible;
+    if (lbAvatar) lbAvatar.checked = !!data.lb_avatar;
+    if (lbDisplayName) lbDisplayName.value = data.lb_display_name || "";
+
     // Linked OAuth Accounts
     const oauthList = document.getElementById("settings-oauth-list");
     if (oauthList) {
@@ -497,6 +506,28 @@
       showToast(res.message, "success");
     } else {
       showToast("Failed to request export.", "error");
+    }
+  }
+
+  async function saveLeaderboardPrivacy() {
+    const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
+    const btn = e && e.target;
+    setButtonState(btn, true, "Saving...");
+
+    const body = {
+      visible: !!document.getElementById("settings-lb-visible")?.checked,
+      show_avatar: !!document.getElementById("settings-lb-avatar")?.checked,
+      display_name: getVal("settings-lb-display-name") || null,
+    };
+
+    const res = await SettingsDataService.saveLeaderboard(body);
+    setButtonState(btn, false, "Save Privacy Details");
+
+    if (res && res.success) {
+      showToast(res.message, "success");
+      savedSettings = { ...savedSettings, lb_visible: body.visible, lb_avatar: body.show_avatar, lb_display_name: body.display_name };
+    } else if (res) {
+      showToast(res.message || "Failed to save leaderboard settings.", "error");
     }
   }
 
@@ -750,6 +781,8 @@
     if (changePhone) changePhone.addEventListener('click', openChangePhoneModal);
     const exportBtn = document.getElementById('btn-export-data');
     if (exportBtn) exportBtn.addEventListener('click', exportData);
+    const saveLbBtn = document.getElementById('btn-save-leaderboard-privacy');
+    if (saveLbBtn) saveLbBtn.addEventListener('click', saveLeaderboardPrivacy);
 
     // Modals
     const emailSubmit = document.getElementById('modal-email-submit-btn');

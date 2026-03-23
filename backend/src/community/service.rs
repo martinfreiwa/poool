@@ -304,9 +304,84 @@ pub async fn create_user_post(
     .fetch_one(&mut *tx)
     .await?;
 
+    // UX.4: Extract and link hashtags from content
+    extract_and_link_hashtags(&mut tx, &req.content, post_id).await?;
+
+    // UX.11: Create poll if poll data is provided
+    if let (Some(question), Some(options)) = (&req.poll_question, &req.poll_options) {
+        if !question.is_empty() && options.len() >= 2 && options.len() <= 10 {
+            let expires_at = req.poll_expires_hours.map(|hours| {
+                chrono::Utc::now() + chrono::Duration::hours(hours.clamp(1, 168) as i64)
+            });
+
+            let poll_id = sqlx::query_scalar::<_, Uuid>(
+                "INSERT INTO polls (post_id, question, expires_at) VALUES ($1, $2, $3) RETURNING id"
+            )
+            .bind(post_id)
+            .bind(question)
+            .bind(expires_at)
+            .fetch_one(&mut *tx)
+            .await?;
+
+            for (i, label) in options.iter().enumerate() {
+                if !label.trim().is_empty() {
+                    sqlx::query(
+                        "INSERT INTO poll_options (poll_id, label, sort_order) VALUES ($1, $2, $3)"
+                    )
+                    .bind(poll_id)
+                    .bind(label.trim())
+                    .bind(i as i32)
+                    .execute(&mut *tx)
+                    .await?;
+                }
+            }
+        }
+    }
+
     tx.commit().await?;
 
     Ok(post_id)
+}
+
+/// UX.4: Extract hashtags from content and link them to the post.
+/// Pattern: #word (alphanumeric + underscores, 1-100 chars).
+async fn extract_and_link_hashtags(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    content: &str,
+    post_id: Uuid,
+) -> Result<(), AppError> {
+    let mut seen = std::collections::HashSet::new();
+
+    for word in content.split_whitespace() {
+        if word.starts_with('#') && word.len() > 1 {
+            let tag = word.trim_start_matches('#')
+                .trim_matches(|c: char| !c.is_alphanumeric() && c != '_')
+                .to_lowercase();
+            if tag.is_empty() || tag.len() > 100 || seen.contains(&tag) {
+                continue;
+            }
+            seen.insert(tag.clone());
+
+            // Upsert the hashtag
+            let hashtag_id: Uuid = sqlx::query_scalar(
+                "INSERT INTO hashtags (tag) VALUES ($1) ON CONFLICT (tag) DO UPDATE SET tag = EXCLUDED.tag RETURNING id"
+            )
+            .bind(&tag)
+            .fetch_one(&mut **tx)
+            .await?;
+
+            // Link post to hashtag
+            sqlx::query(
+                "INSERT INTO post_hashtags (post_id, hashtag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+            )
+            .bind(post_id)
+            .bind(hashtag_id)
+            .execute(&mut **tx)
+            .await?;
+        }
+    }
+
+    Ok(())
 }
 
 /// User reports a post.

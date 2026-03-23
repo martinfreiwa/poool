@@ -309,6 +309,30 @@
     </main>
   </div>
 
+  <!-- ===== ORDER DETAIL MODAL ===== -->
+  <div class="ds-modal-overlay" id="order-detail-overlay">
+    <div class="ds-modal ds-modal--lg" id="order-detail-modal" style="max-width:720px;">
+      <div class="ds-modal__header ds-modal__header--bordered">
+        <div>
+          <h2 class="ds-modal__title" id="order-modal-title">Order Details</h2>
+          <p class="ds-modal__subtitle" id="order-modal-subtitle" style="margin:0;font-size:12px;color:var(--admin-text-muted);"></p>
+        </div>
+        <button class="ds-modal__close" onclick="closeOrderDetail()" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="ds-modal__body" id="order-modal-body" style="max-height:70vh;overflow-y:auto;">
+        <div style="text-align:center;padding:40px;color:var(--admin-text-muted);">
+          <div style="margin:0 auto 12px;width:24px;height:24px;border:2px solid var(--admin-border);border-top-color:var(--admin-accent);border-radius:50%;animation:spin .8s linear infinite;"></div>
+          Loading order details…
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <link rel="stylesheet" href="/static/css/ds-modals.css" />
   <script src="/static/js/admin-orders.js"></script>
 </body>
 

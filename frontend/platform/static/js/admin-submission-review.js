@@ -55,6 +55,62 @@ function updateApproveButtonState() {
   } else if (badge) {
     badge.remove();
   }
+
+  // Auto-save checklist state (debounced)
+  _scheduleChecklistSave();
+}
+
+// ─── Checklist Persistence ────────────────────────────────────────────────────
+let _checklistSaveTimer = null;
+let _checklistInitialized = false;
+
+function _scheduleChecklistSave() {
+  if (!_checklistInitialized) return; // Don't save during initial auto-checks
+  if (_checklistSaveTimer) clearTimeout(_checklistSaveTimer);
+  _checklistSaveTimer = setTimeout(_saveChecklist, 500);
+}
+
+async function _saveChecklist() {
+  if (!projectId) return;
+  const checkboxes = document.querySelectorAll(".validation-chk");
+  const state = {};
+  checkboxes.forEach((chk) => {
+    if (chk.id) state[chk.id] = chk.checked;
+  });
+  try {
+    await fetch(`/api/admin/developer-projects/${projectId}/checklist`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": getCsrfToken()
+      },
+      body: JSON.stringify({ checklist: state }),
+    });
+  } catch (e) {
+    // Silent fail — checklist persistence is best-effort
+    console.warn("Failed to save checklist:", e);
+  }
+}
+
+async function _restoreChecklist() {
+  if (!projectId) return;
+  try {
+    const res = await fetch(`/api/admin/developer-projects/${projectId}/checklist`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const saved = data.checklist || {};
+    Object.entries(saved).forEach(([id, checked]) => {
+      const chk = document.getElementById(id);
+      if (chk && checked) {
+        chk.checked = true;
+      }
+    });
+    _checklistInitialized = true; // Now allow saves on user interaction
+    updateApproveButtonState();
+  } catch (e) {
+    _checklistInitialized = true; // Even on error, allow saves
+    console.warn("Failed to restore checklist:", e);
+  }
 }
 
 // ─── Data Loading ─────────────────────────────────────────────────────────────
@@ -138,6 +194,10 @@ function renderSubmission(data) {
 
   // Conditionally show/hide video and maps checklist items
   toggleConditionalChecklist(asset);
+
+  // Restore saved checklist state from DB (overrides auto-checks where applicable)
+  _restoreChecklist();
+
   // Wire up action buttons
   const btnApprove = document.getElementById("btn-approve");
   const btnTokenize = document.getElementById("btn-tokenize");

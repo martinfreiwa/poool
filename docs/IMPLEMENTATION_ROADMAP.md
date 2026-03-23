@@ -85,8 +85,7 @@ Every task declares a **File Zone** (which directories/files it touches). Check 
 | `2026-03-22 23:25` | `Antigravity` | `14.4` | `backend/src/community/, payments/, admin/` | `✅ Check-Out` | Phase 14 / Community M3 Social Layer completed! All 7 API tasks and 5 UI Tasks complete. Dynamic asset tags natively wire with checkout and approvals. Modals completed. XP engine and badges running. |
 | `2026-03-22 23:45` | `Antigravity` | `Global` | `docs/` | `✅ Check-Out` | Audited Community modules 1-3. Created Module 3.5 for P0/P1 security fixes and restructured Modules 4 & 5 to include AMAs, Challenges, and full admin UI. |
 | `2026-03-23 00:30` | `Antigravity` | `14.5` | `community/xp.rs, circles.rs, routes.rs, community-circles.js` | `✅ Check-Out` | Community M4 Circles & XP COMPLETE: 15/15 tasks. XP system (award, daily caps, levels, history, aggregation worker). Circles (CRUD, invite, join/leave, kick, leaderboard, referral auto-join). Login streak tracker (daily + 7/30-day bonuses). Level-gated features (L2 circles, L3 invites). Circle retry worker. 18 new API endpoints. Frontend: dynamic My Circle tab, XP card w/ streak, leaderboard, level-up animation. |
-
-
+| `2026-03-23 11:45` | `Antigravity` | `11.6` | `tests/e2e/` | `✅ Check-Out` | Playwright E2E testing framework expanded for Journey, Settings, Community, Marketplace, and Circles. |
 
 ---
 
@@ -359,7 +358,7 @@ Every task declares a **File Zone** (which directories/files it touches). Check 
 | **11.3** | Reconciliation Test | Full lifecycle trade → reconciliation = $0 delta (§1.12) | `✅ DONE` | Antigravity | `✅` | 5 tests in `reconciliation_tests.rs`: full lifecycle (deposit→buy→trade→sell→withdraw) with cash conservation, token supply invariant, fee accounting, negative balance prevention, and multi-trade invariant. |
 | **11.4** | FX Fuzz Testing | `proptest` with thousands of random inputs into DECIMAL converters (§1.12) | `✅ DONE` | Antigravity | `✅` | IDR conversion tests with boundary values (0, sub-dollar, $1M). IEEE754 tricky values (0.10, 0.20, 0.30, 19.99, 9.99) all verified correct via string parsing. Overflow protection tested with i64::MAX. |
 | **11.5** | Smart Contract Fuzz | `forge test --fuzz-runs 10000` (§1.12, §3.2.5) | `✅ DONE` | Antigravity | `✅` | 10 fuzz tests in `POOOLAssetToken.fuzz.t.sol`: supply conservation, KYC enforcement, 80% max cap, settleBatch correctness (random batch sizes), pause isolation, double-init, role enforcement. All 12 tests pass at 10,000 runs each (0 failures). |
-| **11.6** | E2E Tests (Playwright) | Full user journey: signup → KYC → deposit → buy → sell → withdraw (§6.8) | `⚪ NOT READY` | - | `❌` | - |
+| **11.6** | E2E Tests (Playwright) | Full user journey: signup → KYC → deposit → buy → sell → withdraw (§6.8) | `✅ DONE` | Antigravity | `✅` | Added robust testing for Settings, Community, Marketplace, Circles and Journey. |
 | **11.7** | Load Test | 100 users, 500 orders/min, 30 minutes sustained (§6.8) | `⚪ NOT READY` | - | `❌` | - |
 | **11.8** | Admin E2E Tests | All 12 admin pages functional with correct RBAC enforcement (§3.5.18) | `✅ DONE` | Antigravity | `✅` | `test_admin_dashboard.py` covers 20+ admin pages: RBAC security (anon + investor blocked), sidebar integrity, page load + security headers, API health checks (10 endpoints), data consistency. 46 admin HTML pages total, all accessible. |
 | **11.9** | UAT (User Acceptance) | Internal test users run through entire flow (§6.8) | `⚪ NOT READY` | - | `❌` | - |

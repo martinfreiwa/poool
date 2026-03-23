@@ -289,15 +289,17 @@ The following bugs were found during a deep security and logic audit of the admi
 
 ---
 
-## 🛠 New Shared Modules Created
+## 🛠 Shared Modules Created (Phase 1-5)
 
 | Module | Purpose |
 |:---|:---|
 | `backend/src/common/currency.rs` | Centralized currency formatting (format_usd, format_idr, format_amount_display) with unit tests |
-| `backend/src/auth/rate_limit.rs` | In-memory per-IP rate limiter with sliding window, integrated into login/signup/forgot-password |
+| `backend/src/common/sanitize.rs` | HTML tag stripping, text/URL sanitization for XSS prevention, 7 unit tests |
+| `backend/src/auth/rate_limit.rs` | Trait-based rate limiter with in-memory + Redis backends, 3 unit tests |
+| `tests/test_e2e.py` | Comprehensive E2E test suite (12 categories, ~40 test cases) |
+| `tests/test_security_audit.py` | Security audit test suite (8 test categories) |
 
 ---
-
 ## 🔍 Phase 4: Deep Module Sweep (2026-03-18)
 
 | # | Item | Severity | Status |
@@ -326,23 +328,11 @@ The following bugs were found during a deep security and logic audit of the admi
 
 ---
 
-## 🛠 New Shared Modules Created
-
-| Module | Purpose |
-|:---|:---|
-| `backend/src/common/currency.rs` | Centralized currency formatting (format_usd, format_idr, format_amount_display) with unit tests |
-| `backend/src/common/sanitize.rs` | HTML tag stripping, text/URL sanitization for XSS prevention, 7 unit tests |
-| `backend/src/auth/rate_limit.rs` | Trait-based rate limiter with in-memory + Redis backends, 3 unit tests |
-| `tests/test_e2e.py` | Comprehensive E2E test suite (12 categories, ~40 test cases) |
-| `tests/test_security_audit.py` | Security audit test suite (8 test categories) |
-
 ---
-### [P1] — Reconciliation code used `unwrap_or` on non-Option types
-- **File:** `backend/src/main.rs` (lines 363-366)
-- **What was wrong:** `row.tokens_total.unwrap_or(0)` and `row.tokens_available.unwrap_or(0)` called on `i32` (not `Option<i32>`), and `row.title.as_deref().unwrap_or("unknown")` called on `String` (not `Option<String>`). Prevented compilation.
-- **What I did:** Removed unnecessary `unwrap_or`/`as_deref` calls. Kept `row.total_owned.unwrap_or(0)` since it IS `Option<i32>`.
-- **Status:** ✅ Resolved
-- **Date:** 2026-03-22
+
+## 🚀 Phase 6: Active Development & Ongoing Fixes (2026-03-22+)
+
+These are ad-hoc fixes during feature implementation, documented inline.
 
 ### [P2] — Admin routes with trailing slashes return 404
 - **File:** `backend/src/admin/pages.rs`
@@ -350,8 +340,6 @@ The following bugs were found during a deep security and logic audit of the admi
 - **What I did:** Added a check for `relative.ends_with('/')` to correctly append `index.html`.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-22
-
----
 
 ### [P2] — Cart/Checkout buttons used off-brand color `#62F7A4`
 - **File:** `frontend/platform/cart.html`, `frontend/platform/checkout.html`
@@ -430,16 +418,12 @@ The following bugs were found during a deep security and logic audit of the admi
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-22
 
----
-
 ### [P1] — Reconciliation code type mismatch (compilation failure - final resolution)
 - **File:** `backend/src/main.rs` (lines 367-370)
 - **What was wrong:** `sqlx::query!` returns `tokens_total` and `tokens_available` as `i32` (non-nullable) and `title` as `String`, not `Option`. Therefore `.unwrap_or(0)` on `i32` and `.as_deref()` on `String` are type errors, not valid calls. Only `total_owned` is actually `Option<i32>` due to the LEFT JOIN.
 - **What I did:** Removed `.unwrap_or(0)` from `tokens_total`/`tokens_available` and `.as_deref().unwrap_or("?")` from `title`. Used direct field access. Kept `.unwrap_or(0)` on `total_owned` which is genuinely nullable.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-22
-
----
 
 ### [P1] — Missing `chrono::Datelike` import broke compilation
 - **File:** `backend/src/payments/service.rs`
@@ -454,9 +438,6 @@ The following bugs were found during a deep security and logic audit of the admi
 - **What I did:** Moved the cart validation loop (which calculates `total_cents`) BEFORE the investment limit check, so the value exists when referenced.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-22
-
----
-
 *Last Updated: 2026-03-22 17:30 ICT*
 
 ### [P1] — sqlx::query! macro error on separate community database
@@ -472,9 +453,6 @@ The following bugs were found during a deep security and logic audit of the admi
 - **What I did:** Fixed naming inconsistencies across `announcements.html`, `blockchain-sync.html`, `asset-change-review.html`, `marketplace/analytics.html`, and `mp-reconciliation.js`.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-22
-
----
-
 ## 🛡 Community Module Security Audit Fixes (2026-03-22)
 
 ### [P0-SECURITY] — XSS in community feed post rendering (FIX-F1)
@@ -525,10 +503,6 @@ The following bugs were found during a deep security and logic audit of the admi
 - **What I did:** Replaced manual auth checks with the `AdminUser` extractor from `admin::extractors`, which is the standard pattern used by all other admin routes.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-22
-
----
-
----
 
 ### [P1] — Production-wide 401/500 errors on all authenticated API endpoints
 - **File:** `backend/src/db.rs` (`build_connect_options()`)
@@ -658,19 +632,20 @@ The following bugs were found during a deep security and logic audit of the admi
 - **What I did:** Restructured the calculation so `subtotal_cents` gets the item sum, then fetched `platform_fee_percent` from the database to compute `fee_cents`, and stored `grand_total_cents`. Corrected wallet deductions to pull `grand_total_cents`, updated `orders` and `invoices` row insertions to store the final combined total, and added an `UPDATE wallets SET balance_cents = balance_cents + fee_cents` entry for the `platform_fee` wallet.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+
 ### [P2] — Order details modal not implemented
 - **File:** `backend/src/admin/orders.rs`, `frontend/platform/admin/orders.html`, `frontend/platform/static/js/admin-orders.js`
 - **What was wrong:** Admins could not view detailed transaction info (items, invoice, wallet txs) for orders on the admin page.
 - **What I did:** Implemented `GET /api/admin/orders/:id` backend endpoint, added modal HTML to `orders.html`, and updated `admin-orders.js` to make order numbers clickable and render the detail modal with rich information.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+
 ### [P2] — Fallback image path incorrect and missing image constraints
 - **File:** `backend/src/cart/routes.rs`, `backend/src/developer/routes.rs`, `backend/src/admin/submissions.rs`
 - **What was wrong:** Fallback image path was broken leading to missing image UI, and there were no strict checks enforcing an image when an asset is submitted or approved.
 - **What I did:** Fixed the fallback image path in the cart render and added validation checks to block submitting/approving an asset if it has no images.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
-
 
 ### [P2] — GCS image visibility fix across platform
 - **File:** `backend/src/storage/service.rs`, `backend/src/storage/routes.rs`, `backend/src/assets/routes.rs`, `backend/src/developer/routes.rs`
@@ -683,5 +658,48 @@ The following bugs were found during a deep security and logic audit of the admi
 - **File:** `platform.poool.app` (API side)
 - **What was wrong:** The $1M villa listing had outdated/inconsistent images (18 images total, some were duplicates or low quality).
 - **What I did:** Generated 8 new photorealistic and consistent images. Removed all old 18 images and uploaded the 8 new ones. Set the first image as the cover. Verified via production API.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Profile API 404 in Community
+- **File:** `frontend/platform/community.html`
+- **What was wrong:** `/api/community/profile/me` 404s, preventing current user's profile load
+- **What I did:** Logged for future fix.
+- **Status:** 🔴 Unresolved
+- **Date:** 2026-03-23
+
+### [P2] — Anonymous Post Attribution
+- **File:** `frontend/platform/community.html`
+- **What was wrong:** New posts are displayed from 'Anonymous User' due to API failure.
+- **What I did:** Logged for future fix.
+- **Status:** 🔴 Unresolved
+- **Date:** 2026-03-23
+
+### [P2] — Raw HTML in Announcements
+- **File:** `frontend/platform/community.html`
+- **What was wrong:** Pinned announcement renders raw HTML tags.
+- **What I did:** Logged for future fix.
+- **Status:** 🔴 Unresolved
+- **Date:** 2026-03-23
+
+### [P2] — Broken Edit Profile Link
+- **File:** `frontend/platform/community.html`
+- **What was wrong:** Edit profile button links to asset application.
+- **What I did:** Logged for future fix.
+- **Status:** 🔴 Unresolved
+- **Date:** 2026-03-23
+
+
+### [P0] — Missing `platform_fee` wallet row causing silent fee loss
+- **File:** `database/067_platform_fee_wallet.sql`
+- **What was wrong:** The backend code credited a `platform_fee` wallet dynamically (`UPDATE wallets ... WHERE wallet_type = 'platform_fee'`), however, this wallet type wasn't permitted by the PostgreSQL `CHECK` constraint, nor was there a row seeded in the database. This caused zero rows to update, effectively blackholing all platform revenue collected during checkout.
+- **What I did:** Added a new schema migration `067_platform_fee_wallet.sql` that updates the PostgreSQL constraint mapping to accept `platform_fee` types, and natively injects a platform fee wallet row for the `admin@poool.app` account. Tested and verified in local db.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — fx_provider logged as "hardcoded" instead of actual provider
+- **File:** `backend/src/payments/service.rs`
+- **What was wrong:** The FX checkout logic accurately calculates dynamic exchange rates using the OpenExchangeRates wrapper, but statically wrote "hardcoded" into the DB for `fx_provider`, dirtying audit logs.
+- **What I did:** Changed the provider string to `"open.er-api.com"` for accurate history logging on orders.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23

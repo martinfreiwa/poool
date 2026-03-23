@@ -286,7 +286,7 @@ function renderOrders() {
     .map(
       (o) => `
         <tr>
-            <td style="font-family:monospace;font-size:12px;font-weight:600;color:var(--admin-accent);">${esc(o.order_number)}</td>
+            <td><a href="#" onclick="openOrderDetail('${esc(o.id)}');return false;" style="font-family:monospace;font-size:12px;font-weight:600;color:var(--admin-accent);text-decoration:none;cursor:pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${esc(o.order_number)}</a></td>
             <td>
                 <div class="admin-user-inline">
                     <div>
@@ -533,4 +533,201 @@ function debounce(fn, ms) {
     clearTimeout(t);
     t = setTimeout(() => fn.apply(this, args), ms);
   };
+}
+
+// ─── Order Detail Modal ─────────────────────────────────────────
+
+async function openOrderDetail(orderId) {
+  const overlay = document.getElementById('order-detail-overlay');
+  const body = document.getElementById('order-modal-body');
+  const title = document.getElementById('order-modal-title');
+  const subtitle = document.getElementById('order-modal-subtitle');
+
+  // Show loading
+  overlay.classList.add('active');
+  body.innerHTML = `
+    <div style="text-align:center;padding:40px;color:var(--admin-text-muted);">
+      <div style="margin:0 auto 12px;width:24px;height:24px;border:2px solid var(--admin-border);border-top-color:var(--admin-accent);border-radius:50%;animation:spin .8s linear infinite;"></div>
+      Loading order details…
+    </div>`;
+
+  try {
+    const resp = await fetch(`/api/admin/orders/${orderId}`);
+    if (!resp.ok) throw new Error('Failed to load order');
+    const data = await resp.json();
+    renderOrderDetail(data, title, subtitle, body);
+  } catch (e) {
+    body.innerHTML = `<div style="text-align:center;padding:40px;color:var(--admin-danger);">Failed to load order details.</div>`;
+  }
+}
+
+function closeOrderDetail() {
+  document.getElementById('order-detail-overlay').classList.remove('active');
+}
+
+// Close on overlay click
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'order-detail-overlay') closeOrderDetail();
+});
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeOrderDetail();
+});
+
+function renderOrderDetail(data, titleEl, subtitleEl, bodyEl) {
+  const o = data.order;
+  const items = data.items || [];
+  const invoice = data.invoice;
+  const walletTxs = data.wallet_transactions || [];
+
+  titleEl.textContent = `Order ${o.order_number}`;
+  subtitleEl.textContent = `Created ${formatDate(o.created_at)} • ${o.user_name} (${o.user_email})`;
+
+  let html = '';
+
+  // ── Order summary section ──
+  html += `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-bottom:24px;">
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--admin-text-muted);margin-bottom:2px;">Status</div>
+        <div>${getOrderStatusBadge(o.status)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--admin-text-muted);margin-bottom:2px;">Total</div>
+        <div style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;">${formatUSD(o.total_cents)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--admin-text-muted);margin-bottom:2px;">Payment Method</div>
+        <div>${getPaymentBadge(o.payment_method)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--admin-text-muted);margin-bottom:2px;">Currency</div>
+        <div style="font-weight:600;">${esc(o.currency)}${o.payment_currency && o.payment_currency !== o.currency ? ` → ${esc(o.payment_currency)}` : ''}</div>
+      </div>
+      ${o.fx_rate ? `
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--admin-text-muted);margin-bottom:2px;">FX Rate</div>
+        <div style="font-weight:500;">${esc(o.fx_rate)}${o.fx_provider ? ` <span style="font-size:11px;color:var(--admin-text-muted);">(${esc(o.fx_provider)})</span>` : ''}</div>
+      </div>` : ''}
+      ${o.payment_ref_id ? `
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--admin-text-muted);margin-bottom:2px;">Payment Ref</div>
+        <div style="font-family:monospace;font-size:12px;word-break:break-all;">${esc(o.payment_ref_id)}</div>
+      </div>` : ''}
+      ${o.completed_at ? `
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--admin-text-muted);margin-bottom:2px;">Completed</div>
+        <div style="font-size:13px;">${formatDate(o.completed_at)}</div>
+      </div>` : ''}
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--admin-text-muted);margin-bottom:2px;">Customer</div>
+        <div><a href="/admin/user-details?id=${esc(o.user_id)}" class="admin-link" style="font-weight:600;">${esc(o.user_name)}</a></div>
+        <div style="font-size:12px;color:var(--admin-text-muted);">${esc(o.user_email)}</div>
+      </div>
+    </div>`;
+
+  // ── Proof of Transfer ──
+  if (o.proof_of_transfer_url) {
+    html += `
+    <div style="margin-bottom:20px;padding:12px 16px;border-radius:var(--admin-radius-sm);border:1px solid var(--admin-border);background:var(--admin-hover-overlay);">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--admin-text-muted);margin-bottom:6px;">Proof of Transfer</div>
+      <a href="${esc(o.proof_of_transfer_url)}" target="_blank" class="admin-link" style="font-size:13px;word-break:break-all;">View uploaded proof →</a>
+    </div>`;
+  }
+
+  // ── Line Items table ──
+  html += `
+    <div style="margin-bottom:20px;">
+      <h3 style="font-size:13px;font-weight:600;color:var(--admin-text-primary);margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;">Line Items (${items.length})</h3>
+      <div style="border:1px solid var(--admin-border);border-radius:var(--admin-radius-sm);overflow:hidden;">
+        <table class="admin-table" style="margin:0;">
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th style="text-align:right;">Qty</th>
+              <th style="text-align:right;">Price/Token</th>
+              <th style="text-align:right;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+  if (items.length === 0) {
+    html += `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--admin-text-muted);">No line items</td></tr>`;
+  } else {
+    for (const item of items) {
+      html += `
+            <tr>
+              <td style="font-weight:600;color:var(--admin-text-primary);">
+                <a href="/admin/asset-details?id=${esc(item.asset_id)}" class="admin-link">${esc(item.asset_title)}</a>
+              </td>
+              <td style="text-align:right;font-variant-numeric:tabular-nums;">${item.tokens_quantity.toLocaleString()}</td>
+              <td style="text-align:right;font-variant-numeric:tabular-nums;">${formatUSD(item.token_price_cents)}</td>
+              <td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">${formatUSD(item.subtotal_cents)}</td>
+            </tr>`;
+    }
+  }
+
+  html += `
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+
+  // ── Invoice section ──
+  if (invoice) {
+    html += `
+    <div style="margin-bottom:20px;">
+      <h3 style="font-size:13px;font-weight:600;color:var(--admin-text-primary);margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;">Invoice</h3>
+      <div style="padding:14px 16px;border:1px solid var(--admin-border);border-radius:var(--admin-radius-sm);background:var(--admin-hover-overlay);">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 16px;">
+          <div>
+            <div style="font-size:11px;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:.4px;">Invoice #</div>
+            <div style="font-weight:600;font-family:monospace;font-size:13px;">${esc(invoice.invoice_number)}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:.4px;">Status</div>
+            <div><span class="admin-badge ${invoice.status === 'issued' ? 'admin-badge--success' : 'admin-badge--neutral'}">${esc(invoice.status)}</span></div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:.4px;">Total</div>
+            <div style="font-weight:700;font-variant-numeric:tabular-nums;">${formatUSD(invoice.total_cents)}</div>
+          </div>
+        </div>
+        ${invoice.pdf_url ? `<div style="margin-top:10px;"><a href="${esc(invoice.pdf_url)}" target="_blank" class="admin-link" style="font-size:13px;">📄 Download PDF</a></div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // ── Wallet Transactions ──
+  if (walletTxs.length > 0) {
+    html += `
+    <div style="margin-bottom:12px;">
+      <h3 style="font-size:13px;font-weight:600;color:var(--admin-text-primary);margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;">Wallet Transactions (${walletTxs.length})</h3>
+      <div style="border:1px solid var(--admin-border);border-radius:var(--admin-radius-sm);overflow:hidden;">
+        <table class="admin-table" style="margin:0;">
+          <thead><tr><th>Type</th><th>Status</th><th style="text-align:right;">Amount</th><th>Description</th><th>Date</th></tr></thead>
+          <tbody>`;
+    for (const tx of walletTxs) {
+      const txStatusMap = {
+        completed: 'admin-badge--success',
+        pending: 'admin-badge--warning',
+        failed: 'admin-badge--danger',
+      };
+      html += `
+            <tr>
+              <td style="font-weight:600;text-transform:capitalize;">${esc(tx.type.replace('_', ' '))}</td>
+              <td><span class="admin-badge ${txStatusMap[tx.status] || 'admin-badge--neutral'}">${esc(tx.status)}</span></td>
+              <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;">${formatUSD(tx.amount_cents)}</td>
+              <td style="font-size:12px;color:var(--admin-text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(tx.description || '—')}</td>
+              <td style="font-size:12px;color:var(--admin-text-muted);white-space:nowrap;">${formatDate(tx.created_at)}</td>
+            </tr>`;
+    }
+    html += `
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  bodyEl.innerHTML = html;
 }

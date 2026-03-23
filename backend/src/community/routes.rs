@@ -958,7 +958,7 @@ pub struct HidePostPayload {
 }
 
 async fn admin_hide_post(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(post_id): Path<Uuid>,
     Json(payload): Json<HidePostPayload>,
@@ -971,6 +971,8 @@ async fn admin_hide_post(
         .execute(&c_pool)
         .await?;
 
+    crate::community::audit::log(&c_pool, admin.user.id, "post.hide", "post", Some(post_id), None, Some(serde_json::json!({"reason": payload.reason}))).await;
+
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
@@ -980,7 +982,7 @@ pub struct ToggleLockPayload {
 }
 
 async fn admin_toggle_lock_post(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(post_id): Path<Uuid>,
     Json(payload): Json<ToggleLockPayload>,
@@ -992,6 +994,9 @@ async fn admin_toggle_lock_post(
         .bind(post_id)
         .execute(&c_pool)
         .await?;
+
+    let action = if payload.is_locked { "post.lock" } else { "post.unlock" };
+    crate::community::audit::log(&c_pool, admin.user.id, action, "post", Some(post_id), None, None).await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1207,7 +1212,7 @@ pub struct BanUserPayload {
 }
 
 async fn admin_toggle_ban_user(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<BanUserPayload>,
@@ -1221,6 +1226,9 @@ async fn admin_toggle_ban_user(
         .execute(&c_pool)
         .await?;
 
+    let action = if payload.is_banned { "user.ban" } else { "user.unban" };
+    crate::community::audit::log(&c_pool, admin.user.id, action, "user", None, Some(user_id), Some(serde_json::json!({"reason": payload.reason}))).await;
+
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
@@ -1230,7 +1238,7 @@ pub struct MuteUserPayload {
 }
 
 async fn admin_mute_user(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<MuteUserPayload>,
@@ -1245,6 +1253,9 @@ async fn admin_mute_user(
         .execute(&c_pool)
         .await?;
 
+    let action = if payload.hours.is_some() { "user.mute" } else { "user.unmute" };
+    crate::community::audit::log(&c_pool, admin.user.id, action, "user", None, Some(user_id), Some(serde_json::json!({"hours": payload.hours}))).await;
+
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
@@ -1254,7 +1265,7 @@ pub struct ShadowbanPayload {
 }
 
 async fn admin_toggle_shadowban(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<ShadowbanPayload>,
@@ -1267,6 +1278,9 @@ async fn admin_toggle_shadowban(
         .execute(&c_pool)
         .await?;
 
+    let action = if payload.is_shadowbanned { "user.shadowban" } else { "user.unshadowban" };
+    crate::community::audit::log(&c_pool, admin.user.id, action, "user", None, Some(user_id), None).await;
+
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
@@ -1276,7 +1290,7 @@ pub struct WarnUserPayload {
 }
 
 async fn admin_warn_user(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<WarnUserPayload>,
@@ -1298,6 +1312,8 @@ async fn admin_warn_user(
         &format!("Warning from Admin: {}", payload.reason), 
         None
     ).await?;
+
+    crate::community::audit::log(&c_pool, admin.user.id, "user.warn", "user", None, Some(user_id), Some(serde_json::json!({"reason": payload.reason}))).await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1382,7 +1398,7 @@ pub struct HideCommentPayload {
 }
 
 async fn admin_hide_comment(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(comment_id): Path<Uuid>,
     Json(_payload): Json<HideCommentPayload>,
@@ -1394,11 +1410,13 @@ async fn admin_hide_comment(
         .execute(&c_pool)
         .await?;
 
+    crate::community::audit::log(&c_pool, admin.user.id, "comment.hide", "comment", Some(comment_id), None, None).await;
+
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
 async fn admin_delete_comment(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(comment_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -1409,6 +1427,8 @@ async fn admin_delete_comment(
         .execute(&c_pool)
         .await?;
 
+    crate::community::audit::log(&c_pool, admin.user.id, "comment.delete", "comment", Some(comment_id), None, None).await;
+
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
@@ -1418,7 +1438,7 @@ pub struct TogglePinCommentPayload {
 }
 
 async fn admin_toggle_pin_comment(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(comment_id): Path<Uuid>,
     Json(payload): Json<TogglePinCommentPayload>,
@@ -1430,6 +1450,9 @@ async fn admin_toggle_pin_comment(
         .bind(comment_id)
         .execute(&c_pool)
         .await?;
+
+    let action = if payload.is_pinned { "comment.pin" } else { "comment.unpin" };
+    crate::community::audit::log(&c_pool, admin.user.id, action, "comment", Some(comment_id), None, None).await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1492,7 +1515,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/community/circles/me", get(get_my_circle))
         .route("/api/community/circles/leaderboard", get(get_circle_leaderboard))
         .route("/api/community/circles/:id", get(get_circle_detail))
-        .route("/api/community/circles/:id", put(update_circle))
+        .route("/api/community/circles/:id", put(update_circle).delete(delete_own_circle_handler))
         .route("/api/community/circles/:id/members", get(get_circle_members))
         .route("/api/community/circles/:id/join", post(join_circle))
         .route("/api/community/circles/leave", post(leave_circle))
@@ -1504,6 +1527,14 @@ pub fn router() -> Router<AppState> {
         .route("/api/community/circles/:id/transfer", post(transfer_circle_ownership))
         // M4-BE.13: Update circle privacy (public/private)
         .route("/api/community/circles/:id/privacy", post(update_circle_privacy))
+        // M4-BE.15: Join requests for private circles
+        .route("/api/community/circles/:id/request", post(request_to_join_circle).delete(cancel_join_request_handler))
+        .route("/api/community/circles/:id/requests", get(list_join_requests))
+        .route("/api/community/circles/requests/mine", get(get_my_join_requests_handler))
+        .route("/api/community/circles/requests/:req_id/approve", post(approve_join_request_handler))
+        .route("/api/community/circles/requests/:req_id/decline", post(decline_join_request_handler))
+        // W3.1: Token-Gated Circles
+        .route("/api/community/circles/:id/token-gate", post(update_circle_token_gate))
         .route("/api/community/invites", get(get_my_invites))
         .route("/api/community/invites/:id/accept", post(accept_invite))
         .route("/api/community/invites/:id/decline", post(decline_invite))
@@ -1545,6 +1576,18 @@ pub fn router() -> Router<AppState> {
         // Admin Leaderboard (M4-ADMIN)
         .route("/api/admin/community/leaderboard", get(admin_get_leaderboard))
         .route("/api/admin/community/users/:id/xp", post(admin_award_xp))
+        // Admin Audit Log (M2-ADMIN.7)
+        .route("/api/admin/community/audit-log", get(admin_get_community_audit_log))
+        // Bookmarks (UX.6)
+        .route("/api/community/bookmarks", get(list_bookmarks))
+        .route("/api/community/posts/:id/bookmark", post(toggle_bookmark))
+        .route("/api/community/posts/:id/bookmark/status", get(get_bookmark_status))
+        // Polls (UX.11)
+        .route("/api/community/posts/:id/poll/vote", post(vote_on_poll))
+        .route("/api/community/posts/:id/poll", get(get_poll_results))
+        // Hashtags (UX.4)
+        .route("/api/community/hashtags/trending", get(get_trending_hashtags))
+        .route("/api/community/hashtags/:tag", get(get_posts_by_hashtag))
 }
 
 // ─── Social Handlers ─────────────────────────────────────────────────────────
@@ -1939,6 +1982,20 @@ async fn update_circle(
     Ok(Json(circle))
 }
 
+async fn delete_own_circle_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    crate::community::circles::delete_own_circle(&c_pool, user.id, circle_id).await?;
+    Ok(Json(serde_json::json!({"success": true})))
+}
+
 async fn get_circle_members(
     jar: CookieJar,
     State(state): State<AppState>,
@@ -1963,6 +2020,10 @@ async fn join_circle(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
+
+    // W3.1: Check token gate requirement before allowing join
+    crate::community::circles::check_token_gate(&c_pool, &state.db, user.id, circle_id).await?;
+
     crate::community::circles::join_circle(&c_pool, user.id, circle_id).await?;
 
     // Award XP
@@ -2107,6 +2168,222 @@ async fn update_circle_privacy(
     ).await?;
 
     Ok(Json(serde_json::json!({"success": true, "is_public": payload.is_public})))
+}
+
+// ─── W3.1: Token-Gated Circle Management ───────────────────────────────────
+
+#[derive(Debug, serde::Deserialize)]
+struct UpdateTokenGateReq {
+    /// If None, clears the token gate
+    asset_id: Option<Uuid>,
+    /// Minimum value in cents (e.g. 100000 = $1,000)
+    min_value_cents: Option<i64>,
+}
+
+/// POST /api/community/circles/:id/token-gate — set or clear the token gate
+async fn update_circle_token_gate(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(payload): Json<UpdateTokenGateReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    // Validate min_value_cents is non-negative if provided
+    if let Some(cents) = payload.min_value_cents {
+        if cents < 0 {
+            return Err(AppError::BadRequest("min_value_cents must be non-negative".into()));
+        }
+    }
+
+    let circle = crate::community::circles::update_token_gate(
+        &c_pool,
+        &state.db,
+        user.id,
+        circle_id,
+        payload.asset_id,
+        payload.min_value_cents,
+    ).await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "circle": circle,
+    })))
+}
+
+// ─── M4-BE.15: Join Request Handlers ───────────────────────────────────────
+
+/// POST /api/community/circles/:id/request — request to join a private circle
+async fn request_to_join_circle(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    // W3.1: Check token gate requirement before allowing join request
+    crate::community::circles::check_token_gate(&c_pool, &state.db, user.id, circle_id).await?;
+
+    let req = crate::community::circles::request_to_join(&c_pool, user.id, circle_id).await?;
+
+    // Notify circle owner
+    let owner_id: Option<Uuid> = sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .fetch_optional(&c_pool)
+        .await?;
+
+    if let Some(oid) = owner_id {
+        let _ = crate::community::notifications::notify_user(
+            &c_pool,
+            oid,
+            Some(user.id),
+            "circle_join_request",
+            Some(circle_id),
+            "Someone has requested to join your circle",
+            Some(&format!("/community?tab=my-circle")),
+        ).await;
+    }
+
+    Ok(Json(req))
+}
+
+/// DELETE /api/community/circles/:id/request — cancel your own join request
+async fn cancel_join_request_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    // Find the pending request ID for this user + circle
+    let req_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM circle_join_requests WHERE circle_id = $1 AND user_id = $2 AND status = 'pending'"
+    )
+    .bind(circle_id)
+    .bind(user.id)
+    .fetch_optional(&c_pool)
+    .await?;
+
+    let req_id = req_id.ok_or_else(|| AppError::NotFound("No pending request found.".into()))?;
+    crate::community::circles::cancel_join_request(&c_pool, user.id, req_id).await?;
+
+    Ok(Json(serde_json::json!({"success": true})))
+}
+
+/// GET /api/community/circles/:id/requests — list pending requests (owner/admin)
+async fn list_join_requests(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let requests = crate::community::circles::get_pending_join_requests(&c_pool, user.id, circle_id).await?;
+
+    // Enrich with names from core DB
+    let user_ids: Vec<Uuid> = requests.iter().map(|r| r.user_id).collect();
+    let names = crate::community::user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+
+    let enriched: Vec<serde_json::Value> = requests.iter().map(|r| {
+        let info = names.get(&r.user_id);
+        serde_json::json!({
+            "id": r.id,
+            "circle_id": r.circle_id,
+            "user_id": r.user_id,
+            "user_name": info.map(|i| i.display_name.clone()).unwrap_or_else(|| "Unknown".into()),
+            "user_avatar": info.and_then(|i| i.avatar_url.clone()),
+            "status": r.status,
+            "created_at": r.created_at,
+        })
+    }).collect();
+
+    Ok(Json(serde_json::json!({"requests": enriched})))
+}
+
+/// GET /api/community/circles/requests/mine — my own pending join requests
+async fn get_my_join_requests_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let requests = crate::community::circles::get_my_join_requests(&c_pool, user.id).await?;
+    Ok(Json(serde_json::json!({"requests": requests})))
+}
+
+/// POST /api/community/circles/requests/:req_id/approve — approve a join request
+async fn approve_join_request_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(request_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let approved_user_id = crate::community::circles::approve_join_request(&c_pool, user.id, request_id).await?;
+
+    // Award XP to the new member
+    let _ = crate::community::xp::award_xp(&c_pool, approved_user_id, "circle_joined", Some("Joined a circle via request"), None).await;
+
+    // Notify the approved user
+    let _ = crate::community::notifications::notify_user(
+        &c_pool,
+        approved_user_id,
+        Some(user.id),
+        "circle_request_approved",
+        None,
+        "Your request to join the circle has been approved! Welcome!",
+        Some("/community?tab=my-circle"),
+    ).await;
+
+    Ok(Json(serde_json::json!({"success": true})))
+}
+
+/// POST /api/community/circles/requests/:req_id/decline — decline a join request
+async fn decline_join_request_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(request_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let declined_user_id = crate::community::circles::decline_join_request(&c_pool, user.id, request_id).await?;
+
+    // Notify the declined user
+    let _ = crate::community::notifications::notify_user(
+        &c_pool,
+        declined_user_id,
+        None,
+        "circle_request_declined",
+        None,
+        "Your request to join the circle was not approved this time.",
+        Some("/community?tab=my-circle"),
+    ).await;
+
+    Ok(Json(serde_json::json!({"success": true})))
 }
 
 async fn get_my_invites(
@@ -2291,8 +2568,17 @@ async fn list_notifications(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let limit = _q.get("limit").and_then(|l| l.parse::<i64>().ok()).unwrap_or(50);
+    let offset = _q.get("offset").and_then(|o| o.parse::<i64>().ok()).unwrap_or(0);
+    
     let c_pool = get_community_pool(&state)?;
-    let notifications = crate::community::notifications::get_my_notifications(&c_pool, user.id, limit).await?;
+    let notifications = crate::community::notifications::get_my_notifications(
+        &c_pool, 
+        &state.db, 
+        state.redis.as_ref(), 
+        user.id, 
+        limit, 
+        offset
+    ).await?;
 
     Ok(Json(serde_json::json!({ "notifications": notifications })))
 }
@@ -2767,22 +3053,24 @@ async fn admin_list_circles(
 }
 
 async fn admin_delete_circle(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(circle_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::admin_delete_circle(&c_pool, circle_id).await?;
+    crate::community::audit::log(&c_pool, admin.user.id, "circle.delete", "circle", Some(circle_id), None, None).await;
     Ok(Json(serde_json::json!({ "status": "deleted" })))
 }
 
 async fn admin_remove_circle_member(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path((circle_id, target_id)): Path<(Uuid, Uuid)>,
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::admin_remove_member(&c_pool, circle_id, target_id).await?;
+    crate::community::audit::log(&c_pool, admin.user.id, "circle.remove_member", "circle", Some(circle_id), Some(target_id), None).await;
     Ok(Json(serde_json::json!({ "status": "removed" })))
 }
 
@@ -2811,7 +3099,7 @@ struct AdminUpdateCircleReq {
 }
 
 async fn admin_update_circle(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(circle_id): Path<Uuid>,
     Json(payload): Json<AdminUpdateCircleReq>,
@@ -2820,6 +3108,7 @@ async fn admin_update_circle(
     let circle = crate::community::circles::admin_force_update_circle(
         &c_pool, circle_id, payload.name.as_deref(), payload.description.as_deref(), payload.avatar_emoji.as_deref(), payload.is_public
     ).await?;
+    crate::community::audit::log(&c_pool, admin.user.id, "circle.update", "circle", Some(circle_id), None, None).await;
     
     Ok(Json(serde_json::json!({ "circle": circle })))
 }
@@ -2830,13 +3119,14 @@ struct AdminTransferCircleReq {
 }
 
 async fn admin_transfer_circle(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(circle_id): Path<Uuid>,
     Json(payload): Json<AdminTransferCircleReq>,
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::admin_force_transfer_circle(&c_pool, circle_id, payload.new_owner_id).await?;
+    crate::community::audit::log(&c_pool, admin.user.id, "circle.transfer", "circle", Some(circle_id), Some(payload.new_owner_id), None).await;
     
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -2862,7 +3152,7 @@ struct AdminAwardXpReq {
 }
 
 async fn admin_award_xp(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<AdminAwardXpReq>,
@@ -2882,7 +3172,58 @@ async fn admin_award_xp(
         crate::community::xp::update_user_level(&c_pool, user_id).await?;
     }
 
+    crate::community::audit::log(&c_pool, admin.user.id, "xp.award", "user", None, Some(user_id), Some(serde_json::json!({"amount": payload.amount, "reason": payload.reason_label}))).await;
+
     Ok(Json(serde_json::json!({ "status": "xp_awarded", "amount": amount_awarded })))
+}
+
+// ─── Admin Audit Log API (M2-ADMIN.7) ────────────────────────────────────────
+
+async fn admin_get_community_audit_log(
+    _admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+    let limit = q.get("limit").and_then(|l| l.parse::<i64>().ok()).unwrap_or(50).min(200);
+    let offset = q.get("offset").and_then(|o| o.parse::<i64>().ok()).unwrap_or(0);
+    let entity_type_filter = q.get("entity_type").cloned();
+    let action_filter = q.get("action").cloned();
+
+    // Build dynamic query
+    let mut conditions = vec!["1=1".to_string()];
+    if let Some(ref et) = entity_type_filter {
+        conditions.push(format!("entity_type = '{}'", et.replace('\'', "")));
+    }
+    if let Some(ref act) = action_filter {
+        conditions.push(format!("action = '{}'", act.replace('\'', "")));
+    }
+    let where_clause = conditions.join(" AND ");
+
+    let sql = format!(
+        "SELECT id, actor_user_id, action, entity_type, entity_id, target_user_id, details, created_at \
+         FROM community_audit_logs WHERE {} ORDER BY created_at DESC LIMIT {} OFFSET {}",
+        where_clause, limit, offset
+    );
+
+    let rows = sqlx::query_as::<_, (Uuid, Option<Uuid>, String, String, Option<Uuid>, Option<Uuid>, serde_json::Value, chrono::DateTime<chrono::Utc>)>(&sql)
+        .fetch_all(&c_pool)
+        .await?;
+
+    let entries: Vec<serde_json::Value> = rows.iter().map(|r| {
+        serde_json::json!({
+            "id": r.0,
+            "actor_user_id": r.1,
+            "action": r.2,
+            "entity_type": r.3,
+            "entity_id": r.4,
+            "target_user_id": r.5,
+            "details": r.6,
+            "created_at": r.7,
+        })
+    }).collect();
+
+    Ok(Json(serde_json::json!({ "logs": entries, "count": entries.len() })))
 }
 
 // ─── Ban Appeals Handlers (M7-BE.5) ──────────────────────────────────────────
@@ -3047,3 +3388,450 @@ async fn review_ban_appeal(
 
     Ok(Json(serde_json::json!({"success": true, "status": status})))
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// UX.6 — BOOKMARKS / SAVED POSTS
+// ═══════════════════════════════════════════════════════════════════
+
+/// Toggle bookmark on a post. If already bookmarked, removes it. Returns {"bookmarked": true/false}.
+async fn toggle_bookmark(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    // Check if already bookmarked
+    let existing: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM bookmarks WHERE user_id = $1 AND post_id = $2"
+    )
+    .bind(user.id)
+    .bind(post_id)
+    .fetch_optional(&c_pool)
+    .await?;
+
+    if let Some(_) = existing {
+        // Remove bookmark
+        sqlx::query("DELETE FROM bookmarks WHERE user_id = $1 AND post_id = $2")
+            .bind(user.id)
+            .bind(post_id)
+            .execute(&c_pool)
+            .await?;
+        Ok(Json(serde_json::json!({"bookmarked": false})))
+    } else {
+        // Verify post exists and is not hidden
+        let post_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM posts WHERE id = $1 AND is_hidden = false)"
+        )
+        .bind(post_id)
+        .fetch_one(&c_pool)
+        .await?;
+
+        if !post_exists {
+            return Err(AppError::NotFound("Post not found".into()));
+        }
+
+        // Add bookmark
+        sqlx::query("INSERT INTO bookmarks (user_id, post_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
+            .bind(user.id)
+            .bind(post_id)
+            .execute(&c_pool)
+            .await?;
+        Ok(Json(serde_json::json!({"bookmarked": true})))
+    }
+}
+
+/// Get bookmark status for a post
+async fn get_bookmark_status(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    let is_bookmarked: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM bookmarks WHERE user_id = $1 AND post_id = $2)"
+    )
+    .bind(user.id)
+    .bind(post_id)
+    .fetch_one(&c_pool)
+    .await?;
+
+    Ok(Json(serde_json::json!({"bookmarked": is_bookmarked})))
+}
+
+/// List all bookmarked posts for the current user (paginated, newest first)
+#[derive(Deserialize)]
+pub struct BookmarkQuery {
+    pub page: Option<i64>,
+}
+
+async fn list_bookmarks(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Query(query): Query<BookmarkQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    let limit: i64 = 20;
+    let offset = (query.page.unwrap_or(1).max(1) - 1) * limit;
+
+    let posts = sqlx::query_as::<_, models::Post>(
+        r#"
+        SELECT p.*
+        FROM bookmarks b
+        JOIN posts p ON b.post_id = p.id
+        WHERE b.user_id = $1 AND p.is_hidden = false
+        ORDER BY b.created_at DESC
+        LIMIT $2 OFFSET $3
+        "#
+    )
+    .bind(user.id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&c_pool)
+    .await?;
+
+    // Build user_ids list for batch fetching
+    let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
+    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
+
+    let mut feed = Vec::with_capacity(posts.len());
+    for p in posts {
+        let author = authors.get(&p.user_id);
+        let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
+
+        feed.push(PostDisplay {
+            id: p.id,
+            author_name: author
+                .map(|a| a.display_name.clone())
+                .unwrap_or_else(|| "Anonymous".into()),
+            author_id: p.user_id,
+            author_avatar: author.and_then(|a| a.avatar_url.clone()),
+            author_badges,
+            post_type: p.post_type.clone(),
+            content: p.content_sanitized.unwrap_or(p.content),
+            asset_id: p.asset_id,
+            image_urls: p.image_urls.unwrap_or_default(),
+            link_preview: p.link_preview,
+            reaction_count: p.reaction_count,
+            comment_count: p.comment_count,
+            is_hidden: p.is_hidden,
+            is_pinned: p.is_pinned,
+            disclaimer_shown: p.disclaimer_shown,
+            verified_owner: false,
+            created_at: p.created_at,
+        });
+    }
+
+    Ok(Json(feed))
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UX.11 — NATIVE POLLS & SURVEYS
+// ═══════════════════════════════════════════════════════════════════
+
+#[derive(Deserialize)]
+pub struct VotePollReq {
+    pub option_id: Uuid,
+}
+
+/// Vote on a poll option. Users can only vote once per poll (unless allows_multiple).
+async fn vote_on_poll(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+    Json(payload): Json<VotePollReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    check_user_not_banned(&c_pool, user.id).await?;
+
+    use sqlx::Row;
+
+    // Get the poll for this post
+    let poll_row = sqlx::query(
+        "SELECT id, allows_multiple, expires_at FROM polls WHERE post_id = $1"
+    )
+    .bind(post_id)
+    .fetch_optional(&c_pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("No poll found for this post".into()))?;
+
+    let poll_id: Uuid = poll_row.try_get("id")?;
+    let allows_multiple: bool = poll_row.try_get("allows_multiple")?;
+    let expires_at: Option<chrono::DateTime<chrono::Utc>> = poll_row.try_get("expires_at")?;
+
+    // Check if poll has expired
+    if let Some(exp) = expires_at {
+        if exp < chrono::Utc::now() {
+            return Err(AppError::BadRequest("This poll has expired".into()));
+        }
+    }
+
+    // Verify the option belongs to this poll
+    let option_valid: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM poll_options WHERE id = $1 AND poll_id = $2)"
+    )
+    .bind(payload.option_id)
+    .bind(poll_id)
+    .fetch_one(&c_pool)
+    .await?;
+
+    if !option_valid {
+        return Err(AppError::BadRequest("Invalid poll option".into()));
+    }
+
+    let mut tx = c_pool.begin().await?;
+
+    if !allows_multiple {
+        // Remove any existing vote on this poll
+        sqlx::query("DELETE FROM poll_votes WHERE poll_id = $1 AND user_id = $2")
+            .bind(poll_id)
+            .bind(user.id)
+            .execute(&mut *tx)
+            .await?;
+    } else {
+        // Check for existing vote on the same option
+        let already_voted: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM poll_votes WHERE poll_id = $1 AND user_id = $2 AND option_id = $3)"
+        )
+        .bind(poll_id)
+        .bind(user.id)
+        .bind(payload.option_id)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        if already_voted {
+            // Toggle off — remove this vote
+            sqlx::query("DELETE FROM poll_votes WHERE poll_id = $1 AND user_id = $2 AND option_id = $3")
+                .bind(poll_id)
+                .bind(user.id)
+                .bind(payload.option_id)
+                .execute(&mut *tx)
+                .await?;
+            tx.commit().await?;
+            return Ok(Json(serde_json::json!({"voted": false, "option_id": payload.option_id})));
+        }
+    }
+
+    // Insert new vote
+    sqlx::query(
+        "INSERT INTO poll_votes (poll_id, option_id, user_id) VALUES ($1, $2, $3)"
+    )
+    .bind(poll_id)
+    .bind(payload.option_id)
+    .bind(user.id)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({"voted": true, "option_id": payload.option_id})))
+}
+
+/// Get poll results for a post, including whether the current user has voted
+async fn get_poll_results(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(post_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db).await;
+    let c_pool = get_community_pool(&state)?;
+
+    use sqlx::Row;
+
+    // Get poll
+    let poll_row = sqlx::query(
+        "SELECT id, question, allows_multiple, total_votes, expires_at FROM polls WHERE post_id = $1"
+    )
+    .bind(post_id)
+    .fetch_optional(&c_pool)
+    .await?;
+
+    let poll_row = match poll_row {
+        Some(r) => r,
+        None => return Ok(Json(serde_json::json!(null))),
+    };
+
+    let poll_id: Uuid = poll_row.try_get("id")?;
+    let question: String = poll_row.try_get("question")?;
+    let allows_multiple: bool = poll_row.try_get("allows_multiple")?;
+    let total_votes: i32 = poll_row.try_get("total_votes")?;
+    let expires_at: Option<chrono::DateTime<chrono::Utc>> = poll_row.try_get("expires_at")?;
+
+    let is_expired = expires_at.map(|e| e < chrono::Utc::now()).unwrap_or(false);
+
+    // Get options with vote counts
+    let option_rows = sqlx::query(
+        "SELECT id, label, sort_order, vote_count FROM poll_options WHERE poll_id = $1 ORDER BY sort_order ASC"
+    )
+    .bind(poll_id)
+    .fetch_all(&c_pool)
+    .await?;
+
+    // Get user's votes (if logged in)
+    let user_voted_options: Vec<Uuid> = if let Some(ref u) = user {
+        sqlx::query_scalar(
+            "SELECT option_id FROM poll_votes WHERE poll_id = $1 AND user_id = $2"
+        )
+        .bind(poll_id)
+        .bind(u.id)
+        .fetch_all(&c_pool)
+        .await?
+    } else {
+        vec![]
+    };
+
+    let has_voted = !user_voted_options.is_empty();
+
+    let options: Vec<serde_json::Value> = option_rows.iter().map(|r| {
+        let opt_id: Uuid = r.try_get("id").unwrap_or_default();
+        let label: String = r.try_get("label").unwrap_or_default();
+        let vote_count: i32 = r.try_get("vote_count").unwrap_or(0);
+        let pct = if total_votes > 0 { (vote_count as f64 / total_votes as f64 * 100.0).round() as i32 } else { 0 };
+
+        serde_json::json!({
+            "id": opt_id,
+            "label": label,
+            "vote_count": vote_count,
+            "percentage": pct,
+            "user_voted": user_voted_options.contains(&opt_id),
+        })
+    }).collect();
+
+    Ok(Json(serde_json::json!({
+        "poll_id": poll_id,
+        "question": question,
+        "allows_multiple": allows_multiple,
+        "total_votes": total_votes,
+        "is_expired": is_expired,
+        "expires_at": expires_at,
+        "has_voted": has_voted,
+        "options": options,
+    })))
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UX.4 — HASHTAG ARCHITECTURE
+// ═══════════════════════════════════════════════════════════════════
+
+/// Get trending hashtags (top 20 by post_count)
+async fn get_trending_hashtags(
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let c_pool = get_community_pool(&state)?;
+
+    use sqlx::Row;
+
+    let rows = sqlx::query(
+        "SELECT id, tag, post_count FROM hashtags WHERE post_count > 0 ORDER BY post_count DESC LIMIT 20"
+    )
+    .fetch_all(&c_pool)
+    .await?;
+
+    let hashtags: Vec<serde_json::Value> = rows.iter().map(|r| {
+        serde_json::json!({
+            "id": r.try_get::<Uuid, _>("id").unwrap_or_default(),
+            "tag": r.try_get::<String, _>("tag").unwrap_or_default(),
+            "post_count": r.try_get::<i32, _>("post_count").unwrap_or(0),
+        })
+    }).collect();
+
+    Ok(Json(hashtags))
+}
+
+/// Get posts by a specific hashtag
+#[derive(Deserialize)]
+pub struct HashtagPostsQuery {
+    pub page: Option<i64>,
+}
+
+async fn get_posts_by_hashtag(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(tag): Path<String>,
+    Query(query): Query<HashtagPostsQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let _user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+
+    let limit: i64 = 20;
+    let offset = (query.page.unwrap_or(1).max(1) - 1) * limit;
+
+    let clean_tag = tag.to_lowercase().trim_start_matches('#').to_string();
+
+    let posts = sqlx::query_as::<_, models::Post>(
+        r#"
+        SELECT p.*
+        FROM posts p
+        JOIN post_hashtags ph ON p.id = ph.post_id
+        JOIN hashtags h ON ph.hashtag_id = h.id
+        WHERE h.tag = $1 AND p.is_hidden = false
+        ORDER BY p.created_at DESC
+        LIMIT $2 OFFSET $3
+        "#
+    )
+    .bind(&clean_tag)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&c_pool)
+    .await?;
+
+    let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
+    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
+
+    let mut feed = Vec::with_capacity(posts.len());
+    for p in posts {
+        let author = authors.get(&p.user_id);
+        let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
+
+        feed.push(PostDisplay {
+            id: p.id,
+            author_name: author
+                .map(|a| a.display_name.clone())
+                .unwrap_or_else(|| "Anonymous".into()),
+            author_id: p.user_id,
+            author_avatar: author.and_then(|a| a.avatar_url.clone()),
+            author_badges,
+            post_type: p.post_type.clone(),
+            content: p.content_sanitized.unwrap_or(p.content),
+            asset_id: p.asset_id,
+            image_urls: p.image_urls.unwrap_or_default(),
+            link_preview: p.link_preview,
+            reaction_count: p.reaction_count,
+            comment_count: p.comment_count,
+            is_hidden: p.is_hidden,
+            is_pinned: p.is_pinned,
+            disclaimer_shown: p.disclaimer_shown,
+            verified_owner: false,
+            created_at: p.created_at,
+        });
+    }
+
+    Ok(Json(serde_json::json!({
+        "tag": clean_tag,
+        "posts": feed,
+    })))
+}
+

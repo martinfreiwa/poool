@@ -1,0 +1,84 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# POOOL Platform — Python Test Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+
+[project]
+name = "poool-e2e-tests"
+version = "1.0.0"
+description = "E2E & Integration Tests for the POOOL Platform"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-playwright>=0.5.0",
+    "pytest-base-url>=2.0",
+    "pytest-html>=4.0",
+    "pytest-xdist>=3.5",           # Parallel test execution
+    "pytest-rerunfailures>=14.0",  # Auto-retry flaky tests
+    "pytest-timeout>=2.3",        # Per-test timeout enforcement
+    "psycopg2-binary>=2.9",
+]
+
+# ─── pytest configuration ─────────────────────────────────────────────────
+
+[tool.pytest.ini_options]
+testpaths = ["tests/e2e"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Base URL for playwright (used by pytest-base-url plugin)
+base_url = "http://localhost:8888"
+
+# Default timeout for each individual test (seconds)
+timeout = 60
+
+# Markers for categorizing tests
+markers = [
+    "smoke: Quick page-load health checks (< 5 sec each)",
+    "auth: Authentication flows (login, signup, OAuth, 2FA)",
+    "admin: Admin dashboard and operational flows",
+    "marketplace: Marketplace, trading, and asset flows",
+    "wallet: Wallet deposits, withdrawals, balance",
+    "developer: Developer/issuer dashboard pipeline",
+    "settings: User settings and preferences",
+    "community: Social features, circles, posts, AMAs",
+    "legal: Legal and regulatory pages",
+    "financial: Any test touching monetary values (CRITICAL)",
+    "mobile: Tests parameterized for mobile viewport",
+    "desktop: Tests parameterized for desktop viewport",
+    "slow: Tests that take > 15 seconds",
+    "destructive: Tests that modify DB state significantly",
+]
+
+# Console output settings
+addopts = [
+    "-v",                          # Verbose output
+    "--strict-markers",            # Fail on unregistered markers
+    "--tb=short",                  # Short tracebacks
+    "--html=tests/e2e/reports/report.html",  # HTML report
+    "--self-contained-html",       # Embed CSS/JS in HTML report
+    "-x",                          # Stop on first failure (remove for CI)
+    "--timeout=60",                # 60s per test max
+]
+
+# Retry flaky tests up to 2 times
+# reruns = 2
+# reruns_delay = 1
+
+# Filter common warnings from Playwright internals
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::pytest.PytestUnraisableExceptionWarning",
+]
+
+# ─── Playwright-specific settings ─────────────────────────────────────────
+
+[tool.playwright]
+# Browser to use: chromium, firefox, webkit
+browser = "chromium"
+# Run headless by default (set HEADED=1 to see browser)
+headless = true
+# Slow motion delay in ms (useful for debugging)
+slow_mo = 0

@@ -92,7 +92,12 @@ pub struct CreatePostRequest {
     pub content: String,
     pub asset_id: Option<Uuid>,
     pub image_urls: Option<Vec<String>>,
+    // UX.11: Poll support — optional
+    pub poll_question: Option<String>,
+    pub poll_options: Option<Vec<String>>,
+    pub poll_expires_hours: Option<i32>,
 }
+
 
 #[derive(Debug, Serialize)]
 pub struct PostDisplay {

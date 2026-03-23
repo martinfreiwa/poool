@@ -202,6 +202,7 @@ function updateCartTotal() {
   const totalElement = document.querySelector(".cart-total-row .total-amount");
   const subtotalElement = document.getElementById("cart-subtotal-amount");
   const feeElement = document.getElementById("cart-fee-amount");
+  const feeIdrElement = document.getElementById("cart-fee-idr");
 
   let total = 0;
 
@@ -230,16 +231,29 @@ function updateCartTotal() {
     });
   }
 
-  // Calculate platform fee if needed in future (currently 0)
-  let fee = 0;
+  // Read fee percentage from data attribute set by the backend
+  const summaryBox = document.getElementById("payment-summary-box");
+  const feePct = summaryBox ? parseFloat(summaryBox.dataset.feePct) || 0 : 0;
+  const fee = Math.round(total * feePct) / 100;
+  const grandTotal = total + fee;
+
+  // IDR conversion rate (must match backend)
+  const IDR_RATE = 15500;
 
   // Format options to match backend (2 decimal places)
   const formatOpts = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
 
-  // Format and update total with USD prefix
+  // Format and update all amounts
   const formattedSubtotal = "USD " + total.toLocaleString("en-US", formatOpts);
-  const formattedTotal = "USD " + (total + fee).toLocaleString("en-US", formatOpts);
+  const formattedTotal = "USD " + grandTotal.toLocaleString("en-US", formatOpts);
   const formattedFee = "USD " + fee.toLocaleString("en-US", formatOpts);
+
+  // Format IDR values
+  const subtotalIdr = Math.round(total * IDR_RATE);
+  const feeIdr = Math.round(fee * IDR_RATE);
+  const totalIdr = Math.round(grandTotal * IDR_RATE);
+
+  const formatIdr = (val) => "≈ Rp " + val.toLocaleString("de-DE").replace(/,/g, ".");
 
   if (totalElement) {
     totalElement.textContent = formattedTotal;
@@ -253,14 +267,31 @@ function updateCartTotal() {
     feeElement.textContent = formattedFee;
   }
 
+  if (feeIdrElement) {
+    feeIdrElement.textContent = formatIdr(feeIdr);
+  }
+
+  // Update subtotal IDR
+  const subtotalIdrEl = subtotalElement ? subtotalElement.closest(".summary-line-values") : null;
+  if (subtotalIdrEl) {
+    const idrSpan = subtotalIdrEl.querySelector(".summary-line-idr");
+    if (idrSpan) idrSpan.textContent = formatIdr(subtotalIdr);
+  }
+
   // Also update summary section if it exists
   const summaryTotal = document.querySelector("#cart-summary-amount");
   if (summaryTotal) {
     summaryTotal.textContent = formattedTotal;
   }
 
+  // Update total IDR
+  const totalIdrEl = document.getElementById("cart-total-idr");
+  if (totalIdrEl) {
+    totalIdrEl.textContent = formatIdr(totalIdr);
+  }
+
   // Update checkout invest button if on checkout page
-  updateCheckoutInvestButton(total + fee);
+  updateCheckoutInvestButton(grandTotal);
 }
 
 // Handle item removal

@@ -102,8 +102,12 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | `2026-03-23 00:00` | `Antigravity` | `M4-DB, M4-BE.1-6` | `community/xp.rs, circles.rs, routes.rs` | `✅ Check-Out` | M4 Phase 1 COMPLETE: 6 DB objects (circles, circle_members, circle_invites, xp_ledger, xp_levels, ALTER community_profiles). XP award system with daily caps. Circles CRUD + invite + auto-join. 18 API endpoints. XP aggregation + invite expiry workers. |
 | `2026-03-23 00:15` | `Antigravity` | `M4-FE.1-5, M4-BE.8` | `community-circles.js, community.html` | `✅ Check-Out` | M4 Frontend COMPLETE: Replaced 'Coming Soon' overlay with dynamic API-wired Circle tab. XP summary card, circle management, member list, leaderboard, XP history, create/invite modals, level-up animation. |
 | `2026-03-23 00:30` | `Antigravity` | `M4-BE.7,9,10` | `xp.rs, background.rs, auth/routes.rs` | `✅ Check-Out` | M4 Phase 2 COMPLETE: Login streak tracker (hooks into email + OAuth login), circle retry worker (30min), level-gated features (L2 circles, L3 invites). Streak badge in XP card. |
+| `2026-03-23 06:40` | `Antigravity` | `M4-BE.11-14` | `community/routes.rs, community/circles.rs` | `✅ Check-Out` | Circle Roles/Transfer/Privacy APIs complete. Added `POST /api/community/circles/:id/roles`, `POST /api/community/circles/:id/transfer` (with notification), `POST /api/community/circles/:id/privacy`. Business logic was already in circles.rs — this wired the HTTP routes. M4-BE.14 (owner self-kick bug) was already protected by actor==target guard. cargo check ✅ |
+| `2026-03-23 07:00` | `Antigravity` | `M4-BE.15` | `community/circles.rs, routes.rs, community-circles.js, community.html` | `✅ Check-Out` | Circle Join Requests COMPLETE: 7 new Rust functions (request/cancel/approve/decline/list/get_mine), 5 new HTTP routes. Frontend: leaderboard now shows Public/Private badges, 'Request to Join' button, '⏳ Pending' state, and owners see an approval queue card with Approve/Decline. Notifications on approve+decline+new request. cargo check ✅ |
+| `2026-03-23 09:40` | `Antigravity` | `M2-ADMIN.7` | `018_community_audit_log.sql, community/audit.rs, community/routes.rs` | `✅ Check-Out` | Community Audit Log COMPLETE: New `community_audit_logs` table (3 indexes), `audit.rs` fire-and-forget logger. 14 admin handlers wired with audit logging: post.hide, post.lock, user.ban, user.mute, user.shadowban, user.warn, comment.hide, comment.delete, comment.pin, circle.delete, circle.remove_member, circle.update, circle.transfer, xp.award. GET `/api/admin/community/audit-log` with entity_type/action filters. cargo check ✅ |
 | `2026-03-23 00:50` | `Antigravity` | `M5-DB.2, M5-BE.2-3, M5-FE.2` | `amas.rs, routes.rs, community-amas.js, community.html` | `✅ Check-Out` | Expert AMAs COMPLETE: 3 DB tables (amas, ama_questions, ama_question_upvotes) + upvote trigger. 11 API endpoints (4 user, 7 admin). Dynamic AMA tab replaces Coming Soon overlay. Question submission, upvoting, expert answers with XP rewards. |
 | `2026-03-23 01:15` | `Antigravity` | `M3-ADMIN.1-4` | `routes.rs, admin-sidebar-loader.js, badges.html, amas.html, user-detail.html, users.html` | `✅ Check-Out` | M3-ADMIN COMPLETE: Admin badge management page (CRUD + grant/revoke), admin AMA management page (create/status/answer/feature), user detail backend API, sidebar extended with Badges + Expert AMAs links. Users table now links to user detail. Fixed P1: require_auth -> get_current_user. |
+| `2026-03-23 10:10` | `Antigravity` | `UX.1-6` | `community-feed.js, community.html, COMMUNITY_ROADMAP.md` | `✅ Check-Out` | Tier 1 UX Polish COMPLETE: Upgraded `renderContentWithHashtags` to also handle @mentions (purple links, hover effects). Trending Hashtags sidebar widget in right panel. Hashtag filter view with branded banner + clear button. Fixed all `#0000FF` → `#03FF88` (POOOL brand green). Removed duplicate functions. Marked UX.1–UX.6 ✅ in roadmap. JS syntax + cargo check clean. |
 
 ---
 
@@ -364,16 +368,16 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M4-BE.9** | Login Streak Tracker | Backend | M4-BE.4 | `✅ DONE` | Agent |
 | **M4-BE.7** | Circle Retry Worker (failed auto-joins) | Backend | M4-BE.2 | `✅ DONE` | Agent |
 | **M4-BE.10** | Level-gated feature enforcement | Backend | M4-BE.6 | `✅ DONE` | Agent |
-| **M4-BE.11** | Circle Roles API (Promote/Demote) | Backend | M4-BE.1 | `❌` | - |
-| **M4-BE.12** | Circle Transfer Ownership API | Backend | M4-BE.1 | `❌` | - |
-| **M4-BE.13** | Circle Privacy Settings API (is_public) | Backend | M4-BE.1 | `❌` | - |
-| **M4-BE.14** | Fix Owner Self-Kick Bug | Backend | M4-BE.3 | `❌` | - |
-| **M4-BE.15** | Circle Join Requests (Private Circles)| Backend | M4-BE.1 | `❌` | - |
+| **M4-BE.11**| Circle Roles API (Promote/Demote) | Backend | M4-BE.1 | `✅ DONE` | Antigravity |
+| **M4-BE.12**| Circle Transfer Ownership API | Backend | M4-BE.1 | `✅ DONE` | Antigravity |
+| **M4-BE.13**| Circle Privacy Settings API (is_public) | Backend | M4-BE.1 | `✅ DONE` | Antigravity |
+| **M4-BE.14**| Fix Owner Self-Kick Bug | Backend | M4-BE.3 | `✅ DONE` | Antigravity |
+| **M4-BE.15**| Circle Join Requests (Private Circles)| Backend | M4-BE.1 | `✅ DONE` | Antigravity |
 | **M4-ADMIN.1**| Admin: Circles Overview page | Admin | M4-BE.1 | `✅ DONE` | Antigravity |
 | **M4-ADMIN.2**| Admin: Leaderboard Management page| Admin | M4-BE.8 | `✅ DONE` | Antigravity |
 | **M4-ADMIN.4**| Admin: Circle & XP APIs | Admin | M4-ADMIN.1/2| `✅ DONE` | Antigravity |
 | **M4-ADMIN.3**| Admin Sidebar: Circles + Leaderboard| Admin | M4-ADMIN.1 | `✅ DONE` | Antigravity |
-| **M2-ADMIN.7**| Admin Audit Log table + inserts | Admin | None | `❌` | - |
+| **M2-ADMIN.7**| Admin Audit Log table + inserts | Admin | None | `✅ DONE` | Antigravity |
 
 ---
 
@@ -657,21 +661,22 @@ W8-9     M4 ║ M5b  Leaderboard ║ Challenges, Notifications
 ## 🚀 Extended Backlog: UX & Discovery (Post-M7)
 
 ### Tier 1: Core Discovery
-* [ ] **UX.1** Algorithmic Feed Sorting (Hot / Trending)
-* [ ] **UX.2** Global Search Engine (Posts, Comments, Users, Circles)
-* [ ] **UX.3** @-Mentions & Notification Triggers
-* [ ] **UX.4** Hashtag Architecture (`#tag` filtering)
-* [ ] **UX.5** Rich Link Previews (OpenGraph Cards)
+* [x] **UX.1** Algorithmic Feed Sorting (Hot / Trending) ✅
+* [x] **UX.2** Global Search Engine (Posts, Comments, Users, Circles) ✅
+* [x] **UX.3** @-Mentions & Notification Triggers ✅
+* [x] **UX.4** Hashtag Architecture (`#tag` filtering + trending sidebar + clickable tags) ✅
+* [x] **UX.5** Rich Link Previews (OpenGraph Cards) ✅
 
 ### Tier 2: Personalization & Retention
-* [ ] **UX.6** Saved / Bookmarked Posts Tab
+* [x] **UX.6** Saved / Bookmarked Posts Tab ✅
 * [ ] **UX.7** Threaded Comment Collapse `[-]`
 * [ ] **UX.8** "Recommended for You" Feed Injection
 * [ ] **UX.9** Offline Push / Email Digests
 * [ ] **UX.10** Direct Messaging (1-on-1 Investor DMs)
 
+
 ### Tier 3: Rich Media & Expression
-* [ ] **UX.11** Native Polls & Surveys
+* [x] **UX.11** Native Polls & Surveys ✅
 * [ ] **UX.12** Auto-Saving Drafts to `localStorage`
 * [ ] **UX.13** Inline GIF / Tenor API Integration
 * [ ] **UX.14** Custom User Flairs

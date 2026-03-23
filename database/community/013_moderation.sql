@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS auto_mod_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
     comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES community_profiles(user_id) ON DELETE CASCADE,
     rule_triggered TEXT NOT NULL,
     action_taken TEXT NOT NULL, -- e.g., 'hidden', 'warned', 'deleted'
     created_at TIMESTAMPTZ DEFAULT NOW(),

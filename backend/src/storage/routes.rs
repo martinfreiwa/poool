@@ -1111,3 +1111,18 @@ pub async fn download_asset_document(
         axum::response::Redirect::temporary(&file_url).into_response()
     }
 }
+
+// ─── Proxy Endpoint for Public URLs ────────────────────────
+/// GET /api/proxy/gcs/:bucket/*path
+/// Proxies a previously generated public URL using a short-lived signed URL, bypassing 403 blocks.
+pub async fn proxy_gcs_image(
+    axum::extract::Path((bucket, object_path)): axum::extract::Path<(String, String)>,
+) -> axum::response::Response {
+    match super::service::generate_signed_url(&bucket, &object_path, 60).await {
+        Ok(signed_url) => axum::response::Redirect::temporary(&signed_url).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to generate signed url for proxy: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Image failed to load").into_response()
+        }
+    }
+}

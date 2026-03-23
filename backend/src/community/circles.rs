@@ -18,6 +18,10 @@ pub struct Circle {
     pub level_name: String,
     pub is_public: bool,
     pub max_members: i32,
+    // W3.1: Token-Gated Circles
+    pub token_gate_asset_id: Option<Uuid>,
+    pub token_gate_min_value_cents: Option<i64>,
+    pub token_gate_asset_name: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -699,6 +703,290 @@ pub async fn update_circle_privacy(pool: &PgPool, actor_id: Uuid, circle_id: Uui
     Ok(())
 }
 
+// ─── Circle Join Requests (M4-BE.15) — Private Circle Flow ─────────────────
+
+#[derive(Debug, serde::Serialize, sqlx::FromRow)]
+pub struct CircleJoinRequest {
+    pub id: Uuid,
+    pub circle_id: Uuid,
+    pub user_id: Uuid,
+    pub status: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Submit a join request for a private circle.
+/// Returns Err if the user is already in a circle, already requested, or the circle is public.
+pub async fn request_to_join(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Result<CircleJoinRequest, AppError> {
+    // Check user isn't already in a circle
+    let already_member: Option<Uuid> = sqlx::query_scalar(
+        "SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1"
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    if already_member.is_some() {
+        return Err(AppError::BadRequest("You are already in a circle. Leave first.".into()));
+    }
+
+    // Get circle – must exist and be private
+    let (is_public, member_count, max_members): (bool, i32, i32) = sqlx::query_as(
+        "SELECT is_public, member_count, max_members FROM circles WHERE id = $1"
+    )
+    .bind(circle_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+
+    if is_public {
+        return Err(AppError::BadRequest("This circle is public — just join directly.".into()));
+    }
+
+    if member_count >= max_members {
+        return Err(AppError::BadRequest("This circle is full.".into()));
+    }
+
+    // Check for existing pending request (the unique index on pending prevents duplicates via DB constraint)
+    let existing: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM circle_join_requests WHERE circle_id = $1 AND user_id = $2 AND status = 'pending'"
+    )
+    .bind(circle_id)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    if existing.is_some() {
+        return Err(AppError::BadRequest("You already have a pending request for this circle.".into()));
+    }
+
+    let req = sqlx::query_as::<_, CircleJoinRequest>(
+        "INSERT INTO circle_join_requests (circle_id, user_id) VALUES ($1, $2) RETURNING *"
+    )
+    .bind(circle_id)
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(req)
+}
+
+/// Cancel your own pending join request.
+pub async fn cancel_join_request(pool: &PgPool, user_id: Uuid, request_id: Uuid) -> Result<(), AppError> {
+    let rows = sqlx::query(
+        "DELETE FROM circle_join_requests WHERE id = $1 AND user_id = $2 AND status = 'pending'"
+    )
+    .bind(request_id)
+    .bind(user_id)
+    .execute(pool)
+    .await?
+    .rows_affected();
+
+    if rows == 0 {
+        return Err(AppError::NotFound("Request not found or already processed.".into()));
+    }
+
+    Ok(())
+}
+
+/// List all pending join requests for a circle (owner/admin only).
+pub async fn get_pending_join_requests(pool: &PgPool, actor_id: Uuid, circle_id: Uuid) -> Result<Vec<CircleJoinRequest>, AppError> {
+    // Check actor is owner or admin
+    let role: Option<String> = sqlx::query_scalar(
+        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
+    )
+    .bind(actor_id)
+    .bind(circle_id)
+    .fetch_optional(pool)
+    .await?;
+
+    match role.as_deref() {
+        Some("owner") | Some("admin") => {},
+        _ => return Err(AppError::Unauthorized("Only circle owner/admin can view requests.".into())),
+    }
+
+    let requests = sqlx::query_as::<_, CircleJoinRequest>(
+        "SELECT * FROM circle_join_requests WHERE circle_id = $1 AND status = 'pending' ORDER BY created_at ASC"
+    )
+    .bind(circle_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(requests)
+}
+
+/// Get your own pending join requests (so users can see where they've requested to join).
+pub async fn get_my_join_requests(pool: &PgPool, user_id: Uuid) -> Result<Vec<CircleJoinRequest>, AppError> {
+    let reqs = sqlx::query_as::<_, CircleJoinRequest>(
+        "SELECT * FROM circle_join_requests WHERE user_id = $1 AND status = 'pending' ORDER BY created_at DESC"
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+    Ok(reqs)
+}
+
+/// Approve a join request (owner/admin action). Adds the requester to the circle.
+pub async fn approve_join_request(pool: &PgPool, actor_id: Uuid, request_id: Uuid) -> Result<Uuid, AppError> {
+    // Fetch the request
+    let req: Option<CircleJoinRequest> = sqlx::query_as(
+        "SELECT * FROM circle_join_requests WHERE id = $1 AND status = 'pending'"
+    )
+    .bind(request_id)
+    .fetch_optional(pool)
+    .await?;
+
+    let req = req.ok_or_else(|| AppError::NotFound("Request not found or already processed.".into()))?;
+
+    // Verify actor is owner or admin of that circle
+    let role: Option<String> = sqlx::query_scalar(
+        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
+    )
+    .bind(actor_id)
+    .bind(req.circle_id)
+    .fetch_optional(pool)
+    .await?;
+
+    match role.as_deref() {
+        Some("owner") | Some("admin") => {},
+        _ => return Err(AppError::Unauthorized("Only circle owner/admin can approve requests.".into())),
+    }
+
+    // Check circle not now full
+    let (member_count, max_members): (i32, i32) = sqlx::query_as(
+        "SELECT member_count, max_members FROM circles WHERE id = $1"
+    )
+    .bind(req.circle_id)
+    .fetch_one(pool)
+    .await?;
+
+    if member_count >= max_members {
+        return Err(AppError::BadRequest("Cannot approve: circle is now full.".into()));
+    }
+
+    let mut tx = pool.begin().await?;
+
+    // Mark request as accepted
+    sqlx::query(
+        "UPDATE circle_join_requests SET status = 'accepted' WHERE id = $1"
+    )
+    .bind(request_id)
+    .execute(&mut *tx)
+    .await?;
+
+    // Add to members
+    sqlx::query(
+        "INSERT INTO circle_members (circle_id, user_id, role) VALUES ($1, $2, 'member') ON CONFLICT DO NOTHING"
+    )
+    .bind(req.circle_id)
+    .bind(req.user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query("UPDATE circles SET member_count = member_count + 1, updated_at = NOW() WHERE id = $1")
+        .bind(req.circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    sqlx::query("UPDATE community_profiles SET circle_id = $1 WHERE user_id = $2")
+        .bind(req.circle_id)
+        .bind(req.user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+
+    Ok(req.user_id)
+}
+
+/// Decline a join request (owner/admin action).
+pub async fn decline_join_request(pool: &PgPool, actor_id: Uuid, request_id: Uuid) -> Result<Uuid, AppError> {
+    let req: Option<CircleJoinRequest> = sqlx::query_as(
+        "SELECT * FROM circle_join_requests WHERE id = $1 AND status = 'pending'"
+    )
+    .bind(request_id)
+    .fetch_optional(pool)
+    .await?;
+
+    let req = req.ok_or_else(|| AppError::NotFound("Request not found or already processed.".into()))?;
+
+    // Verify actor is owner or admin
+    let role: Option<String> = sqlx::query_scalar(
+        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
+    )
+    .bind(actor_id)
+    .bind(req.circle_id)
+    .fetch_optional(pool)
+    .await?;
+
+    match role.as_deref() {
+        Some("owner") | Some("admin") => {},
+        _ => return Err(AppError::Unauthorized("Only circle owner/admin can decline requests.".into())),
+    }
+
+    sqlx::query("UPDATE circle_join_requests SET status = 'declined' WHERE id = $1")
+        .bind(request_id)
+        .execute(pool)
+        .await?;
+
+    Ok(req.user_id)
+}
+
+// ─── Owner Circle Deletion ──────────────────────────────────────────
+
+/// Allow the circle owner to delete their own circle.
+pub async fn delete_own_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Result<(), AppError> {
+    // Verify the user is the owner
+    let owner_id: Option<Uuid> = sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .fetch_optional(pool)
+        .await?;
+
+    match owner_id {
+        Some(oid) if oid == user_id => {},
+        Some(_) => return Err(AppError::Forbidden("Only the circle owner can delete the circle.".into())),
+        None => return Err(AppError::NotFound("Circle not found.".into())),
+    }
+
+    let mut tx = pool.begin().await?;
+
+    // Unlink members in community_profiles
+    sqlx::query("UPDATE community_profiles SET circle_id = NULL WHERE circle_id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Delete members
+    sqlx::query("DELETE FROM circle_members WHERE circle_id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Delete invites
+    sqlx::query("DELETE FROM circle_invites WHERE circle_id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Delete join requests
+    sqlx::query("DELETE FROM circle_join_requests WHERE circle_id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // Delete circle
+    let res = sqlx::query("DELETE FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
+
+    if res.rows_affected() == 0 {
+        return Err(AppError::NotFound("Circle not found.".into()));
+    }
+
+    tx.commit().await?;
+    Ok(())
+}
+
 // ─── Admin Features ──────────────────────────────────────────────────
 
 /// List all circles for admin (ordered by creation date).
@@ -785,3 +1073,128 @@ pub async fn admin_remove_member(pool: &PgPool, circle_id: Uuid, target_id: Uuid
     Ok(())
 }
 
+// ─── W3.1: Token-Gated Circle Enforcement ───────────────────────────────
+
+/// Check if a user meets the token gate requirement for a circle.
+/// Reads the user's investments from the core DB (read-only cross-DB access).
+/// Returns Ok(()) if the gate is passed or the circle has no gate.
+pub async fn check_token_gate(
+    community_pool: &PgPool,
+    core_pool: &PgPool,
+    user_id: Uuid,
+    circle_id: Uuid,
+) -> Result<(), AppError> {
+    use sqlx::Row;
+
+    // Fetch the circle's gate config from community DB
+    let gate_row = sqlx::query(
+        "SELECT token_gate_asset_id, token_gate_min_value_cents FROM circles WHERE id = $1"
+    )
+    .bind(circle_id)
+    .fetch_optional(community_pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+
+    let gate_asset_id: Option<Uuid> = gate_row.try_get("token_gate_asset_id").ok().flatten();
+    let gate_min_cents: Option<i64> = gate_row.try_get("token_gate_min_value_cents").ok().flatten();
+
+    // No gate configured → everyone can join
+    let asset_id = match gate_asset_id {
+        Some(id) => id,
+        None => return Ok(()),
+    };
+
+    let min_cents = gate_min_cents.unwrap_or(0);
+    if min_cents <= 0 {
+        return Ok(());
+    }
+
+    // Read from core DB: user's holdings of this specific asset
+    // current_value = tokens_owned × asset.token_price_cents
+    let holding_value: Option<i64> = sqlx::query_scalar(
+        r#"
+        SELECT (i.tokens_owned * a.token_price_cents)::BIGINT
+        FROM investments i
+        JOIN assets a ON a.id = i.asset_id
+        WHERE i.user_id = $1 AND i.asset_id = $2 AND i.status != 'refunded'
+        ORDER BY (i.tokens_owned * a.token_price_cents) DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(user_id)
+    .bind(asset_id)
+    .fetch_optional(core_pool)
+    .await?;
+
+    let actual_value = holding_value.unwrap_or(0);
+
+    if actual_value < min_cents {
+        let required_formatted = format!("${:.2}", min_cents as f64 / 100.0);
+        let held_formatted = format!("${:.2}", actual_value as f64 / 100.0);
+        return Err(AppError::BadRequest(format!(
+            "Token gate requirement not met. You need at least {} of this asset to join. You currently hold {}.",
+            required_formatted, held_formatted
+        )));
+    }
+
+    Ok(())
+}
+
+/// Set or clear the token gate on a circle. Only the circle owner can do this.
+pub async fn update_token_gate(
+    community_pool: &PgPool,
+    core_pool: &PgPool,
+    user_id: Uuid,
+    circle_id: Uuid,
+    asset_id: Option<Uuid>,
+    min_value_cents: Option<i64>,
+) -> Result<Circle, AppError> {
+    // Verify ownership
+    let owner_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT owner_id FROM circles WHERE id = $1"
+    )
+    .bind(circle_id)
+    .fetch_optional(community_pool)
+    .await?;
+
+    match owner_id {
+        Some(oid) if oid == user_id => {},
+        Some(_) => return Err(AppError::Forbidden("Only the circle owner can set token gates".into())),
+        None => return Err(AppError::NotFound("Circle not found".into())),
+    }
+
+    // If setting a gate, fetch the asset name from core DB for denormalization
+    let asset_name: Option<String> = if let Some(aid) = asset_id {
+        use sqlx::Row;
+        let row = sqlx::query("SELECT title FROM assets WHERE id = $1")
+            .bind(aid)
+            .fetch_optional(core_pool)
+            .await?;
+        match row {
+            Some(r) => Some(r.try_get("title")?),
+            None => return Err(AppError::NotFound("Asset not found. Cannot set token gate for a non-existent asset.".into())),
+        }
+    } else {
+        None
+    };
+
+    let circle = sqlx::query_as::<_, Circle>(
+        r#"
+        UPDATE circles
+        SET token_gate_asset_id = $1,
+            token_gate_min_value_cents = $2,
+            token_gate_asset_name = $3,
+            updated_at = NOW()
+        WHERE id = $4
+        RETURNING *
+        "#
+    )
+    .bind(asset_id)
+    .bind(min_value_cents.unwrap_or(0))
+    .bind(&asset_name)
+    .bind(circle_id)
+    .fetch_one(community_pool)
+    .await?;
+
+    Ok(circle)
+}
