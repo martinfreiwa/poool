@@ -1209,13 +1209,13 @@ async fn api_admin_reports(
                      i.id::text, u.email,
                      a.title as asset_title,
                      i.tokens_owned, i.purchase_value_cents, i.current_value_cents,
-                     i.total_rental_cents, i.status, i.created_at::text
+                     i.total_rental_cents, i.status, i.purchased_at::text as created_at
                    FROM investments i
                    JOIN users u ON i.user_id = u.id
                    JOIN assets a ON i.asset_id = a.id
-                   WHERE ($1::text = '' OR i.created_at >= $1::date)
-                     AND ($2::text = '' OR i.created_at <= ($2::date + interval '1 day'))
-                   ORDER BY i.created_at DESC"#,
+                   WHERE ($1::text = '' OR i.purchased_at >= $1::date)
+                     AND ($2::text = '' OR i.purchased_at <= ($2::date + interval '1 day'))
+                   ORDER BY i.purchased_at DESC"#,
             )
             .bind(&date_from)
             .bind(&date_to)

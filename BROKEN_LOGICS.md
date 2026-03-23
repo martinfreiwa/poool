@@ -834,3 +834,17 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
 
+### [P1] — Full Schema Audit: 3 New Runtime SQL Error Sources
+- **Files:** `backend/src/community/notifications.rs`, `backend/src/community/xp.rs`, `backend/src/main.rs`
+- **What was wrong:** Full schema audit via automated script discovered:
+  1. `notifications.rs` queried `n.actor_id`, `n.entity_id`, `n.content`, `n.link_url` — columns existed in `database/community/012_notifications.sql` but were never applied
+  2. `xp.rs` and related community code queried `community_profiles.xp_total`, `.level`, `.level_name`, `.circle_id` — defined in `008_circles_xp.sql` but never applied; also referenced `xp_ledger`, `xp_levels`, `circles`, `circle_members` tables that didn't exist
+  3. `main.rs` admin reports used `investments.created_at` — that column doesn't exist, should be `purchased_at`
+- **What I did:**
+  - Created `database/069_apply_missing_community_schema.sql` to apply all missing columns and tables (8 new structures) with `IF NOT EXISTS` guards
+  - Created `xp_levels`, `xp_ledger`, `circles`, `circle_members` tables
+  - Added `xp_total`, `level`, `level_name`, `circle_id` to `community_profiles`
+  - Added `actor_id`, `entity_id`, `content`, `link_url` to `notifications`
+  - Fixed `main.rs` admin report: `i.created_at` → `i.purchased_at`
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
