@@ -689,6 +689,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/marketplace-trading-v3", get(page_marketplace_trading_v3))
         .route("/marketplace-secondary", get(page_marketplace_secondary))
         .route("/my-trading", get(page_my_trading))
+        .route("/trade-success", get(page_trade_success))
         .route("/tax-report", get(marketplace::routes::page_tax_report_pdf))
         // ── Static file serving & fallbacks ───────────────────────────
         .route("/", get(handle_root))
@@ -2099,6 +2100,11 @@ async fn page_marketplace_trading_v3(
 /// GET /my-trading — Investor's personal trading dashboard (orders, trades, buy interests, tax export).
 async fn page_my_trading(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "my-trading.html").await
+}
+
+/// GET /trade-success — Confirmation page shown after a successful trade order placement.
+async fn page_trade_success(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "trade-success.html").await
 }
 
 /// GET /payment-in-progress  Payment in progress page (protected).

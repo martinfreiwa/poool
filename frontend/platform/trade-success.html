@@ -1,0 +1,210 @@
+{% set title="Trade Confirmed | POOOL" %}
+{% set extra_css=['payment-success'] %}
+{% set extra_js=['profile-dropdown', 'legal-enhancements', 'mobile-navigation'] %}
+
+{% include "components/head.html" %}
+
+<body id="payment-success-body" class="fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+  <div id="payment-success-page" class="payment-success-page">
+
+    <!-- Sidebar Navigation -->
+    {% include 'components/sidebar.html' %}
+
+    <!-- Main Content Area -->
+    <main id="payment-success-main" class="ds-main payment-success-main">
+      <!-- Confetti Container -->
+      <div class="confetti-container" id="confetti-container"></div>
+
+      <!-- Page Header -->
+      <div class="payment-success-header">
+        <a href="/my-trading" class="payment-success-header__back" title="Back to My Trading">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M15 10H5M5 10L10 15M5 10L10 5" stroke="var(--text-secondary)" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+        <div class="payment-success-steps">
+          <span class="payment-success-steps__step payment-success-steps__step--done">Select Asset</span>
+          <span class="payment-success-steps__divider">→</span>
+          <span class="payment-success-steps__step payment-success-steps__step--done">Confirm Order</span>
+          <span class="payment-success-steps__divider">→</span>
+          <span class="payment-success-steps__step payment-success-steps__step--active">Order Placed</span>
+        </div>
+      </div>
+
+      <!-- Main Card -->
+      <div class="payment-success-card">
+
+        <!-- Gradient Blurs -->
+        <div class="payment-success-blur-1"></div>
+        <div class="payment-success-blur-2"></div>
+
+        <!-- Status Icon -->
+        <div id="status-icon" class="payment-success-icon payment-success-icon--success">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+            <path d="M7 13L10 16L17 9" stroke="#027A48" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="12" cy="12" r="10" stroke="#027A48" stroke-width="2.5" />
+          </svg>
+        </div>
+
+        <!-- Status Title -->
+        <h1 id="status-title" class="payment-success-title">Order Placed Successfully</h1>
+
+        <!-- Status Description -->
+        <p id="status-description" class="payment-success-description">
+          Your order has been submitted and will be matched with available counterparties.
+          You can track its status in your trading dashboard.
+        </p>
+
+        <!-- Order Details -->
+        <div id="order-details" class="payment-success-order">
+          <div class="payment-success-order__row payment-success-order__row--border">
+            <span class="payment-success-order__label">Order ID</span>
+            <span id="display-order-id" class="payment-success-order__value" style="font-family:monospace; font-size:12px;">#...</span>
+          </div>
+          <div class="payment-success-order__row payment-success-order__row--border">
+            <span class="payment-success-order__label">Side</span>
+            <span id="display-side" class="payment-success-order__value" style="font-weight:700;"></span>
+          </div>
+          <div class="payment-success-order__row payment-success-order__row--border">
+            <span class="payment-success-order__label">Asset</span>
+            <span id="display-asset" class="payment-success-order__value"></span>
+          </div>
+          <div class="payment-success-order__row payment-success-order__row--border">
+            <span class="payment-success-order__label">Price per Share</span>
+            <span id="display-price" class="payment-success-order__value"></span>
+          </div>
+          <div class="payment-success-order__row payment-success-order__row--border">
+            <span class="payment-success-order__label">Quantity</span>
+            <span id="display-qty" class="payment-success-order__value"></span>
+          </div>
+          <div class="payment-success-order__row payment-success-order__row--total">
+            <span class="payment-success-order__total-label">Total Amount</span>
+            <span id="display-total" class="payment-success-order__total-value">$0.00</span>
+          </div>
+        </div>
+
+        <!-- Info Notice -->
+        <div style="
+          display:flex; align-items:flex-start; gap:10px; padding:14px 16px;
+          background:rgba(46,46,249,0.04); border:1px solid rgba(46,46,249,0.12);
+          border-radius:12px; margin-top:16px; font-size:13px; color:#475467; line-height:1.6;
+        ">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E2EF9" stroke-width="2" style="flex-shrink:0; margin-top:2px;">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>
+            Your order is now <strong>live on the marketplace</strong>. Once a matching buyer or seller is found,
+            the trade will be executed automatically and you'll receive a notification.
+          </span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="payment-success-actions">
+          <button class="payment-success-btn payment-success-btn--primary" onclick="window.location.href='/my-trading'">
+            View My Trading
+          </button>
+          <button id="btn-trade-again" class="payment-success-btn payment-success-btn--secondary"
+            onclick="window.location.href='/marketplace-secondary'">
+            Continue Trading
+          </button>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+
+      const orderId = params.get('order_id') || '—';
+      const side = params.get('side') || '';
+      const asset = params.get('asset') || '';
+      const qty = params.get('qty') || '0';
+      const price = params.get('price') || '0';
+      const total = params.get('total') || '0';
+      const slug = params.get('slug') || '';
+
+      document.getElementById('display-order-id').textContent = '#' + (orderId.length > 12 ? orderId.substring(0, 12) + '…' : orderId);
+      document.getElementById('display-order-id').title = orderId;
+
+      const sideEl = document.getElementById('display-side');
+      sideEl.textContent = side.toUpperCase();
+      sideEl.style.color = side === 'buy' ? '#00c896' : '#ef4444';
+
+      document.getElementById('display-asset').textContent = decodeURIComponent(asset);
+      document.getElementById('display-price').textContent = '$' + parseFloat(price).toFixed(2);
+      document.getElementById('display-qty').textContent = qty + ' share' + (parseInt(qty) > 1 ? 's' : '');
+      document.getElementById('display-total').textContent = '$' + parseFloat(total).toFixed(2);
+
+      // Update title based on side
+      const titleEl = document.getElementById('status-title');
+      if (side === 'sell') {
+        titleEl.textContent = 'Sell Order Placed';
+        document.getElementById('status-description').textContent =
+          'Your shares have been listed for sale on the marketplace. Once a matching buyer is found, the trade will be executed automatically.';
+      } else {
+        titleEl.textContent = 'Buy Order Placed';
+        document.getElementById('status-description').textContent =
+          'Your buy order has been placed on the marketplace. Once a matching seller is found, the trade will be executed automatically.';
+      }
+
+      // "Trade Again" button links back to the same asset
+      if (slug) {
+        document.getElementById('btn-trade-again').onclick = function() {
+          window.location.href = '/marketplace-trading-v3?asset=' + encodeURIComponent(slug);
+        };
+      }
+
+      // ── Confetti animation ──
+      const container = document.getElementById('confetti-container');
+      if (container) {
+        const colors = ['#00c896', '#2E2EF9', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+        for (let i = 0; i < 60; i++) {
+          const particle = document.createElement('div');
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          const size = 6 + Math.random() * 6;
+          const left = Math.random() * 100;
+          const delay = Math.random() * 1.5;
+          const duration = 2 + Math.random() * 2;
+          Object.assign(particle.style, {
+            position: 'absolute',
+            width: size + 'px',
+            height: size + 'px',
+            background: color,
+            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            left: left + '%',
+            top: '-10px',
+            opacity: '0.9',
+            animation: `confetti-fall ${duration}s ease-out ${delay}s forwards`,
+            transform: `rotate(${Math.random() * 360}deg)`
+          });
+          container.appendChild(particle);
+        }
+      }
+    })();
+  </script>
+
+  <style>
+    @keyframes confetti-fall {
+      0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(60vh) rotate(720deg) scale(0.3);
+      }
+    }
+    .confetti-container {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 100vh;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 9999;
+    }
+  </style>
+</body>
+</html>

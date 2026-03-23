@@ -45,6 +45,153 @@
         }, 4000);
     }
 
+    // ── Order Confirmation Modal ──
+    function showOrderConfirmModal({ side, assetName, priceDisplay, quantity, orderType, totalValue, feeValue, grandTotal }) {
+        return new Promise((resolve) => {
+            // Remove any existing modal
+            const existing = document.getElementById('tv3-confirm-overlay');
+            if (existing) existing.remove();
+
+            const sideLabel = side === 'buy' ? 'Buy' : 'Sell';
+            const sideColor = side === 'buy' ? '#00c896' : '#ef4444';
+            const sideBg = side === 'buy' ? 'rgba(0,200,150,0.08)' : 'rgba(239,68,68,0.08)';
+            const fmt = (v) => '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const overlay = document.createElement('div');
+            overlay.id = 'tv3-confirm-overlay';
+            Object.assign(overlay.style, {
+                position: 'fixed', inset: '0', zIndex: '99995',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '16px', background: 'rgba(10,14,26,0.55)',
+                backdropFilter: 'blur(6px)', animation: 'pc-fade-in 0.18s ease'
+            });
+
+            overlay.innerHTML = `
+                <div style="
+                    background: #fff; border-radius: 16px;
+                    box-shadow: 0 24px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.08);
+                    max-width: 440px; width: 100%; padding: 0; overflow: hidden;
+                    animation: pc-slide-up 0.22s cubic-bezier(0.34,1.56,0.64,1);
+                ">
+                    <!-- Header -->
+                    <div style="padding: 24px 28px 16px; border-bottom: 1px solid #f2f4f7;">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+                            <div style="
+                                width:42px; height:42px; border-radius:10px;
+                                background:${sideBg}; display:flex; align-items:center; justify-content:center;
+                            ">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${sideColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    ${side === 'buy'
+                                        ? '<path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/>'
+                                        : '<path d="M12 5v14"/><polyline points="19 12 12 19 5 12"/>'
+                                    }
+                                </svg>
+                            </div>
+                            <div>
+                                <div style="font-family:'TT Norms Pro',system-ui,sans-serif; font-size:18px; font-weight:700; color:#101828;">
+                                    Confirm ${sideLabel} Order
+                                </div>
+                                <div style="font-size:13px; color:#667085; margin-top:2px;">
+                                    Please review your order details before confirming.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Details -->
+                    <div style="padding: 20px 28px;">
+                        <div style="
+                            background: #f9fafb; border-radius: 12px; padding: 16px 18px;
+                            border: 1px solid #eaecf0; margin-bottom: 20px;
+                        ">
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px;">
+                                <span style="color:#667085;">Asset</span>
+                                <span style="font-weight:600; color:#101828; max-width:220px; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(assetName)}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
+                                <span style="color:#667085;">Side</span>
+                                <span style="font-weight:700; color:${sideColor};">${sideLabel.toUpperCase()}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
+                                <span style="color:#667085;">Price (${orderType})</span>
+                                <span style="font-weight:600; color:#101828;">${fmt(priceDisplay)} / share</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
+                                <span style="color:#667085;">Quantity</span>
+                                <span style="font-weight:600; color:#101828;">${quantity} share${quantity > 1 ? 's' : ''}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
+                                <span style="color:#667085;">Subtotal</span>
+                                <span style="font-weight:600; color:#101828;">${fmt(totalValue)}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
+                                <span style="color:#667085;">Platform Fee (5%)</span>
+                                <span style="font-weight:600; color:#667085;">${side === 'buy' ? '+' : '−'}${fmt(feeValue)}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; padding:10px 0 4px; font-size:16px; border-top:2px solid #d0d5dd; margin-top:4px;">
+                                <span style="font-weight:700; color:#101828;">Total</span>
+                                <span style="font-weight:800; color:${sideColor}; font-size:18px;">${fmt(grandTotal)}</span>
+                            </div>
+                        </div>
+
+                        <!-- Warning -->
+                        <div style="
+                            display:flex; align-items:flex-start; gap:10px; padding:12px 14px;
+                            background:#FFFAEB; border:1px solid #FEC84B; border-radius:10px;
+                            font-size:12px; color:#93370D; line-height:1.5; margin-bottom:20px;
+                        ">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B54708" stroke-width="2" style="flex-shrink:0; margin-top:1px;">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <span>This action cannot be undone. Your ${side === 'buy' ? 'balance' : 'shares'} will be ${side === 'buy' ? 'debited' : 'listed for sale'} immediately.</span>
+                        </div>
+
+                        <!-- Actions -->
+                        <div style="display:flex; gap:10px;">
+                            <button id="tv3-confirm-cancel" style="
+                                flex:1; padding:12px; border-radius:10px; font-size:14px; font-weight:600;
+                                cursor:pointer; border:1.5px solid #D0D5DD; background:#fff; color:#344054;
+                                font-family:inherit; transition:all 0.15s; outline:none;
+                            ">Cancel</button>
+                            <button id="tv3-confirm-ok" style="
+                                flex:1; padding:12px; border-radius:10px; font-size:14px; font-weight:700;
+                                cursor:pointer; border:none; background:${sideColor}; color:#fff;
+                                font-family:inherit; transition:all 0.15s; outline:none;
+                            ">Confirm ${sideLabel}</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            // Focus confirm button
+            const confirmBtn = overlay.querySelector('#tv3-confirm-ok');
+            const cancelBtn = overlay.querySelector('#tv3-confirm-cancel');
+            setTimeout(() => confirmBtn.focus(), 30);
+
+            function close(result) {
+                document.removeEventListener('keydown', onKey);
+                overlay.style.animation = 'pc-fade-in 0.15s ease reverse forwards';
+                setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 150);
+                resolve(result);
+            }
+
+            confirmBtn.addEventListener('click', () => close(true));
+            cancelBtn.addEventListener('click', () => close(false));
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+
+            function onKey(e) {
+                if (e.key === 'Escape') { e.preventDefault(); close(false); }
+            }
+            document.addEventListener('keydown', onKey);
+        });
+    }
+
+    function escapeHtml(str) {
+        return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     // ── Generate 12-month daily price data ──
     function generatePriceData(startPrice, endPrice) {
         const data = [];
@@ -502,36 +649,60 @@
             });
         });
 
-        // Submit — real API call
+        // Submit — real API call with confirmation modal + double-click guard
+        let isSubmitting = false;
         document.getElementById('tv3-order-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('tv3-submit-btn');
-            const orig = btn.textContent;
-            btn.textContent = 'Placing Order…';
-            btn.disabled = true;
-            btn.style.opacity = '0.7';
+            if (isSubmitting) return; // Prevent double-click
 
+            const btn = document.getElementById('tv3-submit-btn');
             const qty = parseInt(document.getElementById('tv3-qty').value) || 0;
             if (qty <= 0) {
                 showTradeToast('Please enter a valid quantity', 'error');
-                btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
                 return;
             }
 
             const orderType = priceMode === 'market' ? 'market' : 'limit';
             const data = getMarketData(currentAsset, currentSide);
             let priceCents = null;
+            let priceDisplay = 0;
             if (orderType === 'limit') {
                 const priceVal = parseFloat(document.getElementById('tv3-price').value);
                 if (!priceVal || priceVal <= 0) {
                     showTradeToast('Please enter a valid price', 'error');
-                    btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
                     return;
                 }
                 priceCents = Math.round(priceVal * 100);
+                priceDisplay = priceVal;
             } else {
                 priceCents = Math.round(data.bestPrice * 100);
+                priceDisplay = data.bestPrice;
             }
+
+            const totalValue = priceDisplay * qty;
+            const feeRate = 0.05;
+            const feeValue = totalValue * feeRate;
+            const grandTotal = currentSide === 'buy' ? totalValue + feeValue : totalValue - feeValue;
+
+            // ── Show Confirmation Modal ──
+            const confirmed = await showOrderConfirmModal({
+                side: currentSide,
+                assetName: currentAsset?.title || currentAsset?.name || 'Asset',
+                priceDisplay: priceDisplay,
+                quantity: qty,
+                orderType: orderType,
+                totalValue: totalValue,
+                feeValue: feeValue,
+                grandTotal: grandTotal,
+            });
+            if (!confirmed) return;
+
+            // ── Submit Order ──
+            isSubmitting = true;
+            const orig = btn.textContent;
+            btn.textContent = 'Placing Order…';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
 
             try {
                 const res = await fetch('/api/marketplace/orders', {
@@ -549,17 +720,27 @@
                 });
                 const result = await res.json();
                 if (res.ok) {
-                    btn.textContent = '✓ Order Placed Successfully';
-                    showTradeToast(result.message || 'Order placed successfully!', 'success');
-                    setTimeout(() => { btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1'; }, 2500);
+                    // Redirect to success page
+                    const params = new URLSearchParams({
+                        side: currentSide,
+                        asset: currentAsset?.title || currentAsset?.name || 'Asset',
+                        qty: qty,
+                        price: priceDisplay.toFixed(2),
+                        total: grandTotal.toFixed(2),
+                        order_id: result.order_id || result.id || '',
+                        slug: asset.slug || ''
+                    });
+                    window.location.href = '/trade-success?' + params.toString();
                 } else {
                     showTradeToast(result.error || 'Order failed', 'error');
                     btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
+                    isSubmitting = false;
                 }
             } catch (err) {
                 console.error('Order submission failed:', err);
                 showTradeToast('Network error — please try again', 'error');
                 btn.textContent = orig; btn.disabled = false; btn.style.opacity = '1';
+                isSubmitting = false;
             }
         });
 
@@ -607,19 +788,38 @@
             sheetSell.classList.add('active'); sheetBuy.classList.remove('active');
             if (sheetSubmit) { sheetSubmit.textContent = 'Place Sell Order'; sheetSubmit.className = 'tv3-submit-btn tv3-submit-btn--sell'; }
         });
+        let isSheetSubmitting = false;
         if (sheetSubmit) sheetSubmit.addEventListener('click', async () => {
-            const orig = sheetSubmit.textContent;
-            sheetSubmit.textContent = 'Placing…';
-            sheetSubmit.disabled = true;
+            if (isSheetSubmitting) return;
 
             const sheetSide = sheetBuy?.classList.contains('active') ? 'buy' : 'sell';
             const qty = parseInt(sheetQty?.value) || 0;
             const priceVal = parseFloat(sheetPrice?.value) || 0;
             if (qty <= 0 || priceVal <= 0) {
                 showTradeToast('Enter valid price and quantity', 'error');
-                sheetSubmit.textContent = orig; sheetSubmit.disabled = false;
                 return;
             }
+
+            const totalValue = priceVal * qty;
+            const feeValue = totalValue * 0.05;
+            const grandTotal = sheetSide === 'buy' ? totalValue + feeValue : totalValue - feeValue;
+
+            const confirmed = await showOrderConfirmModal({
+                side: sheetSide,
+                assetName: currentAsset?.title || currentAsset?.name || asset?.slug || 'Asset',
+                priceDisplay: priceVal,
+                quantity: qty,
+                orderType: 'limit',
+                totalValue: totalValue,
+                feeValue: feeValue,
+                grandTotal: grandTotal,
+            });
+            if (!confirmed) return;
+
+            isSheetSubmitting = true;
+            const orig = sheetSubmit.textContent;
+            sheetSubmit.textContent = 'Placing…';
+            sheetSubmit.disabled = true;
 
             try {
                 const res = await fetch('/api/marketplace/orders', {
@@ -637,16 +837,25 @@
                 });
                 const result = await res.json();
                 if (res.ok) {
-                    sheetSubmit.textContent = '✓ Order Placed';
-                    showTradeToast(result.message || 'Order placed!', 'success');
-                    setTimeout(() => { sheetSubmit.textContent = orig; sheetSubmit.disabled = false; closeSheet(); }, 2000);
+                    const params = new URLSearchParams({
+                        side: sheetSide,
+                        asset: currentAsset?.title || currentAsset?.name || 'Asset',
+                        qty: qty,
+                        price: priceVal.toFixed(2),
+                        total: grandTotal.toFixed(2),
+                        order_id: result.order_id || result.id || '',
+                        slug: asset.slug || ''
+                    });
+                    window.location.href = '/trade-success?' + params.toString();
                 } else {
                     showTradeToast(result.error || 'Order failed', 'error');
                     sheetSubmit.textContent = orig; sheetSubmit.disabled = false;
+                    isSheetSubmitting = false;
                 }
             } catch (err) {
                 showTradeToast('Network error', 'error');
                 sheetSubmit.textContent = orig; sheetSubmit.disabled = false;
+                isSheetSubmitting = false;
             }
         });
 

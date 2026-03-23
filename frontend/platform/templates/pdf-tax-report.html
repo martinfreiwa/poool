@@ -1,93 +1,75 @@
 {% extends "templates/pdf-base.html" %}
 
-{% block content %}
-    <!-- ── Summary Cards ──────────────────────────────────── -->
-    <div class="pdf-section-title">Tax Year Summary ({{ tax_year }})</div>
-
-    <div class="pdf-summary-grid">
-      <div class="pdf-summary-card">
-        <div class="pdf-summary-card__label">Total Trades</div>
-        <div class="pdf-summary-card__value">{{ total_trades }}</div>
-      </div>
-      <div class="pdf-summary-card">
-        <div class="pdf-summary-card__label">Total Volume</div>
-        <div class="pdf-summary-card__value">{{ total_volume }}</div>
-      </div>
-      <div class="pdf-summary-card">
-        <div class="pdf-summary-card__label">Total Fees Paid</div>
-        <div class="pdf-summary-card__value">{{ total_fees }}</div>
-      </div>
-      <div class="pdf-summary-card">
-        <div class="pdf-summary-card__label">Net P&amp;L</div>
-        <div class="pdf-summary-card__value {% if net_pl_positive %}pdf-summary-card__value--positive{% else %}pdf-summary-card__value--negative{% endif %}">
-          {{ net_pl }}
-        </div>
-      </div>
+{% block summary_line %}
+  <div class="pdf-summary-item">
+    <div class="pdf-summary-label">Year</div>
+    <div class="pdf-summary-value">{{ tax_year }}</div>
+  </div>
+  <div class="pdf-summary-item">
+    <div class="pdf-summary-label">Total Trades</div>
+    <div class="pdf-summary-value">{{ total_trades }}</div>
+  </div>
+  <div class="pdf-summary-item">
+    <div class="pdf-summary-label">Total Volume</div>
+    <div class="pdf-summary-value">{{ total_volume }}</div>
+  </div>
+  <div class="pdf-summary-item">
+    <div class="pdf-summary-label">Total Fees</div>
+    <div class="pdf-summary-value">{{ total_fees }}</div>
+  </div>
+  <div class="pdf-summary-item">
+    <div class="pdf-summary-label">Net P&amp;L</div>
+    <div class="pdf-summary-value {% if net_pl_positive %}pdf-text-success{% else %}pdf-text-danger{% endif %}">
+      {{ net_pl }}
     </div>
+  </div>
+{% endblock %}
 
-    <!-- ── Trade History Table ──────────────────────────────── -->
-    <div class="pdf-section-title">Transaction Detail / Rincian Transaksi</div>
+{% block content %}
+    <h3 class="pdf-table-title">Transaction Detail / Rincian Transaksi</h3>
 
-    {% if trades %}
-    <div class="pdf-table-container">
-      <table class="pdf-table">
+    <div class="pdf-business-table-wrapper">
+      <table class="pdf-business-table">
         <thead>
           <tr>
             <th>Date</th>
             <th>Asset</th>
             <th>Side</th>
-            <th class="text-right">Price</th>
-            <th class="text-right">Qty</th>
-            <th class="text-right">Gross</th>
-            <th class="text-right">Fee</th>
-            <th class="text-right">Net</th>
+            <th class="pdf-text-right">Price</th>
+            <th class="pdf-text-right">Qty</th>
+            <th class="pdf-text-right">Gross</th>
+            <th class="pdf-text-right">Fee</th>
+            <th class="pdf-text-right">Net</th>
           </tr>
         </thead>
         <tbody>
-          {% for t in trades %}
-          <tr>
-            <td>{{ t.date }}</td>
-            <td><strong>{{ t.asset_name }}</strong></td>
-            <td>
-              <span class="pdf-badge {% if t.side == 'BUY' %}pdf-badge--buy{% else %}pdf-badge--sell{% endif %}">
-                {{ t.side }}
-              </span>
-            </td>
-            <td class="pdf-money">{{ t.price }}</td>
-            <td class="pdf-money">{{ t.quantity }}</td>
-            <td class="pdf-money">{{ t.gross }}</td>
-            <td class="pdf-money">{{ t.fee }}</td>
-            <td class="pdf-money">{{ t.net }}</td>
-          </tr>
-          {% endfor %}
+          {% if trades %}
+            {% for t in trades %}
+            <tr>
+              <td>{{ t.date }}</td>
+              <td><strong>{{ t.asset_name }}</strong></td>
+              <td>{{ t.side }}</td>
+              <td class="pdf-text-right pdf-val">{{ t.price }}</td>
+              <td class="pdf-text-right pdf-val">{{ t.quantity }}</td>
+              <td class="pdf-text-right pdf-val">{{ t.gross }}</td>
+              <td class="pdf-text-right pdf-val">{{ t.fee }}</td>
+              <td class="pdf-text-right pdf-val">{{ t.net }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+              <td colspan="4">Total ({{ total_trades }} transactions)</td>
+              <td class="pdf-text-right pdf-val">{{ total_volume }}</td>
+              <td class="pdf-text-right pdf-val">{{ total_fees }}</td>
+              <td class="pdf-text-right pdf-val">{{ total_net }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="8" class="pdf-empty">
+                 No transactions recorded for tax year {{ tax_year }}.
+              </td>
+            </tr>
+          {% endif %}
         </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="4"><strong>Total ({{ total_trades }} transactions)</strong></td>
-            <td class="pdf-money"></td>
-            <td class="pdf-money">{{ total_volume }}</td>
-            <td class="pdf-money">{{ total_fees }}</td>
-            <td class="pdf-money">{{ total_net }}</td>
-          </tr>
-        </tfoot>
       </table>
-    </div>
-    {% else %}
-    <div class="pdf-no-data">
-      <div class="pdf-no-data__icon">📊</div>
-      <div class="pdf-no-data__text">No transactions recorded for tax year {{ tax_year }}.</div>
-    </div>
-    {% endif %}
-
-    <!-- ── Indonesian Tax Notes ─────────────────────────────── -->
-    <div class="pdf-notes">
-      <div class="pdf-notes__title">Indonesian Tax Information / Informasi Pajak Indonesia</div>
-      <ul>
-        <li>Trade transactions may be subject to Article 4(2) Final Income Tax (PPh Final) on capital gains.</li>
-        <li>This report is provided for informational purposes only and does not constitute tax advice.</li>
-        <li>Consult a qualified tax advisor or refer to Direktorat Jenderal Pajak (DJP) guidelines for your specific tax obligations.</li>
-        <li>Transaksi perdagangan mungkin dikenakan Pajak Penghasilan Final Pasal 4(2) atas keuntungan modal.</li>
-        <li>Laporan ini disediakan hanya untuk tujuan informasi dan bukan merupakan nasihat pajak.</li>
-      </ul>
     </div>
 {% endblock %}

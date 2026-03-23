@@ -1,586 +1,290 @@
 /*
  * ══════════════════════════════════════════════════════════════
- * PDF Export Template — "The Wealth Terminal" Print Design
+ * PDF Export Template — Formal Business Style
  * ══════════════════════════════════════════════════════════════
- *
- * Aligned with DESIGN.md tokens. Used for all printable/PDF
- * documents: Tax Reports, Dividend Statements, Account Statements,
- * Transaction Confirmations, etc.
- *
- * Usage: Include this CSS on any HTML page rendered as a PDF.
- *        Print via window.print() or server-side headless browser.
  */
 
-/* ── Reset & Page Setup ──────────────────────────────────── */
+/* ── Page Setup ──────────────────────────────────────────── */
 @page {
   size: A4;
-  margin: 16mm 16mm 20mm 16mm;
+  margin: 15mm;
 }
 
 @media print {
-  html, body { background: #FFFFFF !important; }
-  body.pdf-body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; }
-  .pdf-no-print { display: none !important; }
-  .pdf-page-break { page-break-before: always; }
-  .pdf-doc { max-width: 100%; box-shadow: none; padding: 0; border-radius: 0; }
-  .pdf-screen-bg { background: #FFFFFF; min-height: auto; padding: 0; }
+  body {
+    background: #FFFFFF !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  .pdf-no-print {
+    display: none !important;
+  }
+  .pdf-doc {
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    border: none !important;
+  }
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
+/* ── Base Layout ─────────────────────────────────────────── */
 body.pdf-body {
-  font-family: 'TT Norms Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Times New Roman', serif;
   font-size: 10pt;
-  line-height: 1.5;
-  color: #344054;
-  background: #FFFFFF;
-}
-
-/* Screen-only wrapper to create a visual page preview */
-.pdf-screen-bg {
-  background: linear-gradient(145deg, #f0f2f5 0%, #e8eaee 100%);
-  min-height: 100vh;
-  padding: 40px 20px 100px;
+  line-height: 1.4;
+  color: #1a1a1a;
+  background: #f4f4f7;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  margin: 0;
+  padding: 40px 0;
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  min-height: 100vh;
 }
 
-
-/* ══════════════════════════════════════════════════════════════
-   DOCUMENT WRAPPER
-   ══════════════════════════════════════════════════════════════ */
 .pdf-doc {
-  max-width: 210mm;
-  width: 100%;
-  margin: 0 auto;
-  padding: 40px 44px 36px;
   background: #FFFFFF;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
-  border-radius: 8px;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 25mm;
+  box-shadow: 0 0 40px rgba(0,0,0,0.1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  border: 1px solid #e2e8f0;
 }
 
-
-/* ══════════════════════════════════════════════════════════════
-   HEADER — Logo + Company + Document Title
-   ══════════════════════════════════════════════════════════════ */
+/* ── Business Header ─────────────────────────────────────── */
 .pdf-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding-bottom: 18pt;
-  border-bottom: 3px solid #0000FF;   /* Electric Blue brand line */
-  margin-bottom: 22pt;
+  border-bottom: 2pt solid #0000FF;
+  padding-bottom: 15pt;
+  margin-bottom: 25pt;
 }
 
-.pdf-header__brand {
-  display: flex;
-  flex-direction: column;
-  gap: 8pt;
-}
-
-.pdf-header__logo {
-  height: 36pt;
+.pdf-logo {
+  height: 45pt;
   width: auto;
-}
-
-.pdf-header__company-details {
-  font-size: 7.5pt;
-  line-height: 1.6;
-  color: #535862;
-}
-
-.pdf-header__company-details strong {
-  color: #181D27;
-  font-weight: 700;
-  font-size: 8pt;
-}
-
-.pdf-header__doc-info {
-  text-align: right;
-  display: flex;
-  flex-direction: column;
-  gap: 4pt;
-}
-
-.pdf-header__doc-title {
-  font-size: 18pt;
-  font-weight: 700;
-  color: #181D27;
-  letter-spacing: -0.02em;
-}
-
-.pdf-header__doc-number {
-  font-size: 8pt;
-  color: #535862;
-  font-weight: 400;
-}
-
-.pdf-header__doc-date {
-  font-size: 9pt;
-  color: #344054;
-  font-weight: 600;
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   PARTIES — Issuer (Company) + Recipient (User)
-   ══════════════════════════════════════════════════════════════ */
-.pdf-parties {
-  display: flex;
-  justify-content: space-between;
-  gap: 16pt;
-  margin-bottom: 24pt;
-}
-
-.pdf-party {
-  flex: 1;
-  padding: 14pt 16pt;
-  border: 1px solid #E5E7EB;
-  border-radius: 10pt;
-  background: #FAFAFA;
-}
-
-.pdf-party__label {
-  font-size: 7pt;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #0000FF;
   margin-bottom: 8pt;
-  padding-bottom: 6pt;
-  border-bottom: 1px solid #E9EAEB;
 }
 
-.pdf-party__name {
-  font-size: 11pt;
-  font-weight: 700;
-  color: #181D27;
-  margin-bottom: 6pt;
+.pdf-company-info {
+  font-size: 8pt;
+  color: #444;
+  font-family: 'TT Norms Pro', sans-serif;
+  line-height: 1.4;
 }
 
-.pdf-party__detail {
-  font-size: 8.5pt;
-  line-height: 1.7;
-  color: #535862;
+.pdf-doc-meta {
+  text-align: right;
+  font-family: 'TT Norms Pro', sans-serif;
 }
 
-.pdf-party__detail strong {
-  color: #344054;
-  font-weight: 600;
-  display: inline-block;
-  min-width: 54pt;
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   SECTION TITLES
-   ══════════════════════════════════════════════════════════════ */
-.pdf-section-title {
-  font-size: 13pt;
-  font-weight: 700;
-  color: #181D27;
-  margin-top: 24pt;
-  margin-bottom: 12pt;
-  padding-bottom: 8pt;
-  border-bottom: 2px solid #E9EAEB;
-  letter-spacing: -0.01em;
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   SUMMARY GRID — Key-value stat cards
-   ══════════════════════════════════════════════════════════════ */
-.pdf-summary-grid {
-  display: flex;
-  gap: 12pt;
-  margin-bottom: 20pt;
-}
-
-.pdf-summary-card {
-  flex: 1;
-  padding: 12pt 14pt;
-  border: 1px solid #E5E7EB;
-  border-radius: 10pt;
-  background: #FFFFFF;
-  text-align: center;
-}
-
-.pdf-summary-card__label {
-  font-size: 7pt;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #717680;
-  margin-bottom: 6pt;
-}
-
-.pdf-summary-card__value {
+.pdf-doc-title {
   font-size: 16pt;
   font-weight: 700;
-  color: #181D27;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  color: #000;
+  margin-bottom: 4pt;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
-.pdf-summary-card__value--positive {
-  color: #027A48;
-}
-
-.pdf-summary-card__value--negative {
-  color: #B42318;
-}
-
-/* Accent highlight for the last card (Net P&L) */
-.pdf-summary-card:last-child {
-  border-color: rgba(0, 0, 255, 0.15);
-  background: rgba(0, 0, 255, 0.02);
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   DATA TABLE
-   ══════════════════════════════════════════════════════════════ */
-.pdf-table-container {
-  border: 1px solid #E5E7EB;
-  border-radius: 10pt;
-  overflow: hidden;
-  margin-bottom: 20pt;
-}
-
-.pdf-table {
-  width: 100%;
-  border-collapse: collapse;
+.pdf-meta-item {
   font-size: 8.5pt;
-  margin-bottom: 0;
+  margin-bottom: 1pt;
+  color: #555;
 }
 
-.pdf-table thead {
-  background: #F8F9FB;
+/* ── Summary Line (Formal) ───────────────────────────────── */
+.pdf-business-summary {
+  display: flex;
+  justify-content: space-around;
+  background: #f8f9fc;
+  border: 0.5pt solid #dae1ff;
+  padding: 12pt 0;
+  margin-bottom: 30pt;
+  font-family: 'TT Norms Pro', sans-serif;
+  border-radius: 4px;
 }
 
-.pdf-table th {
+.pdf-summary-item {
+  text-align: center;
+  flex: 1;
+}
+
+.pdf-summary-label {
   font-size: 7pt;
-  font-weight: 600;
+  color: #718096;
+  text-transform: uppercase;
+  margin-bottom: 2pt;
+  letter-spacing: 0.1em;
+}
+
+.pdf-summary-value {
+  font-size: 11pt;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+/* ── Parties ─────────────────────────────────────────────── */
+.pdf-business-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50pt;
+  margin-bottom: 35pt;
+}
+
+.pdf-party-section h3 {
+  font-size: 8pt;
+  color: #0000FF;
+  text-transform: uppercase;
+  border-bottom: 1pt solid #eef2f6;
+  padding-bottom: 4pt;
+  margin-bottom: 10pt;
+  font-family: 'TT Norms Pro', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.pdf-party-details {
+  font-size: 9pt;
+  line-height: 1.6;
+}
+
+.pdf-party-details strong {
+  display: block;
+  font-size: 10pt;
+  margin-bottom: 2pt;
+}
+
+/* ── Main Data Table ─────────────────────────────────────── */
+.pdf-table-title {
+  font-size: 10pt;
+  font-weight: 700;
+  margin-bottom: 12pt;
+  font-family: 'TT Norms Pro', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #717680;
-  padding: 10pt 12pt;
+}
+
+.pdf-business-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30pt;
+}
+
+.pdf-business-table th {
   text-align: left;
-  border-bottom: 2px solid #E9EAEB;
-}
-
-.pdf-table th.text-right,
-.pdf-table td.text-right {
-  text-align: right;
-}
-
-.pdf-table td {
-  padding: 9pt 12pt;
-  border-bottom: 1px solid #F2F4F7;
-  color: #344054;
-  vertical-align: middle;
-  font-size: 8.5pt;
-}
-
-.pdf-table tbody tr:nth-child(even) {
-  background: #FCFCFD;
-}
-
-.pdf-table tbody tr:last-child td {
-  border-bottom: 1px solid #E9EAEB;
-}
-
-.pdf-table .pdf-money {
-  font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  text-align: right;
-  font-family: 'TT Norms Pro', monospace;
-}
-
-.pdf-table .pdf-badge {
-  display: inline-block;
-  padding: 2pt 8pt;
-  border-radius: 10pt;
-  font-size: 7pt;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  border-bottom: 2pt solid #000;
+  padding: 8pt 4pt;
+  font-size: 7.5pt;
   text-transform: uppercase;
-}
-
-.pdf-badge--buy {
-  background: #EEF4FF;
-  color: #1B2559;
-  border: 1px solid rgba(27, 37, 89, 0.1);
-}
-
-.pdf-badge--sell {
-  background: #FEF3F2;
-  color: #B42318;
-  border: 1px solid rgba(180, 35, 24, 0.1);
-}
-
-.pdf-badge--success {
-  background: #ECFDF3;
-  color: #027A48;
-  border: 1px solid rgba(2, 122, 72, 0.1);
-}
-
-.pdf-badge--warning {
-  background: #FFFAEB;
-  color: #B54708;
-  border: 1px solid rgba(181, 71, 8, 0.1);
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   TOTALS ROW — Emphasized bottom row
-   ══════════════════════════════════════════════════════════════ */
-.pdf-table tfoot {
-  background: #F8F9FB;
-}
-
-.pdf-table tfoot td {
   font-weight: 700;
-  color: #181D27;
-  padding: 11pt 12pt;
-  border-top: 2px solid #D0D5DD;
-  border-bottom: none;
+  font-family: 'TT Norms Pro', sans-serif;
+}
+
+.pdf-business-table td {
+  padding: 10pt 4pt;
+  border-bottom: 0.5pt solid #edf2f7;
   font-size: 9pt;
 }
 
-
-/* ══════════════════════════════════════════════════════════════
-   NO-DATA STATE
-   ══════════════════════════════════════════════════════════════ */
-.pdf-no-data {
-  text-align: center;
-  padding: 32pt 16pt;
-  color: #717680;
-  font-size: 10pt;
-}
-
-.pdf-no-data__icon {
-  font-size: 28pt;
-  margin-bottom: 8pt;
-  opacity: 0.5;
-}
-
-.pdf-no-data__text {
-  font-weight: 500;
-  color: #535862;
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   NOTES & DISCLAIMERS
-   ══════════════════════════════════════════════════════════════ */
-.pdf-notes {
-  margin-top: 20pt;
-  padding: 12pt 16pt;
-  background: #FAFAFA;
-  border: 1px solid #E5E7EB;
-  border-radius: 10pt;
-  font-size: 7.5pt;
-  color: #535862;
-  line-height: 1.7;
-}
-
-.pdf-notes__title {
-  font-size: 8.5pt;
+.pdf-business-table tr.total-row td {
+  border-top: 2pt solid #000;
+  border-bottom: none;
   font-weight: 700;
-  color: #181D27;
-  margin-bottom: 6pt;
-  display: flex;
-  align-items: center;
-  gap: 6pt;
+  font-size: 10pt;
+  background: #fcfcfc;
 }
 
-.pdf-notes__title::before {
-  content: '';
-  display: inline-block;
-  width: 3pt;
-  height: 12pt;
-  background: #0000FF;
-  border-radius: 2pt;
+.pdf-text-right { text-align: right; }
+.pdf-val { font-variant-numeric: tabular-nums; }
+.pdf-text-success { color: #058527; font-weight: 700; }
+.pdf-text-danger { color: #b91c1c; font-weight: 700; }
+
+/* ── Legal & Footer ──────────────────────────────────────── */
+.pdf-legal-section {
+  margin-top: auto;
+  font-size: 8pt;
+  color: #4a5568;
+  line-height: 1.5;
+  padding-top: 30pt;
+  font-family: 'TT Norms Pro', sans-serif;
 }
 
-.pdf-notes ul {
-  margin: 4pt 0 0 14pt;
-  padding: 0;
+.pdf-legal-block {
+  margin-bottom: 15pt;
+  background: #fdfdfd;
+  padding: 12pt;
+  border: 0.5pt solid #f1f5f9;
+  border-radius: 4px;
 }
 
-.pdf-notes li {
-  margin-bottom: 3pt;
+.pdf-legal-block strong {
+  color: #2d3748;
+  display: block;
+  margin-bottom: 4pt;
+  font-size: 8.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
-
-/* ══════════════════════════════════════════════════════════════
-   FOOTER — Page number, confidentiality, generated date
-   ══════════════════════════════════════════════════════════════ */
-.pdf-footer {
-  margin-top: 32pt;
-  padding-top: 14pt;
-  border-top: 2px solid #E9EAEB;
+.pdf-footer-line {
+  margin-top: 20pt;
+  border-top: 0.5pt solid #cbd5e0;
+  padding-top: 10pt;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
   font-size: 7pt;
-  color: #717680;
+  color: #94a3b8;
 }
 
-.pdf-footer__left {
-  display: flex;
-  flex-direction: column;
-  gap: 3pt;
-}
-
-.pdf-footer__confidential {
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #535862;
-  font-size: 7pt;
-}
-
-.pdf-footer__generated {
-  font-weight: 400;
-  font-size: 7pt;
-}
-
-.pdf-footer__right {
-  text-align: right;
-}
-
-.pdf-footer__page {
-  font-weight: 600;
-  color: #535862;
-  font-size: 8pt;
-}
-
-/* Accent line at bottom of document */
-.pdf-footer::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
-  border-radius: 0 0 8pt 8pt;
-}
-
-.pdf-doc {
-  position: relative;
-  overflow: hidden;
-}
-
-/* Brand accent bar at bottom of document */
-.pdf-brand-bar {
-  height: 4px;
-  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
-  margin-top: 24pt;
-  border-radius: 2pt;
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   WATERMARK — Subtle brand identity
-   ══════════════════════════════════════════════════════════════ */
-.pdf-watermark {
-  position: absolute;
-  bottom: 60pt;
-  right: 30pt;
-  font-size: 100pt;
-  font-weight: 800;
-  color: rgba(0, 0, 255, 0.02);
-  pointer-events: none;
-  user-select: none;
-  letter-spacing: -0.04em;
-  z-index: 0;
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   UTILITY CLASSES
-   ══════════════════════════════════════════════════════════════ */
-.pdf-text-muted    { color: #717680; }
-.pdf-text-primary  { color: #181D27; }
-.pdf-text-accent   { color: #0000FF; }
-.pdf-text-success  { color: #027A48; }
-.pdf-text-danger   { color: #B42318; }
-
-.pdf-text-right    { text-align: right; }
-.pdf-text-center   { text-align: center; }
-
-.pdf-mt-sm  { margin-top: 8pt; }
-.pdf-mt-md  { margin-top: 16pt; }
-.pdf-mt-lg  { margin-top: 24pt; }
-.pdf-mb-sm  { margin-bottom: 8pt; }
-.pdf-mb-md  { margin-bottom: 16pt; }
-
-.pdf-divider {
-  border: none;
-  border-top: 1px solid #E9EAEB;
-  margin: 16pt 0;
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   PRINT BAR — Fixed bottom bar (hidden in print)
-   ══════════════════════════════════════════════════════════════ */
-.pdf-print-bar {
+/* ── Screen Print Controls ───────────────────────────────── */
+.pdf-print-controls {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #181D27;
-  padding: 14px 32px;
+  bottom: 25pt;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  padding: 10pt 20pt;
+  border-radius: 6pt;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  z-index: 10000;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  gap: 12pt;
+  box-shadow: 0 10pt 25pt rgba(0,0,0,0.5);
+  z-index: 1000;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
-.pdf-print-bar__btn {
-  padding: 11px 28px;
+.pdf-btn {
+  padding: 9pt 20pt;
+  border-radius: 4pt;
   border: none;
-  border-radius: 8px;
-  font-family: 'TT Norms Pro', -apple-system, sans-serif;
-  font-size: 14px;
+  font-family: 'TT Norms Pro', sans-serif;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 13px;
+  transition: all 0.2s;
 }
 
-.pdf-print-bar__btn--primary {
-  background: #0000FF;
-  color: #98FB96;
-}
-.pdf-print-bar__btn--primary:hover {
-  background: #0000CC;
-  transform: translateY(-1px);
-}
+.pdf-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.pdf-btn-primary { background: #0000FF; color: #fff; }
+.pdf-btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
 
-.pdf-print-bar__btn--ghost {
-  background: transparent;
-  color: #FFFFFF;
-  border: 1px solid #535862;
-}
-.pdf-print-bar__btn--ghost:hover {
-  background: #344054;
-  border-color: #717680;
-}
-
-@media print {
-  .pdf-print-bar { display: none !important; }
-  .pdf-screen-bg { background: #fff; padding: 0; }
-  .pdf-watermark { display: none; }
-  .pdf-brand-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .pdf-footer::after { display: none; }
+/* ── No-Data / Empty ─────────────────────────────────────── */
+.pdf-empty {
+  padding: 50pt;
+  text-align: center;
+  border: 1pt solid #edf2f7;
+  color: #718096;
+  font-style: italic;
+  font-family: 'TT Norms Pro', sans-serif;
 }
