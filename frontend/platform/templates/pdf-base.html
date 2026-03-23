@@ -4,11 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ doc_title | default("Document") }} — POOOL Finance</title>
+  <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg">
   <link rel="stylesheet" href="/static/css/fonts.css">
   <link rel="stylesheet" href="/static/css/pdf-export.css">
 </head>
 <body class="pdf-body">
+  <div class="pdf-screen-bg pdf-no-print"><!-- screen preview wrapper --></div>
   <div class="pdf-doc">
+
+    <!-- Subtle background watermark -->
+    <div class="pdf-watermark pdf-no-print">POOOL</div>
 
     <!-- ═══════════════════════════════════════════════════════
          HEADER — Logo + Company Info + Document Title
@@ -23,8 +28,8 @@
           {% if company_npwp %}NPWP: {{ company_npwp }}<br>{% endif %}
           {% if company_nib %}NIB: {{ company_nib }}<br>{% endif %}
           {% if company_email %}{{ company_email }}{% endif %}
-          {% if company_phone %} &middot; {{ company_phone }}{% endif %}
-          {% if company_website %} &middot; {{ company_website }}{% endif %}
+          {% if company_phone %} · {{ company_phone }}{% endif %}
+          {% if company_website %} · {{ company_website }}{% endif %}
         </div>
       </div>
 
@@ -73,13 +78,13 @@
 
     <!-- ═══════════════════════════════════════════════════════
          CONTENT BLOCK — Injected by specific report type
-         Each report type extends this template by filling the
-         `content` block with its own summary cards + tables.
          ═══════════════════════════════════════════════════════ -->
     {% block content %}
-    <!-- Default placeholder — override in child templates -->
     <div class="pdf-section-title">Report Content</div>
-    <p style="color: #535862; font-size: 9pt;">No data provided.</p>
+    <div class="pdf-no-data">
+      <div class="pdf-no-data__icon">📄</div>
+      <div class="pdf-no-data__text">No data to display.</div>
+    </div>
     {% endblock %}
 
 
@@ -107,7 +112,7 @@
 
 
     <!-- ═══════════════════════════════════════════════════════
-         FOOTER — Confidentiality, generated timestamp, page
+         FOOTER
          ═══════════════════════════════════════════════════════ -->
     <footer class="pdf-footer">
       <div class="pdf-footer__left">
@@ -119,6 +124,9 @@
       </div>
     </footer>
 
+    <!-- Brand gradient bar at bottom -->
+    <div class="pdf-brand-bar"></div>
+
   </div><!-- /.pdf-doc -->
 
 
@@ -126,12 +134,24 @@
        PRINT BAR — Visible on screen, hidden in print
        ═══════════════════════════════════════════════════════ -->
   <div class="pdf-print-bar pdf-no-print">
-    <button class="pdf-print-bar__btn pdf-print-bar__btn--ghost" onclick="window.history.back()">← Back</button>
+    <button class="pdf-print-bar__btn pdf-print-bar__btn--ghost" onclick="window.history.back()">
+      ← Back
+    </button>
     <button class="pdf-print-bar__btn pdf-print-bar__btn--primary" onclick="window.print()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 6px;"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      Download / Print as PDF
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Save as PDF
     </button>
   </div>
 
+  <script>
+    // Wrap the document in the screen preview background
+    (function() {
+      const bg = document.querySelector('.pdf-screen-bg');
+      const doc = document.querySelector('.pdf-doc');
+      if (bg && doc) {
+        bg.appendChild(doc);
+      }
+    })();
+  </script>
 </body>
 </html>
