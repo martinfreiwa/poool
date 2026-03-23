@@ -779,3 +779,30 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **What I did:** Created a migration to upsert the user, assign `admin` and `super_admin` roles, and set KYC status to `approved`.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+### [P1] — Checkout Page Missing Property Details for Progress Bar
+- **File:** `backend/src/payments/routes.rs`
+- **What was wrong:** The checkout page SQL query was missing `tokens_total`, `bedrooms`, `bathrooms`, `building_size_sqm`, and `land_size_sqm` fields, preventing the progress bar and property detail chips from rendering correctly.
+- **What I did:** Updated the SQL query and the `CartItemRow` struct to include these fields, and mapped them to the template context. Refactored the fetch logic to use a struct instead of a 19-element tuple to bypass SQLx `FromRow` limits.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P1] — Assets Marketplace Compilation Errors
+- **File:** `backend/src/assets/routes.rs`
+- **What was wrong:** Missing `is_empty` variable definition and type mismatch in `CommodityDisplayData::from_asset` (expected `CommodityAsset`, got `MarketplaceAsset`).
+- **What I did:** Defined `is_empty` before template rendering and updated the `page_commodities_marketplace` query to fetch full `CommodityAsset` data.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P1] — Blog Service "Broadway" Syntax Error
+- **File:** `backend/src/blog/service.rs`
+- **What was wrong:** Accidental insertion of ` Broadway: false,` code in the middle of a struct initialization caused a compilation error.
+- **What I did:** Removed the erroneous line.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — GCS image proxy rewrite across all modules
+- **File:** `backend/src/assets/routes.rs`, `backend/src/admin/assets.rs`, `backend/src/admin/submissions.rs`, `backend/src/community/user_bridge.rs`, `backend/src/community/routes.rs`, `backend/src/blog/service.rs`
+- **What was wrong:** Many image URLs and avatars were being returned as direct GCS links (`https://storage.googleapis.com/...`), which failed with 403 Forbidden due to bucket permissions. While some sections (Portfolio, Developer) already used the proxy, others like Marketplace, Admin, Community, and Blog still returned raw URLs.
+- **What I did:** Applied `rewrite_gcs_url` to image URLs in the Marketplace/Commodities listing, Admin asset/submission details, User avatars in community feed/reports, Community post images, and Blog article covers/author avatars. This ensures all visual assets use the server-side signed-URL proxy.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23

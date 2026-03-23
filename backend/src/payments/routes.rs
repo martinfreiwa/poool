@@ -231,20 +231,40 @@ pub async fn checkout_page(
     tracing::info!("Checkout page hit: user={}", user.id);
 
     // Fetch Cart
-    let cart_rows = sqlx::query_as::<
-        _,
-        (
-            uuid::Uuid, uuid::Uuid, i32, i64, String, String, Option<String>, Option<String>,
-            Option<String>, String, Option<i32>, String, i32, Option<String>,
-        ),
-    >(
+    #[derive(sqlx::FromRow)]
+    struct CartItemRow {
+        id: uuid::Uuid,
+        asset_id: uuid::Uuid,
+        tokens_quantity: i32,
+        token_price_cents: i64,
+        title: String,
+        slug: String,
+        location_city: Option<String>,
+        location_country: Option<String>,
+        short_description: Option<String>,
+        asset_type: String,
+        annual_yield_bps: Option<i32>,
+        funding_status: String,
+        tokens_available: i32,
+        tokens_total: i32,
+        cover_image_url: Option<String>,
+        bedrooms: Option<i32>,
+        bathrooms: Option<i32>,
+        building_size_sqm: Option<f64>,
+        land_size_sqm: Option<f64>,
+    }
+
+    let cart_rows = sqlx::query_as::<_, CartItemRow>(
         r#"
         SELECT
             ci.id, ci.asset_id, ci.tokens_quantity, ci.token_price_cents,
             a.title, a.slug,
             a.location_city, a.location_country, a.short_description,
-            a.asset_type, a.annual_yield_bps, a.funding_status, a.tokens_available,
-            (SELECT image_url FROM asset_images ai WHERE ai.asset_id = a.id ORDER BY ai.is_cover DESC, ai.sort_order ASC, ai.created_at ASC LIMIT 1) as cover_image_url
+            a.asset_type, a.annual_yield_bps, a.funding_status, a.tokens_available, a.tokens_total,
+            (SELECT image_url FROM asset_images ai WHERE ai.asset_id = a.id ORDER BY ai.is_cover DESC, ai.sort_order ASC, ai.created_at ASC LIMIT 1) as cover_image_url,
+            a.bedrooms, a.bathrooms,
+            a.building_size_sqm::FLOAT8 as building_size_sqm,
+            a.land_size_sqm::FLOAT8 as land_size_sqm
         FROM cart_items ci
         JOIN assets a ON a.id = ci.asset_id
         WHERE ci.user_id = $1
@@ -260,14 +280,16 @@ pub async fn checkout_page(
     let cart_items: Vec<serde_json::Value> = cart_rows
         .into_iter()
         .map(|r| {
-            let total = r.2 as i64 * r.3;
+            let total = r.tokens_quantity as i64 * r.token_price_cents;
             cart_total_cents += total;
             serde_json::json!({
-                "id": r.0.to_string(), "asset_id": r.1.to_string(), "tokens_quantity": r.2,
-                "token_price_cents": r.3, "total_cents": total, "title": r.4, "slug": r.5,
-                "location_city": r.6, "location_country": r.7, "short_description": r.8,
-                "asset_type": r.9, "annual_yield_bps": r.10, "funding_status": r.11,
-                "tokens_available": r.12, "cover_image_url": r.13.as_ref().map(|u| crate::storage::service::rewrite_gcs_url(u))
+                "id": r.id.to_string(), "asset_id": r.asset_id.to_string(), "tokens_quantity": r.tokens_quantity,
+                "token_price_cents": r.token_price_cents, "total_cents": total, "title": r.title, "slug": r.slug,
+                "location_city": r.location_city, "location_country": r.location_country, "short_description": r.short_description,
+                "asset_type": r.asset_type, "annual_yield_bps": r.annual_yield_bps, "funding_status": r.funding_status,
+                "tokens_available": r.tokens_available, "tokens_total": r.tokens_total, 
+                "cover_image_url": r.cover_image_url.as_ref().map(|u| crate::storage::service::rewrite_gcs_url(u)),
+                "bedrooms": r.bedrooms, "bathrooms": r.bathrooms, "building_size_sqm": r.building_size_sqm, "land_size_sqm": r.land_size_sqm
             })
         })
         .collect();

@@ -53,7 +53,7 @@ pub async fn get_user_info(
                 display_name: r
                     .display_name
                     .unwrap_or_else(|| "Anonymous User".to_string()),
-                avatar_url: r.avatar_url,
+                avatar_url: r.avatar_url.map(|u| crate::storage::service::rewrite_gcs_url(&u)),
             };
 
             // 3. Set Cache
@@ -146,7 +146,7 @@ pub async fn get_users_info_batch(
                     let info = UserBridgeInfo {
                         user_id: r.id,
                         display_name: r.display_name.clone().unwrap_or_else(|| "Anonymous User".to_string()),
-                        avatar_url: r.avatar_url.clone(),
+                        avatar_url: r.avatar_url.clone().map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                     };
                     result_map.insert(r.id, info.clone());
                     let key = format!("community:user_bridge:{}", r.id);
@@ -160,7 +160,7 @@ pub async fn get_users_info_batch(
                     let info = UserBridgeInfo {
                         user_id: r.id,
                         display_name: r.display_name.unwrap_or_else(|| "Anonymous User".to_string()),
-                        avatar_url: r.avatar_url,
+                        avatar_url: r.avatar_url.map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                     };
                     result_map.insert(r.id, info);
                 }
@@ -170,7 +170,7 @@ pub async fn get_users_info_batch(
                 let info = UserBridgeInfo {
                     user_id: r.id,
                     display_name: r.display_name.unwrap_or_else(|| "Anonymous User".to_string()),
-                    avatar_url: r.avatar_url,
+                    avatar_url: r.avatar_url.map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                 };
                 result_map.insert(r.id, info);
             }

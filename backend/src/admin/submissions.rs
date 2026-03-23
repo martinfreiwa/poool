@@ -224,7 +224,10 @@ pub async fn api_admin_submission_detail(
         "video_url": row.get::<Option<String>, _>("video_url"),
         "google_maps_url": row.get::<Option<String>, _>("google_maps_url"),
         "documents": docs.iter().map(|d| serde_json::json!({"document_type": d.0, "file_size": d.1})).collect::<Vec<_>>(),
-        "images": images.iter().map(|i| serde_json::json!({"url": i.0, "is_cover": i.1, "sort_order": i.2})).collect::<Vec<_>>(),
+        "images": images.iter().map(|i| {
+            let url = crate::storage::service::rewrite_gcs_url(&i.0);
+            serde_json::json!({"url": url, "is_cover": i.1, "sort_order": i.2})
+        }).collect::<Vec<_>>(),
         "milestones": milestones.iter().map(|m| serde_json::json!({"title": m.0, "description": m.1, "month_index": m.2, "is_completed": m.3})).collect::<Vec<_>>(),
     })).into_response())
 }

@@ -82,10 +82,15 @@ pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> 
     })
     .unwrap_or_default();
 
-    let is_empty = assets.is_empty();
+    let display_assets: Vec<PropertyDisplayData> = assets
+        .iter()
+        .map(PropertyDisplayData::from_asset)
+        .collect();
+
+    let is_empty = display_assets.is_empty();
 
     match state.templates.get_template("marketplace.html") {
-        Ok(template) => match template.render(context! { assets => assets, empty => is_empty }) {
+        Ok(template) => match template.render(context! { assets => display_assets, empty => is_empty }) {
             Ok(html) => Html(html).into_response(),
             Err(e) => {
                 tracing::error!("Template rendering error: {}", e);
@@ -710,7 +715,7 @@ pub async fn page_commodities_marketplace(
     };
 
     let assets = sqlx::query_as!(
-        MarketplaceAsset,
+        super::models::CommodityAsset,
         r#"
         SELECT
             a.id,
@@ -734,8 +739,6 @@ pub async fn page_commodities_marketplace(
                 WHERE asset_id = a.id 
                 ORDER BY is_cover DESC, created_at ASC
             ) AS "image_urls?",
-            a.bedrooms,
-            a.lease_type,
             a.term_months,
             a.area,
             a.land_size_sqm,
@@ -748,6 +751,16 @@ pub async fn page_commodities_marketplace(
             ) AS "investor_count?",
             a.video_url,
             a.google_maps_url,
+            a.operator_name,
+            a.fixed_roi_bps,
+            a.revenue_min_cents,
+            a.revenue_max_cents,
+            a.expenses_cents,
+            a.net_profit_min_cents,
+            a.net_profit_max_cents,
+            a.investor_payout_cents,
+            a.operator_split_pct,
+            a.poool_split_pct,
             a.location_description
         FROM assets a
         
@@ -761,11 +774,16 @@ pub async fn page_commodities_marketplace(
     .await
     .unwrap_or_default();
 
-    let is_empty = assets.is_empty();
+    let display_assets: Vec<super::models::CommodityDisplayData> = assets
+        .iter()
+        .map(super::models::CommodityDisplayData::from_asset)
+        .collect();
+
+    let is_empty = display_assets.is_empty();
 
     match state.templates.get_template("commodities-marketplace.html") {
         Ok(template) => {
-            match template.render(context! { assets => assets, empty => is_empty, user => user }) {
+            match template.render(context! { assets => display_assets, empty => is_empty, user => user }) {
                 Ok(html) => Html(html).into_response(),
                 Err(e) => {
                     tracing::error!("Template rendering error: {}", e);

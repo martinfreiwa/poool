@@ -195,7 +195,10 @@ pub async fn api_admin_asset_detail(
             "net_income_cents": f.4, "occupancy_rate_bps": f.5
         })).collect::<Vec<_>>(),
         "documents": docs.iter().map(|d| serde_json::json!({"document_type": d.0, "file_size": d.1})).collect::<Vec<_>>(),
-        "images": images.iter().map(|i| serde_json::json!({"url": i.0, "is_cover": i.1, "sort_order": i.2})).collect::<Vec<_>>(),
+        "images": images.iter().map(|i| {
+            let url = crate::storage::service::rewrite_gcs_url(&i.0);
+            serde_json::json!({"url": url, "is_cover": i.1, "sort_order": i.2})
+        }).collect::<Vec<_>>(),
         "milestones": milestones.iter().map(|m| serde_json::json!({"title": m.0, "description": m.1, "month_index": m.2, "is_completed": m.3})).collect::<Vec<_>>(),
         "orders": orders.iter().map(|o| serde_json::json!({
             "order_number": o.0, "user_email": o.1, "tokens": o.2,
