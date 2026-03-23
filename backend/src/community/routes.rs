@@ -1498,6 +1498,12 @@ pub fn router() -> Router<AppState> {
         .route("/api/community/circles/leave", post(leave_circle))
         .route("/api/community/circles/:id/invite", post(send_circle_invite))
         .route("/api/community/circles/:id/kick/:user_id", post(kick_circle_member))
+        // M4-BE.11: Role management (promote/demote to admin/member)
+        .route("/api/community/circles/:id/roles", post(update_circle_member_role))
+        // M4-BE.12: Transfer ownership to another member
+        .route("/api/community/circles/:id/transfer", post(transfer_circle_ownership))
+        // M4-BE.13: Update circle privacy (public/private)
+        .route("/api/community/circles/:id/privacy", post(update_circle_privacy))
         .route("/api/community/invites", get(get_my_invites))
         .route("/api/community/invites/:id/accept", post(accept_invite))
         .route("/api/community/invites/:id/decline", post(decline_invite))
@@ -2014,6 +2020,93 @@ async fn kick_circle_member(
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::kick_member(&c_pool, user.id, target_user_id, circle_id).await?;
     Ok(Json(serde_json::json!({"success": true})))
+}
+
+// ─── M4-BE.11: Circle Role Management ──────────────────────────────────────
+
+#[derive(Deserialize)]
+struct UpdateRoleReq {
+    user_id: Uuid,
+    role: String, // "admin" | "member"
+}
+
+async fn update_circle_member_role(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(payload): Json<UpdateRoleReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    crate::community::circles::update_member_role(
+        &c_pool, user.id, payload.user_id, circle_id, &payload.role
+    ).await?;
+
+    Ok(Json(serde_json::json!({"success": true})))
+}
+
+// ─── M4-BE.12: Transfer Circle Ownership ───────────────────────────────────
+
+#[derive(Deserialize)]
+struct TransferOwnershipReq {
+    new_owner_id: Uuid,
+}
+
+async fn transfer_circle_ownership(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(payload): Json<TransferOwnershipReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    crate::community::circles::transfer_ownership(
+        &c_pool, user.id, payload.new_owner_id, circle_id
+    ).await?;
+
+    // Notify the new owner
+    let _ = crate::community::notifications::notify_user(
+        &c_pool,
+        payload.new_owner_id,
+        Some(user.id),
+        "circle_ownership_transferred",
+        Some(circle_id),
+        "You are now the owner of this circle!",
+        Some(&format!("/community?tab=my-circle")),
+    ).await;
+
+    Ok(Json(serde_json::json!({"success": true})))
+}
+
+// ─── M4-BE.13: Circle Privacy Settings ─────────────────────────────────────
+
+#[derive(Deserialize)]
+struct UpdatePrivacyReq {
+    is_public: bool,
+}
+
+async fn update_circle_privacy(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(circle_id): Path<Uuid>,
+    Json(payload): Json<UpdatePrivacyReq>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    crate::community::circles::update_circle_privacy(
+        &c_pool, user.id, circle_id, payload.is_public
+    ).await?;
+
+    Ok(Json(serde_json::json!({"success": true, "is_public": payload.is_public})))
 }
 
 async fn get_my_invites(
