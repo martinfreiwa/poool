@@ -762,11 +762,12 @@
   grid-template-columns: repeat(3, 344px);
   gap: 24px;
   width: 1080px;
-  align-items: stretch;
+  align-items: stretch; /* equal-height rows */
 }
 
 .property-grid-item {
   width: 344px;
+  display: flex; /* allow child card to stretch full height */
 }
 
 /* ===========================
@@ -776,26 +777,21 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch; /* children fill full width */
   padding: 0px;
   width: 344px;
   min-width: 320px;
-  min-height: 572px;
-  height: auto;
+  /* No fixed min-height — height comes from the grid row (stretch) */
+  height: 100%; /* fill the grid cell so all cards in a row are equal height */
   background: var(--card-bg, #ffffff);
   border: 1px solid var(--card-border-color, var(--table-border-color));
   border-radius: var(--card-border-radius, 16px);
-  flex: none;
-  order: 0;
-  flex-grow: 0;
   overflow: hidden;
   cursor: pointer;
   /* Initial state for animation */
   opacity: 0;
   animation: fadeInUp 0.6s ease-out forwards;
-  /* Animation fill mode ensures final state is maintained */
   animation-fill-mode: forwards;
-  /* Simple transition like developer dashboard */
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -1072,12 +1068,9 @@
   padding: 16px;
   gap: 12px;
   width: 100%;
-  height: auto;
-  min-height: 300px;
-  flex: none;
+  /* flex: 1 makes the content area expand to fill remaining card height */
+  flex: 1 1 auto;
   order: 1;
-  align-self: stretch;
-  flex-grow: 0;
 }
 
 /* Categories Section */
@@ -1087,12 +1080,11 @@
   align-items: center;
   padding: 0px;
   gap: 4px;
-  width: 300px;
+  width: 100%;
   height: 32px;
   flex: none;
   order: 0;
   align-self: stretch;
-  flex-grow: 0;
 }
 
 .property-category {
@@ -1177,12 +1169,11 @@
   align-items: center;
   padding: 0px;
   gap: 4px;
-  width: 300px;
+  width: 100%;
   height: 32px;
   flex: none;
   order: 0;
   align-self: stretch;
-  flex-grow: 0;
 }
 
 .commodity-categories .property-category {
@@ -1215,34 +1206,32 @@
   align-items: flex-start;
   padding: 0px;
   gap: 16px;
-  width: 312px;
-  min-height: 60px;
+  width: 100%;
+  /* Fixed min-height ensures all cards have the same title zone height,
+     preventing shorter titles from collapsing the card height */
+  min-height: 90px;
   height: auto;
   flex: none;
   order: 1;
   align-self: stretch;
-  flex-grow: 0;
 }
 
 .property-title {
-  width: 272px;
-  min-height: 60px;
+  width: 100%;
   height: auto;
-  max-height: 120px;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 700;
   font-size: 20px;
   line-height: 30px;
   color: var(--page-title-color);
-  flex: none;
+  flex: 1;
   order: 0;
-  flex-grow: 1;
   margin: 0;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
@@ -1273,12 +1262,10 @@
   align-items: flex-start;
   padding: 0px;
   gap: 8px;
-  width: 312px;
-  height: 46px;
+  width: 100%;
   flex: none;
   order: 2;
   align-self: stretch;
-  flex-grow: 0;
 }
 
 /* Price and Percentage - First */
@@ -1288,13 +1275,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 0px;
-  gap: 35px;
-  width: 312px;
+  gap: 8px;
+  width: 100%;
   height: 30px;
   flex: none;
   order: 0;
   align-self: stretch;
-  flex-grow: 0;
 }
 
 /* Progress Bar - Second */
@@ -1304,14 +1290,13 @@
   align-items: flex-start;
   padding: 0px 1px;
   gap: 10px;
-  width: 312px;
+  width: 100%;
   height: 8px;
   background: #d5d7da;
   border-radius: 30px;
   flex: none;
   order: 1;
   align-self: stretch;
-  flex-grow: 0;
   overflow: hidden;
 }
 
@@ -1370,14 +1355,16 @@
   padding: 12px;
   gap: 10px;
   width: 100%;
-  height: auto;
-  background: #f8f9fa;
+  background: var(--color-gray-50, #f8f9fa);
   border-radius: 8px;
-  flex: none;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  /* flex: 1 pushes this to the bottom of the card and equalises card heights */
+  flex: 1 1 auto;
   order: 3;
   align-self: stretch;
-  flex-grow: 0;
   box-sizing: border-box;
+  /* Justify rows to the top so they don't stretch when the box is taller */
+  justify-content: flex-start;
 }
 
 .investment-row {

@@ -62,7 +62,7 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
           <!-- Order Summary -->
           <div class="checkout-summary-card">
             <div class="checkout-summary-card__header-row">
-              <div class="checkout-summary-card__title">Order Summary <span id="summary-item-count" style="font-weight:400;font-size:14px;color:#717680;"></span></div>
+              <div class="checkout-summary-card__title">Order Summary</div>
               <div class="checkout-summary-card__timer" id="checkout-timer" style="display:none">
                 <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><circle cx="12" cy="12" r="10" stroke="#B42318" stroke-width="2"/><path d="M12 6v6l4 2" stroke="#B42318" stroke-width="2" stroke-linecap="round"/></svg>
                 <span>Reserved for <strong id="timer-display">15:00</strong></span>
@@ -149,6 +149,14 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
 
                 <div id="usd-bank-details"></div>
                 <div id="idr-bank-details" style="display: none"></div>
+
+                <!-- Confirmation Checkbox -->
+                <div class="checkout-confirmation-box" style="margin-top: 16px; margin-bottom: 20px;">
+                  <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 13px; color: #344054; line-height: 1.5;">
+                    <input type="checkbox" id="bank-terms-checkbox" style="margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer;" />
+                    <span id="bank-terms-text">I confirm that I will include the <strong>Reference ID</strong> in the transfer description and that I will cover all bank transfer fees (e.g., SWIFT 'OUR' instruction).</span>
+                  </label>
+                </div>
 
                 <!-- Proof of Transfer Upload -->
                 <div class="file-upload-zone file-upload-zone--compact" id="upload-zone">
@@ -376,25 +384,21 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
           var chipsHtml = '<div class="cart-item-card__property-details">';
           if (item.bedrooms) {
             chipsHtml += '<span class="cart-item-card__detail-chip">'
-              + '<img src="/static/images/Bed.svg" alt="Beds" width="14" height="14">'
-              + ' ' + item.bedrooms + ' ' + (item.bedrooms === 1 ? 'Bed' : 'Beds') + '</span>';
+              + item.bedrooms + ' ' + (item.bedrooms === 1 ? 'Bed' : 'Beds') + '</span>';
           }
           if (item.bathrooms) {
             chipsHtml += '<span class="cart-item-card__detail-chip">'
-              + '<svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-3a1 1 0 0 1 1-1z"/><path d="M6 12V5a2 2 0 0 1 2-2h3v2.25"/></svg>'
-              + ' ' + item.bathrooms + ' ' + (item.bathrooms === 1 ? 'Bath' : 'Baths') + '</span>';
+              + item.bathrooms + ' ' + (item.bathrooms === 1 ? 'Bath' : 'Baths') + '</span>';
           }
           if (item.building_size_sqm && item.building_size_sqm > 0) {
             var bsqm = item.building_size_sqm % 1 === 0 ? item.building_size_sqm.toFixed(0) : item.building_size_sqm.toFixed(1);
             chipsHtml += '<span class="cart-item-card__detail-chip">'
-              + '<svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 3v18"/></svg>'
-              + ' ' + bsqm + ' m²</span>';
+              + bsqm + ' m²</span>';
           }
           if (item.land_size_sqm && item.land_size_sqm > 0) {
             var lsqm = item.land_size_sqm % 1 === 0 ? item.land_size_sqm.toFixed(0) : item.land_size_sqm.toFixed(1);
             chipsHtml += '<span class="cart-item-card__detail-chip">'
-              + '<svg  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22l5-5"/><path d="M7 22H2v-5"/><path d="M22 2l-5 5"/><path d="M17 2h5v5"/></svg>'
-              + ' ' + lsqm + ' m² land</span>';
+              + lsqm + ' m² land</span>';
           }
           chipsHtml += '</div>';
 
@@ -483,8 +487,16 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
                 <span class="bank-details-panel__value">${esc(usd.bank)}</span>
               </div>
               <div class="bank-details-panel__row">
+                <span class="bank-details-panel__label">Bank Address</span>
+                <span class="bank-details-panel__value">${esc(usd.bank_address)}</span>
+              </div>
+              <div class="bank-details-panel__row">
                 <span class="bank-details-panel__label">Account Name</span>
                 <span class="bank-details-panel__value">${esc(usd.account_name)}</span>
+              </div>
+              <div class="bank-details-panel__row">
+                <span class="bank-details-panel__label">Company Address</span>
+                <span class="bank-details-panel__value">${esc(usd.company_address)}</span>
               </div>
               <div class="bank-details-panel__row">
                 <span class="bank-details-panel__label">IBAN</span>
@@ -507,10 +519,6 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
                   <button type="button" class="bank-details-panel__copy bank-details-panel__copy--ref" data-copy="${refId}" title="Copy">${copyIconSvg}</button>
                 </span>
               </div>
-              <div class="bank-details-panel__ref-hint">
-                <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                Include this Reference ID in your transfer description
-              </div>
             `;
           }
         }
@@ -529,8 +537,16 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
                 <span class="bank-details-panel__value">${esc(idr.bank)}</span>
               </div>
               <div class="bank-details-panel__row">
+                <span class="bank-details-panel__label">Bank Address</span>
+                <span class="bank-details-panel__value">${esc(idr.bank_address)}</span>
+              </div>
+              <div class="bank-details-panel__row">
                 <span class="bank-details-panel__label">Account Name</span>
                 <span class="bank-details-panel__value">${esc(idr.account_name)}</span>
+              </div>
+              <div class="bank-details-panel__row">
+                <span class="bank-details-panel__label">Company Address</span>
+                <span class="bank-details-panel__value">${esc(idr.company_address)}</span>
               </div>
               <div class="bank-details-panel__row">
                 <span class="bank-details-panel__label">Account Number</span>
@@ -545,10 +561,6 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
                   ${refId}
                   <button type="button" class="bank-details-panel__copy bank-details-panel__copy--ref" data-copy="${refId}" title="Copy">${copyIconSvg}</button>
                 </span>
-              </div>
-              <div class="bank-details-panel__ref-hint">
-                <svg  width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                Include this Reference ID in your transfer description
               </div>
             `;
           }
@@ -596,8 +608,8 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
         if (summaryItems) summaryItems.innerHTML = html;
 
         // Item count
-        var countEl = document.getElementById("summary-item-count");
-        if (countEl) countEl.textContent = "(" + cartData.items.length + " item" + (cartData.items.length !== 1 ? "s" : "") + ")";
+        // Displaying item count in header is disabled as per user request
+
 
         // Totals
         var totalStr = formatCurrency(cartTotalCents);
@@ -700,6 +712,18 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
         // ── Validation on Submit ──
         if (selectedPaymentMethod === "bank") {
           var fileInput = document.getElementById("proof-upload");
+          var bankTermsCheckbox = document.getElementById("bank-terms-checkbox");
+          
+          if (!bankTermsCheckbox || !bankTermsCheckbox.checked) {
+            showError("Please confirm that you will include the Reference ID and cover the bank transfer fees.");
+            var termsText = document.getElementById("bank-terms-text");
+            if (termsText) {
+              termsText.style.color = "#B42318";
+              setTimeout(function(){ termsText.style.color = ""; }, 2000);
+            }
+            return;
+          }
+
           if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
             showError("Please upload a proof of transfer before confirming your payment.");
             // Highlight the upload zone

@@ -446,10 +446,12 @@
 .bank-details-panel__row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding: 12px 20px;
     border-bottom: 1px solid #f2f4f7;
     transition: background 0.15s;
+    gap: 16px;
+    min-height: 48px; /* Maintain row height even with flex-start */
 }
 
 .bank-details-panel__row:hover {
@@ -464,6 +466,7 @@
     background: var(--primary-color, #0000FF);
     border-bottom: none;
     padding: 14px 20px;
+    align-items: center; /* Keep reference row centered to match the green text beautifully */
 }
 
 .bank-details-panel__row--ref:hover {
@@ -475,6 +478,7 @@
     color: #717680;
     flex-shrink: 0;
     font-weight: 500;
+    padding-top: 4px; /* visually center against 1 line values */
 }
 
 .bank-details-panel__label--ref {
@@ -482,6 +486,7 @@
     font-weight: 600;
     color: rgba(255, 255, 255, 0.75);
     flex-shrink: 0;
+    padding-top: 0; /* center */
 }
 
 .bank-details-panel__value {
@@ -489,9 +494,14 @@
     font-weight: 600;
     color: var(--page-title-color);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    text-align: right;
     gap: 8px;
     font-family: 'SF Mono', 'Fira Code', monospace, sans-serif;
+    line-height: 1.5;
+    word-break: break-word; /* Ensure long words wrap if necessary */
 }
 
 .bank-details-panel__value--ref {

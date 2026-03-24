@@ -586,10 +586,8 @@ pub async fn api_marketplace_tab(
 
         let bedrooms_html = match bedrooms {
             Some(b) => {
-                let stroke = "#535862";
                 format!(
-                    "<div class=\"card-meta-item\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"{stroke}\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 4v16\"/><path d=\"M2 8h18a2 2 0 0 1 2 2v10\"/><path d=\"M2 17h20\"/><path d=\"M6 8v9\"/></svg><span>{b}</span></div><div class=\"card-meta-divider\"></div>",
-                    stroke = stroke,
+                    "<div class=\"card-meta-item\"><img src=\"/static/images/Bed.svg\" alt=\"Beds\" width=\"16\" height=\"16\"><span>{b}</span></div><div class=\"card-meta-divider\"></div>",
                     b = b,
                 )
             }

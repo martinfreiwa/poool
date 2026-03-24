@@ -387,97 +387,60 @@ document.addEventListener("htmx:afterSwap", function () {
   setTimeout(initGlobalSearch, 100);
 });
 
-function initGlobalSearch() {
-  const searchInputs = document.querySelectorAll('input[type="search"]');
+let __globalSearchIndex = [];
 
-  // The searchable index
-  const searchIndex = [
-    {
-      title: "Properties Marketplace",
-      type: "Page",
-      url: "/marketplace",
-      icon: "home-05.svg",
-    },
-    {
-      title: "Commodities Marketplace",
-      type: "Page",
-      url: "/commodities-marketplace",
-      icon: "home-05.svg",
-    },
+function initGlobalSearch() {
+  const searchInputs = Array.from(document.querySelectorAll('input[type="search"]'))
+    .filter(input => input.id !== 'sidebar-search-input');
+
+  // 1. Build the index from static pages and dynamic assets on current page
+  const staticPages = [
+    { title: "Properties Marketplace", type: "Page", url: "/marketplace", icon: "home-05.svg" },
+    { title: "Commodities Marketplace", type: "Page", url: "/commodities-marketplace", icon: "home-05.svg" },
+    { title: "Resale Market", type: "Page", url: "/marketplace-secondary", icon: "refresh-cw-01.svg" },
     { title: "Wallet", type: "Page", url: "/wallet", icon: "wallet-02.svg" },
-    {
-      title: "Portfolio",
-      type: "Page",
-      url: "/portfolio",
-      icon: "line-chart-up-02.svg",
-    },
+    { title: "Portfolio", type: "Page", url: "/portfolio", icon: "line-chart-up-02.svg" },
     { title: "Cart", type: "Page", url: "/cart", icon: "shopping-cart-01.svg" },
-    {
-      title: "Settings",
-      type: "Page",
-      url: "/settings",
-      icon: "settings-01.svg",
-    },
-    {
-      title: "Support",
-      type: "Page",
-      url: "/support",
-      icon: "message-chat-circle-grey.svg",
-    },
+    { title: "Settings", type: "Page", url: "/settings", icon: "settings-01.svg" },
+    { title: "Support", type: "Page", url: "/support", icon: "message-chat-circle-grey.svg" },
     { title: "Rewards", type: "Page", url: "/rewards", icon: "star-01.svg" },
-    {
-      title: "Transactions",
-      type: "Page",
-      url: "/transactions",
-      icon: "wallet-02.svg",
-    },
-    {
-      title: "Developer Dashboard",
-      type: "Developer",
-      url: "/developer/dashboard",
-      icon: "home-05.svg",
-    },
-    {
-      title: "Developer Assets",
-      type: "Developer",
-      url: "/developer/assets",
-      icon: "home-05.svg",
-    },
-    {
-      title: "The Regent Hotel",
-      type: "Property",
-      url: "/marketplace",
-      icon: "home-05.svg",
-    },
-    {
-      title: "Villa Horizon",
-      type: "Property",
-      url: "/marketplace",
-      icon: "home-05.svg",
-    },
-    {
-      title: "Gold Bullion",
-      type: "Commodity",
-      url: "/commodities-marketplace",
-      icon: "home-05.svg",
-    },
-    {
-      title: "Urban Loft",
-      type: "Property",
-      url: "/marketplace",
-      icon: "home-05.svg",
-    },
+    { title: "Leaderboard", type: "Page", url: "/leaderboard", icon: "award-05.svg" },
+    { title: "Community", type: "Page", url: "/community", icon: "users-01.svg" },
   ];
 
+  const dynamicAssets = Array.from(document.querySelectorAll(".property-card")).map(card => {
+    const titleEl = card.querySelector(".property-title");
+    const imgEl = card.querySelector(".property-image");
+    const type = card.dataset.assetType || "Property";
+    const slug = card.dataset.propertyId;
+    const baseUrl = type.toLowerCase() === 'commodity' ? '/commodity/' : '/property/';
+
+    let imgSrc = "/static/images/home-05.svg";
+    if (imgEl) {
+      if (imgEl.tagName === 'IMG' && imgEl.src) imgSrc = imgEl.src;
+      else if (imgEl.style.backgroundImage) {
+        const urlMatch = imgEl.style.backgroundImage.match(/url\(['"]?(.*?)['"]?\)/);
+        if (urlMatch && urlMatch[1]) imgSrc = urlMatch[1];
+      }
+    }
+
+    return {
+      title: titleEl ? titleEl.textContent.trim() : "Unknown Asset",
+      type: type.charAt(0).toUpperCase() + type.slice(1),
+      url: slug ? (baseUrl + slug) : "#",
+      image: imgSrc,
+      isDynamic: true
+    };
+  });
+
+  __globalSearchIndex = [...staticPages, ...dynamicAssets];
+
+  // 2. Initialize inputs
   searchInputs.forEach((input) => {
-    // Only initialize once
     if (input.dataset.searchInitialized) return;
     input.dataset.searchInitialized = "true";
-
-    // Disable default autocomplete
     input.setAttribute("autocomplete", "off");
 
-    // Create dropdown container – mounted on body to avoid overflow clipping
     const dropdown = document.createElement("div");
     dropdown.className = "search-dropdown-overlay";
     Object.assign(dropdown.style, {
@@ -487,126 +450,76 @@ function initGlobalSearch() {
       backgroundColor: "#fff",
       border: "1px solid #E9EAEB",
       borderRadius: "8px",
-      boxShadow:
-        "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      boxShadow: "0 12px 24px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03)",
       display: "none",
-      maxHeight: "320px",
+      maxHeight: "360px",
       overflowY: "auto",
     });
     document.body.appendChild(dropdown);
 
-    // Position the dropdown directly below the input using fixed positioning
     function positionDropdown() {
       const rect = input.getBoundingClientRect();
       dropdown.style.top = rect.bottom + 4 + "px";
       dropdown.style.left = rect.left + "px";
-      dropdown.style.width = Math.max(rect.width, 240) + "px";
+      dropdown.style.width = Math.max(rect.width, 300) + "px";
     }
 
     function performSearch(query) {
-      if (!query) {
+      if (!query || query.length < 1) {
         dropdown.style.display = "none";
         return;
       }
-
       const lowerQuery = query.toLowerCase();
-      const results = searchIndex.filter(
-        (item) =>
-          item.title.toLowerCase().includes(lowerQuery) ||
-          item.type.toLowerCase().includes(lowerQuery),
-      );
+      
+      const results = __globalSearchIndex.filter((item) => {
+        const itemTitle = item.title.toLowerCase();
+        const itemType = item.type.toLowerCase();
+        if (itemType === lowerQuery) return true;
+        if (itemType === 'page') {
+            return (lowerQuery.length < 4) ? itemTitle.startsWith(lowerQuery) : itemTitle.includes(lowerQuery);
+        } else {
+            return itemTitle.includes(lowerQuery);
+        }
+      });
 
       if (results.length === 0) {
-        dropdown.innerHTML = `
-                    <div style="padding: 12px 16px; color: #717680; font-size: 14px; text-align: center;">
-                        No results found for "${escHtmlNav(query)}"
-                    </div>
-                `;
+        dropdown.innerHTML = `<div style="padding: 16px; color: #717680; font-size: 14px; text-align: center;">No results found for "${escHtmlNav(query)}"</div>`;
       } else {
-        dropdown.innerHTML = results
-          .map(
-            (item) => `
-                    <a href="${item.url}" class="search-result-item" style="display: flex; align-items: center; padding: 12px 16px; text-decoration: none; border-bottom: 1px solid #F2F4F7; transition: background-color 0.2s;">
-                        <div style="width: 32px; height: 32px; border-radius: 6px; background: #F9FAFB; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                            <img src="/static/images/${item.icon}" onerror="this.src='/static/images/${item.icon}'" style="width: 16px; height: 16px; opacity: 0.7;">
-                        </div>
-                        <div>
-                            <div style="font-size: 14px; font-weight: 500; color: #101828;">${item.title}</div>
-                            <div style="font-size: 12px; color: #667085; margin-top: 2px;">${item.type}</div>
-                        </div>
-                    </a>
-                `,
-          )
-          .join("");
+        dropdown.innerHTML = results.slice(0, 10).map(item => `
+          <a href="${item.url}" class="search-result-item" style="display: flex; align-items: center; padding: 10px 16px; text-decoration: none; border-bottom: 1px solid #F2F4F7; transition: background 0.15s;">
+            <div style="width: 36px; height: 36px; border-radius: 6px; overflow: hidden; background: #F9FAFB; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; border: 1px solid #F2F4F7;">
+              ${item.isDynamic 
+                ? `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover;">`
+                : `<img src="/static/images/${item.icon}" onerror="this.src='/static/images/home-05.svg'" style="width: 18px; height: 18px; opacity: 0.7;">`
+              }
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size: 14px; font-weight: 500; color: #101828; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</div>
+              <div style="font-size: 11px; color: #667085; text-transform: uppercase; letter-spacing: 0.02em; margin-top: 1px;">${item.type}</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="opacity: 0.4;"><path d="M6 12L10 8L6 4" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        `).join("");
 
-        // Add hover effect
         dropdown.querySelectorAll(".search-result-item").forEach((el) => {
-          el.addEventListener(
-            "mouseenter",
-            () => (el.style.backgroundColor = "#F9FAFB"),
-          );
-          el.addEventListener(
-            "mouseleave",
-            () => (el.style.backgroundColor = "transparent"),
-          );
+          el.addEventListener("mouseenter", () => (el.style.backgroundColor = "#F9FAFB"));
+          el.addEventListener("mouseleave", () => (el.style.backgroundColor = "transparent"));
         });
       }
-
       positionDropdown();
       dropdown.style.display = "block";
     }
 
-    // Input event
-    input.addEventListener("input", (e) => {
-      performSearch(e.target.value.trim());
-    });
-
-    // Focus event
+    input.addEventListener("input", (e) => performSearch(e.target.value.trim()));
     input.addEventListener("focus", (e) => {
       const val = e.target.value.trim();
       if (val) performSearch(val);
     });
-
-    // Reposition on scroll/resize (since we use fixed positioning)
-    let scrollContainers = [];
-    let el = input.parentNode;
-    while (el && el !== document) {
-      const ov = window.getComputedStyle(el).overflowY;
-      if (ov === "auto" || ov === "scroll") {
-        scrollContainers.push(el);
-      }
-      el = el.parentNode;
-    }
-    scrollContainers.push(window);
-    scrollContainers.forEach((container) => {
-      container.addEventListener(
-        "scroll",
-        () => {
-          if (dropdown.style.display !== "none") {
-            positionDropdown();
-          }
-        },
-        { passive: true },
-      );
-    });
-
-    // Click outside to close
     document.addEventListener("click", (e) => {
-      if (
-        e.target !== input &&
-        e.target !== dropdown &&
-        !dropdown.contains(e.target)
-      ) {
-        dropdown.style.display = "none";
-      }
+      if (e.target !== input && !dropdown.contains(e.target)) dropdown.style.display = "none";
     });
-
-    // Prevent closing when clicking inside input or dropdown
-    input.addEventListener("click", (e) => {
-      e.stopPropagation();
-    });
-    dropdown.addEventListener("click", (e) => {
-      e.stopPropagation();
+    window.addEventListener("resize", () => {
+      if (dropdown.style.display !== "none") positionDropdown();
     });
   });
 }

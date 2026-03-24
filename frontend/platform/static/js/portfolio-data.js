@@ -119,28 +119,7 @@
     setText("mobile-insights-value-annual-rental-yield", data.annualYield);
   }
 
-  function updateInvestmentLimit(data) {
-    if (!data.limit) return;
-    const lim = data.limit;
 
-    // Desktop
-    setText("investment-limit-annual-value", lim.annualDisplay);
-    setText("investment-limit-invested-value", lim.investedDisplay);
-    setText("investment-limit-available-value", lim.availableDisplay);
-    setText("progress-percentage-text", lim.progressLabel);
-
-    const desktopBar = document.getElementById("progress-bar-fill-desktop");
-    if (desktopBar) desktopBar.style.width = `${lim.progressPct}%`;
-
-    // Mobile
-    setText("mobile-investment-limit-annual-value", lim.annualDisplay);
-    setText("mobile-investment-limit-invested-value", lim.investedDisplay);
-    setText("mobile-investment-limit-available-value", lim.availableDisplay);
-    setText("mobile-progress-percentage-text", lim.progressLabel);
-
-    const mobileBar = document.getElementById("progress-bar-fill-mobile");
-    if (mobileBar) mobileBar.style.width = `${lim.progressPct}%`;
-  }
 
   function buildStatusBadgeHtml(statusCss, statusLabel) {
     return `<div class="portfolio-assets-status ${statusCss}">
@@ -230,7 +209,7 @@
             Refund
           </button>
           ` : ''}
-          <button class="portfolio-assets-action-btn"
+          <button class="portfolio-assets-btn"
             onclick="window.location.href='/property/${slug}'">
             See Details
           </button>
@@ -312,7 +291,7 @@
         </td>
         <td class="mobile-assets-cell-status">
           <div class="mobile-assets-status-badge ${statusCss}">
-            <div class="status-dot"></div>
+            <span class="portfolio-assets-status-icon"></span>
             <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60px;">${statusLabel}</span>
           </div>
         </td>
@@ -364,7 +343,6 @@
         updateValueCard(data);
         updateKeyFinancials(data);
         updateInsights(data);
-        updateInvestmentLimit(data);
         switchState(["portfolio-empty-state", "portfolio-value-section", "key-financials-section", "insights-limit-section"]);
         return;
       }
@@ -373,7 +351,6 @@
       updateValueCard(data);
       updateKeyFinancials(data);
       updateInsights(data);
-      updateInvestmentLimit(data);
       updateAssetsTable(data.investments);
       updateMobileAssetsTable(data.investments);
       updatePieChart(data.pieChartData);

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POOOL | Fonts & Typography Template</title>
+
+    <!-- Core Design System -->
+    <link rel="stylesheet" href="/static/css/fonts.css">
+    <link rel="stylesheet" href="/static/css/dashboard-tokens.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+    
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="/static/css/ds-typography.css">
+    <link rel="stylesheet" href="/static/css/ds-page-layout.css">
+    <link rel="stylesheet" href="/static/css/ds-cards.css">
+    
+    <!-- Admin Context (adds sidebar) -->
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <script src="/static/js/admin-theme.js"></script>
+</head>
+<body class="admin-body dom-ready">
+    <div class="admin-wrapper">
+        <div id="admin-sidebar-placeholder"></div>
+        <script src="/static/js/admin-sidebar-loader.js"></script>
+
+        <!-- Main Workspace Canvas -->
+        <main class="ds-main admin-main" id="main-content">
+            <!-- Page Header -->
+            <div class="ds-page-header">
+                <div class="ds-page-header__title-row">
+                    <div class="ds-page-header__icon" style="background: rgba(0, 0, 255, 0.05); border-radius: 10px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="4 7 4 4 20 4 20 7"></polyline>
+                            <line x1="9" y1="20" x2="15" y2="20"></line>
+                            <line x1="12" y1="4" x2="12" y2="20"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="ds-page-header__title ds-text-xl">Typography & Fonts</h1>
+                        <p class="ds-text-subtitle ds-text--muted" style="margin-top: 4px;">Standard typography guidelines using TT Norms Pro for POOOL.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ds-page-content" style="padding: var(--ds-page-px); max-width: 1200px; margin: 0 auto;">
+                
+                <section class="ds-card" style="margin-bottom: var(--section-gap);">
+                    <div class="ds-card__header" style="padding: var(--card-padding); border-bottom: 1px solid var(--card-border-color);">
+                        <h2 class="ds-text-lg" style="color: var(--page-title-color);">Headings</h2>
+                    </div>
+                    <div style="padding: var(--card-padding); display: flex; flex-direction: column; gap: 24px;">
+                        <div>
+                            <span class="ds-text-caption ds-text--muted" style="display: block; margin-bottom: 8px;">.ds-text-xxl (Display)</span>
+                            <h1 class="ds-text-xxl">The future of asset ownership.</h1>
+                        </div>
+                        <div>
+                            <span class="ds-text-caption ds-text--muted" style="display: block; margin-bottom: 8px;">.ds-text-xl (Page Title)</span>
+                            <h2 class="ds-text-xl">Dashboard Overview</h2>
+                        </div>
+                        <div>
+                            <span class="ds-text-caption ds-text--muted" style="display: block; margin-bottom: 8px;">.ds-text-lg (Section Title)</span>
+                            <h3 class="ds-text-lg">Recent Transactions</h3>
+                        </div>
+                        <div>
+                            <span class="ds-text-caption ds-text--muted" style="display: block; margin-bottom: 8px;">.ds-text-md (Card Title)</span>
+                            <h4 class="ds-text-md">Monthly Dividends</h4>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="ds-card" style="margin-bottom: var(--section-gap);">
+                    <div class="ds-card__header" style="padding: var(--card-padding); border-bottom: 1px solid var(--card-border-color);">
+                        <h2 class="ds-text-lg" style="color: var(--page-title-color);">Body & UI Text</h2>
+                    </div>
+                    <div style="padding: var(--card-padding); display: flex; flex-direction: column; gap: 24px;">
+                        <div>
+                            <span class="ds-text-caption ds-text--muted" style="display: block; margin-bottom: 8px;">.ds-text-subtitle (Large Text)</span>
+                            <p class="ds-text-subtitle">This is a subtitle. Used for introductory paragraphs where readability matters most.</p>
+                        </div>
+                        <div>
+                            <span class="ds-text-caption ds-text--muted" style="display: block; margin-bottom: 8px;">.ds-text-body (Default Body)</span>
+                            <p class="ds-text-body">This is the standard body text used across tables, forms, and paragraphs. It features perfect tracking and leading.</p>
+                        </div>
+                        <div>
+                            <span class="ds-text-caption ds-text--muted" style="display: block; margin-bottom: 8px;">.ds-text-caption (Small text)</span>
+                            <p class="ds-text-caption" style="margin:0;">Use this for metadata, hints, and small prints. Example: Last updated 2 hours ago.</p>
+                        </div>
+                        <div>
+                            <span class="ds-text-caption ds-text--muted" style="display: block; margin-bottom: 8px;">Modifiers: .ds-text--muted, .ds-text--success, .ds-text--danger</span>
+                            <p class="ds-text-body ds-text--muted" style="margin:0;">Muted text for secondary information.</p>
+                            <p class="ds-text-body ds-text--success" style="margin:0;">Success text for positive outcomes.</p>
+                            <p class="ds-text-body ds-text--danger" style="margin:0;">Danger text for warnings and errors.</p>
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="ds-card" style="margin-bottom: var(--section-gap);">
+                    <div class="ds-card__header" style="padding: var(--card-padding); border-bottom: 1px solid var(--card-border-color);">
+                        <h2 class="ds-text-lg" style="color: var(--page-title-color);">Numeric (Tabular)</h2>
+                    </div>
+                    <div style="padding: var(--card-padding); display: flex; flex-direction: column; gap: 24px;">
+                        <div>
+                            <span class="ds-text-caption ds-text--muted" style="display: block; margin-bottom: 8px;">.ds-text-money (Tabular figures for data and tables)</span>
+                            <p class="ds-text-body ds-text-money" style="font-size: 24px; color: var(--page-title-color); margin:0;">€ 12,450.00</p>
+                            <p class="ds-text-body ds-text-money" style="font-size: 24px; color: var(--page-title-color); margin:0;">€ &nbsp;1,029.50</p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div> <!-- .admin-wrapper -->
+</body>
+</html>

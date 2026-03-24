@@ -1,0 +1,395 @@
+/* =========================================================================
+   OVERLAYS, MODALS & TOASTS (Template Specific)
+   ========================================================================= */
+
+/* 1. Modal Glass Backdrop & Holographic Treatment */
+dialog::backdrop {
+    background: rgba(52, 64, 84, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: ds-backdrop-fade-in 0.2s ease-out forwards;
+}
+
+dialog[closing]::backdrop {
+    animation: ds-backdrop-fade-out 0.2s ease-out forwards;
+}
+
+/* Modals already have some styling from ds-modals.css, we'll augment for trading */
+.ds-modal {
+    border: none;
+    background: #FFFFFF;
+    border-radius: 16px;
+    box-shadow: 0px 8px 8px -4px rgba(16, 24, 40, 0.03), 0px 20px 24px -4px rgba(16, 24, 40, 0.08);
+    padding: 0;
+    max-width: 480px;
+    width: 100%;
+}
+
+.ds-modal[open] {
+    animation: ds-modal-slide-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.ds-modal[closing] {
+    animation: ds-modal-slide-out 0.2s ease-out forwards;
+}
+
+/* Header, Body, Footer structure */
+.ds-modal__header {
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+}
+
+.ds-modal__title-wrapper {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.ds-modal__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ds-modal__icon--trading {
+    background: linear-gradient(135deg, rgba(0, 0, 255, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
+    color: var(--primary-color, #0000FF);
+    position: relative;
+    border: 1px solid rgba(0, 0, 255, 0.2);
+}
+
+.ds-modal__icon--danger {
+    background: #FEF3F2;
+    color: #D92D20;
+    border: 1px solid #FEE4E2;
+}
+
+.ds-modal__close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #667085;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ds-modal__close:hover {
+    background: #F2F4F7;
+    color: #181D27;
+}
+
+.ds-modal__body {
+    padding: 24px;
+}
+
+.ds-modal__footer {
+    padding: 24px;
+    border-top: 1px solid var(--table-border-color, #E9EAEB);
+    display: flex;
+    gap: 12px;
+    justify-content: stretch;
+    background: #FAFAFA;
+    border-radius: 0 0 16px 16px;
+}
+.ds-modal__footer .ds-btn {
+    flex: 1;
+    justify-content: center; /* center text inside buttons */
+}
+
+/* Trading Glassmorphism Summary Card */
+.ds-glass-summary {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+    /* Subtle glow */
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 2px 4px rgba(0,0,0,0.02);
+    position: relative;
+    overflow: hidden;
+}
+
+.ds-glass-summary::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 4px; height: 100%;
+    background: var(--brand-greeny-green, #03FF88); /* Signal Green */
+}
+
+/* Content grid inside summary */
+.ds-glass-summary__row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.ds-glass-summary__row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.ds-glass-summary__row.ds-total {
+    border-top: 1px solid rgba(0,0,0,0.1);
+    margin-top: 8px;
+    padding-top: 16px;
+}
+
+/* Loading Overlay inside Modal */
+.ds-modal__loader {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+.ds-modal__loader.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+
+/* 2. Slide-Out Panel (Offcanvas) */
+.ds-slide-panel {
+    border: none;
+    margin: 0 0 0 auto; /* align right */
+    height: 100dvh;
+    max-height: 100dvh;
+    width: 480px;
+    max-width: 100%;
+    background: #FFFFFF;
+    box-shadow: -8px 0 24px rgba(16, 24, 40, 0.08); /* shadow to the left */
+    padding: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.ds-slide-panel[open] {
+    animation: ds-slide-panel-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.ds-slide-panel[closing] {
+    animation: ds-slide-panel-out 0.25s ease-out forwards;
+}
+
+.ds-slide-panel__header {
+    padding: 24px;
+    border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ds-slide-panel__body {
+    padding: 24px;
+    flex: 1;
+    overflow-y: auto;
+    background: #FAFAFA; /* Subtle contrast to pure white header */
+}
+
+/* 3. Toast Notifications (Holographic Design) */
+.ds-toast-container {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    pointer-events: none; /* Let clicks pass through container */
+}
+
+.ds-toast {
+    pointer-events: all; /* Catch clicks on toast */
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    padding: 16px;
+    width: 360px;
+    box-shadow: 0px 8px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03);
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    position: relative;
+    overflow: hidden;
+    /* Holographic stroke edge */
+    box-shadow: inset 0 0 0 1px rgba(255,255,255, 0.5), 0 8px 16px -4px rgba(16, 24, 40, 0.08);
+    
+    animation: ds-toast-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.ds-toast.closing {
+    animation: ds-toast-out 0.25s ease-out forwards;
+}
+
+/* Toast Variants */
+.ds-toast--success { border-left: 4px solid #027A48; }
+.ds-toast--error { border-left: 4px solid #D92D20; }
+.ds-toast--info { border-left: 4px solid #0000FF; }
+.ds-toast--warning { border-left: 4px solid #B54708; }
+
+.ds-toast__icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+}
+.ds-toast--success .ds-toast__icon { color: #027A48; }
+.ds-toast--error .ds-toast__icon { color: #D92D20; }
+.ds-toast--info .ds-toast__icon { color: #0000FF; }
+.ds-toast--warning .ds-toast__icon { color: #B54708; }
+
+.ds-toast__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ds-toast__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--page-title-color, #181D27);
+}
+
+.ds-toast__desc {
+    font-size: 13px;
+    color: #535862;
+    line-height: 1.5;
+}
+
+.ds-toast__close {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: #98A2B3;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ds-toast__close:hover {
+    color: #181D27;
+    background: #F2F4F7;
+}
+
+/* Animations Keyframes */
+@keyframes ds-backdrop-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes ds-backdrop-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes ds-modal-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+@keyframes ds-modal-slide-out {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+}
+
+@keyframes ds-slide-panel-in {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+@keyframes ds-slide-panel-out {
+    from { transform: translateX(0); }
+    to { transform: translateX(100%); }
+}
+
+@keyframes ds-toast-in {
+    from {
+        opacity: 0;
+        transform: translateX(32px) translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) translateY(0);
+    }
+}
+@keyframes ds-toast-out {
+    from {
+        opacity: 1;
+        transform: translateX(0) translateY(-8px) scale(0.95);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(32px) translateY(-16px) scale(0.9);
+    }
+}
+
+/* Mobile Overrides for Modals */
+@media (max-width: 768px) {
+    .ds-modal {
+        margin: auto 0 0 0; /* Bottom sheet style */
+        border-radius: 16px 16px 0 0;
+    }
+    
+    .ds-modal[open] {
+        animation: ds-mobile-modal-slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    .ds-modal[closing] {
+        animation: ds-mobile-modal-slide-out 0.25s ease-out forwards;
+    }
+    
+    .ds-toast-container {
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+    }
+    
+    .ds-toast {
+        width: 100%; /* Fill mobile width */
+    }
+}
+
+@keyframes ds-mobile-modal-slide-in {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+@keyframes ds-mobile-modal-slide-out {
+    from { transform: translateY(0); }
+    to { transform: translateY(100%); }
+}

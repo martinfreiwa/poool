@@ -637,10 +637,35 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         let flag = location_country
             .as_deref()
             .map(|cc| {
-                let cc = cc.to_uppercase();
-                if cc.len() == 2 {
+                let cc = cc.trim();
+                let upper = cc.to_uppercase();
+                
+                let iso_code = match upper.as_str() {
+                    "GERMANY" | "DEUTSCHLAND" => "DE",
+                    "INDONESIA" => "ID",
+                    "SWITZERLAND" => "CH",
+                    "AUSTRIA" => "AT",
+                    "SPAIN" => "ES",
+                    "UNITED KINGDOM" | "UK" => "GB",
+                    "UNITED STATES" | "USA" | "US" => "US",
+                    "FRANCE" => "FR",
+                    "ITALY" => "IT",
+                    "NETHERLANDS" => "NL",
+                    "AUSTRALIA" => "AU",
+                    "SINGAPORE" => "SG",
+                    "THAILAND" => "TH",
+                    "PHILIPPINES" => "PH",
+                    "VIETNAM" => "VN",
+                    "MALAYSIA" => "MY",
+                    "JAPAN" => "JP",
+                    "CHINA" => "CN",
+                    "UNITED ARAB EMIRATES" | "UAE" => "AE",
+                    _ => if upper.len() == 2 { upper.as_str() } else { "" }
+                };
+
+                if iso_code.len() == 2 {
                     let mut flag = String::new();
-                    for c in cc.chars() {
+                    for c in iso_code.chars() {
                         if let Some(regional) = char::from_u32(0x1F1E6 + (c as u32 - 'A' as u32)) {
                             flag.push(regional);
                         }
@@ -688,14 +713,14 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         if let Some(beds) = bedrooms {
             let label = if beds == 1 { "Bed" } else { "Beds" };
             property_details_parts.push(format!(
-                "<span class=\"cart-item-card__detail-chip\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 4v16\"/><path d=\"M2 8h18a2 2 0 0 1 2 2v10\"/><path d=\"M2 17h20\"/><path d=\"M6 8v9\"/></svg> {} {}</span>",
+                "<span class=\"cart-item-card__detail-chip\">{} {}</span>",
                 beds, label
             ));
         }
         if let Some(baths) = bathrooms {
             let label = if baths == 1 { "Bath" } else { "Baths" };
             property_details_parts.push(format!(
-                "<span class=\"cart-item-card__detail-chip\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 12h16a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-3a1 1 0 0 1 1-1z\"/><path d=\"M6 12V5a2 2 0 0 1 2-2h3v2.25\"/></svg> {} {}</span>",
+                "<span class=\"cart-item-card__detail-chip\">{} {}</span>",
                 baths, label
             ));
         }
@@ -707,7 +732,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                     format!("{:.1}", bsqm)
                 };
                 property_details_parts.push(format!(
-                    "<span class=\"cart-item-card__detail-chip\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M3 9h18\"/><path d=\"M9 3v18\"/></svg> {} m\u{00b2}</span>",
+                    "<span class=\"cart-item-card__detail-chip\">{} m\u{00b2}</span>",
                     display
                 ));
             }
@@ -720,7 +745,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                     format!("{:.1}", lsqm)
                 };
                 property_details_parts.push(format!(
-                    "<span class=\"cart-item-card__detail-chip\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 22 16 8\"/><path d=\"M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z\"/><path d=\"M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z\"/><path d=\"M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z\"/><path d=\"M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z\"/></svg> {} m\u{00b2} land</span>",
+                    "<span class=\"cart-item-card__detail-chip\">{} m\u{00b2} land</span>",
                     display
                 ));
             }
@@ -1097,13 +1122,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                     </div>
                 </div>
 
-                <!-- Promo Code -->
-                <div class="promo-code-container">
-                    <div class="promo-input-group">
-                        <input type="text" class="promo-input" placeholder="Promo / Referral code" id="promo-code-input" />
-                        <button class="promo-apply-btn">Apply</button>
-                    </div>
-                </div>
+
 
                 <!-- Total -->
                 <div class="cart-summary-divider"></div>

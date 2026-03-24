@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POOOL Table Template</title>
+    <!-- Core POOOL Design System References -->
+    <link rel="stylesheet" href="static/css/dashboard-tokens.css">
+    <link rel="stylesheet" href="static/css/main.css">
+    <link rel="stylesheet" href="static/css/ds-typography.css">
+    <link rel="stylesheet" href="static/css/ds-buttons.css">
+    <link rel="stylesheet" href="static/css/ds-cards.css">
+    <!-- Component Specific -->
+    <link rel="stylesheet" href="static/css/table-template.css">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Admin Context (Optional: Adds sidebar) -->
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <script src="/static/js/admin-theme.js"></script>
+</head>
+<body class="admin-body dom-ready">
+    <div class="admin-wrapper">
+        <div id="admin-sidebar-placeholder"></div>
+        <script src="/static/js/admin-sidebar-loader.js"></script>
+        
+        <main class="ds-main admin-main" style="background-color: var(--content-bg, #FAFAFA); padding: var(--ds-page-pt, 48px) var(--ds-page-px, 24px) var(--ds-page-pb, 64px);">
+    
+    <!-- Page Header (following ds-page-header pattern) -->
+    <div class="ds-page-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--ds-page-gap, 24px);">
+        <div class="ds-page-header__title-row" style="display: flex; align-items: center; gap: var(--ds-header-icon-gap, 12px);">
+            <div class="ds-page-header__icon" style="width: 44px; height: 44px; background: rgba(0, 0, 255, 0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+            </div>
+            <h1 class="ds-text-xl" style="margin: 0; letter-spacing: -0.02em;">Transactions</h1>
+        </div>
+        <div class="ds-page-header__actions">
+            <!-- Download / Action Button using primary styling -->
+            <button class="ds-btn ds-btn--primary" style="display: flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Export Report
+            </button>
+        </div>
+    </div>
+
+    <!-- The Data Table Card -->
+    <div class="ds-card custom-table-container">
+        <!-- Toolbar above the table -->
+        <div class="custom-table-toolbar">
+            <h2 class="ds-text-md" style="margin: 0;">Recent Activity</h2>
+            <!-- HTMX Search Input Example -->
+            <input type="text" class="ds-input" style="width: 240px; padding: 8px 12px; border: 1px solid #D0D5DD; border-radius: 8px;" 
+                   placeholder="Search transactions..."
+                   hx-get="/api/mock/search" 
+                   hx-trigger="keyup changed delay:500ms" 
+                   hx-target="#transaction-table-wrapper"
+                   hx-indicator="#table-spinner">
+        </div>
+
+        <!-- HTMX Wrapper. When HTMX requests new data, it can replace innerHTML of this tag -->
+        <div id="transaction-table-wrapper" class="table-wrapper" style="position: relative;">
+            
+            <table class="ds-table data-table">
+                <thead class="data-table__header">
+                    <tr>
+                        <!-- Example of HTMX Sortable Column Header. Swap content inside #transaction-table-wrapper -->
+                        <th class="data-table__th is-sortable" 
+                            hx-get="/api/mock/sort?col=date&dir=asc" 
+                            hx-target="#transaction-table-wrapper" 
+                            hx-swap="innerHTML"
+                            hx-indicator="#table-spinner">
+                            Date <span class="sort-icon">↓</span>
+                        </th>
+                        <th class="data-table__th">Description</th>
+                        <th class="data-table__th">Reference</th>
+                        <th class="data-table__th is-sortable"
+                            hx-get="/api/mock/sort?col=amount&dir=desc" 
+                            hx-target="#transaction-table-wrapper" 
+                            hx-swap="innerHTML"
+                            hx-indicator="#table-spinner">
+                            Amount <span class="sort-icon"></span>
+                        </th>
+                        <th class="data-table__th">Status</th>
+                        <th class="data-table__th text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="data-table__body">
+                    <!-- Row 1: Completed -->
+                    <tr class="data-table__row">
+                        <td class="data-table__td ds-text-body ds-text--muted">Mär 24, 2026</td>
+                        <td class="data-table__td">
+                            <div class="data-table__primary-text">Dividend Payment</div>
+                            <div class="data-table__secondary-text ds-text-caption">The View - Q1</div>
+                        </td>
+                        <td class="data-table__td ds-text-body ds-text--muted">TRX-10294A</td>
+                        <td class="data-table__td ds-text-money text-success">+ €1,240.00</td>
+                        <td class="data-table__td">
+                            <span class="ds-badge ds-badge--success">Completed</span>
+                        </td>
+                        <td class="data-table__td text-right">
+                            <button class="ds-btn ds-btn--ghost" style="padding: 6px 12px; border: none; font-size: 13px;">View</button>
+                        </td>
+                    </tr>
+                    <!-- Row 2: Pending -->
+                    <tr class="data-table__row">
+                        <td class="data-table__td ds-text-body ds-text--muted">Mär 21, 2026</td>
+                        <td class="data-table__td">
+                            <div class="data-table__primary-text">Asset Purchase</div>
+                            <div class="data-table__secondary-text ds-text-caption">Oceanfront Villa (Fractional)</div>
+                        </td>
+                        <td class="data-table__td ds-text-body ds-text--muted">TRX-10283B</td>
+                        <td class="data-table__td ds-text-money">— €5,000.00</td>
+                        <td class="data-table__td">
+                            <span class="ds-badge ds-badge--warning">Pending</span>
+                        </td>
+                        <td class="data-table__td text-right">
+                            <button class="ds-btn ds-btn--ghost" style="padding: 6px 12px; border: none; font-size: 13px;">View</button>
+                        </td>
+                    </tr>
+                    <!-- Row 3: Failed -->
+                    <tr class="data-table__row">
+                        <td class="data-table__td ds-text-body ds-text--muted">Mär 18, 2026</td>
+                        <td class="data-table__td">
+                            <div class="data-table__primary-text">Wallet Deposit</div>
+                            <div class="data-table__secondary-text ds-text-caption">Bank Transfer ending in 1234</div>
+                        </td>
+                        <td class="data-table__td ds-text-body ds-text--muted">TRX-09384C</td>
+                        <td class="data-table__td ds-text-money text-danger">Failed deposit</td>
+                        <td class="data-table__td">
+                            <span class="ds-badge ds-badge--danger">Failed</span>
+                        </td>
+                        <td class="data-table__td text-right">
+                            <button class="ds-btn ds-btn--ghost" style="padding: 6px 12px; border: none; font-size: 13px;">Retry</button>
+                        </td>
+                    </tr>
+                    <!-- Row 4: Example -->
+                    <tr class="data-table__row">
+                        <td class="data-table__td ds-text-body ds-text--muted">Mär 10, 2026</td>
+                        <td class="data-table__td">
+                            <div class="data-table__primary-text">Dividend Payment</div>
+                            <div class="data-table__secondary-text ds-text-caption">City Plaza Hotel</div>
+                        </td>
+                        <td class="data-table__td ds-text-body ds-text--muted">TRX-09122D</td>
+                        <td class="data-table__td ds-text-money text-success">+ €450.50</td>
+                        <td class="data-table__td">
+                            <span class="ds-badge ds-badge--success">Completed</span>
+                        </td>
+                        <td class="data-table__td text-right">
+                            <button class="ds-btn ds-btn--ghost" style="padding: 6px 12px; border: none; font-size: 13px;">View</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Pagination Bar -->
+            <div class="table-pagination">
+                <div class="table-pagination__info ds-text-caption">
+                    Showing <span style="font-weight: 600; color: var(--page-title-color, #181D27);">1</span> to <span style="font-weight: 600; color: var(--page-title-color, #181D27);">4</span> of <span style="font-weight: 600; color: var(--page-title-color, #181D27);">128</span> entries
+                </div>
+                <!-- Pagination buttons powered by HTMX partial reloads -->
+                <div class="table-pagination__actions">
+                    <button class="ds-btn ds-btn--ghost" disabled style="padding: 8px 16px; font-weight: 500; font-size: 14px; border: 1px solid #D0D5DD; border-radius: 8px; background: #FFFFFF; color: #D0D5DD; cursor: not-allowed;">
+                        Previous
+                    </button>
+                    <!-- Simulated pagination request -->
+                    <button class="ds-btn ds-btn--ghost" 
+                            style="padding: 8px 16px; font-weight: 500; font-size: 14px; border: 1px solid #D0D5DD; border-radius: 8px; background: #FFFFFF; color: var(--page-title-color, #181D27); cursor: pointer;"
+                            hx-get="/api/mock/transactions?page=2" 
+                            hx-target="#transaction-table-wrapper" 
+                            hx-swap="innerHTML"
+                            hx-indicator="#table-spinner">
+                        Next
+                    </button>
+                </div>
+            </div>
+
+            <!-- Absolute positioned loading overlay (triggered by HTMX) -->
+            <div id="table-spinner" class="ds-table-loading htmx-indicator">
+                <div class="ds-spinner"></div> Loading records...
+            </div>
+            
+        </div>
+    </div>
+    
+    </main>
+    </div> <!-- .admin-wrapper -->
+</body>
+</html>

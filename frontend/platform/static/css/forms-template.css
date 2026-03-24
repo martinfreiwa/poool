@@ -1,0 +1,415 @@
+/* ================================================================
+   POOOL - Forms UI Template CSS
+   ================================================================
+   Form-specific styles that layer ON TOP of the cards-template.css
+   design system (holo-card, p-icon, settings-* classes).
+   
+   The base holographic card, icon shell, layout grid, and settings
+   row patterns are all inherited from cards-template.css.
+   This file ONLY adds form control styling.
+   ================================================================ */
+
+/* ── Form Layout ──────────────────────────────────────────────── */
+.ds-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ds-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Labels ───────────────────────────────────────────────────── */
+.ds-label {
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--label-color, #475467);
+  margin-bottom: 8px;
+}
+
+.ds-label--required::after {
+  content: " *";
+  color: var(--primary-color, #0000FF);
+}
+
+/* ── Input Wrapper ────────────────────────────────────────────── */
+.ds-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Inputs & Textareas ───────────────────────────────────────── */
+.ds-input, .ds-textarea {
+  width: 100%;
+  font-family: var(--font-family);
+  font-size: 14px;
+  color: var(--text-primary, #181D27);
+  background: #FFFFFF;
+  border: 1px solid var(--input-border-color, #D0D5DD);
+  border-radius: 8px;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+  line-height: 20px;
+}
+
+.ds-input { height: 44px; }
+.ds-textarea { min-height: 100px; resize: vertical; }
+
+.ds-input::placeholder, .ds-textarea::placeholder {
+  color: #667085;
+}
+
+.ds-input:hover:not(:disabled), .ds-textarea:hover:not(:disabled) {
+  border-color: #98A2B3;
+}
+
+/* Holographic Focus — Blue + Green dual glow */
+.ds-holographic-focus:focus,
+.ds-input:focus,
+.ds-textarea:focus {
+  border-color: var(--primary-color, #0000FF);
+  box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.15), 0 0 0 5px rgba(3, 255, 136, 0.15);
+  outline: none;
+}
+
+/* Disabled */
+.ds-input:disabled, .ds-textarea:disabled {
+  background: #F9FAFB;
+  color: #667085;
+  cursor: not-allowed;
+  border-color: #EAECF0;
+}
+
+/* Error State */
+.ds-input--error {
+  border-color: #D92D20;
+}
+.ds-input--error:focus {
+  border-color: #D92D20;
+  box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.1);
+}
+
+/* Success State */
+.ds-input--success {
+  border-color: #027A48;
+}
+.ds-input--success:focus {
+  border-color: #027A48;
+  box-shadow: 0 0 0 3px rgba(2, 122, 72, 0.1);
+}
+
+.ds-error-text {
+  font-size: 13px;
+  color: #B42318;
+  margin-top: 6px;
+  font-weight: 400;
+}
+
+/* ── Password Toggle ──────────────────────────────────────────── */
+.ds-password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #667085;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+.ds-password-toggle:hover { color: var(--text-primary, #181D27); }
+.ds-input[type="password"] { padding-right: 44px; }
+
+/* ── Custom Select Dropdown ───────────────────────────────────── */
+.ds-select-container {
+  position: relative;
+  width: 100%;
+}
+
+.ds-select-trigger {
+  width: 100%;
+  height: 44px;
+  padding: 10px 14px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  color: #667085;
+  background: #FFFFFF;
+  border: 1px solid var(--input-border-color, #D0D5DD);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ds-select-trigger:hover { border-color: #98A2B3; }
+
+.ds-select-trigger[aria-expanded="true"] {
+  border-color: var(--primary-color, #0000FF);
+  box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.15), 0 0 0 5px rgba(3, 255, 136, 0.15);
+  outline: none;
+}
+
+.ds-select-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
+.ds-select-trigger svg { transition: transform 0.2s ease; color: #667085; }
+
+.ds-select-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  box-shadow: 0px 8px 8px -4px rgba(16, 24, 40, 0.03), 0px 20px 24px -4px rgba(16, 24, 40, 0.08);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out, visibility 0.25s ease-out;
+  padding: 6px;
+  margin: 0;
+  list-style: none;
+}
+
+.ds-select-dropdown.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.ds-select-option {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #344054;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.15s ease;
+}
+
+.ds-select-option:hover { background: #F8F9FC; color: #181D27; }
+
+.ds-select-option.is-active {
+  background: rgba(0, 0, 255, 0.04);
+  color: var(--primary-color, #0000FF);
+  font-weight: 500;
+}
+
+/* ── Checkbox & Radio ─────────────────────────────────────────── */
+.ds-checkbox-label, .ds-radio-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.ds-checkbox-input, .ds-radio-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Checkbox */
+.ds-checkbox-custom {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--input-border-color, #D0D5DD);
+  border-radius: 6px;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  margin-top: 2px;
+}
+
+.ds-checkbox-label:hover .ds-checkbox-input:not(:disabled) ~ .ds-checkbox-custom {
+  border-color: var(--primary-color, #0000FF);
+}
+
+.ds-checkbox-input:checked ~ .ds-checkbox-custom {
+  background: var(--primary-color, #0000FF);
+  border-color: var(--primary-color, #0000FF);
+}
+
+.ds-checkbox-input:focus-visible ~ .ds-checkbox-custom {
+  box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.15), 0 0 0 5px rgba(3, 255, 136, 0.15);
+}
+
+.ds-checkbox-custom::after {
+  content: '';
+  width: 11px;
+  height: 6px;
+  border-left: 2px solid #98FB96;
+  border-bottom: 2px solid #98FB96;
+  transform: rotate(-45deg) scale(0);
+  margin-bottom: 3px;
+  transition: transform 0.15s ease;
+}
+
+.ds-checkbox-input:checked ~ .ds-checkbox-custom::after {
+  transform: rotate(-45deg) scale(1);
+}
+
+.ds-checkbox-content { display: flex; flex-direction: column; gap: 2px; }
+
+.ds-checkbox-title, .ds-radio-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #181D27;
+  line-height: 20px;
+  margin-top: 2px;
+}
+
+.ds-checkbox-description {
+  font-size: 13px;
+  color: #535862;
+  line-height: 20px;
+}
+
+/* Radio */
+.ds-radio-group { display: flex; flex-direction: column; gap: 16px; }
+.ds-radio-group--inline { flex-direction: row; gap: 24px; }
+
+.ds-radio-custom {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--input-border-color, #D0D5DD);
+  border-radius: 50%;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  margin-top: 2px;
+}
+
+.ds-radio-label:hover .ds-radio-input:not(:disabled) ~ .ds-radio-custom {
+  border-color: var(--primary-color, #0000FF);
+}
+
+.ds-radio-input:checked ~ .ds-radio-custom {
+  border-color: var(--primary-color, #0000FF);
+  border-width: 6px;
+  background: #03FF88;
+}
+
+.ds-radio-input:focus-visible ~ .ds-radio-custom {
+  box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.15), 0 0 0 5px rgba(3, 255, 136, 0.15);
+}
+
+/* ── File Upload / Dropzone ───────────────────────────────────── */
+.ds-file-dropzone {
+  width: 100%;
+  border: 1px dashed var(--input-border-color, #D0D5DD);
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ds-file-dropzone:hover {
+  border-color: var(--primary-color, #0000FF);
+  background: #F8F9FC;
+}
+
+.ds-file-dropzone.ds-drag-active {
+  border-color: #03FF88;
+  border-style: solid;
+  background: rgba(3, 255, 136, 0.04);
+  box-shadow: 0 0 0 4px rgba(3, 255, 136, 0.1);
+}
+
+.ds-file-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #F2F4F7;
+  color: #475467;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ds-file-dropzone:hover .ds-file-icon {
+  background: rgba(0, 0, 255, 0.05);
+  color: var(--primary-color, #0000FF);
+}
+
+.ds-file-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #181D27;
+  margin: 0 0 4px 0;
+  pointer-events: none;
+}
+
+.ds-file-title span { color: var(--primary-color, #0000FF); }
+
+.ds-file-subtitle {
+  font-size: 13px;
+  color: #535862;
+  margin: 0;
+  pointer-events: none;
+}
+
+.ds-file-input { display: none; }
+
+/* ── Form Action Bar ──────────────────────────────────────────── */
+.ds-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 32px;
+  border-top: 1px solid #E9EAEB;
+}
+
+/* ── HTMX Spinner ─────────────────────────────────────────────── */
+.ds-btn.htmx-request { pointer-events: none; }
+.ds-btn.htmx-request .ds-btn-text { opacity: 0; }
+.ds-btn.htmx-request .ds-spinner { display: block; }
+
+.ds-spinner {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  animation: ds-spin 0.7s linear infinite;
+  opacity: 0.8;
+}
+
+@keyframes ds-spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}

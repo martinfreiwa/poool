@@ -980,44 +980,7 @@
     text-align: center;
   }
 
-  .mobile-assets-status-funded {
-    background: #ecfdf3;
-    border: 1px solid #abefc6;
-  }
-
-  .mobile-assets-status-funded span {
-    color: #067647;
-  }
-
-  .mobile-assets-status-payout {
-    background: #ffffff;
-    border: 1px solid #d5d7da;
-  }
-
-  .mobile-assets-status-payout span {
-    color: #000000;
-  }
-
-  .mobile-assets-status-rented {
-    background: #ecfdf3;
-    border: 1px solid #abefc6;
-  }
-
-  .mobile-assets-status-rented span {
-    color: #067647;
-  }
-
-  .mobile-assets-status-progress {
-    background: #fef0c7;
-    border: 1px solid #fec84b;
-  }
-
-  .mobile-assets-status-progress span {
-    color: #000000;
-  }
-
   /* Show All Button */
-
 
   /* Mobile Investment Limit Section */
   .mobile-investment-limit-title-wrapper {

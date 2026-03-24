@@ -8,8 +8,7 @@
     let MOCK_ORDERS = [];
     let MOCK_INTERESTS = [];
     let MOCK_TRADES = [];
-    let MOCK_P2P_INCOMING = [];
-    let MOCK_P2P_OUTGOING = [];
+
     let PORTFOLIO_ASSETS = [];
     let currentUserEmail = null;
 
@@ -179,61 +178,7 @@
         }).join('');
     }
 
-    // ── Render P2P Offers ──────────────────────────────────────
-    function renderP2POffers() {
-        const incoming = document.getElementById('p2p-incoming');
-        const outgoing = document.getElementById('p2p-outgoing');
-        const countBadge = document.getElementById('tab-count-p2p');
 
-        const pendingIncoming = MOCK_P2P_INCOMING.filter(p => p.status === 'pending');
-        if (countBadge) countBadge.innerText = pendingIncoming.length;
-
-        if (incoming) {
-            if (MOCK_P2P_INCOMING.length === 0) {
-                incoming.innerHTML = `<div style="text-align:center; padding: 32px; color: var(--myt-text-sec);">No incoming offers.</div>`;
-            } else {
-                incoming.innerHTML = MOCK_P2P_INCOMING.map(p => `
-                    <div class="myt__p2p-card">
-                        <div class="myt__p2p-info">
-                            <div class="myt__p2p-title">User ${p.maker_user_id.substring(0,8)} wants to buy from you</div>
-                            <div class="myt__p2p-details">
-                                    <strong>Asset ${p.asset_id.substring(0,8)}</strong> · ${p.quantity} shares @ ${formatUSD(p.price_cents)} · <span class="myt__status myt__status--${p.status}">${p.status}</span> · <span style="font-size: 11px;">${formatDate(p.created_at)}</span>
-                                ${p.message ? '<br><em>"' + p.message + '"</em>' : ''}
-                            </div>
-                        </div>
-                        ${p.status === 'pending' ? `
-                        <div class="myt__p2p-actions">
-                            <button class="myt__p2p-accept" onclick="respondP2POffer('${p.id}', 'accept')">Accept</button>
-                            <button class="myt__p2p-decline" onclick="respondP2POffer('${p.id}', 'decline')">Decline</button>
-                        </div>
-                        ` : ''}
-                    </div>
-                `).join('');
-            }
-        }
-
-        if (outgoing) {
-            if (MOCK_P2P_OUTGOING.length === 0) {
-                outgoing.innerHTML = `<div style="text-align:center; padding: 32px; color: var(--myt-text-sec);">No sent offers.</div>`;
-            } else {
-                outgoing.innerHTML = MOCK_P2P_OUTGOING.map(p => `
-                    <div class="myt__p2p-card">
-                        <div class="myt__p2p-info">
-                            <div class="myt__p2p-title">You offered to sell to User ${p.taker_user_id.substring(0,8)}</div>
-                            <div class="myt__p2p-details">
-                                <strong>Asset ${p.asset_id.substring(0,8)}</strong> · ${p.quantity} shares @ ${formatUSD(p.price_cents)} · <span class="myt__status myt__status--${p.status}">${p.status}</span> · <span style="font-size:11px;">${formatDate(p.created_at)}</span>
-                            </div>
-                        </div>
-                        ${p.status === 'pending' ? `
-                        <div class="myt__p2p-actions">
-                            <button class="myt__cancel-btn" onclick="cancelP2POffer('${p.id}')">Withdraw</button>
-                        </div>
-                        ` : ''}
-                    </div>
-                `).join('');
-            }
-        }
-    }
 
     // ── Tab Switching ──────────────────────────────────────────
     function initTabs() {
@@ -361,8 +306,7 @@
             const [ordersRes, tradesRes, incomingRes, outgoingRes, portfolioRes, userRes] = await Promise.all([
                 fetch('/api/marketplace/orders/mine'),
                 fetch('/api/marketplace/trades/mine'),
-                fetch('/api/marketplace/p2p/offers/incoming'),
-                fetch('/api/marketplace/p2p/offers/outgoing'),
+
                 fetch('/api/portfolio'),
                 fetch('/api/me')
             ]);
@@ -374,8 +318,7 @@
             
             if (ordersRes.ok) MOCK_ORDERS = await ordersRes.json();
             if (tradesRes.ok) MOCK_TRADES = await tradesRes.json();
-            if (incomingRes.ok) MOCK_P2P_INCOMING = await incomingRes.json();
-            if (outgoingRes.ok) MOCK_P2P_OUTGOING = await outgoingRes.json();
+
             if (portfolioRes.ok) {
                 const p = await portfolioRes.json();
                 PORTFOLIO_ASSETS = p.investments || [];
@@ -384,7 +327,7 @@
             renderOpenOrders();
             renderBuyInterests();
             renderTradeHistory();
-            renderP2POffers();
+
             renderMyAssets();
             renderSummaryCards();
         } catch (err) {
@@ -407,38 +350,7 @@
         } catch (e) { console.error(e); }
     };
 
-    window.respondP2POffer = async function(id, action) {
-        if (!confirm(`Are you sure you want to ${action} this offer?`)) return;
-        try {
-            const res = await fetch(`/api/marketplace/p2p/offers/${id}/respond`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: action })
-            });
 
-            if (res.ok) {
-                alert('Offer ' + action + 'ed');
-                fetchAllData();
-            } else {
-                const text = await res.text();
-                alert('Failed: ' + text);
-            }
-        } catch (e) { console.error(e); }
-    };
-
-    window.cancelP2POffer = async function(id) {
-        if (!confirm('Withdraw this offer?')) return;
-        try {
-            const res = await fetch(`/api/marketplace/p2p/offers/${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                alert('Offer withdrawn');
-                fetchAllData();
-            } else {
-                const text = await res.text();
-                alert('Failed: ' + text);
-            }
-        } catch (e) { console.error(e); }
-    };
 
     // ── Init ──────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {

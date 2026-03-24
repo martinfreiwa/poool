@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POOOL - Forms UI Template</title>
+    
+    <!-- Design System Fonts and Tokens -->
+    <link rel="stylesheet" href="/static/css/fonts.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/dashboard-tokens.css">
+    <link rel="stylesheet" href="/static/css/ds-page-layout.css">
+    <link rel="stylesheet" href="/static/css/ds-typography.css">
+    <link rel="stylesheet" href="/static/css/ds-buttons.css">
+    <link rel="stylesheet" href="/static/css/ds-cards.css">
+    <link rel="stylesheet" href="/static/css/ds-badges.css">
+    
+    <!-- Template Specific CSS -->
+    <link rel="stylesheet" href="/static/css/cards-template.css">
+    <link rel="stylesheet" href="/static/css/forms-template.css">
+
+    <!-- HTMX for interactions -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Admin Context -->
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <script src="/static/js/admin-theme.js"></script>
+</head>
+<body class="admin-body dom-ready fouc-guard">
+    <div class="admin-wrapper">
+        <div id="admin-sidebar-placeholder"></div>
+        <script src="/static/js/admin-sidebar-loader.js"></script>
+        
+        <main class="ds-main admin-main dashboard-content cards-template-layout">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-header-left">
+                <div class="page-header-icon" style="transform: scale(1.1); margin-right: 12px;">
+                    <div class="p-icon p-style-blue">
+                        <div class="p-bg p-bg-1"></div>
+                        <div class="p-bg p-bg-2"></div>
+                        <div class="p-front">
+                            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="page-title">UI Form Components</h1>
+                </div>
+            </div>
+            <div class="page-header-actions">
+                <button class="ds-btn ds-btn--primary">Terminal Actions</button>
+            </div>
+        </div>
+        
+        <p class="page-subtitle">Premium wealth management terminal form modules featuring HTMX & Glassmorphism.</p>
+
+        <!-- ═══════════════════════════════════════════
+             SECTION 1: Institutional Onboarding
+             ═══════════════════════════════════════════ -->
+        <div style="margin-top: 24px; margin-bottom: 24px;">
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--page-title-color); letter-spacing: -0.01em; margin-bottom: 4px;">Institutional Onboarding</h2>
+            <p style="color: #717680; font-size: 14px;">Complete forms for KYC verification and account setup.</p>
+        </div>
+
+        <div class="ds-card holo-card settings-card" style="margin-bottom: 32px;">
+            <div style="display:flex; gap:24px; align-items:flex-start;">
+                <div class="p-icon p-icon--md" style="--glow-color:rgba(0,0,238,.12);">
+                    <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.35;box-shadow:0 3px 12px rgba(3,255,136,.14);"></div>
+                    <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000DD 0%,#0000FF 100%);opacity:0.42;box-shadow:0 3px 12px rgba(0,0,255,.12);"></div>
+                    <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.93) 0%,rgba(238,242,255,.72) 40%,rgba(228,234,255,.55) 100%);border:0;box-shadow:0 .5px 1px rgba(0,0,0,.05),0 4px 14px rgba(0,0,255,.055),inset 0 .5px 0 rgba(255,255,255,.92),inset 0 0 0 .5px rgba(255,255,255,.65);backdrop-filter:blur(18px)saturate(1.9);">
+                        <svg viewBox="0 0 24 24" stroke="#0000EE" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,180,.1));"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <h2 style="margin:0 0 4px 0; font-size:18px; font-weight:700; color:var(--page-title-color);">KYC Verification</h2>
+                    <p style="margin:0 0 24px 0; font-size:14px; color:#717680;">Complete your investment profile for portfolio onboarding.</p>
+
+                    <form class="ds-form" hx-post="/api/mock/submit" hx-swap="outerHTML" hx-indicator="#submit-kyc-btn" onsubmit="event.preventDefault();">
+                        <!-- Text Input -->
+                        <div class="ds-form-group">
+                            <label class="ds-label ds-label--required" for="legal_name">Legal Name</label>
+                            <div class="ds-input-wrapper"><input type="text" id="legal_name" class="ds-input ds-holographic-focus" placeholder="e.g. Acme Holdings LLC" required></div>
+                        </div>
+                        <!-- Password Input -->
+                        <div class="ds-form-group">
+                            <label class="ds-label ds-label--required" for="password">Encrypted Password</label>
+                            <div class="ds-input-wrapper">
+                                <input type="password" id="password" class="ds-input ds-holographic-focus" placeholder="••••••••••••" required>
+                                <button type="button" class="ds-password-toggle" onclick="togglePassword(this, 'password')" aria-label="Toggle password">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Custom Select -->
+                        <div class="ds-form-group">
+                            <label class="ds-label ds-label--required">Investment Target</label>
+                            <div class="ds-select-container" id="investment_target_select">
+                                <button type="button" class="ds-select-trigger ds-holographic-focus" aria-haspopup="listbox" aria-expanded="false" onclick="toggleSelect('investment_target_select')">
+                                    <span class="ds-select-value" style="color: #667085;">Select target...</span>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                </button>
+                                <ul class="ds-select-dropdown" role="listbox">
+                                    <li class="ds-select-option" role="option" data-value="real_estate" onclick="selectOption('investment_target_select', this)">Real Estate</li>
+                                    <li class="ds-select-option" role="option" data-value="commodities" onclick="selectOption('investment_target_select', this)">Commodities</li>
+                                    <li class="ds-select-option" role="option" data-value="private_equity" onclick="selectOption('investment_target_select', this)">Private Equity</li>
+                                </ul>
+                                <input type="hidden" name="investment_target" value="" required>
+                            </div>
+                        </div>
+                        <!-- Error State -->
+                        <div class="ds-form-group">
+                            <label class="ds-label" for="tax_id">Tax ID <i>(Error State)</i></label>
+                            <div class="ds-input-wrapper"><input type="text" id="tax_id" class="ds-input ds-input--error" placeholder="XXX-XXX-XXX" value="INVALID-001"></div>
+                            <span class="ds-error-text">Format invalid. Expected sequence: XXX-XXX-XXX.</span>
+                        </div>
+                        <!-- Success State -->
+                        <div class="ds-form-group">
+                            <label class="ds-label" for="entity_id">Entity ID <i>(Success State)</i></label>
+                            <div class="ds-input-wrapper"><input type="text" id="entity_id" class="ds-input ds-input--success" value="ENT-992-VERIFIED" disabled></div>
+                        </div>
+                        <!-- File Upload -->
+                        <div class="ds-form-group">
+                            <label class="ds-label ds-label--required">KYC Document Upload</label>
+                            <div class="ds-file-dropzone" id="kyc_dropzone" onclick="document.getElementById('kyc_file').click()" ondragover="dropzoneDragOver(event)" ondragleave="dropzoneDragLeave(event)" ondrop="dropzoneDrop(event)">
+                                <input type="file" id="kyc_file" class="ds-file-input" name="kyc_document" accept="application/pdf, image/jpeg, image/png" onchange="handleFileSelect(event)">
+                                <div class="ds-file-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></div>
+                                <div class="ds-file-text">
+                                    <p class="ds-file-title"><span>Click to upload</span> or drag and drop</p>
+                                    <p class="ds-file-subtitle">PDF, JPG or PNG (max. 10MB)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Radio Group -->
+                        <div class="ds-form-group">
+                            <label class="ds-label">Account Verification Tier</label>
+                            <div class="ds-radio-group ds-radio-group--inline">
+                                <label class="ds-radio-label"><input type="radio" class="ds-radio-input" name="account_tier" value="tier1" checked><div class="ds-radio-custom"></div><span class="ds-radio-text">Tier 1: Basic</span></label>
+                                <label class="ds-radio-label"><input type="radio" class="ds-radio-input" name="account_tier" value="tier2"><div class="ds-radio-custom"></div><span class="ds-radio-text">Tier 2: Institutional</span></label>
+                            </div>
+                        </div>
+                        <!-- Checkbox -->
+                        <div class="ds-form-group" style="margin-top: 8px;">
+                            <label class="ds-checkbox-label">
+                                <input type="checkbox" class="ds-checkbox-input" name="terms" required>
+                                <div class="ds-checkbox-custom"></div>
+                                <div class="ds-checkbox-content">
+                                    <div class="ds-checkbox-title">I accept the terms and conditions</div>
+                                    <div class="ds-checkbox-description">By checking this box, you agree to the wealth terminal policies.</div>
+                                </div>
+                            </label>
+                        </div>
+                        <!-- Actions -->
+                        <div class="ds-form-actions">
+                            <button type="button" class="ds-btn ds-btn--ghost ds-btn--md" style="margin-right: auto;">Cancel</button>
+                            <button type="button" class="ds-btn ds-btn--danger ds-btn--md">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1.5 14.5A2 2 0 0115.5 22h-7a2 2 0 01-2-1.5L5 6m3-3h8a2 2 0 012 2v1H6V5a2 2 0 012-2z"></path></svg>
+                                Delete Draft
+                            </button>
+                            <button type="submit" class="ds-btn ds-btn--primary ds-btn--md" id="submit-kyc-btn"><span class="ds-btn-text">Submit Verification</span><span class="ds-spinner"></span></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             SECTION 2: Investment Configuration
+             ═══════════════════════════════════════════ -->
+        <div style="margin-top: 48px; margin-bottom: 24px;">
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--page-title-color); letter-spacing: -0.01em; margin-bottom: 4px;">Investment Configuration</h2>
+            <p style="color: #717680; font-size: 14px;">Asset allocation, risk tolerance, and portfolio strategy forms.</p>
+        </div>
+
+        <div class="ds-card holo-card settings-card" style="margin-bottom: 32px;">
+            <div style="display:flex; gap:24px; align-items:flex-start;">
+                <div class="p-icon p-icon--md" style="--glow-color:rgba(0,0,238,.12);">
+                    <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.35;"></div>
+                    <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000DD 0%,#0000FF 100%);opacity:0.42;"></div>
+                    <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.93) 0%,rgba(238,242,255,.72) 40%,rgba(228,234,255,.55) 100%);border:0;box-shadow:0 .5px 1px rgba(0,0,0,.05),0 4px 14px rgba(0,0,255,.055),inset 0 .5px 0 rgba(255,255,255,.92),inset 0 0 0 .5px rgba(255,255,255,.65);backdrop-filter:blur(18px)saturate(1.9);">
+                        <svg viewBox="0 0 24 24" stroke="#0000EE" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,180,.1));"><polyline points="22 7 13 16 8 11 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <h2 style="margin:0 0 4px 0; font-size:18px; font-weight:700; color:var(--page-title-color);">Portfolio Allocation</h2>
+                    <p style="margin:0 0 24px 0; font-size:14px; color:#717680;">Configure your asset allocation strategy and investment preferences.</p>
+
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">Investment Amount</span>
+                        <div class="ds-input-wrapper"><input type="text" class="settings-input" value="€25,000.00" style="border-radius:8px;"></div>
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">Asset Class</span>
+                        <select class="settings-input" style="border-radius:8px; height:44px; max-width:280px;">
+                            <option value="">Select asset class...</option>
+                            <option value="residential" selected>🏠 Residential Real Estate</option>
+                            <option value="commercial">🏢 Commercial Real Estate</option>
+                            <option value="commodities">⛏️ Commodities</option>
+                            <option value="mixed">📊 Mixed Portfolio</option>
+                        </select>
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">Risk Tolerance</span>
+                        <div class="ds-radio-group ds-radio-group--inline">
+                            <label class="ds-radio-label"><input type="radio" class="ds-radio-input" name="risk" value="conservative"><div class="ds-radio-custom"></div><span class="ds-radio-text">Conservative</span></label>
+                            <label class="ds-radio-label"><input type="radio" class="ds-radio-input" name="risk" value="balanced" checked><div class="ds-radio-custom"></div><span class="ds-radio-text">Balanced</span></label>
+                            <label class="ds-radio-label"><input type="radio" class="ds-radio-input" name="risk" value="aggressive"><div class="ds-radio-custom"></div><span class="ds-radio-text">Aggressive</span></label>
+                        </div>
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">Investment Horizon</span>
+                        <select class="settings-input" style="border-radius:8px; height:44px; max-width:280px;">
+                            <option value="1-3">1–3 years (Short-term)</option>
+                            <option value="3-5" selected>3–5 years (Medium-term)</option>
+                            <option value="5-10">5–10 years (Long-term)</option>
+                            <option value="10+">10+ years (Institutional)</option>
+                        </select>
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:0;">
+                        <span class="settings-label">Notes <span style="font-size:12px; font-weight:400; color:#98A2B3;">Optional</span></span>
+                        <textarea class="settings-input" style="border-radius:8px; min-height:80px; resize:vertical; width:100%; max-width:none;" placeholder="Any special requirements or preferences for your portfolio..."></textarea>
+                    </div>
+                    <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
+                    <div class="settings-edit-footer" style="padding:24px 0 0 0; border:none;">
+                        <button class="ds-btn ds-btn--ghost" style="color:#475467; font-weight:600;">Cancel</button>
+                        <button class="ds-btn ds-btn--primary" style="background:var(--primary-color, #0000FF); color:#98FB96; border-radius:8px;">Save Allocation</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             SECTION 3: Bank Account & Payment
+             ═══════════════════════════════════════════ -->
+        <div style="margin-top: 48px; margin-bottom: 24px;">
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--page-title-color); letter-spacing: -0.01em; margin-bottom: 4px;">Payment Methods</h2>
+            <p style="color: #717680; font-size: 14px;">Add bank accounts and credit cards for deposits and withdrawals.</p>
+        </div>
+
+        <div class="ds-card holo-card settings-card" style="margin-bottom: 32px;">
+            <div style="display:flex; gap:24px; align-items:flex-start;">
+                <div class="p-icon p-icon--md" style="--glow-color:rgba(0,0,238,.12);">
+                    <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.35;"></div>
+                    <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000DD 0%,#0000FF 100%);opacity:0.42;"></div>
+                    <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.93) 0%,rgba(238,242,255,.72) 40%,rgba(228,234,255,.55) 100%);border:0;box-shadow:0 .5px 1px rgba(0,0,0,.05),0 4px 14px rgba(0,0,255,.055),inset 0 .5px 0 rgba(255,255,255,.92),inset 0 0 0 .5px rgba(255,255,255,.65);backdrop-filter:blur(18px)saturate(1.9);">
+                        <svg viewBox="0 0 24 24" stroke="#0000EE" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,180,.1));"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <h2 style="margin:0 0 4px 0; font-size:18px; font-weight:700; color:var(--page-title-color);">Add Bank Account</h2>
+                    <p style="margin:0 0 24px 0; font-size:14px; color:#717680;">Link a bank account for SEPA transfers and withdrawals.</p>
+
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">Account Holder</span>
+                        <input type="text" class="settings-input" placeholder="Full name as on bank statement" style="border-radius:8px;">
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">IBAN</span>
+                        <input type="text" class="settings-input" placeholder="DE89 3704 0044 0532 0130 00" style="border-radius:8px;">
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">BIC / SWIFT</span>
+                        <input type="text" class="settings-input" placeholder="COBADEFFXXX" style="border-radius:8px; max-width:220px;">
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:0;">
+                        <span class="settings-label">Bank Name</span>
+                        <input type="text" class="settings-input" placeholder="Commerzbank AG" style="border-radius:8px;">
+                    </div>
+                    <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
+                    <div class="settings-edit-footer" style="padding:24px 0 0 0; border:none;">
+                        <button class="ds-btn ds-btn--ghost" style="color:#475467; font-weight:600;">Cancel</button>
+                        <button class="ds-btn ds-btn--primary" style="background:var(--primary-color, #0000FF); color:#98FB96; border-radius:8px;">Add Bank Account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             SECTION 4: Contact & Support
+             ═══════════════════════════════════════════ -->
+        <div style="margin-top: 48px; margin-bottom: 24px;">
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--page-title-color); letter-spacing: -0.01em; margin-bottom: 4px;">Contact & Support</h2>
+            <p style="color: #717680; font-size: 14px;">Submit a support ticket or send us a message.</p>
+        </div>
+
+        <div class="ds-card holo-card settings-card" style="margin-bottom: 32px;">
+            <div style="display:flex; gap:24px; align-items:flex-start;">
+                <div class="p-icon p-icon--md" style="--glow-color:rgba(0,0,238,.12);">
+                    <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.35;"></div>
+                    <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000DD 0%,#0000FF 100%);opacity:0.42;"></div>
+                    <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.93) 0%,rgba(238,242,255,.72) 40%,rgba(228,234,255,.55) 100%);border:0;box-shadow:0 .5px 1px rgba(0,0,0,.05),0 4px 14px rgba(0,0,255,.055),inset 0 .5px 0 rgba(255,255,255,.92),inset 0 0 0 .5px rgba(255,255,255,.65);backdrop-filter:blur(18px)saturate(1.9);">
+                        <svg viewBox="0 0 24 24" stroke="#0000EE" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,180,.1));"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <h2 style="margin:0 0 4px 0; font-size:18px; font-weight:700; color:var(--page-title-color);">Support Ticket</h2>
+                    <p style="margin:0 0 24px 0; font-size:14px; color:#717680;">Describe your issue and our team will respond within 24 hours.</p>
+
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">Category</span>
+                        <select class="settings-input" style="border-radius:8px; height:44px; max-width:280px;">
+                            <option value="">Select category...</option>
+                            <option value="account">Account & Verification</option>
+                            <option value="payment">Payment & Withdrawal</option>
+                            <option value="investment">Investment & Portfolio</option>
+                            <option value="technical">Technical Issue</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">Priority</span>
+                        <div class="ds-radio-group ds-radio-group--inline">
+                            <label class="ds-radio-label"><input type="radio" class="ds-radio-input" name="priority" value="low"><div class="ds-radio-custom"></div><span class="ds-radio-text">Low</span></label>
+                            <label class="ds-radio-label"><input type="radio" class="ds-radio-input" name="priority" value="medium" checked><div class="ds-radio-custom"></div><span class="ds-radio-text">Medium</span></label>
+                            <label class="ds-radio-label"><input type="radio" class="ds-radio-input" name="priority" value="high"><div class="ds-radio-custom"></div><span class="ds-radio-text">High</span></label>
+                        </div>
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">Subject</span>
+                        <input type="text" class="settings-input" placeholder="Brief description of your issue" style="border-radius:8px;">
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                        <span class="settings-label">Message</span>
+                        <textarea class="settings-input" style="border-radius:8px; min-height:120px; resize:vertical; width:100%; max-width:none;" placeholder="Please provide as much detail as possible about your issue..."></textarea>
+                    </div>
+                    <div class="settings-form-row align-start" style="grid-template-columns: 160px 1fr; margin-bottom:0;">
+                        <span class="settings-label">Attachment <span style="font-size:12px; font-weight:400; color:#98A2B3;">Optional</span></span>
+                        <div class="ds-file-dropzone" id="support_dropzone" onclick="document.getElementById('support_file').click()" style="padding:20px 16px;">
+                            <input type="file" id="support_file" class="ds-file-input" accept="image/*,application/pdf">
+                            <div class="ds-file-icon" style="width:36px; height:36px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+                            <div class="ds-file-text"><p class="ds-file-title" style="font-size:13px;"><span>Click to upload</span> or drag and drop</p><p class="ds-file-subtitle" style="font-size:12px;">PNG, JPG, PDF (max. 5MB)</p></div>
+                        </div>
+                    </div>
+                    <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
+                    <div class="settings-edit-footer" style="padding:24px 0 0 0; border:none;">
+                        <button class="ds-btn ds-btn--ghost" style="color:#475467; font-weight:600;">Cancel</button>
+                        <button class="ds-btn ds-btn--primary" style="background:var(--primary-color, #0000FF); color:#98FB96; border-radius:8px;">Submit Ticket</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             SECTION 5: Notification Preferences
+             ═══════════════════════════════════════════ -->
+        <div style="margin-top: 48px; margin-bottom: 24px;">
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--page-title-color); letter-spacing: -0.01em; margin-bottom: 4px;">Notification Preferences</h2>
+            <p style="color: #717680; font-size: 14px;">Toggle switches and checkbox groups for managing alert subscriptions.</p>
+        </div>
+
+        <div class="ds-card holo-card settings-card" style="margin-bottom: 32px;">
+            <div style="display:flex; gap:24px; align-items:flex-start;">
+                <div class="p-icon p-icon--md" style="--glow-color:rgba(0,0,238,.12);">
+                    <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.35;"></div>
+                    <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000DD 0%,#0000FF 100%);opacity:0.42;"></div>
+                    <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.93) 0%,rgba(238,242,255,.72) 40%,rgba(228,234,255,.55) 100%);border:0;box-shadow:0 .5px 1px rgba(0,0,0,.05),0 4px 14px rgba(0,0,255,.055),inset 0 .5px 0 rgba(255,255,255,.92),inset 0 0 0 .5px rgba(255,255,255,.65);backdrop-filter:blur(18px)saturate(1.9);">
+                        <svg viewBox="0 0 24 24" stroke="#0000EE" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,180,.1));"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <h2 style="margin:0 0 4px 0; font-size:18px; font-weight:700; color:var(--page-title-color);">Alert Subscriptions</h2>
+                    <p style="margin:0 0 24px 0; font-size:14px; color:#717680;">Choose which notifications you receive and how.</p>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <div><div style="font-size:14px; font-weight:600; color:var(--page-title-color);">Investment Updates</div><div style="font-size:13px; color:#475467;">Portfolio value changes and dividends</div></div>
+                        <button class="ds-switch" data-state="active" onclick="this.dataset.state = this.dataset.state === 'active' ? 'inactive' : 'active'"><div class="ds-switch-thumb"></div></button>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <div><div style="font-size:14px; font-weight:600; color:var(--page-title-color);">New Listings</div><div style="font-size:13px; color:#475467;">New properties and asset opportunities</div></div>
+                        <button class="ds-switch" data-state="active" onclick="this.dataset.state = this.dataset.state === 'active' ? 'inactive' : 'active'"><div class="ds-switch-thumb"></div></button>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <div><div style="font-size:14px; font-weight:600; color:var(--page-title-color);">Email Newsletters</div><div style="font-size:13px; color:#475467;">Weekly market insights and tips</div></div>
+                        <button class="ds-switch" data-state="inactive" onclick="this.dataset.state = this.dataset.state === 'active' ? 'inactive' : 'active'"><div class="ds-switch-thumb"></div></button>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <div><div style="font-size:14px; font-weight:600; color:var(--page-title-color);">Push Notifications</div><div style="font-size:13px; color:#475467;">Browser push for critical alerts</div></div>
+                        <button class="ds-switch" data-state="active" onclick="this.dataset.state = this.dataset.state === 'active' ? 'inactive' : 'active'"><div class="ds-switch-thumb"></div></button>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div><div style="font-size:14px; font-weight:600; color:var(--page-title-color);">Security Alerts</div><div style="font-size:13px; color:#475467;">Login attempts and password changes</div></div>
+                        <button class="ds-switch" data-state="active" onclick="this.dataset.state = this.dataset.state === 'active' ? 'inactive' : 'active'"><div class="ds-switch-thumb"></div></button>
+                    </div>
+
+                    <hr class="settings-divider" style="margin:24px -28px;">
+
+                    <!-- Checkbox group -->
+                    <div style="margin-bottom:12px;"><div style="font-size:14px; font-weight:700; color:var(--page-title-color); margin-bottom:4px;">Delivery Channels</div><div style="font-size:13px; color:#717680;">Select how you want to receive notifications.</div></div>
+                    <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:0;">
+                        <label class="ds-checkbox-label"><input type="checkbox" class="ds-checkbox-input" checked><div class="ds-checkbox-custom"></div><div class="ds-checkbox-content"><div class="ds-checkbox-title">Email</div><div class="ds-checkbox-description">Receive alerts to your registered email.</div></div></label>
+                        <label class="ds-checkbox-label"><input type="checkbox" class="ds-checkbox-input" checked><div class="ds-checkbox-custom"></div><div class="ds-checkbox-content"><div class="ds-checkbox-title">In-App</div><div class="ds-checkbox-description">See notifications in the platform dashboard.</div></div></label>
+                        <label class="ds-checkbox-label"><input type="checkbox" class="ds-checkbox-input"><div class="ds-checkbox-custom"></div><div class="ds-checkbox-content"><div class="ds-checkbox-title">SMS</div><div class="ds-checkbox-description">Text messages for critical updates only.</div></div></label>
+                    </div>
+
+                    <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
+                    <div class="settings-edit-footer" style="padding:24px 0 0 0; border:none;">
+                        <button class="ds-btn ds-btn--primary" style="background:var(--primary-color, #0000FF); color:#98FB96; border-radius:8px;">Update Preferences</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             SECTION 6: Two-Column Form Layout
+             ═══════════════════════════════════════════ -->
+        <div style="margin-top: 48px; margin-bottom: 24px;">
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--page-title-color); letter-spacing: -0.01em; margin-bottom: 4px;">Two-Column Forms</h2>
+            <p style="color: #717680; font-size: 14px;">Side-by-side form cards for compact data entry.</p>
+        </div>
+
+        <div class="page-body-grid layout-two-col" style="margin-bottom: 48px;">
+            <!-- Left: Change Password -->
+            <div class="ds-card holo-card settings-card">
+                <div style="display:flex; gap:16px; align-items:flex-start; margin-bottom:24px;">
+                    <div class="p-icon p-icon--md" style="--glow-color:rgba(0,0,238,.12);">
+                        <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.35;"></div>
+                        <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000DD 0%,#0000FF 100%);opacity:0.42;"></div>
+                        <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.93) 0%,rgba(238,242,255,.72) 40%,rgba(228,234,255,.55) 100%);border:0;box-shadow:0 .5px 1px rgba(0,0,0,.05),0 4px 14px rgba(0,0,255,.055),inset 0 .5px 0 rgba(255,255,255,.92),inset 0 0 0 .5px rgba(255,255,255,.65);backdrop-filter:blur(18px)saturate(1.9);">
+                            <svg viewBox="0 0 24 24" stroke="#0000EE" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </div>
+                    </div>
+                    <div><h2 style="margin:0 0 4px 0; font-size:18px; font-weight:700; color:var(--page-title-color);">Change Password</h2><p style="margin:0; font-size:14px; color:#717680;">Update your account credentials.</p></div>
+                </div>
+                <div class="ds-form-group" style="margin-bottom:16px;"><label class="ds-label" for="current_pw">Current Password</label><div class="ds-input-wrapper"><input type="password" id="current_pw" class="ds-input ds-holographic-focus" placeholder="••••••••••••"></div></div>
+                <div class="ds-form-group" style="margin-bottom:16px;"><label class="ds-label" for="new_pw">New Password</label><div class="ds-input-wrapper"><input type="password" id="new_pw" class="ds-input ds-holographic-focus" placeholder="Minimum 12 characters"></div></div>
+                <div class="ds-form-group" style="margin-bottom:0;"><label class="ds-label" for="confirm_pw">Confirm Password</label><div class="ds-input-wrapper"><input type="password" id="confirm_pw" class="ds-input ds-holographic-focus" placeholder="Re-enter new password"></div></div>
+                <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
+                <div class="settings-edit-footer" style="padding:24px 0 0 0; border:none;"><button class="ds-btn ds-btn--primary" style="background:var(--primary-color, #0000FF); color:#98FB96; border-radius:8px;">Update Password</button></div>
+            </div>
+
+            <!-- Right: Referral Code -->
+            <div class="ds-card holo-card settings-card">
+                <div style="display:flex; gap:16px; align-items:flex-start; margin-bottom:24px;">
+                    <div class="p-icon p-icon--md" style="--glow-color:rgba(0,0,238,.12);">
+                        <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.35;"></div>
+                        <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000DD 0%,#0000FF 100%);opacity:0.42;"></div>
+                        <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.93) 0%,rgba(238,242,255,.72) 40%,rgba(228,234,255,.55) 100%);border:0;box-shadow:0 .5px 1px rgba(0,0,0,.05),0 4px 14px rgba(0,0,255,.055),inset 0 .5px 0 rgba(255,255,255,.92),inset 0 0 0 .5px rgba(255,255,255,.65);backdrop-filter:blur(18px)saturate(1.9);">
+                            <svg viewBox="0 0 24 24" stroke="#0000EE" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        </div>
+                    </div>
+                    <div><h2 style="margin:0 0 4px 0; font-size:18px; font-weight:700; color:var(--page-title-color);">Redeem Referral</h2><p style="margin:0; font-size:14px; color:#717680;">Enter a referral code to earn bonus rewards.</p></div>
+                </div>
+                <div class="ds-form-group" style="margin-bottom:16px;"><label class="ds-label" for="referral_code">Referral Code</label><div class="ds-input-wrapper"><input type="text" id="referral_code" class="ds-input ds-holographic-focus" placeholder="e.g. d8e07596" style="text-transform:uppercase; font-family:monospace; font-weight:600; letter-spacing:2px;"></div></div>
+                <div style="background:#F0F9FF; border:1px solid rgba(0,0,255,0.06); border-radius:12px; padding:16px; margin-bottom:0;">
+                    <div style="display:flex; align-items:flex-start; gap:12px;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0000EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        <div><div style="font-size:14px; font-weight:600; color:var(--page-title-color); margin-bottom:4px;">How referrals work</div><div style="font-size:13px; color:#475467; line-height:1.5;">Enter a valid referral code to receive a €50 bonus on your first investment over €500. Both you and the referrer earn rewards.</div></div>
+                    </div>
+                </div>
+                <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
+                <div class="settings-edit-footer" style="padding:24px 0 0 0; border:none;"><button class="ds-btn ds-btn--primary" style="background:var(--primary-color, #0000FF); color:#98FB96; border-radius:8px;">Apply Code</button></div>
+            </div>
+        </div>
+
+    </main>
+    </div>
+
+    <!-- Vanilla JS -->
+    <script>
+    function togglePassword(btn, inputId) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('svg');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        } else {
+            input.type = 'password';
+            icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
+    }
+
+    function toggleSelect(containerId) {
+        const container = document.getElementById(containerId);
+        const trigger = container.querySelector('.ds-select-trigger');
+        const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+        document.querySelectorAll('.ds-select-container').forEach(c => {
+            if(c.id !== containerId) {
+                c.querySelector('.ds-select-trigger').setAttribute('aria-expanded', 'false');
+                c.querySelector('.ds-select-dropdown').classList.remove('is-open');
+            }
+        });
+        trigger.setAttribute('aria-expanded', !isExpanded);
+        container.querySelector('.ds-select-dropdown').classList.toggle('is-open', !isExpanded);
+    }
+
+    function selectOption(containerId, optionEl) {
+        const container = document.getElementById(containerId);
+        const trigger = container.querySelector('.ds-select-trigger');
+        const valueSpan = container.querySelector('.ds-select-value');
+        const hiddenInput = container.querySelector('input[type="hidden"]');
+        valueSpan.textContent = optionEl.textContent;
+        valueSpan.style.color = 'var(--text-primary)';
+        hiddenInput.value = optionEl.dataset.value;
+        trigger.setAttribute('aria-expanded', 'false');
+        container.querySelector('.ds-select-dropdown').classList.remove('is-open');
+        container.querySelectorAll('.ds-select-option').forEach(el => el.classList.remove('is-active'));
+        optionEl.classList.add('is-active');
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.ds-select-container')) {
+            document.querySelectorAll('.ds-select-container').forEach(c => {
+                c.querySelector('.ds-select-trigger').setAttribute('aria-expanded', 'false');
+                c.querySelector('.ds-select-dropdown').classList.remove('is-open');
+            });
+        }
+    });
+
+    function dropzoneDragOver(e) { e.preventDefault(); document.getElementById('kyc_dropzone').classList.add('ds-drag-active'); }
+    function dropzoneDragLeave(e) { e.preventDefault(); document.getElementById('kyc_dropzone').classList.remove('ds-drag-active'); }
+    function dropzoneDrop(e) {
+        e.preventDefault();
+        document.getElementById('kyc_dropzone').classList.remove('ds-drag-active');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) { document.getElementById('kyc_file').files = files; updateDropzoneUI(files[0].name); }
+    }
+    function handleFileSelect(e) { if (e.target.files.length > 0) updateDropzoneUI(e.target.files[0].name); }
+    function updateDropzoneUI(filename) {
+        const dropzone = document.getElementById('kyc_dropzone');
+        const title = dropzone.querySelector('.ds-file-title');
+        title.textContent = filename + " selected";
+        title.style.color = "var(--primary-color)";
+        title.style.fontWeight = "700";
+        const iconWrap = dropzone.querySelector('.ds-file-icon');
+        iconWrap.style.background = "var(--success-bg)";
+        iconWrap.style.color = "var(--success-text)";
+        iconWrap.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    }
+    </script>
+</body>
+</html>

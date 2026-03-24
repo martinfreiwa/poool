@@ -671,120 +671,409 @@
   }
 }
 
-/* --- TIER STEPPER --- */
-.tier-stepper {
+/* --- TIER CARDS EXPERIENCE --- */
+.tier-cards-container {
   display: flex;
   flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 840px;
 }
 
-.stepper-item {
+.tier-card {
+  padding: 32px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 16px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+}
+
+/* Enhanced glass icon for tier cards */
+.tier-card .glass-icon-container {
+  width: 56px;
+  height: 56px;
+}
+
+.tier-card .glass-icon-bg {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  opacity: 0.45;
+  transform: rotate(12deg);
+  left: 4px;
+  top: -4px;
+}
+
+.tier-card .glass-icon-front {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.85), rgba(230,235,255,0.6));
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 255, 0.08),
+    inset 0 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+.tier-card .glass-icon-front span {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.tier-card--active {
+  border: 2px solid var(--primary-color, #0000FF);
+  box-shadow: 0px 12px 24px -4px rgba(0, 0, 255, 0.1), 0px 4px 8px -2px rgba(0, 0, 255, 0.05);
+  transform: translateY(-2px);
+  padding: 31px; /* compensate 1px extra border */
+}
+
+.tier-card--locked {
+  background: var(--bg-secondary, #FAFAFA);
+  border: 1px dashed var(--card-border-color, #E5E7EB);
+  opacity: 0.9;
+}
+.tier-card--locked .glass-icon-front {
+  background: rgba(240, 240, 240, 0.8) !important;
+  border-color: #E5E7EB !important;
+}
+.tier-card--locked .glass-icon-bg {
+  background: none !important;
+}
+.tier-card--locked .tier-reward-showcase,
+.tier-card--locked .tier-benefits-section {
+  opacity: 0.6;
+}
+
+.tier-card-header-new {
   display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
 }
 
-.stepper-icon {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--input-border-color);
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 0 2px var(--input-border-color);
-  position: absolute;
-  left: 24px;
-  top: 28px;
-  z-index: 2;
+.tier-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.stepper-icon.active {
-  width: 16px;
-  height: 16px;
-  background: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.15);
-  border: 2px solid #ffffff;
+.tier-name-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.tier-reward-showcase {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.reward-amount {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.reward-context {
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.tier-progress-section {
+  background: #F8F9FC;
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 32px;
+}
+
+.progress-labels-new {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.progress-labels-new strong {
+  color: var(--text-primary, #181D27);
+  font-weight: 600;
+}
+
+.tier-progress-track {
+  height: 8px;
+  background: #E5E7EB;
+  border-radius: 30px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.tier-progress-fill {
+  height: 100%;
+  border-radius: 30px;
+  transition: width 0.6s ease;
+}
+.tier-progress-fill.past {
+  width: 100%;
+  background: var(--brand-greeny-green, #03FF88);
+}
+.tier-progress-fill.active {
+  background: var(--primary-color, #0000FF);
+}
+
+.tier-status-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.tier-status-text.completed {
+  color: #027A48;
+}
+
+.tier-status-text.locked {
+  color: var(--text-tertiary, #717680);
+}
+
+.tier-benefits-section {
+  padding-top: 0;
+}
+
+.tier-card-divider {
+  height: 1px;
+  background: var(--card-border-color, #E5E7EB);
+  margin: 24px 0;
+}
+
+.tier-benefits-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-color, #0000FF);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 8px 0;
+}
+
+.tier-benefits-desc {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary, #535862);
+  margin: 0 0 20px 0;
+}
+
+.tier-benefits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tier-benefits-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  color: var(--body-color, #344054);
+  line-height: 1.5;
+}
+
+.tier-benefits-list li svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.benefit-tick {
+  width: 18px;
+  height: 18px;
+  color: var(--primary-color, #0000FF);
+}
+
+.benefit-tick-muted {
+  width: 18px;
+  height: 18px;
+  color: #98A2B3;
+}
+
+/* ── Marketing Tier Icon Variations ── */
+.tier-icon-var {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.tier-icon-var .icon-label {
+  font-size: 11px;
+  color: #717680;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* Shared base for all icon styles */
+.icon-solid,
+.icon-outlined,
+.icon-gradient,
+.icon-dark,
+.icon-mint {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px; /* ~30% squircle ratio */
   display: flex;
   align-items: center;
   justify-content: center;
-  left: 22px;
-  top: 26px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-family: 'TT Norms Pro', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.2s ease;
+  cursor: default;
+  user-select: none;
 }
 
-.stepper-icon.active .stepper-icon-inner {
-  width: 6px;
-  height: 6px;
-  background: #ffffff;
-  border-radius: 50%;
+/* Hover lift — all variants */
+.icon-solid:hover,
+.icon-outlined:hover,
+.icon-gradient:hover,
+.icon-dark:hover,
+.icon-mint:hover {
+  transform: translateY(-2px) scale(1.04);
 }
 
-.stepper-line {
-  position: absolute;
-  left: 29px;
-  top: 44px;
-  bottom: 0;
-  width: 2px;
-  background: var(--card-border-color);
-  z-index: 1;
+/* ── Solid Blue ── */
+.icon-solid {
+  background: linear-gradient(160deg, #1a1aff 0%, #0000DD 100%);
+  color: #fff;
+  box-shadow:
+    0 1px 2px rgba(0,0,255,0.12),
+    0 4px 8px rgba(0,0,255,0.08),
+    0 8px 20px rgba(0,0,255,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+}
+.icon-solid:hover {
+  box-shadow:
+    0 2px 4px rgba(0,0,255,0.15),
+    0 8px 16px rgba(0,0,255,0.12),
+    0 12px 28px rgba(0,0,255,0.08);
 }
 
-.stepper-item.active .stepper-line {
-  background: var(--primary-color);
+/* ── Outlined ── */
+.icon-outlined {
+  background: transparent;
+  border: 2px solid #0000FF;
+  color: #0000FF;
+  box-shadow: 0 1px 3px rgba(0,0,255,0.06);
+}
+.icon-outlined:hover {
+  background: rgba(0,0,255,0.03);
+  box-shadow:
+    0 2px 6px rgba(0,0,255,0.08),
+    0 8px 16px rgba(0,0,255,0.05);
 }
 
-.stepper-item.has-blue-line .stepper-line {
-  background: var(--primary-color);
+/* ── Blue → Green Gradient ── */
+.icon-gradient {
+  background: linear-gradient(135deg, #0000FF 0%, #00CC6F 60%, #03FF88 100%);
+  color: #fff;
+  box-shadow:
+    0 1px 2px rgba(0,0,255,0.1),
+    0 4px 8px rgba(0,100,80,0.08),
+    0 8px 20px rgba(3,255,136,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.icon-gradient:hover {
+  box-shadow:
+    0 2px 4px rgba(0,0,255,0.12),
+    0 8px 16px rgba(0,100,80,0.1),
+    0 12px 28px rgba(3,255,136,0.08);
 }
 
-.stepper-item:last-child .stepper-line {
-  display: none;
+/* ── Dark Mode ── */
+.icon-dark {
+  background: linear-gradient(160deg, #1E2330 0%, #141821 100%);
+  color: #4D4DFF;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.2),
+    0 4px 8px rgba(0,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.icon-dark:hover {
+  color: #6666FF;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.24),
+    0 8px 16px rgba(0,0,0,0.16),
+    0 0 20px rgba(0,0,255,0.06);
 }
 
-.stepper-content {
-  margin-left: 56px;
-  padding: 20px 24px 20px 0;
-  flex: 1;
+/* ── Mint Surface ── */
+.icon-mint {
+  background: linear-gradient(160deg, rgba(3,255,136,0.1) 0%, rgba(3,255,136,0.04) 100%);
+  border: 1.5px solid rgba(3,255,136,0.25);
+  color: #0000FF;
+  box-shadow:
+    0 1px 2px rgba(3,255,136,0.06),
+    0 4px 8px rgba(3,255,136,0.04);
+}
+.icon-mint:hover {
+  border-color: rgba(3,255,136,0.4);
+  box-shadow:
+    0 2px 4px rgba(3,255,136,0.08),
+    0 8px 16px rgba(3,255,136,0.06),
+    0 0 20px rgba(3,255,136,0.04);
 }
 
-.border-top {
-  border-top: 1px solid var(--card-border-color);
-  padding-top: 16px;
-  margin-top: 12px;
+/* ── Animations ── */
+
+/* Pulse ring — radiating outward */
+@keyframes tier-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(0,0,255,0.3), inset 0 1px 0 rgba(255,255,255,0.15); }
+  70%  { box-shadow: 0 0 0 12px rgba(0,0,255,0), inset 0 1px 0 rgba(255,255,255,0.15); }
+  100% { box-shadow: 0 0 0 0 rgba(0,0,255,0), inset 0 1px 0 rgba(255,255,255,0.15); }
+}
+.icon-anim-pulse {
+  animation: tier-pulse-ring 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-.border-top-none {
-  border-top: none;
+/* Breathing glow — dual-color ambient */
+@keyframes tier-glow-breathe {
+  0%, 100% {
+    box-shadow:
+      0 0 6px rgba(0,0,255,0.12),
+      0 4px 12px rgba(0,0,255,0.06),
+      inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 16px rgba(0,0,255,0.3),
+      0 0 32px rgba(3,255,136,0.08),
+      0 4px 12px rgba(0,0,255,0.1),
+      inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+}
+.icon-anim-glow {
+  animation: tier-glow-breathe 3.5s ease-in-out infinite;
 }
 
-.stepper-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
+/* Float — subtle vertical hover */
+@keyframes tier-float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-5px); }
 }
-
-.stepper-header.space-between {
-  justify-content: space-between;
-}
-
-.stepper-lock {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #98a2b3;
-}
-
-.stepper-body h4 {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0;
-}
-
-.stepper-body p {
-  font-size: 14px;
-  margin: 0;
-}
-
-.mt-2 {
-  margin-top: 8px;
+.icon-anim-float {
+  animation: tier-float 3s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 
 /* Badges */

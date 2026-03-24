@@ -74,6 +74,18 @@
     background: linear-gradient(135deg, #0000FF 0%, #60A5FA 100%);
 }
 
+.glass-brand-green-bg {
+    background: linear-gradient(135deg, #03FF88 0%, #00CC6F 100%);
+}
+
+.glass-dark-bg {
+    background: linear-gradient(135deg, #181D27 0%, #2E3440 100%);
+}
+
+.glass-duo-bg {
+    background: linear-gradient(135deg, #0000FF 0%, #03FF88 100%);
+}
+
 /* Section title shared style */
 .section-title {
     font-family: 'TT Norms Pro', sans-serif;

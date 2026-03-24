@@ -870,5 +870,26 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **File:** `frontend/platform/static/js/marketplace-secondary.js`, `frontend/platform/static/css/marketplace-secondary.css`
 - **What was wrong:** Badge text duplicated "Leasehold", neutral change indicator looked like a minus button, and chart toggle expanded all cards at once.
 - **What I did:** Fixed logic to only append "Leasehold" if missing, changed neutral indicator to "0.0%", and scoped the chart toggle to the specific clicked card.
+- **Date:** 2026-03-24
+
+### [P2] — Login page typography constraints, name mismatch, and autofill styling
+- **File:** `frontend/platform/login.html`, `backend/templates/login.html`, `frontend/platform/static/css/login.css`
+- **What was wrong:** The login page had a gender/name mismatch on its testimonial (man's photo with woman's name), used improper inheritance for TT Norms Pro font causing fallback usage, lacked `-0.02em` tracking, lacked the primary button text color, and used a background image that burned-in the UI components which clipped on different aspect ratios.
+- **What I did:** Migrated the testimonial UI out of the background image into an HTML DOM overlay using `quote-panel`. Changed the image reference to `Khai.webp` to match the name. Applied proper `var(--font-family)` overrides, `letter-spacing: -0.02em`, custom `-webkit-autofill` resets, and custom checkbox primitive styling matching the system token shape.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-24
+
+
+### [P2] — Missing flag emojis for full country names in Cart
+- **File:** `backend/src/cart/routes.rs`
+- **What was wrong:** The country flag generation logic assumed `location_country` was strictly a 2-character ISO code. Common entries like "Germany" failed the `cc.len() == 2` check, causing the flag emoji to be omitted from the UI.
+- **What I did:** Added a mapping table to successfully convert full country names (e.g., "Germany", "United States") to their respective ISO alpha-2 codes before running the flag generation logic.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-24
+
+### [P2] — Portfolio page violates Holographic design system (17 issues)
+- **File:** `frontend/platform/portfolio.html`, `frontend/platform/static/css/portfolio.css`, `frontend/platform/static/css/portfolio-assets-table.css`
+- **What was wrong:** Portfolio used flat white cards, legacy glass-icon-container, hardcoded Tailwind hex colors, wrong chart colors, missing ds-text-money, wrong border-radius, and 5 competing CSS files with 80+ !important declarations.
+- **What I did:** Converted all cards to .holo-card, replaced 6 glass-icon instances with .p-icon system, added holographic page header icon, added ds-text-money to financial values, rewrote portfolio.css with design tokens, fixed chart colors to Signal Green #03FF88, removed portfolio-value-card.css and portfolio-enhancements.css imports, and added cards-template.css.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-24

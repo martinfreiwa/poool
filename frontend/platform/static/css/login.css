@@ -63,8 +63,9 @@ body, html {
 }
 
 #text {
-  font-size: 30px;
-  font-weight: 600;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-size: 36px;
+  font-weight: 700;
   color: var(--page-title-color);
   letter-spacing: -0.02em;
 }
@@ -119,7 +120,7 @@ body, html {
 #divider-left, #divider-right {
   flex: 1;
   height: 1px;
-  background: var(--table-border-color);
+  background: #E5E7EB;
 }
 
 #or-text {
@@ -202,9 +203,10 @@ body, html {
   width: 100%;
   height: 44px;
   background: var(--primary-color);
-  color: #ffffff;
+  color: var(--btn-primary-color, #98FB96);
   border: none;
   border-radius: 8px;
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -237,23 +239,161 @@ body, html {
   text-decoration: underline;
 }
 
-/* Right Section - Image */
+/* Form Primitive Overrides */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: var(--page-title-color) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 4px;
+  background-color: #ffffff;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Right Section - Image & Quote Panel */
 #right-section {
   flex: 1;
   background: #ffffff;
   padding: 24px;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
 }
 
-#testimonial-image {
+#testimonial-container {
   width: 100%;
   height: 100%;
-  background-image: url("../../images/indonez.webp");
+  background-image: url("../../images/Khai.webp");
   background-size: cover;
   background-position: center;
   border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+}
+
+#quote-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 50%;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+  padding: 32px;
+}
+
+#attribution-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+#testimonial-quote {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.3;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.highlight-green {
+  color: var(--brand-greeny-green, #03FF88);
+}
+
+#name-and-stars {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#text-and-supporting {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#author-name {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 600;
+  font-size: 20px;
+  color: #ffffff;
+}
+
+#author-company {
+  font-family: var(--font-family, "TT Norms Pro", sans-serif);
+  font-weight: 400;
+  font-size: 16px;
+  color: #D0D5DD;
+}
+
+#stars-container {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+}
+
+#arrows-container {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.carousel-arrow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.carousel-arrow:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 /* Response */

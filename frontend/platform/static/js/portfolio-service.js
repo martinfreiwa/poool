@@ -108,29 +108,42 @@ const PortfolioDataService = (function () {
 
     /**
      * Map investment status string → display-ready badge info.
+     * Dynamic approach to handle any upcoming statuses from the database.
+     * Maps styling based on semantic keywords but doesn't hardcode text.
      * @param {string} status
      * @param {string|null} payoutAt
      * @returns {{ cssClass: string, label: string }}
      */
     function mapInvestmentStatus(status, payoutAt) {
-        const s = (status || "").toLowerCase();
-        if (s.includes("funded"))
-            return { cssClass: "status-funded", label: "Property funded" };
-        if (s.includes("payout")) {
-            const month = payoutAt
-                ? new Date(payoutAt).toLocaleString("en-US", { month: "short" })
-                : "Soon";
-            return {
-                cssClass: "status-payout",
-                label: `Payout expected: ${month}`,
-            };
+        if (!status) return { cssClass: "status-default", label: "Unknown" };
+
+        const s = status.toLowerCase();
+
+        // Dynamically create label (e.g. 'funding_in_progress' -> 'Funding in progress')
+        let label = s.replace(/[-_]/g, ' ');
+        label = label.charAt(0).toUpperCase() + label.slice(1);
+
+        // Optional special overrides for specific expected statuses
+        if (s === "payout_pending" && payoutAt) {
+            const month = new Date(payoutAt).toLocaleString("en-US", { month: "short" });
+            label = `Payout expected: ${month}`;
         }
-        if (s.includes("rented"))
-            return { cssClass: "status-rented", label: "Rented" };
-        if (s.includes("exited"))
-            return { cssClass: "status-exited", label: "Exited" };
-        return { cssClass: "status-process", label: "In process" };
+
+        // Dynamically assign styling via keywords
+        let cssClass = "status-default";
+        if (s.includes("progress") || s.includes("process")) {
+             cssClass = "status-progress";
+        } else if (s.includes("fund") || s.includes("rent") || s.includes("active")) {
+             cssClass = "status-success";
+        } else if (s.includes("payout") || s.includes("pending")) {
+             cssClass = "status-warning";
+        } else if (s.includes("exit") || s.includes("cancel")) {
+             cssClass = "status-neutral";
+        }
+
+        return { cssClass, label };
     }
+
 
     // ─── Fetch & Transform ────────────────────────────────────────
 

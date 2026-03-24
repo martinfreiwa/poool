@@ -266,6 +266,39 @@
                             <span>Settings</span>
                         </a>
                     </div>
+
+                    <!-- Templates -->
+                    <div class="admin-nav-section">
+                        <span class="admin-nav-section-label">Templates</span>
+                        <a href="/admin/templates/icons.html" class="admin-nav-item ${isPathActive(["/admin/templates/icons.html"]) ? "active" : ""}" id="nav-tpl-icons">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+                            <span>Icons</span>
+                        </a>
+                        <a href="/statistics-template.html" class="admin-nav-item ${isPathActive(["/statistics-template.html"]) ? "active" : ""}" id="nav-tpl-statistics">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                            <span>Statistics & Analytics</span>
+                        </a>
+                        <a href="/forms-template.html" class="admin-nav-item ${isPathActive(["/forms-template.html"]) ? "active" : ""}" id="nav-tpl-forms">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                            <span>Forms & Inputs</span>
+                        </a>
+                        <a href="/table-template.html" class="admin-nav-item ${isPathActive(["/table-template.html"]) ? "active" : ""}" id="nav-tpl-table">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><line x1="22" y1="10" x2="2" y2="10"></line><line x1="8" y1="20" x2="8" y2="10"></line></svg>
+                            <span>Data Tables</span>
+                        </a>
+                        <a href="/cards-template.html" class="admin-nav-item ${isPathActive(["/cards-template.html"]) ? "active" : ""}" id="nav-tpl-cards">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                            <span>UI Cards</span>
+                        </a>
+                        <a href="/overlays-template.html" class="admin-nav-item ${isPathActive(["/overlays-template.html"]) ? "active" : ""}" id="nav-tpl-overlays">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22 6 12 13 2 6"></polyline></svg>
+                            <span>Overlays & Modals</span>
+                        </a>
+                        <a href="/fonts-template.html" class="admin-nav-item ${isPathActive(["/fonts-template.html"]) ? "active" : ""}" id="nav-tpl-fonts">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                            <span>Fonts & Typography</span>
+                        </a>
+                    </div>
                 </nav>
 
                 <!-- Footer -->

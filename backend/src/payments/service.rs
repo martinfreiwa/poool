@@ -12,14 +12,18 @@ use super::models::*;
 
 pub const BANK_DETAILS_USD: &str = r#"{
     "bank": "Deutsche Bank AG",
+    "bank_address": "Taunusanlage 12, 60325 Frankfurt am Main, Germany",
     "account_name": "POOOL GmbH",
+    "company_address": "Königsallee 61, 40215 Düsseldorf, Germany",
     "iban": "DE89 3704 0044 0532 0130 00",
     "bic_swift": "DEUTDEDB"
 }"#;
 
 pub const BANK_DETAILS_IDR: &str = r#"{
     "bank": "Bank Central Asia (BCA)",
+    "bank_address": "Menara BCA, Grand Indonesia, Jl. M.H. Thamrin No.1, Jakarta 10310, Indonesia",
     "account_name": "PT POOOL Indonesia",
+    "company_address": "Jl. Sudirman Kav 1, Jakarta 10000, Indonesia",
     "account_number": "0987654321"
 }"#;
 

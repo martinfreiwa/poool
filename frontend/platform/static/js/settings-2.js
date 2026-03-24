@@ -165,6 +165,21 @@ function setReadValue(elementId, value, placeholder = 'Not provided') {
     const isEmpty = !value || value.trim() === '';
     el.innerText = isEmpty ? placeholder : value;
     el.classList.toggle('settings-read-value--empty', isEmpty);
+    
+    // Make empty fields interactive: click to edit
+    if (isEmpty) {
+        el.style.cursor = 'pointer';
+        el.title = 'Click to provide information';
+        el.onclick = () => {
+           const group = el.closest('.settings-morph-group');
+           const editBtn = group?.querySelector('.js-morph-edit');
+           if (editBtn) editBtn.click();
+        };
+    } else {
+        el.style.cursor = '';
+        el.title = '';
+        el.onclick = null;
+    }
 }
 
 /**

@@ -1,0 +1,217 @@
+/* table-template.css - Dedicated styles for the advanced data table component */
+
+/* Container & Layout */
+.custom-table-container {
+    padding: 0;
+    overflow: hidden; /* Contains the scrollable area inside rounded card without clipping border radius */
+    display: flex;
+    flex-direction: column;
+}
+
+.custom-table-toolbar {
+    padding: var(--card-padding, 24px);
+    border-bottom: var(--table-border-color, 1px solid #E9EAEB);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--card-bg, #FFFFFF);
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    position: relative;
+    /* Optional fixed height to scroll within card */
+    max-height: 600px;
+    scrollbar-width: thin;
+    scrollbar-color: #D0D5DD transparent;
+}
+
+.table-wrapper::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+.table-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+    background-color: #D0D5DD;
+    border-radius: 10px;
+}
+
+/* Core Table Structural Styles */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+/* Sticky Header specific styles */
+.data-table__header {
+    background-color: var(--table-header-bg, #FAFAFA);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    /* Use box-shadow to prevent header scroll border overlap issues */
+    box-shadow: 0 1px 0 var(--table-border-color, #E9EAEB);
+}
+
+.data-table__th {
+    padding: 16px 24px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--table-header-color, #717680);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    background-color: var(--table-header-bg, #FAFAFA); /* explicit color for scrolling */
+}
+
+/* HTMX Column Sorting Affordances */
+.data-table__th.is-sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease;
+}
+
+.data-table__th.is-sortable:hover {
+    color: var(--page-title-color, #181D27);
+}
+
+.sort-icon {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 10px;
+    opacity: 0.5;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.data-table__th.is-sortable:hover .sort-icon {
+    opacity: 1;
+}
+
+/* Table Body Cells */
+.data-table__td {
+    padding: 16px 24px;
+    border-bottom: var(--table-border-color, 1px solid #E9EAEB);
+    vertical-align: middle;
+}
+
+.data-table__row:last-child .data-table__td {
+    border-bottom: none;
+}
+
+/* Elegant Table Row interaction mimicking a light Glassmorphism */
+.data-table__row {
+    transition: background-color 0.2s ease;
+    background-color: transparent;
+}
+
+.data-table__row:hover {
+    background-color: var(--table-row-hover-bg, #F8F9FC); /* Subtle tinted hover */
+}
+
+/* Text Formats Inside Cells */
+.data-table__primary-text {
+    margin-bottom: 4px;
+    color: var(--page-title-color, #181D27);
+    font-weight: 500;
+}
+
+.data-table__secondary-text {
+    color: var(--text-secondary, #535862);
+}
+
+.text-right {
+    text-align: right;
+}
+
+/* Financial Format Color Modifiers */
+.text-success { color: #027A48; font-weight: 600; font-variant-numeric: tabular-nums; }
+.text-danger { color: #B42318; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ds-text-money { font-weight: 600; font-variant-numeric: tabular-nums; } /* Defaults for tabular alignment */
+
+/* Status Badges */
+.ds-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    line-height: 1.5;
+}
+
+/* Badge Variations reflecting institutional confidence */
+.ds-badge--success { background-color: #ECFDF3; color: #027A48; }
+.ds-badge--warning { background-color: #FFFAEB; color: #B54708; }
+.ds-badge--danger { background-color: #FEF3F2; color: #B42318; }
+.ds-badge--info    { background-color: #EEF4FF; color: #1B2559; }
+
+/* Pagination Container */
+.table-pagination {
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: var(--table-border-color, 1px solid #E9EAEB);
+    background-color: var(--card-bg, #FFFFFF);
+}
+
+.table-pagination__info {
+    color: var(--text-secondary, #535862);
+    font-size: 13px;
+}
+
+.table-pagination__actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* HTMX Integration / Loading Indicator */
+.htmx-indicator {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.htmx-request .htmx-indicator {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.htmx-request.htmx-indicator {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Glassmorphism Loader Overlay */
+.ds-table-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.5); /* Semi-transparent */
+    backdrop-filter: blur(4px); /* Glassmorphism touch for state loading */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--page-title-color, #181D27);
+    font-weight: 600;
+    z-index: 30; /* Keep above sticky header */
+}
+
+.ds-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid rgba(0, 0, 255, 0.15); /* Brand presence */
+    border-left-color: var(--primary-color, #0000FF);
+    border-radius: 50%;
+    animation: ds-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    margin-right: 12px;
+}
+
+@keyframes ds-spin {
+    to { transform: rotate(360deg); }
+}

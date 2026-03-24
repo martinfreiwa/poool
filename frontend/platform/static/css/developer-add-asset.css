@@ -4,7 +4,39 @@
    =========================== */
 
 /* ===========================
-   1. Asset Type Grid — flow-based, left-aligned
+   1. Asset Type Header
+   =========================== */
+.asset-type-header {
+  text-align: center;
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 1096px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.asset-type-header__title {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.02em;
+  color: var(--page-title-color, #181D27);
+  margin: 0 0 8px 0;
+}
+
+.asset-type-header__subtitle {
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-secondary, #535862);
+  margin: 0;
+}
+
+/* ===========================
+   1.1 Asset Type Grid — flow-based, left-aligned
    =========================== */
 .asset-type-grid {
   display: grid;

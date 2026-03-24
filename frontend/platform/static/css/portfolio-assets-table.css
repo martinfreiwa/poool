@@ -1,23 +1,22 @@
-/* Portfolio Assets Table - Clean Implementation */
+/* Portfolio Assets Table — Inside holo-card container */
 
 .portfolio-assets-table {
   width: 100%;
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid var(--table-border-color);
+  background: transparent;
   overflow: hidden;
-  margin-top: 24px;
+  margin-top: 0;
 }
 
 /* Table Header */
 .portfolio-assets-header {
   display: flex;
   align-items: center;
-  background: #fafafa;
+  background: var(--table-header-bg);
   border-bottom: 1px solid var(--table-border-color);
-  padding: 12px 24px;
-  height: 44px;
+  padding: var(--table-header-padding);
+  height: var(--table-header-height);
   box-sizing: border-box;
+  border-radius: 23px 23px 0 0;
 }
 
 .portfolio-assets-header-cell {
@@ -30,21 +29,21 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #717680;
-  font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 12px;
+  color: var(--table-header-color);
+  font-family: var(--font-family);
+  font-weight: var(--table-header-font-weight);
+  font-size: var(--table-header-font-size);
   line-height: 18px;
 }
 
 .portfolio-assets-header-text {
-  color: #717680;
-  font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 12px;
+  color: var(--table-header-color);
+  font-family: var(--font-family);
+  font-weight: var(--table-header-font-weight);
+  font-size: var(--table-header-font-size);
   line-height: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* Table Body */
@@ -55,7 +54,7 @@
 .portfolio-assets-row {
   display: flex;
   align-items: center;
-  padding: 16px 24px;
+  padding: var(--table-cell-padding);
   height: 72px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--table-border-color);
@@ -63,7 +62,7 @@
 }
 
 .portfolio-assets-row:hover {
-  background-color: #f9f9fa;
+  background-color: var(--table-row-hover-bg);
 }
 
 .portfolio-assets-row:last-child {
@@ -164,12 +163,12 @@
 }
 
 .portfolio-assets-value {
-  color: #000000;
-  font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
+  color: var(--page-title-color);
+  font-family: var(--font-family);
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--table-cell-font-size);
   line-height: 20px;
+  font-variant-numeric: tabular-nums;
 }
 
 .portfolio-assets-change {
@@ -209,17 +208,9 @@
   background-size: 12px 12px;
 }
 
-.portfolio-assets-change.positive .portfolio-assets-change-icon {
-  /* Arrow points up-right for positive */
-}
-
 .portfolio-assets-change.negative .portfolio-assets-change-icon {
   /* Arrow points down-left for negative */
   transform: rotate(180deg);
-}
-
-.portfolio-assets-change.neutral .portfolio-assets-change-icon {
-  /* Arrow still visible for neutral */
 }
 
 .portfolio-assets-change.neutral {
@@ -254,86 +245,62 @@
   text-align: center;
 }
 
-/* Status badge styles - matching exact screenshot */
+/* Dynamic Status Badge Redesign */
 
-/* Property Funded - Green badge with stars icon */
-.status-funded {
+/* SUCCESS (e.g., Funded, Rented, Active) */
+.status-success {
   background: #ecfdf3;
   border: 1px solid #abefc6;
   color: #067647;
 }
 
-.status-funded .portfolio-assets-status-icon {
-  background: url("/static/images/stars-02.svg") no-repeat center;
-  background-size: 12px 12px;
-}
 
-/* Rented - Green badge with check-circle icon */
-.status-rented {
-  background: #ecfdf3;
-  border: 1px solid #abefc6;
-  color: #067647;
-}
-
-.status-rented .portfolio-assets-status-icon {
+.status-success .portfolio-assets-status-icon {
   background: url("/static/images/check-circle.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
-
-/* Active - Blue badge with check icon */
-.status-active {
-  background: rgba(0, 0, 255, 0.06);
-  border: 1px solid rgba(0, 0, 255, 0.18);
-  color: #0000CC;
-}
-
-.status-active .portfolio-assets-status-icon {
-  background: url("/static/images/check-circle.svg") no-repeat center;
-  background-size: 12px 12px;
-}
-
-/* In-Process - Yellow badge with clock icon */
-.status-process {
+/* PROGRESS / PROCESS (e.g., In process, Funding in progress) */
+.status-progress {
   background: #fef0c7;
   border: 1px solid #fec84b;
-  color: #000000;
+  color: #b54708;
 }
 
-.status-process .portfolio-assets-status-icon {
+.status-progress .portfolio-assets-status-icon {
   background: url("/static/images/clock-refresh.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
-/* Payout Expected - White badge with refresh icon */
-.status-payout {
-  background: #ffffff;
-  border: 1px solid #d5d7da;
-  color: #000000;
+/* WARNING / PENDING (e.g., Payout pending) */
+.status-warning {
+  background: #fff4ed;
+  border: 1px solid #ffdbc2;
+  color: #b93815;
 }
 
-.status-payout .portfolio-assets-status-icon {
+.status-warning .portfolio-assets-status-icon {
   background: url("/static/images/coins-swap-02.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
-/* Funding in progress - White badge with check icon */
-.status-pending {
-  background: #ffffff;
-  border: 1px solid #d5d7da;
-  color: #000000;
+/* NEUTRAL / INACTIVE (e.g., Exited, Cancelled) */
+.status-neutral {
+  background: #f9fafb;
+  border: 1px solid #eaecf0;
+  color: #344054;
 }
 
-.status-pending .portfolio-assets-status-icon {
-  background: url("/static/images/check-circle.svg") no-repeat center;
+.status-neutral .portfolio-assets-status-icon {
+  background: url("/static/images/check-verified-02.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
-/* Default status */
+/* DEFAULT for any unmapped status */
 .status-default {
   background: #ffffff;
   border: 1px solid #d5d7da;
-  color: #000000;
+  color: #414651;
 }
 
 .status-default .portfolio-assets-status-icon {
@@ -365,5 +332,28 @@
 }
 
 .portfolio-assets-action-btn:hover {
-  background: #f3f4f6;
+  background: var(--table-row-hover-bg);
+}
+
+.portfolio-assets-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 12px;
+  background: #ffffff;
+  border: 1px solid #d5d7da;
+  border-radius: 6px;
+  font-family: 'TT Norms Pro', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: #414651;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.portfolio-assets-btn:hover {
+  background: var(--table-row-hover-bg);
+  border-color: var(--body-color);
 }
