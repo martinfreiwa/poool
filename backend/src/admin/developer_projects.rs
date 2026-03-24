@@ -1009,9 +1009,7 @@ pub async fn api_admin_project_checklist_save(
     .await;
 
     match result {
-        Ok(r) if r.rows_affected() == 0 => {
-            Err(ApiError::NotFound("Project not found".to_string()))
-        }
+        Ok(r) if r.rows_affected() == 0 => Err(ApiError::NotFound("Project not found".to_string())),
         Ok(_) => Ok(Json(serde_json::json!({
             "status": "saved",
             "checklist": checklist

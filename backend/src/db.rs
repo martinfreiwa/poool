@@ -80,9 +80,7 @@ fn build_connect_options(database_url: &str) -> PgConnectOptions {
         })
     };
 
-    let mut opts: PgConnectOptions = database_url
-        .parse()
-        .expect("Invalid DATABASE_URL");
+    let mut opts: PgConnectOptions = database_url.parse().expect("Invalid DATABASE_URL");
 
     // If PGBOUNCER_ENABLED is true, we must disable SQLx's prepared statement cache
     // because PgBouncer in transaction mode does not support named prepared statements

@@ -602,11 +602,9 @@ pub async fn handle_checkout(
                 if let Some(c_pool) = &state.community_db {
                     for asset_id in result.purchased_asset_ids {
                         let _ = crate::community::service::trigger_investment_milestones(
-                            &state.db,
-                            c_pool,
-                            user.id,
-                            asset_id
-                        ).await;
+                            &state.db, c_pool, user.id, asset_id,
+                        )
+                        .await;
                     }
                 }
             }
@@ -1125,11 +1123,9 @@ pub async fn api_admin_approve_order(
             if let Some(c_pool) = &state.community_db {
                 for asset_id in asset_ids {
                     let _ = crate::community::service::trigger_investment_milestones(
-                        &state.db,
-                        c_pool,
-                        user_id,
-                        asset_id
-                    ).await;
+                        &state.db, c_pool, user_id, asset_id,
+                    )
+                    .await;
                 }
             }
 

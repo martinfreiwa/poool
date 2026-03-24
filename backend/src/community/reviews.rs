@@ -29,7 +29,11 @@ pub struct AssetReviewWithUser {
 // ─── CRUD Operations ────────────────────────────────────────────────
 
 /// Check if a user currently owns tokens in an asset (using the main DB pool).
-pub async fn check_verified_owner(main_pool: &PgPool, user_id: Uuid, asset_id: Uuid) -> Result<bool, AppError> {
+pub async fn check_verified_owner(
+    main_pool: &PgPool,
+    user_id: Uuid,
+    asset_id: Uuid,
+) -> Result<bool, AppError> {
     let owned: Option<i64> = sqlx::query_scalar(
         "SELECT COALESCE(SUM(tokens_owned), 0)::BIGINT FROM investments WHERE user_id = $1 AND asset_id = $2"
     )
@@ -51,11 +55,15 @@ pub async fn upsert_review(
     content: &str,
 ) -> Result<AssetReview, AppError> {
     if !(1..=5).contains(&rating) {
-        return Err(AppError::BadRequest("Rating must be between 1 and 5".into()));
+        return Err(AppError::BadRequest(
+            "Rating must be between 1 and 5".into(),
+        ));
     }
 
     if content.trim().is_empty() {
-        return Err(AppError::BadRequest("Review content cannot be empty".into()));
+        return Err(AppError::BadRequest(
+            "Review content cannot be empty".into(),
+        ));
     }
 
     // Check ownership status in main DB
@@ -71,7 +79,7 @@ pub async fn upsert_review(
             is_owner = EXCLUDED.is_owner,
             updated_at = NOW()
         RETURNING *
-        "#
+        "#,
     )
     .bind(asset_id)
     .bind(user_id)
@@ -82,7 +90,8 @@ pub async fn upsert_review(
     .await?;
 
     // Award Gamification Challenge
-    crate::community::challenges::increment_progress(community_pool, user_id, "write_review", 1).await?;
+    crate::community::challenges::increment_progress(community_pool, user_id, "write_review", 1)
+        .await?;
 
     Ok(review)
 }
@@ -94,7 +103,7 @@ pub async fn get_my_review(
     asset_id: Uuid,
 ) -> Result<Option<AssetReview>, AppError> {
     let review = sqlx::query_as::<_, AssetReview>(
-        "SELECT * FROM asset_reviews WHERE asset_id = $1 AND user_id = $2"
+        "SELECT * FROM asset_reviews WHERE asset_id = $1 AND user_id = $2",
     )
     .bind(asset_id)
     .bind(user_id)
@@ -127,13 +136,17 @@ pub async fn list_reviews_for_asset(
 
     // Get display names
     let user_ids: Vec<Uuid> = reviews.iter().map(|r| r.user_id).collect();
-    
+
     // Fetch from community_profiles table directly
     #[derive(sqlx::FromRow)]
-    struct ProfileRow { user_id: Uuid, display_name: String, avatar_url: Option<String> }
-    
+    struct ProfileRow {
+        user_id: Uuid,
+        display_name: String,
+        avatar_url: Option<String>,
+    }
+
     let profiles: Vec<ProfileRow> = sqlx::query_as(
-        "SELECT user_id, display_name, avatar_url FROM community_profiles WHERE user_id = ANY($1)"
+        "SELECT user_id, display_name, avatar_url FROM community_profiles WHERE user_id = ANY($1)",
     )
     .bind(&user_ids[..])
     .fetch_all(community_pool)
@@ -147,20 +160,22 @@ pub async fn list_reviews_for_asset(
     let mut result = Vec::with_capacity(reviews.len());
     for review in reviews {
         let u_info = bridge_info_map.get(&review.user_id);
-        let display_name = u_info.map(|i| i.display_name.clone()).unwrap_or_else(|| "Anonymous".to_string());
+        let display_name = u_info
+            .map(|i| i.display_name.clone())
+            .unwrap_or_else(|| "Anonymous".to_string());
         let avatar_url = u_info.and_then(|i| i.avatar_url.clone());
-        
+
         let has_upvoted = match viewer_id {
             Some(v_id) => {
                 let check: Option<Uuid> = sqlx::query_scalar(
-                    "SELECT user_id FROM review_upvotes WHERE review_id = $1 AND user_id = $2"
+                    "SELECT user_id FROM review_upvotes WHERE review_id = $1 AND user_id = $2",
                 )
                 .bind(review.id)
                 .bind(v_id)
                 .fetch_optional(community_pool)
                 .await?;
                 check.is_some()
-            },
+            }
             None => false,
         };
 
@@ -188,7 +203,9 @@ pub async fn delete_review(
         .await?;
 
     if res.rows_affected() == 0 {
-        return Err(AppError::NotFound("Review not found or not owned by you".into()));
+        return Err(AppError::NotFound(
+            "Review not found or not owned by you".into(),
+        ));
     }
 
     Ok(())
@@ -205,7 +222,7 @@ pub async fn toggle_review_upvote(
     let mut tx = community_pool.begin().await?;
 
     let exists: Option<Uuid> = sqlx::query_scalar(
-        "SELECT user_id FROM review_upvotes WHERE review_id = $1 AND user_id = $2"
+        "SELECT user_id FROM review_upvotes WHERE review_id = $1 AND user_id = $2",
     )
     .bind(review_id)
     .bind(user_id)
@@ -221,11 +238,13 @@ pub async fn toggle_review_upvote(
             .bind(user_id)
             .execute(&mut *tx)
             .await?;
-            
-        sqlx::query("UPDATE asset_reviews SET helpful_count = GREATEST(0, helpful_count - 1) WHERE id = $1")
-            .bind(review_id)
-            .execute(&mut *tx)
-            .await?;
+
+        sqlx::query(
+            "UPDATE asset_reviews SET helpful_count = GREATEST(0, helpful_count - 1) WHERE id = $1",
+        )
+        .bind(review_id)
+        .execute(&mut *tx)
+        .await?;
         is_now_upvoted = false;
     } else {
         // Add upvote
@@ -234,7 +253,7 @@ pub async fn toggle_review_upvote(
             .bind(user_id)
             .execute(&mut *tx)
             .await?;
-            
+
         sqlx::query("UPDATE asset_reviews SET helpful_count = helpful_count + 1 WHERE id = $1")
             .bind(review_id)
             .execute(&mut *tx)
@@ -242,10 +261,11 @@ pub async fn toggle_review_upvote(
         is_now_upvoted = true;
     }
 
-    let new_count: i32 = sqlx::query_scalar("SELECT helpful_count FROM asset_reviews WHERE id = $1")
-        .bind(review_id)
-        .fetch_one(&mut *tx)
-        .await?;
+    let new_count: i32 =
+        sqlx::query_scalar("SELECT helpful_count FROM asset_reviews WHERE id = $1")
+            .bind(review_id)
+            .fetch_one(&mut *tx)
+            .await?;
 
     tx.commit().await?;
 
@@ -264,12 +284,11 @@ pub async fn get_review_stats(
     community_pool: &PgPool,
     asset_id: Uuid,
 ) -> Result<AssetReviewStats, AppError> {
-    let (avg, count): (Option<f64>, Option<i64>) = sqlx::query_as(
-        "SELECT AVG(rating), COUNT(*) FROM asset_reviews WHERE asset_id = $1"
-    )
-    .bind(asset_id)
-    .fetch_one(community_pool)
-    .await?;
+    let (avg, count): (Option<f64>, Option<i64>) =
+        sqlx::query_as("SELECT AVG(rating), COUNT(*) FROM asset_reviews WHERE asset_id = $1")
+            .bind(asset_id)
+            .fetch_one(community_pool)
+            .await?;
 
     Ok(AssetReviewStats {
         average_rating: avg.unwrap_or(0.0) as f32,

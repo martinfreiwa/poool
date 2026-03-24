@@ -152,7 +152,9 @@ pub async fn download_object(
         .await
         .map_err(|e| AppError::NotFound(format!("GCS object not found: {}", e)))?;
 
-    let content_type = meta.content_type.unwrap_or_else(|| "application/octet-stream".to_string());
+    let content_type = meta
+        .content_type
+        .unwrap_or_else(|| "application/octet-stream".to_string());
 
     // Download the bytes
     let data = client

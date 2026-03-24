@@ -48,13 +48,19 @@ pub async fn api_orderbook(
     let asset_id = resolve_asset_id(&state.db, &id_or_slug).await?;
 
     let mut snapshot = match state.redis.as_ref() {
-        Some(redis) => match super::orderbook::get_orderbook_snapshot(redis, asset_id, None).await {
-            Ok(s) => s,
-            Err(e) => {
-                tracing::warn!("Redis orderbook unavailable ({}). Falling back to PostgreSQL.", e);
-                super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, None).await?
+        Some(redis) => {
+            match super::orderbook::get_orderbook_snapshot(redis, asset_id, None).await {
+                Ok(s) => s,
+                Err(e) => {
+                    tracing::warn!(
+                        "Redis orderbook unavailable ({}). Falling back to PostgreSQL.",
+                        e
+                    );
+                    super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, None)
+                        .await?
+                }
             }
-        },
+        }
         None => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, None).await?,
     };
 
@@ -222,16 +228,17 @@ pub async fn api_export_tax_report(
     .await
     .map_err(AppError::Database)?;
 
-    let mut csv_data = String::from("Date,Asset Name,Side,Price,Quantity,Gross Total,Fee,Net Total\n");
+    let mut csv_data =
+        String::from("Date,Asset Name,Side,Price,Quantity,Gross Total,Fee,Net Total\n");
     for t in trades {
         let is_buyer = t.buyer_user_id == user.id;
         let side = if is_buyer { "BUY" } else { "SELL" };
         let date_str = t.executed_at_str;
-        
+
         let price = t.price_cents as f64 / 100.0;
         let gross = t.total_cents.unwrap_or(0) as f64 / 100.0;
         let fee = t.fee_cents as f64 / 100.0;
-        
+
         // Let's assume the user paid the fee whether buying or selling (simplification matching frontend logic)
         let net = if is_buyer { gross + fee } else { gross - fee };
 
@@ -244,21 +251,18 @@ pub async fn api_export_tax_report(
 
         csv_data.push_str(&format!(
             "{},{},{},${:.2},{},${:.2},${:.2},${:.2}\n",
-            date_str,
-            safe_asset_name,
-            side,
-            price,
-            t.quantity,
-            gross,
-            fee,
-            net
+            date_str, safe_asset_name, side, price, t.quantity, gross, fee, net
         ));
     }
 
     let is_pdf = query.format.to_lowercase() == "pdf";
     // NOTE: True PDF generation requires an external crate. For now, returning CSV data universally.
     let content_type = if is_pdf { "text/csv" } else { "text/csv" };
-    let filename = if is_pdf { format!("tax_report_{}.csv", query.year) } else { format!("tax_report_{}.csv", query.year) };
+    let filename = if is_pdf {
+        format!("tax_report_{}.csv", query.year)
+    } else {
+        format!("tax_report_{}.csv", query.year)
+    };
 
     use axum::http::header;
 
@@ -367,7 +371,11 @@ pub async fn page_tax_report_pdf(
         let side = if is_buyer { "BUY" } else { "SELL" };
         let gross_cents = t.total_cents.unwrap_or(0);
         let fee_cents = t.fee_cents;
-        let net_cents = if is_buyer { gross_cents + fee_cents } else { gross_cents - fee_cents };
+        let net_cents = if is_buyer {
+            gross_cents + fee_cents
+        } else {
+            gross_cents - fee_cents
+        };
 
         total_volume_cents += gross_cents;
         total_fees_cents += fee_cents;
@@ -430,7 +438,13 @@ pub async fn page_tax_report_pdf(
         "trades": trade_rows,
     });
 
-    crate::common::routes_helper::serve_protected_with_context(jar, &state, "templates/pdf-tax-report.html", context).await
+    crate::common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "templates/pdf-tax-report.html",
+        context,
+    )
+    .await
 }
 
 /// DELETE /api/marketplace/orders/:order_id

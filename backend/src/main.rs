@@ -173,13 +173,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(support::sla::monitor_sla_breaches(pool.clone()));
 
     if let Some(c_pool) = &state.community_db {
-        tokio::spawn(community::background::monitor_asset_velocity(c_pool.clone(), pool.clone()));
-        tokio::spawn(community::background::gamification_worker(c_pool.clone(), pool.clone()));
+        tokio::spawn(community::background::monitor_asset_velocity(
+            c_pool.clone(),
+            pool.clone(),
+        ));
+        tokio::spawn(community::background::gamification_worker(
+            c_pool.clone(),
+            pool.clone(),
+        ));
         tokio::spawn(community::background::xp_aggregation_worker(c_pool.clone()));
-        tokio::spawn(community::background::circle_invite_expiry_worker(c_pool.clone()));
-        tokio::spawn(community::background::circle_retry_worker(c_pool.clone(), pool.clone()));
-        tokio::spawn(community::background::gdpr_anonymization_worker(c_pool.clone(), pool.clone()));
-        tokio::spawn(community::background::weekly_digest_worker(c_pool.clone(), pool.clone()));
+        tokio::spawn(community::background::circle_invite_expiry_worker(
+            c_pool.clone(),
+        ));
+        tokio::spawn(community::background::circle_retry_worker(
+            c_pool.clone(),
+            pool.clone(),
+        ));
+        tokio::spawn(community::background::gdpr_anonymization_worker(
+            c_pool.clone(),
+            pool.clone(),
+        ));
+        tokio::spawn(community::background::weekly_digest_worker(
+            c_pool.clone(),
+            pool.clone(),
+        ));
     }
 
     // Auto-refund worker for expired primary escrow offerings
@@ -2033,7 +2050,7 @@ async fn page_community_post(
         LEFT JOIN user_profiles up ON up.user_id = posts.user_id
         LEFT JOIN users u ON u.id = posts.user_id
         WHERE posts.id = $1
-        "#
+        "#,
     )
     .bind(id)
     .fetch_optional(&state.db)
@@ -2052,13 +2069,19 @@ async fn page_community_post(
         let author = p.display_name.unwrap_or_else(|| "User".to_string());
         let og_title = format!("Post by {}", author);
         context.insert("og_title".to_string(), serde_json::Value::String(og_title));
-        context.insert("og_description".to_string(), serde_json::Value::String(content_snippet));
+        context.insert(
+            "og_description".to_string(),
+            serde_json::Value::String(content_snippet),
+        );
 
         // Ensure image_urls is an array then extract the first string
         if let Some(imgs) = p.image_urls {
             if let Some(arr) = imgs.as_array() {
                 if let Some(serde_json::Value::String(s)) = arr.first() {
-                    context.insert("og_image".to_string(), serde_json::Value::String(s.to_string()));
+                    context.insert(
+                        "og_image".to_string(),
+                        serde_json::Value::String(s.to_string()),
+                    );
                 }
             }
         }
@@ -2067,7 +2090,10 @@ async fn page_community_post(
         context.insert("og_url".to_string(), serde_json::Value::String(og_url));
     }
 
-    context.insert("ssr_post_id".to_string(), serde_json::Value::String(id.to_string()));
+    context.insert(
+        "ssr_post_id".to_string(),
+        serde_json::Value::String(id.to_string()),
+    );
 
     // Serve via public with context, which will include user if logged in, but won't force login for crawlers
     common::routes_helper::serve_public_with_context(jar, &state, "community.html", context).await

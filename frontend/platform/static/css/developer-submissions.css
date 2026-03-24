@@ -163,7 +163,7 @@
 }
 
 /* ── Max Width Overrides for Design System Consistency ── */
-#developer-submissions-main .cart-page-header {
+#developer-submissions-main .ds-page-header {
     max-width: 1096px !important;
 }
 

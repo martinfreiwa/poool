@@ -31,6 +31,12 @@ pub async fn log(
     .await;
 
     if let Err(e) = result {
-        tracing::error!("Failed to write community audit log: {} — action={}, entity={}:{:?}", e, action, entity_type, entity_id);
+        tracing::error!(
+            "Failed to write community audit log: {} — action={}, entity={}:{:?}",
+            e,
+            action,
+            entity_type,
+            entity_id
+        );
     }
 }

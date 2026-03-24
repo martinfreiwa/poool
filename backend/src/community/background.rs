@@ -25,7 +25,7 @@ async fn check_velocity(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate
          WHERE asset_id IS NOT NULL \
          AND created_at >= NOW() - INTERVAL '10 minutes' \
          GROUP BY asset_id \
-         HAVING count(*) >= 5"
+         HAVING count(*) >= 5",
     )
     .fetch_all(c_pool)
     .await?;
@@ -34,11 +34,19 @@ async fn check_velocity(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate
         let asset_id: Uuid = row.try_get("asset_id")?;
         let count: i64 = row.try_get("post_count")?;
 
-        tracing::warn!("Pump & Dump Warning: Asset {} has {} mentions in the last 10 minutes!", asset_id, count);
+        tracing::warn!(
+            "Pump & Dump Warning: Asset {} has {} mentions in the last 10 minutes!",
+            asset_id,
+            count
+        );
 
         // Alert Admins by creating a special admin notification or just logging for now.
         // If an admin_alerts table is added later, we can insert into it.
-        tracing::error!("PUMP & DUMP ALERT: Asset {} mentioned {} times in 10 mins", asset_id, count);
+        tracing::error!(
+            "PUMP & DUMP ALERT: Asset {} mentioned {} times in 10 mins",
+            asset_id,
+            count
+        );
     }
 
     Ok(())
@@ -56,7 +64,10 @@ pub async fn gamification_worker(community_pool: PgPool, core_pool: PgPool) {
     }
 }
 
-async fn run_badge_evaluations(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+async fn run_badge_evaluations(
+    c_pool: &PgPool,
+    core_pool: &PgPool,
+) -> Result<(), crate::error::AppError> {
     use sqlx::Row;
 
     tracing::info!("Starting Gamification Badge evaluations...");
@@ -64,7 +75,8 @@ async fn run_badge_evaluations(c_pool: &PgPool, core_pool: &PgPool) -> Result<()
     // 1. First Timber / First Investment Badge
     // For anyone who has at least 1 investment
     let rows = sqlx::query("SELECT DISTINCT user_id FROM investments")
-        .fetch_all(core_pool).await?;
+        .fetch_all(core_pool)
+        .await?;
 
     for row in rows {
         let user_id: Uuid = row.try_get("user_id")?;
@@ -76,8 +88,10 @@ async fn run_badge_evaluations(c_pool: &PgPool, core_pool: &PgPool) -> Result<()
         "SELECT user_id, SUM(current_value_cents) as total 
          FROM investments 
          GROUP BY user_id 
-         HAVING SUM(current_value_cents) >= 1000000"
-    ).fetch_all(core_pool).await?;
+         HAVING SUM(current_value_cents) >= 1000000",
+    )
+    .fetch_all(core_pool)
+    .await?;
 
     for w in whales {
         let user_id: Uuid = w.try_get("user_id")?;
@@ -89,8 +103,10 @@ async fn run_badge_evaluations(c_pool: &PgPool, core_pool: &PgPool) -> Result<()
         "SELECT user_id, COUNT(DISTINCT asset_id) as c
          FROM investments
          GROUP BY user_id
-         HAVING COUNT(DISTINCT asset_id) >= 3"
-    ).fetch_all(core_pool).await?;
+         HAVING COUNT(DISTINCT asset_id) >= 3",
+    )
+    .fetch_all(core_pool)
+    .await?;
 
     for d in diverse {
         let user_id: Uuid = d.try_get("user_id")?;
@@ -111,7 +127,11 @@ async fn run_badge_evaluations(c_pool: &PgPool, core_pool: &PgPool) -> Result<()
     Ok(())
 }
 
-async fn assign_badge(c_pool: &PgPool, user_id: Uuid, badge_code: &str) -> Result<(), crate::error::AppError> {
+async fn assign_badge(
+    c_pool: &PgPool,
+    user_id: Uuid,
+    badge_code: &str,
+) -> Result<(), crate::error::AppError> {
     // 1. Find badge UUID
     let badge_id: Option<Uuid> = sqlx::query_scalar("SELECT id FROM badges WHERE code = $1")
         .bind(badge_code)
@@ -120,16 +140,20 @@ async fn assign_badge(c_pool: &PgPool, user_id: Uuid, badge_code: &str) -> Resul
 
     if let Some(bid) = badge_id {
         // 2. Insert if not exists
-        sqlx::query("INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
-            .bind(user_id)
-            .bind(bid)
-            .execute(c_pool)
-            .await?;
+        sqlx::query(
+            "INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        )
+        .bind(user_id)
+        .bind(bid)
+        .execute(c_pool)
+        .await?;
 
         // 3. Award XP for badge (idempotent via daily cap + reason check)
-        let _ = crate::community::xp::award_xp(c_pool, user_id, "badge_earned", Some(badge_code), None).await;
+        let _ =
+            crate::community::xp::award_xp(c_pool, user_id, "badge_earned", Some(badge_code), None)
+                .await;
     }
-    
+
     Ok(())
 }
 
@@ -185,7 +209,10 @@ pub async fn circle_retry_worker(community_pool: PgPool, core_pool: PgPool) {
     }
 }
 
-async fn retry_circle_auto_joins(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+async fn retry_circle_auto_joins(
+    c_pool: &PgPool,
+    core_pool: &PgPool,
+) -> Result<(), crate::error::AppError> {
     use sqlx::Row;
 
     // 1. Get all referred users from core DB
@@ -205,12 +232,11 @@ async fn retry_circle_auto_joins(c_pool: &PgPool, core_pool: &PgPool) -> Result<
         let referrer_id: Uuid = row.try_get("referrer_id")?;
 
         // 2. Check if already in a circle (community DB)
-        let already_in_circle: Option<Uuid> = sqlx::query_scalar(
-            "SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1"
-        )
-        .bind(referred_id)
-        .fetch_optional(c_pool)
-        .await?;
+        let already_in_circle: Option<Uuid> =
+            sqlx::query_scalar("SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1")
+                .bind(referred_id)
+                .fetch_optional(c_pool)
+                .await?;
 
         if already_in_circle.is_some() {
             continue; // already in a circle, skip
@@ -218,21 +244,26 @@ async fn retry_circle_auto_joins(c_pool: &PgPool, core_pool: &PgPool) -> Result<
 
         // 3. Ensure community profile exists
         sqlx::query(
-            "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING"
+            "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
         )
         .bind(referred_id)
         .execute(c_pool)
         .await?;
 
         // 4. Try auto-join
-        match crate::community::circles::auto_join_referrer_circle(c_pool, referred_id, referrer_id).await {
+        match crate::community::circles::auto_join_referrer_circle(c_pool, referred_id, referrer_id)
+            .await
+        {
             Ok(()) => joined += 1,
             Err(e) => tracing::debug!(user_id = %referred_id, "Circle retry skipped: {}", e),
         }
     }
 
     if joined > 0 {
-        tracing::info!("Circle retry worker: auto-joined {} users to referrer circles", joined);
+        tracing::info!(
+            "Circle retry worker: auto-joined {} users to referrer circles",
+            joined
+        );
     }
 
     Ok(())
@@ -241,7 +272,7 @@ async fn retry_circle_auto_joins(c_pool: &PgPool, core_pool: &PgPool) -> Result<
 // ─── GDPR Worker (M7-BE.6) ───────────────────────────────────────────────────
 
 /// GDPR Deletion & Anonymization Worker
-/// Scans the core DB for users with status = 'deleted' recently, 
+/// Scans the core DB for users with status = 'deleted' recently,
 /// and ensures their community footprints (profile, bio) are anonymized.
 pub async fn gdpr_anonymization_worker(community_pool: PgPool, core_pool: PgPool) {
     let mut interval = tokio::time::interval(Duration::from_secs(60 * 60)); // Once an hour
@@ -254,12 +285,15 @@ pub async fn gdpr_anonymization_worker(community_pool: PgPool, core_pool: PgPool
     }
 }
 
-async fn run_gdpr_anonymization(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+async fn run_gdpr_anonymization(
+    c_pool: &PgPool,
+    core_pool: &PgPool,
+) -> Result<(), crate::error::AppError> {
     use sqlx::Row;
 
     // 1. Fetch recently deleted users from Core DB
     let deleted_users = sqlx::query(
-        "SELECT id FROM users WHERE status = 'deleted' AND updated_at >= NOW() - INTERVAL '1 day'"
+        "SELECT id FROM users WHERE status = 'deleted' AND updated_at >= NOW() - INTERVAL '1 day'",
     )
     .fetch_all(core_pool)
     .await?;
@@ -280,7 +314,7 @@ async fn run_gdpr_anonymization(c_pool: &PgPool, core_pool: &PgPool) -> Result<(
                    bio = NULL, 
                    avatar_emoji = NULL, 
                    is_community_banned = true 
-               WHERE user_id = $1 AND display_name != 'Deleted User'"#
+               WHERE user_id = $1 AND display_name != 'Deleted User'"#,
         )
         .bind(user_id)
         .execute(c_pool)
@@ -304,7 +338,10 @@ async fn run_gdpr_anonymization(c_pool: &PgPool, core_pool: &PgPool) -> Result<(
     }
 
     if anonymized_count > 0 {
-        tracing::info!("GDPR Worker: Anonymized {} community profiles.", anonymized_count);
+        tracing::info!(
+            "GDPR Worker: Anonymized {} community profiles.",
+            anonymized_count
+        );
     }
 
     Ok(())
@@ -326,7 +363,10 @@ pub async fn weekly_digest_worker(community_pool: PgPool, core_pool: PgPool) {
     }
 }
 
-async fn run_weekly_digest(_c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+async fn run_weekly_digest(
+    _c_pool: &PgPool,
+    core_pool: &PgPool,
+) -> Result<(), crate::error::AppError> {
     use sqlx::Row;
 
     // Fetch users inactive for > 7 days who have notifications enabled
@@ -342,7 +382,7 @@ async fn run_weekly_digest(_c_pool: &PgPool, core_pool: &PgPool) -> Result<(), c
               SELECT user_id FROM user_sessions WHERE created_at > NOW() - INTERVAL '7 days'
           )
           LIMIT 100
-        "#
+        "#,
     )
     .fetch_all(core_pool)
     .await?;

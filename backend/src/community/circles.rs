@@ -54,12 +54,11 @@ pub async fn create_circle(
     emoji: Option<&str>,
 ) -> Result<Circle, AppError> {
     // Check: user can only own one circle
-    let existing: Option<Uuid> = sqlx::query_scalar(
-        "SELECT id FROM circles WHERE owner_id = $1 LIMIT 1"
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await?;
+    let existing: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM circles WHERE owner_id = $1 LIMIT 1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
 
     if existing.is_some() {
         return Err(AppError::BadRequest("You already own a circle".into()));
@@ -70,7 +69,7 @@ pub async fn create_circle(
     let circle = sqlx::query_as::<_, Circle>(
         r#"INSERT INTO circles (name, description, owner_id, avatar_emoji, member_count)
            VALUES ($1, $2, $3, $4, 1)
-           RETURNING *"#
+           RETURNING *"#,
     )
     .bind(name)
     .bind(description)
@@ -80,13 +79,11 @@ pub async fn create_circle(
     .await?;
 
     // Add owner as member
-    sqlx::query(
-        "INSERT INTO circle_members (circle_id, user_id, role) VALUES ($1, $2, 'owner')"
-    )
-    .bind(circle.id)
-    .bind(user_id)
-    .execute(&mut *tx)
-    .await?;
+    sqlx::query("INSERT INTO circle_members (circle_id, user_id, role) VALUES ($1, $2, 'owner')")
+        .bind(circle.id)
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
 
     // Update profile circle_id
     sqlx::query("UPDATE community_profiles SET circle_id = $1 WHERE user_id = $2")
@@ -102,12 +99,10 @@ pub async fn create_circle(
 
 /// Get circle by ID.
 pub async fn get_circle(pool: &PgPool, circle_id: Uuid) -> Result<Option<Circle>, AppError> {
-    let circle = sqlx::query_as::<_, Circle>(
-        "SELECT * FROM circles WHERE id = $1"
-    )
-    .bind(circle_id)
-    .fetch_optional(pool)
-    .await?;
+    let circle = sqlx::query_as::<_, Circle>("SELECT * FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .fetch_optional(pool)
+        .await?;
     Ok(circle)
 }
 
@@ -117,7 +112,7 @@ pub async fn get_my_circle(pool: &PgPool, user_id: Uuid) -> Result<Option<Circle
         r#"SELECT c.* FROM circles c
            JOIN circle_members cm ON cm.circle_id = c.id
            WHERE cm.user_id = $1
-           LIMIT 1"#
+           LIMIT 1"#,
     )
     .bind(user_id)
     .fetch_optional(pool)
@@ -135,15 +130,15 @@ pub async fn update_circle(
     emoji: Option<&str>,
 ) -> Result<Circle, AppError> {
     // Verify ownership
-    let owner_id: Option<Uuid> = sqlx::query_scalar(
-        "SELECT owner_id FROM circles WHERE id = $1"
-    )
-    .bind(circle_id)
-    .fetch_optional(pool)
-    .await?;
+    let owner_id: Option<Uuid> = sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .fetch_optional(pool)
+        .await?;
 
     if owner_id != Some(user_id) {
-        return Err(AppError::Unauthorized("Only the circle owner can edit".into()));
+        return Err(AppError::Unauthorized(
+            "Only the circle owner can edit".into(),
+        ));
     }
 
     let circle = sqlx::query_as::<_, Circle>(
@@ -152,7 +147,7 @@ pub async fn update_circle(
             description = COALESCE($3, description),
             avatar_emoji = COALESCE($4, avatar_emoji),
             updated_at = NOW()
-           WHERE id = $1 RETURNING *"#
+           WHERE id = $1 RETURNING *"#,
     )
     .bind(circle_id)
     .bind(name)
@@ -179,7 +174,7 @@ pub async fn admin_force_update_circle(
             avatar_emoji = COALESCE($4, avatar_emoji),
             is_public = COALESCE($5, is_public),
             updated_at = NOW()
-           WHERE id = $1 RETURNING *"#
+           WHERE id = $1 RETURNING *"#,
     )
     .bind(circle_id)
     .bind(name)
@@ -197,22 +192,20 @@ pub async fn admin_force_transfer_circle(
     circle_id: Uuid,
     new_owner_id: Uuid,
 ) -> Result<(), AppError> {
-    
     // Check if new_owner is in circle_members. If not, add them.
-    let is_member: Option<String> = sqlx::query_scalar(
-        "SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2"
-    )
-    .bind(circle_id)
-    .bind(new_owner_id)
-    .fetch_optional(pool)
-    .await?;
-    
+    let is_member: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE circle_id = $1 AND user_id = $2")
+            .bind(circle_id)
+            .bind(new_owner_id)
+            .fetch_optional(pool)
+            .await?;
+
     // Begin transaction
     let mut tx = pool.begin().await?;
 
     // Current owner -> admin/member
     sqlx::query(
-        "UPDATE circle_members SET role = 'member' WHERE circle_id = $1 AND role = 'owner'"
+        "UPDATE circle_members SET role = 'member' WHERE circle_id = $1 AND role = 'owner'",
     )
     .bind(circle_id)
     .execute(&mut *tx)
@@ -221,7 +214,7 @@ pub async fn admin_force_transfer_circle(
     if is_member.is_some() {
         // Just upgrade them
         sqlx::query(
-            "UPDATE circle_members SET role = 'owner' WHERE circle_id = $1 AND user_id = $2"
+            "UPDATE circle_members SET role = 'owner' WHERE circle_id = $1 AND user_id = $2",
         )
         .bind(circle_id)
         .bind(new_owner_id)
@@ -230,18 +223,18 @@ pub async fn admin_force_transfer_circle(
     } else {
         // Check if full (this is admin so forcibly allow them over limits maybe?)
         sqlx::query(
-            "INSERT INTO circle_members (circle_id, user_id, role) VALUES ($1, $2, 'owner')"
+            "INSERT INTO circle_members (circle_id, user_id, role) VALUES ($1, $2, 'owner')",
         )
         .bind(circle_id)
         .bind(new_owner_id)
         .execute(&mut *tx)
         .await?;
-        
+
         sqlx::query("UPDATE circles SET member_count = member_count + 1 WHERE id = $1")
             .bind(circle_id)
             .execute(&mut *tx)
             .await?;
-            
+
         sqlx::query("UPDATE community_profiles SET circle_id = $1 WHERE user_id = $2")
             .bind(circle_id)
             .bind(new_owner_id)
@@ -250,13 +243,11 @@ pub async fn admin_force_transfer_circle(
     }
 
     // Set circles.owner_id
-    sqlx::query(
-        "UPDATE circles SET owner_id = $1 WHERE id = $2"
-    )
-    .bind(new_owner_id)
-    .bind(circle_id)
-    .execute(&mut *tx)
-    .await?;
+    sqlx::query("UPDATE circles SET owner_id = $1 WHERE id = $2")
+        .bind(new_owner_id)
+        .bind(circle_id)
+        .execute(&mut *tx)
+        .await?;
 
     tx.commit().await?;
 
@@ -264,7 +255,10 @@ pub async fn admin_force_transfer_circle(
 }
 
 /// Get all members of a circle.
-pub async fn get_circle_members(pool: &PgPool, circle_id: Uuid) -> Result<Vec<CircleMember>, AppError> {
+pub async fn get_circle_members(
+    pool: &PgPool,
+    circle_id: Uuid,
+) -> Result<Vec<CircleMember>, AppError> {
     let members = sqlx::query_as::<_, CircleMember>(
         "SELECT user_id, role, joined_at FROM circle_members WHERE circle_id = $1 ORDER BY joined_at ASC"
     )
@@ -279,28 +273,30 @@ pub async fn get_circle_members(pool: &PgPool, circle_id: Uuid) -> Result<Vec<Ci
 /// Join a public circle (or accept an invite for private).
 pub async fn join_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Result<(), AppError> {
     // Check if already in a circle
-    let existing_circle: Option<Uuid> = sqlx::query_scalar(
-        "SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1"
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await?;
+    let existing_circle: Option<Uuid> =
+        sqlx::query_scalar("SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
 
     if existing_circle.is_some() {
-        return Err(AppError::BadRequest("You are already in a circle. Leave first.".into()));
+        return Err(AppError::BadRequest(
+            "You are already in a circle. Leave first.".into(),
+        ));
     }
 
     // Check circle exists and is public
-    let (is_public, member_count, max_members): (bool, i32, i32) = sqlx::query_as(
-        "SELECT is_public, member_count, max_members FROM circles WHERE id = $1"
-    )
-    .bind(circle_id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+    let (is_public, member_count, max_members): (bool, i32, i32) =
+        sqlx::query_as("SELECT is_public, member_count, max_members FROM circles WHERE id = $1")
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
 
     if !is_public {
-        return Err(AppError::BadRequest("This circle is private. You need an invite.".into()));
+        return Err(AppError::BadRequest(
+            "This circle is private. You need an invite.".into(),
+        ));
     }
 
     if member_count >= max_members {
@@ -309,18 +305,18 @@ pub async fn join_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Resul
 
     let mut tx = pool.begin().await?;
 
-    sqlx::query(
-        "INSERT INTO circle_members (circle_id, user_id, role) VALUES ($1, $2, 'member')"
-    )
-    .bind(circle_id)
-    .bind(user_id)
-    .execute(&mut *tx)
-    .await?;
-
-    sqlx::query("UPDATE circles SET member_count = member_count + 1, updated_at = NOW() WHERE id = $1")
+    sqlx::query("INSERT INTO circle_members (circle_id, user_id, role) VALUES ($1, $2, 'member')")
         .bind(circle_id)
+        .bind(user_id)
         .execute(&mut *tx)
         .await?;
+
+    sqlx::query(
+        "UPDATE circles SET member_count = member_count + 1, updated_at = NOW() WHERE id = $1",
+    )
+    .bind(circle_id)
+    .execute(&mut *tx)
+    .await?;
 
     sqlx::query("UPDATE community_profiles SET circle_id = $1 WHERE user_id = $2")
         .bind(circle_id)
@@ -338,12 +334,11 @@ pub async fn join_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Resul
 
 /// Leave a circle. Owner cannot leave (must transfer or delete).
 pub async fn leave_circle(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> {
-    let membership: Option<(Uuid, String)> = sqlx::query_as(
-        "SELECT circle_id, role FROM circle_members WHERE user_id = $1"
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await?;
+    let membership: Option<(Uuid, String)> =
+        sqlx::query_as("SELECT circle_id, role FROM circle_members WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
 
     let (circle_id, role) = match membership {
         Some(m) => m,
@@ -351,7 +346,9 @@ pub async fn leave_circle(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> 
     };
 
     if role == "owner" {
-        return Err(AppError::BadRequest("Circle owners cannot leave. Transfer ownership or delete the circle.".into()));
+        return Err(AppError::BadRequest(
+            "Circle owners cannot leave. Transfer ownership or delete the circle.".into(),
+        ));
     }
 
     let mut tx = pool.begin().await?;
@@ -380,28 +377,35 @@ pub async fn leave_circle(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> 
 // ─── Invites ────────────────────────────────────────────────────────
 
 /// Send an invite to a user. Only owner/admin can invite.
-pub async fn send_invite(pool: &PgPool, inviter_id: Uuid, invitee_id: Uuid, circle_id: Uuid) -> Result<CircleInvite, AppError> {
+pub async fn send_invite(
+    pool: &PgPool,
+    inviter_id: Uuid,
+    invitee_id: Uuid,
+    circle_id: Uuid,
+) -> Result<CircleInvite, AppError> {
     // Check inviter permission
-    let role: Option<String> = sqlx::query_scalar(
-        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
-    )
-    .bind(inviter_id)
-    .bind(circle_id)
-    .fetch_optional(pool)
-    .await?;
+    let role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+            .bind(inviter_id)
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     match role.as_deref() {
-        Some("owner") | Some("admin") => {},
-        _ => return Err(AppError::Unauthorized("Only circle owner/admin can invite".into())),
+        Some("owner") | Some("admin") => {}
+        _ => {
+            return Err(AppError::Unauthorized(
+                "Only circle owner/admin can invite".into(),
+            ))
+        }
     }
 
     // Check invitee not already in a circle
-    let existing: Option<Uuid> = sqlx::query_scalar(
-        "SELECT circle_id FROM circle_members WHERE user_id = $1"
-    )
-    .bind(invitee_id)
-    .fetch_optional(pool)
-    .await?;
+    let existing: Option<Uuid> =
+        sqlx::query_scalar("SELECT circle_id FROM circle_members WHERE user_id = $1")
+            .bind(invitee_id)
+            .fetch_optional(pool)
+            .await?;
 
     if existing.is_some() {
         return Err(AppError::BadRequest("User is already in a circle.".into()));
@@ -409,7 +413,7 @@ pub async fn send_invite(pool: &PgPool, inviter_id: Uuid, invitee_id: Uuid, circ
 
     let invite = sqlx::query_as::<_, CircleInvite>(
         r#"INSERT INTO circle_invites (circle_id, inviter_id, invitee_id)
-           VALUES ($1, $2, $3) RETURNING *"#
+           VALUES ($1, $2, $3) RETURNING *"#,
     )
     .bind(circle_id)
     .bind(inviter_id)
@@ -423,7 +427,7 @@ pub async fn send_invite(pool: &PgPool, inviter_id: Uuid, invitee_id: Uuid, circ
 /// Accept an invite.
 pub async fn accept_invite(pool: &PgPool, user_id: Uuid, invite_id: Uuid) -> Result<(), AppError> {
     let invite: Option<CircleInvite> = sqlx::query_as(
-        "SELECT * FROM circle_invites WHERE id = $1 AND invitee_id = $2 AND status = 'pending'"
+        "SELECT * FROM circle_invites WHERE id = $1 AND invitee_id = $2 AND status = 'pending'",
     )
     .bind(invite_id)
     .bind(user_id)
@@ -486,12 +490,15 @@ pub struct CircleLeaderboardEntry {
     pub level_name: String,
 }
 
-pub async fn get_circle_leaderboard(pool: &PgPool, limit: i64) -> Result<Vec<CircleLeaderboardEntry>, AppError> {
+pub async fn get_circle_leaderboard(
+    pool: &PgPool,
+    limit: i64,
+) -> Result<Vec<CircleLeaderboardEntry>, AppError> {
     let entries = sqlx::query_as::<_, CircleLeaderboardEntry>(
         r#"SELECT id, name, avatar_emoji, owner_id, member_count, total_xp, level, level_name
            FROM circles
            ORDER BY total_xp DESC
-           LIMIT $1"#
+           LIMIT $1"#,
     )
     .bind(limit.clamp(1, 50))
     .fetch_all(pool)
@@ -502,14 +509,17 @@ pub async fn get_circle_leaderboard(pool: &PgPool, limit: i64) -> Result<Vec<Cir
 // ─── Auto-Join from Referral ────────────────────────────────────────
 
 /// Called after referral signup: automatically join the referrer's circle.
-pub async fn auto_join_referrer_circle(pool: &PgPool, new_user_id: Uuid, referrer_id: Uuid) -> Result<(), AppError> {
+pub async fn auto_join_referrer_circle(
+    pool: &PgPool,
+    new_user_id: Uuid,
+    referrer_id: Uuid,
+) -> Result<(), AppError> {
     // Find referrer's circle
-    let circle_id: Option<Uuid> = sqlx::query_scalar(
-        "SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1"
-    )
-    .bind(referrer_id)
-    .fetch_optional(pool)
-    .await?;
+    let circle_id: Option<Uuid> =
+        sqlx::query_scalar("SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1")
+            .bind(referrer_id)
+            .fetch_optional(pool)
+            .await?;
 
     if let Some(cid) = circle_id {
         // Try to join, ignore errors (circle may be full, etc.)
@@ -529,35 +539,43 @@ pub async fn auto_join_referrer_circle(pool: &PgPool, new_user_id: Uuid, referre
 // ─── Kick Member ────────────────────────────────────────────────────
 
 /// Remove a member from a circle (owner/admin only).
-pub async fn kick_member(pool: &PgPool, actor_id: Uuid, target_id: Uuid, circle_id: Uuid) -> Result<(), AppError> {
+pub async fn kick_member(
+    pool: &PgPool,
+    actor_id: Uuid,
+    target_id: Uuid,
+    circle_id: Uuid,
+) -> Result<(), AppError> {
     // Check actor permission
-    let actor_role: Option<String> = sqlx::query_scalar(
-        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
-    )
-    .bind(actor_id)
-    .bind(circle_id)
-    .fetch_optional(pool)
-    .await?;
+    let actor_role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+            .bind(actor_id)
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     if actor_id == target_id {
-        return Err(AppError::BadRequest("You cannot kick yourself. Please use the leave circle function.".into()));
+        return Err(AppError::BadRequest(
+            "You cannot kick yourself. Please use the leave circle function.".into(),
+        ));
     }
 
     match actor_role.as_deref() {
-        Some("owner") => {},
+        Some("owner") => {}
         Some("admin") => {
             // Admin can only kick members, not other admins
             let target_role: Option<String> = sqlx::query_scalar(
-                "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
+                "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2",
             )
             .bind(target_id)
             .bind(circle_id)
             .fetch_optional(pool)
             .await?;
             if target_role.as_deref() != Some("member") {
-                return Err(AppError::Unauthorized("Admins can only kick members".into()));
+                return Err(AppError::Unauthorized(
+                    "Admins can only kick members".into(),
+                ));
             }
-        },
+        }
         _ => return Err(AppError::Unauthorized("Not authorized to kick".into())),
     }
 
@@ -587,34 +605,48 @@ pub async fn kick_member(pool: &PgPool, actor_id: Uuid, target_id: Uuid, circle_
 // ─── Circle Roles & Settings (M4-BE.11, M4-BE.12, M4-BE.13) ──────────────────
 
 /// Promote or demote a member. Owner can promote to admin or demote to member.
-pub async fn update_member_role(pool: &PgPool, owner_id: Uuid, target_id: Uuid, circle_id: Uuid, new_role: &str) -> Result<(), AppError> {
+pub async fn update_member_role(
+    pool: &PgPool,
+    owner_id: Uuid,
+    target_id: Uuid,
+    circle_id: Uuid,
+    new_role: &str,
+) -> Result<(), AppError> {
     if new_role != "admin" && new_role != "member" {
-        return Err(AppError::BadRequest("Role must be 'admin' or 'member'.".into()));
+        return Err(AppError::BadRequest(
+            "Role must be 'admin' or 'member'.".into(),
+        ));
     }
 
     // Verify actor is owner
-    let owner_check: Option<Uuid> = sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
-        .bind(circle_id)
-        .fetch_optional(pool)
-        .await?;
+    let owner_check: Option<Uuid> =
+        sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     if owner_check != Some(owner_id) {
-        return Err(AppError::Unauthorized("Only the circle owner can manage roles.".into()));
+        return Err(AppError::Unauthorized(
+            "Only the circle owner can manage roles.".into(),
+        ));
     }
 
     // Verify target is in circle
-    let target_role: Option<String> = sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
-        .bind(target_id)
-        .bind(circle_id)
-        .fetch_optional(pool)
-        .await?;
+    let target_role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+            .bind(target_id)
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     if target_role.is_none() {
         return Err(AppError::NotFound("User is not in this circle.".into()));
     }
 
     if target_role.as_deref() == Some("owner") {
-        return Err(AppError::BadRequest("Cannot change the owner's role directly. Use transfer ownership instead.".into()));
+        return Err(AppError::BadRequest(
+            "Cannot change the owner's role directly. Use transfer ownership instead.".into(),
+        ));
     }
 
     sqlx::query("UPDATE circle_members SET role = $1 WHERE user_id = $2 AND circle_id = $3")
@@ -628,26 +660,37 @@ pub async fn update_member_role(pool: &PgPool, owner_id: Uuid, target_id: Uuid, 
 }
 
 /// Transfer circle ownership.
-pub async fn transfer_ownership(pool: &PgPool, current_owner_id: Uuid, new_owner_id: Uuid, circle_id: Uuid) -> Result<(), AppError> {
+pub async fn transfer_ownership(
+    pool: &PgPool,
+    current_owner_id: Uuid,
+    new_owner_id: Uuid,
+    circle_id: Uuid,
+) -> Result<(), AppError> {
     // Verify current owner
-    let owner_check: Option<Uuid> = sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
-        .bind(circle_id)
-        .fetch_optional(pool)
-        .await?;
+    let owner_check: Option<Uuid> =
+        sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     if owner_check != Some(current_owner_id) {
-        return Err(AppError::Unauthorized("Only the circle owner can transfer ownership.".into()));
+        return Err(AppError::Unauthorized(
+            "Only the circle owner can transfer ownership.".into(),
+        ));
     }
 
     // Verify new owner is in circle
-    let new_role: Option<String> = sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
-        .bind(new_owner_id)
-        .bind(circle_id)
-        .fetch_optional(pool)
-        .await?;
+    let new_role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+            .bind(new_owner_id)
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     if new_role.is_none() {
-        return Err(AppError::BadRequest("The new owner must be a member of the circle.".into()));
+        return Err(AppError::BadRequest(
+            "The new owner must be a member of the circle.".into(),
+        ));
     }
 
     let mut tx = pool.begin().await?;
@@ -679,19 +722,27 @@ pub async fn transfer_ownership(pool: &PgPool, current_owner_id: Uuid, new_owner
 }
 
 /// Update circle privacy setting.
-pub async fn update_circle_privacy(pool: &PgPool, actor_id: Uuid, circle_id: Uuid, is_public: bool) -> Result<(), AppError> {
+pub async fn update_circle_privacy(
+    pool: &PgPool,
+    actor_id: Uuid,
+    circle_id: Uuid,
+    is_public: bool,
+) -> Result<(), AppError> {
     // Verify actor is owner or admin
-    let actor_role: Option<String> = sqlx::query_scalar(
-        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
-    )
-    .bind(actor_id)
-    .bind(circle_id)
-    .fetch_optional(pool)
-    .await?;
+    let actor_role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+            .bind(actor_id)
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     match actor_role.as_deref() {
-        Some("owner") | Some("admin") => {},
-        _ => return Err(AppError::Unauthorized("Only the circle owner or an admin can change privacy settings.".into())),
+        Some("owner") | Some("admin") => {}
+        _ => {
+            return Err(AppError::Unauthorized(
+                "Only the circle owner or an admin can change privacy settings.".into(),
+            ))
+        }
     }
 
     sqlx::query("UPDATE circles SET is_public = $1, updated_at = NOW() WHERE id = $2")
@@ -716,30 +767,36 @@ pub struct CircleJoinRequest {
 
 /// Submit a join request for a private circle.
 /// Returns Err if the user is already in a circle, already requested, or the circle is public.
-pub async fn request_to_join(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Result<CircleJoinRequest, AppError> {
+pub async fn request_to_join(
+    pool: &PgPool,
+    user_id: Uuid,
+    circle_id: Uuid,
+) -> Result<CircleJoinRequest, AppError> {
     // Check user isn't already in a circle
-    let already_member: Option<Uuid> = sqlx::query_scalar(
-        "SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1"
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await?;
+    let already_member: Option<Uuid> =
+        sqlx::query_scalar("SELECT circle_id FROM circle_members WHERE user_id = $1 LIMIT 1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
 
     if already_member.is_some() {
-        return Err(AppError::BadRequest("You are already in a circle. Leave first.".into()));
+        return Err(AppError::BadRequest(
+            "You are already in a circle. Leave first.".into(),
+        ));
     }
 
     // Get circle – must exist and be private
-    let (is_public, member_count, max_members): (bool, i32, i32) = sqlx::query_as(
-        "SELECT is_public, member_count, max_members FROM circles WHERE id = $1"
-    )
-    .bind(circle_id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
+    let (is_public, member_count, max_members): (bool, i32, i32) =
+        sqlx::query_as("SELECT is_public, member_count, max_members FROM circles WHERE id = $1")
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
 
     if is_public {
-        return Err(AppError::BadRequest("This circle is public — just join directly.".into()));
+        return Err(AppError::BadRequest(
+            "This circle is public — just join directly.".into(),
+        ));
     }
 
     if member_count >= max_members {
@@ -756,11 +813,13 @@ pub async fn request_to_join(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> R
     .await?;
 
     if existing.is_some() {
-        return Err(AppError::BadRequest("You already have a pending request for this circle.".into()));
+        return Err(AppError::BadRequest(
+            "You already have a pending request for this circle.".into(),
+        ));
     }
 
     let req = sqlx::query_as::<_, CircleJoinRequest>(
-        "INSERT INTO circle_join_requests (circle_id, user_id) VALUES ($1, $2) RETURNING *"
+        "INSERT INTO circle_join_requests (circle_id, user_id) VALUES ($1, $2) RETURNING *",
     )
     .bind(circle_id)
     .bind(user_id)
@@ -771,9 +830,13 @@ pub async fn request_to_join(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> R
 }
 
 /// Cancel your own pending join request.
-pub async fn cancel_join_request(pool: &PgPool, user_id: Uuid, request_id: Uuid) -> Result<(), AppError> {
+pub async fn cancel_join_request(
+    pool: &PgPool,
+    user_id: Uuid,
+    request_id: Uuid,
+) -> Result<(), AppError> {
     let rows = sqlx::query(
-        "DELETE FROM circle_join_requests WHERE id = $1 AND user_id = $2 AND status = 'pending'"
+        "DELETE FROM circle_join_requests WHERE id = $1 AND user_id = $2 AND status = 'pending'",
     )
     .bind(request_id)
     .bind(user_id)
@@ -782,26 +845,35 @@ pub async fn cancel_join_request(pool: &PgPool, user_id: Uuid, request_id: Uuid)
     .rows_affected();
 
     if rows == 0 {
-        return Err(AppError::NotFound("Request not found or already processed.".into()));
+        return Err(AppError::NotFound(
+            "Request not found or already processed.".into(),
+        ));
     }
 
     Ok(())
 }
 
 /// List all pending join requests for a circle (owner/admin only).
-pub async fn get_pending_join_requests(pool: &PgPool, actor_id: Uuid, circle_id: Uuid) -> Result<Vec<CircleJoinRequest>, AppError> {
+pub async fn get_pending_join_requests(
+    pool: &PgPool,
+    actor_id: Uuid,
+    circle_id: Uuid,
+) -> Result<Vec<CircleJoinRequest>, AppError> {
     // Check actor is owner or admin
-    let role: Option<String> = sqlx::query_scalar(
-        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
-    )
-    .bind(actor_id)
-    .bind(circle_id)
-    .fetch_optional(pool)
-    .await?;
+    let role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+            .bind(actor_id)
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     match role.as_deref() {
-        Some("owner") | Some("admin") => {},
-        _ => return Err(AppError::Unauthorized("Only circle owner/admin can view requests.".into())),
+        Some("owner") | Some("admin") => {}
+        _ => {
+            return Err(AppError::Unauthorized(
+                "Only circle owner/admin can view requests.".into(),
+            ))
+        }
     }
 
     let requests = sqlx::query_as::<_, CircleJoinRequest>(
@@ -815,7 +887,10 @@ pub async fn get_pending_join_requests(pool: &PgPool, actor_id: Uuid, circle_id:
 }
 
 /// Get your own pending join requests (so users can see where they've requested to join).
-pub async fn get_my_join_requests(pool: &PgPool, user_id: Uuid) -> Result<Vec<CircleJoinRequest>, AppError> {
+pub async fn get_my_join_requests(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<CircleJoinRequest>, AppError> {
     let reqs = sqlx::query_as::<_, CircleJoinRequest>(
         "SELECT * FROM circle_join_requests WHERE user_id = $1 AND status = 'pending' ORDER BY created_at DESC"
     )
@@ -826,52 +901,58 @@ pub async fn get_my_join_requests(pool: &PgPool, user_id: Uuid) -> Result<Vec<Ci
 }
 
 /// Approve a join request (owner/admin action). Adds the requester to the circle.
-pub async fn approve_join_request(pool: &PgPool, actor_id: Uuid, request_id: Uuid) -> Result<Uuid, AppError> {
+pub async fn approve_join_request(
+    pool: &PgPool,
+    actor_id: Uuid,
+    request_id: Uuid,
+) -> Result<Uuid, AppError> {
     // Fetch the request
-    let req: Option<CircleJoinRequest> = sqlx::query_as(
-        "SELECT * FROM circle_join_requests WHERE id = $1 AND status = 'pending'"
-    )
-    .bind(request_id)
-    .fetch_optional(pool)
-    .await?;
+    let req: Option<CircleJoinRequest> =
+        sqlx::query_as("SELECT * FROM circle_join_requests WHERE id = $1 AND status = 'pending'")
+            .bind(request_id)
+            .fetch_optional(pool)
+            .await?;
 
-    let req = req.ok_or_else(|| AppError::NotFound("Request not found or already processed.".into()))?;
+    let req =
+        req.ok_or_else(|| AppError::NotFound("Request not found or already processed.".into()))?;
 
     // Verify actor is owner or admin of that circle
-    let role: Option<String> = sqlx::query_scalar(
-        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
-    )
-    .bind(actor_id)
-    .bind(req.circle_id)
-    .fetch_optional(pool)
-    .await?;
+    let role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+            .bind(actor_id)
+            .bind(req.circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     match role.as_deref() {
-        Some("owner") | Some("admin") => {},
-        _ => return Err(AppError::Unauthorized("Only circle owner/admin can approve requests.".into())),
+        Some("owner") | Some("admin") => {}
+        _ => {
+            return Err(AppError::Unauthorized(
+                "Only circle owner/admin can approve requests.".into(),
+            ))
+        }
     }
 
     // Check circle not now full
-    let (member_count, max_members): (i32, i32) = sqlx::query_as(
-        "SELECT member_count, max_members FROM circles WHERE id = $1"
-    )
-    .bind(req.circle_id)
-    .fetch_one(pool)
-    .await?;
+    let (member_count, max_members): (i32, i32) =
+        sqlx::query_as("SELECT member_count, max_members FROM circles WHERE id = $1")
+            .bind(req.circle_id)
+            .fetch_one(pool)
+            .await?;
 
     if member_count >= max_members {
-        return Err(AppError::BadRequest("Cannot approve: circle is now full.".into()));
+        return Err(AppError::BadRequest(
+            "Cannot approve: circle is now full.".into(),
+        ));
     }
 
     let mut tx = pool.begin().await?;
 
     // Mark request as accepted
-    sqlx::query(
-        "UPDATE circle_join_requests SET status = 'accepted' WHERE id = $1"
-    )
-    .bind(request_id)
-    .execute(&mut *tx)
-    .await?;
+    sqlx::query("UPDATE circle_join_requests SET status = 'accepted' WHERE id = $1")
+        .bind(request_id)
+        .execute(&mut *tx)
+        .await?;
 
     // Add to members
     sqlx::query(
@@ -882,10 +963,12 @@ pub async fn approve_join_request(pool: &PgPool, actor_id: Uuid, request_id: Uui
     .execute(&mut *tx)
     .await?;
 
-    sqlx::query("UPDATE circles SET member_count = member_count + 1, updated_at = NOW() WHERE id = $1")
-        .bind(req.circle_id)
-        .execute(&mut *tx)
-        .await?;
+    sqlx::query(
+        "UPDATE circles SET member_count = member_count + 1, updated_at = NOW() WHERE id = $1",
+    )
+    .bind(req.circle_id)
+    .execute(&mut *tx)
+    .await?;
 
     sqlx::query("UPDATE community_profiles SET circle_id = $1 WHERE user_id = $2")
         .bind(req.circle_id)
@@ -899,28 +982,35 @@ pub async fn approve_join_request(pool: &PgPool, actor_id: Uuid, request_id: Uui
 }
 
 /// Decline a join request (owner/admin action).
-pub async fn decline_join_request(pool: &PgPool, actor_id: Uuid, request_id: Uuid) -> Result<Uuid, AppError> {
-    let req: Option<CircleJoinRequest> = sqlx::query_as(
-        "SELECT * FROM circle_join_requests WHERE id = $1 AND status = 'pending'"
-    )
-    .bind(request_id)
-    .fetch_optional(pool)
-    .await?;
+pub async fn decline_join_request(
+    pool: &PgPool,
+    actor_id: Uuid,
+    request_id: Uuid,
+) -> Result<Uuid, AppError> {
+    let req: Option<CircleJoinRequest> =
+        sqlx::query_as("SELECT * FROM circle_join_requests WHERE id = $1 AND status = 'pending'")
+            .bind(request_id)
+            .fetch_optional(pool)
+            .await?;
 
-    let req = req.ok_or_else(|| AppError::NotFound("Request not found or already processed.".into()))?;
+    let req =
+        req.ok_or_else(|| AppError::NotFound("Request not found or already processed.".into()))?;
 
     // Verify actor is owner or admin
-    let role: Option<String> = sqlx::query_scalar(
-        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
-    )
-    .bind(actor_id)
-    .bind(req.circle_id)
-    .fetch_optional(pool)
-    .await?;
+    let role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+            .bind(actor_id)
+            .bind(req.circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     match role.as_deref() {
-        Some("owner") | Some("admin") => {},
-        _ => return Err(AppError::Unauthorized("Only circle owner/admin can decline requests.".into())),
+        Some("owner") | Some("admin") => {}
+        _ => {
+            return Err(AppError::Unauthorized(
+                "Only circle owner/admin can decline requests.".into(),
+            ))
+        }
     }
 
     sqlx::query("UPDATE circle_join_requests SET status = 'declined' WHERE id = $1")
@@ -934,7 +1024,11 @@ pub async fn decline_join_request(pool: &PgPool, actor_id: Uuid, request_id: Uui
 // ─── Owner Circle Deletion ──────────────────────────────────────────
 
 /// Allow the circle owner to delete their own circle.
-pub async fn delete_own_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) -> Result<(), AppError> {
+pub async fn delete_own_circle(
+    pool: &PgPool,
+    user_id: Uuid,
+    circle_id: Uuid,
+) -> Result<(), AppError> {
     // Verify the user is the owner
     let owner_id: Option<Uuid> = sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
         .bind(circle_id)
@@ -942,8 +1036,12 @@ pub async fn delete_own_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) ->
         .await?;
 
     match owner_id {
-        Some(oid) if oid == user_id => {},
-        Some(_) => return Err(AppError::Forbidden("Only the circle owner can delete the circle.".into())),
+        Some(oid) if oid == user_id => {}
+        Some(_) => {
+            return Err(AppError::Forbidden(
+                "Only the circle owner can delete the circle.".into(),
+            ))
+        }
         None => return Err(AppError::NotFound("Circle not found.".into())),
     }
 
@@ -991,11 +1089,9 @@ pub async fn delete_own_circle(pool: &PgPool, user_id: Uuid, circle_id: Uuid) ->
 
 /// List all circles for admin (ordered by creation date).
 pub async fn admin_get_all_circles(pool: &PgPool) -> Result<Vec<Circle>, AppError> {
-    let circles = sqlx::query_as::<_, Circle>(
-        "SELECT * FROM circles ORDER BY created_at DESC"
-    )
-    .fetch_all(pool)
-    .await?;
+    let circles = sqlx::query_as::<_, Circle>("SELECT * FROM circles ORDER BY created_at DESC")
+        .fetch_all(pool)
+        .await?;
     Ok(circles)
 }
 
@@ -1026,7 +1122,7 @@ pub async fn admin_delete_circle(pool: &PgPool, circle_id: Uuid) -> Result<(), A
         .bind(circle_id)
         .execute(&mut *tx)
         .await?;
-        
+
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound("Circle not found".into()));
     }
@@ -1036,18 +1132,23 @@ pub async fn admin_delete_circle(pool: &PgPool, circle_id: Uuid) -> Result<(), A
 }
 
 /// Admin removes a user from a circle. Owner cannot be removed.
-pub async fn admin_remove_member(pool: &PgPool, circle_id: Uuid, target_id: Uuid) -> Result<(), AppError> {
-    let role: Option<String> = sqlx::query_scalar(
-        "SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2"
-    )
-    .bind(target_id)
-    .bind(circle_id)
-    .fetch_optional(pool)
-    .await?;
+pub async fn admin_remove_member(
+    pool: &PgPool,
+    circle_id: Uuid,
+    target_id: Uuid,
+) -> Result<(), AppError> {
+    let role: Option<String> =
+        sqlx::query_scalar("SELECT role FROM circle_members WHERE user_id = $1 AND circle_id = $2")
+            .bind(target_id)
+            .bind(circle_id)
+            .fetch_optional(pool)
+            .await?;
 
     let role = role.ok_or_else(|| AppError::NotFound("User not in circle".into()))?;
     if role == "owner" {
-        return Err(AppError::BadRequest("Cannot remove circle owner. Delete circle instead.".into()));
+        return Err(AppError::BadRequest(
+            "Cannot remove circle owner. Delete circle instead.".into(),
+        ));
     }
 
     let mut tx = pool.begin().await?;
@@ -1088,7 +1189,7 @@ pub async fn check_token_gate(
 
     // Fetch the circle's gate config from community DB
     let gate_row = sqlx::query(
-        "SELECT token_gate_asset_id, token_gate_min_value_cents FROM circles WHERE id = $1"
+        "SELECT token_gate_asset_id, token_gate_min_value_cents FROM circles WHERE id = $1",
     )
     .bind(circle_id)
     .fetch_optional(community_pool)
@@ -1096,7 +1197,10 @@ pub async fn check_token_gate(
     .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
 
     let gate_asset_id: Option<Uuid> = gate_row.try_get("token_gate_asset_id").ok().flatten();
-    let gate_min_cents: Option<i64> = gate_row.try_get("token_gate_min_value_cents").ok().flatten();
+    let gate_min_cents: Option<i64> = gate_row
+        .try_get("token_gate_min_value_cents")
+        .ok()
+        .flatten();
 
     // No gate configured → everyone can join
     let asset_id = match gate_asset_id {
@@ -1150,16 +1254,18 @@ pub async fn update_token_gate(
     min_value_cents: Option<i64>,
 ) -> Result<Circle, AppError> {
     // Verify ownership
-    let owner_id: Option<Uuid> = sqlx::query_scalar(
-        "SELECT owner_id FROM circles WHERE id = $1"
-    )
-    .bind(circle_id)
-    .fetch_optional(community_pool)
-    .await?;
+    let owner_id: Option<Uuid> = sqlx::query_scalar("SELECT owner_id FROM circles WHERE id = $1")
+        .bind(circle_id)
+        .fetch_optional(community_pool)
+        .await?;
 
     match owner_id {
-        Some(oid) if oid == user_id => {},
-        Some(_) => return Err(AppError::Forbidden("Only the circle owner can set token gates".into())),
+        Some(oid) if oid == user_id => {}
+        Some(_) => {
+            return Err(AppError::Forbidden(
+                "Only the circle owner can set token gates".into(),
+            ))
+        }
         None => return Err(AppError::NotFound("Circle not found".into())),
     }
 
@@ -1172,7 +1278,11 @@ pub async fn update_token_gate(
             .await?;
         match row {
             Some(r) => Some(r.try_get("title")?),
-            None => return Err(AppError::NotFound("Asset not found. Cannot set token gate for a non-existent asset.".into())),
+            None => {
+                return Err(AppError::NotFound(
+                    "Asset not found. Cannot set token gate for a non-existent asset.".into(),
+                ))
+            }
         }
     } else {
         None
@@ -1187,7 +1297,7 @@ pub async fn update_token_gate(
             updated_at = NOW()
         WHERE id = $4
         RETURNING *
-        "#
+        "#,
     )
     .bind(asset_id)
     .bind(min_value_cents.unwrap_or(0))

@@ -69,8 +69,15 @@ pub async fn get_user_info(
         Some(r) => {
             let info = UserBridgeInfo {
                 user_id: r.id,
-                display_name: build_display_name(r.display_name, r.first_name, r.last_name, r.email),
-                avatar_url: r.avatar_url.map(|u| crate::storage::service::rewrite_gcs_url(&u)),
+                display_name: build_display_name(
+                    r.display_name,
+                    r.first_name,
+                    r.last_name,
+                    r.email,
+                ),
+                avatar_url: r
+                    .avatar_url
+                    .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
             };
 
             // 3. Set Cache
@@ -108,11 +115,12 @@ pub async fn get_users_info_batch(
     if let Some(pool) = redis_pool {
         if let Ok(mut conn) = pool.get().await {
             use redis::AsyncCommands;
-            let keys: Vec<String> = user_ids.iter()
+            let keys: Vec<String> = user_ids
+                .iter()
                 .map(|id| format!("community:user_bridge:{}", id))
                 .collect();
-            
-            // Try mget 
+
+            // Try mget
             let cached: Vec<Option<String>> = conn.get(&keys).await.unwrap_or_default();
             // If the size is different, fallback entirely to avoiding index out of bounds
             if cached.len() == user_ids.len() {
@@ -162,8 +170,16 @@ pub async fn get_users_info_batch(
                 for r in &rows {
                     let info = UserBridgeInfo {
                         user_id: r.id,
-                        display_name: build_display_name(r.display_name.clone(), r.first_name.clone(), r.last_name.clone(), r.email.clone()),
-                        avatar_url: r.avatar_url.clone().map(|u| crate::storage::service::rewrite_gcs_url(&u)),
+                        display_name: build_display_name(
+                            r.display_name.clone(),
+                            r.first_name.clone(),
+                            r.last_name.clone(),
+                            r.email.clone(),
+                        ),
+                        avatar_url: r
+                            .avatar_url
+                            .clone()
+                            .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                     };
                     result_map.insert(r.id, info.clone());
                     let key = format!("community:user_bridge:{}", r.id);
@@ -176,8 +192,15 @@ pub async fn get_users_info_batch(
                 for r in rows {
                     let info = UserBridgeInfo {
                         user_id: r.id,
-                        display_name: build_display_name(r.display_name, r.first_name, r.last_name, r.email),
-                        avatar_url: r.avatar_url.map(|u| crate::storage::service::rewrite_gcs_url(&u)),
+                        display_name: build_display_name(
+                            r.display_name,
+                            r.first_name,
+                            r.last_name,
+                            r.email,
+                        ),
+                        avatar_url: r
+                            .avatar_url
+                            .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                     };
                     result_map.insert(r.id, info);
                 }
@@ -186,8 +209,15 @@ pub async fn get_users_info_batch(
             for r in rows {
                 let info = UserBridgeInfo {
                     user_id: r.id,
-                    display_name: build_display_name(r.display_name, r.first_name, r.last_name, r.email),
-                    avatar_url: r.avatar_url.map(|u| crate::storage::service::rewrite_gcs_url(&u)),
+                    display_name: build_display_name(
+                        r.display_name,
+                        r.first_name,
+                        r.last_name,
+                        r.email,
+                    ),
+                    avatar_url: r
+                        .avatar_url
+                        .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                 };
                 result_map.insert(r.id, info);
             }

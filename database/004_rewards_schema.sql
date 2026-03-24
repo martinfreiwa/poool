@@ -16,11 +16,11 @@ CREATE TABLE IF NOT EXISTS tiers (
 
 -- Seed tier data
 INSERT INTO tiers (name, min_invest, max_invest, cashback_pct, badge_color, sort_order) VALUES
-    ('Intro',   0,        999999,  1.00, '#98FB96', 1),
-    ('Plus',    1000000,  4999999, 2.00, '#027A48', 2),
-    ('Pro',     5000000,  9999999, 3.00, '#7A5AF8', 3),
-    ('Elite',   10000000, 24999999,4.00, '#F79009', 4),
-    ('Premium', 25000000, NULL,    5.00, '#0000FF', 5)
+    ('Intro',   0,        399999,  1.00, '#98FB96', 1),
+    ('Plus',    400000,   999999,  2.00, '#027A48', 2),
+    ('Pro',     1000000,  2999999, 3.00, '#7A5AF8', 3),
+    ('Elite',   3000000,  9999999, 4.00, '#F79009', 4),
+    ('Premium', 10000000, NULL,    5.00, '#0000FF', 5)
 ON CONFLICT (name) DO UPDATE SET
     min_invest = EXCLUDED.min_invest,
     max_invest = EXCLUDED.max_invest,

@@ -14,8 +14,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::models::{
-    MarketOrder, OrderResponse, OrderSide, RecentTrade, SubmitOrderRequest, TickerResponse,
-    OrderbookSnapshot, PriceLevel
+    MarketOrder, OrderResponse, OrderSide, OrderbookSnapshot, PriceLevel, RecentTrade,
+    SubmitOrderRequest, TickerResponse,
 };
 use super::{orderbook, validation};
 use crate::error::AppError;
@@ -37,7 +37,6 @@ pub async fn resolve_asset_id(pool: &PgPool, id_or_slug: &str) -> Result<Uuid, A
         asset_id.ok_or_else(|| AppError::NotFound("Asset not found".into()))
     }
 }
-
 
 /// Create a new market order.
 ///
@@ -107,18 +106,31 @@ pub async fn create_order(
             // Priority: Redis (if available) -> Database (fallback)
             if let Some(redis) = redis {
                 let best = match side {
-                    OrderSide::Buy => orderbook::best_ask(redis, asset_uuid).await.map(|o| o.map(|o| o.price_cents)),
-                    OrderSide::Sell => orderbook::best_bid(redis, asset_uuid).await.map(|o| o.map(|o| o.price_cents)),
+                    OrderSide::Buy => orderbook::best_ask(redis, asset_uuid)
+                        .await
+                        .map(|o| o.map(|o| o.price_cents)),
+                    OrderSide::Sell => orderbook::best_bid(redis, asset_uuid)
+                        .await
+                        .map(|o| o.map(|o| o.price_cents)),
                 };
-                
+
                 match best {
                     Ok(Some(price)) => price,
-                    Ok(None) => return Err(AppError::OrderRejected(format!(
-                        "No {} orders available. Try a limit order instead.",
-                        if side == OrderSide::Buy { "sell" } else { "buy" }
-                    ))),
+                    Ok(None) => {
+                        return Err(AppError::OrderRejected(format!(
+                            "No {} orders available. Try a limit order instead.",
+                            if side == OrderSide::Buy {
+                                "sell"
+                            } else {
+                                "buy"
+                            }
+                        )))
+                    }
                     Err(e) => {
-                        tracing::warn!("Redis best-price lookup failed ({}). Falling back to Database.", e);
+                        tracing::warn!(
+                            "Redis best-price lookup failed ({}). Falling back to Database.",
+                            e
+                        );
                         // Fall through to DB fallback
                         get_best_price_from_db(pool, asset_uuid, side).await?
                     }
@@ -402,7 +414,10 @@ pub async fn cancel_order(
 // ═══════════════════════════════════════════════════════════════
 
 /// Get the user's orders (most recent first, limit 100).
-pub async fn get_user_orders(pool: &PgPool, user_id: Uuid) -> Result<Vec<super::models::MyOrderResponse>, AppError> {
+pub async fn get_user_orders(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<super::models::MyOrderResponse>, AppError> {
     let orders = sqlx::query!(
         r#"SELECT 
             m.id, m.asset_id, a.title as asset_name, m.side, m.price_cents,
@@ -521,16 +536,12 @@ pub async fn get_user_trades_history(
         let is_buyer = r.buyer_user_id == user_id;
         let side = if is_buyer { "buy" } else { "sell" };
         let total = r.price_cents.saturating_mul(r.quantity as i64);
-        
+
         // Let's just assume the user paid the fee if they were the buyer for simplicity,
-        // or just show half. 
+        // or just show half.
         let fee = r.fee_cents;
-        
-        let net = if is_buyer {
-            total + fee
-        } else {
-            total - fee
-        };
+
+        let net = if is_buyer { total + fee } else { total - fee };
 
         // PL can be null for buys, and some positive/negative for sells
         let pl = if !is_buyer {
@@ -556,8 +567,6 @@ pub async fn get_user_trades_history(
 
     Ok(out)
 }
-
-
 
 /// Get 24-hour ticker data for an asset.
 pub async fn get_ticker(pool: &PgPool, asset_id: Uuid) -> Result<TickerResponse, AppError> {
@@ -651,7 +660,9 @@ pub async fn calculate_trade_fee(
     Ok((fee_cents, bps))
 }
 
-pub async fn get_secondary_assets(pool: &PgPool) -> Result<Vec<super::models::SecondaryAsset>, AppError> {
+pub async fn get_secondary_assets(
+    pool: &PgPool,
+) -> Result<Vec<super::models::SecondaryAsset>, AppError> {
     let raw_assets = sqlx::query!(
         r#"
         SELECT
@@ -692,7 +703,10 @@ pub async fn get_secondary_assets(pool: &PgPool) -> Result<Vec<super::models::Se
     let mut results = Vec::new();
     for row in raw_assets {
         let stats = super::charts::get_chart_summary(pool, row.id).await.ok();
-        let price = stats.as_ref().and_then(|s| s.last_price_cents).unwrap_or(row.token_price_cents);
+        let price = stats
+            .as_ref()
+            .and_then(|s| s.last_price_cents)
+            .unwrap_or(row.token_price_cents);
         let change24h = stats.as_ref().and_then(|s| s.change_24h_pct).unwrap_or(0.0);
         let volume24h = stats.as_ref().and_then(|s| s.volume_24h).unwrap_or(0);
 

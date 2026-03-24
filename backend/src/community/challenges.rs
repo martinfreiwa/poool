@@ -47,7 +47,7 @@ pub async fn list_challenges_for_user(
         LEFT JOIN challenge_progress cp ON cp.challenge_id = c.id AND cp.user_id = $1
         WHERE c.is_active = true
         ORDER BY COALESCE(cp.is_completed, false) ASC, c.xp_reward DESC, c.created_at ASC
-        "#
+        "#,
     )
     .bind(user_id)
     .fetch_all(community_pool)
@@ -64,12 +64,11 @@ pub async fn increment_progress(
     increment_by: i32,
 ) -> Result<Vec<Uuid>, AppError> {
     // Find all active challenges with this requirement_type
-    let matching_challenges: Vec<Challenge> = sqlx::query_as(
-        "SELECT * FROM challenges WHERE requirement_type = $1 AND is_active = true"
-    )
-    .bind(requirement_type)
-    .fetch_all(community_pool)
-    .await?;
+    let matching_challenges: Vec<Challenge> =
+        sqlx::query_as("SELECT * FROM challenges WHERE requirement_type = $1 AND is_active = true")
+            .bind(requirement_type)
+            .fetch_all(community_pool)
+            .await?;
 
     let mut newly_completed = Vec::new();
 
@@ -102,7 +101,7 @@ pub async fn increment_progress(
                 UPDATE challenge_progress 
                 SET is_completed = true, completed_at = NOW() 
                 WHERE user_id = $1 AND challenge_id = $2
-                "#
+                "#,
             )
             .bind(user_id)
             .bind(challenge.id)
@@ -132,7 +131,8 @@ pub async fn increment_progress(
                 Some(challenge.id),
                 &notif_content,
                 Some("/community?tab=challenges"),
-            ).await;
+            )
+            .await;
 
             newly_completed.push(challenge.id);
         }

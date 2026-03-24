@@ -153,16 +153,17 @@ pub async fn upload_post_image(
     };
 
     // Read multipart field
-    let (file_bytes, mime_type) = match read_multipart_file(&mut multipart, MAX_POST_IMAGE_BYTES).await {
-        Ok(v) => v,
-        Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({"error": e})),
-            )
-                .into_response()
-        }
-    };
+    let (file_bytes, mime_type) =
+        match read_multipart_file(&mut multipart, MAX_POST_IMAGE_BYTES).await {
+            Ok(v) => v,
+            Err(e) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({"error": e})),
+                )
+                    .into_response()
+            }
+        };
 
     if let Err(e) = service::validate_image_mime(&mime_type) {
         return e.into_response();

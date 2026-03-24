@@ -110,10 +110,19 @@ async fn handle_ws_connection(mut socket: WebSocket, asset_id: Uuid, state: AppS
             Some(redis) => {
                 match orderbook::get_orderbook_snapshot(redis, asset_id, Some(20)).await {
                     Ok(s) => Ok(s),
-                    Err(_) => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await,
+                    Err(_) => {
+                        super::service::get_orderbook_snapshot_from_db(
+                            &state.db,
+                            asset_id,
+                            Some(20),
+                        )
+                        .await
+                    }
                 }
             }
-            None => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await,
+            None => {
+                super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await
+            }
         }
     };
 
@@ -209,12 +218,12 @@ async fn handle_ws_connection(mut socket: WebSocket, asset_id: Uuid, state: AppS
 /// 2. Redis Pub/Sub (other Cloud Run instances)
 pub async fn broadcast_orderbook_update(state: &AppState, asset_id: Uuid) {
     let snapshot_res = match state.redis.as_ref() {
-        Some(redis) => {
-            match orderbook::get_orderbook_snapshot(redis, asset_id, Some(20)).await {
-                Ok(s) => Ok(s),
-                Err(_) => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await,
+        Some(redis) => match orderbook::get_orderbook_snapshot(redis, asset_id, Some(20)).await {
+            Ok(s) => Ok(s),
+            Err(_) => {
+                super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await
             }
-        }
+        },
         None => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await,
     };
 

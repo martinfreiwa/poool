@@ -432,7 +432,9 @@ pub async fn api_cart(jar: CookieJar, State(state): State<AppState>) -> axum::re
                         bathrooms: r.get("bathrooms"),
                         building_size_sqm: r.get("building_size_sqm"),
                         land_size_sqm: r.get("land_size_sqm"),
-                        cover_image_url: r.get::<Option<String>, _>("cover_image_url").map(|u| crate::storage::service::rewrite_gcs_url(&u)),
+                        cover_image_url: r
+                            .get::<Option<String>, _>("cover_image_url")
+                            .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
                     }
                 })
                 .collect();
@@ -555,7 +557,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
 
     // ── Read platform fee percentage from platform_settings ──
     let platform_fee_pct: f64 = sqlx::query_scalar(
-        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'"
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
     )
     .fetch_optional(&state.db)
     .await
@@ -1328,7 +1330,8 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         </div>
         <!-- Mobile Empty Cart State -->
     "#,
-        mobile_items_html, format_cart_usd(grand_total_cents)
+        mobile_items_html,
+        format_cart_usd(grand_total_cents)
     );
     // Slicing out desktop empty state removes the original Cart Content
     // Slicing out desktop empty state removes the original Cart Content

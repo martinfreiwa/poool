@@ -858,3 +858,17 @@ These are ad-hoc fixes during feature implementation, documented inline.
   - Fixed `ws_market_handler` to properly accept `Path<String>` and resolve the asset ID via the DB asynchronously before upgrading the socket.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-23
+
+### [P2] — Developer Submissions page UI issues (6 fixes)
+- **File:** `frontend/platform/developer/submissions.html`, `frontend/platform/static/css/developer-assets.css`, `frontend/platform/static/css/sidebar-developer.css`, `frontend/platform/components/sidebar.html`
+- **What was wrong:** Multiple design system deviations: (1) Inconsistent button labels ("New Asset" vs "Add Asset"), (2) "Soon" badge used non-compliant colors (#e5e5ff), (3) Empty state icon lacked glassmorphism per DESIGN.md, (4) Feature hint pills used hardcoded colors, (5) Buttons used inline `onclick` handlers instead of proper `<a>` tags, (6) Empty state was centered instead of left-aligned with header.
+- **What I did:** Standardized all buttons to "Add Asset", updated Soon badge to Info badge spec (#EEF4FF/#1B2559), applied glassmorphism (backdrop-filter blur) to empty state icon, changed feature hint icon colors to `currentColor`, replaced all `onclick` handlers with semantic `<a>` tags, left-aligned empty state.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-23
+
+### [P2] — Visual/UX glitches on Secondary Market page
+- **File:** `frontend/platform/static/js/marketplace-secondary.js`, `frontend/platform/static/css/marketplace-secondary.css`
+- **What was wrong:** Badge text duplicated "Leasehold", neutral change indicator looked like a minus button, and chart toggle expanded all cards at once.
+- **What I did:** Fixed logic to only append "Leasehold" if missing, changed neutral indicator to "0.0%", and scoped the chart toggle to the specific clicked card.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-24

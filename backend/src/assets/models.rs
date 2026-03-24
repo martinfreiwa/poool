@@ -158,8 +158,13 @@ impl PropertyDisplayData {
             bedrooms: asset.bedrooms,
             lease_type: asset.lease_type.clone(),
             term_months: asset.term_months,
-            image_urls: asset.image_urls.clone().unwrap_or_default()
-                .into_iter().map(|u| rewrite_gcs_url(&u)).collect(),
+            image_urls: asset
+                .image_urls
+                .clone()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|u| rewrite_gcs_url(&u))
+                .collect(),
             cover_image_url: asset
                 .image_urls
                 .as_ref()
@@ -437,8 +442,13 @@ impl CommodityDisplayData {
             asset_type: asset.asset_type.clone(),
             location_city: asset.location_city.clone(),
             location_country: asset.location_country.clone(),
-            image_urls: asset.image_urls.clone().unwrap_or_default()
-                .into_iter().map(|u| rewrite_gcs_url(&u)).collect(),
+            image_urls: asset
+                .image_urls
+                .clone()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|u| rewrite_gcs_url(&u))
+                .collect(),
             cover_image_url: asset
                 .image_urls
                 .as_ref()

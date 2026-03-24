@@ -413,20 +413,23 @@ pub async fn api_admin_blockchain_tokenize(
             "Asset is already tokenized on-chain".to_string(),
         ));
     }
-    
-    if !asset.4 { // published (approved)
+
+    if !asset.4 {
+        // published (approved)
         return Err(ApiError::BadRequest(
             "Asset must be approved and published before tokenization".to_string(),
         ));
     }
-    
-    if asset.2 <= 0 { // tokens_total
+
+    if asset.2 <= 0 {
+        // tokens_total
         return Err(ApiError::BadRequest(
             "Asset must have a token supply greater than 0".to_string(),
         ));
     }
-    
-    if asset.3 <= 0 { // token_price_cents
+
+    if asset.3 <= 0 {
+        // token_price_cents
         return Err(ApiError::BadRequest(
             "Asset must have a token price greater than 0".to_string(),
         ));
@@ -503,7 +506,9 @@ pub async fn api_admin_blockchain_tokenize(
                 if topics.len() >= 2 {
                     let topic0 = topics[0].as_str()?;
                     // Check if event is AssetDeployed(address,string,uint256,address)
-                    if topic0 == "0xf54b4b9b8f2bef47422e0fed45f313d33ca3c25388cb5034358aecb5dcd85714" {
+                    if topic0
+                        == "0xf54b4b9b8f2bef47422e0fed45f313d33ca3c25388cb5034358aecb5dcd85714"
+                    {
                         let addr_topic = topics[1].as_str()?;
                         // Convert padded topic "0x000000000000000000000000[address]" to "0x[address]"
                         if addr_topic.len() == 66 {

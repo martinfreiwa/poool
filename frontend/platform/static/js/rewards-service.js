@@ -60,10 +60,11 @@ const RewardsDataService = (function () {
         // 2. Business Logic: Dynamische Berechnung des Tier-Fortschritts
         const invested = rawData.invested_12m || 0;
         const threshold = rawData.tier_target_amount || 0;
-        // Prozentwert berechnen und bei 100% kappen
-        const progressPercentage = threshold > 0
-            ? Math.min((invested / threshold) * 100, 100)
-            : 100;
+        // Prozentwert dynamisch aus dem Backend übernehmen,
+        // da das Backend den Offset des aktuellen Tiers berücksichtigt.
+        const progressPercentage = rawData.progress_pct !== undefined 
+            ? rawData.progress_pct 
+            : (threshold > 0 ? Math.min((invested / threshold) * 100, 100) : 100);
 
         const tier = {
             currentTier: rawData.tier_name || 'Standard',

@@ -79,11 +79,12 @@ pub async fn api_admin_submission_approve(
     let uid = ApiError::parse_uuid(&asset_id)?;
 
     // Ensure the asset has at least one image uploaded before allowing approval
-    let image_count: i64 = sqlx::query_scalar("SELECT COUNT(*)::bigint FROM asset_images WHERE asset_id = $1")
-        .bind(uid)
-        .fetch_one(&state.db)
-        .await
-        .unwrap_or(0);
+    let image_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM asset_images WHERE asset_id = $1")
+            .bind(uid)
+            .fetch_one(&state.db)
+            .await
+            .unwrap_or(0);
 
     if image_count == 0 {
         return Err(ApiError::BadRequest(

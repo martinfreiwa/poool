@@ -120,7 +120,11 @@ pub async fn check_kyc_verified(pool: &PgPool, user_id: Uuid) -> Result<(), Orde
 ///
 /// An asset must be in `funding_status = 'funded'` and `published = true`
 /// to be tradable on the secondary market.
-pub async fn check_asset_tradable(pool: &PgPool, asset_id: Uuid, user_id: Uuid) -> Result<i32, OrderRejection> {
+pub async fn check_asset_tradable(
+    pool: &PgPool,
+    asset_id: Uuid,
+    user_id: Uuid,
+) -> Result<i32, OrderRejection> {
     let row = sqlx::query!(
         r#"SELECT tokens_total, funding_status, published
            FROM assets

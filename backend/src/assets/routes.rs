@@ -82,21 +82,21 @@ pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> 
     })
     .unwrap_or_default();
 
-    let display_assets: Vec<PropertyDisplayData> = assets
-        .iter()
-        .map(PropertyDisplayData::from_asset)
-        .collect();
+    let display_assets: Vec<PropertyDisplayData> =
+        assets.iter().map(PropertyDisplayData::from_asset).collect();
 
     let is_empty = display_assets.is_empty();
 
     match state.templates.get_template("marketplace.html") {
-        Ok(template) => match template.render(context! { assets => display_assets, empty => is_empty }) {
-            Ok(html) => Html(html).into_response(),
-            Err(e) => {
-                tracing::error!("Template rendering error: {}", e);
-                Html(format!("<h1>Internal Server Error</h1><p>{}</p>", e)).into_response()
+        Ok(template) => {
+            match template.render(context! { assets => display_assets, empty => is_empty }) {
+                Ok(html) => Html(html).into_response(),
+                Err(e) => {
+                    tracing::error!("Template rendering error: {}", e);
+                    Html(format!("<h1>Internal Server Error</h1><p>{}</p>", e)).into_response()
+                }
             }
-        },
+        }
         Err(e) => {
             tracing::error!("Template missing: {}", e);
             Html("<h1>Internal Server Error: Template Missing</h1>".to_string()).into_response()
@@ -783,7 +783,9 @@ pub async fn page_commodities_marketplace(
 
     match state.templates.get_template("commodities-marketplace.html") {
         Ok(template) => {
-            match template.render(context! { assets => display_assets, empty => is_empty, user => user }) {
+            match template
+                .render(context! { assets => display_assets, empty => is_empty, user => user })
+            {
                 Ok(html) => Html(html).into_response(),
                 Err(e) => {
                     tracing::error!("Template rendering error: {}", e);
@@ -1064,21 +1066,33 @@ pub async fn api_asset_search(
     .await
     .unwrap_or_default();
 
-    let results: Vec<SearchResult> = assets.into_iter().map(|a| {
-        let icon = if a.asset_type == "commodity" { "🌽" } else { "🏠" };
-        let url = if a.asset_type == "commodity" { 
-            format!("/commodity/{}", a.slug)
-        } else {
-            format!("/property/{}", a.slug)
-        };
+    let results: Vec<SearchResult> = assets
+        .into_iter()
+        .map(|a| {
+            let icon = if a.asset_type == "commodity" {
+                "🌽"
+            } else {
+                "🏠"
+            };
+            let url = if a.asset_type == "commodity" {
+                format!("/commodity/{}", a.slug)
+            } else {
+                format!("/property/{}", a.slug)
+            };
 
-        SearchResult {
-            title: a.title,
-            subtitle: format!("{} · {}, {}", a.asset_type, a.location_city.unwrap_or_default(), a.location_country.unwrap_or_default()),
-            url,
-            icon: icon.to_string(),
-        }
-    }).collect();
+            SearchResult {
+                title: a.title,
+                subtitle: format!(
+                    "{} · {}, {}",
+                    a.asset_type,
+                    a.location_city.unwrap_or_default(),
+                    a.location_country.unwrap_or_default()
+                ),
+                url,
+                icon: icon.to_string(),
+            }
+        })
+        .collect();
 
     Json(results).into_response()
 }

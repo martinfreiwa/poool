@@ -96,7 +96,7 @@ pub async fn serve_public_with_context<T: serde::Serialize>(
         Ok(serde_json::Value::Object(m)) => m,
         _ => serde_json::Map::new(),
     };
-    
+
     // Optionally inject user if logged in, but DO NOT redirect if missing
     if let Some(u) = middleware::get_current_user(&jar, &state.db).await {
         if let Ok(u_val) = serde_json::to_value(&u) {

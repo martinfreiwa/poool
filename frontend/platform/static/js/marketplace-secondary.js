@@ -85,7 +85,10 @@
         ).join('');
 
         // Badges matching primary marketplace style
-        const typeText = (asset.leaseType ? asset.leaseType.charAt(0).toUpperCase() + asset.leaseType.slice(1).toLowerCase() : 'Standard') + ' Leasehold';
+        let typeText = 'Standard Leasehold';
+        if (asset.leaseType) {
+            typeText = asset.leaseType.charAt(0).toUpperCase() + asset.leaseType.slice(1).toLowerCase();
+        }    
         
         const typeBadge = `<div class="mp-sec__badge mp-sec__badge--type">
             <span class="mp-sec__badge-text">${typeText}</span>
@@ -155,7 +158,7 @@
                     <span class="mp-sec__price">${formatUSD(asset.price)}</span>
                     ${asset.change24h !== 0
                         ? `<span class="mp-sec__change ${changeClass}">${changePrefix}${asset.change24h.toFixed(1)}%</span>`
-                        : '<span class="mp-sec__change mp-sec__change--neutral">—</span>'
+                        : `<span class="mp-sec__change mp-sec__change--neutral">0.0%</span>`
                     }
                 </div>
                 <div class="mp-sec__details-box">
@@ -222,7 +225,7 @@
         if (dots[newIdx]) dots[newIdx].classList.add('active');
     };
 
-    // ── Chart Toggle (GLOBAL — all visible cards toggle together) ──
+    // ── Chart Toggle (Per Card) ──
     window.mpSecToggleChart = function (slug) {
         const clickedSection = document.getElementById(`chart-section-${slug}`);
         if (!clickedSection) return;
@@ -230,44 +233,38 @@
         // Determine new state from clicked card
         const isCurrentlyHidden = clickedSection.style.display === 'none' || !clickedSection.classList.contains('expanded');
 
-        // Get ALL visible cards' chart sections and toggles
-        const allSections = document.querySelectorAll('.mp-sec__chart-section');
-        const allToggles = document.querySelectorAll('.mp-sec__chart-toggle');
+        // Find the specific toggle button for this card
+        const toggleBtn = document.querySelector(`.mp-sec__chart-toggle[data-slug="${slug}"]`);
 
         if (isCurrentlyHidden) {
-            // Show ALL charts
-            allSections.forEach(section => {
-                section.style.display = 'block';
-                section.classList.add('expanded');
+            // Show this chart
+            clickedSection.style.display = 'block';
+            clickedSection.classList.add('expanded');
 
-                // Lazy-render chart only on first expand
-                if (!section.dataset.rendered) {
-                    section.dataset.rendered = 'true';
-                    const sectionSlug = section.id.replace('chart-section-', '');
+            // Lazy-render chart only on first expand
+            if (!clickedSection.dataset.rendered) {
+                clickedSection.dataset.rendered = 'true';
+                const asset = MOCK_ASSETS.find(a => a.slug === slug);
+                if (asset) {
+                    const sparkId = `sparkline-${slug}`;
+                    const isPositive = asset.change24h >= 0;
                     setTimeout(() => {
-                        const asset = MOCK_ASSETS.find(a => a.slug === sectionSlug);
-                        if (asset) {
-                            const sparkId = `sparkline-${sectionSlug}`;
-                            const isPositive = asset.change24h >= 0;
-                            buildSparkline(sparkId, asset.sparkline, isPositive, asset.price);
-                        }
+                        buildSparkline(sparkId, asset.sparkline, isPositive, asset.price);
                     }, 50);
                 }
-            });
-            allToggles.forEach(toggle => {
-                toggle.classList.add('expanded');
-                toggle.querySelector('span').textContent = 'Hide Chart';
-            });
+            }
+            if (toggleBtn) {
+                toggleBtn.classList.add('expanded');
+                toggleBtn.querySelector('span').textContent = 'Hide Chart';
+            }
         } else {
-            // Hide ALL charts
-            allSections.forEach(section => {
-                section.style.display = 'none';
-                section.classList.remove('expanded');
-            });
-            allToggles.forEach(toggle => {
-                toggle.classList.remove('expanded');
-                toggle.querySelector('span').textContent = '12m Chart';
-            });
+            // Hide this chart
+            clickedSection.style.display = 'none';
+            clickedSection.classList.remove('expanded');
+            if (toggleBtn) {
+                toggleBtn.classList.remove('expanded');
+                toggleBtn.querySelector('span').textContent = '12m Chart';
+            }
         }
     };
 
@@ -605,7 +602,7 @@
                 if (changeEl) {
                     const pct = summary.change_24h_pct;
                     const isPositive = pct >= 0;
-                    changeEl.textContent = (isPositive ? '+' : '') + pct.toFixed(1) + '%';
+                    changeEl.textContent = (pct === 0 ? '' : (isPositive ? '+' : '')) + pct.toFixed(1) + '%';
                     changeEl.className = 'mp-sec__change ' + (
                         pct === 0 ? 'mp-sec__change--neutral' :
                         isPositive ? 'mp-sec__change--up' : 'mp-sec__change--down'

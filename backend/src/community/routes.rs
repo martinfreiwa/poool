@@ -1,7 +1,7 @@
 use axum::{
     extract::{Path, Query, State},
     response::{IntoResponse, Json},
-    routing::{get, post, put, delete},
+    routing::{delete, get, post, put},
     Router,
 };
 use axum_extra::extract::cookie::CookieJar;
@@ -61,7 +61,8 @@ async fn check_user_not_banned(pool: &sqlx::PgPool, user_id: Uuid) -> Result<(),
     if let Some(r) = record {
         if r.is_community_banned {
             return Err(AppError::Forbidden(
-                "Your community access has been suspended. Contact support for more information.".to_string()
+                "Your community access has been suspended. Contact support for more information."
+                    .to_string(),
             ));
         }
 
@@ -116,34 +117,31 @@ async fn parse_and_notify_mentions(
                     "mention",
                     Some(post_id),
                     &msg,
-                    Some(&format!("/community/feed?post={}", post_id))
-                ).await;
+                    Some(&format!("/community/feed?post={}", post_id)),
+                )
+                .await;
             }
         }
     }
 }
 
 /// Helper to parse the first URL in the content and fetch its OpenGraph data
-async fn parse_and_store_opengraph(
-    c_pool: sqlx::PgPool,
-    content: String,
-    post_id: Uuid,
-) {
+async fn parse_and_store_opengraph(c_pool: sqlx::PgPool, content: String, post_id: Uuid) {
     if let Ok(url_regex) = regex::Regex::new(r"https?://[^\s<]+") {
         if let Some(mat) = url_regex.find(&content) {
             let url = mat.as_str().to_string();
-            
+
             let client = reqwest::Client::builder()
                 .timeout(std::time::Duration::from_secs(3))
                 .build()
                 .unwrap_or_default();
-                
+
             if let Ok(res) = client.get(&url).send().await {
                 if let Ok(html) = res.text().await {
                     let title = extract_meta_tag(&html, "og:title");
                     let image = extract_meta_tag(&html, "og:image");
                     let desc = extract_meta_tag(&html, "og:description");
-                    
+
                     if title.is_some() || image.is_some() || desc.is_some() {
                         let preview = serde_json::json!({
                             "url": url,
@@ -151,7 +149,7 @@ async fn parse_and_store_opengraph(
                             "image": image,
                             "description": desc,
                         });
-                        
+
                         let _ = sqlx::query("UPDATE posts SET link_preview = $1 WHERE id = $2")
                             .bind(preview)
                             .bind(post_id)
@@ -165,23 +163,29 @@ async fn parse_and_store_opengraph(
 }
 
 fn extract_meta_tag(html: &str, property: &str) -> Option<String> {
-    let re_str = format!(r#"(?i)<meta\s+[^>]*?property=["']{}["'][^>]*?content=["']([^"']+)["'][^>]*>"#, property);
-    let re_str_alt = format!(r#"(?i)<meta\s+[^>]*?content=["']([^"']+)["'][^>]*?property=["']{}["'][^>]*>"#, property);
-    
+    let re_str = format!(
+        r#"(?i)<meta\s+[^>]*?property=["']{}["'][^>]*?content=["']([^"']+)["'][^>]*>"#,
+        property
+    );
+    let re_str_alt = format!(
+        r#"(?i)<meta\s+[^>]*?content=["']([^"']+)["'][^>]*?property=["']{}["'][^>]*>"#,
+        property
+    );
+
     // Check property before content
     if let Ok(re) = regex::Regex::new(&re_str) {
         if let Some(caps) = re.captures(html) {
             return caps.get(1).map(|m| m.as_str().to_string());
         }
     }
-    
+
     // Check content before property
     if let Ok(re) = regex::Regex::new(&re_str_alt) {
         if let Some(caps) = re.captures(html) {
             return caps.get(1).map(|m| m.as_str().to_string());
         }
     }
-    
+
     None
 }
 
@@ -194,10 +198,12 @@ async fn get_feed(
 ) -> Result<impl IntoResponse, AppError> {
     // Auth check
     let user = middleware::get_current_user(&jar, &state.db).await;
-    
+
     // Determine if we need to enforce auth based on query
     if query.feed_mode.as_deref() == Some("following") && user.is_none() {
-         return Err(AppError::Unauthorized("You must be logged in to view your following feed.".into()));
+        return Err(AppError::Unauthorized(
+            "You must be logged in to view your following feed.".into(),
+        ));
     }
 
     let c_pool = get_community_pool(&state)?;
@@ -211,11 +217,20 @@ async fn get_feed(
         None
     };
 
-    let posts = service::get_community_feed(&c_pool, query.category, only_following_user_id, query.sort_by, limit, offset).await?;
+    let posts = service::get_community_feed(
+        &c_pool,
+        query.category,
+        only_following_user_id,
+        query.sort_by,
+        limit,
+        offset,
+    )
+    .await?;
 
     // Build user_ids list for batch fetching
     let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
-    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let authors =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
     let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
 
     // Construct Display views
@@ -235,7 +250,12 @@ async fn get_feed(
             post_type: p.post_type.clone(),
             content: p.content_sanitized.unwrap_or(p.content),
             asset_id: p.asset_id,
-            image_urls: p.image_urls.unwrap_or_default().into_iter().map(|u| crate::storage::service::rewrite_gcs_url(&u)).collect(),
+            image_urls: p
+                .image_urls
+                .unwrap_or_default()
+                .into_iter()
+                .map(|u| crate::storage::service::rewrite_gcs_url(&u))
+                .collect(),
             link_preview: p.link_preview,
             reaction_count: p.reaction_count,
             comment_count: p.comment_count,
@@ -268,21 +288,23 @@ async fn get_post_detail(
         WHERE p.id = $1 
           AND p.is_hidden = false 
           AND (cp.is_shadowbanned = false OR p.user_id = $2)
-        "#
+        "#,
     )
-        .bind(post_id)
-        .bind(user.as_ref().map(|u| u.id))
-        .fetch_optional(&c_pool)
-        .await
-        .map_err(AppError::Database)?;
+    .bind(post_id)
+    .bind(user.as_ref().map(|u| u.id))
+    .fetch_optional(&c_pool)
+    .await
+    .map_err(AppError::Database)?;
 
     let p = match post {
         Some(pt) => pt,
         None => return Err(AppError::NotFound("Post not found".into())),
     };
 
-    let author_info = user_bridge::get_user_info(&state.db, state.redis.as_ref(), p.user_id).await.ok();
-    
+    let author_info = user_bridge::get_user_info(&state.db, state.redis.as_ref(), p.user_id)
+        .await
+        .ok();
+
     let mut author_badges = vec![];
     if p.user_id != Uuid::nil() {
         let mut b_map = service::get_badges_batch(&c_pool, &[p.user_id]).await?;
@@ -301,7 +323,12 @@ async fn get_post_detail(
         post_type: p.post_type.clone(),
         content: p.content_sanitized.unwrap_or(p.content),
         asset_id: p.asset_id,
-        image_urls: p.image_urls.unwrap_or_default().into_iter().map(|u| crate::storage::service::rewrite_gcs_url(&u)).collect(),
+        image_urls: p
+            .image_urls
+            .unwrap_or_default()
+            .into_iter()
+            .map(|u| crate::storage::service::rewrite_gcs_url(&u))
+            .collect(),
         link_preview: p.link_preview,
         reaction_count: p.reaction_count,
         comment_count: p.comment_count,
@@ -359,7 +386,14 @@ async fn toggle_reaction(
 
     // Award XP only when reaction is added (not removed)
     if added {
-        let _ = crate::community::xp::award_xp(&c_pool, user.id, "reaction_given", Some("Reacted to a post"), None).await;
+        let _ = crate::community::xp::award_xp(
+            &c_pool,
+            user.id,
+            "reaction_given",
+            Some("Reacted to a post"),
+            None,
+        )
+        .await;
     }
 
     Ok(Json(serde_json::json!({ "added": added })))
@@ -382,7 +416,10 @@ async fn create_comment(
 
     if let Some(reason) = validation::check_automod(&payload.content) {
         // M6-BE.1 Auto Mod
-        return Err(AppError::Forbidden(format!("Content violation: {}", reason)));
+        return Err(AppError::Forbidden(format!(
+            "Content violation: {}",
+            reason
+        )));
     }
 
     // FIX-F7: Check ban before allowing comment
@@ -395,7 +432,9 @@ async fn create_comment(
         .await?;
 
     if is_locked.unwrap_or(false) {
-        return Err(AppError::Forbidden("This thread has been locked by a moderator.".into()));
+        return Err(AppError::Forbidden(
+            "This thread has been locked by a moderator.".into(),
+        ));
     }
 
     // FIX-CRL: Comment rate limiting (30 comments/hour via Redis)
@@ -406,7 +445,9 @@ async fn create_comment(
             let count: Option<i64> = conn.get(&rl_key).await.unwrap_or(None);
             if let Some(c) = count {
                 if c >= 30 {
-                    return Err(AppError::BadRequest("Rate limit exceeded: Max 30 comments per hour.".into()));
+                    return Err(AppError::BadRequest(
+                        "Rate limit exceeded: Max 30 comments per hour.".into(),
+                    ));
                 }
             }
             let _: () = conn.incr(&rl_key, 1).await.unwrap_or(());
@@ -414,14 +455,30 @@ async fn create_comment(
         }
     }
 
-    let comment_id =
-        service::create_comment(&c_pool, post_id, user.id, payload.content.clone(), clean_html).await?;
+    let comment_id = service::create_comment(
+        &c_pool,
+        post_id,
+        user.id,
+        payload.content.clone(),
+        clean_html,
+    )
+    .await?;
 
     // Award XP for comment
-    let _ = crate::community::xp::award_xp(&c_pool, user.id, "comment_created", Some("Posted a comment"), None).await;
+    let _ = crate::community::xp::award_xp(
+        &c_pool,
+        user.id,
+        "comment_created",
+        Some("Posted a comment"),
+        None,
+    )
+    .await;
 
-    let author_name = user_bridge::get_user_info(&state.db, state.redis.as_ref(), user.id).await.map(|u| u.display_name).unwrap_or_else(|_| "Someone".to_string());
-    
+    let author_name = user_bridge::get_user_info(&state.db, state.redis.as_ref(), user.id)
+        .await
+        .map(|u| u.display_name)
+        .unwrap_or_else(|_| "Someone".to_string());
+
     // Parse and notify mentions asynchronously
     let core_db_clone = state.db.clone();
     let c_pool_clone = c_pool.clone();
@@ -434,7 +491,8 @@ async fn create_comment(
             user.id,
             author_name,
             post_id,
-        ).await;
+        )
+        .await;
     });
 
     Ok(Json(serde_json::json!({ "id": comment_id })))
@@ -470,7 +528,8 @@ async fn get_comments(
 
     // Batch map authors
     let user_ids: Vec<Uuid> = comments.iter().map(|c| c.user_id).collect();
-    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let authors =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
 
     let mut result = Vec::with_capacity(comments.len());
     for c in comments {
@@ -499,12 +558,12 @@ async fn get_admin_stats(
         .fetch_one(&c_pool)
         .await
         .unwrap_or((0,));
-    
+
     let total_comments: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM comments")
         .fetch_one(&c_pool)
         .await
         .unwrap_or((0,));
-        
+
     let total_reactions: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM reactions")
         .fetch_one(&c_pool)
         .await
@@ -520,15 +579,17 @@ async fn get_admin_stats(
         .await
         .unwrap_or((0,));
 
-    let total_xp: (i64,) = sqlx::query_as("SELECT COALESCE(SUM(current_xp), 0) FROM user_xp_totals")
-        .fetch_one(&c_pool)
-        .await
-        .unwrap_or((0,));
+    let total_xp: (i64,) =
+        sqlx::query_as("SELECT COALESCE(SUM(current_xp), 0) FROM user_xp_totals")
+            .fetch_one(&c_pool)
+            .await
+            .unwrap_or((0,));
 
-    let pending_reports_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM content_reports WHERE status = 'pending'")
-        .fetch_one(&c_pool)
-        .await
-        .unwrap_or((0,));
+    let pending_reports_count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM content_reports WHERE status = 'pending'")
+            .fetch_one(&c_pool)
+            .await
+            .unwrap_or((0,));
 
     Ok(Json(serde_json::json!({
         "total_posts": total_posts.0,
@@ -553,7 +614,10 @@ async fn create_user_post(
     let c_pool = get_community_pool(&state)?;
 
     if let Some(reason) = validation::check_automod(&payload.content) {
-        return Err(AppError::Forbidden(format!("Content violation: {}", reason)));
+        return Err(AppError::Forbidden(format!(
+            "Content violation: {}",
+            reason
+        )));
     }
 
     // FIX-F7: Check ban before allowing post creation
@@ -589,27 +653,48 @@ async fn create_user_post(
         .unwrap_or_default();
 
         for name in owned_assets {
-            if payload.content.to_lowercase().contains(&name.to_lowercase()) {
+            if payload
+                .content
+                .to_lowercase()
+                .contains(&name.to_lowercase())
+            {
                 verified_owner = true;
                 break;
             }
         }
     }
 
-    let post_id = service::create_user_post(&c_pool, state.redis.as_ref(), user.id, payload.clone(), is_high_level_user).await?;
+    let post_id = service::create_user_post(
+        &c_pool,
+        state.redis.as_ref(),
+        user.id,
+        payload.clone(),
+        is_high_level_user,
+    )
+    .await?;
 
     // Award XP for post creation
-    let _ = crate::community::xp::award_xp(&c_pool, user.id, "post_created", Some("Created a post"), None).await;
+    let _ = crate::community::xp::award_xp(
+        &c_pool,
+        user.id,
+        "post_created",
+        Some("Created a post"),
+        None,
+    )
+    .await;
 
-    let author_name = user_bridge::get_user_info(&state.db, state.redis.as_ref(), user.id).await.map(|u| u.display_name).unwrap_or_else(|_| "Someone".to_string());
-    
+    let author_name = user_bridge::get_user_info(&state.db, state.redis.as_ref(), user.id)
+        .await
+        .map(|u| u.display_name)
+        .unwrap_or_else(|_| "Someone".to_string());
+
     // Parse and notify mentions asynchronously
     let core_db_clone = state.db.clone();
     let c_pool_clone = c_pool.clone();
     let content_clone = payload.content.clone();
     let c_pool_clone_for_og = c_pool.clone();
     let content_clone_for_og = payload.content.clone();
-    
+
     tokio::spawn(async move {
         parse_and_notify_mentions(
             core_db_clone,
@@ -618,16 +703,15 @@ async fn create_user_post(
             user.id,
             author_name,
             post_id,
-        ).await;
-        
-        parse_and_store_opengraph(
-            c_pool_clone_for_og,
-            content_clone_for_og,
-            post_id,
-        ).await;
+        )
+        .await;
+
+        parse_and_store_opengraph(c_pool_clone_for_og, content_clone_for_og, post_id).await;
     });
 
-    Ok(Json(serde_json::json!({ "id": post_id, "verified_owner": verified_owner })))
+    Ok(Json(
+        serde_json::json!({ "id": post_id, "verified_owner": verified_owner }),
+    ))
 }
 
 #[derive(Deserialize)]
@@ -649,10 +733,20 @@ async fn update_user_post(
     let is_high_level_user = false;
 
     if let Some(reason) = validation::check_automod(&payload.content) {
-        return Err(AppError::Forbidden(format!("Content violation: {}", reason)));
+        return Err(AppError::Forbidden(format!(
+            "Content violation: {}",
+            reason
+        )));
     }
 
-    service::update_user_post(&c_pool, post_id, user.id, payload.content, is_high_level_user).await?;
+    service::update_user_post(
+        &c_pool,
+        post_id,
+        user.id,
+        payload.content,
+        is_high_level_user,
+    )
+    .await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -685,7 +779,8 @@ async fn create_content_report(
 
     let c_pool = get_community_pool(&state)?;
 
-    let report_id = service::create_content_report(&c_pool, post_id, user.id, payload.reason).await?;
+    let report_id =
+        service::create_content_report(&c_pool, post_id, user.id, payload.reason).await?;
 
     Ok(Json(serde_json::json!({ "id": report_id })))
 }
@@ -711,12 +806,10 @@ async fn get_reports(
     let mut posts_map = std::collections::HashMap::new();
     if !post_ids.is_empty() {
         let p_ids: Vec<Uuid> = post_ids.into_iter().collect();
-        let posts: Vec<models::Post> = sqlx::query_as(
-            "SELECT * FROM posts WHERE id = ANY($1)"
-        )
-        .bind(&p_ids)
-        .fetch_all(&c_pool)
-        .await?;
+        let posts: Vec<models::Post> = sqlx::query_as("SELECT * FROM posts WHERE id = ANY($1)")
+            .bind(&p_ids)
+            .fetch_all(&c_pool)
+            .await?;
 
         for p in posts {
             user_ids.insert(p.user_id);
@@ -725,29 +818,41 @@ async fn get_reports(
     }
 
     let user_ids_vec: Vec<Uuid> = user_ids.into_iter().collect();
-    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids_vec).await?;
+    let authors =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids_vec).await?;
 
     let mut response = Vec::with_capacity(pending_reports.len());
 
     for r in pending_reports {
         let reporter = authors.get(&r.reporter_id);
-        
-        let (post_author_id, post_author_name, post_content) = if let Some(post) = posts_map.get(&r.post_id) {
-            let p_author = authors.get(&post.user_id);
-            (
-                post.user_id,
-                p_author.map(|a| a.display_name.clone()).unwrap_or_else(|| "Unknown".into()),
-                post.content_sanitized.clone().unwrap_or(post.content.clone())
-            )
-        } else {
-            (Uuid::nil(), "Deleted Post".into(), "[Content Unavailable]".into())
-        };
+
+        let (post_author_id, post_author_name, post_content) =
+            if let Some(post) = posts_map.get(&r.post_id) {
+                let p_author = authors.get(&post.user_id);
+                (
+                    post.user_id,
+                    p_author
+                        .map(|a| a.display_name.clone())
+                        .unwrap_or_else(|| "Unknown".into()),
+                    post.content_sanitized
+                        .clone()
+                        .unwrap_or(post.content.clone()),
+                )
+            } else {
+                (
+                    Uuid::nil(),
+                    "Deleted Post".into(),
+                    "[Content Unavailable]".into(),
+                )
+            };
 
         response.push(models::AdminReportDisplay {
             id: r.id,
             post_id: r.post_id,
             reporter_id: r.reporter_id,
-            reporter_name: reporter.map(|a| a.display_name.clone()).unwrap_or_else(|| "Unknown".into()),
+            reporter_name: reporter
+                .map(|a| a.display_name.clone())
+                .unwrap_or_else(|| "Unknown".into()),
             post_author_id,
             post_author_name,
             post_content,
@@ -793,14 +898,13 @@ async fn admin_list_challenges(
 ) -> Result<impl IntoResponse, AppError> {
     let _ = admin;
     let c_pool = get_community_pool(&state)?;
-    
-    let challenges: Vec<crate::community::challenges::Challenge> = sqlx::query_as(
-        "SELECT * FROM challenges ORDER BY created_at DESC"
-    )
-    .fetch_all(&c_pool)
-    .await
-    .map_err(AppError::Database)?;
-    
+
+    let challenges: Vec<crate::community::challenges::Challenge> =
+        sqlx::query_as("SELECT * FROM challenges ORDER BY created_at DESC")
+            .fetch_all(&c_pool)
+            .await
+            .map_err(AppError::Database)?;
+
     Ok(Json(challenges))
 }
 
@@ -811,7 +915,7 @@ async fn admin_create_challenge(
 ) -> Result<impl IntoResponse, AppError> {
     let _ = admin;
     let c_pool = get_community_pool(&state)?;
-    
+
     let challenge = crate::community::challenges::admin_create_challenge(
         &c_pool,
         &payload.title,
@@ -823,7 +927,7 @@ async fn admin_create_challenge(
         &payload.frequency,
     )
     .await?;
-    
+
     Ok(Json(challenge))
 }
 
@@ -840,9 +944,9 @@ async fn admin_toggle_challenge(
 ) -> Result<impl IntoResponse, AppError> {
     let _ = admin;
     let c_pool = get_community_pool(&state)?;
-    
+
     crate::community::challenges::admin_toggle_challenge(&c_pool, id, payload.is_active).await?;
-    
+
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
@@ -870,12 +974,11 @@ async fn get_trending_assets(
 
     let asset_ids: Vec<Uuid> = trending.iter().map(|(id, _)| *id).collect();
 
-    let assets: Vec<(Uuid, String, String)> = sqlx::query_as(
-        "SELECT id, name, symbol FROM assets WHERE id = ANY($1)"
-    )
-    .bind(&asset_ids)
-    .fetch_all(&state.db)
-    .await?;
+    let assets: Vec<(Uuid, String, String)> =
+        sqlx::query_as("SELECT id, name, symbol FROM assets WHERE id = ANY($1)")
+            .bind(&asset_ids)
+            .fetch_all(&state.db)
+            .await?;
 
     let mut asset_map = std::collections::HashMap::new();
     for a in assets {
@@ -925,7 +1028,8 @@ async fn admin_get_posts(
         .await?;
 
     let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
-    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let authors =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
 
     let mut result = Vec::new();
     for p in posts {
@@ -971,7 +1075,16 @@ async fn admin_hide_post(
         .execute(&c_pool)
         .await?;
 
-    crate::community::audit::log(&c_pool, admin.user.id, "post.hide", "post", Some(post_id), None, Some(serde_json::json!({"reason": payload.reason}))).await;
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "post.hide",
+        "post",
+        Some(post_id),
+        None,
+        Some(serde_json::json!({"reason": payload.reason})),
+    )
+    .await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -995,8 +1108,21 @@ async fn admin_toggle_lock_post(
         .execute(&c_pool)
         .await?;
 
-    let action = if payload.is_locked { "post.lock" } else { "post.unlock" };
-    crate::community::audit::log(&c_pool, admin.user.id, action, "post", Some(post_id), None, None).await;
+    let action = if payload.is_locked {
+        "post.lock"
+    } else {
+        "post.unlock"
+    };
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        action,
+        "post",
+        Some(post_id),
+        None,
+        None,
+    )
+    .await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1038,34 +1164,42 @@ async fn admin_get_post_detail(
         .ok_or_else(|| AppError::NotFound("Post not found".into()))?;
 
     // 2. Fetch Comments
-    let comments: Vec<models::Comment> = sqlx::query_as("SELECT * FROM comments WHERE post_id = $1 ORDER BY created_at ASC")
-        .bind(post_id)
-        .fetch_all(&c_pool)
-        .await?;
+    let comments: Vec<models::Comment> =
+        sqlx::query_as("SELECT * FROM comments WHERE post_id = $1 ORDER BY created_at ASC")
+            .bind(post_id)
+            .fetch_all(&c_pool)
+            .await?;
 
     // 3. Fetch Reactions
-    let reactions: Vec<models::Reaction> = sqlx::query_as("SELECT * FROM reactions WHERE post_id = $1 ORDER BY created_at DESC")
-        .bind(post_id)
-        .fetch_all(&c_pool)
-        .await?;
+    let reactions: Vec<models::Reaction> =
+        sqlx::query_as("SELECT * FROM reactions WHERE post_id = $1 ORDER BY created_at DESC")
+            .bind(post_id)
+            .fetch_all(&c_pool)
+            .await?;
 
     // 4. Fetch Reports
-    let reports: Vec<models::ContentReport> = sqlx::query_as(
-        "SELECT * FROM content_reports WHERE post_id = $1 ORDER BY created_at DESC"
-    )
-    .bind(post_id)
-    .fetch_all(&c_pool)
-    .await?;
+    let reports: Vec<models::ContentReport> =
+        sqlx::query_as("SELECT * FROM content_reports WHERE post_id = $1 ORDER BY created_at DESC")
+            .bind(post_id)
+            .fetch_all(&c_pool)
+            .await?;
 
     // Collect all unique user IDs to fetch names
     let mut user_ids = std::collections::HashSet::new();
     user_ids.insert(p.user_id);
-    for c in &comments { user_ids.insert(c.user_id); }
-    for r in &reactions { user_ids.insert(r.user_id); }
-    for rep in &reports { user_ids.insert(rep.reporter_id); }
+    for c in &comments {
+        user_ids.insert(c.user_id);
+    }
+    for r in &reactions {
+        user_ids.insert(r.user_id);
+    }
+    for rep in &reports {
+        user_ids.insert(rep.reporter_id);
+    }
 
     let user_ids_vec: Vec<Uuid> = user_ids.into_iter().collect();
-    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids_vec).await?;
+    let authors =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids_vec).await?;
 
     // Build the post
     let post_author_name = authors
@@ -1090,7 +1224,10 @@ async fn admin_get_post_detail(
     // Format Comments
     let mut comments_display = Vec::new();
     for c in comments {
-        let name = authors.get(&c.user_id).map(|a| a.display_name.clone()).unwrap_or_else(|| "Unknown".into());
+        let name = authors
+            .get(&c.user_id)
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Unknown".into());
         comments_display.push(serde_json::json!({
             "id": c.id,
             "user_id": c.user_id,
@@ -1105,7 +1242,10 @@ async fn admin_get_post_detail(
     // Format Reactions
     let mut reactions_display = Vec::new();
     for r in reactions {
-        let name = authors.get(&r.user_id).map(|a| a.display_name.clone()).unwrap_or_else(|| "Unknown".into());
+        let name = authors
+            .get(&r.user_id)
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Unknown".into());
         reactions_display.push(serde_json::json!({
             "id": r.id,
             "user_id": r.user_id,
@@ -1118,7 +1258,10 @@ async fn admin_get_post_detail(
     // Format Reports
     let mut reports_display = Vec::new();
     for rep in reports {
-        let name = authors.get(&rep.reporter_id).map(|a| a.display_name.clone()).unwrap_or_else(|| "Unknown".into());
+        let name = authors
+            .get(&rep.reporter_id)
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Unknown".into());
         reports_display.push(serde_json::json!({
             "id": rep.id,
             "reporter_id": rep.reporter_id,
@@ -1171,7 +1314,8 @@ async fn admin_get_users(
         user_ids.push(u_id);
     }
 
-    let core_users = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let core_users =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
 
     let mut result = Vec::new();
     for row in rows {
@@ -1186,10 +1330,12 @@ async fn admin_get_users(
         let created_at: chrono::DateTime<chrono::Utc> = row.try_get("created_at")?;
 
         let user_info = core_users.get(&u_id);
-        
+
         result.push(AdminUserDisplay {
             user_id: u_id,
-            display_name: user_info.map(|u| u.display_name.clone()).unwrap_or_else(|| "Unknown".into()),
+            display_name: user_info
+                .map(|u| u.display_name.clone())
+                .unwrap_or_else(|| "Unknown".into()),
             avatar_url: user_info.and_then(|u| u.avatar_url.clone()),
             is_community_banned,
             ban_reason,
@@ -1226,8 +1372,21 @@ async fn admin_toggle_ban_user(
         .execute(&c_pool)
         .await?;
 
-    let action = if payload.is_banned { "user.ban" } else { "user.unban" };
-    crate::community::audit::log(&c_pool, admin.user.id, action, "user", None, Some(user_id), Some(serde_json::json!({"reason": payload.reason}))).await;
+    let action = if payload.is_banned {
+        "user.ban"
+    } else {
+        "user.unban"
+    };
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        action,
+        "user",
+        None,
+        Some(user_id),
+        Some(serde_json::json!({"reason": payload.reason})),
+    )
+    .await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1245,7 +1404,9 @@ async fn admin_mute_user(
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
 
-    let muted_until = payload.hours.map(|h| chrono::Utc::now() + chrono::Duration::hours(h as i64));
+    let muted_until = payload
+        .hours
+        .map(|h| chrono::Utc::now() + chrono::Duration::hours(h as i64));
 
     sqlx::query("UPDATE community_profiles SET muted_until = $1 WHERE user_id = $2")
         .bind(muted_until)
@@ -1253,8 +1414,21 @@ async fn admin_mute_user(
         .execute(&c_pool)
         .await?;
 
-    let action = if payload.hours.is_some() { "user.mute" } else { "user.unmute" };
-    crate::community::audit::log(&c_pool, admin.user.id, action, "user", None, Some(user_id), Some(serde_json::json!({"hours": payload.hours}))).await;
+    let action = if payload.hours.is_some() {
+        "user.mute"
+    } else {
+        "user.unmute"
+    };
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        action,
+        "user",
+        None,
+        Some(user_id),
+        Some(serde_json::json!({"hours": payload.hours})),
+    )
+    .await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1278,8 +1452,21 @@ async fn admin_toggle_shadowban(
         .execute(&c_pool)
         .await?;
 
-    let action = if payload.is_shadowbanned { "user.shadowban" } else { "user.unshadowban" };
-    crate::community::audit::log(&c_pool, admin.user.id, action, "user", None, Some(user_id), None).await;
+    let action = if payload.is_shadowbanned {
+        "user.shadowban"
+    } else {
+        "user.unshadowban"
+    };
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        action,
+        "user",
+        None,
+        Some(user_id),
+        None,
+    )
+    .await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1297,23 +1484,35 @@ async fn admin_warn_user(
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
 
-    sqlx::query("UPDATE community_profiles SET warning_count = warning_count + 1 WHERE user_id = $1")
-        .bind(user_id)
-        .execute(&c_pool)
-        .await?;
+    sqlx::query(
+        "UPDATE community_profiles SET warning_count = warning_count + 1 WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .execute(&c_pool)
+    .await?;
 
     // Create an in-app notification for the warning
     crate::community::notifications::notify_user(
-        &c_pool, 
-        user_id, 
+        &c_pool,
+        user_id,
         None,
-        "system_alert", 
+        "system_alert",
         None,
-        &format!("Warning from Admin: {}", payload.reason), 
-        None
-    ).await?;
+        &format!("Warning from Admin: {}", payload.reason),
+        None,
+    )
+    .await?;
 
-    crate::community::audit::log(&c_pool, admin.user.id, "user.warn", "user", None, Some(user_id), Some(serde_json::json!({"reason": payload.reason}))).await;
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "user.warn",
+        "user",
+        None,
+        Some(user_id),
+        Some(serde_json::json!({"reason": payload.reason})),
+    )
+    .await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1361,14 +1560,15 @@ async fn admin_get_comments(
     let c_pool = get_community_pool(&state)?;
 
     let comments: Vec<models::Comment> = sqlx::query_as(
-        "SELECT * FROM comments ORDER BY created_at DESC LIMIT $1" // show hidden comments too
+        "SELECT * FROM comments ORDER BY created_at DESC LIMIT $1", // show hidden comments too
     )
     .bind(limit)
     .fetch_all(&c_pool)
     .await?;
 
     let user_ids: Vec<Uuid> = comments.iter().map(|c| c.user_id).collect();
-    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let authors =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
 
     let mut result = Vec::with_capacity(comments.len());
     for c in comments {
@@ -1410,7 +1610,16 @@ async fn admin_hide_comment(
         .execute(&c_pool)
         .await?;
 
-    crate::community::audit::log(&c_pool, admin.user.id, "comment.hide", "comment", Some(comment_id), None, None).await;
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "comment.hide",
+        "comment",
+        Some(comment_id),
+        None,
+        None,
+    )
+    .await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1427,7 +1636,16 @@ async fn admin_delete_comment(
         .execute(&c_pool)
         .await?;
 
-    crate::community::audit::log(&c_pool, admin.user.id, "comment.delete", "comment", Some(comment_id), None, None).await;
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "comment.delete",
+        "comment",
+        Some(comment_id),
+        None,
+        None,
+    )
+    .await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1451,8 +1669,21 @@ async fn admin_toggle_pin_comment(
         .execute(&c_pool)
         .await?;
 
-    let action = if payload.is_pinned { "comment.pin" } else { "comment.unpin" };
-    crate::community::audit::log(&c_pool, admin.user.id, action, "comment", Some(comment_id), None, None).await;
+    let action = if payload.is_pinned {
+        "comment.pin"
+    } else {
+        "comment.unpin"
+    };
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        action,
+        "comment",
+        Some(comment_id),
+        None,
+        None,
+    )
+    .await;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1470,8 +1701,16 @@ pub fn router() -> Router<AppState> {
         )
         // User Posts
         .route("/api/community/posts", post(create_user_post))
-        .route("/api/community/posts/:id", axum::routing::get(get_post_detail).put(update_user_post).delete(delete_user_post))
-        .route("/api/community/posts/:id/report", post(create_content_report))
+        .route(
+            "/api/community/posts/:id",
+            axum::routing::get(get_post_detail)
+                .put(update_user_post)
+                .delete(delete_user_post),
+        )
+        .route(
+            "/api/community/posts/:id/report",
+            post(create_content_report),
+        )
         // Reactions
         .route("/api/community/posts/:id/reactions", post(toggle_reaction))
         // Comments
@@ -1482,25 +1721,55 @@ pub fn router() -> Router<AppState> {
         // Admin Stats & Moderation
         .route("/api/admin/community/stats", get(get_admin_stats))
         .route("/api/admin/community/reports", get(get_reports))
-        .route("/api/admin/community/reports/:id/action", post(take_report_action))
+        .route(
+            "/api/admin/community/reports/:id/action",
+            post(take_report_action),
+        )
         .route("/api/admin/community/posts", get(admin_get_posts))
         .route("/api/admin/community/posts/:id", get(admin_get_post_detail))
         .route("/api/admin/community/posts/:id/hide", post(admin_hide_post))
-        .route("/api/admin/community/posts/:id/lock", post(admin_toggle_lock_post))
-        .route("/api/admin/community/posts/:id/tags", post(admin_update_post_tags))
+        .route(
+            "/api/admin/community/posts/:id/lock",
+            post(admin_toggle_lock_post),
+        )
+        .route(
+            "/api/admin/community/posts/:id/tags",
+            post(admin_update_post_tags),
+        )
         .route("/api/admin/community/users", get(admin_get_users))
-        .route("/api/admin/community/users/:id/ban", post(admin_toggle_ban_user))
+        .route(
+            "/api/admin/community/users/:id/ban",
+            post(admin_toggle_ban_user),
+        )
         .route("/api/community/appeals", post(submit_ban_appeal))
         .route("/api/admin/community/appeals", get(get_ban_appeals))
-        .route("/api/admin/community/appeals/:id/review", post(review_ban_appeal))
+        .route(
+            "/api/admin/community/appeals/:id/review",
+            post(review_ban_appeal),
+        )
         .route("/api/admin/community/users/:id/warn", post(admin_warn_user))
-        .route("/api/admin/community/users/:id/mod-notes", post(admin_update_mod_notes))
+        .route(
+            "/api/admin/community/users/:id/mod-notes",
+            post(admin_update_mod_notes),
+        )
         .route("/api/admin/community/users/:id/mute", post(admin_mute_user))
-        .route("/api/admin/community/users/:id/shadowban", post(admin_toggle_shadowban))
+        .route(
+            "/api/admin/community/users/:id/shadowban",
+            post(admin_toggle_shadowban),
+        )
         .route("/api/admin/community/comments", get(admin_get_comments))
-        .route("/api/admin/community/comments/:id", delete(admin_delete_comment))
-        .route("/api/admin/community/comments/:id/hide", post(admin_hide_comment))
-        .route("/api/admin/community/comments/:id/pin", post(admin_toggle_pin_comment))
+        .route(
+            "/api/admin/community/comments/:id",
+            delete(admin_delete_comment),
+        )
+        .route(
+            "/api/admin/community/comments/:id/hide",
+            post(admin_hide_comment),
+        )
+        .route(
+            "/api/admin/community/comments/:id/pin",
+            post(admin_toggle_pin_comment),
+        )
         // Social Layer
         .route("/api/community/profile/me", get(get_profile_me))
         .route("/api/community/profile", put(update_profile))
@@ -1513,80 +1782,198 @@ pub fn router() -> Router<AppState> {
         // Circles (M4)
         .route("/api/community/circles", post(create_circle))
         .route("/api/community/circles/me", get(get_my_circle))
-        .route("/api/community/circles/leaderboard", get(get_circle_leaderboard))
+        .route(
+            "/api/community/circles/leaderboard",
+            get(get_circle_leaderboard),
+        )
         .route("/api/community/circles/:id", get(get_circle_detail))
-        .route("/api/community/circles/:id", put(update_circle).delete(delete_own_circle_handler))
-        .route("/api/community/circles/:id/members", get(get_circle_members))
+        .route(
+            "/api/community/circles/:id",
+            put(update_circle).delete(delete_own_circle_handler),
+        )
+        .route(
+            "/api/community/circles/:id/members",
+            get(get_circle_members),
+        )
         .route("/api/community/circles/:id/join", post(join_circle))
         .route("/api/community/circles/leave", post(leave_circle))
-        .route("/api/community/circles/:id/invite", post(send_circle_invite))
-        .route("/api/community/circles/:id/kick/:user_id", post(kick_circle_member))
+        .route(
+            "/api/community/circles/:id/invite",
+            post(send_circle_invite),
+        )
+        .route(
+            "/api/community/circles/:id/kick/:user_id",
+            post(kick_circle_member),
+        )
         // M4-BE.11: Role management (promote/demote to admin/member)
-        .route("/api/community/circles/:id/roles", post(update_circle_member_role))
+        .route(
+            "/api/community/circles/:id/roles",
+            post(update_circle_member_role),
+        )
         // M4-BE.12: Transfer ownership to another member
-        .route("/api/community/circles/:id/transfer", post(transfer_circle_ownership))
+        .route(
+            "/api/community/circles/:id/transfer",
+            post(transfer_circle_ownership),
+        )
         // M4-BE.13: Update circle privacy (public/private)
-        .route("/api/community/circles/:id/privacy", post(update_circle_privacy))
+        .route(
+            "/api/community/circles/:id/privacy",
+            post(update_circle_privacy),
+        )
         // M4-BE.15: Join requests for private circles
-        .route("/api/community/circles/:id/request", post(request_to_join_circle).delete(cancel_join_request_handler))
-        .route("/api/community/circles/:id/requests", get(list_join_requests))
-        .route("/api/community/circles/requests/mine", get(get_my_join_requests_handler))
-        .route("/api/community/circles/requests/:req_id/approve", post(approve_join_request_handler))
-        .route("/api/community/circles/requests/:req_id/decline", post(decline_join_request_handler))
+        .route(
+            "/api/community/circles/:id/request",
+            post(request_to_join_circle).delete(cancel_join_request_handler),
+        )
+        .route(
+            "/api/community/circles/:id/requests",
+            get(list_join_requests),
+        )
+        .route(
+            "/api/community/circles/requests/mine",
+            get(get_my_join_requests_handler),
+        )
+        .route(
+            "/api/community/circles/requests/:req_id/approve",
+            post(approve_join_request_handler),
+        )
+        .route(
+            "/api/community/circles/requests/:req_id/decline",
+            post(decline_join_request_handler),
+        )
         // W3.1: Token-Gated Circles
-        .route("/api/community/circles/:id/token-gate", post(update_circle_token_gate))
+        .route(
+            "/api/community/circles/:id/token-gate",
+            post(update_circle_token_gate),
+        )
         .route("/api/community/invites", get(get_my_invites))
         .route("/api/community/invites/:id/accept", post(accept_invite))
         .route("/api/community/invites/:id/decline", post(decline_invite))
         // Property Reviews (M5)
-        .route("/api/community/assets/:id/reviews", get(list_asset_reviews).put(upsert_asset_review).delete(delete_asset_review))
-        .route("/api/community/reviews/:review_id/upvote", post(toggle_review_upvote))
+        .route(
+            "/api/community/assets/:id/reviews",
+            get(list_asset_reviews)
+                .put(upsert_asset_review)
+                .delete(delete_asset_review),
+        )
+        .route(
+            "/api/community/reviews/:review_id/upvote",
+            post(toggle_review_upvote),
+        )
         // Challenges (M5)
         .route("/api/community/challenges", get(list_challenges))
         // Notifications (M5)
         .route("/api/community/notifications", get(list_notifications))
-        .route("/api/community/notifications/unread-count", get(get_unread_notification_count))
-        .route("/api/community/notifications/read-all", post(mark_all_notifications_read))
-        .route("/api/community/notifications/:id/read", post(mark_notification_read))
+        .route(
+            "/api/community/notifications/unread-count",
+            get(get_unread_notification_count),
+        )
+        .route(
+            "/api/community/notifications/read-all",
+            post(mark_all_notifications_read),
+        )
+        .route(
+            "/api/community/notifications/:id/read",
+            post(mark_notification_read),
+        )
         // Expert AMAs (M5)
         .route("/api/community/amas", get(list_amas))
         .route("/api/community/amas/:id", get(get_ama_detail))
-        .route("/api/community/amas/:id/questions", post(submit_ama_question))
-        .route("/api/community/amas/:id/questions/:qid/upvote", post(toggle_ama_upvote))
+        .route(
+            "/api/community/amas/:id/questions",
+            post(submit_ama_question),
+        )
+        .route(
+            "/api/community/amas/:id/questions/:qid/upvote",
+            post(toggle_ama_upvote),
+        )
         // Admin AMAs
-        .route("/api/admin/community/amas", get(admin_list_amas).post(admin_create_ama))
-        .route("/api/admin/community/amas/:id/status", post(admin_update_ama_status))
-        .route("/api/admin/community/amas/:id/questions/:qid/answer", post(admin_answer_question))
-        .route("/api/admin/community/amas/:id/questions/:qid/feature", post(admin_toggle_featured))
+        .route(
+            "/api/admin/community/amas",
+            get(admin_list_amas).post(admin_create_ama),
+        )
+        .route(
+            "/api/admin/community/amas/:id/status",
+            post(admin_update_ama_status),
+        )
+        .route(
+            "/api/admin/community/amas/:id/questions/:qid/answer",
+            post(admin_answer_question),
+        )
+        .route(
+            "/api/admin/community/amas/:id/questions/:qid/feature",
+            post(admin_toggle_featured),
+        )
         // Admin Challenges
-        .route("/api/admin/community/challenges", get(admin_list_challenges).post(admin_create_challenge))
-        .route("/api/admin/community/challenges/:id/toggle", post(admin_toggle_challenge))
+        .route(
+            "/api/admin/community/challenges",
+            get(admin_list_challenges).post(admin_create_challenge),
+        )
+        .route(
+            "/api/admin/community/challenges/:id/toggle",
+            post(admin_toggle_challenge),
+        )
         // Admin Badges (M3-ADMIN)
-        .route("/api/admin/community/badges", get(admin_list_badges).post(admin_create_badge))
+        .route(
+            "/api/admin/community/badges",
+            get(admin_list_badges).post(admin_create_badge),
+        )
         .route("/api/admin/community/badges/:id", put(admin_update_badge))
-        .route("/api/admin/community/users/:id/badge", post(admin_grant_badge))
-        .route("/api/admin/community/users/:id/badge/:badge_id", delete(admin_revoke_badge))
+        .route(
+            "/api/admin/community/users/:id/badge",
+            post(admin_grant_badge),
+        )
+        .route(
+            "/api/admin/community/users/:id/badge/:badge_id",
+            delete(admin_revoke_badge),
+        )
         // Admin User Detail (M3-ADMIN)
-        .route("/api/admin/community/users/:id/detail", get(admin_get_user_detail))
+        .route(
+            "/api/admin/community/users/:id/detail",
+            get(admin_get_user_detail),
+        )
         // Admin Circles (M4-ADMIN / M5-ADMIN)
         .route("/api/admin/community/circles", get(admin_list_circles))
-        .route("/api/admin/community/circles/:id", get(admin_get_circle_detail).delete(admin_delete_circle).put(admin_update_circle))
-        .route("/api/admin/community/circles/:id/transfer", post(admin_transfer_circle))
-        .route("/api/admin/community/circles/:id/members/:user_id", delete(admin_remove_circle_member))
+        .route(
+            "/api/admin/community/circles/:id",
+            get(admin_get_circle_detail)
+                .delete(admin_delete_circle)
+                .put(admin_update_circle),
+        )
+        .route(
+            "/api/admin/community/circles/:id/transfer",
+            post(admin_transfer_circle),
+        )
+        .route(
+            "/api/admin/community/circles/:id/members/:user_id",
+            delete(admin_remove_circle_member),
+        )
         // Admin Leaderboard (M4-ADMIN)
-        .route("/api/admin/community/leaderboard", get(admin_get_leaderboard))
+        .route(
+            "/api/admin/community/leaderboard",
+            get(admin_get_leaderboard),
+        )
         .route("/api/admin/community/users/:id/xp", post(admin_award_xp))
         // Admin Audit Log (M2-ADMIN.7)
-        .route("/api/admin/community/audit-log", get(admin_get_community_audit_log))
+        .route(
+            "/api/admin/community/audit-log",
+            get(admin_get_community_audit_log),
+        )
         // Bookmarks (UX.6)
         .route("/api/community/bookmarks", get(list_bookmarks))
         .route("/api/community/posts/:id/bookmark", post(toggle_bookmark))
-        .route("/api/community/posts/:id/bookmark/status", get(get_bookmark_status))
+        .route(
+            "/api/community/posts/:id/bookmark/status",
+            get(get_bookmark_status),
+        )
         // Polls (UX.11)
         .route("/api/community/posts/:id/poll/vote", post(vote_on_poll))
         .route("/api/community/posts/:id/poll", get(get_poll_results))
         // Hashtags (UX.4)
-        .route("/api/community/hashtags/trending", get(get_trending_hashtags))
+        .route(
+            "/api/community/hashtags/trending",
+            get(get_trending_hashtags),
+        )
         .route("/api/community/hashtags/:tag", get(get_posts_by_hashtag))
 }
 
@@ -1642,13 +2029,14 @@ async fn get_profile(
     let c_pool = get_community_pool(&state)?;
 
     let profile = crate::community::service::get_user_profile(&c_pool, profile_id).await?;
-    let bridge_info = crate::community::user_bridge::get_user_info(&state.db, state.redis.as_ref(), profile_id).await.unwrap_or_else(|_| {
-        crate::community::user_bridge::UserBridgeInfo {
-            user_id: profile_id,
-            display_name: "Anonymous User".to_string(),
-            avatar_url: None,
-        }
-    });
+    let bridge_info =
+        crate::community::user_bridge::get_user_info(&state.db, state.redis.as_ref(), profile_id)
+            .await
+            .unwrap_or_else(|_| crate::community::user_bridge::UserBridgeInfo {
+                user_id: profile_id,
+                display_name: "Anonymous User".to_string(),
+                avatar_url: None,
+            });
 
     let is_following = if let Some(u) = user {
         crate::community::service::is_following(&c_pool, u.id, profile_id).await?
@@ -1686,7 +2074,14 @@ async fn follow_user(
     crate::community::service::add_follow(&c_pool, user.id, target_id).await?;
 
     // Award XP to the person being followed (they gained a follower)
-    let _ = crate::community::xp::award_xp(&c_pool, target_id, "follow_gained", Some("Gained a new follower"), None).await;
+    let _ = crate::community::xp::award_xp(
+        &c_pool,
+        target_id,
+        "follow_gained",
+        Some("Gained a new follower"),
+        None,
+    )
+    .await;
 
     Ok(Json(serde_json::json!({"success": true})))
 }
@@ -1739,38 +2134,42 @@ async fn search_community(
               AND bio ILIKE $1
             ORDER BY follower_count DESC
             LIMIT $2 OFFSET $3
-            "#
+            "#,
         )
         .bind(&search_term)
         .bind(limit)
         .bind(offset)
         .fetch_all(&c_pool)
         .await?;
-        
+
         // Match with display_names in main DB!
         // Wait, display names are in the main database... it's better to fetch users whose display_name matches from main db!
         let user_matches_from_main = sqlx::query!(
             "SELECT u.id FROM users u JOIN user_profiles up ON u.id = up.user_id WHERE up.display_name ILIKE $1 LIMIT $2",
             &search_term, limit
         ).fetch_all(&state.db).await?;
-        
+
         let matching_uids: Vec<Uuid> = user_matches_from_main.iter().map(|u| u.id).collect();
-        
+
         if !matching_uids.is_empty() {
-             let name_matched_users = sqlx::query_as::<_, crate::community::models::CommunityProfile>(
-                r#"
+            let name_matched_users =
+                sqlx::query_as::<_, crate::community::models::CommunityProfile>(
+                    r#"
                 SELECT * FROM community_profiles 
                 WHERE is_shadowbanned = false 
                   AND is_community_banned = false
                   AND user_id = ANY($1)
-                "#
-            )
-            .bind(&matching_uids)
-            .fetch_all(&c_pool)
-            .await?;
-            
+                "#,
+                )
+                .bind(&matching_uids)
+                .fetch_all(&c_pool)
+                .await?;
+
             for u in name_matched_users {
-                if !users_result.iter().any(|existing| existing.user_id == u.user_id) {
+                if !users_result
+                    .iter()
+                    .any(|existing| existing.user_id == u.user_id)
+                {
                     users_result.push(u);
                 }
             }
@@ -1789,7 +2188,7 @@ async fn search_community(
               AND (p.content ILIKE $1 OR p.content_tags::text ILIKE $1)
             ORDER BY p.created_at DESC
             LIMIT $2 OFFSET $3
-            "#
+            "#,
         )
         .bind(&search_term)
         .bind(limit)
@@ -1800,13 +2199,22 @@ async fn search_community(
 
     // Resolve Users
     let mut uids_to_fetch = std::collections::HashSet::new();
-    for u in &users_result { uids_to_fetch.insert(u.user_id); }
-    for p in &posts_result { uids_to_fetch.insert(p.user_id); }
+    for u in &users_result {
+        uids_to_fetch.insert(u.user_id);
+    }
+    for p in &posts_result {
+        uids_to_fetch.insert(p.user_id);
+    }
     let uids_vec: Vec<Uuid> = uids_to_fetch.into_iter().collect();
 
-    let authors = crate::community::user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &uids_vec).await?;
+    let authors = crate::community::user_bridge::get_users_info_batch(
+        &state.db,
+        state.redis.as_ref(),
+        &uids_vec,
+    )
+    .await?;
     let badges = crate::community::service::get_badges_batch(&c_pool, &uids_vec).await?;
-    
+
     // Format response
     let mut users_formatted = Vec::new();
     for u in users_result {
@@ -1827,7 +2235,9 @@ async fn search_community(
         let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
         posts_formatted.push(PostDisplay {
             id: p.id,
-            author_name: auth.map(|a| a.display_name.clone()).unwrap_or_else(|| "Anonymous".into()),
+            author_name: auth
+                .map(|a| a.display_name.clone())
+                .unwrap_or_else(|| "Anonymous".into()),
             author_id: p.user_id,
             author_avatar: auth.and_then(|a| a.avatar_url.clone()),
             author_badges,
@@ -1883,7 +2293,8 @@ async fn get_xp_history(
 
     let page = q.page.unwrap_or(1).max(1);
     let c_pool = get_community_pool(&state)?;
-    let entries = crate::community::xp::get_xp_history(&c_pool, user.id, 20, (page - 1) * 20).await?;
+    let entries =
+        crate::community::xp::get_xp_history(&c_pool, user.id, 20, (page - 1) * 20).await?;
     Ok(Json(serde_json::json!({"entries": entries, "page": page})))
 }
 
@@ -1908,14 +2319,31 @@ async fn create_circle(
     let c_pool = get_community_pool(&state)?;
 
     // Level gate: Level 2 required to create a circle (M4-BE.10)
-    crate::community::xp::check_level_gate(&c_pool, user.id, crate::community::xp::GatedFeature::CreateCircle).await?;
+    crate::community::xp::check_level_gate(
+        &c_pool,
+        user.id,
+        crate::community::xp::GatedFeature::CreateCircle,
+    )
+    .await?;
 
     let circle = crate::community::circles::create_circle(
-        &c_pool, user.id, &payload.name, payload.description.as_deref(), payload.emoji.as_deref()
-    ).await?;
+        &c_pool,
+        user.id,
+        &payload.name,
+        payload.description.as_deref(),
+        payload.emoji.as_deref(),
+    )
+    .await?;
 
     // Award XP for creating a circle
-    let _ = crate::community::xp::award_xp(&c_pool, user.id, "circle_created", Some("Created a circle"), None).await;
+    let _ = crate::community::xp::award_xp(
+        &c_pool,
+        user.id,
+        "circle_created",
+        Some("Created a circle"),
+        None,
+    )
+    .await;
 
     Ok(Json(circle))
 }
@@ -1935,7 +2363,7 @@ async fn get_my_circle(
         Some(c) => {
             let members = crate::community::circles::get_circle_members(&c_pool, c.id).await?;
             Ok(Json(serde_json::json!({"circle": c, "members": members})))
-        },
+        }
         None => Ok(Json(serde_json::json!({"circle": null, "members": []}))),
     }
 }
@@ -1950,11 +2378,14 @@ async fn get_circle_detail(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
-    let circle = crate::community::circles::get_circle(&c_pool, circle_id).await?
+    let circle = crate::community::circles::get_circle(&c_pool, circle_id)
+        .await?
         .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
     let members = crate::community::circles::get_circle_members(&c_pool, circle_id).await?;
 
-    Ok(Json(serde_json::json!({"circle": circle, "members": members})))
+    Ok(Json(
+        serde_json::json!({"circle": circle, "members": members}),
+    ))
 }
 
 #[derive(Deserialize)]
@@ -1976,9 +2407,14 @@ async fn update_circle(
 
     let c_pool = get_community_pool(&state)?;
     let circle = crate::community::circles::update_circle(
-        &c_pool, circle_id, user.id,
-        payload.name.as_deref(), payload.description.as_deref(), payload.emoji.as_deref()
-    ).await?;
+        &c_pool,
+        circle_id,
+        user.id,
+        payload.name.as_deref(),
+        payload.description.as_deref(),
+        payload.emoji.as_deref(),
+    )
+    .await?;
     Ok(Json(circle))
 }
 
@@ -2027,7 +2463,14 @@ async fn join_circle(
     crate::community::circles::join_circle(&c_pool, user.id, circle_id).await?;
 
     // Award XP
-    let _ = crate::community::xp::award_xp(&c_pool, user.id, "circle_joined", Some("Joined a circle"), None).await;
+    let _ = crate::community::xp::award_xp(
+        &c_pool,
+        user.id,
+        "circle_joined",
+        Some("Joined a circle"),
+        None,
+    )
+    .await;
 
     Ok(Json(serde_json::json!({"success": true})))
 }
@@ -2063,9 +2506,16 @@ async fn send_circle_invite(
     let c_pool = get_community_pool(&state)?;
 
     // Level gate: Level 3 required to invite (M4-BE.10)
-    crate::community::xp::check_level_gate(&c_pool, user.id, crate::community::xp::GatedFeature::InviteToCircle).await?;
+    crate::community::xp::check_level_gate(
+        &c_pool,
+        user.id,
+        crate::community::xp::GatedFeature::InviteToCircle,
+    )
+    .await?;
 
-    let invite = crate::community::circles::send_invite(&c_pool, user.id, payload.invitee_id, circle_id).await?;
+    let invite =
+        crate::community::circles::send_invite(&c_pool, user.id, payload.invitee_id, circle_id)
+            .await?;
     Ok(Json(invite))
 }
 
@@ -2103,8 +2553,13 @@ async fn update_circle_member_role(
 
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::update_member_role(
-        &c_pool, user.id, payload.user_id, circle_id, &payload.role
-    ).await?;
+        &c_pool,
+        user.id,
+        payload.user_id,
+        circle_id,
+        &payload.role,
+    )
+    .await?;
 
     Ok(Json(serde_json::json!({"success": true})))
 }
@@ -2128,8 +2583,12 @@ async fn transfer_circle_ownership(
 
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::transfer_ownership(
-        &c_pool, user.id, payload.new_owner_id, circle_id
-    ).await?;
+        &c_pool,
+        user.id,
+        payload.new_owner_id,
+        circle_id,
+    )
+    .await?;
 
     // Notify the new owner
     let _ = crate::community::notifications::notify_user(
@@ -2140,7 +2599,8 @@ async fn transfer_circle_ownership(
         Some(circle_id),
         "You are now the owner of this circle!",
         Some(&format!("/community?tab=my-circle")),
-    ).await;
+    )
+    .await;
 
     Ok(Json(serde_json::json!({"success": true})))
 }
@@ -2164,10 +2624,16 @@ async fn update_circle_privacy(
 
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::update_circle_privacy(
-        &c_pool, user.id, circle_id, payload.is_public
-    ).await?;
+        &c_pool,
+        user.id,
+        circle_id,
+        payload.is_public,
+    )
+    .await?;
 
-    Ok(Json(serde_json::json!({"success": true, "is_public": payload.is_public})))
+    Ok(Json(
+        serde_json::json!({"success": true, "is_public": payload.is_public}),
+    ))
 }
 
 // ─── W3.1: Token-Gated Circle Management ───────────────────────────────────
@@ -2196,7 +2662,9 @@ async fn update_circle_token_gate(
     // Validate min_value_cents is non-negative if provided
     if let Some(cents) = payload.min_value_cents {
         if cents < 0 {
-            return Err(AppError::BadRequest("min_value_cents must be non-negative".into()));
+            return Err(AppError::BadRequest(
+                "min_value_cents must be non-negative".into(),
+            ));
         }
     }
 
@@ -2207,7 +2675,8 @@ async fn update_circle_token_gate(
         circle_id,
         payload.asset_id,
         payload.min_value_cents,
-    ).await?;
+    )
+    .await?;
 
     Ok(Json(serde_json::json!({
         "success": true,
@@ -2249,7 +2718,8 @@ async fn request_to_join_circle(
             Some(circle_id),
             "Someone has requested to join your circle",
             Some(&format!("/community?tab=my-circle")),
-        ).await;
+        )
+        .await;
     }
 
     Ok(Json(req))
@@ -2293,11 +2763,17 @@ async fn list_join_requests(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
-    let requests = crate::community::circles::get_pending_join_requests(&c_pool, user.id, circle_id).await?;
+    let requests =
+        crate::community::circles::get_pending_join_requests(&c_pool, user.id, circle_id).await?;
 
     // Enrich with names from core DB
     let user_ids: Vec<Uuid> = requests.iter().map(|r| r.user_id).collect();
-    let names = crate::community::user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let names = crate::community::user_bridge::get_users_info_batch(
+        &state.db,
+        state.redis.as_ref(),
+        &user_ids,
+    )
+    .await?;
 
     let enriched: Vec<serde_json::Value> = requests.iter().map(|r| {
         let info = names.get(&r.user_id);
@@ -2340,10 +2816,18 @@ async fn approve_join_request_handler(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
-    let approved_user_id = crate::community::circles::approve_join_request(&c_pool, user.id, request_id).await?;
+    let approved_user_id =
+        crate::community::circles::approve_join_request(&c_pool, user.id, request_id).await?;
 
     // Award XP to the new member
-    let _ = crate::community::xp::award_xp(&c_pool, approved_user_id, "circle_joined", Some("Joined a circle via request"), None).await;
+    let _ = crate::community::xp::award_xp(
+        &c_pool,
+        approved_user_id,
+        "circle_joined",
+        Some("Joined a circle via request"),
+        None,
+    )
+    .await;
 
     // Notify the approved user
     let _ = crate::community::notifications::notify_user(
@@ -2354,7 +2838,8 @@ async fn approve_join_request_handler(
         None,
         "Your request to join the circle has been approved! Welcome!",
         Some("/community?tab=my-circle"),
-    ).await;
+    )
+    .await;
 
     Ok(Json(serde_json::json!({"success": true})))
 }
@@ -2370,7 +2855,8 @@ async fn decline_join_request_handler(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
-    let declined_user_id = crate::community::circles::decline_join_request(&c_pool, user.id, request_id).await?;
+    let declined_user_id =
+        crate::community::circles::decline_join_request(&c_pool, user.id, request_id).await?;
 
     // Notify the declined user
     let _ = crate::community::notifications::notify_user(
@@ -2381,7 +2867,8 @@ async fn decline_join_request_handler(
         None,
         "Your request to join the circle was not approved this time.",
         Some("/community?tab=my-circle"),
-    ).await;
+    )
+    .await;
 
     Ok(Json(serde_json::json!({"success": true})))
 }
@@ -2412,7 +2899,14 @@ async fn accept_invite(
     crate::community::circles::accept_invite(&c_pool, user.id, invite_id).await?;
 
     // Award XP
-    let _ = crate::community::xp::award_xp(&c_pool, user.id, "circle_invite_accepted", Some("Accepted circle invite"), None).await;
+    let _ = crate::community::xp::award_xp(
+        &c_pool,
+        user.id,
+        "circle_invite_accepted",
+        Some("Accepted circle invite"),
+        None,
+    )
+    .await;
 
     Ok(Json(serde_json::json!({"success": true})))
 }
@@ -2452,12 +2946,23 @@ async fn list_asset_reviews(
     Path(asset_id): Path<Uuid>,
     axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, AppError> {
-    let viewer_id = middleware::get_current_user(&jar, &state.db).await.map(|u| u.id);
-    let limit = q.get("limit").and_then(|l| l.parse::<i64>().ok()).unwrap_or(20);
-    let offset = q.get("offset").and_then(|o| o.parse::<i64>().ok()).unwrap_or(0);
+    let viewer_id = middleware::get_current_user(&jar, &state.db)
+        .await
+        .map(|u| u.id);
+    let limit = q
+        .get("limit")
+        .and_then(|l| l.parse::<i64>().ok())
+        .unwrap_or(20);
+    let offset = q
+        .get("offset")
+        .and_then(|o| o.parse::<i64>().ok())
+        .unwrap_or(0);
 
     let c_pool = get_community_pool(&state)?;
-    let reviews = crate::community::reviews::list_reviews_for_asset(&c_pool, asset_id, viewer_id, limit, offset).await?;
+    let reviews = crate::community::reviews::list_reviews_for_asset(
+        &c_pool, asset_id, viewer_id, limit, offset,
+    )
+    .await?;
     let stats = crate::community::reviews::get_review_stats(&c_pool, asset_id).await?;
 
     // Also get my review if logged in
@@ -2492,15 +2997,18 @@ async fn upsert_asset_review(
 
     let c_pool = get_community_pool(&state)?;
     let review = crate::community::reviews::upsert_review(
-        &c_pool, 
-        &state.db, 
-        user.id, 
-        asset_id, 
-        payload.rating, 
-        &payload.content
-    ).await?;
+        &c_pool,
+        &state.db,
+        user.id,
+        asset_id,
+        payload.rating,
+        &payload.content,
+    )
+    .await?;
 
-    Ok(Json(serde_json::json!({ "success": true, "review": review })))
+    Ok(Json(
+        serde_json::json!({ "success": true, "review": review }),
+    ))
 }
 
 async fn delete_asset_review(
@@ -2516,9 +3024,10 @@ async fn delete_asset_review(
     // the route is /api/community/assets/:id/reviews, but a user only has one review per asset
     // So we can find the review by user_id and asset_id.
     let c_pool = get_community_pool(&state)?;
-    
+
     // Grab review ID first
-    let review = crate::community::reviews::get_my_review(&c_pool, user.id, asset_id).await?
+    let review = crate::community::reviews::get_my_review(&c_pool, user.id, asset_id)
+        .await?
         .ok_or_else(|| AppError::NotFound("Review not found".into()))?;
 
     crate::community::reviews::delete_review(&c_pool, user.id, review.id).await?;
@@ -2535,9 +3044,12 @@ async fn toggle_review_upvote(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
-    let (is_upvoted, count) = crate::community::reviews::toggle_review_upvote(&c_pool, user.id, review_id).await?;
+    let (is_upvoted, count) =
+        crate::community::reviews::toggle_review_upvote(&c_pool, user.id, review_id).await?;
 
-    Ok(Json(serde_json::json!({ "is_upvoted": is_upvoted, "helpful_count": count })))
+    Ok(Json(
+        serde_json::json!({ "is_upvoted": is_upvoted, "helpful_count": count }),
+    ))
 }
 
 // ─── Challenges Handlers (M5) ──────────────────────────────────────────────
@@ -2551,7 +3063,8 @@ async fn list_challenges(
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
-    let challenges = crate::community::challenges::list_challenges_for_user(&c_pool, user.id).await?;
+    let challenges =
+        crate::community::challenges::list_challenges_for_user(&c_pool, user.id).await?;
 
     Ok(Json(serde_json::json!({ "challenges": challenges })))
 }
@@ -2567,18 +3080,25 @@ async fn list_notifications(
         .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
-    let limit = _q.get("limit").and_then(|l| l.parse::<i64>().ok()).unwrap_or(50);
-    let offset = _q.get("offset").and_then(|o| o.parse::<i64>().ok()).unwrap_or(0);
-    
+    let limit = _q
+        .get("limit")
+        .and_then(|l| l.parse::<i64>().ok())
+        .unwrap_or(50);
+    let offset = _q
+        .get("offset")
+        .and_then(|o| o.parse::<i64>().ok())
+        .unwrap_or(0);
+
     let c_pool = get_community_pool(&state)?;
     let notifications = crate::community::notifications::get_my_notifications(
-        &c_pool, 
-        &state.db, 
-        state.redis.as_ref(), 
-        user.id, 
-        limit, 
-        offset
-    ).await?;
+        &c_pool,
+        &state.db,
+        state.redis.as_ref(),
+        user.id,
+        limit,
+        offset,
+    )
+    .await?;
 
     Ok(Json(serde_json::json!({ "notifications": notifications })))
 }
@@ -2593,7 +3113,8 @@ async fn get_unread_notification_count(
     }
 
     let c_pool = get_community_pool(&state)?;
-    let count = crate::community::notifications::get_unread_count(&c_pool, user.unwrap().id).await?;
+    let count =
+        crate::community::notifications::get_unread_count(&c_pool, user.unwrap().id).await?;
 
     Ok(Json(serde_json::json!({ "count": count })))
 }
@@ -2673,14 +3194,24 @@ async fn submit_ama_question(
 
     let q_text = payload.question.trim();
     if q_text.len() < 10 || q_text.len() > 500 {
-        return Err(AppError::BadRequest("Question must be between 10 and 500 characters.".into()));
+        return Err(AppError::BadRequest(
+            "Question must be between 10 and 500 characters.".into(),
+        ));
     }
 
     let c_pool = get_community_pool(&state)?;
-    let question = crate::community::amas::submit_question(&c_pool, ama_id, user.id, q_text).await?;
+    let question =
+        crate::community::amas::submit_question(&c_pool, ama_id, user.id, q_text).await?;
 
     // Award XP for submitting a question
-    let _ = crate::community::xp::award_xp(&c_pool, user.id, "ama_question", Some("Submitted an AMA question"), Some(10)).await;
+    let _ = crate::community::xp::award_xp(
+        &c_pool,
+        user.id,
+        "ama_question",
+        Some("Submitted an AMA question"),
+        Some(10),
+    )
+    .await;
 
     Ok(Json(question))
 }
@@ -2741,7 +3272,8 @@ async fn admin_create_ama(
         payload.expert_avatar_url.as_deref(),
         payload.scheduled_at,
         payload.status.as_deref(),
-    ).await?;
+    )
+    .await?;
 
     Ok(Json(ama))
 }
@@ -2806,26 +3338,28 @@ async fn admin_list_badges(
     .await?;
 
     // Get usage counts
-    let counts: Vec<(Uuid, i64)> = sqlx::query_as(
-        "SELECT badge_id, COUNT(*)::BIGINT FROM user_badges GROUP BY badge_id"
-    )
-    .fetch_all(&c_pool)
-    .await?;
+    let counts: Vec<(Uuid, i64)> =
+        sqlx::query_as("SELECT badge_id, COUNT(*)::BIGINT FROM user_badges GROUP BY badge_id")
+            .fetch_all(&c_pool)
+            .await?;
 
     let count_map: std::collections::HashMap<Uuid, i64> = counts.into_iter().collect();
 
-    let result: Vec<serde_json::Value> = badges.iter().map(|b| {
-        serde_json::json!({
-            "id": b.id,
-            "code": b.code,
-            "name": b.name,
-            "description": b.description,
-            "icon": b.icon,
-            "display_order": b.display_order,
-            "created_at": b.created_at,
-            "users_count": count_map.get(&b.id).copied().unwrap_or(0),
+    let result: Vec<serde_json::Value> = badges
+        .iter()
+        .map(|b| {
+            serde_json::json!({
+                "id": b.id,
+                "code": b.code,
+                "name": b.name,
+                "description": b.description,
+                "icon": b.icon,
+                "display_order": b.display_order,
+                "created_at": b.created_at,
+                "users_count": count_map.get(&b.id).copied().unwrap_or(0),
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(Json(serde_json::json!({"badges": result})))
 }
@@ -2861,7 +3395,7 @@ async fn admin_create_badge(
     let badge = sqlx::query_as::<_, BadgeRow>(
         r#"INSERT INTO badges (code, name, description, icon, display_order)
            VALUES ($1, $2, $3, $4, $5)
-           RETURNING id, code, name, description, icon, display_order, created_at"#
+           RETURNING id, code, name, description, icon, display_order, created_at"#,
     )
     .bind(&payload.code)
     .bind(&payload.name)
@@ -2897,7 +3431,7 @@ async fn admin_update_badge(
             description = COALESCE($2, description),
             icon = COALESCE($3, icon),
             display_order = COALESCE($4, display_order)
-           WHERE id = $5"#
+           WHERE id = $5"#,
     )
     .bind(payload.name.as_deref())
     .bind(payload.description.as_deref())
@@ -2928,17 +3462,21 @@ async fn admin_grant_badge(
         .bind(&payload.badge_code)
         .fetch_optional(&c_pool)
         .await?
-        .ok_or_else(|| AppError::NotFound(format!("Badge code '{}' not found", payload.badge_code)))?;
+        .ok_or_else(|| {
+            AppError::NotFound(format!("Badge code '{}' not found", payload.badge_code))
+        })?;
 
     sqlx::query(
-        "INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+        "INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
     )
     .bind(user_id)
     .bind(badge_id)
     .execute(&c_pool)
     .await?;
 
-    Ok(Json(serde_json::json!({"success": true, "badge_code": payload.badge_code})))
+    Ok(Json(
+        serde_json::json!({"success": true, "badge_code": payload.badge_code}),
+    ))
 }
 
 async fn admin_revoke_badge(
@@ -2985,7 +3523,7 @@ async fn admin_get_user_detail(
             'ban_reason', ban_reason,
             'warning_count', warning_count,
             'created_at', created_at
-        ) FROM community_profiles WHERE user_id = $1"#
+        ) FROM community_profiles WHERE user_id = $1"#,
     )
     .bind(user_id)
     .fetch_optional(&c_pool)
@@ -3008,14 +3546,16 @@ async fn admin_get_user_detail(
         r#"SELECT json_build_object(
             'id', id, 'content', LEFT(content, 200), 'post_type', post_type,
             'is_hidden', is_hidden, 'created_at', created_at, 'reaction_count', reaction_count
-        ) FROM posts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10"#
+        ) FROM posts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10"#,
     )
     .bind(user_id)
     .fetch_all(&c_pool)
     .await?;
 
     // XP summary
-    let xp_summary = crate::community::xp::get_xp_summary(&c_pool, user_id).await.ok();
+    let xp_summary = crate::community::xp::get_xp_summary(&c_pool, user_id)
+        .await
+        .ok();
 
     // Core user data (from main DB)
     let core_data: Option<serde_json::Value> = sqlx::query_scalar(
@@ -3026,7 +3566,7 @@ async fn admin_get_user_detail(
             'avatar_url', u.avatar_url
         ) FROM users u
         LEFT JOIN user_profiles p ON p.user_id = u.id
-        WHERE u.id = $1"#
+        WHERE u.id = $1"#,
     )
     .bind(user_id)
     .fetch_optional(&state.db)
@@ -3059,7 +3599,16 @@ async fn admin_delete_circle(
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::admin_delete_circle(&c_pool, circle_id).await?;
-    crate::community::audit::log(&c_pool, admin.user.id, "circle.delete", "circle", Some(circle_id), None, None).await;
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "circle.delete",
+        "circle",
+        Some(circle_id),
+        None,
+        None,
+    )
+    .await;
     Ok(Json(serde_json::json!({ "status": "deleted" })))
 }
 
@@ -3070,7 +3619,16 @@ async fn admin_remove_circle_member(
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::admin_remove_member(&c_pool, circle_id, target_id).await?;
-    crate::community::audit::log(&c_pool, admin.user.id, "circle.remove_member", "circle", Some(circle_id), Some(target_id), None).await;
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "circle.remove_member",
+        "circle",
+        Some(circle_id),
+        Some(target_id),
+        None,
+    )
+    .await;
     Ok(Json(serde_json::json!({ "status": "removed" })))
 }
 
@@ -3080,7 +3638,8 @@ async fn admin_get_circle_detail(
     Path(circle_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
-    let circle = crate::community::circles::get_circle(&c_pool, circle_id).await?
+    let circle = crate::community::circles::get_circle(&c_pool, circle_id)
+        .await?
         .ok_or_else(|| AppError::NotFound("Circle not found".into()))?;
     let members = crate::community::circles::get_circle_members(&c_pool, circle_id).await?;
 
@@ -3106,10 +3665,25 @@ async fn admin_update_circle(
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
     let circle = crate::community::circles::admin_force_update_circle(
-        &c_pool, circle_id, payload.name.as_deref(), payload.description.as_deref(), payload.avatar_emoji.as_deref(), payload.is_public
-    ).await?;
-    crate::community::audit::log(&c_pool, admin.user.id, "circle.update", "circle", Some(circle_id), None, None).await;
-    
+        &c_pool,
+        circle_id,
+        payload.name.as_deref(),
+        payload.description.as_deref(),
+        payload.avatar_emoji.as_deref(),
+        payload.is_public,
+    )
+    .await?;
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "circle.update",
+        "circle",
+        Some(circle_id),
+        None,
+        None,
+    )
+    .await;
+
     Ok(Json(serde_json::json!({ "circle": circle })))
 }
 
@@ -3125,9 +3699,23 @@ async fn admin_transfer_circle(
     Json(payload): Json<AdminTransferCircleReq>,
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
-    crate::community::circles::admin_force_transfer_circle(&c_pool, circle_id, payload.new_owner_id).await?;
-    crate::community::audit::log(&c_pool, admin.user.id, "circle.transfer", "circle", Some(circle_id), Some(payload.new_owner_id), None).await;
-    
+    crate::community::circles::admin_force_transfer_circle(
+        &c_pool,
+        circle_id,
+        payload.new_owner_id,
+    )
+    .await?;
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "circle.transfer",
+        "circle",
+        Some(circle_id),
+        Some(payload.new_owner_id),
+        None,
+    )
+    .await;
+
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
@@ -3138,7 +3726,10 @@ async fn admin_get_leaderboard(
     State(state): State<AppState>,
     axum::extract::Query(_q): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, AppError> {
-    let limit = _q.get("limit").and_then(|l| l.parse::<i64>().ok()).unwrap_or(100);
+    let limit = _q
+        .get("limit")
+        .and_then(|l| l.parse::<i64>().ok())
+        .unwrap_or(100);
     let c_pool = get_community_pool(&state)?;
     let entries = crate::community::xp::get_user_leaderboard(&c_pool, limit).await?;
     Ok(Json(serde_json::json!({ "leaderboard": entries })))
@@ -3158,23 +3749,35 @@ async fn admin_award_xp(
     Json(payload): Json<AdminAwardXpReq>,
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
-    
+
     let amount_awarded = crate::community::xp::award_xp(
-        &c_pool, 
-        user_id, 
-        &payload.reason_label, 
-        Some(&payload.description), 
-        Some(payload.amount)
-    ).await?;
+        &c_pool,
+        user_id,
+        &payload.reason_label,
+        Some(&payload.description),
+        Some(payload.amount),
+    )
+    .await?;
 
     if amount_awarded != 0 {
         // Evaluate level up
         crate::community::xp::update_user_level(&c_pool, user_id).await?;
     }
 
-    crate::community::audit::log(&c_pool, admin.user.id, "xp.award", "user", None, Some(user_id), Some(serde_json::json!({"amount": payload.amount, "reason": payload.reason_label}))).await;
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "xp.award",
+        "user",
+        None,
+        Some(user_id),
+        Some(serde_json::json!({"amount": payload.amount, "reason": payload.reason_label})),
+    )
+    .await;
 
-    Ok(Json(serde_json::json!({ "status": "xp_awarded", "amount": amount_awarded })))
+    Ok(Json(
+        serde_json::json!({ "status": "xp_awarded", "amount": amount_awarded }),
+    ))
 }
 
 // ─── Admin Audit Log API (M2-ADMIN.7) ────────────────────────────────────────
@@ -3185,8 +3788,15 @@ async fn admin_get_community_audit_log(
     axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
-    let limit = q.get("limit").and_then(|l| l.parse::<i64>().ok()).unwrap_or(50).min(200);
-    let offset = q.get("offset").and_then(|o| o.parse::<i64>().ok()).unwrap_or(0);
+    let limit = q
+        .get("limit")
+        .and_then(|l| l.parse::<i64>().ok())
+        .unwrap_or(50)
+        .min(200);
+    let offset = q
+        .get("offset")
+        .and_then(|o| o.parse::<i64>().ok())
+        .unwrap_or(0);
     let entity_type_filter = q.get("entity_type").cloned();
     let action_filter = q.get("action").cloned();
 
@@ -3206,24 +3816,41 @@ async fn admin_get_community_audit_log(
         where_clause, limit, offset
     );
 
-    let rows = sqlx::query_as::<_, (Uuid, Option<Uuid>, String, String, Option<Uuid>, Option<Uuid>, serde_json::Value, chrono::DateTime<chrono::Utc>)>(&sql)
-        .fetch_all(&c_pool)
-        .await?;
+    let rows = sqlx::query_as::<
+        _,
+        (
+            Uuid,
+            Option<Uuid>,
+            String,
+            String,
+            Option<Uuid>,
+            Option<Uuid>,
+            serde_json::Value,
+            chrono::DateTime<chrono::Utc>,
+        ),
+    >(&sql)
+    .fetch_all(&c_pool)
+    .await?;
 
-    let entries: Vec<serde_json::Value> = rows.iter().map(|r| {
-        serde_json::json!({
-            "id": r.0,
-            "actor_user_id": r.1,
-            "action": r.2,
-            "entity_type": r.3,
-            "entity_id": r.4,
-            "target_user_id": r.5,
-            "details": r.6,
-            "created_at": r.7,
+    let entries: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "id": r.0,
+                "actor_user_id": r.1,
+                "action": r.2,
+                "entity_type": r.3,
+                "entity_id": r.4,
+                "target_user_id": r.5,
+                "details": r.6,
+                "created_at": r.7,
+            })
         })
-    }).collect();
+        .collect();
 
-    Ok(Json(serde_json::json!({ "logs": entries, "count": entries.len() })))
+    Ok(Json(
+        serde_json::json!({ "logs": entries, "count": entries.len() }),
+    ))
 }
 
 // ─── Ban Appeals Handlers (M7-BE.5) ──────────────────────────────────────────
@@ -3233,33 +3860,40 @@ async fn submit_ban_appeal(
     State(state): State<AppState>,
     Json(payload): Json<models::CreateBanAppealReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = middleware::get_current_user(&jar, &state.db).await
+    let user = middleware::get_current_user(&jar, &state.db)
+        .await
         .ok_or_else(|| AppError::Unauthorized("Auth needed".into()))?;
 
     let c_pool = get_community_pool(&state)?;
 
     if payload.appeal_text.len() < 10 || payload.appeal_text.len() > 2000 {
-        return Err(AppError::BadRequest("Appeal text must be between 10 and 2000 characters.".into()));
+        return Err(AppError::BadRequest(
+            "Appeal text must be between 10 and 2000 characters.".into(),
+        ));
     }
 
     // Check if the user is actually banned
-    let is_banned: Option<bool> = sqlx::query_scalar("SELECT is_community_banned FROM community_profiles WHERE user_id = $1")
-        .bind(user.id)
-        .fetch_optional(&c_pool)
-        .await?;
+    let is_banned: Option<bool> =
+        sqlx::query_scalar("SELECT is_community_banned FROM community_profiles WHERE user_id = $1")
+            .bind(user.id)
+            .fetch_optional(&c_pool)
+            .await?;
 
     if !is_banned.unwrap_or(false) {
         return Err(AppError::BadRequest("You are not currently banned.".into()));
     }
 
     // Check if they already have a pending appeal
-    let existing_pending: Option<Uuid> = sqlx::query_scalar("SELECT id FROM ban_appeals WHERE user_id = $1 AND status = 'pending'")
-        .bind(user.id)
-        .fetch_optional(&c_pool)
-        .await?;
+    let existing_pending: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM ban_appeals WHERE user_id = $1 AND status = 'pending'")
+            .bind(user.id)
+            .fetch_optional(&c_pool)
+            .await?;
 
     if existing_pending.is_some() {
-        return Err(AppError::BadRequest("You already have a pending ban appeal. Please wait for an admin to review it.".into()));
+        return Err(AppError::BadRequest(
+            "You already have a pending ban appeal. Please wait for an admin to review it.".into(),
+        ));
     }
 
     sqlx::query("INSERT INTO ban_appeals (user_id, appeal_text) VALUES ($1, $2)")
@@ -3268,7 +3902,9 @@ async fn submit_ban_appeal(
         .execute(&c_pool)
         .await?;
 
-    Ok(Json(serde_json::json!({"success": true, "message": "Appeal submitted successfully."})))
+    Ok(Json(
+        serde_json::json!({"success": true, "message": "Appeal submitted successfully."}),
+    ))
 }
 
 async fn get_ban_appeals(
@@ -3277,7 +3913,7 @@ async fn get_ban_appeals(
     axum::extract::Query(_q): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, AppError> {
     let c_pool = get_community_pool(&state)?;
-    
+
     // Status filter
     let status_filter = _q.get("status").map(|s| s.as_str()).unwrap_or("pending");
 
@@ -3287,7 +3923,7 @@ async fn get_ban_appeals(
         FROM ban_appeals a
         WHERE ($1 = 'all' OR a.status = $1)
         ORDER BY a.created_at ASC
-        "#
+        "#,
     )
     .bind(status_filter)
     .fetch_all(&c_pool)
@@ -3304,7 +3940,10 @@ async fn get_ban_appeals(
         let admin_notes: Option<String> = rec.try_get("admin_notes")?;
         let created_at: chrono::DateTime<chrono::Utc> = rec.try_get("created_at")?;
         let resolved_at: Option<chrono::DateTime<chrono::Utc>> = rec.try_get("resolved_at")?;
-        let name = user_bridge::get_user_info(&state.db, state.redis.as_ref(), user_id).await.map(|u| u.display_name).unwrap_or_else(|_| "Unknown".into());
+        let name = user_bridge::get_user_info(&state.db, state.redis.as_ref(), user_id)
+            .await
+            .map(|u| u.display_name)
+            .unwrap_or_else(|_| "Unknown".into());
 
         appeals.push(models::BanAppealDisplay {
             id,
@@ -3334,7 +3973,11 @@ async fn review_ban_appeal(
     let status = match payload.action.as_str() {
         "approve" => "approved",
         "reject" => "rejected",
-        _ => return Err(AppError::BadRequest("Action must be 'approve' or 'reject'".into())),
+        _ => {
+            return Err(AppError::BadRequest(
+                "Action must be 'approve' or 'reject'".into(),
+            ))
+        }
     };
 
     let mut tx = c_pool.begin().await.map_err(AppError::Database)?;
@@ -3360,7 +4003,7 @@ async fn review_ban_appeal(
             .bind(user_id)
             .execute(&mut *tx)
             .await?;
-            
+
         // Notify the user
         crate::community::notifications::notify_user(
             &c_pool,
@@ -3406,13 +4049,12 @@ async fn toggle_bookmark(
     let c_pool = get_community_pool(&state)?;
 
     // Check if already bookmarked
-    let existing: Option<Uuid> = sqlx::query_scalar(
-        "SELECT id FROM bookmarks WHERE user_id = $1 AND post_id = $2"
-    )
-    .bind(user.id)
-    .bind(post_id)
-    .fetch_optional(&c_pool)
-    .await?;
+    let existing: Option<Uuid> =
+        sqlx::query_scalar("SELECT id FROM bookmarks WHERE user_id = $1 AND post_id = $2")
+            .bind(user.id)
+            .bind(post_id)
+            .fetch_optional(&c_pool)
+            .await?;
 
     if let Some(_) = existing {
         // Remove bookmark
@@ -3425,7 +4067,7 @@ async fn toggle_bookmark(
     } else {
         // Verify post exists and is not hidden
         let post_exists: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM posts WHERE id = $1 AND is_hidden = false)"
+            "SELECT EXISTS(SELECT 1 FROM posts WHERE id = $1 AND is_hidden = false)",
         )
         .bind(post_id)
         .fetch_one(&c_pool)
@@ -3436,11 +4078,13 @@ async fn toggle_bookmark(
         }
 
         // Add bookmark
-        sqlx::query("INSERT INTO bookmarks (user_id, post_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
-            .bind(user.id)
-            .bind(post_id)
-            .execute(&c_pool)
-            .await?;
+        sqlx::query(
+            "INSERT INTO bookmarks (user_id, post_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        )
+        .bind(user.id)
+        .bind(post_id)
+        .execute(&c_pool)
+        .await?;
         Ok(Json(serde_json::json!({"bookmarked": true})))
     }
 }
@@ -3458,7 +4102,7 @@ async fn get_bookmark_status(
     let c_pool = get_community_pool(&state)?;
 
     let is_bookmarked: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM bookmarks WHERE user_id = $1 AND post_id = $2)"
+        "SELECT EXISTS(SELECT 1 FROM bookmarks WHERE user_id = $1 AND post_id = $2)",
     )
     .bind(user.id)
     .bind(post_id)
@@ -3496,7 +4140,7 @@ async fn list_bookmarks(
         WHERE b.user_id = $1 AND p.is_hidden = false
         ORDER BY b.created_at DESC
         LIMIT $2 OFFSET $3
-        "#
+        "#,
     )
     .bind(user.id)
     .bind(limit)
@@ -3506,7 +4150,8 @@ async fn list_bookmarks(
 
     // Build user_ids list for batch fetching
     let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
-    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let authors =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
     let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
 
     let mut feed = Vec::with_capacity(posts.len());
@@ -3566,13 +4211,12 @@ async fn vote_on_poll(
     use sqlx::Row;
 
     // Get the poll for this post
-    let poll_row = sqlx::query(
-        "SELECT id, allows_multiple, expires_at FROM polls WHERE post_id = $1"
-    )
-    .bind(post_id)
-    .fetch_optional(&c_pool)
-    .await?
-    .ok_or_else(|| AppError::NotFound("No poll found for this post".into()))?;
+    let poll_row =
+        sqlx::query("SELECT id, allows_multiple, expires_at FROM polls WHERE post_id = $1")
+            .bind(post_id)
+            .fetch_optional(&c_pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("No poll found for this post".into()))?;
 
     let poll_id: Uuid = poll_row.try_get("id")?;
     let allows_multiple: bool = poll_row.try_get("allows_multiple")?;
@@ -3587,7 +4231,7 @@ async fn vote_on_poll(
 
     // Verify the option belongs to this poll
     let option_valid: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM poll_options WHERE id = $1 AND poll_id = $2)"
+        "SELECT EXISTS(SELECT 1 FROM poll_options WHERE id = $1 AND poll_id = $2)",
     )
     .bind(payload.option_id)
     .bind(poll_id)
@@ -3620,30 +4264,34 @@ async fn vote_on_poll(
 
         if already_voted {
             // Toggle off — remove this vote
-            sqlx::query("DELETE FROM poll_votes WHERE poll_id = $1 AND user_id = $2 AND option_id = $3")
-                .bind(poll_id)
-                .bind(user.id)
-                .bind(payload.option_id)
-                .execute(&mut *tx)
-                .await?;
+            sqlx::query(
+                "DELETE FROM poll_votes WHERE poll_id = $1 AND user_id = $2 AND option_id = $3",
+            )
+            .bind(poll_id)
+            .bind(user.id)
+            .bind(payload.option_id)
+            .execute(&mut *tx)
+            .await?;
             tx.commit().await?;
-            return Ok(Json(serde_json::json!({"voted": false, "option_id": payload.option_id})));
+            return Ok(Json(
+                serde_json::json!({"voted": false, "option_id": payload.option_id}),
+            ));
         }
     }
 
     // Insert new vote
-    sqlx::query(
-        "INSERT INTO poll_votes (poll_id, option_id, user_id) VALUES ($1, $2, $3)"
-    )
-    .bind(poll_id)
-    .bind(payload.option_id)
-    .bind(user.id)
-    .execute(&mut *tx)
-    .await?;
+    sqlx::query("INSERT INTO poll_votes (poll_id, option_id, user_id) VALUES ($1, $2, $3)")
+        .bind(poll_id)
+        .bind(payload.option_id)
+        .bind(user.id)
+        .execute(&mut *tx)
+        .await?;
 
     tx.commit().await?;
 
-    Ok(Json(serde_json::json!({"voted": true, "option_id": payload.option_id})))
+    Ok(Json(
+        serde_json::json!({"voted": true, "option_id": payload.option_id}),
+    ))
 }
 
 /// Get poll results for a post, including whether the current user has voted
@@ -3688,33 +4336,38 @@ async fn get_poll_results(
 
     // Get user's votes (if logged in)
     let user_voted_options: Vec<Uuid> = if let Some(ref u) = user {
-        sqlx::query_scalar(
-            "SELECT option_id FROM poll_votes WHERE poll_id = $1 AND user_id = $2"
-        )
-        .bind(poll_id)
-        .bind(u.id)
-        .fetch_all(&c_pool)
-        .await?
+        sqlx::query_scalar("SELECT option_id FROM poll_votes WHERE poll_id = $1 AND user_id = $2")
+            .bind(poll_id)
+            .bind(u.id)
+            .fetch_all(&c_pool)
+            .await?
     } else {
         vec![]
     };
 
     let has_voted = !user_voted_options.is_empty();
 
-    let options: Vec<serde_json::Value> = option_rows.iter().map(|r| {
-        let opt_id: Uuid = r.try_get("id").unwrap_or_default();
-        let label: String = r.try_get("label").unwrap_or_default();
-        let vote_count: i32 = r.try_get("vote_count").unwrap_or(0);
-        let pct = if total_votes > 0 { (vote_count as f64 / total_votes as f64 * 100.0).round() as i32 } else { 0 };
+    let options: Vec<serde_json::Value> = option_rows
+        .iter()
+        .map(|r| {
+            let opt_id: Uuid = r.try_get("id").unwrap_or_default();
+            let label: String = r.try_get("label").unwrap_or_default();
+            let vote_count: i32 = r.try_get("vote_count").unwrap_or(0);
+            let pct = if total_votes > 0 {
+                (vote_count as f64 / total_votes as f64 * 100.0).round() as i32
+            } else {
+                0
+            };
 
-        serde_json::json!({
-            "id": opt_id,
-            "label": label,
-            "vote_count": vote_count,
-            "percentage": pct,
-            "user_voted": user_voted_options.contains(&opt_id),
+            serde_json::json!({
+                "id": opt_id,
+                "label": label,
+                "vote_count": vote_count,
+                "percentage": pct,
+                "user_voted": user_voted_options.contains(&opt_id),
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(Json(serde_json::json!({
         "poll_id": poll_id,
@@ -3746,13 +4399,16 @@ async fn get_trending_hashtags(
     .fetch_all(&c_pool)
     .await?;
 
-    let hashtags: Vec<serde_json::Value> = rows.iter().map(|r| {
-        serde_json::json!({
-            "id": r.try_get::<Uuid, _>("id").unwrap_or_default(),
-            "tag": r.try_get::<String, _>("tag").unwrap_or_default(),
-            "post_count": r.try_get::<i32, _>("post_count").unwrap_or(0),
+    let hashtags: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "id": r.try_get::<Uuid, _>("id").unwrap_or_default(),
+                "tag": r.try_get::<String, _>("tag").unwrap_or_default(),
+                "post_count": r.try_get::<i32, _>("post_count").unwrap_or(0),
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(Json(hashtags))
 }
@@ -3789,7 +4445,7 @@ async fn get_posts_by_hashtag(
         WHERE h.tag = $1 AND p.is_hidden = false
         ORDER BY p.created_at DESC
         LIMIT $2 OFFSET $3
-        "#
+        "#,
     )
     .bind(&clean_tag)
     .bind(limit)
@@ -3798,7 +4454,8 @@ async fn get_posts_by_hashtag(
     .await?;
 
     let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
-    let authors = user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
+    let authors =
+        user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
     let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
 
     let mut feed = Vec::with_capacity(posts.len());
@@ -3834,4 +4491,3 @@ async fn get_posts_by_hashtag(
         "posts": feed,
     })))
 }
-

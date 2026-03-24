@@ -1041,16 +1041,18 @@ pub async fn api_developer_submit_draft(
     })?;
 
     // Ensure the asset has at least one image uploaded before allowing submission
-    let image_count: i64 = sqlx::query_scalar("SELECT COUNT(*)::bigint FROM asset_images WHERE asset_id = $1")
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await
-        .unwrap_or(0);
+    let image_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM asset_images WHERE asset_id = $1")
+            .bind(id)
+            .fetch_one(&mut *tx)
+            .await
+            .unwrap_or(0);
 
     if image_count == 0 {
         let _ = tx.rollback().await;
         return Err(AppError::BadRequest(
-            "You must upload at least one image before submitting the asset for review.".to_string(),
+            "You must upload at least one image before submitting the asset for review."
+                .to_string(),
         ));
     }
 

@@ -375,8 +375,24 @@ document.addEventListener('DOMContentLoaded', () => {
         reactionTypes.forEach(r => {
             const btn = document.createElement('button');
             btn.className = 'feed-reaction-btn';
-            btn.innerHTML = r.icon + '<span style="margin-left:6px">' + r.count + '</span>';
-            btn.addEventListener('click', () => toggleReaction(p.id, btn, r.type));
+            
+            if (r.type === 'share') {
+                btn.innerHTML = r.icon + '<span style="margin-left:6px">Share</span>';
+                btn.addEventListener('click', () => {
+                    const url = `${window.location.origin}/community/post/${p.id}`;
+                    navigator.clipboard.writeText(url).then(() => {
+                        if (window.showToast) window.showToast('Link copied to clipboard');
+                        else alert('Link copied to clipboard');
+                    }).catch(err => console.error('Failed to copy: ', err));
+                });
+            } else {
+                btn.innerHTML = r.icon + '<span style="margin-left:6px">' + r.count + '</span>';
+                if (r.type === 'comment') {
+                    btn.addEventListener('click', () => toggleComments(p.id));
+                } else {
+                    btn.addEventListener('click', () => toggleReaction(p.id, btn, r.type));
+                }
+            }
             reactions.appendChild(btn);
         });
 
@@ -742,12 +758,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const createPostBox = document.querySelector('.community-create-post');
-    if (createPostBox) {
-        createPostBox.addEventListener('click', () => {
-            document.getElementById('create-post-modal').style.display = 'block';
-        });
-    }
+    window.openCreatePostModal = function(type = 'general', triggerPhoto = false) {
+        document.getElementById('create-post-modal').style.display = 'block';
+        const typeBtn = document.querySelector(`.post-type-btn[data-type="${type}"]`);
+        if (typeBtn && window.selectPostType) {
+            window.selectPostType(typeBtn);
+        }
+        if (triggerPhoto) {
+            document.getElementById('post-image-file-input').click();
+        }
+    };
 
     window.postImageUrls = [];
     
@@ -1066,6 +1086,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (postEl) postEl.textContent = profile.post_count || 0;
         if (folEl) folEl.textContent = profile.follower_count || 0;
         if (fngEl) fngEl.textContent = profile.following_count || 0;
+
+        const createPostAvatarEl = document.getElementById('create-post-my-avatar');
+        if (createPostAvatarEl && window.__POOOL_USER) {
+            createPostAvatarEl.textContent = (window.__POOOL_USER.name || "U")[0].toUpperCase();
+        }
+
+        const badgesEl = document.getElementById('my-profile-badges');
+        if (badgesEl) {
+            badgesEl.innerHTML = '';
+            if (profile.badges && profile.badges.length > 0) {
+                profile.badges.forEach(b => {
+                    const span = document.createElement('span');
+                    span.className = 'profile-badge profile-badge--gold';
+                    let label = b.name || b.badge_type || '';
+                    // Try to map some to standard ones
+                    if (label.toLowerCase().includes('verified')) span.className = 'profile-badge profile-badge--verified';
+                    if (label.toLowerCase().includes('investor')) span.className = 'profile-badge profile-badge--investor';
+                    span.textContent = label;
+                    if (b.description) span.title = b.description;
+                    badgesEl.appendChild(span);
+                });
+            }
+        }
     }
 
     async function checkOnboarding() {
@@ -1469,6 +1512,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadTrendingHashtags();
 
+    async function loadSidebarAMA() {
+        try {
+            const res = await fetch('/api/community/amas');
+            if (!res.ok) return;
+            const data = await res.json();
+            const activeOrUpcoming = data.amas?.find(a => a.status === 'active' || a.status === 'upcoming');
+            
+            if (activeOrUpcoming) {
+                const titleEl = document.getElementById('sidebar-ama-title');
+                const expertEl = document.getElementById('sidebar-ama-expert');
+                const timeEl = document.getElementById('sidebar-ama-time');
+                if (titleEl) titleEl.textContent = activeOrUpcoming.title;
+                if (expertEl) expertEl.textContent = `with ${activeOrUpcoming.expert_name || 'an Expert'}`;
+                if (timeEl) {
+                    const dt = new Date(activeOrUpcoming.scheduled_for);
+                    timeEl.textContent = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' — ' + dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                }
+                const widget = document.getElementById('sidebar-ama-widget');
+                if (widget) widget.style.display = 'block';
+            }
+        } catch (e) {
+            console.error('Failed to load sidebar AMA', e);
+        }
+    }
+    loadSidebarAMA();
+
     // ═══════════════════════════════════════════════════════════════
     // UX.11: POLL CREATOR IN POST MODAL
     // ═══════════════════════════════════════════════════════════════
@@ -1538,6 +1607,54 @@ document.addEventListener('DOMContentLoaded', () => {
     // UX.15: EDIT COMMUNITY PROFILE
     // ═══════════════════════════════════════════════════════════════
 
+    window.openProfileEditModal = async function() {
+        const modal = document.getElementById('edit-profile-modal');
+        if (!modal) return;
+        
+        try {
+            const res = await fetch('/api/community/profile/me');
+            if (res.ok) {
+                const profile = await res.json();
+                document.getElementById('edit-profile-bio').value = profile.bio || '';
+            }
+        } catch (e) {
+            console.error('Failed to load profile for editing', e);
+        }
+        
+        modal.style.display = 'block';
+    };
 
+    window.saveProfileDetails = async function() {
+        const bio = document.getElementById('edit-profile-bio').value.trim();
+        const btn = document.getElementById('save-profile-btn');
+        const originalText = btn.textContent;
+        btn.textContent = 'Saving...';
+        btn.disabled = true;
+        
+        try {
+            const res = await fetch('/api/community/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bio: bio })
+            });
+            
+            if (res.ok) {
+                const updatedProfile = await res.json();
+                const bioEl = document.getElementById('my-profile-bio');
+                if (bioEl) bioEl.textContent = updatedProfile.bio || "No bio yet • Start your journey 🌱";
+                document.getElementById('edit-profile-modal').style.display = 'none';
+                if (window.showToast) window.showToast('Profile updated successfully');
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Failed to update profile');
+            }
+        } catch (e) {
+            console.error('Failed to save profile', e);
+            alert('A network error occurred');
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    };
 
 });

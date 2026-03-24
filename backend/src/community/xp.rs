@@ -37,9 +37,9 @@ pub fn xp_for_reason(reason: &str) -> i32 {
 
 // ─── Daily Caps ─────────────────────────────────────────────────────
 
-const DAILY_POST_XP_CAP: i32 = 50;       // Max 5 posts worth per day
-const DAILY_COMMENT_XP_CAP: i32 = 30;    // Max 6 comments worth per day
-const DAILY_REACTION_XP_CAP: i32 = 20;   // Max 10 reactions per day
+const DAILY_POST_XP_CAP: i32 = 50; // Max 5 posts worth per day
+const DAILY_COMMENT_XP_CAP: i32 = 30; // Max 6 comments worth per day
+const DAILY_REACTION_XP_CAP: i32 = 20; // Max 10 reactions per day
 
 async fn check_daily_cap(pool: &PgPool, user_id: Uuid, reason: &str) -> Result<bool, AppError> {
     let cap = match reason {
@@ -83,7 +83,7 @@ pub async fn award_xp(
 
     // Ensure profile exists
     sqlx::query(
-        "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING"
+        "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
     )
     .bind(user_id)
     .execute(pool)
@@ -91,7 +91,7 @@ pub async fn award_xp(
 
     // Insert XP entry
     sqlx::query(
-        "INSERT INTO xp_ledger (user_id, amount, reason, description) VALUES ($1, $2, $3, $4)"
+        "INSERT INTO xp_ledger (user_id, amount, reason, description) VALUES ($1, $2, $3, $4)",
     )
     .bind(user_id)
     .bind(amount)
@@ -101,13 +101,11 @@ pub async fn award_xp(
     .await?;
 
     // Update total XP on profile
-    sqlx::query(
-        "UPDATE community_profiles SET xp_total = xp_total + $1 WHERE user_id = $2"
-    )
-    .bind(amount)
-    .bind(user_id)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE community_profiles SET xp_total = xp_total + $1 WHERE user_id = $2")
+        .bind(amount)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
 
     // Recalculate level
     update_user_level(pool, user_id).await?;
@@ -118,17 +116,19 @@ pub async fn award_xp(
 // ─── Level Calculation ──────────────────────────────────────────────
 
 /// Update user level based on current xp_total.
-pub async fn update_user_level(pool: &PgPool, user_id: Uuid) -> Result<Option<(i32, String)>, AppError> {
-    let xp_total: i32 = sqlx::query_scalar(
-        "SELECT xp_total FROM community_profiles WHERE user_id = $1"
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await?
-    .unwrap_or(0);
+pub async fn update_user_level(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Option<(i32, String)>, AppError> {
+    let xp_total: i32 =
+        sqlx::query_scalar("SELECT xp_total FROM community_profiles WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?
+            .unwrap_or(0);
 
     let (new_level, new_name): (i32, String) = sqlx::query_as(
-        "SELECT level, name FROM xp_levels WHERE min_xp <= $1 ORDER BY level DESC LIMIT 1"
+        "SELECT level, name FROM xp_levels WHERE min_xp <= $1 ORDER BY level DESC LIMIT 1",
     )
     .bind(xp_total)
     .fetch_optional(pool)
@@ -136,26 +136,26 @@ pub async fn update_user_level(pool: &PgPool, user_id: Uuid) -> Result<Option<(i
     .unwrap_or((1, "Seedling".to_string()));
 
     // Get old level
-    let old_level: i32 = sqlx::query_scalar(
-        "SELECT level FROM community_profiles WHERE user_id = $1"
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await?
-    .unwrap_or(1);
+    let old_level: i32 =
+        sqlx::query_scalar("SELECT level FROM community_profiles WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?
+            .unwrap_or(1);
 
     // Update profile
-    sqlx::query(
-        "UPDATE community_profiles SET level = $1, level_name = $2 WHERE user_id = $3"
-    )
-    .bind(new_level)
-    .bind(&new_name)
-    .bind(user_id)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE community_profiles SET level = $1, level_name = $2 WHERE user_id = $3")
+        .bind(new_level)
+        .bind(&new_name)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
 
     if new_level > old_level {
-        let notif_content = format!("Congratulations! You've leveled up to {} (Level {}).", new_name, new_level);
+        let notif_content = format!(
+            "Congratulations! You've leveled up to {} (Level {}).",
+            new_name, new_level
+        );
         let _ = crate::community::notifications::notify_user(
             pool,
             user_id,
@@ -164,7 +164,8 @@ pub async fn update_user_level(pool: &PgPool, user_id: Uuid) -> Result<Option<(i
             None,
             &notif_content,
             Some("/community?tab=xp-tracker"),
-        ).await;
+        )
+        .await;
 
         Ok(Some((new_level, new_name)))
     } else {
@@ -225,29 +226,23 @@ pub async fn get_xp_summary(pool: &PgPool, user_id: Uuid) -> Result<XpSummary, A
     .await?
     .unwrap_or((0, 1, "Seedling".to_string(), 0));
 
-    let icon: String = sqlx::query_scalar(
-        "SELECT icon FROM xp_levels WHERE level = $1"
-    )
-    .bind(level)
-    .fetch_optional(pool)
-    .await?
-    .unwrap_or_else(|| "🌱".to_string());
+    let icon: String = sqlx::query_scalar("SELECT icon FROM xp_levels WHERE level = $1")
+        .bind(level)
+        .fetch_optional(pool)
+        .await?
+        .unwrap_or_else(|| "🌱".to_string());
 
-    let next_level_xp: i32 = sqlx::query_scalar(
-        "SELECT min_xp FROM xp_levels WHERE level = $1"
-    )
-    .bind(level + 1)
-    .fetch_optional(pool)
-    .await?
-    .unwrap_or(i32::MAX);
+    let next_level_xp: i32 = sqlx::query_scalar("SELECT min_xp FROM xp_levels WHERE level = $1")
+        .bind(level + 1)
+        .fetch_optional(pool)
+        .await?
+        .unwrap_or(i32::MAX);
 
-    let current_level_xp: i32 = sqlx::query_scalar(
-        "SELECT min_xp FROM xp_levels WHERE level = $1"
-    )
-    .bind(level)
-    .fetch_optional(pool)
-    .await?
-    .unwrap_or(0);
+    let current_level_xp: i32 = sqlx::query_scalar("SELECT min_xp FROM xp_levels WHERE level = $1")
+        .bind(level)
+        .fetch_optional(pool)
+        .await?
+        .unwrap_or(0);
 
     let range = (next_level_xp - current_level_xp).max(1);
     let progress = (xp_total - current_level_xp) as f32 / range as f32;
@@ -265,7 +260,6 @@ pub async fn get_xp_summary(pool: &PgPool, user_id: Uuid) -> Result<XpSummary, A
     })
 }
 
-
 // ─── User Leaderboard ───────────────────────────────────────────────
 
 #[derive(Debug, serde::Serialize, sqlx::FromRow)]
@@ -278,12 +272,15 @@ pub struct UserLeaderboardEntry {
     pub login_streak: i32,
 }
 
-pub async fn get_user_leaderboard(pool: &PgPool, limit: i64) -> Result<Vec<UserLeaderboardEntry>, AppError> {
+pub async fn get_user_leaderboard(
+    pool: &PgPool,
+    limit: i64,
+) -> Result<Vec<UserLeaderboardEntry>, AppError> {
     let entries = sqlx::query_as::<_, UserLeaderboardEntry>(
         r#"SELECT user_id, xp_total, level, level_name, circle_id, login_streak
            FROM community_profiles
            ORDER BY xp_total DESC
-           LIMIT $1"#
+           LIMIT $1"#,
     )
     .bind(limit.clamp(1, 100))
     .fetch_all(pool)
@@ -308,7 +305,7 @@ pub async fn aggregate_xp(pool: &PgPool) -> Result<(), AppError> {
             GROUP BY user_id
         ) agg
         WHERE cp.user_id = agg.user_id AND cp.xp_total != agg.total
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
@@ -330,7 +327,7 @@ pub async fn aggregate_xp(pool: &PgPool) -> Result<(), AppError> {
             ORDER BY cp2.user_id, xl2.level DESC
         ) xl
         WHERE cp.user_id = xl.user_id AND (cp.level != xl.level OR cp.level_name != xl.name)
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
@@ -351,7 +348,7 @@ pub async fn aggregate_xp(pool: &PgPool) -> Result<(), AppError> {
             GROUP BY cm.circle_id
         ) agg
         WHERE c.id = agg.circle_id
-        "#
+        "#,
     )
     .execute(pool)
     .await?;
@@ -367,7 +364,7 @@ pub async fn aggregate_xp(pool: &PgPool) -> Result<(), AppError> {
 pub async fn track_login_streak(pool: &PgPool, user_id: Uuid) -> Result<i32, AppError> {
     // Ensure profile exists
     sqlx::query(
-        "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING"
+        "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
     )
     .bind(user_id)
     .execute(pool)
@@ -375,7 +372,7 @@ pub async fn track_login_streak(pool: &PgPool, user_id: Uuid) -> Result<i32, App
 
     // Get current streak state
     let row: Option<(i32, Option<chrono::NaiveDate>)> = sqlx::query_as(
-        "SELECT login_streak, last_login_date FROM community_profiles WHERE user_id = $1"
+        "SELECT login_streak, last_login_date FROM community_profiles WHERE user_id = $1",
     )
     .bind(user_id)
     .fetch_optional(pool)
@@ -405,7 +402,7 @@ pub async fn track_login_streak(pool: &PgPool, user_id: Uuid) -> Result<i32, App
 
     // Update profile
     sqlx::query(
-        "UPDATE community_profiles SET login_streak = $1, last_login_date = $2 WHERE user_id = $3"
+        "UPDATE community_profiles SET login_streak = $1, last_login_date = $2 WHERE user_id = $3",
     )
     .bind(new_streak)
     .bind(today)
@@ -414,17 +411,39 @@ pub async fn track_login_streak(pool: &PgPool, user_id: Uuid) -> Result<i32, App
     .await?;
 
     // Award daily login XP
-    let _ = award_xp(pool, user_id, "daily_login", Some("Daily login bonus"), None).await;
+    let _ = award_xp(
+        pool,
+        user_id,
+        "daily_login",
+        Some("Daily login bonus"),
+        None,
+    )
+    .await;
 
     // Award streak milestones
     if new_streak == 7 {
-        let _ = award_xp(pool, user_id, "login_streak_7", Some("7-day login streak!"), None).await;
+        let _ = award_xp(
+            pool,
+            user_id,
+            "login_streak_7",
+            Some("7-day login streak!"),
+            None,
+        )
+        .await;
     } else if new_streak == 30 {
-        let _ = award_xp(pool, user_id, "login_streak_30", Some("30-day login streak!"), None).await;
+        let _ = award_xp(
+            pool,
+            user_id,
+            "login_streak_30",
+            Some("30-day login streak!"),
+            None,
+        )
+        .await;
     }
 
     // Award Gamification Challenge
-    let _ = crate::community::challenges::increment_progress(pool, user_id, "login_streak", 1).await;
+    let _ =
+        crate::community::challenges::increment_progress(pool, user_id, "login_streak", 1).await;
 
     tracing::debug!(user_id = %user_id, streak = new_streak, "Login streak updated");
     Ok(new_streak)
@@ -434,13 +453,13 @@ pub async fn track_login_streak(pool: &PgPool, user_id: Uuid) -> Result<i32, App
 
 /// Feature gates that require a minimum user level.
 pub enum GatedFeature {
-    CreatePost,          // Level 1 (anyone)
-    CreateComment,       // Level 1
-    GiveReaction,        // Level 1
-    CreateCircle,        // Level 2
-    InviteToCircle,      // Level 3
-    MarketInsightPost,   // Level 3
-    ReviewPost,          // Level 4
+    CreatePost,        // Level 1 (anyone)
+    CreateComment,     // Level 1
+    GiveReaction,      // Level 1
+    CreateCircle,      // Level 2
+    InviteToCircle,    // Level 3
+    MarketInsightPost, // Level 3
+    ReviewPost,        // Level 4
 }
 
 impl GatedFeature {
@@ -471,22 +490,27 @@ impl GatedFeature {
 
 /// Check if a user's level meets the gate requirement.
 /// Returns Ok(()) if allowed, Err if level is too low.
-pub async fn check_level_gate(pool: &PgPool, user_id: Uuid, feature: GatedFeature) -> Result<(), AppError> {
-    let user_level: i32 = sqlx::query_scalar(
-        "SELECT level FROM community_profiles WHERE user_id = $1"
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await?
-    .unwrap_or(1);
+pub async fn check_level_gate(
+    pool: &PgPool,
+    user_id: Uuid,
+    feature: GatedFeature,
+) -> Result<(), AppError> {
+    let user_level: i32 =
+        sqlx::query_scalar("SELECT level FROM community_profiles WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?
+            .unwrap_or(1);
 
     let required = feature.min_level();
     if user_level < required {
-        return Err(AppError::BadRequest(
-            format!("Level {} required to {}. You are Level {}.", required, feature.label(), user_level)
-        ));
+        return Err(AppError::BadRequest(format!(
+            "Level {} required to {}. You are Level {}.",
+            required,
+            feature.label(),
+            user_level
+        )));
     }
 
     Ok(())
 }
-

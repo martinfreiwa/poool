@@ -446,7 +446,7 @@ pub async fn execute_checkout(
 
     // 2.8 Calculate platform fee
     let platform_fee_pct: f64 = sqlx::query_scalar(
-        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'"
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
     )
     .fetch_optional(&mut *tx)
     .await
@@ -679,7 +679,7 @@ pub async fn execute_checkout(
     if fee_cents > 0 && payment_method == "wallet" {
         sqlx::query(
             "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW()
-             WHERE wallet_type = 'platform_fee' AND currency = 'USD'"
+             WHERE wallet_type = 'platform_fee' AND currency = 'USD'",
         )
         .bind(fee_cents)
         .execute(&mut *tx)
@@ -971,11 +971,12 @@ pub async fn approve_order(
     }
 
     // Capture asset IDs for milestones
-    let order_assets: Vec<Uuid> = sqlx::query_scalar("SELECT asset_id FROM order_items WHERE order_id = $1")
-        .bind(order_id)
-        .fetch_all(&mut *tx)
-        .await
-        .map_err(|e| format!("Failed to get order items: {}", e))?;
+    let order_assets: Vec<Uuid> =
+        sqlx::query_scalar("SELECT asset_id FROM order_items WHERE order_id = $1")
+            .bind(order_id)
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(|e| format!("Failed to get order items: {}", e))?;
 
     // 2. Update order status to completed
     sqlx::query("UPDATE orders SET status = 'completed', completed_at = NOW() WHERE id = $1")

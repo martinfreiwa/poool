@@ -20,13 +20,13 @@ extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigatio
           </h1>
         </div>
         <div class="ds-page-header__actions">
-          <button class="add-asset-btn" onclick="window.location.href = '/developer/add-asset'">
+          <a href="/developer/add-asset" class="add-asset-btn">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#98FB96" stroke-width="1.66667"
               stroke-linecap="round">
               <path d="M10 4v12M4 10h12" />
             </svg>
             <span class="add-asset-text">Add Asset</span>
-          </button>
+          </a>
         </div>
       </div>
 
@@ -221,31 +221,22 @@ extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigatio
         {% else %}
         <!-- Empty State — Full page -->
         <div class="dev-empty-state">
-          <!-- Illustration -->
-          <div class="dev-empty-state__icon">
-            <div class="dev-empty-state__icon-bg"></div>
-            <div class="dev-empty-state__icon-front">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="1.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <path d="M3 9h18" />
-                <path d="M9 21V9" />
-              </svg>
-            </div>
-          </div>
-
+          <h2 class="dev-empty-state__title">No assets yet</h2>
+          <p class="dev-empty-state__description">
+            List your first property or asset to start attracting investors. Track funding, manage listings, and monitor activity — all from one place.
+          </p>
 
           <!-- Feature hints -->
           <div class="dev-empty-state__features">
             <div class="dev-empty-state__feature">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2"
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
               </svg>
               <span>Track funding progress</span>
             </div>
             <div class="dev-empty-state__feature">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2"
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -255,7 +246,7 @@ extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigatio
               <span>Monitor investor activity</span>
             </div>
             <div class="dev-empty-state__feature">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2"
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
                 <line x1="1" y1="10" x2="23" y2="10" />
@@ -264,13 +255,13 @@ extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigatio
             </div>
           </div>
 
-          <button class="dev-empty-state__cta" onclick="window.location.href = '/developer/add-asset'">
+          <a href="/developer/add-asset" class="dev-empty-state__cta">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#98FB96" stroke-width="2"
               stroke-linecap="round">
               <path d="M10 4v12M4 10h12" />
             </svg>
             <span>Add your first asset</span>
-          </button>
+          </a>
           {% endif %}
         </div>
     </main>

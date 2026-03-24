@@ -53,7 +53,8 @@
     const hint = document.querySelector(".tp-hint");
     if (hint) {
       if (data.tier.nextTier && data.tier.thresholdForNextTier > 0) {
-        hint.innerHTML = `Invest <strong class="text-blue">${formatCurrency(data.tier.thresholdForNextTier, data.balance.currency)}</strong> to reach ${data.tier.nextTier}`;
+        const remaining = Math.max(0, data.tier.thresholdForNextTier - data.tier.investedLast12Months);
+        hint.innerHTML = `Invest <strong class="text-blue">${formatCurrency(remaining, data.balance.currency)}</strong> to reach ${data.tier.nextTier}`;
       } else {
         // Bedingtes Rendering: UI reagiert auf Endstufe
         hint.innerHTML = `<strong class="text-blue">Maximum Tier Reached</strong>`;

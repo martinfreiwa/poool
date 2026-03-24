@@ -22,15 +22,17 @@ pub fn sanitize_html_basic(html: &str) -> String {
 /// Automod: Profanity and link blocker (M6-BE.1)
 pub fn check_automod(content: &str) -> Option<String> {
     let lower = content.to_lowercase();
-    
+
     // Simplistic profanity filter
-    let banned_words = ["fuck", "shit", "bitch", "asshole", "cunt", "nigger", "faggot", "dyke", "tranny"];
+    let banned_words = [
+        "fuck", "shit", "bitch", "asshole", "cunt", "nigger", "faggot", "dyke", "tranny",
+    ];
     for word in banned_words.iter() {
         if lower.contains(word) {
             return Some(format!("Profanity detected: {}", word));
         }
     }
-    
+
     // Simplistic link filter
     let banned_links = ["pornhub.com", "xvideos.com", "onlyfans.com", "scam.com"];
     for link in banned_links.iter() {
@@ -38,6 +40,6 @@ pub fn check_automod(content: &str) -> Option<String> {
             return Some(format!("Banned link detected: {}", link));
         }
     }
-    
+
     None
 }

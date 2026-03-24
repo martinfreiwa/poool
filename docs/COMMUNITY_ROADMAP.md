@@ -108,6 +108,7 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | `2026-03-23 00:50` | `Antigravity` | `M5-DB.2, M5-BE.2-3, M5-FE.2` | `amas.rs, routes.rs, community-amas.js, community.html` | `✅ Check-Out` | Expert AMAs COMPLETE: 3 DB tables (amas, ama_questions, ama_question_upvotes) + upvote trigger. 11 API endpoints (4 user, 7 admin). Dynamic AMA tab replaces Coming Soon overlay. Question submission, upvoting, expert answers with XP rewards. |
 | `2026-03-23 01:15` | `Antigravity` | `M3-ADMIN.1-4` | `routes.rs, admin-sidebar-loader.js, badges.html, amas.html, user-detail.html, users.html` | `✅ Check-Out` | M3-ADMIN COMPLETE: Admin badge management page (CRUD + grant/revoke), admin AMA management page (create/status/answer/feature), user detail backend API, sidebar extended with Badges + Expert AMAs links. Users table now links to user detail. Fixed P1: require_auth -> get_current_user. |
 | `2026-03-23 10:10` | `Antigravity` | `UX.1-6` | `community-feed.js, community.html, COMMUNITY_ROADMAP.md` | `✅ Check-Out` | Tier 1 UX Polish COMPLETE: Upgraded `renderContentWithHashtags` to also handle @mentions (purple links, hover effects). Trending Hashtags sidebar widget in right panel. Hashtag filter view with branded banner + clear button. Fixed all `#0000FF` → `#03FF88` (POOOL brand green). Removed duplicate functions. Marked UX.1–UX.6 ✅ in roadmap. JS syntax + cargo check clean. |
+| `2026-03-24 11:15` | `Antigravity` | `M5.5-FIXES` | `frontend/platform/community.html, js/community*.js` | `✅ Check-Out` | Completed 10 Data Wiring / UI tasks from audit. Fixed post buttons, share clipboard, dynamic profile stats/badges, profile editor modal, dynamic AMA sidebar, hidden fake investors/announcements, etc. |
 
 ---
 
@@ -419,6 +420,21 @@ Same protocol as `IMPLEMENTATION_ROADMAP.md`. Agents **MUST**:
 | **M5-ADMIN.5**| Admin: Global Comments Moderation Page | Admin | None | `✅ DONE` | Antigravity |
 | **M5-ADMIN.6**| Admin: Force Transfer Circle Ownership API | Admin | M4-BE.1 | `✅ DONE` | Antigravity |
 | **M5-ADMIN.7**| Admin: User Mute/Warning System API | Admin | None | `✅ DONE` | Antigravity |
+
+### 🛠️ MODULE 5.5: Data Wiring & UI Fixes (Post-Audit)
+
+| ID | Task | Category | Dependencies | Status | Assignee |
+|:---|:---|:---|:---|:---|:---|
+| **M5.5-F1**| Fix Create Post buttons (Type pre-selection) | User | M2 | `✅ DONE` | Antigravity |
+| **M5.5-F2**| Implement Share button (Copy to clipboard) | User | M1 | `✅ DONE` | Antigravity |
+| **M5.5-F3**| Render Profile stats from API on load (0/0/0 fix) | User | M3 | `✅ DONE` | Antigravity |
+| **M5.5-F4**| Fetch & render Badges from API (remove hardcoded) | User | M3 | `✅ DONE` | Antigravity |
+| **M5.5-F5**| Use real user initial/avatar in Create Post box | User | M1 | `✅ DONE` | Antigravity |
+| **M5.5-F6**| Build Community Profile Edit modal (Bio, Name) | User | M3 | `✅ DONE` | Antigravity |
+| **M5.5-F7**| Make AMA card dynamic or hide past dates | User | M5 | `✅ DONE` | Antigravity |
+| **M5.5-F8**| Fetch Suggested Investors from API or remove fake | User | M3 | `✅ DONE` | Antigravity |
+| **M5.5-F9**| Render Announcements tab from API data | User | M1 | `✅ DONE` | Antigravity |
+| **M5.5-F10**| Fix Trending Assets to work with real data | User | M2 | `✅ DONE` | Antigravity |
 
 ---
 

@@ -98,7 +98,6 @@ pub struct CreatePostRequest {
     pub poll_expires_hours: Option<i32>,
 }
 
-
 #[derive(Debug, Serialize)]
 pub struct PostDisplay {
     pub id: Uuid,

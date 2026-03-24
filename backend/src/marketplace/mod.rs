@@ -36,7 +36,10 @@ pub fn router() -> Router<AppState> {
     use routes::*;
     Router::new()
         // ── Public Read APIs ────────────────────────────────
-        .route("/api/marketplace/secondary/assets", get(api_secondary_assets))
+        .route(
+            "/api/marketplace/secondary/assets",
+            get(api_secondary_assets),
+        )
         .route("/api/marketplace/:asset_id/orderbook", get(api_orderbook))
         .route("/api/marketplace/:asset_id/trades", get(api_recent_trades))
         .route("/api/marketplace/:asset_id/ticker", get(api_ticker))

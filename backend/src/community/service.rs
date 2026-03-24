@@ -1,14 +1,14 @@
-use crate::community::models::{Post, ContentReport};
+use crate::community::models::{ContentReport, Post};
 use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
 /// Ensures a community profile exists for a user.
-pub async fn ensure_community_profile<'a, E>(executor: E, user_id: Uuid) -> Result<(), AppError> 
-where 
-    E: sqlx::Executor<'a, Database = sqlx::Postgres>
+pub async fn ensure_community_profile<'a, E>(executor: E, user_id: Uuid) -> Result<(), AppError>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Postgres>,
 {
     sqlx::query(
-        "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING"
+        "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
     )
     .bind(user_id)
     .execute(executor)
@@ -54,14 +54,14 @@ pub async fn get_community_feed(
             "#,
             order_clause
         );
-        
+
         sqlx::query_as::<_, Post>(&query_str)
-        .bind(cat)
-        .bind(only_following_user_id)
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(pool)
-        .await?
+            .bind(cat)
+            .bind(only_following_user_id)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?
     } else {
         let query_str = format!(
             r#"
@@ -78,11 +78,11 @@ pub async fn get_community_feed(
         );
 
         sqlx::query_as::<_, Post>(&query_str)
-        .bind(only_following_user_id)
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(pool)
-        .await?
+            .bind(only_following_user_id)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?
     };
 
     Ok(rows)
@@ -153,7 +153,7 @@ pub async fn toggle_reaction(
     let added = if let Some(_) = existing {
         // Remove existing reaction (toggle off)
         sqlx::query(
-            "DELETE FROM reactions WHERE post_id = $1 AND user_id = $2 AND reaction_type = $3"
+            "DELETE FROM reactions WHERE post_id = $1 AND user_id = $2 AND reaction_type = $3",
         )
         .bind(post_id)
         .bind(user_id)
@@ -163,14 +163,12 @@ pub async fn toggle_reaction(
         false
     } else {
         // Insert new reaction
-        sqlx::query(
-            "INSERT INTO reactions (post_id, user_id, reaction_type) VALUES ($1, $2, $3)"
-        )
-        .bind(post_id)
-        .bind(user_id)
-        .bind(&reaction_type)
-        .execute(&mut *tx)
-        .await?;
+        sqlx::query("INSERT INTO reactions (post_id, user_id, reaction_type) VALUES ($1, $2, $3)")
+            .bind(post_id)
+            .bind(user_id)
+            .bind(&reaction_type)
+            .execute(&mut *tx)
+            .await?;
         true
     };
 
@@ -194,7 +192,8 @@ pub async fn toggle_reaction(
                 Some(post_id),
                 &notif_content,
                 Some(&link),
-            ).await;
+            )
+            .await;
         }
     }
 
@@ -247,7 +246,8 @@ pub async fn create_comment(
             Some(post_id),
             &notif_content,
             Some(&link),
-        ).await;
+        )
+        .await;
     }
 
     Ok(comment_id)
@@ -261,7 +261,6 @@ pub async fn create_user_post(
     req: crate::community::models::CreatePostRequest,
     is_high_level_user: bool,
 ) -> Result<Uuid, AppError> {
-
     // --- Post Rate Limiting (M2-BE.7) ---
     if let Some(redis_pool) = redis {
         use redis::AsyncCommands;
@@ -271,7 +270,9 @@ pub async fn create_user_post(
             let count: Option<i64> = conn.get(&rl_key).await.unwrap_or(None);
             if let Some(c) = count {
                 if c >= 5 {
-                    return Err(AppError::BadRequest("Rate limit exceeded: Max 5 posts per hour.".into()));
+                    return Err(AppError::BadRequest(
+                        "Rate limit exceeded: Max 5 posts per hour.".into(),
+                    ));
                 }
             }
 
@@ -283,13 +284,15 @@ pub async fn create_user_post(
             let dup_key = format!("community:dup:{}:{}", user_id, content_hash);
             let is_dup: Option<String> = conn.get(&dup_key).await.unwrap_or(None);
             if is_dup.is_some() {
-                return Err(AppError::BadRequest("Duplicate post detected. Please wait before posting the same content.".into()));
+                return Err(AppError::BadRequest(
+                    "Duplicate post detected. Please wait before posting the same content.".into(),
+                ));
             }
 
             // Mark successful post creation in Redis limits
-            let _ : () = conn.incr(&rl_key, 1).await.unwrap_or(());
-            let _ : () = conn.expire(&rl_key, 3600).await.unwrap_or(());
-            let _ : () = conn.set_ex(&dup_key, "1", 300).await.unwrap_or(());
+            let _: () = conn.incr(&rl_key, 1).await.unwrap_or(());
+            let _: () = conn.expire(&rl_key, 3600).await.unwrap_or(());
+            let _: () = conn.set_ex(&dup_key, "1", 300).await.unwrap_or(());
         }
     }
 
@@ -299,7 +302,8 @@ pub async fn create_user_post(
     ensure_community_profile(&mut *tx, user_id).await?;
 
     // Moderate content
-    let mod_result = crate::community::moderation::moderate_content(&req.content, is_high_level_user);
+    let mod_result =
+        crate::community::moderation::moderate_content(&req.content, is_high_level_user);
 
     let post_id = sqlx::query_scalar::<_, Uuid>(
         r#"
@@ -342,7 +346,7 @@ pub async fn create_user_post(
             for (i, label) in options.iter().enumerate() {
                 if !label.trim().is_empty() {
                     sqlx::query(
-                        "INSERT INTO poll_options (poll_id, label, sort_order) VALUES ($1, $2, $3)"
+                        "INSERT INTO poll_options (poll_id, label, sort_order) VALUES ($1, $2, $3)",
                     )
                     .bind(poll_id)
                     .bind(label.trim())
@@ -370,7 +374,8 @@ async fn extract_and_link_hashtags(
 
     for word in content.split_whitespace() {
         if word.starts_with('#') && word.len() > 1 {
-            let tag = word.trim_start_matches('#')
+            let tag = word
+                .trim_start_matches('#')
                 .trim_matches(|c: char| !c.is_alphanumeric() && c != '_')
                 .to_lowercase();
             if tag.is_empty() || tag.len() > 100 || seen.contains(&tag) {
@@ -438,27 +443,30 @@ pub async fn update_user_post(
     use sqlx::Row;
 
     // Check ownership and time
-    let post = sqlx::query(
-        "SELECT user_id, created_at FROM posts WHERE id = $1 FOR UPDATE"
-    )
-    .bind(post_id)
-    .fetch_optional(&mut *tx)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Post not found".to_string()))?;
+    let post = sqlx::query("SELECT user_id, created_at FROM posts WHERE id = $1 FOR UPDATE")
+        .bind(post_id)
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Post not found".to_string()))?;
 
     let post_user_id: Uuid = post.try_get("user_id")?;
     let created_at: chrono::DateTime<chrono::Utc> = post.try_get("created_at")?;
 
     if post_user_id != user_id {
-        return Err(AppError::Forbidden("You can only edit your own posts".to_string()));
+        return Err(AppError::Forbidden(
+            "You can only edit your own posts".to_string(),
+        ));
     }
 
     let now = chrono::Utc::now();
     if (now - created_at).num_minutes() > 15 {
-        return Err(AppError::BadRequest("Posts can only be edited within 15 minutes of creation".to_string()));
+        return Err(AppError::BadRequest(
+            "Posts can only be edited within 15 minutes of creation".to_string(),
+        ));
     }
 
-    let mod_result = crate::community::moderation::moderate_content(&new_content, is_high_level_user);
+    let mod_result =
+        crate::community::moderation::moderate_content(&new_content, is_high_level_user);
 
     sqlx::query(
         r#"
@@ -481,27 +489,23 @@ pub async fn update_user_post(
 }
 
 /// Delete a user post (must be owner)
-pub async fn delete_user_post(
-    pool: &PgPool,
-    post_id: Uuid,
-    user_id: Uuid,
-) -> Result<(), AppError> {
+pub async fn delete_user_post(pool: &PgPool, post_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
     let mut tx = pool.begin().await?;
 
     use sqlx::Row;
 
-    let post = sqlx::query(
-        "SELECT user_id FROM posts WHERE id = $1 FOR UPDATE"
-    )
-    .bind(post_id)
-    .fetch_optional(&mut *tx)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Post not found".to_string()))?;
+    let post = sqlx::query("SELECT user_id FROM posts WHERE id = $1 FOR UPDATE")
+        .bind(post_id)
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Post not found".to_string()))?;
 
     let post_user_id: Uuid = post.try_get("user_id")?;
 
     if post_user_id != user_id {
-        return Err(AppError::Forbidden("You can only delete your own posts".to_string()));
+        return Err(AppError::Forbidden(
+            "You can only delete your own posts".to_string(),
+        ));
     }
 
     sqlx::query("DELETE FROM posts WHERE id = $1")
@@ -515,7 +519,7 @@ pub async fn delete_user_post(
 
 pub async fn get_pending_reports(pool: &PgPool) -> Result<Vec<ContentReport>, AppError> {
     let reports = sqlx::query_as::<_, ContentReport>(
-        "SELECT * FROM content_reports WHERE status = 'pending' ORDER BY created_at ASC"
+        "SELECT * FROM content_reports WHERE status = 'pending' ORDER BY created_at ASC",
     )
     .fetch_all(pool)
     .await?;
@@ -548,7 +552,7 @@ pub async fn action_on_report(
                 .bind(post_id)
                 .execute(&mut *tx)
                 .await?;
-            
+
             sqlx::query("UPDATE content_reports SET status = 'resolved', admin_notes = $1, updated_at = NOW() WHERE id = $2")
                 .bind(notes)
                 .bind(report_id)
@@ -563,10 +567,11 @@ pub async fn action_on_report(
                 .await?;
         }
         "warn_user" => {
-            let author_id: Option<Uuid> = sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
-                .bind(post_id)
-                .fetch_optional(&mut *tx)
-                .await?;
+            let author_id: Option<Uuid> =
+                sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
+                    .bind(post_id)
+                    .fetch_optional(&mut *tx)
+                    .await?;
             if let Some(uid) = author_id {
                 sqlx::query("UPDATE community_profiles SET warning_count = warning_count + 1 WHERE user_id = $1")
                     .bind(uid)
@@ -580,10 +585,11 @@ pub async fn action_on_report(
                 .await?;
         }
         "ban_user" => {
-            let author_id: Option<Uuid> = sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
-                .bind(post_id)
-                .fetch_optional(&mut *tx)
-                .await?;
+            let author_id: Option<Uuid> =
+                sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
+                    .bind(post_id)
+                    .fetch_optional(&mut *tx)
+                    .await?;
             if let Some(uid) = author_id {
                 sqlx::query("UPDATE community_profiles SET is_community_banned = true, ban_reason = $1 WHERE user_id = $2")
                     .bind("Banned via report action")
@@ -604,7 +610,6 @@ pub async fn action_on_report(
     Ok(())
 }
 
-
 pub async fn get_trending_assets(pool: &PgPool) -> Result<Vec<(Uuid, i64)>, AppError> {
     use sqlx::Row;
     let rows = sqlx::query(
@@ -613,7 +618,7 @@ pub async fn get_trending_assets(pool: &PgPool) -> Result<Vec<(Uuid, i64)>, AppE
          WHERE asset_id IS NOT NULL \
          GROUP BY asset_id \
          ORDER BY post_count DESC \
-         LIMIT 3"
+         LIMIT 3",
     )
     .fetch_all(pool)
     .await?;
@@ -647,8 +652,8 @@ pub async fn update_user_profile(
 
 /// Fetches badges for a batch of users (useful for feed rendering without N+1)
 pub async fn get_badges_batch(
-    pool: &PgPool, 
-    user_ids: &[Uuid]
+    pool: &PgPool,
+    user_ids: &[Uuid],
 ) -> Result<std::collections::HashMap<Uuid, Vec<String>>, AppError> {
     if user_ids.is_empty() {
         return Ok(std::collections::HashMap::new());
@@ -660,13 +665,14 @@ pub async fn get_badges_batch(
          FROM user_badges ub 
          JOIN badges b ON ub.badge_id = b.id 
          WHERE ub.user_id = ANY($1) 
-         ORDER BY b.display_order ASC"
+         ORDER BY b.display_order ASC",
     )
     .bind(user_ids)
     .fetch_all(pool)
     .await?;
 
-    let mut map: std::collections::HashMap<Uuid, Vec<String>> = std::collections::HashMap::with_capacity(user_ids.len());
+    let mut map: std::collections::HashMap<Uuid, Vec<String>> =
+        std::collections::HashMap::with_capacity(user_ids.len());
     for r in badge_rows {
         let uid: Uuid = r.get("user_id");
         let icon: String = r.get("icon");
@@ -693,23 +699,32 @@ pub struct UserProfileDisplay {
     pub badges: Vec<BadgeDisplay>,
 }
 
-pub async fn is_following(pool: &PgPool, follower: Uuid, following: Uuid) -> Result<bool, AppError> {
-    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = $2)")
-        .bind(follower)
-        .bind(following)
-        .fetch_one(pool)
-        .await?;
+pub async fn is_following(
+    pool: &PgPool,
+    follower: Uuid,
+    following: Uuid,
+) -> Result<bool, AppError> {
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = $2)",
+    )
+    .bind(follower)
+    .bind(following)
+    .fetch_one(pool)
+    .await?;
     Ok(exists)
 }
 
-pub async fn get_user_profile(pool: &PgPool, user_id: Uuid) -> Result<UserProfileDisplay, AppError> {
+pub async fn get_user_profile(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<UserProfileDisplay, AppError> {
     // Ensure profile exists (Auto-Onboarding Fix)
     ensure_community_profile(pool, user_id).await?;
 
     use sqlx::Row;
     let row = sqlx::query(
         "SELECT bio, follower_count, following_count, post_count 
-         FROM community_profiles WHERE user_id = $1"
+         FROM community_profiles WHERE user_id = $1",
     )
     .bind(user_id)
     .fetch_optional(pool)
@@ -723,17 +738,20 @@ pub async fn get_user_profile(pool: &PgPool, user_id: Uuid) -> Result<UserProfil
          FROM user_badges ub 
          JOIN badges b ON ub.badge_id = b.id 
          WHERE ub.user_id = $1 
-         ORDER BY b.display_order ASC"
+         ORDER BY b.display_order ASC",
     )
     .bind(user_id)
     .fetch_all(pool)
     .await?;
 
-    let badges = badge_rows.into_iter().map(|r| BadgeDisplay {
-        code: r.get("code"),
-        name: r.get("name"),
-        icon: r.get("icon"),
-    }).collect();
+    let badges = badge_rows
+        .into_iter()
+        .map(|r| BadgeDisplay {
+            code: r.get("code"),
+            name: r.get("name"),
+            icon: r.get("icon"),
+        })
+        .collect();
 
     Ok(UserProfileDisplay {
         user_id,
@@ -745,12 +763,16 @@ pub async fn get_user_profile(pool: &PgPool, user_id: Uuid) -> Result<UserProfil
     })
 }
 
-pub async fn add_follow(pool: &PgPool, follower_id: Uuid, following_id: Uuid) -> Result<(), AppError> {
+pub async fn add_follow(
+    pool: &PgPool,
+    follower_id: Uuid,
+    following_id: Uuid,
+) -> Result<(), AppError> {
     let mut tx = pool.begin().await?;
 
     // Insert follow logic
     let res = sqlx::query(
-        "INSERT INTO follows (follower_id, following_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
+        "INSERT INTO follows (follower_id, following_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
     )
     .bind(follower_id)
     .bind(following_id)
@@ -762,10 +784,13 @@ pub async fn add_follow(pool: &PgPool, follower_id: Uuid, following_id: Uuid) ->
         sqlx::query("UPDATE community_profiles SET following_count = following_count + 1 WHERE user_id = $1")
             .bind(follower_id)
             .execute(&mut *tx).await?;
-        
-        sqlx::query("UPDATE community_profiles SET follower_count = follower_count + 1 WHERE user_id = $1")
-            .bind(following_id)
-            .execute(&mut *tx).await?;
+
+        sqlx::query(
+            "UPDATE community_profiles SET follower_count = follower_count + 1 WHERE user_id = $1",
+        )
+        .bind(following_id)
+        .execute(&mut *tx)
+        .await?;
 
         // Notify
         let notif_content = "Someone started following you.".to_string();
@@ -778,14 +803,19 @@ pub async fn add_follow(pool: &PgPool, follower_id: Uuid, following_id: Uuid) ->
             None,
             &notif_content,
             Some(&link),
-        ).await;
+        )
+        .await;
     }
 
     tx.commit().await?;
     Ok(())
 }
 
-pub async fn remove_follow(pool: &PgPool, follower_id: Uuid, following_id: Uuid) -> Result<(), AppError> {
+pub async fn remove_follow(
+    pool: &PgPool,
+    follower_id: Uuid,
+    following_id: Uuid,
+) -> Result<(), AppError> {
     let mut tx = pool.begin().await?;
 
     let res = sqlx::query("DELETE FROM follows WHERE follower_id = $1 AND following_id = $2")
@@ -798,7 +828,7 @@ pub async fn remove_follow(pool: &PgPool, follower_id: Uuid, following_id: Uuid)
         sqlx::query("UPDATE community_profiles SET following_count = GREATEST(0, following_count - 1) WHERE user_id = $1")
             .bind(follower_id)
             .execute(&mut *tx).await?;
-        
+
         sqlx::query("UPDATE community_profiles SET follower_count = GREATEST(0, follower_count - 1) WHERE user_id = $1")
             .bind(following_id)
             .execute(&mut *tx).await?;
@@ -814,11 +844,11 @@ pub async fn trigger_investment_milestones(
     core_pool: &PgPool,
     community_pool: &PgPool,
     user_id: Uuid,
-    new_asset_id: Uuid
+    new_asset_id: Uuid,
 ) -> Result<(), AppError> {
     // 1. Get user total active investments count
     let total_investments: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM investments WHERE user_id = $1 AND tokens_owned > 0"
+        "SELECT COUNT(*) FROM investments WHERE user_id = $1 AND tokens_owned > 0",
     )
     .bind(user_id)
     .fetch_one(core_pool)
@@ -836,7 +866,10 @@ pub async fn trigger_investment_milestones(
         let content = if total_investments == 1 {
             format!("🎉 I just made my very first investment on POOOL in **{}**! Excited to join the community.", asset_name)
         } else {
-            format!("🚀 Milestone reached! I just completed my {}th investment in **{}**.", total_investments, asset_name)
+            format!(
+                "🚀 Milestone reached! I just completed my {}th investment in **{}**.",
+                total_investments, asset_name
+            )
         };
 
         let sanitized = crate::community::validation::sanitize_html_basic(&content);
@@ -845,7 +878,7 @@ pub async fn trigger_investment_milestones(
 
         // create_user_post handles adding to DB and updating profile counts!
         // We will call the DB insert directly to bypass the route redis limits.
-        
+
         let mut tx = community_pool.begin().await?;
         let _post_id = sqlx::query_scalar::<_, Uuid>(
             "INSERT INTO posts (user_id, post_type, content, content_sanitized, asset_id, image_urls, is_hidden, disclaimer_shown) 
@@ -862,7 +895,8 @@ pub async fn trigger_investment_milestones(
 
         sqlx::query("UPDATE community_profiles SET post_count = post_count + 1 WHERE user_id = $1")
             .bind(user_id)
-            .execute(&mut *tx).await?;
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
     }

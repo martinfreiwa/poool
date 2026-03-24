@@ -76,7 +76,7 @@ pub async fn list_amas(pool: &PgPool) -> Result<Vec<Ama>, AppError> {
                    WHEN 'archived' THEN 5
                    ELSE 6
                END,
-               scheduled_at DESC NULLS LAST"#
+               scheduled_at DESC NULLS LAST"#,
     )
     .fetch_all(pool)
     .await?;
@@ -90,7 +90,7 @@ pub async fn list_amas_admin(pool: &PgPool) -> Result<Vec<Ama>, AppError> {
         r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url,
                   status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at
            FROM amas
-           ORDER BY created_at DESC"#
+           ORDER BY created_at DESC"#,
     )
     .fetch_all(pool)
     .await?;
@@ -100,11 +100,15 @@ pub async fn list_amas_admin(pool: &PgPool) -> Result<Vec<Ama>, AppError> {
 
 // ─── Get AMA Detail ──────────────────────────────────────────────────
 
-pub async fn get_ama_detail(pool: &PgPool, ama_id: Uuid, user_id: Uuid) -> Result<AmaDetail, AppError> {
+pub async fn get_ama_detail(
+    pool: &PgPool,
+    ama_id: Uuid,
+    user_id: Uuid,
+) -> Result<AmaDetail, AppError> {
     let ama = sqlx::query_as::<_, Ama>(
         r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url,
                   status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at
-           FROM amas WHERE id = $1"#
+           FROM amas WHERE id = $1"#,
     )
     .bind(ama_id)
     .fetch_optional(pool)
@@ -125,12 +129,11 @@ pub async fn get_ama_detail(pool: &PgPool, ama_id: Uuid, user_id: Uuid) -> Resul
     .fetch_all(pool)
     .await?;
 
-    let question_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*)::BIGINT FROM ama_questions WHERE ama_id = $1"
-    )
-    .bind(ama_id)
-    .fetch_one(pool)
-    .await?;
+    let question_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*)::BIGINT FROM ama_questions WHERE ama_id = $1")
+            .bind(ama_id)
+            .fetch_one(pool)
+            .await?;
 
     // Check if user set a reminder (we'll store this in a simple way — check if user submitted a "remind" entry)
     // For now we use a simple approach: no separate table, just return false
@@ -153,33 +156,36 @@ pub async fn submit_question(
     question: &str,
 ) -> Result<AmaQuestion, AppError> {
     // Validate AMA status
-    let (status, max_q): (String, i32) = sqlx::query_as(
-        "SELECT status, max_questions FROM amas WHERE id = $1"
-    )
-    .bind(ama_id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| AppError::NotFound("AMA not found".into()))?;
+    let (status, max_q): (String, i32) =
+        sqlx::query_as("SELECT status, max_questions FROM amas WHERE id = $1")
+            .bind(ama_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("AMA not found".into()))?;
 
     if !["accepting_questions", "live"].contains(&status.as_str()) {
-        return Err(AppError::BadRequest("This AMA is not currently accepting questions.".into()));
+        return Err(AppError::BadRequest(
+            "This AMA is not currently accepting questions.".into(),
+        ));
     }
 
     // Check max questions
-    let current_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*)::BIGINT FROM ama_questions WHERE ama_id = $1"
-    )
-    .bind(ama_id)
-    .fetch_one(pool)
-    .await?;
+    let current_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*)::BIGINT FROM ama_questions WHERE ama_id = $1")
+            .bind(ama_id)
+            .fetch_one(pool)
+            .await?;
 
     if current_count >= max_q as i64 {
-        return Err(AppError::BadRequest(format!("This AMA has reached the maximum of {} questions.", max_q)));
+        return Err(AppError::BadRequest(format!(
+            "This AMA has reached the maximum of {} questions.",
+            max_q
+        )));
     }
 
     // Check user hasn't submitted more than 3 questions per AMA
     let user_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*)::BIGINT FROM ama_questions WHERE ama_id = $1 AND user_id = $2"
+        "SELECT COUNT(*)::BIGINT FROM ama_questions WHERE ama_id = $1 AND user_id = $2",
     )
     .bind(ama_id)
     .bind(user_id)
@@ -187,7 +193,9 @@ pub async fn submit_question(
     .await?;
 
     if user_count >= 3 {
-        return Err(AppError::BadRequest("You can submit a maximum of 3 questions per AMA.".into()));
+        return Err(AppError::BadRequest(
+            "You can submit a maximum of 3 questions per AMA.".into(),
+        ));
     }
 
     let q = sqlx::query_as::<_, AmaQuestion>(
@@ -207,7 +215,11 @@ pub async fn submit_question(
 // ─── Toggle Upvote ───────────────────────────────────────────────────
 
 /// Toggle upvote on a question. Returns true if added, false if removed.
-pub async fn toggle_upvote(pool: &PgPool, question_id: Uuid, user_id: Uuid) -> Result<bool, AppError> {
+pub async fn toggle_upvote(
+    pool: &PgPool,
+    question_id: Uuid,
+    user_id: Uuid,
+) -> Result<bool, AppError> {
     // Attempt insert
     let inserted = sqlx::query(
         "INSERT INTO ama_question_upvotes (question_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING"
@@ -222,13 +234,11 @@ pub async fn toggle_upvote(pool: &PgPool, question_id: Uuid, user_id: Uuid) -> R
     }
 
     // Already existed — remove (toggle off)
-    sqlx::query(
-        "DELETE FROM ama_question_upvotes WHERE question_id = $1 AND user_id = $2"
-    )
-    .bind(question_id)
-    .bind(user_id)
-    .execute(pool)
-    .await?;
+    sqlx::query("DELETE FROM ama_question_upvotes WHERE question_id = $1 AND user_id = $2")
+        .bind(question_id)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
 
     Ok(false)
 }
@@ -270,25 +280,52 @@ pub async fn create_ama(
 
 // ─── Admin: Update AMA Status ────────────────────────────────────────
 
-pub async fn update_ama_status(pool: &PgPool, ama_id: Uuid, new_status: &str) -> Result<(), AppError> {
-    let valid = ["draft", "scheduled", "accepting_questions", "live", "closed", "archived"];
+pub async fn update_ama_status(
+    pool: &PgPool,
+    ama_id: Uuid,
+    new_status: &str,
+) -> Result<(), AppError> {
+    let valid = [
+        "draft",
+        "scheduled",
+        "accepting_questions",
+        "live",
+        "closed",
+        "archived",
+    ];
     if !valid.contains(&new_status) {
-        return Err(AppError::BadRequest(format!("Invalid AMA status: {}", new_status)));
+        return Err(AppError::BadRequest(format!(
+            "Invalid AMA status: {}",
+            new_status
+        )));
     }
 
     // Set timestamps based on status
     match new_status {
         "live" => {
-            sqlx::query("UPDATE amas SET status = $1, started_at = NOW(), updated_at = NOW() WHERE id = $2")
-                .bind(new_status).bind(ama_id).execute(pool).await?;
+            sqlx::query(
+                "UPDATE amas SET status = $1, started_at = NOW(), updated_at = NOW() WHERE id = $2",
+            )
+            .bind(new_status)
+            .bind(ama_id)
+            .execute(pool)
+            .await?;
         }
         "closed" | "archived" => {
-            sqlx::query("UPDATE amas SET status = $1, ended_at = NOW(), updated_at = NOW() WHERE id = $2")
-                .bind(new_status).bind(ama_id).execute(pool).await?;
+            sqlx::query(
+                "UPDATE amas SET status = $1, ended_at = NOW(), updated_at = NOW() WHERE id = $2",
+            )
+            .bind(new_status)
+            .bind(ama_id)
+            .execute(pool)
+            .await?;
         }
         _ => {
             sqlx::query("UPDATE amas SET status = $1, updated_at = NOW() WHERE id = $2")
-                .bind(new_status).bind(ama_id).execute(pool).await?;
+                .bind(new_status)
+                .bind(ama_id)
+                .execute(pool)
+                .await?;
         }
     }
 
@@ -304,7 +341,7 @@ pub async fn answer_question(
     answer: &str,
 ) -> Result<(), AppError> {
     let result = sqlx::query(
-        "UPDATE ama_questions SET answer = $1, answered_by = $2, answered_at = NOW() WHERE id = $3"
+        "UPDATE ama_questions SET answer = $1, answered_by = $2, answered_at = NOW() WHERE id = $3",
     )
     .bind(answer)
     .bind(admin_id)
@@ -317,16 +354,22 @@ pub async fn answer_question(
     }
 
     // Award XP to the question author and notify them
-    let info: Option<(Uuid, Uuid)> = sqlx::query_as(
-        "SELECT user_id, ama_id FROM ama_questions WHERE id = $1"
-    )
-    .bind(question_id)
-    .fetch_optional(pool)
-    .await?;
+    let info: Option<(Uuid, Uuid)> =
+        sqlx::query_as("SELECT user_id, ama_id FROM ama_questions WHERE id = $1")
+            .bind(question_id)
+            .fetch_optional(pool)
+            .await?;
 
     if let Some((uid, ama_id)) = info {
-        let _ = crate::community::xp::award_xp(pool, uid, "ama_question", Some("Your AMA question was answered!"), Some(50)).await;
-        
+        let _ = crate::community::xp::award_xp(
+            pool,
+            uid,
+            "ama_question",
+            Some("Your AMA question was answered!"),
+            Some(50),
+        )
+        .await;
+
         let notif_content = "Your AMA question was answered by the expert!".to_string();
         let link = format!("/community/feed?ama={}", ama_id);
         let _ = crate::community::notifications::notify_user(
@@ -336,8 +379,9 @@ pub async fn answer_question(
             "ama_answer",
             Some(ama_id),
             &notif_content,
-            Some(&link)
-        ).await;
+            Some(&link),
+        )
+        .await;
     }
 
     Ok(())
@@ -360,12 +404,11 @@ pub async fn toggle_featured(pool: &PgPool, question_id: Uuid) -> Result<bool, A
 // ─── Question Count per AMA ──────────────────────────────────────────
 
 pub async fn get_question_count(pool: &PgPool, ama_id: Uuid) -> Result<i64, AppError> {
-    let count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*)::BIGINT FROM ama_questions WHERE ama_id = $1"
-    )
-    .bind(ama_id)
-    .fetch_one(pool)
-    .await?;
+    let count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*)::BIGINT FROM ama_questions WHERE ama_id = $1")
+            .bind(ama_id)
+            .fetch_one(pool)
+            .await?;
 
     Ok(count)
 }

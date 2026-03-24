@@ -115,6 +115,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .add-asset-btn:hover {
@@ -235,8 +236,10 @@
   position: relative;
   width: 80px;
   height: 80px;
-  background: rgba(0, 0, 255, 0.08);
-  border: 1px solid rgba(0, 0, 255, 0.12);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -278,11 +281,17 @@
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
   font-size: 13px;
   font-weight: 500;
-  color: #414651;
-  background: #f8f9fc;
-  padding: 8px 16px;
+  color: var(--text-secondary, #535862);
+  background: var(--card-bg, #FFFFFF);
+  padding: 8px 14px;
   border-radius: 100px;
-  border: 1px solid var(--table-border-color);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dev-empty-state__feature:hover {
+  border-color: rgba(0, 0, 255, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
 .dev-empty-state__feature svg {
@@ -303,6 +312,7 @@
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
+  text-decoration: none;
   box-shadow:
     0px 1px 2px rgba(16, 24, 40, 0.05),
     inset 0px 0px 0px 1px rgba(10, 13, 18, 0.18),

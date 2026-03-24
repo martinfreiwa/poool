@@ -88,13 +88,12 @@ pub async fn require_step_up_2fa(
     // ── Developer account bypass ─────────────────────────────────
     // support@traffic-creator.com is the web developer account and is
     // permanently exempt from all step-up 2FA / dual-approval requirements.
-    let email: Option<String> =
-        sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-            .bind(user_id)
-            .fetch_optional(db)
-            .await
-            .ok()
-            .flatten();
+    let email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+        .bind(user_id)
+        .fetch_optional(db)
+        .await
+        .ok()
+        .flatten();
     if email.as_deref() == Some("support@traffic-creator.com") {
         return Ok(());
     }
