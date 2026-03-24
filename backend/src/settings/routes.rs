@@ -356,6 +356,11 @@ pub async fn page_settings_2(jar: CookieJar, State(state): State<AppState>) -> i
     crate::common::routes_helper::serve_protected(jar, &state, "settings-2.html").await
 }
 
+/// GET /settings-3 — Render the new alternative settings page design based on cards.
+pub async fn page_settings_3(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    crate::common::routes_helper::serve_protected(jar, &state, "settings-3.html").await
+}
+
 /// GET /account-deletion — Render the account deletion page.
 pub async fn page_account_deletion(
     jar: CookieJar,

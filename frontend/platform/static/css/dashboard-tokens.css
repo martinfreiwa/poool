@@ -29,7 +29,7 @@
     --page-title-font-weight: 700;
     --page-title-color: #181D27;
     --page-title-line-height: 1.2;
-    --page-title-margin-bottom: 0;
+    --page-title-margin-bottom: 24px;
 
     /* ── 4. Subtitle / Description ────────────────────────────────── */
     --page-subtitle-font-size: 15px;

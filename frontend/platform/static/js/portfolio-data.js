@@ -83,29 +83,47 @@
   }
 
   function updateKeyFinancials(data) {
+    function updateChange(id, val, isPositive) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = val;
+      const parent = el.closest(".financials-change") || el.closest(".mobile-financial-change-badge") || el.closest(".mobile-financial-change");
+      if (parent) {
+        parent.classList.remove("change-increase", "change-decrease", "change-neutral");
+        if (val === "—") {
+          parent.classList.add("change-neutral");
+        } else {
+          parent.classList.add(isPositive ? "change-increase" : "change-decrease");
+        }
+      }
+    }
+
     // Desktop
     setText("portfolio-monthly-income", data.monthlyIncome);
     setText("portfolio-total-rental", data.totalRental);
     setText("portfolio-total-appreciation", data.totalAppreciation);
-    setText("portfolio-monthly-income-change", "—");
-    setText("portfolio-total-rental-change", "—");
-    setText("portfolio-total-appreciation-change", data.appreciation.display);
+    
+    updateChange("portfolio-monthly-income-change", "—", true);
+    updateChange("portfolio-total-rental-change", "—", true);
+    updateChange("portfolio-total-appreciation-change", data.appreciation.display, data.appreciation.isPositive);
 
     const period = data.periodLabel;
     setText("portfolio-monthly-income-period", period);
-    setText("portfolio-total-rental-period", `as of ${period}`);
-    setText("portfolio-total-appreciation-period", `as of ${period}`);
+    setText("portfolio-total-rental-period", period);
+    setText("portfolio-total-appreciation-period", period);
 
     // Mobile
     setText("mobile-portfolio-monthly-income", data.monthlyIncome);
     setText("mobile-portfolio-total-rental", data.totalRental);
     setText("mobile-portfolio-total-appreciation", data.totalAppreciation);
-    setText("mobile-portfolio-monthly-income-change", "—");
-    setText("mobile-portfolio-total-rental-change", "—");
-    setText("mobile-portfolio-total-appreciation-change", data.appreciation.display);
+    
+    updateChange("mobile-portfolio-monthly-income-change", "—", true);
+    updateChange("mobile-portfolio-total-rental-change", "—", true);
+    updateChange("mobile-portfolio-total-appreciation-change", data.appreciation.display, data.appreciation.isPositive);
+    
     setText("mobile-portfolio-monthly-income-period", period);
-    setText("mobile-portfolio-total-rental-period", `as of ${period}`);
-    setText("mobile-portfolio-total-appreciation-period", `as of ${period}`);
+    setText("mobile-portfolio-total-rental-period", period);
+    setText("mobile-portfolio-total-appreciation-period", period);
   }
 
   function updateInsights(data) {
@@ -153,13 +171,15 @@
 
     if (investments.length === 0) {
       body.innerHTML = `
-        <div class="portfolio-assets-row" style="justify-content:center; padding:48px;">
-          <div style="display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;">
-            <img src="/static/images/home-smile.svg" alt="No assets" width="48" height="48" style="opacity:0.4;">
-            <span style="color:#667085; font-size:14px;">No investments found.</span>
-            <a href="/marketplace" style="color:#0000ff; font-size:14px; text-decoration:none;">Browse the Marketplace →</a>
-          </div>
-        </div>`;
+        <tr class="portfolio-assets-row">
+          <td colspan="6" style="padding:48px; text-align:center;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:12px; justify-content:center;">
+              <img src="/static/images/home-smile.svg" alt="No assets" width="48" height="48" style="opacity:0.4;">
+              <span style="color:#667085; font-size:14px;">No investments found.</span>
+              <a href="/marketplace" style="color:#0000ff; font-size:14px; text-decoration:none;">Browse the Marketplace →</a>
+            </div>
+          </td>
+        </tr>`;
       return;
     }
 
@@ -171,50 +191,46 @@
       const statusLabel = escHtml(inv.statusLabel);
       const chainBadge = buildChainBadge(inv);
       return `
-      <div class="portfolio-assets-row">
-        <div class="portfolio-assets-cell property-col">
-          <div class="portfolio-assets-property">
-            <div class="portfolio-assets-property-image">
-              <img loading="lazy" src="${cover}" alt="${title}"
-                width="48" height="48" onerror="this.src='/static/images/property-placeholder.webp'" />
-            </div>
-            <div class="portfolio-assets-property-info">
-              <div class="portfolio-assets-property-name">${title}${chainBadge}</div>
+      <tr class="data-table__row" onclick="window.location.href='/property/${slug}'" style="cursor:pointer;">
+        <td class="data-table__td">
+          <div style="display:flex; align-items:center; gap:16px;">
+            <img src="${cover}" alt="${title}" style="width: 56px; height: 40px; border-radius: 6px; object-fit: cover;" onerror="this.outerHTML='<div class=\\'property-image-placeholder\\'><svg width=\\'20\\' height=\\'20\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\' ry=\\'2\\'></rect><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'></circle><polyline points=\\'21 15 16 10 5 21\\'></polyline></svg></div>'">
+            <div style="font-weight: 700; color: #101828; font-size: 14px; line-height: 1.4; max-width: 200px;">
+              ${title}<br/>${chainBadge}
             </div>
           </div>
-        </div>
-        <div class="portfolio-assets-cell investment-col">
-          <div class="portfolio-assets-investment">
-            <div class="portfolio-assets-value">${escHtml(inv.currentValueDisplay)}</div>
-            <div class="portfolio-assets-change ${escHtml(inv.appreciationClass)}">
-              <span class="portfolio-assets-change-icon"></span>
-              <span>${escHtml(inv.appreciationDisplay)}</span>
-            </div>
-          </div>
-        </div>
-        <div class="portfolio-assets-cell rental-col">
-          <div class="portfolio-assets-rental">
-            <div class="portfolio-assets-value">${escHtml(inv.totalRentalDisplay)}</div>
-          </div>
-        </div>
-        <div class="portfolio-assets-cell status-col">
+        </td>
+        <td class="data-table__td">
+          <div style="font-weight: 700; color: #101828; font-size: 14px;">${escHtml(inv.currentValueDisplay)}</div>
+        </td>
+        <td class="data-table__td">
+          <span class="ds-badge" style="background: #FFFFFF; color: #475467; border: 1px solid #E9EAEB; padding: 4px 8px; font-weight: 600; font-size: 12px; display:inline-flex; align-items:center; gap:4px; border-radius: 6px;">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3.5 8.5L8.5 3.5M8.5 3.5H3.5M8.5 3.5V8.5" stroke="#475467" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            ${escHtml(inv.appreciationDisplay)}
+          </span>
+        </td>
+        <td class="data-table__td">
+          <div style="font-weight: 700; color: #101828; font-size: 14px;">${escHtml(inv.totalRentalDisplay)}</div>
+        </td>
+        <td class="data-table__td">
           ${buildStatusBadgeHtml(statusCss, statusLabel)}
-        </div>
-        <div class="portfolio-assets-cell actions-col" style="gap:8px; display: flex; align-items: center;">
+        </td>
+        <td class="data-table__td text-right" onclick="event.stopPropagation();">
           ${(inv.isWithin48h && inv.originalStatus === 'funding_in_progress') ? `
-          <button class="portfolio-assets-action-btn"
-            style="color: #D92D20; border: 1px solid #FDA29B; background: #FEF3F2;"
+          <button class="ds-btn ds-btn--ghost ds-btn--sm"
+            style="color: #D92D20; border: 1px solid #FDA29B; background: #FEF3F2; margin-right: 8px;"
             onclick="window.cancelInvestment('${inv.id}')"
             id="cancel-btn-${inv.id}">
             Refund
           </button>
           ` : ''}
-          <button class="portfolio-assets-btn"
+          <button class="ds-btn ds-btn--ghost ds-btn--sm"
+            style="border: 1px solid #E9EAEB; border-radius: 8px; font-weight: 600; color: #475467; background:#FFFFFF;"
             onclick="window.location.href='/property/${slug}'">
             See Details
           </button>
-        </div>
-      </div>`;}).join("");
+        </td>
+      </tr>`;}).join("");
   }
 
   // ─── Cancel Action Binding ─────────────────────────────────────

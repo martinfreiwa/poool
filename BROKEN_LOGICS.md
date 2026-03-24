@@ -893,3 +893,10 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **What I did:** Converted all cards to .holo-card, replaced 6 glass-icon instances with .p-icon system, added holographic page header icon, added ds-text-money to financial values, rewrote portfolio.css with design tokens, fixed chart colors to Signal Green #03FF88, removed portfolio-value-card.css and portfolio-enhancements.css imports, and added cards-template.css.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-24
+
+### [P2] — Broken DOM nesting in cards-template
+- **File:** `frontend/platform/cards-template.html`
+- **What was wrong:** Extraneous closing `</div>` broke layout by prematurely closing main/wrapper tags.
+- **What I did:** Removed the extra closing `</div>` to restore correct HTML nesting based on python parser.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-24

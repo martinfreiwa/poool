@@ -1,5 +1,5 @@
 {% with title="Developer Dashboard – POOOL", no_index=True, extra_css=['developer-dashboard',
-'mobile-developer-dashboard'],
+'unified-styles', 'unified-cards', 'mobile-developer-dashboard'],
 extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% include
 "components/head.html" %}{% endwith %}
 
@@ -36,6 +36,7 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
 
     <!-- Main Content Area -->
     <main id="developer-dashboard-main" class="ds-main developer-dashboard-main">
+      <div class="ds-main__content">
 
       <!-- Dashboard Content Wrapper -->
       <div id="dashboard-content-wrapper">
@@ -54,7 +55,7 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
           {% for chunk in stats.metrics | batch(4) %}
           <div class="metrics-row">
             {% for metric in chunk %}
-            <div id="metric-card-{{ metric.label }}" class="metric-card">
+            <div id="metric-card-{{ metric.label }}" class="ds-card holo-card metric-card">
               <div id="metric-heading-{{ metric.label }}" class="metric-heading">
                 {{ metric.label }}
               </div>
@@ -117,11 +118,12 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
           {% endfor %}
         </div>
         <!-- Sales Chart -->
-        <div id="sales-chart-section" class="sales-chart-section">
+        <div id="sales-chart-section" class="sales-chart-section" style="margin-top: 24px;">
           {% include 'components/developer-chart.html' %}
         </div>
       </div>
 
+      </div>
       </div>
     </main>
   </div>

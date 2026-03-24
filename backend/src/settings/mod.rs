@@ -14,6 +14,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         // HTML page — V2 is now the primary settings page
         .route("/settings", get(page_settings_2))
+        .route("/settings-3", get(page_settings_3))
         .route("/account-deletion", get(page_account_deletion))
         // JSON API
         .route("/api/settings", get(get_settings_handler))

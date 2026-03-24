@@ -110,6 +110,7 @@ const COMPLETENESS_FIELDS = [
     { key: 'country', label: 'Country' },
     { key: 'date_of_birth', label: 'Birthday' },
     { key: 'nationality', label: 'Nationality' },
+    { key: 'gender', label: 'Gender' },
     { key: 'email_verified', label: 'Email Verified', check: v => v === true },
     { key: 'status', label: 'KYC Verified', check: v => v === 'verified' || v === 'approved' },
 ];
@@ -193,17 +194,21 @@ function populateProfileData(profile) {
     updateCompletenessBanner();
 
     // Core Profile (Read)
-    const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-    setReadValue('read-name', fullName);
+    const fullName = [profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(' ').trim();
+    setReadValue('read-name', fullName || 'Not provided');
     setReadValue('read-email', profile.email);
     setReadValue('read-phone', profile.phone_number);
+    setReadValue('read-gender', profile.gender, 'Not provided');
 
     const readEmailSecurity = document.getElementById('settings-security-email-text');
     if(readEmailSecurity) readEmailSecurity.innerText = profile.email || 'user@example.com';
 
     // Core Profile (Edit)
-    document.getElementById('edit-first-name').value = profile.first_name || '';
-    document.getElementById('edit-last-name').value = profile.last_name || '';
+    if (document.getElementById('edit-first-name')) document.getElementById('edit-first-name').value = profile.first_name || '';
+    if (document.getElementById('edit-middle-name')) document.getElementById('edit-middle-name').value = profile.middle_name || '';
+    if (document.getElementById('edit-last-name')) document.getElementById('edit-last-name').value = profile.last_name || '';
+    if (document.getElementById('edit-phone')) document.getElementById('edit-phone').value = profile.phone_number || '';
+    if (document.getElementById('edit-gender')) document.getElementById('edit-gender').value = profile.gender || '';
 
     // Address (Read)
     let addrParts = [profile.address_line_1 || profile.address_line1, profile.address_line_2 || profile.address_line2, profile.city, profile.state_province, profile.postal_code, profile.country].filter(Boolean);
@@ -522,7 +527,10 @@ function initMorphForms() {
                     if(group.id === 'morph-core-profile') {
                         payload = {
                             first_name: document.getElementById('edit-first-name').value,
-                            last_name: document.getElementById('edit-last-name').value
+                            middle_name: document.getElementById('edit-middle-name').value,
+                            last_name: document.getElementById('edit-last-name').value,
+                            phone_number: document.getElementById('edit-phone').value,
+                            gender: document.getElementById('edit-gender').value
                         };
                     } else if (group.id === 'morph-address') {
                         payload = {
@@ -547,8 +555,14 @@ function initMorphForms() {
                     if (result && result.success !== false) {
                         // Re-sync read views
                         if(group.id === 'morph-core-profile') {
-                            const savedName = `${document.getElementById('edit-first-name').value} ${document.getElementById('edit-last-name').value}`.trim();
-                            setReadValue('read-name', savedName);
+                            const fullName = [
+                                document.getElementById('edit-first-name').value,
+                                document.getElementById('edit-middle-name').value,
+                                document.getElementById('edit-last-name').value
+                            ].filter(Boolean).join(' ').trim();
+                            setReadValue('read-name', fullName || 'Not provided');
+                            setReadValue('read-phone', document.getElementById('edit-phone').value);
+                            setReadValue('read-gender', document.getElementById('edit-gender').value);
                         } else if (group.id === 'morph-address') {
                             const parts = [document.getElementById('edit-address-1').value, document.getElementById('edit-city').value, document.getElementById('edit-postal').value, document.getElementById('edit-country') ? document.getElementById('edit-country').value : ''].filter(Boolean);
                             setReadValue('read-full-address', parts.length > 0 ? parts.join(', ') : '');

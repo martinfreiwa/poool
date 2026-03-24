@@ -52,6 +52,7 @@ body.kyc-hidden .wallet-main {
   justify-content: space-between;
   gap: 12px;
   margin-top: 0;
+  margin-bottom: 0;
   position: relative;
   z-index: 5;
   padding: 0;

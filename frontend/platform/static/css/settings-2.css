@@ -125,7 +125,7 @@
 .settings-completeness-banner__pct {
   font-size: 20px;
   font-weight: 700;
-  color: #0000FF;
+  color: var(--primary-color);
   font-family: 'TT Norms Pro', sans-serif;
 }
 
@@ -140,7 +140,7 @@
 
 .settings-completeness-banner__bar-fill {
   height: 100%;
-  background: #0000FF;
+  background: var(--primary-color);
   border-radius: 4px;
   width: 0%;
   transition: width 0.6s ease;
@@ -157,12 +157,12 @@
   align-items: center;
   gap: 4px;
   padding: 3px 10px;
-  background: #0000FF;
+  background: var(--primary-color);
   border: 1px solid rgba(0, 0, 255, 0.3);
   border-radius: 16px;
   font-size: 12px;
   font-weight: 500;
-  color: #98FB96;
+  color: var(--brand-greeny-green);
   font-family: 'TT Norms Pro', sans-serif;
 }
 
@@ -203,14 +203,14 @@
 }
 
 .settings-tab-link.active {
-  color: #0000FF;
+  color: var(--primary-color);
   font-weight: 600;
-  border-bottom-color: #0000FF;
+  border-bottom-color: var(--primary-color);
 }
 
 .settings-tab-link.active svg {
   opacity: 1;
-  stroke: #0000FF;
+  stroke: var(--primary-color);
 }
 
 /* ─── Right Content Feed ─── */
@@ -252,14 +252,7 @@
   margin: 0;
 }
 
-.settings-card {
-  background: #ffffff;
-  border: 1px solid var(--card-border-color);
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
-  display: flex;
-  flex-direction: column;
-}
+
 
 .settings-card-divider {
   border: 0;
@@ -437,7 +430,7 @@
 
 .settings-input:focus {
   outline: none;
-  border-color: #0000FF;
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 4px rgba(0, 0, 255, 0.1);
   background: #ffffff;
 }
@@ -692,7 +685,7 @@
 }
 
 input:checked + .settings-toggle-slider {
-  background-color: #2E2EF9;
+  background-color: var(--primary-color);
 }
 
 input:checked + .settings-toggle-slider:before {
@@ -716,12 +709,12 @@ input:checked + .settings-toggle-slider:before {
 }
 
 .settings-btn--primary {
-  background: #0000FF;
-  color: #98FB96;
+  background: var(--primary-color);
+  color: var(--brand-greeny-green);
 }
 
 .settings-btn--primary:hover {
-  background: #0000CC;
+  background: var(--primary-color);
 }
 
 .settings-btn--secondary {
@@ -1095,7 +1088,7 @@ input:checked + .settings-toggle-slider:before {
 }
 
 .settings-learn-see-all:hover {
-  color: #2E2EF9;
+  color: var(--primary-color);
 }
 
 /* ─── Loading Skeleton ─── */
@@ -1162,7 +1155,7 @@ input:checked + .settings-toggle-slider:before {
 
 #settings-empty-state button {
   padding: 8px 20px;
-  background: #2E2EF9;
+  background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 8px;
@@ -1268,7 +1261,7 @@ input:checked + .settings-toggle-slider:before {
 
 .settings-toast--info {
   background: #eef2ff;
-  color: #2E2EF9;
+  color: var(--primary-color);
   border: 1px solid #c7d7fe;
 }
 
@@ -1305,7 +1298,7 @@ input:checked + .settings-toggle-slider:before {
 }
 
 .settings-avatar-preview:hover {
-  border-color: #2E2EF9;
+  border-color: var(--primary-color);
 }
 
 .settings-avatar-upload-info {
@@ -1461,7 +1454,7 @@ input:checked + .settings-toggle-slider:before {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #2E2EF9;
+  color: var(--primary-color);
 }
 
 .settings-search-result-item__text {
@@ -1539,7 +1532,7 @@ input:checked + .settings-toggle-slider:before {
 .nationality-dropdown__trigger:focus,
 .nationality-dropdown.open .nationality-dropdown__trigger {
   outline: none;
-  border-color: #2E2EF9;
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(46, 46, 249, 0.08);
 }
 
@@ -1654,7 +1647,7 @@ input:checked + .settings-toggle-slider:before {
 
 .nationality-dropdown__list li.selected {
   background: #eff0ff;
-  color: #0000FF;
+  color: var(--primary-color);
   font-weight: 600;
 }
 
@@ -1906,7 +1899,7 @@ input:checked + .settings-toggle-slider:before {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0000FF 0%, #4444FF 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #4444FF 100%);
   display: flex;
   align-items: center;
   justify-content: center;

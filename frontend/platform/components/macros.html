@@ -1,0 +1,27 @@
+{% macro p_icon(style="blue", size="") %}
+<div class="p-icon p-style-{{ style }} {{ size }}">
+    <div class="p-bg p-bg-1"></div>
+    <div class="p-bg p-bg-2"></div>
+    <div class="p-front">
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro holo_card_header(title, subtitle, icon_style="blue", icon_size="p-icon--md") %}
+<div style="display:flex; gap:24px; align-items:flex-start; margin-bottom: 24px;">
+    <div class="p-icon p-style-{{ icon_style }} {{ icon_size }}">
+        <div class="p-bg p-bg-1"></div>
+        <div class="p-bg p-bg-2"></div>
+        <div class="p-front">
+            {{ caller() }}
+        </div>
+    </div>
+    <div style="flex:1;">
+        <h2 style="margin:0 0 4px 0; font-size:18px; font-weight:700; color:var(--page-title-color);">
+            {{ title }}</h2>
+        <p style="margin:0; font-size:14px; color:#717680;">{{ subtitle }}</p>
+    </div>
+</div>
+<hr class="settings-divider" style="margin:0 -28px 32px -28px;">
+{% endmacro %}
