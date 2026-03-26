@@ -73,9 +73,35 @@ pub fn format_amount_display(cents: i64, currency: &str) -> String {
     }
 }
 
+/// Format a large integer with thousand separators: "1,234,567"
+#[allow(dead_code)]
+pub fn format_thousands(n: i64) -> String {
+    let s = n.to_string();
+    let bytes = s.as_bytes();
+    let len = bytes.len();
+    let mut result = String::new();
+
+    for (i, &c) in bytes.iter().enumerate() {
+        if i > 0 && (len - i) % 3 == 0 && bytes[i - 1] != b'-' {
+            result.push(',');
+        }
+        result.push(c as char);
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_format_thousands() {
+        assert_eq!(format_thousands(0), "0");
+        assert_eq!(format_thousands(100), "100");
+        assert_eq!(format_thousands(1000), "1,000");
+        assert_eq!(format_thousands(1000000), "1,000,000");
+        assert_eq!(format_thousands(-1000), "-1,000");
+    }
 
     #[test]
     fn test_format_usd() {

@@ -76,10 +76,12 @@ pub async fn run_matching_engine(redis: &RedisPool, pool: &PgPool) {
         let active_assets = get_active_asset_ids(pool).await;
 
         for asset_id in active_assets {
+            let mut matched = false;
             // Try to match orders for this asset until no more matches are possible
             loop {
                 match try_match_once(redis, asset_id).await {
                     Ok(Some(match_event)) => {
+                        matched = true;
                         // Match found → push to settlement queue
                         let event_json = match serde_json::to_string(&match_event) {
                             Ok(json) => json,
@@ -115,6 +117,11 @@ pub async fn run_matching_engine(redis: &RedisPool, pool: &PgPool) {
                         break;
                     }
                 }
+            }
+
+            if matched {
+                // Real-time broadcast: orderbook has changed after matches
+                super::websocket::broadcast_orderbook_update(pool, Some(redis), asset_id).await;
             }
         }
 

@@ -494,8 +494,8 @@ function initGlobalSearch() {
               }
             </div>
             <div style="flex:1; min-width:0;">
-              <div style="font-size: 14px; font-weight: 500; color: #101828; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</div>
-              <div style="font-size: 11px; color: #667085; text-transform: uppercase; letter-spacing: 0.02em; margin-top: 1px;">${item.type}</div>
+              <div style="font-size: 14px; font-weight: 500; color: #101828; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escHtmlNav(item.title)}</div>
+              <div style="font-size: 11px; color: #667085; text-transform: uppercase; letter-spacing: 0.02em; margin-top: 1px;">${escHtmlNav(item.type)}</div>
             </div>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="opacity: 0.4;"><path d="M6 12L10 8L6 4" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>

@@ -271,6 +271,10 @@ pub async fn create_order(
                     order.id,
                     e
                 );
+            } else {
+                // Real-time broadcast: orderbook has changed with new order
+                super::websocket::broadcast_orderbook_update(pool, Some(redis), order.asset_id)
+                    .await;
             }
         }
     }
@@ -401,6 +405,9 @@ pub async fn cancel_order(
                 order_id,
                 e
             );
+        } else {
+            // Real-time broadcast: orderbook has changed after removal
+            super::websocket::broadcast_orderbook_update(pool, Some(redis), order.asset_id).await;
         }
         // Release the lock
         let _ = orderbook::release_lock(redis, order_id).await;

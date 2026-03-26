@@ -266,11 +266,9 @@ poool/
 
 ## ⚠️ Known Issues
 
-See `BROKEN_LOGICS.md` for the full tracker. Key outstanding items:
-- Several admin system APIs not yet implemented (background jobs, sessions, webhooks)
-- Admin approval "phantom approval" bug (marks approved but doesn't trigger business logic)
-- Some report endpoints return all-time data regardless of date filters
-- /checkout route missing (CRITICAL)
+See `BROKEN_LOGICS.md` for the full tracker.
+- No critical (P0/P1) blockers at this time.
+- 41 non-critical compilation warnings pending `cargo fix`.
 
 ---
 

@@ -639,7 +639,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             .map(|cc| {
                 let cc = cc.trim();
                 let upper = cc.to_uppercase();
-                
+
                 let iso_code = match upper.as_str() {
                     "GERMANY" | "DEUTSCHLAND" => "DE",
                     "INDONESIA" => "ID",
@@ -660,7 +660,13 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                     "JAPAN" => "JP",
                     "CHINA" => "CN",
                     "UNITED ARAB EMIRATES" | "UAE" => "AE",
-                    _ => if upper.len() == 2 { upper.as_str() } else { "" }
+                    _ => {
+                        if upper.len() == 2 {
+                            upper.as_str()
+                        } else {
+                            ""
+                        }
+                    }
                 };
 
                 if iso_code.len() == 2 {

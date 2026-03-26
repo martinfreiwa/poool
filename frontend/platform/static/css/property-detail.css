@@ -1306,6 +1306,71 @@ body.lightbox-open {
   height: 20px;
 }
 
+/* ===========================
+   Premium Glassmorphism Icon (p-icon)
+   =========================== */
+.p-icon {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.p-icon .p-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+}
+
+.p-icon .p-bg-1 {
+  background: linear-gradient(135deg, #03FF88 0%, #00CC6F 100%);
+  opacity: 0.28;
+  box-shadow: 0 2px 8px rgba(3, 255, 136, 0.12);
+  transform: rotate(-8deg);
+  top: -3px;
+  left: 2px;
+}
+
+.p-icon .p-bg-2 {
+  background: linear-gradient(135deg, #0000FF 0%, #3344FF 100%);
+  opacity: 0.32;
+  box-shadow: 0 2px 8px rgba(0, 0, 255, 0.1);
+  transform: rotate(15deg);
+  top: -6px;
+  left: 1px;
+}
+
+.p-icon .p-front {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  border-radius: 10px;
+  background: linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(244,246,255,0.78) 40%, rgba(236,240,255,0.62) 100%);
+  border: none;
+  box-shadow:
+    0 0.5px 0.5px rgba(0,0,0,0.04),
+    0 1px 2px rgba(0,0,0,0.04),
+    0 4px 12px rgba(0,0,255,0.04),
+    0 8px 24px rgba(0,0,255,0.025),
+    inset 0 0.5px 0 rgba(255,255,255,0.95),
+    inset 0 0 0 0.5px rgba(255,255,255,0.7),
+    inset 0 -1px 3px rgba(180,195,255,0.08);
+  backdrop-filter: blur(20px) saturate(1.85);
+  -webkit-backdrop-filter: blur(20px) saturate(1.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.p-icon .p-front svg {
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 0.5px 0 rgba(0, 0, 200, 0.08));
+}
+
 /* Supporting text */
 .price-card-supporting-text {
   width: 368px;
@@ -2367,8 +2432,8 @@ body.youtube-modal-active {
    =========================== */
 #investment-type-section {
   position: relative;
-  margin-top: 64px;
-  /* 64px below property description */
+  margin-top: 48px;
+  /* 48px below property description */
   margin-left: 24px;
   width: 616px;
 }
@@ -2420,25 +2485,23 @@ body.youtube-modal-active {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 16px;
-  gap: 20px;
-  width: 616px;
-  height: 357px;
-  background: #eafee9;
-  /* Brand Green Accent/25 */
+  padding: 24px;
+  gap: 24px;
+  width: 100%;
+  height: auto;
+  background: #03FF88;
   border-radius: 16px;
   box-sizing: border-box;
 }
 
 .strategy-header {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   padding: 0px;
-  gap: 102px;
-  width: 584px;
-  height: 80px;
+  gap: 8px;
+  width: 100%;
+  height: auto;
 }
 
 .strategy-text {
@@ -2447,13 +2510,13 @@ body.youtube-modal-active {
   align-items: flex-start;
   padding: 0px;
   gap: 8px;
-  width: 434px;
-  height: 80px;
+  width: 100%;
+  height: auto;
 }
 
 .strategy-text h3 {
-  width: 434px;
-  height: 32px;
+  width: 100%;
+  height: auto;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 700;
@@ -2464,8 +2527,8 @@ body.youtube-modal-active {
 }
 
 .strategy-text p {
-  width: 434px;
-  height: 40px;
+  width: 100%;
+  height: auto;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 400;
@@ -2508,12 +2571,13 @@ body.youtube-modal-active {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 16px;
-  gap: 20px;
-  width: 584px;
-  height: 225px;
+  padding: 24px;
+  gap: 24px;
+  width: 100%;
+  height: auto;
   background: #ffffff;
   border-radius: 12px;
+  box-sizing: border-box;
 }
 
 .strategy-item {
@@ -2522,12 +2586,12 @@ body.youtube-modal-active {
   align-items: flex-start;
   padding: 0px;
   gap: 8px;
-  width: 552px;
+  width: 100%;
 }
 
 .strategy-item h4 {
-  width: 552px;
-  height: 28px;
+  width: 100%;
+  height: auto;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 700;
@@ -2538,7 +2602,7 @@ body.youtube-modal-active {
 }
 
 .strategy-item p {
-  width: 552px;
+  width: 100%;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 400;
@@ -2549,9 +2613,9 @@ body.youtube-modal-active {
 }
 
 .strategy-divider {
-  width: 552px;
+  width: 100%;
   height: 1px;
-  background: var(--table-border-color);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 #investment-type-heading {
@@ -2634,7 +2698,7 @@ body.youtube-modal-active {
   width: 616px;
   min-height: 369px;
   left: 24px;
-  margin-top: 64px;
+  margin-top: 48px;
   margin-bottom: 0;
 }
 
@@ -2669,7 +2733,7 @@ body.youtube-modal-active {
 #calculator-section {
   position: relative;
   left: 24px;
-  margin-top: 64px;
+  margin-top: 48px;
   /* Remove fixed height - let content determine height */
 }
 
@@ -2731,45 +2795,26 @@ body.youtube-modal-active {
   flex-grow: 0;
 }
 
-/* Background Gradients */
 .calc-gradient-1 {
-  position: absolute;
-  width: 486.81px;
-  height: 446.39px;
-  left: -226px;
-  top: -207px;
-
-  background: rgba(0, 29, 202, 0.06);
-  filter: blur(100px);
-  transform: rotate(54.66deg);
-  pointer-events: none;
+  display: none;
 }
 
 .calc-gradient-2 {
-  position: absolute;
-  width: 418.52px;
-  height: 383.77px;
-  left: 310px;
-  top: 379px;
-
-  background: rgba(152, 251, 150, 0.1);
-  filter: blur(100px);
-  transform: rotate(-2.73deg);
-  pointer-events: none;
+  display: none;
 }
 
-/* Main title */
 .calc-main-title {
   position: absolute;
-  width: 345px;
+  width: auto;
   height: 32px;
-  left: calc(50% - 345px / 2 + 0.5px);
+  left: 50%;
+  transform: translateX(-50%);
   top: 27px;
 
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
-  font-weight: 400;
-  font-size: 24px;
+  font-weight: 500;
+  font-size: 20px;
   line-height: 32px;
   text-align: center;
   white-space: nowrap;
@@ -2777,7 +2822,6 @@ body.youtube-modal-active {
   color: #717680;
 }
 
-/* Main value */
 .calc-main-value {
   position: absolute;
   width: auto;
@@ -2788,13 +2832,13 @@ body.youtube-modal-active {
 
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
-  font-weight: 700;
-  font-size: 24px;
+  font-weight: 800;
+  font-size: 28px;
   line-height: 32px;
   text-align: center;
   white-space: nowrap;
 
-  color: var(--page-title-color);
+  color: #1a1a24;
 }
 
 /* Statistics Card */
@@ -2802,19 +2846,21 @@ body.youtube-modal-active {
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
-  justify-content: center;
+  justify-content: space-evenly;
   align-items: center;
-  padding: 16px 0px;
-  gap: 48px;
+  padding: 16px 24px;
+  gap: 24px;
 
   position: absolute;
   width: 584px;
-  height: 71px;
+  height: auto;
   left: calc(50% - 584px / 2);
   top: 108px;
 
-  border: 1px solid var(--table-border-color);
+  border: 1px solid #eaecf0;
   border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.02);
 }
 
 /* Statistics item */
@@ -2849,15 +2895,15 @@ body.youtube-modal-active {
 }
 
 .calc-stat-color.investment {
-  background: #6B7AFF;
+  background: #000080;
 }
 
 .calc-stat-color.appreciation {
-  background: #0000FF;
+  background: #3A4BFF;
 }
 
 .calc-stat-color.rental {
-  background: #FF9F43;
+  background: #98FB96;
 }
 
 /* Statistics label */
@@ -2947,15 +2993,15 @@ body.youtube-modal-active {
 }
 
 .calc-legend-color.investment {
-  background: #6B7AFF;
+  background: #000080;
 }
 
 .calc-legend-color.appreciation {
-  background: #0000FF;
+  background: #3A4BFF;
 }
 
 .calc-legend-color.rental {
-  background: #FF9F43;
+  background: #98FB96;
 }
 
 .calc-legend-text {
@@ -2974,7 +3020,6 @@ body.youtube-modal-active {
   flex-grow: 0;
 }
 
-/* Y-axis container */
 .calc-y-axis {
   display: flex;
   flex-direction: column;
@@ -2990,7 +3035,8 @@ body.youtube-modal-active {
   order: 1;
   align-self: stretch;
   flex-grow: 1;
-  z-index: 1;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .calc-y-axis-line {
@@ -3044,7 +3090,7 @@ body.youtube-modal-active {
   order: 1;
   flex-grow: 1;
 
-  background: #f5f5f5;
+  background: #eaecf0;
   border: none;
   position: relative;
 }
@@ -3100,7 +3146,6 @@ body.youtube-modal-active {
   z-index: 4;
 }
 
-/* Chart bars container */
 .calc-chart-bars {
   display: flex;
   flex-direction: row;
@@ -3113,6 +3158,7 @@ body.youtube-modal-active {
   right: 0px;
   top: 0%;
   bottom: 18px;
+  z-index: 10;
 }
 
 .calc-bar {
@@ -3167,21 +3213,21 @@ body.youtube-modal-active {
 .calc-series.series-1 {
   top: 0%;
   bottom: 0%;
-  background: #6B7AFF;
-  border-radius: 2px 2px 0 0;
+  background: #000080;
+  border-radius: 0 0 0 0;
 }
 
 .calc-series.series-2 {
   top: 29.17%;
   bottom: 0%;
-  background: #0000FF;
+  background: #3A4BFF;
 }
 
 .calc-series.series-3 {
   top: 62.5%;
   bottom: 0%;
-  background: #FF9F43;
-  border-radius: 0 0 2px 2px;
+  background: #98FB96;
+  border-radius: 6px 6px 0 0;
 }
 
 /* Bar value label (above bar) */
@@ -3250,9 +3296,9 @@ body.youtube-modal-active {
   flex-shrink: 0;
 }
 
-.calc-bar-tooltip-dot.investment { background: #6B7AFF; }
-.calc-bar-tooltip-dot.appreciation { background: #0000FF; }
-.calc-bar-tooltip-dot.rental { background: #FF9F43; }
+.calc-bar-tooltip-dot.investment { background: #000080; }
+.calc-bar-tooltip-dot.appreciation { background: #3A4BFF; }
+.calc-bar-tooltip-dot.rental { background: #98FB96; }
 
 .calc-bar-tooltip-label {
   color: #A4A7AE;
@@ -3322,17 +3368,17 @@ body.youtube-modal-active {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 4px;
-  background: #e2e2e2;
+  height: 2px;
+  background: linear-gradient(to right, #0000FF var(--slider-progress, 0%), #e2e2e2 var(--slider-progress, 0%));
   border-radius: 30px;
   outline: none;
   cursor: pointer;
 }
 
 .calc-slider::-webkit-slider-runnable-track {
-  height: 4px;
-  background: linear-gradient(to right, #0000FF var(--slider-progress, 0%), #e2e2e2 var(--slider-progress, 0%));
+  height: 2px;
   border-radius: 30px;
+  background: transparent;
 }
 
 .calc-slider::-webkit-slider-thumb {
@@ -3344,19 +3390,19 @@ body.youtube-modal-active {
   border: 4px solid #0000FF;
   border-radius: 50%;
   cursor: pointer;
-  margin-top: -6px;
+  margin-top: -7px;
   box-shadow: none;
 }
 
 .calc-slider::-moz-range-track {
-  height: 4px;
+  height: 2px;
   background: #e2e2e2;
   border-radius: 30px;
   border: none;
 }
 
 .calc-slider::-moz-range-progress {
-  height: 4px;
+  height: 2px;
   background: #0000FF;
   border-radius: 30px;
 }
@@ -3830,7 +3876,7 @@ body.youtube-modal-active {
   width: 616px;
   height: 281px;
   left: 24px;
-  margin-top: 64px;
+  margin-top: 48px;
   margin-bottom: 0;
 }
 
@@ -3990,7 +4036,7 @@ body.youtube-modal-active {
 
 .financial-tab.active .tab-text {
   /* Text color for active (on green) */
-  color: #000000 !important;
+  color: #0000FF !important;
   font-weight: 700;
 }
 
@@ -4184,7 +4230,7 @@ body.youtube-modal-active {
   position: relative;
   width: 616px;
   left: 24px;
-  margin-top: 64px;
+  margin-top: 48px;
   margin-bottom: 0;
 }
 
@@ -4290,7 +4336,7 @@ body.youtube-modal-active {
    19. Property Developer Section
    =========================== */
 .developer-section {
-  margin-top: 72px;
+  margin-top: 48px;
   position: relative;
   width: 616px;
   left: 24px;
@@ -4751,7 +4797,7 @@ body.youtube-modal-active {
 
 /* Risk Notification Section */
 #risk-notification-section {
-  margin-top: 56px;
+  margin-top: 48px;
   position: relative;
   left: 24px;
 }
@@ -4964,7 +5010,7 @@ body.youtube-modal-active {
    =========================== */
 /* FAQ Section Wrapper */
 .faq-section-wrapper {
-  margin-top: 56px;
+  margin-top: 48px;
   position: relative;
   left: 24px;
   width: 616px;
@@ -5121,7 +5167,7 @@ body.youtube-modal-active {
    =========================== */
 .contact-section {
   position: relative;
-  margin-top: 64px;
+  margin-top: 48px;
   margin-bottom: 48px;
   left: 24px;
   width: 556px;
@@ -5328,7 +5374,7 @@ body.youtube-modal-active {
   position: absolute;
   width: 1096px;
   left: 24px;
-  top: 7800px;
+  /* top is set dynamically by JS based on actual content height */
   padding-left: 0;
 }
 
@@ -6089,7 +6135,7 @@ body.youtube-modal-active {
   width: 616px;
   min-height: 369px;
   left: 24px;
-  margin-top: 64px;
+  margin-top: 48px;
 }
 
 /* Section Header */
@@ -6244,7 +6290,7 @@ body.youtube-modal-active {
   background: #e5e5ff;
   box-shadow:
     0px 0px 0px 2px #ffffff,
-    0px 0px 0px 4px #03FF88;
+    0px 0px 0px 4px #0000FF;
 }
 
 /* Funding Step Content */
@@ -6264,7 +6310,7 @@ body.youtube-modal-active {
 
 .funding-step-base.completed .funding-step-content {
   /* Brand/600 */
-  background: var(--primary-color);
+  background: #03FF88;
   border: none;
 }
 
@@ -6440,12 +6486,12 @@ body.youtube-modal-active {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
-  padding: 2px 10px 2px 8px;
-  gap: 4px;
+  padding: 4px 10px;
+  gap: 0;
 
-  /* Electric blue background */
-  background: #0033FF;
-  border: 1px solid #0033FF;
+  /* Green background with blue text */
+  background: #03FF88;
+  border: 1px solid #03FF88;
   border-radius: 16px;
 
   /* Inside auto layout */
@@ -6473,6 +6519,11 @@ body.youtube-modal-active {
   flex-grow: 0;
 }
 
+.payment-badge .dollar-icon circle,
+.payment-badge .dollar-icon path {
+  stroke: #0000FF;
+}
+
 .payment-badge span {
   /* Text xs/Medium */
   font-family: 'TT Norms Pro', sans-serif;
@@ -6484,8 +6535,8 @@ body.youtube-modal-active {
   text-align: center;
   white-space: nowrap;
 
-  /* Green text on blue */
-  color: #03FF88;
+  /* Blue text on green */
+  color: #0000FF;
 
   /* Inside auto layout */
   flex: none;
@@ -6506,7 +6557,7 @@ body.youtube-modal-active {
   width: 616px;
   height: 386px;
   margin-left: 24px;
-  margin-top: 64px;
+  margin-top: 48px;
 }
 
 /* Section Header */
@@ -6569,7 +6620,7 @@ body.youtube-modal-active {
   flex-direction: column;
   align-items: flex-start;
   padding: 16px;
-  gap: 20px;
+  gap: 24px;
 
   width: 616px;
   height: 342px;

@@ -386,6 +386,33 @@ async fn settle_trade(
         seller_proceeds,
     );
 
+    // ── Real-time Broadcasts ────────────────────────────────
+    // All trades are broadcast to the global WebSocket pool.
+    // matches decided in matching.rs use the maker's price.
+    super::websocket::broadcast_trade(
+        pool,
+        Some(_redis),
+        event.asset_id,
+        event.match_price_cents,
+        event.match_quantity,
+        total_cents,
+        true, // Matches from matching.rs always cross the book
+    )
+    .await;
+
+    // Ticker data (24h volume/price change) is refreshed after every trade
+    if let Ok(ticker) = super::service::get_ticker(pool, event.asset_id).await {
+        super::websocket::broadcast_ticker(
+            pool,
+            Some(_redis),
+            event.asset_id,
+            ticker.last_price_cents.unwrap_or(0),
+            ticker.change_24h_pct,
+            ticker.volume_24h_cents,
+        )
+        .await;
+    }
+
     Ok(trade_id)
 }
 

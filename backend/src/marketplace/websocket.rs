@@ -216,15 +216,19 @@ async fn handle_ws_connection(mut socket: WebSocket, asset_id: Uuid, state: AppS
 /// Sends to:
 /// 1. Local broadcast channel (this instance's clients)
 /// 2. Redis Pub/Sub (other Cloud Run instances)
-pub async fn broadcast_orderbook_update(state: &AppState, asset_id: Uuid) {
-    let snapshot_res = match state.redis.as_ref() {
-        Some(redis) => match orderbook::get_orderbook_snapshot(redis, asset_id, Some(20)).await {
+pub async fn broadcast_orderbook_update(
+    pool: &sqlx::PgPool,
+    redis: Option<&deadpool_redis::Pool>,
+    asset_id: Uuid,
+) {
+    let snapshot_res = match redis {
+        Some(r) => match orderbook::get_orderbook_snapshot(r, asset_id, Some(20)).await {
             Ok(s) => Ok(s),
             Err(_) => {
-                super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await
+                super::service::get_orderbook_snapshot_from_db(pool, asset_id, Some(20)).await
             }
         },
-        None => super::service::get_orderbook_snapshot_from_db(&state.db, asset_id, Some(20)).await,
+        None => super::service::get_orderbook_snapshot_from_db(pool, asset_id, Some(20)).await,
     };
 
     if let Ok(snapshot) = snapshot_res {
@@ -237,8 +241,8 @@ pub async fn broadcast_orderbook_update(state: &AppState, asset_id: Uuid) {
         };
 
         if let Ok(json) = serde_json::to_string(&msg) {
-            if let Some(ref redis) = state.redis {
-                send_to_local_and_pubsub(redis, asset_id, &json).await;
+            if let Some(r) = redis {
+                send_to_local_and_pubsub(r, asset_id, &json).await;
             } else {
                 send_to_local(asset_id, &json).await;
             }
@@ -250,7 +254,8 @@ pub async fn broadcast_orderbook_update(state: &AppState, asset_id: Uuid) {
 ///
 /// Called by the settlement worker after a trade is committed.
 pub async fn broadcast_trade(
-    state: &AppState,
+    _pool: &sqlx::PgPool,
+    redis: Option<&deadpool_redis::Pool>,
     asset_id: Uuid,
     price_cents: i64,
     quantity: i32,
@@ -268,8 +273,8 @@ pub async fn broadcast_trade(
     };
 
     if let Ok(json) = serde_json::to_string(&msg) {
-        if let Some(ref redis) = state.redis {
-            send_to_local_and_pubsub(redis, asset_id, &json).await;
+        if let Some(r) = redis {
+            send_to_local_and_pubsub(r, asset_id, &json).await;
         } else {
             send_to_local(asset_id, &json).await;
         }
@@ -278,7 +283,8 @@ pub async fn broadcast_trade(
 
 /// Broadcast a ticker update to all connected clients for an asset.
 pub async fn broadcast_ticker(
-    state: &AppState,
+    _pool: &sqlx::PgPool,
+    redis: Option<&deadpool_redis::Pool>,
     asset_id: Uuid,
     last_price_cents: i64,
     change_24h_pct: f64,
@@ -293,8 +299,8 @@ pub async fn broadcast_ticker(
     };
 
     if let Ok(json) = serde_json::to_string(&msg) {
-        if let Some(ref redis) = state.redis {
-            send_to_local_and_pubsub(redis, asset_id, &json).await;
+        if let Some(r) = redis {
+            send_to_local_and_pubsub(r, asset_id, &json).await;
         } else {
             send_to_local(asset_id, &json).await;
         }

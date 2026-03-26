@@ -900,3 +900,24 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **What I did:** Removed the extra closing `</div>` to restore correct HTML nesting based on python parser.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-24
+
+### [P0-SECURITY] — Potential XSS in global search results text interpolation
+- **File:** `frontend/platform/static/js/mobile-navigation.js`
+- **What was wrong:** When building the global search dropdown, asset titles were injected directly into the HTML without sanitization using template literals (`${item.title}`).
+- **What I did:** Wrapped the variables in `escHtmlNav()` to safely escape any HTML characters.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P1] — Missing real-time marketplace broadcasts
+- **File:** `backend/src/marketplace/matching.rs`, `backend/src/marketplace/settlement.rs`, `backend/src/marketplace/service.rs`
+- **What was wrong:** Order creation, cancellation, and trade settlement were updating Redis/PostgreSQL but were NOT triggering WebSocket broadcasts. Real-time clients (orderbook/trade tape) would only update upon manual page refresh.
+- **What I did:** Added `broadcast_trade`, `broadcast_ticker`, and `broadcast_orderbook_update` calls to all state-changing paths in the matching engine, settlement worker, and order service.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Duplicated format_number logic
+- **File:** `backend/src/templates.rs`, `backend/src/assets/models.rs`, `backend/src/common/currency.rs`
+- **What was wrong:** Thousands-separator formatting logic was duplicated in several places.
+- **What I did:** Consolidated into `common::currency::format_thousands`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26

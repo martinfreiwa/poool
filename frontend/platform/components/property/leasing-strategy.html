@@ -13,7 +13,7 @@
     </div>
     <div class="leasing-divider"><div class="divider-line"></div></div>
     <div class="leasing-item">
-      <div class="leasing-item-header"><h3>{{ asset.lease_type | default('Standard Leasehold') }}</h3></div>
+      <div class="leasing-item-header"><h3>{{ (asset.lease_type | default('Standard Leasehold')) | replace('leasehold', 'Leasehold') }}</h3></div>
       <p>{% if asset.term_months %}{{ asset.term_months }}-month{% endif %} lease term with built-in renewal options and annual rent escalation clauses to protect against inflation.</p>
     </div>
     <div class="leasing-divider"><div class="divider-line"></div></div>

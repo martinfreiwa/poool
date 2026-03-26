@@ -1,4 +1,4 @@
-use minijinja::{Environment, context};
+use minijinja::{context, Environment};
 
 fn main() {
     let mut env = Environment::new();
@@ -20,8 +20,9 @@ fn main() {
 {% call wrapper() %}
   hello
 {% endcall %}
-"
-    ).unwrap();
+",
+    )
+    .unwrap();
     let tmpl = env.get_template("test").unwrap();
     match tmpl.render(context! {}) {
         Ok(s) => println!("Success: {}", s),

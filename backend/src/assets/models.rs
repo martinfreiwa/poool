@@ -199,17 +199,7 @@ impl PropertyDisplayData {
 
 /// Format a number with thousands separators (e.g. 1234567 -> "1,234,567")
 pub(crate) fn format_number(n: i64) -> String {
-    let s = n.to_string();
-    let bytes = s.as_bytes();
-    let len = bytes.len();
-    let mut result = String::with_capacity(len + len / 3);
-    for (i, &b) in bytes.iter().enumerate() {
-        if i > 0 && (len - i).is_multiple_of(3) {
-            result.push(',');
-        }
-        result.push(b as char);
-    }
-    result
+    crate::common::currency::format_thousands(n)
 }
 
 /// Extract YouTube video ID from a URL string.
