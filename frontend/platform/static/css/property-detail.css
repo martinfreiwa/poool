@@ -10,7 +10,6 @@
    =========================== */
 .property-detail-wrapper {
   width: 100%;
-  min-height: 8630px;
   background: #fafafa;
   margin: 0;
   padding: 0;
@@ -19,12 +18,7 @@
 
 .property-detail-container {
   width: 100%;
-  height: 8740px;
   background: #fafafa;
-  flex: none;
-  order: 1;
-  flex-grow: 0;
-  z-index: 0;
   position: relative;
   margin: 0;
   padding: 0;
@@ -34,9 +28,6 @@
   position: relative;
   width: 100%;
   max-width: 1144px;
-  /* Full width to accommodate all 5 gallery images */
-  min-height: 9200px;
-  /* Increased to accommodate dynamic content growth */
 }
 
 /* ===========================
@@ -938,7 +929,7 @@ body.lightbox-open {
   width: 226px;
   height: 32px;
   left: 24px;
-  margin-bottom: 12px;
+  margin-bottom: 24px;
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 700;
@@ -954,7 +945,7 @@ body.lightbox-open {
   position: relative;
   width: 602px;
   left: 24px;
-  margin-top: 24px;
+  margin-top: 0px;
 }
 
 .property-about-description p {
@@ -2442,7 +2433,7 @@ body.youtube-modal-active {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .section-icon {
@@ -2693,7 +2684,7 @@ body.youtube-modal-active {
   flex-direction: column;
   align-items: flex-start;
   padding: 0px;
-  gap: 12px;
+  gap: 24px;
   position: relative;
   width: 616px;
   min-height: 369px;
@@ -3870,7 +3861,7 @@ body.youtube-modal-active {
   flex-direction: column;
   align-items: flex-start;
   padding: 0px;
-  gap: 12px;
+  gap: 24px;
 
   position: relative;
   width: 616px;
@@ -4220,116 +4211,106 @@ body.youtube-modal-active {
    18. Location Section (Inside Property Card)
    =========================== */
 .location-section {
-  /* Auto layout */
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 0px;
-  gap: 0px;
-
-  position: relative;
-  width: 616px;
-  left: 24px;
+  padding: 0 24px;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
   margin-top: 48px;
-  margin-bottom: 0;
 }
 
 /* Location header with icon */
 .location-header {
-  /* Auto layout */
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0px;
   gap: 4px;
-
-  width: 130px;
   height: 32px;
-
-  /* Inside auto layout */
-  flex: none;
-  order: 0;
-  flex-grow: 0;
 }
 
 .location-icon {
   width: 24px;
   height: 24px;
-
-  /* Inside auto layout */
-  flex: none;
-  order: 0;
-  flex-grow: 0;
+  flex-shrink: 0;
 }
 
 .location-title {
-  width: 102px;
-  height: 32px;
-
-  /* Display xs/Bold */
   font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
   font-weight: 700;
   font-size: 24px;
   line-height: 32px;
-  /* identical to box height, or 133% */
-  white-space: nowrap;
-
-  /* Gray/900 */
   color: var(--page-title-color);
-
-  /* Inside auto layout */
-  flex: none;
-  order: 1;
-  flex-grow: 0;
+  margin: 0;
 }
 
 /* Location subtitle */
 .location-subtitle {
-  width: 250px;
-  height: 20px;
-  margin-top: 8px;
-
-  /* Text sm / Bold */
   font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
   font-weight: 700;
   font-size: 14px;
   line-height: 20px;
-  /* identical to box height, or 143% */
-  white-space: nowrap;
-
-  /* Brand/600 */
   color: var(--primary-color);
+  margin: 0;
 }
 
 /* Map */
 .location-map {
-  width: 616px;
+  width: 100%;
   height: 400px;
-  margin-top: 32px;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
   background: #f3f4f6;
 }
 
+.location-map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 12px;
+}
+
 /* Location description */
 .location-description {
-  width: 616px;
-  height: 180px;
-  margin-top: 20px;
-
-  /* Text sm/Regular */
+  width: 100%;
   font-family: 'TT Norms Pro', sans-serif;
-  font-style: normal;
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  /* or 143% */
-
-  /* Gray/600 */
   color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ===========================
+   18a. Location Section — Mobile
+   Consolidated from mobile-location.css; use media queries, not separate files.
+   =========================== */
+@media (max-width: 768px) {
+  .location-section {
+    gap: 12px;
+    padding: 0 16px;
+    margin-top: 40px;
+  }
+
+  .location-header {
+    height: 30px;
+  }
+
+  .location-header img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .location-title {
+    font-size: 20px;
+    line-height: 30px;
+  }
+
+  .location-map {
+    height: 200px;
+  }
 }
 
 /* ===========================
@@ -4348,7 +4329,7 @@ body.youtube-modal-active {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .developer-icon {
@@ -4587,7 +4568,7 @@ body.youtube-modal-active {
 
   width: 155px;
   height: 32px;
-  margin-bottom: 12px;
+  margin-bottom: 24px;
 }
 
 .documents-icon {
@@ -5017,24 +4998,27 @@ body.youtube-modal-active {
 }
 
 /* FAQ Heading */
-.faq-heading {
+.faq-header {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  padding: 0px;
-  gap: 4px;
-  width: 326px;
-  height: 32px;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.faq-heading {
   font-family: 'TT Norms Pro', sans-serif;
   font-style: normal;
   font-weight: 700;
   font-size: 24px;
   line-height: 32px;
   color: var(--page-title-color);
-  flex: none;
-  order: 0;
-  flex-grow: 0;
-  margin: 0 0 16px 0;
+  margin: 0;
+}
+
+.faq-icon {
+  width: 24px;
+  height: 24px;
+  filter: brightness(0);
 }
 
 /* FAQ Section */
@@ -6129,7 +6113,7 @@ body.youtube-modal-active {
   flex-direction: column;
   align-items: flex-start;
   padding: 0px;
-  gap: 12px;
+  gap: 24px;
 
   position: relative;
   width: 616px;
@@ -6551,7 +6535,7 @@ body.youtube-modal-active {
   flex-direction: column;
   align-items: flex-start;
   padding: 0px;
-  gap: 12px;
+  gap: 24px;
 
   position: relative;
   width: 616px;

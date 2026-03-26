@@ -74,9 +74,7 @@
                   >
                 </div>
               </nav>
-              <!-- 2. Top Action Button --><button id="property-action-button">
-                <span>Share Asset</span></button
-              ><!-- 3. Image Gallery Section -->
+              <!-- 3. Image Gallery Section -->
               {% set gallery_ids = ['gallery-main-image', 'gallery-image-top-left', 'gallery-image-top-right', 'gallery-image-bottom-left', 'gallery-image-bottom-right'] %}
               {% for img_url in asset.image_urls %}
               {% if loop.index0 < 5 %}

@@ -1,4 +1,4 @@
-{% with title="Property Details", extra_css=['property-detail', 'marketplace', 'property-detail-mobile', 'mobile-investment-type', 'mobile-funding-timeline', 'mobile-leasing-strategy', 'mobile-financial', 'mobile-location', 'mobile-developer', 'mobile-documents', 'mobile-risk-notification', 'mobile-faq', 'mobile-contact', 'mobile-similar-properties', 'mobile-youtube-modal'], extra_js=['property-detail', 'property-detail-cart', 'property-price-sticky', 'profile-dropdown', 'marketplace', 'legal-enhancements', 'mobile-navigation', 'property-detail-mobile', 'mobile-calculator', 'mobile-financial', 'mobile-documents', 'mobile-faq'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Property Details", extra_css=['property-detail', 'marketplace', 'property-detail-mobile', 'mobile-investment-type', 'mobile-funding-timeline', 'mobile-leasing-strategy', 'mobile-financial', 'mobile-developer', 'mobile-documents', 'mobile-risk-notification', 'mobile-faq', 'mobile-contact', 'mobile-similar-properties', 'mobile-youtube-modal'], extra_js=['property-detail', 'property-detail-cart', 'property-price-sticky', 'profile-dropdown', 'marketplace', 'legal-enhancements', 'mobile-navigation', 'property-detail-mobile', 'mobile-calculator', 'mobile-financial', 'mobile-documents', 'mobile-faq'] %}{% include "components/head.html" %}{% endwith %}
   <body class="app-body fouc-guard">
     {% include 'components/mobile-menu.html' %}
     <div id="app-wrapper" class="app-wrapper">
@@ -34,7 +34,7 @@
               </nav>
 
               <!-- 2. Top Action Button -->
-              <button id="property-action-button"><span>Share Property</span></button>
+
 
               <!-- 3. Image Gallery -->
               {% include 'components/property/gallery.html' %}
@@ -311,7 +311,7 @@
                     <img  src="/static/images/portfolio_asset_details/marker-pin-04.svg" alt="Location" class="location-icon" width="24" height="24" />
                     <h2 class="location-title">Location</h2>
                   </div>
-                  <h3 class="location-subtitle">{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</h3>
+
                   <div class="location-map">
                     <iframe src="{{ asset.google_maps_url if asset.google_maps_url else 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1010296.8845780512!2d114.39853926615555!3d-8.455246740624838!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd141d3e8100fa1%3A0x24910fb14b24e690!2sBali%2C%20Indonesia!5e0!3m2!1sen!2sid!4v1711234567890!5m2!1sen!2sid' }}"
                       width="100%" height="400" style="border: 0; border-radius: 12px" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
@@ -496,69 +496,7 @@
                 </div>
               </div>
 
-              <!-- Similar Properties -->
-              {% if similar_assets and similar_assets | length > 0 %}
-              <div class="similar-properties-wrapper">
-                <h3 class="similar-heading">Similar Properties</h3>
-                <div class="section-divider"></div>
-                <div class="similar-properties-section">
-                  <div id="property-grid-container" class="property-grid-container">
-                    <div id="property-grid-content" class="property-grid-content">
-                      {% for sp in similar_assets %}
-                      <div class="property-card" onclick="window.location.href='/property/{{ sp.slug }}'">
-                        <div class="property-gallery">
-                          <div class="property-image-container">
-                            <div class="property-image active" style="background-image: url('{{ sp.cover_image_url | default('/static/images/villa1.webp') }}'); background-size: cover; background-position: center;"></div>
-                          </div>
-                        </div>
-                        <div class="property-content">
-                          <div class="card-meta-row">
-                            {% if sp.bedrooms %}
-                            <div class="card-meta-item">
-                              <img src="/static/images/Bed.svg" alt="Beds" width="16" height="16">
-                              <span>{{ sp.bedrooms }}</span>
-                            </div>
-                            <div class="card-meta-divider"></div>
-                            {% endif %}
-                            <div class="card-meta-item">
-                              <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                              <span>Available</span>
-                            </div>
-                            <div class="card-meta-divider"></div>
-                            <div class="card-meta-item">
-                              <span>{{ sp.location_city | default('Bali') }}, {{ sp.location_country | default('ID') }}</span>
-                            </div>
-                          </div>
-                          <div class="property-heading">
-                            <h3 class="property-title">{{ sp.title }}</h3>
-                          </div>
-                          <div class="property-pricing">
-                            <div class="price-wrapper">
-                              <span class="property-price">USD {{ sp.total_value_usd }}</span>
-                              <span class="funded-percentage">{{ sp.funded_percentage_display }}% funded</span>
-                            </div>
-                            <div class="property-progress">
-                              <div class="progress-bar" style="width: {{ sp.funded_percentage_display }}%;"></div>
-                            </div>
-                          </div>
-                          <div class="investment-details">
-                            <div class="investment-row">
-                              <span class="investment-label">Projected return</span>
-                              <span class="investment-value">{{ sp.projected_return_percent }}%</span>
-                            </div>
-                            <div class="investment-row">
-                              <span class="investment-label">Annual net return</span>
-                              <span class="investment-value">{{ sp.annualised_net_return_percent }}%</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {% endfor %}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {% endif %}
+
             </div>
           </div>
         </div>
