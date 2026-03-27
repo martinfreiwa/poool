@@ -1371,12 +1371,34 @@
   background: #ffffff;
   border: 1px solid var(--card-border-color);
   border-radius: 12px;
-  padding: 20px;
+  padding: 24px;
   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.05);
+  border-color: rgba(0, 0, 255, 0.1);
+}
+
+/* Premium Icon Shell for Metric Cards */
+.metric-card .p-icon { position: relative; width: 44px; height: 44px; flex-shrink: 0; transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; transform: translateZ(0); }
+.metric-card:hover .p-icon { transform: scale(1.05) translateZ(0); }
+.metric-card .p-icon::before { content: ''; position: absolute; inset: 3px; border-radius: 22.37%; background: var(--glow-color, rgba(0, 0, 255, 0.06)); filter: blur(10px); opacity: 0; transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1); z-index: 0; }
+.metric-card:hover .p-icon::before { opacity: 1; }
+.metric-card .p-bg { position: absolute; border-radius: 22.37%; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; }
+.metric-card .p-bg-1 { width: 37px; height: 37px; opacity: 0.3; transform: rotate(18deg) translateZ(0); left: 7px; top: -4px; z-index: 1; }
+.metric-card .p-bg-2 { width: 40px; height: 40px; opacity: 0.38; transform: rotate(10deg) translateZ(0); left: 3px; top: -2px; z-index: 2; }
+.metric-card .p-front { position: absolute; inset: 0; width: 44px; height: 44px; border-radius: 22.37%; z-index: 3; display: flex; align-items: center; justify-content: center; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+.metric-card .p-front::after { content: ''; position: absolute; inset: 0; border-radius: inherit; opacity: .015; mix-blend-mode: soft-light; background: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); pointer-events: none; z-index: 6; }
+.metric-card .p-front::before { content: ''; position: absolute; top: -20%; left: -20%; width: 90%; height: 90%; border-radius: 50%; background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.22) 0%, rgba(255,255,255,.08) 40%, transparent 70%); z-index: 5; pointer-events: none; }
+.metric-card .p-front svg { width: 18px; height: 18px; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; position: relative; z-index: 7; }
 
 .metric-card-header {
   display: flex;

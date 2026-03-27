@@ -31,7 +31,6 @@
   const SECTION_IDS = [
     "portfolio-value-section",
     "key-financials-section",
-    "insights-limit-section",
     "assets-section",
   ];
 
@@ -171,15 +170,13 @@
 
     if (investments.length === 0) {
       body.innerHTML = `
-        <tr class="portfolio-assets-row">
-          <td colspan="6" style="padding:48px; text-align:center;">
+        <div class="portfolio-assets-row" style="justify-content:center; padding:48px;">
             <div style="display:flex; flex-direction:column; align-items:center; gap:12px; justify-content:center;">
               <img src="/static/images/home-smile.svg" alt="No assets" width="48" height="48" style="opacity:0.4;">
               <span style="color:#667085; font-size:14px;">No investments found.</span>
               <a href="/marketplace" style="color:#0000ff; font-size:14px; text-decoration:none;">Browse the Marketplace →</a>
             </div>
-          </td>
-        </tr>`;
+        </div>`;
       return;
     }
 
@@ -189,33 +186,33 @@
       const cover = escHtml(inv.coverImage);
       const statusCss = escHtml(inv.statusCss);
       const statusLabel = escHtml(inv.statusLabel);
-      const chainBadge = buildChainBadge(inv);
+      
       return `
-      <tr class="data-table__row" onclick="window.location.href='/property/${slug}'" style="cursor:pointer;">
-        <td class="data-table__td">
+      <div class="portfolio-assets-row" onclick="window.location.href='/property/${slug}'" style="cursor:pointer;">
+        <div class="portfolio-assets-cell property-col">
           <div style="display:flex; align-items:center; gap:16px;">
-            <img src="${cover}" alt="${title}" style="width: 56px; height: 40px; border-radius: 6px; object-fit: cover;" onerror="this.outerHTML='<div class=\\'property-image-placeholder\\'><svg width=\\'20\\' height=\\'20\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.5\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\' ry=\\'2\\'></rect><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'></circle><polyline points=\\'21 15 16 10 5 21\\'></polyline></svg></div>'">
+            <img src="${cover}" alt="${title}" style="width: 56px; height: 40px; border-radius: 6px; object-fit: cover;" onerror="this.outerHTML='<div class=\'property-image-placeholder\'><svg width=\'20\' height=\'20\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\' ry=\'2\'></rect><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'></circle><polyline points=\'21 15 16 10 5 21\'></polyline></svg></div>'">
             <div style="font-weight: 700; color: #101828; font-size: 14px; line-height: 1.4; max-width: 200px;">
-              ${title}<br/>${chainBadge}
+              ${title}
             </div>
           </div>
-        </td>
-        <td class="data-table__td">
+        </div>
+        <div class="portfolio-assets-cell investment-col">
           <div style="font-weight: 700; color: #101828; font-size: 14px;">${escHtml(inv.currentValueDisplay)}</div>
-        </td>
-        <td class="data-table__td">
-          <span class="ds-badge" style="background: #FFFFFF; color: #475467; border: 1px solid #E9EAEB; padding: 4px 8px; font-weight: 600; font-size: 12px; display:inline-flex; align-items:center; gap:4px; border-radius: 6px;">
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3.5 8.5L8.5 3.5M8.5 3.5H3.5M8.5 3.5V8.5" stroke="#475467" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="portfolio-assets-cell appreciation-col">
+          <span class="ds-badge" style="background: #FFFFFF; color: #475467; border: 1px solid #E9EAEB; padding: 2px 6px; font-weight: 600; font-size: 11px; display:inline-flex; align-items:center; gap:2px; border-radius: 4px;">
+            <svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M3.5 8.5L8.5 3.5M8.5 3.5H3.5M8.5 3.5V8.5" stroke="#475467" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             ${escHtml(inv.appreciationDisplay)}
           </span>
-        </td>
-        <td class="data-table__td">
+        </div>
+        <div class="portfolio-assets-cell rental-col">
           <div style="font-weight: 700; color: #101828; font-size: 14px;">${escHtml(inv.totalRentalDisplay)}</div>
-        </td>
-        <td class="data-table__td">
+        </div>
+        <div class="portfolio-assets-cell status-col">
           ${buildStatusBadgeHtml(statusCss, statusLabel)}
-        </td>
-        <td class="data-table__td text-right" onclick="event.stopPropagation();">
+        </div>
+        <div class="portfolio-assets-cell actions-col" onclick="event.stopPropagation();">
           ${(inv.isWithin48h && inv.originalStatus === 'funding_in_progress') ? `
           <button class="ds-btn ds-btn--ghost ds-btn--sm"
             style="color: #D92D20; border: 1px solid #FDA29B; background: #FEF3F2; margin-right: 8px;"
@@ -229,8 +226,8 @@
             onclick="window.location.href='/property/${slug}'">
             See Details
           </button>
-        </td>
-      </tr>`;}).join("");
+        </div>
+      </div>`;}).join("");
   }
 
   // ─── Cancel Action Binding ─────────────────────────────────────
@@ -359,7 +356,7 @@
         updateValueCard(data);
         updateKeyFinancials(data);
         updateInsights(data);
-        switchState(["portfolio-empty-state", "portfolio-value-section", "key-financials-section", "insights-limit-section"]);
+        switchState(["portfolio-empty-state", "portfolio-value-section", "key-financials-section"]);
         return;
       }
 

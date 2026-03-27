@@ -82,12 +82,17 @@
 }
 
 .investment-col {
-  width: 200px;
+  width: 160px;
+  flex: none;
+}
+
+.appreciation-col {
+  width: 140px;
   flex: none;
 }
 
 .rental-col {
-  width: 200px;
+  width: 160px;
   flex: none;
 }
 
