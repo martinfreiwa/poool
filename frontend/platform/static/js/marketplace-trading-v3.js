@@ -838,7 +838,8 @@
             const max = parseFloat(slider.max);
             const val = parseFloat(slider.value);
             const pct = ((val - min) / (max - min)) * 100;
-            slider.style.background = `linear-gradient(to right, #0000FF ${pct}%, #e2e2e2 ${pct}%)`;
+            slider.style.background = 'transparent'; // Clear inline background that causes thick track
+            slider.style.setProperty('--slider-progress', pct + '%');
         }
 
         function formatSliderValue(val, isUSD) {

@@ -70,9 +70,19 @@
 
   function updateValueCard(data) {
     setText("portfolio-total-value", data.totalValue);
+    if (window.CurrencyService && data.totalValue) {
+      window.CurrencyService.attachIdrSubtitle(data.totalValue, "portfolio-total-value");
+    }
+
     // Mobile
     const mobileAmount = document.querySelector(".mobile-portfolio-value-amount");
-    if (mobileAmount) mobileAmount.textContent = data.totalValue;
+    if (mobileAmount) {
+      mobileAmount.textContent = data.totalValue;
+      if (!mobileAmount.id) mobileAmount.id = "mobile-portfolio-total-value-id";
+      if (window.CurrencyService && data.totalValue) {
+        window.CurrencyService.attachIdrSubtitle(data.totalValue, mobileAmount.id);
+      }
+    }
 
     const appEl = document.getElementById("portfolio-appreciation-percentage");
     if (appEl) appEl.textContent = data.appreciation.display;
@@ -99,11 +109,13 @@
 
     // Desktop
     setText("portfolio-monthly-income", data.monthlyIncome);
+
     setText("portfolio-total-rental", data.totalRental);
+
     setText("portfolio-total-appreciation", data.totalAppreciation);
     
-    updateChange("portfolio-monthly-income-change", "—", true);
-    updateChange("portfolio-total-rental-change", "—", true);
+    updateChange("portfolio-monthly-income-change", "+0.0%", true);
+    updateChange("portfolio-total-rental-change", "+0.0%", true);
     updateChange("portfolio-total-appreciation-change", data.appreciation.display, data.appreciation.isPositive);
 
     const period = data.periodLabel;
@@ -113,11 +125,13 @@
 
     // Mobile
     setText("mobile-portfolio-monthly-income", data.monthlyIncome);
+
     setText("mobile-portfolio-total-rental", data.totalRental);
+
     setText("mobile-portfolio-total-appreciation", data.totalAppreciation);
     
-    updateChange("mobile-portfolio-monthly-income-change", "—", true);
-    updateChange("mobile-portfolio-total-rental-change", "—", true);
+    updateChange("mobile-portfolio-monthly-income-change", "+0.0%", true);
+    updateChange("mobile-portfolio-total-rental-change", "+0.0%", true);
     updateChange("mobile-portfolio-total-appreciation-change", data.appreciation.display, data.appreciation.isPositive);
     
     setText("mobile-portfolio-monthly-income-period", period);

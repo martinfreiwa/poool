@@ -77,27 +77,27 @@
 
 /* Column Widths - Exact from design */
 .property-col {
-  width: 312px;
+  width: 280px;
   flex: none;
 }
 
 .investment-col {
-  width: 160px;
+  width: 150px;
   flex: none;
 }
 
 .appreciation-col {
-  width: 140px;
+  width: 110px;
   flex: none;
 }
 
 .rental-col {
-  width: 160px;
+  width: 150px;
   flex: none;
 }
 
 .status-col {
-  width: 223px;
+  width: 180px;
   flex: none;
 }
 

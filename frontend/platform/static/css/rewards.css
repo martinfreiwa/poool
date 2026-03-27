@@ -1422,19 +1422,32 @@
 }
 
 .metric-card-trend {
-  font-size: 13px;
-  font-weight: 500;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 12px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
 }
 
 .metric-card-trend.positive {
-  color: var(--brand-greeny-green, var(--brand-greeny-green, #03FF88));
+  color: #027A48;
+  background-color: #ECFDF3;
 }
 
 .metric-card-trend.neutral {
-  color: #667085;
+  color: #344054;
+  background-color: #F2F4F7;
+}
+
+.metric-card-trend svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.5px;
 }
 
 @media (max-width: 1024px) {

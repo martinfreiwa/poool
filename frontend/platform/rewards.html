@@ -686,6 +686,73 @@ include
               </div>
             </div>
 
+            <!-- Campaign Breakdown Table -->
+            <div class="campaign-breakdown-card campaign-breakdown-card--table">
+              <div class="campaign-card-header">
+                <div class="campaign-header-info">
+                  <div class="campaign-title-wrap">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="7" height="7" />
+                      <rect x="14" y="3" width="7" height="7" />
+                      <rect x="14" y="14" width="7" height="7" />
+                      <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                    <h3>Campaign Performance</h3>
+                  </div>
+                  <span class="campaign-subtitle">Track metrics using <code>?subid=your_campaign</code></span>
+                </div>
+
+                <div class="campaign-table-actions">
+                  <div class="search-input-wrapper">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98a2b3" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"
+                      style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%);">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="campaign-search-input" placeholder="Search campaigns..." />
+                  </div>
+                  <button id="campaign-export-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export
+                  </button>
+                </div>
+              </div>
+              <div class="campaign-table-wrap">
+                <table class="campaign-table" id="campaign-table">
+                  <thead>
+                    <tr>
+                      <th data-sort="subid" style="cursor: pointer;" class="sortable">Campaign <span
+                          class="sort-icon"></span></th>
+                      <th data-sort="clicks" style="cursor: pointer;" class="sortable">Clicks <span
+                          class="sort-icon">↓</span></th>
+                      <th data-sort="signups" style="cursor: pointer;" class="sortable">Signups <span
+                          class="sort-icon"></span></th>
+                      <th data-sort="cvr" style="cursor: pointer;" class="sortable">CVR <span class="sort-icon"></span>
+                      </th>
+                      <th data-sort="qualified" style="cursor: pointer;" class="sortable">Qualified <span
+                          class="sort-icon"></span></th>
+                      <th data-sort="revenue" style="cursor: pointer;" class="sortable">Revenue <span
+                          class="sort-icon"></span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="campaign-table-body">
+                    <tr class="campaign-empty-row">
+                      <td colspan="6" style="text-align:center; padding:32px 0; color:#98a2b3;">
+                        No campaign data yet. Add <code>?subid=newsletter</code> to your referral link to start
+                        tracking.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <!-- Campaign Link Generator & Sharing -->
             <div class="campaign-link-generator-card">
               <div class="campaign-card-header">
@@ -760,73 +827,6 @@ include
               </div>
             </div>
 
-            <!-- Campaign Breakdown Table -->
-            <div class="campaign-breakdown-card campaign-breakdown-card--table">
-              <div class="campaign-card-header">
-                <div class="campaign-header-info">
-                  <div class="campaign-title-wrap">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="3" y="3" width="7" height="7" />
-                      <rect x="14" y="3" width="7" height="7" />
-                      <rect x="14" y="14" width="7" height="7" />
-                      <rect x="3" y="14" width="7" height="7" />
-                    </svg>
-                    <h3>Campaign Performance</h3>
-                  </div>
-                  <span class="campaign-subtitle">Track metrics using <code>?subid=your_campaign</code></span>
-                </div>
-
-                <div class="campaign-table-actions">
-                  <div class="search-input-wrapper">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#98a2b3" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round"
-                      style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%);">
-                      <circle cx="11" cy="11" r="8"></circle>
-                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    <input type="text" id="campaign-search-input" placeholder="Search campaigns..." />
-                  </div>
-                  <button id="campaign-export-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Export
-                  </button>
-                </div>
-              </div>
-              <div class="campaign-table-wrap">
-                <table class="campaign-table" id="campaign-table">
-                  <thead>
-                    <tr>
-                      <th data-sort="subid" style="cursor: pointer;" class="sortable">Campaign <span
-                          class="sort-icon"></span></th>
-                      <th data-sort="clicks" style="cursor: pointer;" class="sortable">Clicks <span
-                          class="sort-icon">↓</span></th>
-                      <th data-sort="signups" style="cursor: pointer;" class="sortable">Signups <span
-                          class="sort-icon"></span></th>
-                      <th data-sort="cvr" style="cursor: pointer;" class="sortable">CVR <span class="sort-icon"></span>
-                      </th>
-                      <th data-sort="qualified" style="cursor: pointer;" class="sortable">Qualified <span
-                          class="sort-icon"></span></th>
-                      <th data-sort="revenue" style="cursor: pointer;" class="sortable">Revenue <span
-                          class="sort-icon"></span></th>
-                    </tr>
-                  </thead>
-                  <tbody id="campaign-table-body">
-                    <tr class="campaign-empty-row">
-                      <td colspan="6" style="text-align:center; padding:32px 0; color:#98a2b3;">
-                        No campaign data yet. Add <code>?subid=newsletter</code> to your referral link to start
-                        tracking.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
 
           </div> <!-- end affiliate-tab -->
 

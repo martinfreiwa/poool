@@ -565,11 +565,7 @@
 
     var labelSpan = btn.querySelector("span");
     if (labelSpan) {
-      if (count === 1) {
-        labelSpan.textContent = "Filters";
-      } else {
-        labelSpan.textContent = "Filters (" + count + ")";
-      }
+      labelSpan.textContent = "Filters";
     }
   }
 
