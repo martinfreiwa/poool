@@ -23,26 +23,6 @@
                     <h1 class="mp-sec__title">Secondary Market</h1>
                     <span class="mp-sec__badge">Beta</span>
                 </div>
-                <div class="mp-sec__header-right">
-                    <!-- Search -->
-                    <div class="mp-sec__search-wrap">
-                        <svg class="mp-sec__search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                            <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.67"/>
-                            <path d="M13 13L17 17" stroke="#717680" stroke-width="1.67" stroke-linecap="round"/>
-                        </svg>
-                        <input id="mp-search" type="search" class="mp-sec__search" placeholder="Search assets…" autocomplete="off">
-                    </div>
-                    <!-- Sort -->
-                    <div class="mp-sec__sort-wrap">
-                        <label class="mp-sec__sort-label" for="mp-sort">Sort by</label>
-                        <select id="mp-sort" class="mp-sec__sort-select">
-                            <option value="volume">Volume</option>
-                            <option value="price">Price</option>
-                            <option value="change">24h Change</option>
-                            <option value="roi">ROI</option>
-                        </select>
-                    </div>
-                </div>
             </div>
 
             <!-- Status Tabs (Available / Funded) -->
@@ -118,7 +98,7 @@
             </div>
 
             <div class="mp-sec__modal-total">
-                <span>Total (incl. 5% fee)</span>
+                <span>Total (incl. {{ fee_pct_display | default("5") }}% fee)</span>
                 <strong id="interest-total">$0.00</strong>
             </div>
 
@@ -132,5 +112,9 @@
         </div>
     </div>
 
+    <script>
+        window.POOOL_FEE_PCT = parseFloat("{{ fee_pct | default(5.0) }}");
+        window.POOOL_FEE_DISPLAY = "{{ fee_pct_display | default('5') }}";
+    </script>
 </body>
 </html>

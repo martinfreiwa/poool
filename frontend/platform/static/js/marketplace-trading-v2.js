@@ -206,7 +206,7 @@
         var qty = parseInt(document.getElementById('tv2-qty').value) || 0;
         var price = parseFloat(document.getElementById('tv2-price').value) || 0;
         var subtotal = qty * price;
-        var fee = subtotal * 0.05;
+        var fee = subtotal * ((window.POOOL_FEE_PCT || 5) / 100);
         var total = subtotal + fee;
 
         document.getElementById('tv2-subtotal').textContent = formatUSD(subtotal);

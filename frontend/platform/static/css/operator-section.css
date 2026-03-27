@@ -2,17 +2,18 @@
 #operator-section {
   box-sizing: border-box;
   position: relative;
-  width: 616px;
-  min-height: 509px;
-  left: 24px;
-  margin-top: -3px;
+  width: 100%;
+  padding: 16px;
+  margin-left: 24px;
+  margin-right: 24px;
+  width: calc(100% - 48px);
+  margin-top: 0;
 
   /* Base/White */
   background: #ffffff;
   /* Gray/200 */
   border: 1px solid var(--table-border-color);
   border-radius: 16px;
-  padding: 16px;
 
   overflow: hidden;
 }

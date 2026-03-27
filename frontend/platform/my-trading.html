@@ -1,5 +1,5 @@
 {% set title="My Trading" %}
-{% set extra_css=['my-trading'] %}
+{% set extra_css=['my-trading', 'cards-template'] %}
 {% set extra_js=['my-trading'] %}
 {% set body_class="my-trading-body fouc-guard" %}
 
@@ -16,196 +16,212 @@
 
         <!-- Main Content -->
         <main class="myt__main">
-            <!-- Page Header -->
-            <div class="myt__header">
-                <div class="myt__header-left">
-                    <h1 class="myt__title">My Trading</h1>
-                    <span class="myt__badge">Marketplace</span>
+            <div class="myt__content-wrapper">
+                <!-- Page Header -->
+                <div class="myt__header">
+                    <div class="myt__header-left">
+                        <h1 class="myt__title">My Trading</h1>
+                        <span class="myt__badge">Marketplace</span>
+                    </div>
+                    <div class="myt__header-right">
+                        <a href="/marketplace-secondary" class="myt__action-btn myt__action-btn--outline">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Browse Market
+                        </a>
+                        <button class="myt__action-btn myt__action-btn--primary" id="btn-export-tax">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Export Tax Report
+                        </button>
+                    </div>
                 </div>
-                <div class="myt__header-right">
-                    <a href="/marketplace-secondary" class="myt__action-btn myt__action-btn--outline">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        Browse Market
-                    </a>
-                    <button class="myt__action-btn myt__action-btn--primary" id="btn-export-tax">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        Export Tax Report
+
+                <!-- Summary Cards -->
+                <div class="myt__summary">
+                    <div class="tpl-icon-item">
+                        <div class="p-icon" style="--glow-color:rgba(0,0,255,.1);">
+                            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
+                            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
+                            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
+                                <svg viewBox="0 0 24 24" stroke="#0000FF" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="icon-value" id="summary-open-orders">3</span>
+                            <span class="icon-name">Open Orders</span>
+                        </div>
+                    </div>
+                    <div class="tpl-icon-item">
+                        <div class="p-icon" style="--glow-color:rgba(0,0,255,.1);">
+                            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
+                            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
+                            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
+                                <svg viewBox="0 0 24 24" stroke="#0000FF" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="icon-value" id="summary-trades">12</span>
+                            <span class="icon-name">Completed Trades</span>
+                        </div>
+                    </div>
+                    <div class="tpl-icon-item">
+                        <div class="p-icon" style="--glow-color:rgba(0,0,255,.1);">
+                            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
+                            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
+                            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
+                                <svg viewBox="0 0 24 24" stroke="#0000FF" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5a3 3 0 00-3-3h-1a3 3 0 000 6h2a3 3 0 010 6h-2a3 3 0 01-3-3"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="icon-value" id="summary-fees">$342.50</span>
+                            <span class="icon-name">Total Fees Paid</span>
+                        </div>
+                    </div>
+                    <div class="tpl-icon-item">
+                        <div class="p-icon" style="--glow-color:rgba(0,0,255,.1);">
+                            <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
+                            <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
+                            <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
+                                <svg viewBox="0 0 24 24" stroke="#0000FF" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><polyline points="8 12 12 16 16 12"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="icon-value" id="summary-interests">1</span>
+                            <span class="icon-name">Active Buy Interests</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="myt__tabs">
+                    <button class="myt__tab active" data-tab="open-orders">
+                        Open Orders
+                        <span class="myt__tab-count" id="tab-count-orders">3</span>
                     </button>
-                </div>
-            </div>
+                    <button class="myt__tab" data-tab="buy-interests">
+                        Buy Interests
+                        <span class="myt__tab-count" id="tab-count-interests">1</span>
+                    </button>
+                    <button class="myt__tab" data-tab="my-assets">
+                        My Assets
+                        <span class="myt__tab-count" id="tab-count-assets">0</span>
+                    </button>
+                    <button class="myt__tab" data-tab="trade-history">
+                        Trade History
+                    </button>
 
-            <!-- Summary Cards -->
-            <div class="myt__summary">
-                <div class="myt__summary-card">
-                    <div class="myt__summary-icon myt__summary-icon--blue">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                    </div>
-                    <div class="myt__summary-content">
-                        <span class="myt__summary-label">Open Orders</span>
-                        <span class="myt__summary-value" id="summary-open-orders">3</span>
-                    </div>
                 </div>
-                <div class="myt__summary-card">
-                    <div class="myt__summary-icon myt__summary-icon--green">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    </div>
-                    <div class="myt__summary-content">
-                        <span class="myt__summary-label">Completed Trades</span>
-                        <span class="myt__summary-value" id="summary-trades">12</span>
-                    </div>
-                </div>
-                <div class="myt__summary-card">
-                    <div class="myt__summary-icon myt__summary-icon--amber">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5a3 3 0 00-3-3h-1a3 3 0 000 6h2a3 3 0 010 6h-2a3 3 0 01-3-3"/></svg>
-                    </div>
-                    <div class="myt__summary-content">
-                        <span class="myt__summary-label">Total Fees Paid</span>
-                        <span class="myt__summary-value" id="summary-fees">$342.50</span>
-                    </div>
-                </div>
-                <div class="myt__summary-card">
-                    <div class="myt__summary-icon myt__summary-icon--purple">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><polyline points="8 12 12 16 16 12"/></svg>
-                    </div>
-                    <div class="myt__summary-content">
-                        <span class="myt__summary-label">Active Buy Interests</span>
-                        <span class="myt__summary-value" id="summary-interests">1</span>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Tabs -->
-            <div class="myt__tabs">
-                <button class="myt__tab active" data-tab="open-orders">
-                    Open Orders
-                    <span class="myt__tab-count" id="tab-count-orders">3</span>
-                </button>
-                <button class="myt__tab" data-tab="buy-interests">
-                    Buy Interests
-                    <span class="myt__tab-count" id="tab-count-interests">1</span>
-                </button>
-                <button class="myt__tab" data-tab="my-assets">
-                    My Assets
-                    <span class="myt__tab-count" id="tab-count-assets">0</span>
-                </button>
-                <button class="myt__tab" data-tab="trade-history">
-                    Trade History
-                </button>
-
-            </div>
-
-            <!-- Tab: Open Orders -->
-            <div class="myt__tab-content active" id="tab-open-orders">
-                <div class="myt__card">
-                    <table class="myt__table">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Asset</th>
-                                <th>Side</th>
-                                <th>Price</th>
-                                <th>Qty</th>
-                                <th>Filled</th>
-                                <th>Fee</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="open-orders-body">
-                            <!-- JS fills this -->
-                        </tbody>
-                    </table>
+                <!-- Tab: Open Orders -->
+                <div class="myt__tab-content active" id="tab-open-orders">
+                    <div class="myt__card">
+                        <table class="myt__table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Asset</th>
+                                    <th>Side</th>
+                                    <th>Price</th>
+                                    <th>Qty</th>
+                                    <th>Filled</th>
+                                    <th>Fee</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="open-orders-body">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Tab: Buy Interests -->
-            <div class="myt__tab-content" id="tab-buy-interests">
-                <div class="myt__card">
-                    <table class="myt__table">
-                        <thead>
-                            <tr>
-                                <th>Asset</th>
-                                <th>Your Offer Price</th>
-                                <th>Qty</th>
-                                <th>Total (incl. fee)</th>
-                                <th>Holders Notified</th>
-                                <th>Expires</th>
-                                <th>Status</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="buy-interests-body">
-                            <!-- JS fills this -->
-                        </tbody>
-                    </table>
+                <!-- Tab: Buy Interests -->
+                <div class="myt__tab-content" id="tab-buy-interests">
+                    <div class="myt__card">
+                        <table class="myt__table">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Your Offer Price</th>
+                                    <th>Qty</th>
+                                    <th>Total (incl. fee)</th>
+                                    <th>Holders Notified</th>
+                                    <th>Expires</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="buy-interests-body">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Tab: My Assets -->
-            <div class="myt__tab-content" id="tab-my-assets">
-                <div class="myt__card">
-                    <table class="myt__table">
-                        <thead>
-                            <tr>
-                                <th>Asset</th>
-                                <th>Tokens Owned</th>
-                                <th>Total Invested</th>
-                                <th>Current Value</th>
-                                <th>P/L</th>
-                                <th>Yield</th>
-                                <th>Status</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="my-assets-body">
-                            <!-- JS fills this -->
-                        </tbody>
-                    </table>
+                <!-- Tab: My Assets -->
+                <div class="myt__tab-content" id="tab-my-assets">
+                    <div class="myt__card">
+                        <table class="myt__table">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Tokens Owned</th>
+                                    <th>Total Invested</th>
+                                    <th>Current Value</th>
+                                    <th>P/L</th>
+                                    <th>Yield</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="my-assets-body">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Tab: Trade History -->
-            <div class="myt__tab-content" id="tab-trade-history">
-                <div class="myt__card">
-                    <div class="myt__table-header">
-                        <div class="myt__table-filter">
-                            <select id="trade-filter-asset" class="myt__select">
-                                <option value="">All Assets</option>
-                            </select>
-                            <select id="trade-filter-period" class="myt__select">
-                                <option value="30d">Last 30 Days</option>
-                                <option value="90d">Last 90 Days</option>
-                                <option value="1y">Last Year</option>
-                                <option value="all">All Time</option>
-                            </select>
+                <!-- Tab: Trade History -->
+                <div class="myt__tab-content" id="tab-trade-history">
+                    <div class="myt__card">
+                        <div class="myt__table-header">
+                            <div class="myt__table-filter">
+                                <select id="trade-filter-asset" class="myt__select">
+                                    <option value="">All Assets</option>
+                                </select>
+                                <select id="trade-filter-period" class="myt__select">
+                                    <option value="30d">Last 30 Days</option>
+                                    <option value="90d">Last 90 Days</option>
+                                    <option value="1y">Last Year</option>
+                                    <option value="all">All Time</option>
+                                </select>
+                            </div>
+                            <div class="myt__table-summary" id="trade-summary">
+                                Net P/L: <strong class="myt__pnl myt__pnl--positive">+$1,245.30</strong>
+                            </div>
                         </div>
-                        <div class="myt__table-summary" id="trade-summary">
-                            Net P/L: <strong class="myt__pnl myt__pnl--positive">+$1,245.30</strong>
-                        </div>
+                        <table class="myt__table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Asset</th>
+                                    <th>Side</th>
+                                    <th>Price</th>
+                                    <th>Qty</th>
+                                    <th>Total</th>
+                                    <th>Fee ({{ fee_pct_display | default("5") }}%)</th>
+                                    <th>Net Amount</th>
+                                    <th>P/L</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trade-history-body">
+                                <!-- JS fills this -->
+                            </tbody>
+                        </table>
                     </div>
-                    <table class="myt__table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Asset</th>
-                                <th>Side</th>
-                                <th>Price</th>
-                                <th>Qty</th>
-                                <th>Total</th>
-                                <th>Fee (5%)</th>
-                                <th>Net Amount</th>
-                                <th>P/L</th>
-                            </tr>
-                        </thead>
-                        <tbody id="trade-history-body">
-                            <!-- JS fills this -->
-                        </tbody>
-                    </table>
                 </div>
             </div>
-
-
         </main>
     </div>
 
@@ -263,5 +279,9 @@
         </div>
     </div>
 
+    <script>
+        window.POOOL_FEE_PCT = parseFloat("{{ fee_pct | default(5.0) }}");
+        window.POOOL_FEE_DISPLAY = "{{ fee_pct_display | default('5') }}";
+    </script>
 </body>
 </html>

@@ -2104,7 +2104,26 @@ async fn page_marketplace_trading_v2(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    common::routes_helper::serve_protected(jar, &state, "marketplace-trading-v2.html").await
+    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+        .and_then(|v: String| v.parse::<f64>().ok())
+        .unwrap_or(5.0);
+
+    let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
+        format!("{:.0}", platform_fee_pct)
+    } else {
+        format!("{:.1}", platform_fee_pct)
+    };
+
+    let context = serde_json::json!({
+        "fee_pct": platform_fee_pct,
+        "fee_pct_display": fee_pct_display
+    });
+
+    common::routes_helper::serve_protected_with_context(jar, &state, "marketplace-trading-v2.html", context).await
 }
 
 /// GET /marketplace-secondary — Secondary market overview page (protected).
@@ -2112,7 +2131,26 @@ async fn page_marketplace_secondary(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    common::routes_helper::serve_protected(jar, &state, "marketplace-secondary.html").await
+    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+        .and_then(|v: String| v.parse::<f64>().ok())
+        .unwrap_or(5.0);
+
+    let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
+        format!("{:.0}", platform_fee_pct)
+    } else {
+        format!("{:.1}", platform_fee_pct)
+    };
+
+    let context = serde_json::json!({
+        "fee_pct": platform_fee_pct,
+        "fee_pct_display": fee_pct_display
+    });
+
+    common::routes_helper::serve_protected_with_context(jar, &state, "marketplace-secondary.html", context).await
 }
 
 /// GET /marketplace-trading-v3 — V3 Marketplace trading page with full property content (protected).
@@ -2120,12 +2158,50 @@ async fn page_marketplace_trading_v3(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    common::routes_helper::serve_protected(jar, &state, "marketplace-trading-v3.html").await
+    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+        .and_then(|v: String| v.parse::<f64>().ok())
+        .unwrap_or(5.0);
+
+    let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
+        format!("{:.0}", platform_fee_pct)
+    } else {
+        format!("{:.1}", platform_fee_pct)
+    };
+
+    let context = serde_json::json!({
+        "fee_pct": platform_fee_pct,
+        "fee_pct_display": fee_pct_display
+    });
+
+    common::routes_helper::serve_protected_with_context(jar, &state, "marketplace-trading-v3.html", context).await
 }
 
 /// GET /my-trading — Investor's personal trading dashboard (orders, trades, buy interests, tax export).
 async fn page_my_trading(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
-    common::routes_helper::serve_protected(jar, &state, "my-trading.html").await
+    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+        .and_then(|v: String| v.parse::<f64>().ok())
+        .unwrap_or(5.0);
+
+    let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
+        format!("{:.0}", platform_fee_pct)
+    } else {
+        format!("{:.1}", platform_fee_pct)
+    };
+
+    let context = serde_json::json!({
+        "fee_pct": platform_fee_pct,
+        "fee_pct_display": fee_pct_display
+    });
+
+    common::routes_helper::serve_protected_with_context(jar, &state, "my-trading.html", context).await
 }
 
 /// GET /trade-success — Confirmation page shown after a successful trade order placement.

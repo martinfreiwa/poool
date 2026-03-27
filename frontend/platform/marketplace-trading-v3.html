@@ -132,6 +132,8 @@
                      ═══════════════════════════════════════ -->
                 <div class="tv3-layout-grid">
                     <div class="tv3-layout-main">
+                        <div class="tv3-main-card">
+
 
                         <!-- P2P Offers Section -->
                         <section class="tv3-panel tv3-p2p-panel" aria-label="Peer-to-peer offers">
@@ -141,262 +143,187 @@
                         <!-- ═══════════════════════════════════════
                      3. PROPERTY OVERVIEW
                      ═══════════════════════════════════════ -->
-                        <section class="tv3-section">
-                            <div class="tv3-section-header">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                                </svg>
-                                <h2>Property Overview</h2>
-                            </div>
-                            <p class="tv3-description" id="tv3-description">Loading description…</p>
-                            <div class="info-div" id="tv3-info-badges">
+                        <div id="property-info-div" class="info-div">
                                 <div class="info-badge">
                                     <div class="info-badge-icon">
-                                        <img src="/static/images/prop-details/ID.webp" alt="Location" width="36"
-                                            height="36" />
+                                        <img src="/static/images/prop-details/ID.webp" alt="Location" width="36" height="36" />
                                     </div>
                                     <div class="info-badge-text">
-                                        <h4 id="tv3-info-country">Indonesia, Bali</h4>
+                                        <h4 id="tv3-info-country">Loading...</h4>
                                         <p>A mature real estate market with a high return on investment</p>
                                     </div>
                                 </div>
                                 <div class="info-badge">
                                     <div class="info-badge-icon">
-                                        <img loading="lazy" src="/static/images/prop-details/house.webp" alt="Rented"
-                                            width="36" height="36" />
+                                        <img loading="lazy" src="/static/images/prop-details/house.webp" alt="Rented" width="36" height="36" />
                                     </div>
                                     <div class="info-badge-text">
-                                        <h4 id="tv3-info-status">Rented</h4>
+                                        <h4 id="tv3-info-status">Loading...</h4>
                                         <p>Currently occupied and professionally managed by our team</p>
                                     </div>
                                 </div>
                                 <div class="info-badge">
                                     <div class="info-badge-icon">
-                                        <img loading="lazy" src="/static/images/prop-details/coins-stacked-02.webp"
-                                            alt="Yield" width="36" height="36" />
+                                        <img loading="lazy" src="/static/images/prop-details/coins-stacked-02.webp" alt="Yield" width="36" height="36" />
                                     </div>
                                     <div class="info-badge-text">
-                                        <h4 id="tv3-info-yield">12% annual rental yield</h4>
-                                        <p>Distributed monthly among all investors</p>
+                                        <h4 id="tv3-info-yield">...</h4>
+                                        <p>Distributed monthly among all investors after standard charges and fees</p>
                                     </div>
                                 </div>
                                 <div class="info-badge">
                                     <div class="info-badge-icon">
-                                        <img loading="lazy" src="/static/images/prop-details/line-chart-up-02.webp"
-                                            alt="Growth" width="36" height="36" />
+                                        <img loading="lazy" src="/static/images/prop-details/line-chart-up-02.webp" alt="Growth" width="36" height="36" />
                                     </div>
                                     <div class="info-badge-text">
-                                        <h4 id="tv3-info-growth">12% annual gross yield</h4>
-                                        <p id="tv3-info-net">With a net yield of 9.2%</p>
+                                        <h4 id="tv3-info-growth">...</h4>
+                                        <p id="tv3-info-net">...</p>
                                     </div>
                                 </div>
                             </div>
-                        </section>
+                            <!-- Property Overview Section -->
+                            <div id="property-overview-section">
+                                <h2 id="property-heading">Property Overview</h2>
+                                <div id="tv3-description" class="property-about-description">
+                                    <p>Loading description…</p>
+                                </div>
+                            </div>
 
 
-                        <!-- Key Financials + Property Info -->
-                        <section class="tv3-details-grid">
-                            <div class="tv3-panel">
-                                <div class="tv3-detail-header">
-                                    <img src="/static/images/prop-details/line-chart-up-02.webp" alt="Financials"
-                                        width="24" height="24" />
-                                    <h3>Key Financials</h3>
+                        <!-- Key Financials (Hidden to not break JS) -->
+                            <div style="display:none;" id="tv3-financials"><span id="tv3-prop-value"></span><span id="tv3-gross-yield"></span><span id="tv3-net-return"></span><span id="tv3-price-sqm"></span></div>
+                            <div style="display:none;" id="tv3-property-info"><span id="tv3-prop-type"></span><span id="tv3-prop-land"></span><span id="tv3-prop-beds"></span><span id="tv3-prop-status"></span></div>
+                            <!-- Investment Type -->
+                        <div id="investment-type-section">
+                                <div class="section-header">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>
+                                    <h2>Investment type</h2>
                                 </div>
-                                <div class="tv3-detail-grid" id="tv3-financials">
-                                    <div class="tv3-detail-item"><span class="tv3-dl">Property Value</span><span
-                                            class="tv3-dv" id="tv3-prop-value">—</span></div>
-                                    <div class="tv3-detail-item"><span class="tv3-dl">Annual Gross Yield</span><span
-                                            class="tv3-dv" id="tv3-gross-yield">—</span></div>
-                                    <div class="tv3-detail-item"><span class="tv3-dl">Net Return</span><span
-                                            class="tv3-dv" id="tv3-net-return">—</span></div>
-                                    <div class="tv3-detail-item"><span class="tv3-dl">Price per m²</span><span
-                                            class="tv3-dv" id="tv3-price-sqm">—</span></div>
-                                </div>
-                            </div>
-                            <div class="tv3-panel">
-                                <div class="tv3-detail-header">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="4" y="2" width="16" height="20" rx="2" />
-                                        <path d="M9 22V12h6v10" />
-                                        <path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01" />
-                                    </svg>
-                                    <h3>Property Information</h3>
-                                </div>
-                                <div class="tv3-detail-grid" id="tv3-property-info">
-                                    <div class="tv3-detail-item"><span class="tv3-dl">Property Type</span><span
-                                            class="tv3-dv" id="tv3-prop-type">—</span></div>
-                                    <div class="tv3-detail-item"><span class="tv3-dl">Land Size</span><span
-                                            class="tv3-dv" id="tv3-prop-land">—</span></div>
-                                    <div class="tv3-detail-item"><span class="tv3-dl">Bedrooms</span><span
-                                            class="tv3-dv" id="tv3-prop-beds">—</span></div>
-                                    <div class="tv3-detail-item"><span class="tv3-dl">Status</span><span class="tv3-dv"
-                                            id="tv3-prop-status">—</span></div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <!-- Investment Type -->
-                        <section class="tv3-panel">
-                            <div class="tv3-detail-header">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>
-                                <h3>Investment Type</h3>
-                            </div>
-                            <div class="strategy-card">
-                                <div class="strategy-header">
-                                    <div class="strategy-text">
-                                        <h3 id="tv3-lease-type">Standard Leasehold</h3>
-                                        <p>A safe strategy blending consistent income, strong appreciation, and capital
-                                            protection.</p>
+                                <div class="strategy-card">
+                                    <div class="strategy-header">
+                                        <div class="strategy-text">
+                                            <h3 id="tv3-lease-type">Standard Leasehold</h3>
+                                            <p>A safe strategy blending consistent income, strong appreciation, and capital protection.</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="strategy-content">
-                                    <div class="strategy-item">
-                                        <h4>Reputable building and community</h4>
-                                        <p>Located in a premium community with high demand from investors for its
-                                            desirability and stature.</p>
-                                    </div>
-                                    <div class="strategy-divider"></div>
-                                    <div class="strategy-item">
-                                        <h4>High-end amenities</h4>
-                                        <p>Luxurious amenities enhance lifestyle and justify premium rents, attracting
-                                            high-end tenants.</p>
+                                    <div class="strategy-content">
+                                        <div class="strategy-item">
+                                            <h4>Reputable building and community</h4>
+                                            <p>Located in a premium community with high demand from investors for its desirability and stature.</p>
+                                        </div>
+                                        <div class="strategy-divider"></div>
+                                        <div class="strategy-item">
+                                            <h4>High-end amenities</h4>
+                                            <p>Luxurious amenities enhance lifestyle and justify premium rents, attracting high-end tenants.</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </section>
 
                         <!-- Funding Timeline -->
-                        <section class="tv3-panel">
-                            <div class="tv3-detail-header">
-                                <img src="/static/images/portfolio_asset_details/calendar-check-02.svg"
-                                    alt="Funding Timeline" width="24" height="24" />
-                                <h3>Funding Timeline</h3>
-                            </div>
-                            <div class="progress-steps">
-                                <div class="funding-step-base completed">
-                                    <div class="funding-connector-wrap">
-                                        <div class="funding-step-icon-base">
-                                            <div class="funding-step-content">
-                                                <div class="funding-step-dot"></div>
-                                            </div>
-                                        </div>
-                                        <div class="funding-connector"></div>
-                                    </div>
-                                    <div class="funding-step-text">
-                                        <div class="funding-text-icon-row">
-                                            <h4 class="funding-step-heading">Property funded</h4>
-                                        </div>
-                                        <p class="funding-step-date">Completed</p>
-                                        <p class="funding-step-description">This property has been fully funded by
-                                            investors.</p>
-                                    </div>
+                        <div id="funding-section">
+                                <div class="funding-header">
+                                    <img src="/static/images/portfolio_asset_details/calendar-check-02.svg" alt="Funding Timeline" class="calendar-icon" width="24" height="24" />
+                                    <h2>Funding Timeline</h2>
                                 </div>
-                                <div class="funding-step-base completed">
-                                    <div class="funding-connector-wrap">
-                                        <div class="funding-step-icon-base">
-                                            <div class="funding-step-content">
-                                                <div class="funding-step-dot"></div>
+                                <div class="funding-divider"></div>
+                                <div class="progress-steps">
+                                    <div class="funding-step-base completed">
+                                        <div class="funding-connector-wrap">
+                                            <div class="funding-step-icon-base">
+                                                <div class="funding-step-content"><div class="funding-step-dot"></div></div>
+                                            </div>
+                                            <div class="funding-connector"></div>
+                                        </div>
+                                        <div class="funding-step-text">
+                                            <div class="funding-text-icon-row">
+                                                <h4 class="funding-step-heading">Property funded</h4>
+                                            </div>
+                                            <p class="funding-step-date">Completed</p>
+                                            <p class="funding-step-description">This property has been fully funded by investors.</p>
+                                        </div>
+                                    </div>
+                                    <div class="funding-step-base completed">
+                                        <div class="funding-connector-wrap">
+                                            <div class="funding-step-icon-base">
+                                                <div class="funding-step-content"><div class="funding-step-dot"></div></div>
+                                            </div>
+                                            <div class="funding-connector"></div>
+                                        </div>
+                                        <div class="funding-step-text">
+                                            <div class="funding-text-icon-row">
+                                                <h4 class="funding-step-heading">Property Share Certificates</h4>
+                                            </div>
+                                            <p class="funding-step-date">Issued</p>
+                                            <p class="funding-step-description">Your Property Share Certificates have been issued.</p>
+                                        </div>
+                                    </div>
+                                    <div class="funding-step-base last completed">
+                                        <div class="funding-connector-wrap">
+                                            <div class="funding-step-icon-base">
+                                                <div class="funding-step-content"><div class="funding-step-dot"></div></div>
                                             </div>
                                         </div>
-                                        <div class="funding-connector"></div>
-                                    </div>
-                                    <div class="funding-step-text">
-                                        <div class="funding-text-icon-row">
-                                            <h4 class="funding-step-heading">Property Share Certificates</h4>
-                                        </div>
-                                        <p class="funding-step-date">Issued</p>
-                                        <p class="funding-step-description">Your Property Share Certificates have been
-                                            issued.</p>
-                                    </div>
-                                </div>
-                                <div class="funding-step-base last completed">
-                                    <div class="funding-connector-wrap">
-                                        <div class="funding-step-icon-base">
-                                            <div class="funding-step-content">
-                                                <div class="funding-step-dot"></div>
+                                        <div class="funding-step-text">
+                                            <div class="funding-text-icon-row">
+                                                <h4 class="funding-step-heading">First rent payment</h4>
                                             </div>
+                                            <p class="funding-step-date">Active</p>
+                                            <div class="payment-badge">
+                                                <span>Income distributions active</span>
+                                            </div>
+                                            <p class="funding-step-description">Rental income is being distributed to investors on a monthly basis.</p>
                                         </div>
-                                    </div>
-                                    <div class="funding-step-text">
-                                        <div class="funding-text-icon-row">
-                                            <h4 class="funding-step-heading">First rent payment</h4>
-                                        </div>
-                                        <p class="funding-step-date">Active</p>
-                                        <div class="payment-badge">
-                                            <span>Income distributions active</span>
-                                        </div>
-                                        <p class="funding-step-description">Rental income is being distributed to
-                                            investors on a monthly basis.</p>
                                     </div>
                                 </div>
                             </div>
-                        </section>
 
                         <!-- Leasing Strategy -->
-                        <section class="tv3-panel">
-                            <div class="tv3-detail-header">
-                                <img src="/static/images/portfolio_asset_details/key-01.svg" alt="Leasing" width="24"
-                                    height="24" />
-                                <h3>Leasing Strategy</h3>
-                            </div>
-                            <div class="leasing-strategy-card">
-                                <div class="leasing-list">
+                        <div id="leasing-strategy-section">
+                                <div class="leasing-header">
+                                    <img src="/static/images/portfolio_asset_details/key-01.svg" alt="Leasing Strategy" class="key-icon" width="24" height="24" />
+                                    <h2>Leasing Strategy</h2>
+                                </div>
+                                <div class="leasing-content-box">
                                     <div class="leasing-item">
-                                        <div class="leasing-icon-wrap"><img
-                                                src="/static/images/portfolio_asset_details/building-03.svg"
-                                                alt="Professional property management" width="20" height="20" /></div>
-                                        <div class="leasing-text">
-                                            <h4>Professional property management</h4>
-                                            <p>Our experienced team handles all tenant relations, maintenance, and
-                                                day-to-day operations to maximise occupancy rates and rental income.</p>
+                                        <div class="leasing-item-header">
+                                            <h3>Professional property management</h3>
                                         </div>
+                                        <p>Our experienced team handles all tenant relations, maintenance, and day-to-day operations to maximise occupancy rates and rental income.</p>
                                     </div>
+                                    <div class="leasing-divider"><div class="divider-line"></div></div>
                                     <div class="leasing-item">
-                                        <div class="leasing-icon-wrap"><img
-                                                src="/static/images/portfolio_asset_details/file-check-02.svg"
-                                                alt="Standard Leasehold" width="20" height="20" /></div>
-                                        <div class="leasing-text">
-                                            <h4 id="tv3-lease-term">Standard Leasehold</h4>
-                                            <p>Lease term with built-in renewal options and annual rent escalation
-                                                clauses to protect against inflation.</p>
-                                        </div>
+                                        <div class="leasing-item-header"><h3 id="tv3-lease-term">Standard Leasehold</h3></div>
+                                        <p>Lease term with built-in renewal options and annual rent escalation clauses to protect against inflation.</p>
                                     </div>
+                                    <div class="leasing-divider"><div class="divider-line"></div></div>
                                     <div class="leasing-item">
-                                        <div class="leasing-icon-wrap"><img
-                                                src="/static/images/portfolio_asset_details/coins-stacked-02.svg"
-                                                alt="Monthly income distribution" width="20" height="20" /></div>
-                                        <div class="leasing-text">
-                                            <h4>Monthly income distribution</h4>
-                                            <p>Net rental income is distributed to all property token holders on a
-                                                monthly basis, providing consistent passive income.</p>
-                                        </div>
+                                        <div class="leasing-item-header"><h3>Monthly income distribution</h3></div>
+                                        <p>Net rental income is distributed to all property token holders on a monthly basis, providing consistent passive income.</p>
                                     </div>
                                 </div>
                             </div>
-                        </section>
 
                         <!-- Financials (Tabbed) -->
-                        <section class="tv3-panel">
-                            <div class="tv3-detail-header">
-                                <img src="/static/images/portfolio_asset_details/coins-stacked-02.svg" alt="Financials"
-                                    width="24" height="24" />
-                                <h3>Financials</h3>
-                            </div>
-                            <div class="tv3-fin-tabs">
+                        <div class="financial-section">
+                                <div class="financial-header">
+                                    <img src="/static/images/portfolio_asset_details/coins-stacked-02.svg" alt="Financials" class="financial-icon" width="24" height="24" />
+                                    <h2 class="financial-title">Financials</h2>
+                                </div>
+                                <div class="financial-content">
+                                    <div class="tv3-fin-tabs">
                                 <button class="tv3-fin-tab active" data-fin="cost">Property Cost</button>
                                 <button class="tv3-fin-tab" data-fin="rental">Rental Income (Year 1)</button>
                             </div>
                             <div class="tv3-fin-content" id="tv3-fin-cost">
                                 <div class="tv3-fin-row"><span>Property price</span><span id="tv3-fin-price">—</span>
                                 </div>
-                                <div class="tv3-fin-row"><span>POOOL platform fee (5%)</span><span
+                                <div class="tv3-fin-row"><span>POOOL platform fee ({{ fee_pct_display | default("5") }}%)</span><span
                                         id="tv3-fin-fee">—</span></div>
                                 <div class="tv3-fin-divider"></div>
                                 <div class="tv3-fin-row tv3-fin-row--total"><span>Total investment cost</span><span
                                         id="tv3-fin-total">—</span></div>
-                                <div class="tv3-fin-note">Includes POOOL's 5% Fee</div>
+                                <div class="tv3-fin-note">Includes POOOL's {{ fee_pct_display | default("5") }}% Fee</div>
                             </div>
                             <div class="tv3-fin-content" id="tv3-fin-rental" style="display:none">
                                 <div class="tv3-fin-row"><span>Annual gross yield</span><span
@@ -408,15 +335,15 @@
                                         id="tv3-fin-net">—</span></div>
                                 <div class="tv3-fin-note" id="tv3-fin-note2">Based on 12% annual rental yield</div>
                             </div>
-                        </section>
+                                </div>
+                            </div>
 
                         <!-- Investment Calculator -->
-                        <section class="tv3-section" id="tv3-calculator-section">
-                            <div class="tv3-section-header">
-                                <img src="/static/images/portfolio_asset_details/settings-04.svg"
-                                    alt="Investment Calculator" width="24" height="24" />
-                                <h2>Investment Calculator</h2>
-                            </div>
+                        <div id="calculator-section">
+                                <div class="section-header">
+                                    <img src="/static/images/portfolio_asset_details/settings-04.svg" alt="Investment Calculator" class="section-icon" width="24" height="24" />
+                                    <h2>Investment Calculator</h2>
+                                </div>
                             <div class="tv3-calculator-div">
                                 <div class="tv3-calc-gradient-1"></div>
                                 <div class="tv3-calc-gradient-2"></div>
@@ -591,15 +518,14 @@
                                     </svg>
                                 </div>
                             </div>
-                        </section>
+                        </div>
 
                         <!-- Location -->
-                        <section class="tv3-panel">
-                            <div class="tv3-detail-header">
-                                <img src="/static/images/portfolio_asset_details/marker-pin-04.svg" alt="Location"
-                                    width="24" height="24" />
-                                <h3>Location</h3>
-                            </div>
+                        <div class="location-section">
+                                <div class="location-header">
+                                    <img src="/static/images/portfolio_asset_details/marker-pin-04.svg" alt="Location" class="location-icon" width="24" height="24" />
+                                    <h2 class="location-title">Location</h2>
+                                </div>
                             <h4 class="tv3-location-subtitle" id="tv3-loc-subtitle">Bali, Indonesia</h4>
                             <div class="tv3-map">
                                 <iframe id="tv3-map-iframe"
@@ -607,74 +533,75 @@
                                     width="100%" height="300" style="border:0;border-radius:16px" allowfullscreen
                                     loading="lazy"></iframe>
                             </div>
-                            <p class="tv3-location-desc" id="tv3-loc-desc">Loading…</p>
-                        </section>
+                            <p class="location-description" id="tv3-loc-desc">Loading…</p>
+                            </div>
 
-                        <!-- Developer -->
-                        <section class="tv3-panel tv3-developer-panel">
-                            <div class="tv3-detail-header">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="4" y="2" width="16" height="20" rx="2" />
-                                    <path d="M9 22V12h6v10" />
-                                    <path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01" />
-                                </svg>
-                                <h3>Property Developer</h3>
+                        <!-- Developer (Platform) -->
+                        <div id="developer-section" class="developer-section">
+                            <div class="developer-header">
+                                <img src="/static/images/portfolio_asset_details/building-03.svg" alt="Platform" class="developer-icon" width="24" height="24" />
+                                <h3 class="developer-heading">Platform</h3>
                             </div>
-                            <div class="tv3-developer">
-                                <div class="tv3-dev-logo"><img id="tv3-dev-logo" src="/static/images/alexvillas.webp"
-                                        alt="Developer" /></div>
-                                <div class="tv3-dev-info">
-                                    <h4 id="tv3-dev-name">ALEX VILLAS</h4>
-                                    <p id="tv3-dev-desc">At Alex Villas, we believe in complete control over the quality
-                                        of our projects. That's why we've established our own production facilities,
-                                        including a concrete factory and a furniture factory.</p>
-                                </div>
-                            </div>
-                            <div class="tv3-dev-links">
-                                <a href="https://alexvillasgroup.com" target="_blank" class="tv3-dev-link">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <path d="M2 12h20" />
-                                        <path
-                                            d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+                            <div class="tv3-platform-card">
+                                <div class="tv3-platform-logo">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                      <circle cx="12" cy="8" r="4"></circle>
+                                      <circle cx="8" cy="14" r="4"></circle>
+                                      <circle cx="16" cy="14" r="4"></circle>
                                     </svg>
-                                    alexvillasgroup.com
-                                </a>
-                                <div class="tv3-dev-socials-row">
-                                    <a href="#" class="tv3-social-link" aria-label="Facebook"><svg width="18"
-                                            height="18" viewBox="0 0 20 20" fill="none">
-                                            <path
-                                                d="M20 10C20 4.477 15.523 0 10 0S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z"
-                                                fill="currentColor"></path>
-                                        </svg></a>
-                                    <a href="#" class="tv3-social-link" aria-label="Instagram"><svg width="18"
-                                            height="18" viewBox="0 0 20 20" fill="none">
-                                            <rect x="2" y="2" width="16" height="16" rx="4" stroke="currentColor"
-                                                stroke-width="1.5"></rect>
-                                            <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5">
-                                            </circle>
-                                            <circle cx="14.5" cy="5.5" r="1" fill="currentColor"></circle>
-                                        </svg></a>
-                                    <a href="#" class="tv3-social-link" aria-label="YouTube"><svg width="18" height="18"
-                                            viewBox="0 0 20 20" fill="none">
-                                            <path
-                                                d="M19.543 5.491C19.353 4.766 18.784 4.197 18.059 4.007C16.728 3.667 10 3.667 10 3.667s-6.728 0-8.059.34C1.216 4.197.647 4.766.457 5.491.167 6.822.167 10 .167 10s0 3.178.29 4.509c.19.725.759 1.294 1.484 1.484C3.272 16.333 10 16.333 10 16.333s6.728 0 8.059-.34c.725-.19 1.294-.759 1.484-1.484.29-1.331.29-4.509.29-4.509s0-3.178-.29-4.509zM8 12.5V7.5l5.5 2.5L8 12.5z"
-                                                fill="currentColor"></path>
-                                        </svg></a>
+                                </div>
+                                <h3 class="tv3-platform-title">PT. POOOL AGRO INVEST</h3>
+                                <p class="tv3-platform-desc">
+                                    POOOL enables you to invest in premium real estate and businesses starting from just $500 - powered by cutting-edge technology and notarized investment contracts that make every investment secure, transparent, and unique.
+                                </p>
+                                <p class="tv3-platform-desc">
+                                    What began as a market trend has evolved into a global investment platform, giving thousands of users access to high-yield premium assets.
+                                </p>
+                                <div class="tv3-platform-footer">
+                                    <div class="tv3-platform-footer-col">
+                                        <span class="tv3-platform-footer-label">Website</span>
+                                        <a href="https://poool.app" target="_blank" class="tv3-platform-footer-link">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                            </svg>
+                                            poool.app
+                                        </a>
+                                    </div>
+                                    <div class="tv3-platform-footer-col">
+                                        <span class="tv3-platform-footer-label">Social media</span>
+                                        <div class="tv3-platform-footer-icons">
+                                            <a href="#" class="tv3-platform-social">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                                                </svg>
+                                            </a>
+                                            <a href="#" class="tv3-platform-social">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                                                </svg>
+                                            </a>
+                                            <a href="#" class="tv3-platform-social">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                                    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.42a2.78 2.78 0 0 0-1.94 2C1 8.17 1 12 1 12s0 3.83.46 5.58a2.78 2.78 0 0 0 1.94 2C5.12 20 12 20 12 20s6.88 0 8.6-.42a2.78 2.78 0 0 0 1.94-2C23 15.83 23 12 23 12s0-3.83-.46-5.58z"></path>
+                                                    <polygon fill="#fff" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"></polygon>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </section>
-
+                        </div>
 
                         <!-- Documents (Tabbed) -->
-                        <section class="tv3-panel">
-                            <div class="tv3-detail-header">
-                                <img src="/static/images/portfolio_asset_details/Star%205.svg" alt="Documents"
-                                    width="24" height="24" />
-                                <h3>Documents</h3>
-                            </div>
+                        <div id="documents-section" class="documents-section">
+                                <div class="documents-header">
+                                    <img src="/static/images/portfolio_asset_details/Star%205.svg" alt="Documents" class="documents-icon" width="16" height="16" />
+                                    <h3 class="documents-heading">Documents</h3>
+                                </div>
                             <div class="tv3-doc-tabs">
                                 <button class="tv3-doc-tab active" data-doc-tab="smart-contract">Smart Contract</button>
                                 <button class="tv3-doc-tab" data-doc-tab="due-diligence">Due Diligence</button>
@@ -706,21 +633,21 @@
                                             src="/static/images/portfolio_asset_details/download-cloud-02.svg"
                                             alt="Download" width="18" height="18" /></button>
                                 </div>
+                                </div>
                             </div>
-                        </section>
 
                         <!-- Risk Notification -->
-                        <section class="tv3-panel tv3-risk-panel">
-                            <div class="tv3-risk-card">
-                                <div class="tv3-risk-header">
-                                    <div class="tv3-risk-header-text">
+                        <div id="risk-notification-section">
+                                <div class="risk-strategy-card">
+                                <div class="strategy-header">
+                                    <div class="strategy-text">
                                         <h3>Risk notification</h3>
                                         <p>While we strive to deliver the best for our customers, it's important to be
                                             aware of certain risks of full or partial loss of your investment that may
                                             be beyond our control:</p>
                                     </div>
-                                    <div class="tv3-risk-icon">
-                                        <div class="tv3-risk-icon-wrapper">
+                                    <div class="strategy-icon">
+                                        <div class="icon-wrapper">
                                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                                                 <path
                                                     d="M10 6V10M10 14H10.01M19 10C19 14.9706 14.9706 19 10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10Z"
@@ -730,145 +657,35 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="tv3-risk-content">
-                                    <div class="tv3-risk-item">
+                                <div class="strategy-content">
+                                    <div class="strategy-item">
                                         <h4>Developer Issues:</h4>
                                         <p>Unforeseen problems with developers can arise, potentially impacting project
                                             timelines and outcomes.</p>
                                     </div>
-                                    <div class="tv3-risk-divider"></div>
-                                    <div class="tv3-risk-item">
+                                    <div class="strategy-divider"></div>
+                                    <div class="strategy-item">
                                         <h4>Natural Events:</h4>
                                         <p>Events such as extreme weather or natural disasters can affect construction
                                             progress.</p>
                                     </div>
-                                    <div class="tv3-risk-divider"></div>
-                                    <div class="tv3-risk-item">
+                                    <div class="strategy-divider"></div>
+                                    <div class="strategy-item">
                                         <h4>Investment Duration:</h4>
                                         <p>Please note that investments cannot be withdrawn until the construction is
                                             complete and sold.</p>
                                     </div>
                                 </div>
-                                <div class="tv3-risk-footer">
-                                    <p>We believe in transparency and want you to make informed decisions. Thank you for
-                                        trusting us with your investment.</p>
-                                </div>
+                                
                             </div>
-                        </section>
+                            </div>
 
 
                         <!-- FAQ -->
-                        <section class="tv3-panel">
-                            <div class="tv3-detail-header">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-                                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                                </svg>
-                                <h3>Frequently Asked Questions</h3>
-                            </div>
-                            <div class="tv3-faq" id="tv3-faq">
-                                <div class="tv3-faq-item">
-                                    <div class="tv3-faq-q" onclick="this.parentElement.classList.toggle('open')">
-                                        <span>Can I change my investment amount later?</span><svg class="tv3-faq-icon"
-                                            width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2">
-                                            <line x1="12" y1="5" x2="12" y2="19" />
-                                            <line x1="5" y1="12" x2="19" y2="12" />
-                                        </svg></div>
-                                    <div class="tv3-faq-a">
-                                        <p>Yes, you can modify your investment amount before the property is fully
-                                            funded. Once funding is complete, changes are not possible as the investment
-                                            is locked in.</p>
-                                    </div>
-                                </div>
-                                <div class="tv3-faq-item">
-                                    <div class="tv3-faq-q" onclick="this.parentElement.classList.toggle('open')">
-                                        <span>What is the withdrawal policy?</span><svg class="tv3-faq-icon" width="20"
-                                            height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2">
-                                            <line x1="12" y1="5" x2="12" y2="19" />
-                                            <line x1="5" y1="12" x2="19" y2="12" />
-                                        </svg></div>
-                                    <div class="tv3-faq-a">
-                                        <p>You can withdraw your investment after the minimum holding period of 12
-                                            months. Early withdrawals may be subject to penalties and market conditions.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="tv3-faq-item">
-                                    <div class="tv3-faq-q" onclick="this.parentElement.classList.toggle('open')">
-                                        <span>How are rental payments distributed?</span><svg class="tv3-faq-icon"
-                                            width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2">
-                                            <line x1="12" y1="5" x2="12" y2="19" />
-                                            <line x1="5" y1="12" x2="19" y2="12" />
-                                        </svg></div>
-                                    <div class="tv3-faq-a">
-                                        <p>Rental income is distributed monthly to all investors proportionally based on
-                                            their ownership percentage. Payments are typically processed within the
-                                            first week of each month.</p>
-                                    </div>
-                                </div>
-                                <div class="tv3-faq-item">
-                                    <div class="tv3-faq-q" onclick="this.parentElement.classList.toggle('open')">
-                                        <span>What are the associated fees?</span><svg class="tv3-faq-icon" width="20"
-                                            height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2">
-                                            <line x1="12" y1="5" x2="12" y2="19" />
-                                            <line x1="5" y1="12" x2="19" y2="12" />
-                                        </svg></div>
-                                    <div class="tv3-faq-a">
-                                        <p>There's a 5% platform fee on investment amounts and up to 10% management fee
-                                            on rental income. No hidden charges or additional fees apply.</p>
-                                    </div>
-                                </div>
-                                <div class="tv3-faq-item">
-                                    <div class="tv3-faq-q" onclick="this.parentElement.classList.toggle('open')">
-                                        <span>What happens if the property value decreases?</span><svg
-                                            class="tv3-faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2">
-                                            <line x1="12" y1="5" x2="12" y2="19" />
-                                            <line x1="5" y1="12" x2="19" y2="12" />
-                                        </svg></div>
-                                    <div class="tv3-faq-a">
-                                        <p>Real estate investments carry market risk. While we carefully select
-                                            properties in stable markets, property values can fluctuate. However, you'll
-                                            continue to receive rental income regardless of short-term value changes.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
+                        {% include 'components/property/faq.html' %}
                         <!-- Contact -->
-                        <section class="tv3-panel tv3-contact-panel">
-                            <div class="tv3-contact">
-                                <div class="tv3-contact-avatar"><img src="/static/images/support-avatar.png"
-                                        alt="Support" /></div>
-                                <div class="tv3-contact-info">
-                                    <h3>Have more questions about this property?</h3>
-                                    <p>Contact our real estate experts</p>
-                                    <div class="tv3-contact-btns">
-                                        <button class="tv3-contact-btn">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff"
-                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-                                            </svg>
-                                            Chat us
-                                        </button>
-                                        <button class="tv3-contact-btn">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff"
-                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path
-                                                    d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.81.36 1.61.68 2.37a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.76.32 1.56.55 2.37.68A2 2 0 0122 16.92z" />
-                                            </svg>
-                                            Book a call
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                        {% include 'components/property/contact.html' %}
+                        </div> <!-- End tv3-main-card -->
                     </div> <!-- End layout-main -->
 
                     <div class="tv3-layout-sidebar">
@@ -953,7 +770,7 @@
                                     <div class="tv3-order-summary">
                                         <div class="tv3-sum-row"><span>Subtotal</span><span
                                                 id="tv3-subtotal">$0.00</span></div>
-                                        <div class="tv3-sum-row"><span>Platform Fee (5%)</span><span
+                                        <div class="tv3-sum-row"><span>Platform Fee ({{ fee_pct_display | default("5") }}%)</span><span
                                                 id="tv3-fee">$0.00</span></div>
                                         <div class="tv3-sum-row tv3-sum-row--total"><span>Total</span><span
                                                 id="tv3-total">$0.00</span></div>
@@ -1047,6 +864,9 @@
 
     <!-- Initialize live trading (after all scripts loaded) -->
     <script>
+        window.POOOL_FEE_PCT = parseFloat("{{ fee_pct | default(5.0) }}");
+        window.POOOL_FEE_DISPLAY = "{{ fee_pct_display | default('5') }}";
+        
         document.addEventListener('DOMContentLoaded', function () {
             // Extract asset_id from URL query param or data attribute
             var params = new URLSearchParams(window.location.search);
@@ -1058,20 +878,12 @@
                 if (window.MarketTrading) {
                     window.MarketTrading.init(assetId);
                 }
-                // Initialize candlestick chart
-                if (window.MarketChart) {
-                    window.MarketChart.init('tv3-chart', assetId);
-                }
                 // Initialize P2P offers panel
                 if (window.MarketP2P) {
                     window.MarketP2P.init('tv3-p2p-container', assetId);
                 }
             } else {
                 console.log('[Trading] Demo mode — using mock data');
-                // Still init chart with mock data in demo mode
-                if (window.MarketChart) {
-                    window.MarketChart.init('tv3-chart', null);
-                }
             }
         });
     </script>

@@ -1,18 +1,31 @@
 // Property Price Card Sticky Functionality
 document.addEventListener("DOMContentLoaded", function () {
   const priceCard = document.getElementById("property-price-card");
-  const kycBanner = document.querySelector(".kyc-banner");
-  const similarPropertiesWrapper = document.querySelector(
-    ".similar-properties-wrapper",
-  );
+  const kycBannerElement = document.querySelector(".kyc-banner");
+  // Look for similar properties first, fallback to main card bottom boundary
+  const stopElement = document.querySelector(".similar-properties-wrapper") || document.getElementById("property-main-card");
 
-  if (!priceCard || !kycBanner || !similarPropertiesWrapper) {
+  if (!priceCard || !stopElement) {
     return;
   }
 
   // Get initial position and dimensions
   const priceCardRect = priceCard.getBoundingClientRect();
-  const kycBannerRect = kycBanner.getBoundingClientRect();
+  
+  // Create a reliable measurement for the top boundary
+  function getStickyTopOffset() {
+    if (kycBannerElement) {
+      return {
+        height: kycBannerElement.getBoundingClientRect().height,
+        bottom: kycBannerElement.getBoundingClientRect().bottom
+      };
+    }
+    // Fallback if no KYC banner - this is a sidebar app, so there is no top navbar!
+    // We just return 0 to stick it near the top of the viewport.
+    return { height: 0, bottom: 0 };
+  }
+
+  const initialTopOffset = getStickyTopOffset();
 
   // Store original position values and calculate absolute positions
   const originalPosition = {
@@ -25,26 +38,30 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   // Configuration
-  const DISTANCE_FROM_BANNER = 24; // 24px distance from KYC banner
+  const DISTANCE_FROM_BANNER = 24; // 24px distance from KYC banner or header
 
   // Calculate the scroll position where sticky should START
-  // This is when the price card would normally scroll above the KYC banner + distance
   const stickyStartPoint =
-    originalPosition.offsetTop - kycBannerRect.height - DISTANCE_FROM_BANNER;
+    originalPosition.offsetTop - initialTopOffset.height - DISTANCE_FROM_BANNER;
 
   function updateStickyPosition() {
     const scrollY = window.scrollY;
-    const kycBannerRect = kycBanner.getBoundingClientRect();
-    const similarPropertiesRect =
-      similarPropertiesWrapper.getBoundingClientRect();
+    const currentTopOffset = getStickyTopOffset();
+    const stopElementRect = stopElement.getBoundingClientRect();
     const priceCardHeight = priceCard.offsetHeight;
 
-    // Calculate when to stop sticking (before hitting similar properties)
-    const similarPropertiesTop = similarPropertiesRect.top + scrollY;
+    // Calculate when to stop sticking
+    let boundaryY;
+    if (stopElement.classList.contains('similar-properties-wrapper')) {
+      boundaryY = stopElementRect.top + scrollY;
+    } else {
+      boundaryY = stopElementRect.bottom + scrollY;
+    }
+
     const maxScrollBeforeStop =
-      similarPropertiesTop -
+      boundaryY -
       priceCardHeight -
-      kycBannerRect.height -
+      currentTopOffset.height -
       DISTANCE_FROM_BANNER;
 
     // Determine if we should stick the card
@@ -54,13 +71,14 @@ document.addEventListener("DOMContentLoaded", function () {
     if (shouldStick && !shouldStopSticking) {
       // Make sticky: position fixed with calculated top
       priceCard.style.position = "fixed";
-      priceCard.style.top = `${kycBannerRect.bottom + DISTANCE_FROM_BANNER}px`;
+      const stickyTopPos = Math.max(currentTopOffset.bottom, 0) + DISTANCE_FROM_BANNER;
+      priceCard.style.top = `${stickyTopPos}px`;
       priceCard.style.left = `${originalPosition.offsetLeft}px`;
       priceCard.style.zIndex = "999";
     } else if (shouldStopSticking) {
-      // Stop at similar properties: position absolute
+      // Stop at boundary: position absolute
       priceCard.style.position = "absolute";
-      priceCard.style.top = `${similarPropertiesTop - priceCardHeight - DISTANCE_FROM_BANNER}px`;
+      priceCard.style.top = `${boundaryY - priceCardHeight - DISTANCE_FROM_BANNER}px`;
       priceCard.style.left = originalPosition.left;
       priceCard.style.zIndex = originalPosition.zIndex;
     } else {

@@ -125,7 +125,7 @@
                                 <span style="font-weight:600; color:#101828;">${fmt(totalValue)}</span>
                             </div>
                             <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-top:1px solid #eaecf0;">
-                                <span style="color:#667085;">Platform Fee (5%)</span>
+                                <span style="color:#667085;">Platform Fee (${window.POOOL_FEE_DISPLAY || '5'}%)</span>
                                 <span style="font-weight:600; color:#667085;">${side === 'buy' ? '+' : '−'}${fmt(feeValue)}</span>
                             </div>
                             <div style="display:flex; justify-content:space-between; padding:10px 0 4px; font-size:16px; border-top:2px solid #d0d5dd; margin-top:4px;">
@@ -319,80 +319,6 @@
         }
     }
 
-    // ── Build 12-Month Chart ──
-    function buildChart(asset) {
-        const isPositive = asset.annualYield > 0;
-        const color = isPositive ? '#16a34a' : '#dc2626';
-        const data = generatePriceData(asset.tokenPrice * 0.92, asset.tokenPrice);
-
-        const now = new Date();
-        const categories = data.map((_, i) => {
-            const d = new Date(now.getTime() - (data.length - 1 - i) * 86400000);
-            return d.toISOString();
-        });
-
-        const options = {
-            chart: {
-                type: 'area',
-                height: 250,
-                sparkline: { enabled: false },
-                toolbar: { show: false },
-                zoom: { enabled: false },
-                animations: { enabled: true, easing: 'easeinout', speed: 600 },
-                background: 'transparent',
-                fontFamily: "'TT Norms Pro', sans-serif",
-                parentHeightOffset: 0,
-            },
-            series: [{ name: 'Share Price', data }],
-            stroke: { width: 2, curve: 'smooth', colors: [color] },
-            colors: [color],
-            fill: {
-                type: 'gradient',
-                gradient: { shadeIntensity: 1, opacityFrom: 0.25, opacityTo: 0.05, stops: [0, 100] },
-            },
-            xaxis: {
-                type: 'datetime',
-                categories,
-                labels: {
-                    show: true,
-                    style: { fontSize: '10px', colors: '#9ca3af' },
-                    datetimeFormatter: { month: 'MMM', year: 'yyyy' },
-                },
-                axisBorder: { show: false },
-                axisTicks: { show: false },
-                tickAmount: 6,
-            },
-            yaxis: {
-                labels: {
-                    show: true,
-                    style: { fontSize: '10px', colors: '#9ca3af' },
-                    formatter: v => '$' + v.toFixed(0),
-                },
-                tickAmount: 4,
-            },
-            grid: {
-                show: true,
-                borderColor: '#f0f0f0',
-                strokeDashArray: 3,
-                xaxis: { lines: { show: false } },
-                yaxis: { lines: { show: true } },
-                padding: { top: -10, right: 0, bottom: 0, left: 6 },
-            },
-            tooltip: {
-                enabled: true,
-                x: { format: 'dd MMM yyyy' },
-                y: { formatter: v => '$' + v.toFixed(2) },
-                theme: 'light',
-            },
-            dataLabels: { enabled: false },
-        };
-
-        const el = document.getElementById('tv3-chart');
-        if (el && typeof ApexCharts !== 'undefined') {
-            el.innerHTML = '';
-            new ApexCharts(el, options).render();
-        }
-    }
 
     // ── Trade Widget State ──
     let currentSide = 'buy';
@@ -415,7 +341,7 @@
         const qty = parseInt(document.getElementById('tv3-qty').value) || 0;
         const price = getActivePrice();
         const subtotal = qty * price;
-        const fee = subtotal * 0.05;
+        const fee = subtotal * ((window.POOOL_FEE_PCT || 5) / 100);
         const total = subtotal + fee;
 
         document.getElementById('tv3-subtotal').textContent = fmt(subtotal);
@@ -576,7 +502,7 @@
                 landSize: rawAsset.landSize || 'N/A',
                 bedrooms: rawAsset.bedrooms || 0,
                 rentStatus: rawAsset.rentStatus || 'N/A',
-                platformFee: rawAsset.propertyValue ? (rawAsset.propertyValue / 100) * 0.05 : 0,
+                platformFee: rawAsset.propertyValue ? (rawAsset.propertyValue / 100) * ((window.POOOL_FEE_PCT || 5) / 100) : 0,
                 images: rawAsset.images && rawAsset.images.length > 0 ? rawAsset.images : ['/static/images/villa1.webp'],
                 sellOrders: rawAsset.sellOrders > 0 ? [{ tokens: rawAsset.sellOrders, price: rawAsset.price / 100 }] : [],
                 buyBids: rawAsset.buy_interest > 0 ? [{ tokens: rawAsset.buy_interest, price: rawAsset.price / 100 }] : [],
@@ -595,7 +521,6 @@
         populateHero(asset);
         populateDetails(asset);
         populateTradeWidget(asset);
-        buildChart(asset);
 
         // Initialize trade widget
         updateMarketInfo();
@@ -680,7 +605,7 @@
             }
 
             const totalValue = priceDisplay * qty;
-            const feeRate = 0.05;
+            const feeRate = ((window.POOOL_FEE_PCT || 5) / 100);
             const feeValue = totalValue * feeRate;
             const grandTotal = currentSide === 'buy' ? totalValue + feeValue : totalValue - feeValue;
 
@@ -801,7 +726,7 @@
             }
 
             const totalValue = priceVal * qty;
-            const feeValue = totalValue * 0.05;
+            const feeValue = totalValue * ((window.POOOL_FEE_PCT || 5) / 100);
             const grandTotal = sheetSide === 'buy' ? totalValue + feeValue : totalValue - feeValue;
 
             const confirmed = await showOrderConfirmModal({
@@ -1106,6 +1031,33 @@
                 tabs.forEach(function(t) { t.classList.remove('active'); });
                 this.classList.add('active');
             });
+        });
+    });
+})();
+
+// ═══════════════════════════════════════
+// FAQ SECTION
+// ═══════════════════════════════════════
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        var faqItems = document.querySelectorAll('.faq-item');
+        if (faqItems.length === 0) return;
+
+        faqItems.forEach(function(item) {
+            var itemContent = item.querySelector('.faq-item-content');
+            if (itemContent) {
+                itemContent.addEventListener('click', function() {
+                    var isActive = item.classList.contains('active');
+                    
+                    // Close all
+                    faqItems.forEach(function(t) { t.classList.remove('active'); });
+                    
+                    // If it wasn't active, open it
+                    if (!isActive) {
+                        item.classList.add('active');
+                    }
+                });
+            }
         });
     });
 })();

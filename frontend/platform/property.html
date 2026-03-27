@@ -272,7 +272,7 @@
                         <div class="financial-value-group"><span class="financial-value">USD {{ asset.total_value_usd }}</span></div>
                       </div>
                       <div class="financial-row">
-                        <span class="financial-label">POOOL platform fee (5%)</span>
+                        <span class="financial-label">POOOL platform fee ({{ fee_pct_display | default("5") }}%)</span>
                         <div class="financial-value-group"><span class="financial-value">+ USD {{ asset.platform_fee_usd }}</span></div>
                       </div>
                       <div class="financial-divider"></div>
@@ -281,7 +281,7 @@
                         <div class="financial-value-group"><span class="financial-value total">= USD {{ asset.total_investment_cost_usd }}</span></div>
                       </div>
                       <div class="financial-info-bar">
-                        <span class="info-bar-text">Includes POOOL's 5% Fee</span>
+                        <span class="info-bar-text">Includes POOOL's {{ fee_pct_display | default("5") }}% Fee</span>
                       </div>
                     </div>
                     <div class="financial-info" id="rental-income-content" style="display: none">
@@ -366,40 +366,7 @@
                 </div>
 
                 <!-- 13. Documents Section -->
-                <div id="documents-section" class="documents-section">
-                  <div class="documents-header">
-                    <img  src="/static/images/portfolio_asset_details/Star%205.svg" alt="Documents" class="documents-icon" width="16" height="16" />
-                    <h3 class="documents-heading">Documents</h3>
-                  </div>
-                  <div class="documents-tabs">
-                    <button class="documents-tab active" id="tab-smart-contract"><span class="tab-text">Smart Contract</span></button>
-                    <button class="documents-tab" id="tab-due-diligence"><span class="tab-text">Due Diligence</span></button>
-                    <button class="documents-tab" id="tab-property"><span class="tab-text">Property</span></button>
-                  </div>
-                  <div class="documents-list">
-                    <div class="document-item">
-                      <div class="document-info">
-                        <div class="document-icon"><img  src="/static/images/portfolio_asset_details/File%20type%20icon.svg" alt="Document" width="24" height="24" /></div>
-                        <span class="document-name">Smart Contract</span>
-                      </div>
-                      <button class="download-button"><img  src="/static/images/portfolio_asset_details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
-                    </div>
-                    <div class="document-item">
-                      <div class="document-info">
-                        <div class="document-icon"><img  src="/static/images/portfolio_asset_details/File%20type%20icon.svg" alt="Document" width="24" height="24" /></div>
-                        <span class="document-name">Token Registration</span>
-                      </div>
-                      <button class="download-button"><img  src="/static/images/portfolio_asset_details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
-                    </div>
-                    <div class="document-item">
-                      <div class="document-info">
-                        <div class="document-icon"><img  src="/static/images/portfolio_asset_details/File%20type%20icon.svg" alt="Document" width="24" height="24" /></div>
-                        <span class="document-name">Articles_of_Organization_LLC.pdf</span>
-                      </div>
-                      <button class="download-button"><img  src="/static/images/portfolio_asset_details/download-cloud-02.svg" alt="Download" width="24" height="24" /></button>
-                    </div>
-                  </div>
-                </div>
+                {% include 'components/property/documents.html' %}
 
                 <!-- 14. Risk Notification -->
                 {% include 'components/property/risk-notification.html' %}
@@ -637,6 +604,9 @@
     {% include 'components/property/modals.html' %}
 
   <script>
+    window.POOOL_FEE_PCT = parseFloat("{{ fee_pct | default(5.0) }}");
+    window.POOOL_FEE_DISPLAY = "{{ fee_pct_display | default('5') }}";
+    
     function openVirtualTour() {
       var toast = document.createElement('div');
       toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--page-title-color);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);';

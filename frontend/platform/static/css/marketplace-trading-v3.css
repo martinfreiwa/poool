@@ -144,6 +144,54 @@ body.tv3-body {
     }
 }
 
+.tv3-main-card {
+    background: var(--tv3-surface);
+    border: 1px solid var(--tv3-border);
+    border-radius: 16px;
+    padding-bottom: 48px;
+    padding-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px; /* Force perfectly consistent vertical spacing between all sections */
+}
+
+/* Force legacy fixed-width elements (like 664px) to expand fluidly inside the card */
+.tv3-main-card #property-info-div,
+.tv3-main-card #property-heading,
+.tv3-main-card .property-about-description,
+.tv3-main-card #property-video,
+.tv3-main-card .video-container,
+.tv3-main-card #property-title,
+.tv3-main-card #property-heading-section,
+.tv3-main-card #property-categories {
+    width: auto !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Strip broken legacy margins to rely exclusively on the uniform 48px Flex gap grid */
+.tv3-main-card > div,
+.tv3-main-card > section {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    width: 100%;
+}
+
+/* Support proper responsive padding for sections that relied on fixed positional left-shifts */
+.tv3-main-card #property-overview-section {
+    padding: 0 24px;
+    box-sizing: border-box;
+    width: 100%;
+}
+.tv3-main-card #property-heading {
+    left: 0 !important; /* Cancel legacy left: 24px positional shift */
+}
+/* Ensure description texts don't run flush against the right border */
+.tv3-main-card .property-about-description,
+.tv3-main-card #property-video {
+    margin-right: 0 !important; /* Handled by parent padding now */
+}
+
 /* === Breadcrumbs === */
 .tv3-breadcrumbs {
     display: flex;
@@ -354,7 +402,7 @@ body.tv3-body {
     border-radius: 0;
     border: none;
     box-shadow: none;
-    padding: 0;
+    padding: 0 24px;
     margin-bottom: 24px;
 }
 
@@ -756,6 +804,7 @@ body.tv3-body {
 /* ═══════════════════════════════════════
    5. CHART
    ═══════════════════════════════════════ */
+.chart-section { padding: 24px 24px 0 24px; }
 .tv3-chart-panel { margin-bottom: 0; }
 .tv3-chart { width: 100%; height: 250px; }
 
@@ -769,6 +818,9 @@ body.tv3-body {
     border-radius: 100px;
     padding: 4px;
     margin-bottom: 24px;
+    width: 100%;
+    box-sizing: border-box;
+    align-self: stretch;
 }
 .tv3-fin-tab {
     flex: 1;
@@ -789,7 +841,11 @@ body.tv3-body {
     box-shadow: none;
 }
 
-.tv3-fin-content { padding: 0; }
+.tv3-fin-content { 
+    padding: 0; 
+    width: 100%;
+    align-self: stretch;
+}
 .tv3-fin-row {
     display: flex;
     justify-content: space-between;
@@ -824,64 +880,111 @@ body.tv3-body {
     font-size: 15px; font-weight: 600;
     color: var(--tv3-text);
     margin: 0 0 16px;
+    width: 100%;
 }
-.tv3-map { margin-bottom: 16px; border-radius: var(--tv3-radius); overflow: hidden; }
-.tv3-location-desc {
+.tv3-map { 
+    margin-bottom: 16px; 
+    border-radius: var(--tv3-radius); 
+    overflow: hidden; 
+    width: 100%;
+    align-self: stretch;
+}
+.tv3-location-desc,
+.location-description {
     font-size: 13px;
     line-height: 1.6;
     color: var(--tv3-text-sec);
     margin: 0;
+    width: 100%;
 }
 
 /* ═══════════════════════════════════════
-   8. DEVELOPER
+   8. PLATFORM
    ═══════════════════════════════════════ */
-.tv3-developer {
+.tv3-platform-card {
+    background: #FAFAFA;
+    border: 1px solid var(--tv3-border);
+    border-radius: 12px;
+    padding: 32px 24px;
     display: flex;
-    gap: 24px;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
 }
-.tv3-dev-logo {
-    width: 72px; height: 72px;
-    border-radius: 14px;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: #f3f4f6;
-}
-.tv3-dev-logo img { width: 100%; height: 100%; object-fit: cover; }
-.tv3-dev-info h4 {
-    font-size: 15px; font-weight: 700; margin: 0 0 8px;
-    color: var(--tv3-text);
-}
-.tv3-dev-info p {
-    font-size: 13px; line-height: 1.6;
-    color: var(--tv3-text-sec);
-    margin: 0 0 16px;
-}
-.tv3-dev-links {
+.tv3-platform-logo {
+    width: 64px;
+    height: 64px;
+    background: var(--tv3-blue);
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--tv3-border);
-    margin-top: 8px;
+    justify-content: center;
+    margin-bottom: 16px;
 }
-.tv3-dev-link {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 13px; font-weight: 600;
+.tv3-platform-title {
+    color: var(--tv3-blue);
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 16px 0;
+}
+.tv3-platform-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--tv3-text);
+    margin: 0 0 16px 0;
+    max-width: 600px;
+}
+.tv3-platform-desc:last-of-type {
+    margin-bottom: 0;
+}
+.tv3-platform-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 48px;
+    margin-top: 24px;
+}
+.tv3-platform-footer-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.tv3-platform-footer-label {
+    font-size: 11px;
+    color: var(--tv3-text-sec);
+}
+.tv3-platform-footer-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--tv3-blue);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+.tv3-platform-footer-link:hover {
+    opacity: 0.8;
+}
+.tv3-platform-footer-icons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.tv3-platform-social {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--tv3-blue);
     text-decoration: none;
-    transition: color 0.2s;
+    transition: opacity 0.2s;
 }
-.tv3-dev-link:hover { color: #0000B3; }
-.tv3-dev-socials-row {
-    display: flex; gap: 8px;
-    margin-left: auto;
-}
-.tv3-social-link {
-    color: var(--tv3-text-muted);
-    transition: color 0.2s, transform 0.2s;
-    display: flex; align-items: center; justify-content: center;
+.tv3-platform-social:hover {
+    opacity: 0.8;
 }
 .tv3-social-link:hover {
     color: var(--tv3-text);

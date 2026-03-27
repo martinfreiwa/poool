@@ -921,3 +921,171 @@ These are ad-hoc fixes during feature implementation, documented inline.
 - **What I did:** Consolidated into `common::currency::format_thousands`.
 - **Status:** ✅ Resolved
 - **Date:** 2026-03-26
+
+### [P1] — Typo "PT. NEO AGO SOLUTIONS" in operator commodity component
+- **File:** `frontend/platform/components/property/operator-commodity.html`
+- **What was wrong:** Mulyadi Jayabaya's profile listed "PT. NEO AGO SOLUTIONS" instead of "PT. NEO AGRO SOLUTIONS" — a typo that misrepresented the operator.
+- **What I did:** Corrected "AGO" → "AGRO".
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P1] — Cart routes.rs compilation error (unused format args)
+- **File:** `backend/src/cart/routes.rs`
+- **What was wrong:** `item_count` and `item_label` were passed as named arguments to the `format!` macro on L1256-1259 but were never referenced in the format template string (`summary_html`), causing `error: multiple unused formatting arguments`.
+- **What I did:** Removed the two unused named arguments.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Commodity page loaded 15+ unused CSS/JS files
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** The `{% with %}` header loaded CSS for `marketplace`, `property-detail-mobile`, `mobile-investment-type`, `mobile-funding-timeline`, `mobile-similar-properties`, `mobile-youtube-modal`, and JS for `marketplace`, `mobile-navigation`, `property-detail-mobile`, `mobile-calculator`, `mobile-financial`, `mobile-documents`, `mobile-faq` — none of which had corresponding DOM on this page.
+- **What I did:** Stripped all unreferenced CSS/JS from the `{% with %}` block, keeping only genuinely used files.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Commodity description rendered as plain text despite containing HTML
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** Description used `{{ asset.description }}` without the `| safe` filter, and `CommodityDisplayData` lacked a `long_description` field for multi-paragraph rendering.
+- **What I did:** Added `long_description` and `youtube_video_id` fields to `CommodityDisplayData`. Updated commodity.html to use `{{ asset.long_description | safe }}` inside a proper `property-about-description` wrapper.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Double FAQ heading on commodity page
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** Commodity wrapped `{% include faq.html %}` in a div with its own `<h3>Frequently asked questions</h3>`, but `faq.html` component already contains the heading. This produced a duplicate heading.
+- **What I did:** Removed the wrapper div and extra heading, using direct `{% include %}` matching the property page pattern.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Commodity sidebar showed "/m²" badge (real estate metric)
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** The price card conditionally showed a `price_per_sqm` badge with "/m²" suffix — a real estate metric meaningless for agricultural commodities.
+- **What I did:** Changed to `per_hectare_cost_usd` with "/ha" suffix, matching the commodity data model.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — "month" not pluralized in commodity sidebar
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** Projected Term displayed "12 month" instead of "12 months".
+- **What I did:** Added the missing "s".
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Fake investor count default "352"
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** `{{ asset.investor_count | default("352") }}` showed a fabricated number when no data was present.
+- **What I did:** Changed default to "0".
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — How It Works commodity step 1 used house icon
+- **File:** `frontend/platform/components/property/how-it-works-commodity.html`
+- **What was wrong:** Step 1 ("Buy a fraction of premium commodity") used a house SVG icon from the real estate template.
+- **What I did:** Replaced with a 3D package/box icon matching the commodity asset type.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Roadmap `month_index is defined` always true in MiniJinja
+- **File:** `frontend/platform/components/property/roadmap-commodity.html`
+- **What was wrong:** `{% if item.month_index is defined %}` always evaluates true because the backend always passes the key (even if null). Should check for null, not existence.
+- **What I did:** Changed to `{% if item.month_index is not none %}`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Missing `openVirtualTour` function on commodity page
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** The `gallery.html` component referenced `openVirtualTour()` via onclick, but the commodity page had no inline `<script>` defining it, causing a `ReferenceError` if users clicked the virtual tour button.
+- **What I did:** Added the function definition before `</body>`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Location section showed `src="none"` and text "none"
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** When an asset had no `google_maps_url` or `location_description`, MiniJinja rendered `None` as the literal string "none", resulting in a broken iframe and visible "none" text.
+- **What I did:** Wrapped the entire location section in `{% if asset.google_maps_url %}` and removed all `| default()` fallbacks with fake data.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Financials tabs showed "USD none" and "none ha"
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** `per_hectare_cost_usd` and `land_size_hectares` fields rendered as "none" when null. The entire section displayed broken data.
+- **What I did:** Wrapped each row in `{% if %}` conditionals. Hid the entire financials section when no data exists.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — How It Works commodity used unstyled CSS classes
+- **File:** `frontend/platform/components/property/how-it-works-commodity.html`
+- **What was wrong:** Used class names (`.how-step-card`, `.step-badge`, `.step-icon`) that had NO CSS definitions anywhere. The property page uses `.info-card`, `.card-step`, `.card-image` classes which have full styling in `property-detail.css`.
+- **What I did:** Rewrote the component to use the property page's working CSS selectors (`#property-info-cards`, `.info-card`, `.card-step`, `.card-title`, `.card-action`). Changed Step 1 icon to a package/commodity SVG.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Operational Strategy used house icon and had double dividers
+- **File:** `frontend/platform/components/property/operational-strategy-commodity.html`
+- **What was wrong:** Used a house SVG icon for a farming strategy section. Each section had `inner-holo-card` margin AND a `leasing-divider`, creating doubled spacing.
+- **What I did:** Replaced house icon with shield-check and circle-check SVGs. Removed inline margin styles and extra dividers, keeping a clean single divider between sections.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Roadmap showed single generic fallback milestone
+- **File:** `frontend/platform/components/property/roadmap-commodity.html`
+- **What was wrong:** When no DB milestones existed, the fallback showed a single "Phase 1: Project Launch" step — meaningless for an agricultural commodity.
+- **What I did:** Replaced with 3 commodity-relevant fallback milestones: "Investment & Land Preparation" (Month 1-2), "Cultivation & Growth" (Month 3-9), "Harvest & Investor Payout" (Month 10-12).
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — FAQ used real estate questions on commodity page
+- **File:** `frontend/platform/components/property/faq-commodity.html` (new)
+- **What was wrong:** Shared `faq.html` asked about "rental payments", "property value decreases", and "property is fully funded" on a farming commodity page.
+- **What I did:** Created `faq-commodity.html` with agriculture-specific Q&As: minimum investment, harvest cycle returns, early withdrawal policy, platform fees, crop failure risk.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Contact section said "property" and "real estate experts" on commodity page
+- **File:** `frontend/platform/components/property/contact-commodity.html` (new)
+- **What was wrong:** Shared `contact.html` said "Have more questions about this property?" and "Contact our real estate experts" on a commodity page. The "Chat us" button was a dead `<button>` with no action.
+- **What I did:** Created `contact-commodity.html` with correct "commodity" language, "investment specialists" label, and linked the button to `/support`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Risk notification referenced "construction" and "developers" on commodity page
+- **File:** `frontend/platform/components/property/risk-notification-commodity.html` (new)
+- **What was wrong:** Shared `risk-notification.html` mentioned "Developer Issues", "construction progress", and "construction is complete and sold" — none applicable to agricultural commodities.
+- **What I did:** Created `risk-notification-commodity.html` with farming-relevant risks: crop & weather risk, market price fluctuation, harvest cycle lock-in.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Breadcrumb "Marketplace" was not clickable
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** The "Marketplace" breadcrumb was a `<div>` not an `<a>`, so users couldn't navigate back.
+- **What I did:** Changed to `<a href="/marketplace">` with `text-decoration:none`.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Duplicate short_description displayed twice
+- **File:** `frontend/platform/commodity.html`
+- **What was wrong:** Section 2 showed `short_description` as a tagline, then Section 5 "About the asset" showed it again as the first paragraph. Users saw the exact same text twice.
+- **What I did:** Removed the duplicate Section 2 wrapper. The text now appears only once in the "About the asset" section.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Commodity page missing `fee_pct` template variable
+- **File:** `backend/src/assets/routes.rs`
+- **What was wrong:** The commodity route handler didn't fetch or pass `fee_pct` / `fee_pct_display` to the template, unlike the property route. Fee-related template variables would render as empty.
+- **What I did:** Added `platform_fee_pct` query and `fee_pct_display` formatting, passing both to the commodity template context.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Explicit component widths breaking responsive layout and left-alignment
+- **File:** `frontend/platform/static/css/property-detail.css`
+- **What was wrong:** Multiple components within the main property card (`#neighborhood-section`, `#calculator-section`, `#stages-section`, `.faq-section`, `.developer-card`, `.document-item`, `.timeline-container`, `.progress-steps`) had hardcoded `width: 616px` and/or `left: 24px` offsets, breaking horizontal alignment and preventing fluid width.
+- **What I did:** Converted all offending blocks to use `100%` width with `padding: 0 24px` and `box-sizing: border-box`, mapping to the new responsive design standards. Removed explicit pixel offsets.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-26
+
+### [P2] — Undefined macro import resulting in error on Portfolio page
+- **File:** `frontend/platform/portfolio.html`
+- **What was wrong:** The Portfolio page template used `macros.holo_card_header` but didn't import `components/macros.html`, resulting in an `Internal Server Error: unknown method: undefined has no method named holo_card_header (in portfolio.html:67)`.
+- **What I did:** Added `{% import "components/macros.html" as macros %}` to the top of `portfolio.html` immediately after the header include.
+- **Status:** ✅ Resolved
+- **Date:** 2026-03-27

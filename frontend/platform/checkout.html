@@ -418,7 +418,6 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
           // Stats row
           var statsHtml = '<div class="cart-item-card__stats">'
             + '<div class="cart-item-card__stat"><span class="stat-label">Share Price</span><span class="stat-value">$' + pricePerToken + '</span></div>'
-            + '<div class="cart-item-card__stat"><span class="stat-label">Shares</span><span class="stat-value">' + item.tokens_quantity + '</span></div>'
             + (yieldPct ? '<div class="cart-item-card__stat"><span class="stat-label">Yield</span><span class="stat-value stat-value--yield">' + yieldPct + '%</span></div>' : '')
             + '</div>';
 

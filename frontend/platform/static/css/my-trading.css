@@ -53,6 +53,12 @@ body.my-trading-body {
     min-height: 100vh;
 }
 
+.myt__content-wrapper {
+    max-width: 1096px;
+    margin: 0;
+    width: 100%;
+}
+
 /* === Header === */
 .myt__header {
     display: flex;
@@ -165,6 +171,51 @@ body.my-trading-body {
 .myt__summary-icon--green { background: var(--myt-green-bg); color: var(--myt-green); }
 .myt__summary-icon--amber { background: var(--myt-amber-bg); color: var(--myt-amber); }
 .myt__summary-icon--purple { background: var(--myt-purple-bg); color: var(--myt-purple); }
+
+/* Glassmorphism vertical layout per holographic edition */
+.tpl-icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px 16px;
+    border-radius: 16px;
+    background: var(--myt-surface);
+    border: 1px solid var(--myt-border);
+    transition: all .35s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    cursor: pointer;
+}
+.tpl-icon-item:hover {
+    background: rgba(0,0,255,.02);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,255,.04);
+}
+.tpl-icon-item:hover .p-icon {
+    transform: scale(1.05) translateZ(0);
+}
+.tpl-icon-item .icon-name {
+    font-family: 'TT Norms Pro', system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--myt-text-sec);
+    text-align: center;
+    display: block;
+    line-height: 1.35;
+    transition: color .3s;
+}
+.tpl-icon-item .icon-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--myt-text-bright);
+    text-align: center;
+    display: block;
+    margin-top: 4px;
+}
+.tpl-icon-item:hover .icon-name {
+    color: #535862;
+}
 
 .myt__summary-content {
     display: flex;

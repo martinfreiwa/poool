@@ -195,6 +195,13 @@ impl PropertyDisplayData {
             total_investment_cost_usd: format_number(total_value_dollars * 105 / 100),
         }
     }
+
+    pub fn update_fee(&mut self, fee_pct: f64) {
+        let total_value_dollars = self.total_value_cents / 100;
+        let fee_dollars = ((total_value_dollars as f64) * fee_pct / 100.0).round() as i64;
+        self.platform_fee_usd = format_number(fee_dollars);
+        self.total_investment_cost_usd = format_number(total_value_dollars + fee_dollars);
+    }
 }
 
 /// Format a number with thousands separators (e.g. 1234567 -> "1,234,567")
@@ -312,6 +319,10 @@ pub struct CommodityDisplayData {
     pub funding_status: String,
     pub google_maps_url: Option<String>,
     pub video_url: Option<String>,
+    /// Extracted YouTube video ID (e.g. "dQw4w9WgXcQ")
+    pub youtube_video_id: Option<String>,
+    /// The full description rendered as HTML paragraphs
+    pub long_description: Option<String>,
 
     // ── Funding / token metrics ──
     pub total_value_usd: String,
@@ -352,6 +363,10 @@ pub struct CommodityDisplayData {
 
     // Location
     pub location_description: Option<String>,
+
+    // Platform fee
+    pub platform_fee_usd: String,
+    pub total_investment_cost_usd: String,
 
     // Yield display (for card-style display)
     pub annual_yield_percent: String,
@@ -446,6 +461,21 @@ impl CommodityDisplayData {
             funding_status: asset.funding_status.clone(),
             google_maps_url: asset.google_maps_url.clone(),
             video_url: asset.video_url.clone(),
+            youtube_video_id: extract_youtube_id(asset.video_url.as_deref()),
+            long_description: asset.description.as_ref().and_then(|desc| {
+                let trimmed = desc.trim();
+                if trimmed.is_empty() {
+                    None
+                } else {
+                    let paragraphs: Vec<&str> = trimmed.split("\n\n").collect();
+                    let html: String = paragraphs
+                        .iter()
+                        .map(|p| format!("<p>{}</p>", p.trim()))
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    Some(html)
+                }
+            }),
 
             total_value_usd: format_number(total_value_dollars),
             total_value_cents: asset.total_value_cents,
@@ -493,10 +523,21 @@ impl CommodityDisplayData {
 
             location_description: asset.location_description.clone(),
 
+            platform_fee_usd: format_number(total_value_dollars * 5 / 100),
+            total_investment_cost_usd: format_number(total_value_dollars * 105 / 100),
+
             annual_yield_percent: format!("{:.2}", annual_yield_pct),
             capital_appreciation_percent: format!("{:.2}", cap_appreciation_pct),
             projected_return_percent: format!("{:.2}", projected_return),
         }
+    }
+
+    /// Recalculate platform fee from a dynamic percentage
+    pub fn update_fee(&mut self, fee_pct: f64) {
+        let total_value_dollars = self.total_value_cents / 100;
+        let fee_dollars = ((total_value_dollars as f64) * fee_pct / 100.0).round() as i64;
+        self.platform_fee_usd = format_number(fee_dollars);
+        self.total_investment_cost_usd = format_number(total_value_dollars + fee_dollars);
     }
 }
 

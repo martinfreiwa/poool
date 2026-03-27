@@ -743,19 +743,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                 ));
             }
         }
-        if let Some(lsqm) = land_sqm {
-            if lsqm > 0.0 {
-                let display = if lsqm == lsqm.floor() {
-                    format!("{:.0}", lsqm)
-                } else {
-                    format!("{:.1}", lsqm)
-                };
-                property_details_parts.push(format!(
-                    "<span class=\"cart-item-card__detail-chip\">{} m\u{00b2} land</span>",
-                    display
-                ));
-            }
-        }
+
 
         let property_details_html = if property_details_parts.is_empty() {
             String::new()
@@ -802,10 +790,6 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                             <div class="cart-item-card__stat">
                                 <span class="stat-label">Share Price</span>
                                 <span class="stat-value">{token_price}</span>
-                            </div>
-                            <div class="cart-item-card__stat">
-                                <span class="stat-label">Shares</span>
-                                <span class="stat-value" id="cart-item-{idx}-tokens-label">{tokens_qty}</span>
                             </div>
                             <div class="cart-item-card__stat">
                                 <span class="stat-label">Yield</span>
@@ -1091,7 +1075,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             <div class="cart-summary-container" id="payment-summary-box" data-fee-pct="{fee_pct_raw}" style="{payment_vis}">
                 <!-- Header: title + timer -->
                 <div class="cart-summary-top-row">
-                    <h3 class="cart-summary-heading" style="margin:0;">Order Summary <span style="font-weight:400; font-size:14px; color:#717680;">({item_count} {item_label})</span></h3>
+                    <h3 class="cart-summary-heading" style="margin:0;">Order Summary</h3>
                     <div style="color:#B42318; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px; white-space:nowrap;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                         Reserved for <span id="checkout-timer">10:00</span>
@@ -1267,8 +1251,6 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         </div>"##,
         payment_vis = payment_display,
         kyc_vis = kyc_display,
-        item_count = item_count,
-        item_label = if item_count == 1 { "item" } else { "items" },
         summary_items = summary_items_html,
         total = total_display,
         subtotal_idr = subtotal_idr,
@@ -1316,16 +1298,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                 <div class="cart-add-more-card__progress-placeholder"><div class="cart-add-more-card__line-placeholder" style="width:100%; height:6px; border-radius:3px;"></div></div>
             </div>
         </a>
-        <!-- Support Card -->
-        <div class="cart-support-card">
-            <div class="cart-support-card__icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            </div>
-            <div class="cart-support-card__text">
-                <span class="cart-support-card__title">Need help?</span>
-                <span class="cart-support-card__desc">Our team is here. <a href="/support" class="cart-support-card__link">Contact support</a> or call <strong>+62 361 123 456</strong></span>
-            </div>
-        </div>
+
         </div></div>{summary}{kfs_modal}
         <!-- Empty Cart State -->"##,
         items_html = cart_items_html,

@@ -266,18 +266,39 @@ pub async fn page_property(
         vec![]
     };
 
-    // Convert similar assets to display-friendly data
-    let similar_display: Vec<PropertyDisplayData> = similar_assets
-        .iter()
-        .map(PropertyDisplayData::from_asset)
-        .collect();
-
     // Convert to display-friendly data with pre-computed values
-    let display_data = asset.as_ref().map(PropertyDisplayData::from_asset);
+    let mut display_data = asset.as_ref().map(PropertyDisplayData::from_asset);
+
+    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+        .and_then(|v: String| v.parse::<f64>().ok())
+        .unwrap_or(5.0);
+
+    let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
+        format!("{:.0}", platform_fee_pct)
+    } else {
+        format!("{:.1}", platform_fee_pct)
+    };
+
+    if let Some(ref mut d) = display_data {
+        d.update_fee(platform_fee_pct);
+    }
+    
+    let mut similar_display: Vec<PropertyDisplayData> = similar_assets
+        .iter()
+        .map(|a| {
+            let mut d = PropertyDisplayData::from_asset(a);
+            d.update_fee(platform_fee_pct);
+            d
+        })
+        .collect();
 
     match state.templates.get_template("property.html") {
         Ok(template) => match template
-            .render(context! { asset => display_data, similar_assets => similar_display })
+            .render(context! { asset => display_data, similar_assets => similar_display, fee_pct => platform_fee_pct, fee_pct_display => fee_pct_display })
         {
             Ok(html) => Html(html).into_response(),
             Err(e) => {
@@ -369,7 +390,7 @@ pub async fn page_commodity(
     };
 
     // Convert to display data
-    let display_data = asset
+    let mut display_data = asset
         .as_ref()
         .map(super::models::CommodityDisplayData::from_asset);
 
@@ -467,11 +488,31 @@ pub async fn page_commodity(
         vec![]
     };
 
+    // Fetch platform fee for display
+    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None)
+        .map(|v: String| v.parse::<f64>().unwrap_or(5.0))
+        .unwrap_or(5.0);
+
+    let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
+        format!("{:.0}", platform_fee_pct)
+    } else {
+        format!("{:.1}", platform_fee_pct)
+    };
+
+    if let Some(ref mut d) = display_data {
+        d.update_fee(platform_fee_pct);
+    }
+
     match state.templates.get_template("commodity.html") {
         Ok(template) => match template.render(context! {
             asset => display_data,
             milestones => milestones_ctx,
             similar_assets => similar_assets,
+            fee_pct => platform_fee_pct,
+            fee_pct_display => fee_pct_display,
         }) {
             Ok(html) => Html(html).into_response(),
             Err(e) => {

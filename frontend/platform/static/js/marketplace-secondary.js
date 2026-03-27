@@ -84,18 +84,21 @@
             `<div class="mp-sec__card-dot ${i === 0 ? 'active' : ''}" data-image-index="${i}"></div>`
         ).join('');
 
-        // Badges matching primary marketplace style
         let typeText = 'Standard Leasehold';
-        if (asset.leaseType) {
+        let badgeColorClass = 'ds-badge--leasehold';
+        
+        if (asset.type && asset.type.toLowerCase() === 'commodity') {
+            typeText = 'Agricultural';
+            badgeColorClass = 'ds-badge--commodity';
+        } else if (asset.leaseType) {
             typeText = asset.leaseType.charAt(0).toUpperCase() + asset.leaseType.slice(1).toLowerCase();
+            if (asset.leaseType.toLowerCase() === 'freehold') {
+                badgeColorClass = 'ds-badge--freehold';
+            }
         }    
         
-        const typeBadge = `<div class="mp-sec__badge mp-sec__badge--type">
-            <span class="mp-sec__badge-text">${typeText}</span>
-        </div>`;
-
-        const statusBadge = `<div class="mp-sec__badge mp-sec__badge--status">
-            <span class="mp-sec__badge-text">${asset.sellOrders > 0 ? 'Secondary' : 'Funded'}</span>
+        const typeBadge = `<div class="property-badge ds-badge ds-badge--overlay ${badgeColorClass}">
+            <span class="badge-text">${typeText}</span>
         </div>`;
 
         return `
@@ -105,11 +108,7 @@
                     ${navHTML}
                     <div class="mp-sec__card-dots">${dotsHTML}</div>
                 </div>
-                <div class="mp-sec__badge-row">
-                    ${typeBadge}
-                    ${statusBadge}
-                </div>
-                ${getStatusOverlay(asset)}
+                ${typeBadge}
             </div>`;
     }
 
@@ -143,11 +142,6 @@
                     </div>
                     <div class="mp-sec__card-meta-divider"></div>
                     ` : ''}
-                    <div class="mp-sec__card-meta-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                        <span>${asset.sellOrders > 0 ? 'Available' : 'Funded'}</span>
-                    </div>
-                    <div class="mp-sec__card-meta-divider"></div>
                     <div class="mp-sec__card-meta-item">
                         <img src="/static/images/${asset.country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="${asset.country}">
                         <span>${asset.location}</span>
@@ -371,8 +365,10 @@
     function filterAndSort() {
         const grid = document.getElementById('mp-asset-grid');
         const empty = document.getElementById('mp-empty');
-        const query = (document.getElementById('mp-search').value || '').toLowerCase().trim();
-        const sortBy = document.getElementById('mp-sort').value;
+        const searchEl = document.getElementById('mp-search');
+        const sortEl = document.getElementById('mp-sort');
+        const query = (searchEl ? searchEl.value : '').toLowerCase().trim();
+        const sortBy = sortEl ? sortEl.value : 'volume';
 
         let assets = [...MOCK_ASSETS];
         
@@ -453,7 +449,7 @@
         const price = parseFloat(priceInput?.value) || 0;
         const qty = parseInt(qtyInput?.value) || 0;
         const subtotal = price * qty;
-        const fee = subtotal * 0.05;
+        const fee = subtotal * ((window.POOOL_FEE_PCT || 5) / 100);
         const total = subtotal + fee;
         if (totalEl) totalEl.textContent = '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -471,9 +467,11 @@
         
         filterAndSort();
 
-        // Search + Sort
-        document.getElementById('mp-search').addEventListener('input', debounce(filterAndSort, 200));
-        document.getElementById('mp-sort').addEventListener('change', filterAndSort);
+        // Search + Sort (if elements exist)
+        const searchInput = document.getElementById('mp-search');
+        const sortSelect = document.getElementById('mp-sort');
+        if (searchInput) searchInput.addEventListener('input', debounce(filterAndSort, 200));
+        if (sortSelect) sortSelect.addEventListener('change', filterAndSort);
 
         // Status tabs (Available / Funded)
         document.querySelectorAll('.mp-sec__status-tab').forEach(btn => {

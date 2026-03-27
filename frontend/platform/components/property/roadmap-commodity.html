@@ -1,0 +1,90 @@
+<!-- Roadmap / Funding Section -->
+<div id="funding-section">
+  <div class="funding-header">
+    <img src="/static/images/portfolio_asset_details/calendar-check-02.svg" alt="Funding Timeline" class="calendar-icon" width="24" height="24" />
+    <h2>Roadmap</h2>
+  </div>
+  <div class="funding-divider"></div>
+  <div class="progress-steps">
+    {% set items = milestones | default([]) %}
+    {% if items | length > 0 %}
+      {% for item in items %}
+      <div class="funding-step-base {% if item.is_completed %}completed{% endif %} {% if loop.last %}last{% endif %}">
+        <div class="funding-connector-wrap">
+          <div class="funding-step-icon-base">
+            <div class="funding-step-content">
+              <div class="funding-step-dot"></div>
+            </div>
+          </div>
+          {% if not loop.last %}
+          <div class="funding-connector"></div>
+          {% endif %}
+        </div>
+        <div class="funding-step-text">
+          <div class="funding-text-icon-row">
+            <h4 class="funding-step-heading">
+              {% if item.month_index is not none %}
+                Month {{ item.month_index + 1 }}
+              {% else %}
+                {{ item.milestone_date }}
+              {% endif %}
+            </h4>
+          </div>
+          {% if item.title %}
+            <div class="payment-badge">
+              <span>{{ item.title }}</span>
+            </div>
+          {% endif %}
+          <p class="funding-step-description">{{ item.description }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <!-- Fallback milestones for commodity assets -->
+      <div class="funding-step-base completed">
+        <div class="funding-connector-wrap">
+          <div class="funding-step-icon-base">
+            <div class="funding-step-content">
+              <div class="funding-step-dot"></div>
+            </div>
+          </div>
+          <div class="funding-connector"></div>
+        </div>
+        <div class="funding-step-text">
+          <h4 class="funding-step-heading">Month 1–2</h4>
+          <div class="payment-badge"><span>Investment &amp; Land Preparation</span></div>
+          <p class="funding-step-description">Funding round closes. Land cleared, soil tested, and organic fertilizers applied.</p>
+        </div>
+      </div>
+      <div class="funding-step-base">
+        <div class="funding-connector-wrap">
+          <div class="funding-step-icon-base">
+            <div class="funding-step-content">
+              <div class="funding-step-dot"></div>
+            </div>
+          </div>
+          <div class="funding-connector"></div>
+        </div>
+        <div class="funding-step-text">
+          <h4 class="funding-step-heading">Month 3–9</h4>
+          <div class="payment-badge"><span>Cultivation &amp; Growth</span></div>
+          <p class="funding-step-description">Crops planted and maintained. Regular progress reports shared with investors.</p>
+        </div>
+      </div>
+      <div class="funding-step-base last">
+        <div class="funding-connector-wrap">
+          <div class="funding-step-icon-base">
+            <div class="funding-step-content">
+              <div class="funding-step-dot"></div>
+            </div>
+          </div>
+        </div>
+        <div class="funding-step-text">
+          <h4 class="funding-step-heading">Month 10–12</h4>
+          <div class="payment-badge"><span>Harvest &amp; Investor Payout</span></div>
+          <p class="funding-step-description">Crops harvested and sold to contracted buyers. Returns distributed to investors.</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>

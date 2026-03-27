@@ -162,7 +162,7 @@
                                     <span id="tv2-subtotal">$0.00</span>
                                 </div>
                                 <div class="tv2-summary-row">
-                                    <span>Platform Fee (5%)</span>
+                                    <span>Platform Fee ({{ fee_pct_display | default("5") }}%)</span>
                                     <span id="tv2-fee">$0.00</span>
                                 </div>
                                 <div class="tv2-summary-row tv2-summary-row--total">
@@ -291,5 +291,9 @@
             </div>
         </main>
     </div>
+    <script>
+        window.POOOL_FEE_PCT = parseFloat("{{ fee_pct | default(5.0) }}");
+        window.POOOL_FEE_DISPLAY = "{{ fee_pct_display | default('5') }}";
+    </script>
 </body>
 </html>
