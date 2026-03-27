@@ -677,7 +677,7 @@
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  max-width: 840px;
+  max-width: 1096px;
 }
 
 .tier-card {
@@ -1425,13 +1425,16 @@
   position: absolute;
   top: 16px;
   right: 16px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  flex-shrink: 0;
   font-size: 12px;
   font-weight: 600;
-  display: flex;
-  align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  border-radius: 20px;
 }
 
 .metric-card-trend.positive {
