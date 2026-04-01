@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.postback_url, ar.sub_id, \n                           COALESCE((SELECT SUM(provisional_amount_cents)::bigint FROM affiliate_commissions WHERE referral_id = $2), 0) as \"payout_cents!\"\n                           FROM affiliates a\n                           JOIN affiliate_referrals ar ON ar.id = $2\n                           WHERE a.user_id = $1 AND a.postback_url IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "postback_url",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "sub_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "payout_cents!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "4865b675ff363a071a1e9c203b36ace2ac0f01e68fca99432235f35716c83bd4"
+}

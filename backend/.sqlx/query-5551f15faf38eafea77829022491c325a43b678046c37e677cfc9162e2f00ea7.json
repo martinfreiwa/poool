@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW() WHERE wallet_type = 'affiliate_treasury' AND currency = 'USD'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5551f15faf38eafea77829022491c325a43b678046c37e677cfc9162e2f00ea7"
+}

@@ -1,15 +1,769 @@
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.26s
+warning: field `avatar_url` is never read
+    --> src/main.rs:2201:9
+     |
+2197 |     struct PostOgData {
+     |            ---------- field in this struct
+...
+2201 |         avatar_url: Option<String>,
+     |         ^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `address` and `transaction_hash` are never read
+  --> src/blockchain/event_indexer.rs:49:5
+   |
+47 | struct EthLog {
+   |        ------ fields in this struct
+48 |     /// Contract address (0x-prefixed, lowercase)
+49 |     address: String,
+   |     ^^^^^^^
+...
+57 |     transaction_hash: String,
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = note: `EthLog` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: function `get_question_count` is never used
+   --> src/community/amas.rs:406:14
+    |
+406 | pub async fn get_question_count(pool: &PgPool, ama_id: Uuid) -> Result<i64, AppError> {
+    |              ^^^^^^^^^^^^^^^^^^
+
+warning: struct `AnnouncementCategory` is never constructed
+ --> src/community/models.rs:6:12
+  |
+6 | pub struct AnnouncementCategory {
+  |            ^^^^^^^^^^^^^^^^^^^^
+
+warning: field `reason` is never read
+    --> src/community/routes.rs:1646:9
+     |
+1645 | pub struct HideCommentPayload {
+     |            ------------------ field in this struct
+1646 |     pub reason: Option<String>,
+     |         ^^^^^^
+
+warning: variants `CreatePost`, `CreateComment`, `GiveReaction`, `MarketInsightPost`, and `ReviewPost` are never constructed
+   --> src/community/xp.rs:456:5
+    |
+455 | pub enum GatedFeature {
+    |          ------------ variants in this enum
+456 |     CreatePost,        // Level 1 (anyone)
+    |     ^^^^^^^^^^
+457 |     CreateComment,     // Level 1
+    |     ^^^^^^^^^^^^^
+458 |     GiveReaction,      // Level 1
+    |     ^^^^^^^^^^^^
+...
+461 |     MarketInsightPost, // Level 3
+    |     ^^^^^^^^^^^^^^^^^
+462 |     ReviewPost,        // Level 4
+    |     ^^^^^^^^^^
+
+warning: fields `id` and `chain_metadata_uri` are never read
+   --> src/ipfs/metadata.rs:157:5
+    |
+156 | struct AssetRow {
+    |        -------- fields in this struct
+157 |     id: uuid::Uuid,
+    |     ^^
+...
+178 |     chain_metadata_uri: Option<String>,
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `AssetRow` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `gateway_url` is never read
+  --> src/ipfs/service.rs:27:9
+   |
+21 | pub struct PinataConfig {
+   |            ------------ field in this struct
+...
+27 |     pub gateway_url: String,
+   |         ^^^^^^^^^^^
+   |
+   = note: `PinataConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: struct `PinJsonRequest` is never constructed
+  --> src/ipfs/service.rs:56:8
+   |
+56 | struct PinJsonRequest {
+   |        ^^^^^^^^^^^^^^
+
+warning: struct `PinataMetadata` is never constructed
+  --> src/ipfs/service.rs:67:8
+   |
+67 | struct PinataMetadata {
+   |        ^^^^^^^^^^^^^^
+
+warning: struct `PinataOptions` is never constructed
+  --> src/ipfs/service.rs:78:8
+   |
+78 | struct PinataOptions {
+   |        ^^^^^^^^^^^^^
+
+warning: variant `SerializationError` is never constructed
+   --> src/ipfs/service.rs:108:5
+    |
+100 | pub enum IpfsError {
+    |          --------- variant in this enum
+...
+108 |     SerializationError(String),
+    |     ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `IpfsError` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: function `pin_file` is never used
+   --> src/ipfs/service.rs:199:14
+    |
+199 | pub async fn pin_file(
+    |              ^^^^^^^^
+
+warning: enum `OrderType` is never used
+  --> src/marketplace/models.rs:56:10
+   |
+56 | pub enum OrderType {
+   |          ^^^^^^^^^
+
+warning: method `as_str` is never used
+  --> src/marketplace/models.rs:65:12
+   |
+63 | impl OrderType {
+   | -------------- method in this implementation
+64 |     /// Convert to the DB-compatible string value.
+65 |     pub fn as_str(&self) -> &'static str {
+   |            ^^^^^^
+
+warning: methods `is_filled`, `total_value_cents`, and `remaining_value_cents` are never used
+   --> src/marketplace/models.rs:140:12
+    |
+133 | impl MarketOrder {
+    | ---------------- methods in this implementation
+...
+140 |     pub fn is_filled(&self) -> bool {
+    |            ^^^^^^^^^
+...
+162 |     pub fn total_value_cents(&self) -> i64 {
+    |            ^^^^^^^^^^^^^^^^^
+...
+167 |     pub fn remaining_value_cents(&self) -> i64 {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `TradeRecord` is never constructed
+   --> src/marketplace/models.rs:176:12
+    |
+176 | pub struct TradeRecord {
+    |            ^^^^^^^^^^^
+
+warning: fields `current_pct` and `requested_pct` are never read
+   --> src/marketplace/models.rs:502:9
+    |
+500 |     ConcentrationLimit {
+    |     ------------------ fields in this variant
+501 |         /// Current ownership percentage.
+502 |         current_pct: f64,
+    |         ^^^^^^^^^^^
+503 |         /// Requested additional percentage.
+504 |         requested_pct: f64,
+    |         ^^^^^^^^^^^^^
+    |
+    = note: `OrderRejection` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: fields `order_pct` and `order_value_cents` are never read
+   --> src/marketplace/models.rs:511:9
+    |
+509 |     RequiresAdminReview {
+    |     ------------------- fields in this variant
+510 |         /// Order percentage of total supply.
+511 |         order_pct: f64,
+    |         ^^^^^^^^^
+512 |         /// Order total value in cents.
+513 |         order_value_cents: i64,
+    |         ^^^^^^^^^^^^^^^^^
+    |
+    = note: `OrderRejection` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `actual_cents` is never read
+   --> src/marketplace/models.rs:520:9
+    |
+516 |     BelowMinimum {
+    |     ------------ field in this variant
+...
+520 |         actual_cents: i64,
+    |         ^^^^^^^^^^^^
+    |
+    = note: `OrderRejection` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: field `current` is never read
+   --> src/marketplace/models.rs:537:9
+    |
+533 |     TooManyOpenOrders {
+    |     ----------------- field in this variant
+...
+537 |         current: i32,
+    |         ^^^^^^^
+    |
+    = note: `OrderRejection` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: variants `TwoFactorRequired` and `RateLimited` are never constructed
+   --> src/marketplace/models.rs:542:5
+    |
+484 | pub enum OrderRejection {
+    |          -------------- variants in this enum
+...
+542 |     TwoFactorRequired,
+    |     ^^^^^^^^^^^^^^^^^
+543 |     /// Rate limit exceeded.
+544 |     RateLimited {
+    |     ^^^^^^^^^^^
+    |
+    = note: `OrderRejection` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: constant `IDEMPOTENCY_PREFIX` is never used
+  --> src/marketplace/orderbook.rs:32:7
+   |
+32 | const IDEMPOTENCY_PREFIX: &str = "idempotency:";
+   |       ^^^^^^^^^^^^^^^^^^
+
+warning: function `check_idempotency` is never used
+   --> src/marketplace/orderbook.rs:483:14
+    |
+483 | pub async fn check_idempotency(redis: &RedisPool, key: &str) -> Result<Option<String>, AppError> {
+    |              ^^^^^^^^^^^^^^^^^
+
+warning: function `store_idempotency` is never used
+   --> src/marketplace/orderbook.rs:501:14
+    |
+501 | pub async fn store_idempotency(redis: &RedisPool, key: &str, result: &str) -> Result<(), AppError> {
+    |              ^^^^^^^^^^^^^^^^^
+
+warning: function `expire_stale_offers` is never used
+   --> src/marketplace/p2p.rs:663:14
+    |
+663 | pub async fn expire_stale_offers(pool: &PgPool) -> Result<u64, AppError> {
+    |              ^^^^^^^^^^^^^^^^^^^
+
+warning: fields `status` and `exam_answers` are never read
+   --> src/rewards/models.rs:94:9
+    |
+ 92 | pub struct SubmitOnboardingForm {
+    |            -------------------- fields in this struct
+ 93 |     pub exam_passed: bool,
+ 94 |     pub status: Option<String>,
+    |         ^^^^^^
+...
+103 |     pub exam_answers: Option<std::collections::HashMap<String, String>>,
+    |         ^^^^^^^^^^^^
+    |
+    = note: `SubmitOnboardingForm` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: function `rewrite_gcs_url_opt` is never used
+   --> src/storage/service.rs:301:8
+    |
+301 | pub fn rewrite_gcs_url_opt(url: Option<&str>) -> Option<String> {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: `poool-backend` (bin "poool-backend") generated 28 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.17s
+warning: the following packages contain code that will be rejected by a future version of Rust: redis v0.24.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
      Running `target/debug/poool-backend`
-[2m2026-03-08T15:25:33.198706Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Starting POOOL Backend...
-[2m2026-03-08T15:25:33.198841Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Connecting to database...
-[2m2026-03-08T15:25:33.216220Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Database connection established ✓
-[2m2026-03-08T15:25:33.217651Z[0m [32m INFO[0m [2mpoool_backend::templates[0m[2m:[0m Template engine initialized ✓
-[2m2026-03-08T15:25:33.218291Z[0m [32m INFO[0m [2mpoool_backend::email[0m[2m:[0m Starting POOOL Email Drips Scheduler...
-[2m2026-03-08T15:25:33.221228Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Server listening on http://0.0.0.0:8888
-[2m2026-03-08T15:44:41.743330Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Internal error: Invalid password hash format: password hash string missing field
-[2m2026-03-08T15:44:41.804113Z[0m [31mERROR[0m [2mpoool_backend::wallet::routes[0m[2m:[0m No payment method provided for deposit
-[2m2026-03-08T15:44:41.856227Z[0m [32m INFO[0m [2mpoool_backend::payments::routes[0m[2m:[0m Checkout page hit: user=0ee84d65-6576-4d63-b767-0359b06b8ec5
-[2m2026-03-08T15:44:49.397784Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Internal error: Invalid password hash format: password hash string missing field
-[2m2026-03-08T15:44:49.463050Z[0m [31mERROR[0m [2mpoool_backend::wallet::routes[0m[2m:[0m No payment method provided for deposit
-[2m2026-03-08T15:44:49.503092Z[0m [32m INFO[0m [2mpoool_backend::payments::routes[0m[2m:[0m Checkout page hit: user=0ee84d65-6576-4d63-b767-0359b06b8ec5
-[2m2026-03-08T15:45:02.454421Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Internal error: Invalid password hash format: password hash string missing field
+[2m2026-04-01T06:19:51.418720Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Starting POOOL Backend...
+[2m2026-04-01T06:19:51.421794Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Connecting to primary database...
+[2m2026-04-01T06:19:51.444572Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m primary database connection established ✓ (max=30, min=5)
+[2m2026-04-01T06:19:51.444596Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m No DATABASE_REPLICA_URL — reads will use primary pool
+[2m2026-04-01T06:19:51.444601Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Community database URL configured — creating community pool
+[2m2026-04-01T06:19:51.444659Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m Connecting to community database...
+[2m2026-04-01T06:19:51.453535Z[0m [32m INFO[0m [2mpoool_backend::db[0m[2m:[0m community database connection established ✓ (max=15, min=2)
+[2m2026-04-01T06:19:51.454305Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_schema_migrations" already exists, skipping
+[2m2026-04-01T06:19:51.456623Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: 044_wallet_balance_constraint.sql
+[2m2026-04-01T06:19:51.457785Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 044_wallet_balance_constraint.sql failed on statement: error returned from database: constraint "wallet_balance_non_negative" for relation "wallets" already exists
+[2m2026-04-01T06:19:51.494247Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: 050_marketplace_orders.sql
+[2m2026-04-01T06:19:51.497381Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 050_marketplace_orders.sql failed on statement: error returned from database: relation "market_orders" already exists
+[2m2026-04-01T06:19:51.497802Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: 050b_alter_wallets_held_balance.sql
+[2m2026-04-01T06:19:51.498688Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "held_balance_cents" of relation "wallets" already exists, skipping
+[2m2026-04-01T06:19:51.499092Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 050b_alter_wallets_held_balance.sql failed on statement: error returned from database: constraint "chk_held_balance_non_negative" for relation "wallets" already exists
+[2m2026-04-01T06:19:51.499504Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: 050c_alter_investments_held_tokens.sql
+[2m2026-04-01T06:19:51.502542Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "held_tokens" of relation "investments" already exists, skipping
+[2m2026-04-01T06:19:51.503066Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 050c_alter_investments_held_tokens.sql failed on statement: error returned from database: constraint "chk_held_tokens_non_negative" for relation "investments" already exists
+[2m2026-04-01T06:19:51.503388Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: 051_trade_history.sql
+[2m2026-04-01T06:19:51.505388Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 051_trade_history.sql failed on statement: error returned from database: relation "trade_history" already exists
+[2m2026-04-01T06:19:51.505704Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: 072_affiliate_core_system.sql
+[2m2026-04-01T06:19:51.506489Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 072_affiliate_core_system.sql failed on statement: error returned from database: relation "affiliates" already exists
+[2m2026-04-01T06:19:51.506785Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: 075_affiliate_postback_url.sql
+[2m2026-04-01T06:19:51.507633Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 075_affiliate_postback_url.sql failed on statement: error returned from database: column "postback_url" of relation "affiliates" already exists
+[2m2026-04-01T06:19:51.508107Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: 076_fix_reconciliation_drift.sql
+[2m2026-04-01T06:19:51.537866Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 076_fix_reconciliation_drift.sql failed on statement: error returned from database: duplicate key value violates unique constraint "investments_user_id_asset_id_key"
+[2m2026-04-01T06:19:51.538357Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: production_seed.sql
+[2m2026-04-01T06:19:51.539045Z[0m [33m WARN[0m [2msqlx::postgres::notice[0m[2m:[0m there is already a transaction in progress
+[2m2026-04-01T06:19:51.540981Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m Using user: jonas.freiwald@poool.app (id: b45f038b-3e75-41e7-806a-0db9ca5b9272)
+[2m2026-04-01T06:19:51.541358Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration production_seed.sql failed on statement: error returned from database: duplicate key value violates unique constraint "assets_slug_key"
+[2m2026-04-01T06:19:51.541744Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: publish_article_fractional_bali.sql
+[2m2026-04-01T06:19:51.543515Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration publish_article_fractional_bali.sql failed on statement: error returned from database: value too long for type character varying(70)
+[2m2026-04-01T06:19:51.543973Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Applying migration: publish_articles_batch_02.sql
+[2m2026-04-01T06:19:51.549534Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration publish_articles_batch_02.sql failed on statement: error returned from database: value too long for type character varying(160)
+[2m2026-04-01T06:19:51.549898Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [core] Database schema is up to date (74 migrations tracked)
+[2m2026-04-01T06:19:51.550359Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m relation "_schema_migrations" already exists, skipping
+[2m2026-04-01T06:19:51.551063Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [community] Applying migration: 008_circles_xp.sql
+[2m2026-04-01T06:19:51.551620Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "circle_id" of relation "community_profiles" already exists, skipping
+[2m2026-04-01T06:19:51.551627Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "xp_total" of relation "community_profiles" already exists, skipping
+[2m2026-04-01T06:19:51.551630Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "level" of relation "community_profiles" already exists, skipping
+[2m2026-04-01T06:19:51.551633Z[0m [32m INFO[0m [2msqlx::postgres::notice[0m[2m:[0m column "level_name" of relation "community_profiles" already exists, skipping
+[2m2026-04-01T06:19:51.551915Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 008_circles_xp.sql failed on statement: error returned from database: relation "circles" already exists
+[2m2026-04-01T06:19:51.552207Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [community] Applying migration: 010_reviews.sql
+[2m2026-04-01T06:19:51.552733Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 010_reviews.sql failed on statement: error returned from database: relation "asset_reviews" already exists
+[2m2026-04-01T06:19:51.553048Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [community] Applying migration: 011_challenges.sql
+[2m2026-04-01T06:19:51.553363Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 011_challenges.sql failed on statement: error returned from database: relation "challenges" already exists
+[2m2026-04-01T06:19:51.553601Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [community] Applying migration: 012_notifications.sql
+[2m2026-04-01T06:19:51.553917Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m Migration 012_notifications.sql failed on statement: error returned from database: relation "notifications" already exists
+[2m2026-04-01T06:19:51.554206Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m [community] Database schema is up to date (19 migrations tracked)
+[2m2026-04-01T06:19:51.554554Z[0m [32m INFO[0m [2mpoool_backend::templates[0m[2m:[0m Template engine initialized (dev_mode=true, version=1775024391) ✓
+[2m2026-04-01T06:19:51.554582Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Rate limiter: using in-memory backend (single instance only)
+[2m2026-04-01T06:19:51.554682Z[0m [32m INFO[0m [2mpoool_backend::email[0m[2m:[0m Starting POOOL Email Drips Scheduler...
+[2m2026-04-01T06:19:51.554919Z[0m [33m WARN[0m [2mpoool_backend[0m[2m:[0m ⚠️ Redis not configured — Marketplace trading is DISABLED. Order submission still works but matching won't occur.
+[2m2026-04-01T06:19:51.555124Z[0m [32m INFO[0m [2mpoool_backend::blockchain::kyc_whitelist[0m[2m:[0m 🔑 KYC→Whitelist: blockchain configured but DISABLED.
+[2m2026-04-01T06:19:51.555124Z[0m [32m INFO[0m [2mpoool_backend::blockchain::service[0m[2m:[0m ⛓️ Blockchain settlement is configured but DISABLED. Set CHAIN_SETTLEMENT_ENABLED=true to enable.
+[2m2026-04-01T06:19:51.555416Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Starting Gamification Badge evaluations...
+[2m2026-04-01T06:19:51.557629Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to dev2_9f8620@poool.app
+[2m2026-04-01T06:19:51.557657Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to browser_test@poool.app
+[2m2026-04-01T06:19:51.557661Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-register-a910e9ff@poool.test
+[2m2026-04-01T06:19:51.557664Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to user_97f814c8@poool.app
+[2m2026-04-01T06:19:51.557667Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to wallet.test.1773226904@poool.app
+[2m2026-04-01T06:19:51.557669Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to wallet.test.1773227921@poool.app
+[2m2026-04-01T06:19:51.557671Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to testdev@poool.app
+[2m2026-04-01T06:19:51.557674Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to test-vt@poool.finance
+[2m2026-04-01T06:19:51.557676Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to jonas.freiwald@poool.app
+[2m2026-04-01T06:19:51.557678Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to qa_test_final@poool.app
+[2m2026-04-01T06:19:51.557681Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to referred_1772982719@example.com
+[2m2026-04-01T06:19:51.557683Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to referred_1772982740@example.com
+[2m2026-04-01T06:19:51.557686Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to timmytech@gmail.com
+[2m2026-04-01T06:19:51.557688Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-1c309285@poool.app
+[2m2026-04-01T06:19:51.557690Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to admin_tester_new@poool.app
+[2m2026-04-01T06:19:51.557693Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to martin@traffic-creator.com
+[2m2026-04-01T06:19:51.557695Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to oliviarhye@poool.dev
+[2m2026-04-01T06:19:51.557700Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to sarah.chen@demo.poool.app
+[2m2026-04-01T06:19:51.557702Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to marcus.weber@demo.poool.app
+[2m2026-04-01T06:19:51.557705Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-9fd1e146@poool.app
+[2m2026-04-01T06:19:51.557707Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to test_debug2@poool.app
+[2m2026-04-01T06:19:51.557709Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-64fe5c8a@poool.app
+[2m2026-04-01T06:19:51.557711Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-60972c3c@poool.app
+[2m2026-04-01T06:19:51.557714Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-dd9944ac@poool.app
+[2m2026-04-01T06:19:51.557716Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-a110ba55@poool.app
+[2m2026-04-01T06:19:51.557718Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-9bb27e78@poool.app
+[2m2026-04-01T06:19:51.557720Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-3d497843@poool.app
+[2m2026-04-01T06:19:51.557722Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-937d0456@poool.app
+[2m2026-04-01T06:19:51.557724Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-8456128d@poool.app
+[2m2026-04-01T06:19:51.557726Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-24f12b8d@poool.app
+[2m2026-04-01T06:19:51.557730Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-0003e4f1@poool.app
+[2m2026-04-01T06:19:51.557732Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-5c0e636c@poool.app
+[2m2026-04-01T06:19:51.557734Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-f6b4b69f@poool.app
+[2m2026-04-01T06:19:51.557736Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-3fc776a8@poool.app
+[2m2026-04-01T06:19:51.557739Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-bbb15d34@poool.app
+[2m2026-04-01T06:19:51.557742Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-f4b16268@poool.app
+[2m2026-04-01T06:19:51.557745Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-04a6f3ec@poool.app
+[2m2026-04-01T06:19:51.557747Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-5b6e62e4@poool.app
+[2m2026-04-01T06:19:51.557752Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-3abaa2b1@poool.app
+[2m2026-04-01T06:19:51.557755Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-db4bbed6@poool.app
+[2m2026-04-01T06:19:51.557758Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-c9f24e87@poool.app
+[2m2026-04-01T06:19:51.557762Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-4a93c931@poool.app
+[2m2026-04-01T06:19:51.557764Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-2559697c@poool.app
+[2m2026-04-01T06:19:51.557766Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-1c77b562@poool.app
+[2m2026-04-01T06:19:51.557769Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-294bbc3c@poool.app
+[2m2026-04-01T06:19:51.557771Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-c38b8415@poool.app
+[2m2026-04-01T06:19:51.557773Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-9ea73e4c@poool.app
+[2m2026-04-01T06:19:51.557775Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-dad67510@poool.app
+[2m2026-04-01T06:19:51.557777Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-78de97fa@poool.app
+[2m2026-04-01T06:19:51.557780Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-35d5e3a3@poool.app
+[2m2026-04-01T06:19:51.557782Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-3f963c58@poool.app
+[2m2026-04-01T06:19:51.557784Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-ab874f6c@poool.app
+[2m2026-04-01T06:19:51.557786Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-ddb5c2d4@poool.app
+[2m2026-04-01T06:19:51.557788Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-c9825d05@poool.app
+[2m2026-04-01T06:19:51.557791Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-041c9ee9@poool.app
+[2m2026-04-01T06:19:51.557793Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to test_verify@poool.app
+[2m2026-04-01T06:19:51.557795Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-c4676428@poool.app
+[2m2026-04-01T06:19:51.557797Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-99ace9cd@poool.app
+[2m2026-04-01T06:19:51.557799Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-e1c16b10@poool.app
+[2m2026-04-01T06:19:51.557803Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-ae453de3@poool.app
+[2m2026-04-01T06:19:51.557806Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-a2be7cfc@poool.app
+[2m2026-04-01T06:19:51.557808Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-fb22cbcb@poool.app
+[2m2026-04-01T06:19:51.557811Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-d731dad0@poool.app
+[2m2026-04-01T06:19:51.557814Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-46954821@poool.app
+[2m2026-04-01T06:19:51.557818Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-49d640f4@poool.app
+[2m2026-04-01T06:19:51.557821Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-ca30fe70@poool.app
+[2m2026-04-01T06:19:51.557824Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-0f8b4c8d@poool.app
+[2m2026-04-01T06:19:51.557827Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-04012b54@poool.app
+[2m2026-04-01T06:19:51.557830Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-cbded437@poool.app
+[2m2026-04-01T06:19:51.557833Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-29d279ae@poool.app
+[2m2026-04-01T06:19:51.557836Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-c438527a@poool.app
+[2m2026-04-01T06:19:51.557839Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-107de1fd@poool.app
+[2m2026-04-01T06:19:51.557841Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-336b0a9b@poool.app
+[2m2026-04-01T06:19:51.557844Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-admin-78517ae4@poool.app
+[2m2026-04-01T06:19:51.557846Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-8a3aa574@poool.app
+[2m2026-04-01T06:19:51.557849Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-a01c3d13@poool.app
+[2m2026-04-01T06:19:51.557852Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-90578928@poool.app
+[2m2026-04-01T06:19:51.557855Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-46c17d02@poool.app
+[2m2026-04-01T06:19:51.557858Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-13c303e0@poool.app
+[2m2026-04-01T06:19:51.557861Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-f8a043b1@poool.app
+[2m2026-04-01T06:19:51.557864Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-ad7b6a8e@poool.app
+[2m2026-04-01T06:19:51.557867Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-7026f955@poool.app
+[2m2026-04-01T06:19:51.557870Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-f51b037c@poool.app
+[2m2026-04-01T06:19:51.557874Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-0c8eef5f@poool.app
+[2m2026-04-01T06:19:51.557877Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to uat_tester@poool.app
+[2m2026-04-01T06:19:51.557880Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to devx@poool.app
+[2m2026-04-01T06:19:51.557883Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-4f1d5004@poool.app
+[2m2026-04-01T06:19:51.557886Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to elena.rodriguez@demo.poool.app
+[2m2026-04-01T06:19:51.557889Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-8cad64a7@poool.app
+[2m2026-04-01T06:19:51.557892Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to james.nakamura@demo.poool.app
+[2m2026-04-01T06:19:51.557895Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-996c4870@poool.app
+[2m2026-04-01T06:19:51.557897Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-eafcbcbd@poool.app
+[2m2026-04-01T06:19:51.557901Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-f919884e@poool.app
+[2m2026-04-01T06:19:51.557903Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-89354f75@poool.app
+[2m2026-04-01T06:19:51.557906Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-b2e22f3c@poool.app
+[2m2026-04-01T06:19:51.557909Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-31b57f58@poool.app
+[2m2026-04-01T06:19:51.557914Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-98fb0110@poool.app
+[2m2026-04-01T06:19:51.557917Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-6ab01d21@poool.app
+[2m2026-04-01T06:19:51.557920Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-7cdcb414@poool.app
+[2m2026-04-01T06:19:51.557923Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Weekly Digest Worker: Would send digest email to e2e-test-19d94fb0@poool.app
+[2m2026-04-01T06:19:51.560723Z[0m [32m INFO[0m [2mpoool_backend::blockchain::event_indexer[0m[2m:[0m 🔍 Event indexer: DISABLED via platform_settings. Set chain_indexer_enabled=true to activate.
+[2m2026-04-01T06:19:51.566697Z[0m [32m INFO[0m [2mpoool_backend::community::xp[0m[2m:[0m XP aggregation complete
+[2m2026-04-01T06:19:51.572521Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Server listening on http://0.0.0.0:8888
+[2m2026-04-01T06:19:51.586675Z[0m [32m INFO[0m [2mpoool_backend::community::background[0m[2m:[0m Gamification Badge evaluations complete.
+[2m2026-04-01T06:19:57.482443Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:19:57.485529Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:19:57.502938Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:19:57.757884Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:19:57.810925Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:19:57.853485Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:19:57.854923Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.165720Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.170059Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.248643Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.253178Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.261785Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.262805Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.263527Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.263886Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.265450Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.265454Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.266697Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.268065Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:00.268304Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:01.582131Z[0m [32m INFO[0m [2mpoool_backend::leaderboard::service[0m[2m:[0m Leaderboard: refreshed metrics and ranks for all-time view
+[2m2026-04-01T06:20:01.603159Z[0m [32m INFO[0m [2mpoool_backend::leaderboard::service[0m[2m:[0m Leaderboard: refreshed metrics and ranks for all-time view
+[2m2026-04-01T06:20:03.270245Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:03.271350Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:03.353503Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:03.358983Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:03.367416Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:03.368191Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:03.370479Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:03.371379Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.191061Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.192249Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.276806Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.284497Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.296004Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.297315Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.298020Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.299568Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.301926Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.303205Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.321171Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.321976Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.404486Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.405312Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.407715Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:04.408545Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:06.461559Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:06.462214Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:06.546811Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:06.552395Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:06.557790Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:06.558942Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:06.562253Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:06.563024Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:08.376129Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:08.376771Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:08.452908Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:08.457096Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:08.461407Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:08.462827Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:08.465653Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:08.466104Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.289360Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.290266Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.368978Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.373248Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.379332Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.380456Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.381654Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.382348Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.385937Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.386700Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.397313Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.398240Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.482335Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.482967Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.486468Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:09.487024Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.105668Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.106365Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.190931Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.194278Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.204745Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.205254Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.206435Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.207069Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.211469Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.213583Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.221069Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.221511Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.303420Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.304191Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.312756Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.313370Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.694541Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.695167Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.774054Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.779085Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.787029Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.787719Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.790601Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:10.791102Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.130708Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.131503Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.204720Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.208676Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.216670Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.217160Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.218201Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.218762Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.220843Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.222583Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.222583Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.222810Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.222810Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.223263Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.223301Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.223330Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.285443Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.286626Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.286624Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.286741Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.287058Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.287375Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.287639Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.322772Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.323435Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.336545Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:15.337991Z[0m [31mERROR[0m [2mpoool_backend::common::routes_helper[0m[2m:[0m Template rendering error for partials/community_post_list.html: could not render include: error in "partials/community_post_card.html" (in partials/community_post_list.html:23)
+[2m2026-04-01T06:20:17.473278Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.473800Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.535880Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.539519Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.544561Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.545099Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.547028Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.547619Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.549518Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.551101Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.551102Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.551740Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.551740Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.552547Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.552685Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.552686Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.619399Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.619902Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.619920Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.620327Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.621022Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.621210Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.621290Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.647463Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.647943Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.660110Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:17.661500Z[0m [31mERROR[0m [2mpoool_backend::common::routes_helper[0m[2m:[0m Template rendering error for partials/community_post_list.html: could not render include: error in "partials/community_post_card.html" (in partials/community_post_list.html:23)
+[2m2026-04-01T06:20:21.556739Z[0m [32m INFO[0m [2mpoool_backend::rewards::service[0m[2m:[0m 🔄 Affiliate holdback worker starting (runs every 6h)
+[2m2026-04-01T06:20:21.556836Z[0m [32m INFO[0m [2mpoool_backend::rewards::service[0m[2m:[0m 🔄 Affiliate holdback worker: scanning expired holdbacks...
+[2m2026-04-01T06:20:21.559003Z[0m [32m INFO[0m [2mpoool_backend::rewards::service[0m[2m:[0m Holdback worker: no expired holdbacks found.
+[2m2026-04-01T06:20:35.950825Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:35.951751Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.022037Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.026572Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.032889Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.033412Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.035690Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.035690Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.035933Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.036044Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.036375Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.036540Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.036541Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:36.036556Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:20:51.557685Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Starting daily financial reconciliation...
+[2m2026-04-01T06:20:51.566509Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m RECONCILIATION FATAL: Cash delta of 147215500 cents (wallets=152253506, expected=5038006). Deposits=900000, Withdrawals=50000, Purchases=4439340
+[2m2026-04-01T06:20:51.578397Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Specialty Coffee – Kintamani Highlands' (Some(754e5be6-22f6-44fb-8cd7-f3aa90d86d25)): sold=1000 but investments show 20 tokens
+[2m2026-04-01T06:20:51.580547Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Premium Bali Rice – Harvest Cycle Q2 2026' (Some(fad407a3-b106-4903-bd4e-0772fc94c78e)): sold=650 but investments show 10 tokens
+[2m2026-04-01T06:20:51.582504Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Boutique Resort with 6 Villas in Central Ubud' (Some(fef0838f-01cd-4993-8c86-0aa7cd6e1cbf)): sold=6402 but investments show 2 tokens
+[2m2026-04-01T06:20:51.586047Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Organic Cacao – Single Origin Bali' (Some(0081d064-996e-46a2-b19c-92a9d7389767)): sold=400 but investments show 592 tokens
+[2m2026-04-01T06:20:51.588105Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Uluwatu Luxury Retreat' (Some(a4444444-4444-4444-4444-444444444444)): sold=2500 but investments show 0 tokens
+[2m2026-04-01T06:20:51.589485Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Luxury Pool Villa – Fully Funded' (Some(89295282-6302-42d3-9961-a168b4578a40)): sold=10000 but investments show 100 tokens
+[2m2026-04-01T06:20:51.590938Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Renovation Flip Project – Canggu Villa' (Some(ebdc983b-5792-43a0-b764-1c0517701e2b)): sold=4502 but investments show 2 tokens
+[2m2026-04-01T06:20:51.592235Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'New Development Project – 4 Villa Complex' (Some(e8719314-1fac-4e2a-ad2d-e86a725fec96)): sold=3033 but investments show 744 tokens
+[2m2026-04-01T06:20:51.594459Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Modern Surf Villa near Echo Beach in Canggu' (Some(6ddc6ee5-ed72-4d3c-90f9-8cf4b6704771)): sold=8355 but investments show 2430 tokens
+[2m2026-04-01T06:20:51.595512Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Luxury Clifftop Villa – Uluwatu' (Some(0a64f742-eb99-41f7-bd0a-9dd941b11011)): sold=0 but investments show 10000 tokens
+[2m2026-04-01T06:20:51.596684Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Coastal Modern Villa – Bukit Peninsula' (Some(7ac2a0e3-e6f7-433b-aa6f-a3e5dfcd43c6)): sold=5000 but investments show 100 tokens
+[2m2026-04-01T06:20:51.597851Z[0m [31mERROR[0m [2mpoool_backend[0m[2m:[0m TOKEN MISMATCH: Asset 'Vacation Rental Villa with Temple Views' (Some(0303245f-a4b0-4723-87f7-3cfcd64910d5)): sold=9202 but investments show 27 tokens
+[2m2026-04-01T06:20:51.599823Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Reconciliation check 3/3 PASS: No negative wallet balances.
+[2m2026-04-01T06:20:51.601331Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m 📊 Reconciliation report persisted for 2026-04-01 — status: fail
+[2m2026-04-01T06:20:51.601356Z[0m [32m INFO[0m [2mpoool_backend[0m[2m:[0m Daily financial reconciliation completed.
+[2m2026-04-01T06:21:21.557053Z[0m [32m INFO[0m [2mpoool_backend::rewards::service[0m[2m:[0m 🏆 Affiliate tier progression worker starting (runs every 24h)
+[2m2026-04-01T06:21:21.558293Z[0m [32m INFO[0m [2mpoool_backend::rewards::service[0m[2m:[0m 🏆 Affiliate tier progression worker: scanning for tier upgrades...
+[2m2026-04-01T06:21:21.561914Z[0m [32m INFO[0m [2mpoool_backend::rewards::service[0m[2m:[0m 🏆 Tier progression worker complete: 0 affiliate(s) upgraded
+[2m2026-04-01T06:22:23.558189Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:23.559237Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:23.624866Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:23.629448Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:23.635000Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:23.635679Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:23.636723Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.631537Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.633140Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.647173Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.649186Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.658236Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.659744Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.669477Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.671261Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.680806Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.682230Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.691126Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.692941Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.701314Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.702521Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.711515Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.713202Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.721146Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.722566Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.729576Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.731126Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.736124Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.737701Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.742422Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.743449Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.749536Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.750832Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.754678Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.756537Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:25.762582Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:25.763645Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:32.670543Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:32.671319Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:32.741359Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:32.745889Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:32.753922Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:32.755305Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:32.755993Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:32.756458Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.852859Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.853331Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.924410Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.929765Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.936683Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.937226Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.938729Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.939630Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.944228Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.944874Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.955479Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:36.956520Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:37.042045Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:37.042716Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:37.045487Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:37.045931Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:38.345326Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:38.345819Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:38.418745Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:38.423920Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:38.428975Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:38.429861Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:38.432144Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:38.432565Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.336995Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.337853Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.414960Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.483106Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.491422Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.492013Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.493685Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.494303Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.501763Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.502491Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.502491Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:39.503098Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.443154Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.444381Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.517723Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.521179Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.527399Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.528670Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.528670Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.528970Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.529209Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.529775Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.529775Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.530118Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:40.530159Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:41.091566Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:41.093066Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:41.168508Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:41.173479Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:41.177114Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:41.177561Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:41.178356Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.211017Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.212566Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.226104Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.228016Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.237252Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.238571Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.247456Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.248851Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.256438Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.257213Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.263722Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.264951Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.271114Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.272002Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.275865Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.276836Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.280552Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.281422Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.285569Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.286604Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.293818Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.294537Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.299881Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.300902Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.307103Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.308011Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.311264Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.312900Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:43.318318Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:43.319021Z[0m [31mERROR[0m [2mpoool_backend::error[0m[2m:[0m Database error: error occurred while decoding column "volume_24h": mismatched types; Rust type `core::option::Option<i64>` (as SQL type `INT8`) is not compatible with SQL type `NUMERIC`
+[2m2026-04-01T06:22:46.331873Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.332953Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.414166Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.417502Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.423607Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.425110Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.425110Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.425110Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.425683Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.425975Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.426500Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.426698Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:22:46.428142Z[0m [32m INFO[0m [2mpoool_backend::auth::service[0m[2m:[0m Session 27XnYYvri6wuyEJIvd6Zpv01T_8GKu6CLzBTCKXPx87LbGPQ3mvSje94wjjePQSHq84saACs3_FQOLLPAjV5rA valid for user support@traffic-creator.com
+[2m2026-04-01T06:24:51.564335Z[0m [32m INFO[0m [2mpoool_backend::community::xp[0m[2m:[0m XP aggregation complete
+[2m2026-04-01T06:29:51.606491Z[0m [32m INFO[0m [2mpoool_backend::community::xp[0m[2m:[0m XP aggregation complete

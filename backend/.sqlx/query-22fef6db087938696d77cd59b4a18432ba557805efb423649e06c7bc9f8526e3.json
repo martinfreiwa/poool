@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ac.provisional_amount_cents, ac.status, ac.tier_at_execution, ac.created_at::text as \"created_at\"\n           FROM affiliate_commissions ac\n           WHERE ac.affiliate_id = $1\n           ORDER BY ac.created_at DESC\n           LIMIT 10",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "provisional_amount_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "tier_at_execution",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "22fef6db087938696d77cd59b4a18432ba557805efb423649e06c7bc9f8526e3"
+}

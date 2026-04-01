@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliate_commissions \n           SET status = 'paid', payout_batch_id = $1, updated_at = NOW()\n           WHERE affiliate_id = $2 AND status = 'payable'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1118da81936f693df6a93cff24100cfd0cc9d826cfd15bf3ef2287678392f779"
+}

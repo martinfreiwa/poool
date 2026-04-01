@@ -36,6 +36,7 @@
             ? selectEl.options[0].textContent
             : "Select...",
           noLabel: true,
+          searchable: selectEl.hasAttribute('data-searchable'),
           className: selectEl.classList.contains("admin-select")
             ? "poool-dropdown--sm poool-dropdown--inline"
             : "",
@@ -73,6 +74,7 @@
         try {
           PooolDropdown.fromSelect(selectEl, {
             noLabel: true,
+            searchable: selectEl.hasAttribute('data-searchable'),
             className: selectEl.classList.contains("admin-select")
               ? "poool-dropdown--sm poool-dropdown--inline"
               : "",

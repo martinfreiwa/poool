@@ -1,0 +1,697 @@
+{% with title="POOOL | The Asset Marketplace", extra_css=['marketplace'] %}{% include "components/head.html" %}{% endwith %}
+<!-- Statischer Fallback für lokales Öffnen ohne Server -->
+<link rel="stylesheet" href="/static/css/marketplace.css">
+<link rel="stylesheet" href="/static/css/global.css">
+
+<body class="public-landing fouc-guard" style="margin:0; padding:0; background:#fcfcfd; font-family:'TT Norms Pro', sans-serif;">
+  <style>
+    /* Hero V2 (Exact Match to poool.app) */
+    .hero-exact {
+      display: grid;
+      min-height: 100vh;
+      width: 100vw;
+      grid-template-rows: max-content 1fr;
+      place-items: center;
+      background-color: #0024D1;
+      background-image: url('/svg/bg-1.svg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+      margin-left: calc(-50vw + 50%); /* Full bleed */
+    }
+    
+    .hero-exact-header {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr max-content 1fr;
+      align-content: center;
+      align-items: center;
+      justify-items: center;
+      gap: 16px;
+      width: 100%;
+      padding: 16px 24px;
+      margin: 0 auto;
+    }
+    
+    @media(min-width: 1024px) {
+      .hero-exact-header { padding: 16px 48px; }
+    }
+    @media(min-width: 1280px) {
+      .hero-exact-header { padding: 32px 72px; }
+    }
+    
+    .header-logo { justify-self: flex-start; height: 36px; cursor: pointer; }
+    
+    .header-nav {
+      display: none;
+      justify-content: space-around;
+      gap: 16px;
+      white-space: nowrap;
+      border-radius: 9999px;
+      border: 2px solid transparent; /* secondary-green logic would be needed, but it's white bg */
+      background-color: white;
+      padding: 0 16px;
+    }
+    @media(min-width: 1024px) {
+      .header-nav { display: flex; }
+    }
+    @media(min-width: 1280px) {
+      .header-nav { gap: 32px; }
+    }
+    
+    .header-nav-item {
+      cursor: pointer;
+      border-radius: 9999px;
+      padding: 8px;
+      font-weight: 500;
+      color: rgb(0,0,0);
+      text-decoration: none;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    .header-nav-item:hover { background-color: rgba(255,255,255,0.4); color: rgb(152, 251, 150); }
+    
+    .header-right {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    @media(min-width: 640px) { .header-right { right: 64px; } }
+    @media(min-width: 1024px) { .header-right { right: 56px; } }
+    @media(min-width: 1280px) { .header-right { right: 80px; } }
+    
+    .lang-selector { display: flex; align-items: center; gap: 8px; }
+    .lang-btn { background: none; border: none; font-size: 14px; text-transform: uppercase; cursor: pointer; }
+    .lang-btn-id { font-weight: 400; color: white; }
+    .lang-btn-en { font-weight: 700; color: #98FB96; }
+    .lang-sep { font-size: 12px; font-weight: 300; line-height: 1; color: #9CA3AF; }
+    
+    .sign-in-btn {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border-radius: 9999px;
+      padding: 8px 12px;
+      background-color: #98FB96;
+      color: #0000FF;
+      border: 1px solid #0000FF;
+      font-size: 16px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    @media(min-width: 1280px) { .sign-in-btn { padding: 8px 32px; } }
+    .sign-in-btn:hover { background-color: #0000FF; color: #98FB96; border-color: #0000FF; }
+    
+    .hero-content {
+      display: flex;
+      height: 100%;
+      max-width: 1440px;
+      flex-direction: column-reverse;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      padding: 16px;
+      padding-bottom: 80px;
+    }
+    @media(min-width: 1024px) {
+      .hero-content {
+        display: grid;
+        height: max-content;
+        grid-template-columns: min-content 1fr;
+        place-items: center;
+        gap: 32px;
+        padding-left: 32px;
+        padding-right: 32px;
+      }
+    }
+    @media(min-width: 1280px) {
+      .hero-content { padding-left: 64px; }
+    }
+    
+    .hero-text-container {
+      display: flex;
+      width: fit-content;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      text-wrap: wrap;
+      text-align: center;
+    }
+    @media(min-width: 1024px) {
+      .hero-text-container {
+        width: min-content;
+        align-items: flex-start;
+        justify-content: flex-start;
+        gap: 24px;
+        padding-top: 40px;
+        text-align: left;
+      }
+    }
+    
+    .hero-title {
+      font-size: 30px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -0.05em;
+      color: #DBECFF;
+      line-height: 1.1;
+      white-space: nowrap;
+      margin: 0;
+    }
+    @media(min-width: 1024px) { .hero-title { font-size: 56px; } }
+    @media(min-width: 1280px) { .hero-title { font-size: 72px; } }
+    
+    .hero-title-inline {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding-bottom: 4px;
+    }
+    @media(min-width: 1024px) {
+      .hero-title-inline {
+        flex-direction: row;
+        gap: 16px;
+        padding-bottom: 0;
+      }
+    }
+    
+    .hero-price-pill {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border-radius: 9999px;
+      padding: 8px 12px;
+      background-color: #031583;
+      color: #98FB96;
+      border: 1px solid white;
+      font-size: 16px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: auto;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+    @media(min-width: 1280px) { .hero-price-pill { padding: 8px 32px; } }
+    
+    .hero-subtitle {
+      white-space: normal;
+      text-wrap: wrap;
+      font-size: 16px;
+      color: #DBECFF;
+      margin: 0;
+      font-weight: 400;
+    }
+    @media(min-width: 1024px) { .hero-subtitle { font-size: 24px; } }
+    
+    .hero-actions {
+      display: grid;
+      width: 100%;
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+      gap: 8px;
+    }
+    @media(min-width: 1024px) {
+      .hero-actions {
+        width: max-content;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+    }
+    
+    .hero-video-btn {
+      position: relative;
+      background: transparent;
+      color: #98FB96;
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 9999px;
+      padding: 8px 12px;
+      font-size: 16px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      overflow: hidden;
+    }
+    @media(min-width: 1280px) { .hero-video-btn { padding: 8px 32px; } }
+    
+    .hero-video-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0px;
+      padding: 2px;
+      border-radius: 9999px;
+      background: linear-gradient(135deg, #00c853, rgba(0,200,83,0.1), #00c853, rgba(0,200,83,0.1), #00c853, rgba(0,200,83,0.1), #00c853, rgba(0,200,83,0.1), #00c853, rgba(0,200,83,0.1), #00c853);
+      background-size: 400% 400%;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      animation: moveGradient 15s linear infinite;
+    }
+    
+    @keyframes moveGradient {
+      0% { background-position: 0% 0%; }
+      50% { background-position: 100% 100%; }
+      100% { background-position: 0% 0%; }
+    }
+    
+    .hero-video-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .hero-video-container video {
+      height: 100%;
+      width: 100%;
+      object-fit: cover;
+    }
+    
+    /* Search Bar Under Hero */
+    .search-bar-floating { 
+      position: absolute; 
+      bottom: -40px; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      background: white; 
+      padding: 12px; 
+      border-radius: 100px; 
+      box-shadow: 0 20px 40px -8px rgba(16, 24, 40, 0.15); 
+      display: flex; 
+      gap: 12px; 
+      width: 90%; 
+      max-width: 800px; 
+      z-index: 10; 
+      align-items: center; 
+      border: 1px solid #E4E7EC; 
+    }
+    .search-input-group { flex: 1; display: flex; flex-direction: column; text-align: left; padding: 4px 24px; border-right: 1px solid #E4E7EC; }
+    .search-input-group:last-of-type { border-right: none; }
+    .search-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475467; margin-bottom: 4px; letter-spacing: 0.05em; }
+    .search-select { border: none; outline: none; font-size: 16px; font-weight: 500; font-family: inherit; color: #101828; background: transparent; cursor: pointer; width: 100%; padding:0; appearance: none; }
+    .search-btn-hero { background: #98FB96; color: #0000FF; border: 1px solid #0000FF; border-radius: 50px; padding: 16px 36px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; height: 100%; display: flex; align-items: center; }
+    .search-btn-hero:hover { background: #0000FF; color: #98FB96; transform: scale(1.05); }
+
+    /* Layout Sections */
+    .public-marketplace { padding: 120px 5% 40px; max-width: 1300px; margin: 0 auto; position: relative; }
+    .section-title { font-size: 2.2rem; color: #101828; margin-bottom: 40px; font-weight: 700; letter-spacing: -0.02em; }
+
+    /* Image Gallery Controls Mockup */
+    .gallery-control { position: absolute; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: rgba(255,255,255,0.8); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #101828; font-weight: bold; font-size: 14px; opacity: 0; transition: opacity 0.2s;}
+    .property-card:hover .gallery-control { opacity: 1; }
+    .gallery-control-left { left: 8px; }
+    .gallery-control-right { right: 8px; }
+    .gallery-dots { position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
+    .gallery-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); }
+    .gallery-dot.active { background: white; }
+
+    /* Info Sections */
+    .info-section { max-width: 1300px; margin: 60px auto; padding: 60px 0; border-top: 1px solid #E4E7EC; border-radius: 0; text-align: center; }
+    .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 40px; }
+    .step-card { padding: 20px; }
+    .step-icon { width: 64px; height: 64px; background: #ECFDF3; color: #027A48; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 20px; }
+    
+    /* Footer */
+    .public-footer { background: #101828; color: white; padding: 60px 5% 40px; margin-top: 80px; }
+    .footer-grid { max-width: 1300px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
+    .footer-link { color: #98A2B3; text-decoration: none; display: block; margin-bottom: 12px; font-size: 14px; }
+    .footer-link:hover { color: white; }
+  </style>
+
+  <div class="hero-exact">
+    <header class="hero-exact-header">
+      <img src="/svg/logo.svg" alt="Logo" class="header-logo">
+      
+      <nav class="header-nav">
+        <a href="#why-us" class="header-nav-item" style="color: #98FB96; background: transparent; pointer-events: none;">WHY US</a>
+        <a href="#how-it-works" class="header-nav-item">HOW IT WORKS</a>
+        <a href="#market" class="header-nav-item">MARKET</a>
+        <a href="#faq" class="header-nav-item">FAQ</a>
+      </nav>
+
+      <div class="header-right">
+        <div class="lang-selector">
+          <button class="lang-btn lang-btn-id">ID</button>
+          <span class="lang-sep">|</span>
+          <button class="lang-btn lang-btn-en">EN</button>
+        </div>
+        <a href="/login" class="sign-in-btn">Sign in</a>
+      </div>
+    </header>
+
+    <article class="hero-content">
+      <div class="hero-text-container">
+        <h1 class="hero-title">
+          own a piece <br> of bali <br>
+          <span class="hero-title-inline"> 
+            villa 
+            <button class="hero-price-pill" type="button">Start from $500</button>
+          </span>
+          <br> earn monthly
+        </h1>
+        <p class="hero-subtitle"> Thousands of investors owning shares in Bali's growing market </p>
+        <div class="hero-actions">
+          <a tabindex="0">
+            <button class="hero-video-btn" type="button">
+              <img src="/svg/play-circle.svg" alt="play-circle" style="height: 20px">
+              <span>Watch Video</span>
+            </button>
+          </a>
+        </div>
+      </div>
+      
+      <div class="hero-video-container">
+        <video playsinline autoplay muted loop>
+          <source src="/webm/webm_villa_no-bg.webm" type="video/webm">
+          <source src="/webm/webm_villa.webm" type="video/webm">
+        </video>
+      </div>
+
+      <!-- Search Bar Floating Layered Over Boundary -->
+      <div class="search-bar-floating">
+        <div class="search-input-group">
+          <span class="search-label">Asset Category</span>
+          <select class="search-select">
+            <option>All Assets</option>
+            <option>Real Estate</option>
+            <option>Commodities</option>
+          </select>
+        </div>
+        <div class="search-input-group">
+          <span class="search-label">Target Yield</span>
+          <select class="search-select">
+            <option>Any Yield</option>
+            <option>> 8% p.a.</option>
+            <option>> 12% p.a.</option>
+          </select>
+        </div>
+        <button class="search-btn-hero">Search Assets</button>
+      </div>
+    </article>
+  </div>
+
+  <main class="public-marketplace">
+    <div style="display: flex; justify-content: space-between; align-items: end; margin-bottom: 40px;">
+      <h2 class="section-title" style="margin: 0;">Live Opportunities</h2>
+      <!-- Category Tabs -->
+      <div style="display: flex; background: #F2F4F7; padding: 4px; border-radius: 12px; border: 1px solid #E4E7EC;">
+        <button style="background: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: #101828;">All Assets</button>
+        <button style="background: transparent; border: none; padding: 10px 20px; color: #475467; font-weight: 600; font-size: 14px; cursor: pointer;">Real Estate</button>
+        <button style="background: transparent; border: none; padding: 10px 20px; color: #475467; font-weight: 600; font-size: 14px; cursor: pointer;">Commodities</button>
+      </div>
+    </div>
+
+    <!-- Marktplatz Grid (Original POOOL Card Structure) -->
+    <div id="property-grid" class="property-grid">
+      
+      <!-- Card 1: Real Estate Bali -->
+      <div
+        class="property-card"
+        data-property-id="sunset-luxury-villa"
+        onclick="window.location.href = '/property/sunset-luxury-villa'"
+      >
+        <div class="property-gallery">
+          <div class="property-image-container">
+            <div
+              class="property-image active"
+              style="background-image: url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop'); background-size: cover; background-position: center;"
+              aria-label="Sunset Luxury Villa"
+            ></div>
+          </div>
+          <div class="property-badge ds-badge ds-badge--overlay ds-badge--funding">
+            <span class="badge-text">Funding In Progress</span>
+          </div>
+          <!-- Image Controls Mockup -->
+          <div class="gallery-control gallery-control-left">←</div>
+          <div class="gallery-control gallery-control-right">→</div>
+          <div class="gallery-dots"><div class="gallery-dot active"></div><div class="gallery-dot"></div><div class="gallery-dot"></div></div>
+        </div>
+        <div class="property-content">
+          <div class="property-categories">
+            <div class="category">
+              <span class="category-text">Location: Canggu, Bali</span>
+            </div>
+            <div class="category-separator"></div>
+            <div class="category">
+              <span class="category-text">Real Estate</span>
+            </div>
+          </div>
+
+          <div class="property-heading">
+            <h3 class="property-title">
+              Sunset Luxury Villa
+            </h3>
+          </div>
+
+          <div class="property-pricing">
+            <div class="price-wrapper">
+              <span class="property-price">$500,000</span>
+              <span class="funded-percentage">68.5% funded</span>
+            </div>
+            <div class="property-progress ds-progress">
+              <div
+                class="ds-progress__fill"
+                style="width: 68.5%"
+              ></div>
+            </div>
+          </div>
+
+          <div class="investment-details">
+            <div class="investment-row">
+              <span class="investment-label">Token Price</span>
+              <span class="investment-value">$50</span>
+            </div>
+            <div class="investment-row">
+              <span class="investment-label">Annual Yield</span>
+              <span class="investment-value">
+                12.4%
+              </span>
+            </div>
+            <div class="investment-row">
+              <span class="investment-label">Capital Appreciation</span>
+              <span class="investment-value">
+                6.0%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Commodity -->
+      <div
+        class="property-card"
+        data-property-id="premium-arabica"
+        onclick="window.location.href = '/property/premium-arabica'"
+      >
+        <div class="property-gallery">
+          <div class="property-image-container">
+            <div
+              class="property-image active"
+              style="background-image: url('https://images.unsplash.com/photo-1610375461246-83ff852e5318?q=80&w=1974&auto=format&fit=crop'); background-size: cover; background-position: center;"
+              aria-label="Premium Arabica Coffee Batch"
+            ></div>
+          </div>
+          <div class="property-badge ds-badge ds-badge--overlay ds-badge--funding">
+            <span class="badge-text" style="color: #027A48;">Fully Funded</span>
+          </div>
+        </div>
+        <div class="property-content">
+          <div class="property-categories">
+            <div class="category">
+              <span class="category-text">Location: Kintamani, Bali</span>
+            </div>
+            <div class="category-separator"></div>
+            <div class="category">
+              <span class="category-text">Commodity</span>
+            </div>
+          </div>
+
+          <div class="property-heading">
+            <h3 class="property-title">
+              Premium Arabica Coffee Batch
+            </h3>
+          </div>
+
+          <div class="property-pricing">
+            <div class="price-wrapper">
+              <span class="property-price">$150,000</span>
+              <span class="funded-percentage">100% funded</span>
+            </div>
+            <div class="property-progress ds-progress" style="background: #D1FADF;">
+              <div
+                class="ds-progress__fill"
+                style="width: 100%; background: #12B76A;"
+              ></div>
+            </div>
+          </div>
+
+          <div class="investment-details">
+            <div class="investment-row">
+              <span class="investment-label">Token Price</span>
+              <span class="investment-value">$15</span>
+            </div>
+            <div class="investment-row">
+              <span class="investment-label">Annual Yield</span>
+              <span class="investment-value">
+                8.5%
+              </span>
+            </div>
+            <div class="investment-row">
+              <span class="investment-label">Capital Appreciation</span>
+              <span class="investment-value">
+                N/A
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Real Estate Bali 2 -->
+      <div
+        class="property-card"
+        data-property-id="cliffside-resort"
+        onclick="window.location.href = '/property/cliffside-resort'"
+      >
+        <div class="property-gallery">
+          <div class="property-image-container">
+            <div
+              class="property-image active"
+              style="background-image: url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop'); background-size: cover; background-position: center;"
+              aria-label="Cliffside Resort Share"
+            ></div>
+          </div>
+          <div class="property-badge ds-badge ds-badge--overlay ds-badge--funding">
+            <span class="badge-text">Funding In Progress</span>
+          </div>
+          <div class="gallery-control gallery-control-left">←</div>
+          <div class="gallery-control gallery-control-right">→</div>
+          <div class="gallery-dots"><div class="gallery-dot"></div><div class="gallery-dot active"></div></div>
+        </div>
+        <div class="property-content">
+          <div class="property-categories">
+            <div class="category">
+              <span class="category-text">Location: Uluwatu, Bali</span>
+            </div>
+            <div class="category-separator"></div>
+            <div class="category">
+              <span class="category-text">Real Estate</span>
+            </div>
+          </div>
+
+          <div class="property-heading">
+            <h3 class="property-title">
+              Cliffside Resort Share
+            </h3>
+          </div>
+
+          <div class="property-pricing">
+            <div class="price-wrapper">
+              <span class="property-price">$1,200,000</span>
+              <span class="funded-percentage">42.0% funded</span>
+            </div>
+            <div class="property-progress ds-progress">
+              <div
+                class="ds-progress__fill"
+                style="width: 42.0%"
+              ></div>
+            </div>
+          </div>
+
+          <div class="investment-details">
+            <div class="investment-row">
+              <span class="investment-label">Token Price</span>
+              <span class="investment-value">$100</span>
+            </div>
+            <div class="investment-row">
+              <span class="investment-label">Annual Yield</span>
+              <span class="investment-value">
+                15.1%
+              </span>
+            </div>
+            <div class="investment-row">
+              <span class="investment-label">Capital Appreciation</span>
+              <span class="investment-value">
+                4.5%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- How It Works Section -->
+  <section class="info-section">
+    <h2 class="section-title" style="margin-bottom: 16px;">How It Works</h2>
+    <p style="color: #475467; font-size: 1.1rem; max-width: 600px; margin: 0 auto;">Investing in premium real estate and commodities has never been this accessible.</p>
+    
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-icon">1</div>
+        <h3 style="font-size: 1.25rem; color: #101828; margin-bottom: 12px;">Create Account</h3>
+        <p style="color: #475467; line-height: 1.5;">Sign up and verify your identity in less than 3 minutes using our secure KYC process.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-icon">2</div>
+        <h3 style="font-size: 1.25rem; color: #101828; margin-bottom: 12px;">Build Portfolio</h3>
+        <p style="color: #475467; line-height: 1.5;">Browse our vetted selection of properties and commodities. Buy tokens starting at $50.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-icon">3</div>
+        <h3 style="font-size: 1.25rem; color: #101828; margin-bottom: 12px;">Earn & Trade</h3>
+        <p style="color: #475467; line-height: 1.5;">Receive daily yield payouts directly into your wallet and trade your tokens on the secondary market anytime.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="public-footer">
+    <div class="footer-grid">
+      <div>
+        <div style="font-weight: 800; font-size: 24px; margin-bottom: 20px;">POOOL<span style="color: #03FF88">.</span></div>
+        <p style="color: #98A2B3; font-size: 14px; line-height: 1.6; max-width: 250px;">Democratizing access to high-yield real estate and secure commodities through blockchain technology.</p>
+      </div>
+      <div>
+        <h4 style="font-size: 16px; margin-bottom: 20px;">Marketplace</h4>
+        <a href="#" class="footer-link">Real Estate</a>
+        <a href="#" class="footer-link">Commodities</a>
+        <a href="#" class="footer-link">Secondary Market</a>
+      </div>
+      <div>
+        <h4 style="font-size: 16px; margin-bottom: 20px;">Company</h4>
+        <a href="#" class="footer-link">About Us</a>
+        <a href="#" class="footer-link">Careers</a>
+        <a href="#" class="footer-link">Contact Support</a>
+      </div>
+      <div>
+        <h4 style="font-size: 16px; margin-bottom: 20px;">Legal</h4>
+        <a href="#" class="footer-link">Terms of Service</a>
+        <a href="#" class="footer-link">Privacy Policy</a>
+        <a href="#" class="footer-link">Risk Disclaimer</a>
+      </div>
+    </div>
+    <div style="border-top: 1px solid #344054; margin-top: 40px; padding-top: 24px; text-align: center; color: #667085; font-size: 13px;">
+      &copy; 2026 POOOL Platform. All rights reserved.
+    </div>
+  </footer>
+</body>

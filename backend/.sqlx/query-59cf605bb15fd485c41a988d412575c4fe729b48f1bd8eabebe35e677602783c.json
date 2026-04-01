@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT c.id, c.affiliate_id, c.source_order_id, c.referral_id\n            FROM affiliate_commissions c\n            JOIN affiliate_referrals ar ON c.referral_id = ar.id\n            WHERE c.status IN ('provisionally_tracked', 'on_hold')\n              AND c.created_at <= NOW() - INTERVAL '30 days'\n              AND ar.status IN ('qualified', 'paid')\n            FOR UPDATE OF c SKIP LOCKED\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "affiliate_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "source_order_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "referral_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "59cf605bb15fd485c41a988d412575c4fe729b48f1bd8eabebe35e677602783c"
+}

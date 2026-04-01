@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO payout_batches (id, affiliate_id, total_amount_cents, status, created_by_admin_id, paid_at)\n           VALUES ($1, $2, $3, 'paid', $4, NOW())",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2e588a3b4fee53791134e089a58f798fbf4026caf6334ac0ad74a0fe5ecec83e"
+}

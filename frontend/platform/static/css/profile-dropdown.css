@@ -293,6 +293,11 @@
   border-radius: 200px;
   object-fit: cover;
   transition: transform 0.2s ease;
+  /* Prevent broken image Alt text from overflowing and overlapping */
+  display: block;
+  font-size: 0;
+  overflow: hidden;
+  text-indent: -9999px;
 }
 
 /* Avatar hover effect */
@@ -386,7 +391,7 @@
 }
 
 .profile-menu-item.account-item:not(.selected) .profile-account-type {
-  color: #0e9053;
+  color: var(--text-secondary);
 }
 
 /* Checkbox */

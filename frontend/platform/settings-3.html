@@ -14,6 +14,7 @@
     <!-- Main Content Area -->
     <main id="settings-main" class="ds-main marketplace-main cards-template-layout"
         style="background:#F9FAFB; padding: 32px 48px;">
+        <style>.holo-card.settings-card { overflow: visible !important; }</style>
         <div class="settings-content-wrapper" style="max-width: 1096px; width: 100%; margin: 0;">
         <div class="page-header"
             style="margin-bottom: 40px; border-bottom: none; display: flex; justify-content: space-between; align-items: center;">
@@ -82,18 +83,18 @@
                 <div>
                     <!-- Avatar identity hero block (mirrors Account Details card design) -->
                     <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
-                        <div
+                        <div class="settings-photo-current"
                             style="width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#F0F2FF 0%,#E8ECFF 100%); border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,255,0.08); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:#0000EE; flex-shrink:0; overflow:hidden;">
                             <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150"
                                 alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
                         </div>
                         <div>
-                            <div
+                            <div id="settings-display-name"
                                 style="font-size:17px; font-weight:700; color:var(--page-title-color); margin-bottom:2px;">
                                 UpdatedTest User Two</div>
-                            <div style="font-size:14px; color:#717680;">martin@poool.app</div>
+                            <div id="settings-display-email" style="font-size:14px; color:#717680;">martin@poool.app</div>
                         </div>
-                        <button class="ds-btn ds-btn--ghost ds-btn--sm"
+                        <button id="btn-photo-upload" class="ds-btn ds-btn--ghost ds-btn--sm"
                             style="margin-left:auto; border:1px solid #E5E7EB; border-radius:8px; display:flex; align-items:center; gap:6px;"><svg
                                 viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
                                 stroke-width="2">
@@ -101,32 +102,27 @@
                                 <polyline points="17 8 12 3 7 8" />
                                 <line x1="12" y1="3" x2="12" y2="15" />
                             </svg> Change Photo</button>
+                        <input type="file" id="profile-photo-upload" accept="image/jpeg, image/png, image/webp" style="display: none;">
                     </div>
 
                     <hr class="settings-divider" style="margin:0 -32px 24px -32px;">
 
                     <!-- Name fields: First / Middle / Last -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
                         <span class="settings-label">First Name</span>
                         <input type="text" class="settings-input" id="settings-first-name" style="border-radius:8px;">
                     </div>
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
-                        <span class="settings-label">Middle Name <span
-                                style="font-size:12px; font-weight:400; color:#98A2B3;">Optional</span></span>
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
+                        <span class="settings-label">Middle Name</span>
                         <input type="text" class="settings-input" id="settings-middle-name" placeholder="Middle name" style="border-radius:8px;">
                     </div>
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
                         <span class="settings-label">Last Name</span>
                         <input type="text" class="settings-input" id="settings-last-name" style="border-radius:8px;">
                     </div>
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
-                        <span class="settings-label">Gender <span
-                                style="font-size:12px; font-weight:400; color:#98A2B3;">Optional</span></span>
-                        <select class="settings-input settings-select" id="settings-gender" style="border-radius:8px; height:44px; max-width:280px;">
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
+                        <span class="settings-label">Gender</span>
+                        <select class="settings-input settings-select" id="settings-gender" style="border-radius:8px;">
                             <option value="">Select gender...</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
@@ -177,42 +173,35 @@
 
                 <div>
                     <!-- All address fields always shown — no hidden-behind-button -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
                         <span class="settings-label">Address Line 1</span>
                         <input type="text" class="settings-input" id="settings-address-1" placeholder="Street address"
                             style="border-radius:8px;">
                     </div>
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
-                        <span class="settings-label">Address Line 2 <span
-                                style="font-size:12px; font-weight:400; color:#98A2B3;">Optional</span></span>
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
+                        <span class="settings-label">Address Line 2</span>
                         <input type="text" class="settings-input" id="settings-address-2" placeholder="Apt, suite, unit, floor"
                             style="border-radius:8px;">
                     </div>
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
                         <span class="settings-label">City</span>
                         <input type="text" class="settings-input" id="settings-city" placeholder="City"
                             style="border-radius:8px;">
                     </div>
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
-                        <span class="settings-label">State / Region <span
-                                style="font-size:12px; font-weight:400; color:#98A2B3;">Optional</span></span>
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
+                        <span class="settings-label">State / Region</span>
                         <input type="text" class="settings-input" id="settings-state" placeholder="State, province or region"
                             style="border-radius:8px;">
                     </div>
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
                         <span class="settings-label">Postal / ZIP Code</span>
                         <input type="text" class="settings-input" id="settings-postal" placeholder="Postal or ZIP code"
                             style="border-radius:8px; max-width:160px;">
                     </div>
-                    <div class="settings-form-row align-start"
+                    <div class="settings-form-row settings-form-row--list"
                         style="grid-template-columns: 160px 1fr; margin-bottom:0;">
                         <span class="settings-label">Country</span>
-                        <select class="settings-input settings-select" id="settings-country" style="border-radius:8px; height:44px; max-width:280px;">
+                        <select class="settings-input settings-select" id="settings-country" data-searchable="true" style="border-radius:8px;">
 <option value="" disabled>Select a country</option>
 									<option value="AF">Afghanistan</option>
 									<option value="AL">Albania</option>
@@ -433,25 +422,21 @@
 					{% endcall %}
 
                 <div>
-                    <div class="settings-form-row align-start" style="grid-template-columns: 200px 1fr;">
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 200px 1fr;">
                         <span class="settings-label">Date of Birth</span>
                         <input type="date" class="settings-input" id="settings-dob" style="border-radius:8px;">
                     </div>
                     <hr class="settings-divider" style="margin:16px -32px;">
-                    <div class="settings-form-row align-start" style="grid-template-columns: 200px 1fr;">
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 200px 1fr;">
                         <span class="settings-label">Nationality</span>
                         <input type="text" class="settings-input" id="settings-nationality" style="border-radius:8px;">
                     </div>
                     <hr class="settings-divider" style="margin:16px -32px;">
-                    <div class="settings-form-row align-start" style="grid-template-columns: 200px 1fr;">
+                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 200px 1fr;">
                         <span class="settings-label">Tax ID</span>
                         <input type="text" class="settings-input" id="settings-tax-id" style="border-radius:8px;">
                     </div>
-                    <hr class="settings-divider" style="margin:16px -32px;">
-                    <div class="settings-form-row align-start" style="grid-template-columns: 200px 1fr;">
-                        <span class="settings-label">Annual Income (USD)</span>
-                        <input type="number" class="settings-input" id="settings-annual-income" placeholder="0.00" style="border-radius:8px;">
-                    </div>
+
 
                     <hr class="settings-divider" style="margin:24px -32px 0 -32px;">
                     <div class="settings-edit-footer"
@@ -602,28 +587,7 @@
                     </div>
                     <hr class="settings-divider" style="margin:0 -28px 16px -28px;">
                     <div style="margin-bottom:16px;">
-                        <div style="font-size:14px; font-weight:700; color:var(--page-title-color); margin-bottom:4px;">
-                            Active Sessions</div>
-                        <div style="font-size:13px; color:#475467; margin-bottom:16px;">Devices currently logged in to
-                            your account</div>
-                        <div id="settings-sessions-list">
-                            <div class="session-box">
-                                <div class="session-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none"
-                                        stroke="currentColor" stroke-width="2">
-                                        <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
-                                        <rect x="9" y="9" width="6" height="6" />
-                                    </svg></div>
-                                <div style="display:flex; flex-direction:column; gap:4px;">
-                                    <div style="display:flex; align-items:center; gap:8px;"><span
-                                            style="font-size:14px; font-weight:600; color:var(--page-title-color);">Unknown
-                                            Device</span> <span class="settings-label-badge"
-                                            style="color:#027A48;">Current</span></div><span
-                                        style="font-size:13px; color:#475467;">Unknown Location</span>
-                                </div>
-                            </div>
-                        </div>
-                        <hr class="settings-divider" style="margin:0 -28px 16px -28px;">
-                        <div>
+
                             <div
                                 style="font-size:14px; font-weight:700; color:var(--page-title-color); margin-bottom:4px;">
                                 Linked Accounts</div>
@@ -673,7 +637,7 @@
             </div>
 
             <div class="ds-card holo-card settings-card" style="margin-bottom: 32px; width:100%; box-sizing:border-box;">
-                {% call macros.holo_card_header('Preferences &amp; Alerts', 'Timezone, currency, and notification
+                {% call macros.holo_card_header('Preferences', 'Timezone, currency, and notification
                             preferences.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
 		<path
@@ -683,10 +647,10 @@
 					{% endcall %}
 
                 <div>
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
+                    <div class="settings-form-row settings-form-row--list"
+                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
                         <span class="settings-label">Timezone</span>
-                        <select class="settings-input settings-select" id="settings-timezone" style="border-radius:8px; height:44px;">
+                        <select class="settings-input settings-select" id="settings-timezone" style="border-radius:8px;">
 <optgroup label="Americas">
 										<option value="Pacific/Honolulu">(UTC-10:00) Hawaii</option>
 										<option value="America/Anchorage">(UTC-09:00) Alaska</option>
@@ -775,10 +739,10 @@
 									</optgroup>
 </select>
                     </div>
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:0; align-items:center;">
+                    <div class="settings-form-row settings-form-row--list"
+                        style="grid-template-columns: 160px 1fr; margin-bottom:0;">
                         <span class="settings-label">Currency</span>
-                        <select class="settings-input settings-select" id="settings-currency" style="border-radius:8px; height:44px;">
+                        <select class="settings-input settings-select" id="settings-currency" style="border-radius:8px;">
                             <option value="USD">USD 🇺🇸</option>
                             <option value="EUR">EUR 🇪🇺</option>
                         </select>

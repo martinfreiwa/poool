@@ -31,8 +31,7 @@
         activePage = "affiliate";
       } else if (path.includes("/rewards")) {
         activePage = "rewards";
-      } else if (path.includes("/community")) {
-        activePage = "community";
+
       } else if (path.includes("/leaderboard")) {
         activePage = "leaderboard";
       } else if (path.includes("/developer/dashboard")) {
@@ -169,20 +168,7 @@
               </div>
             </a>
           </div>
-          <!-- Notifications -->
-          <div id="nav-item-notifications" class="sidebar__nav-item">
-            <div id="nav-item-notifications-content"
-              class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
-              <div id="nav-text-icon-notifications" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-notifications" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/Menu%20developer/Notifications.svg" alt="Notifications"
-                    class="nav-icon" width="20" height="20" />
-                </div>
-                <span id="nav-text-notifications" class="sidebar__nav-text">Notifications</span>
-              </div>
-              <span id="nav-badge-notifications" class="nav-badge notifications-badge" style="display: none;"></span>
-            </div>
-          </div>
+
           <!-- Ranking (formerly Reports) -->
           <div id="nav-item-ranking" class="sidebar__nav-item">
             <div id="nav-item-ranking-content" class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
@@ -265,7 +251,7 @@
             </div>
             <div id="account-text-wrapper" class="sidebar__account-text">
               <span id="account-name" class="sidebar__account-name"></span>
-              <span id="account-email" class="sidebar__account-email">Developer profile</span>
+              <span id="account-email" class="sidebar__account-email">Developer Profile</span>
             </div>
           </div>
           <!-- Menu Button Icon (no longer a button) -->
@@ -334,7 +320,7 @@
                       </div>
                       <div class="profile-text-wrapper">
                         <span class="profile-account-name"></span>
-                        <span class="profile-account-type">Developer profile</span>
+                        <span class="profile-account-type">Developer Profile</span>
                       </div>
                     </div>
                     <div class="profile-checkbox">
@@ -497,77 +483,15 @@
               </div>
             </a>
           </div>
-          <div id="nav-item-community" class="sidebar__nav-item">
-            <a id="nav-item-community-content" href="/community" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-community" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-community" class="sidebar__nav-icon-wrapper">
-                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </div>
-                <span id="nav-text-community" class="sidebar__nav-text">Community</span>
-              </div>
-              <span class="sidebar__nav-badge" style="background:rgba(3,255,136,0.15);color:#027A48;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;">New</span>
-            </a>
-          </div>
-          <div id="nav-item-cards-template" class="sidebar__nav-item">
-            <a id="nav-item-cards-template-content" href="/cards-template.html" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-cards-template" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-cards-template" class="sidebar__nav-icon-wrapper">
-                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="9" y1="21" x2="9" y2="9"></line>
-                  </svg>
-                </div>
-                <span id="nav-text-cards-template" class="sidebar__nav-text">UI Cards</span>
-              </div>
-            </a>
-          </div>
+
+
         </nav>
       </div>
       <!-- Footer Section -->
       <div id="sidebar-footer" class="sidebar__footer">
         <!-- Footer Navigation -->
         <nav id="footer-nav" class="sidebar__footer-nav">
-          <div id="nav-item-notifications" class="sidebar__nav-item" x-data="notificationBadge()" @notifications-read.window="init()">
-            <a id="nav-item-notifications-content" href="/community?tab=notifications" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-notifications" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-notifications" class="sidebar__nav-icon-wrapper">
-                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                  </svg>
-                </div>
-                <span id="nav-text-notifications" class="sidebar__nav-text">Notifications</span>
-              </div>
-              <span id="notification-badge-count" x-show="count > 0" class="sidebar__nav-badge" style="background:#F04438;color:#FFF;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;" x-text="count"></span>
-            </a>
-            <script>
-                document.addEventListener('alpine:init', () => {
-                    Alpine.data('notificationBadge', () => ({
-                        count: 0,
-                        async init() {
-                            try {
-                                const res = await fetch('/api/community/notifications/unread-count');
-                                if (res.ok) {
-                                    const data = await res.json();
-                                    this.count = data.count || 0;
-                                }
-                            } catch (e) {
-                                console.error('Failed to load notification count', e);
-                            }
-                        },
-                        async markAsRead() {
-                            this.count = 0;
-                        }
-                    }));
-                });
-            </script>
-          </div>
+
           <div id="nav-item-settings" class="sidebar__nav-item">
             <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
               <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
@@ -595,38 +519,7 @@
             </a>
           </div>
         </nav>
-        <!-- Community Card -->
-        <div id="nav-featured-card" class="nav-featured-card sidebar__featured-card">
-          <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close" aria-label="Close">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M14 14L6 6M6 14L14 6" stroke="#2E2EF9" stroke-width="1.66667" stroke-linecap="round">
-              </path>
-            </svg></button><!-- Text and supporting text -->
-          <div id="featured-card-text" class="sidebar__featured-text">
-            <div class="featured-card-title-wrap">
-              <h4 id="featured-card-title" class="sidebar__featured-title">
-                Community soon
-              </h4>
-            </div>
-            <p id="featured-card-description" class="sidebar__featured-description">
-              Check out the new community feature. Connect with other
-              investors soon.
-            </p>
-          </div>
-          <!-- Image wrap -->
-          <div class="sidebar__featured-image">
-            <img src="/static/images/community-illustration.png" alt="Community illustration" loading="lazy" />
-          </div>
-          <!-- Actions -->
-          <div id="featured-card-actions" class="sidebar__featured-actions">
-            <button id="featured-card-dismiss" class="sidebar__featured-button sidebar__featured-button--dismiss">
-              Dismiss
-            </button>
-            <button id="featured-card-action" class="sidebar__featured-button sidebar__featured-button--action">
-              What&#39;s new?
-            </button>
-          </div>
-        </div>
+
         <!-- Account Card - Now fully clickable -->
         <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
           style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
@@ -707,7 +600,7 @@
                       </div>
                       <div class="profile-text-wrapper">
                         <span class="profile-account-name"></span>
-                        <span class="profile-account-type">Developer profile</span>
+                        <span class="profile-account-type">Developer Profile</span>
                       </div>
                     </div>
                     <div class="profile-checkbox">

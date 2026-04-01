@@ -222,14 +222,40 @@
 
     // ── Tab Switching ──────────────────────────────────────────
     function initTabs() {
-        document.querySelectorAll('.myt__tab').forEach(tab => {
+        document.querySelectorAll('.myt-card-tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                document.querySelectorAll('.myt__tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.myt-card-tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.myt__tab-content').forEach(c => c.classList.remove('active'));
                 tab.classList.add('active');
                 const target = document.getElementById('tab-' + tab.dataset.tab);
                 if (target) target.classList.add('active');
+                
+                // Also visually sync the top sub-stat cards if they exist
+                document.querySelectorAll('.sub-stat').forEach(s => s.classList.remove('active'));
+                let statId = tab.dataset.tab;
+                if (statId === 'trade-history') statId = 'trades';
+                if (statId === 'buy-interests') statId = 'interests';
+                const subStat = document.querySelector(`.sub-stat[data-stat="${statId}"]`);
+                if (subStat) subStat.classList.add('active');
             });
+        });
+
+        // Make the summary cards clickable (acting as tabs)
+        document.querySelectorAll('.sub-stat').forEach(statCard => {
+            statCard.addEventListener('click', () => {
+                let tabName = statCard.dataset.stat;
+                // Mapping stat to tab name
+                if (tabName === 'trades') tabName = 'trade-history';
+                if (tabName === 'interests') tabName = 'buy-interests';
+
+                const associatedTabBtn = document.querySelector(`.myt-card-tab[data-tab="${tabName}"]`);
+                if (associatedTabBtn) {
+                    associatedTabBtn.click();
+                    associatedTabBtn.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+            // Indicate they are clickable
+            statCard.style.cursor = 'pointer';
         });
     }
 
@@ -322,7 +348,7 @@
     function renderSummaryCards() {
         const spanOpen = document.getElementById('summary-open-orders');
         const spanTrades = document.getElementById('summary-trades');
-        const spanFees = document.getElementById('summary-fees');
+        const spanAssets = document.getElementById('summary-assets');
         const spanInterests = document.getElementById('summary-interests');
 
         if (spanOpen) {
@@ -331,9 +357,8 @@
         if (spanTrades) {
             spanTrades.innerText = MOCK_TRADES.length;
         }
-        if (spanFees) {
-            const totalFees = MOCK_TRADES.reduce((sum, t) => sum + (t.fee || 0), 0);
-            spanFees.innerText = formatUSD(totalFees);
+        if (spanAssets) {
+            spanAssets.innerText = PORTFOLIO_ASSETS.length;
         }
         if (spanInterests) {
             spanInterests.innerText = MOCK_INTERESTS.length;

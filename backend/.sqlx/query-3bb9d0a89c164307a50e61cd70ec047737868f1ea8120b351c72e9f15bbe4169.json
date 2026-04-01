@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO wallet_transactions (wallet_id, type, status, amount_cents, currency, description, external_ref_id, completed_at)\n           VALUES ($1, 'reward', 'completed', $2, 'USD', 'Affiliate Commission Payout', $3, NOW())",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3bb9d0a89c164307a50e61cd70ec047737868f1ea8120b351c72e9f15bbe4169"
+}

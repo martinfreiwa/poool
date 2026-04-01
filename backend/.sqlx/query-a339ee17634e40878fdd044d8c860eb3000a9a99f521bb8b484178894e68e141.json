@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, metadata)\n                   VALUES ($1, 'AFFILIATE_COMMISSION_STATUS_CHANGED', 'affiliate_referrals', $2, $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a339ee17634e40878fdd044d8c860eb3000a9a99f521bb8b484178894e68e141"
+}

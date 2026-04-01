@@ -1,5 +1,5 @@
 {% set title="My Trading" %}
-{% set extra_css=['my-trading', 'cards-template'] %}
+{% set extra_css=['my-trading', 'cards-template', 'developer-submissions'] %}
 {% set extra_js=['my-trading'] %}
 {% set body_class="my-trading-body fouc-guard" %}
 
@@ -18,103 +18,101 @@
         <main class="myt__main">
             <div class="myt__content-wrapper">
                 <!-- Page Header -->
-                <div class="myt__header">
-                    <div class="myt__header-left">
-                        <h1 class="myt__title">My Trading</h1>
-                        <span class="myt__badge">Marketplace</span>
+                <div class="ds-page-header">
+                    <div class="ds-page-header__title-row">
+                        <h1 id="my-trading-page-title" class="ds-page-header__title">
+                            My Trading
+                            <span class="myt__badge">Marketplace</span>
+                        </h1>
                     </div>
-                    <div class="myt__header-right">
-                        <a href="/marketplace-secondary" class="myt__action-btn myt__action-btn--outline">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            Browse Market
-                        </a>
-                        <button class="myt__action-btn myt__action-btn--primary" id="btn-export-tax">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Export Tax Report
-                        </button>
+                    <div class="ds-page-header__actions">
+                        <!-- Buttons removed per user request -->
                     </div>
                 </div>
 
-                <!-- Summary Cards -->
-                <div class="myt__summary">
-                    <div class="tpl-icon-item">
-                        <div class="p-icon" style="--glow-color:rgba(0,0,255,.1);">
+                <!-- Summary Stat Cards — matches submissions .sub-stats layout, original holographic icons -->
+                <div class="sub-stats myt-stats-row">
+                    <div class="sub-stat" data-stat="open-orders">
+                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
                             <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
                             <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
                             <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
                                 <svg viewBox="0 0 24 24" stroke="#0000FF" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                             </div>
                         </div>
-                        <div>
-                            <span class="icon-value" id="summary-open-orders">3</span>
-                            <span class="icon-name">Open Orders</span>
+                        <div class="sub-stat__content">
+                            <span class="sub-stat__count" id="summary-open-orders">3</span>
+                            <span class="sub-stat__label">Open Orders</span>
                         </div>
                     </div>
-                    <div class="tpl-icon-item">
-                        <div class="p-icon" style="--glow-color:rgba(0,0,255,.1);">
+                    <div class="sub-stat" data-stat="trades">
+                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
                             <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
                             <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
                             <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
                                 <svg viewBox="0 0 24 24" stroke="#0000FF" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                             </div>
                         </div>
-                        <div>
-                            <span class="icon-value" id="summary-trades">12</span>
-                            <span class="icon-name">Completed Trades</span>
+                        <div class="sub-stat__content">
+                            <span class="sub-stat__count" id="summary-trades">12</span>
+                            <span class="sub-stat__label">Completed Trades</span>
                         </div>
                     </div>
-                    <div class="tpl-icon-item">
-                        <div class="p-icon" style="--glow-color:rgba(0,0,255,.1);">
+                    <div class="sub-stat" data-stat="my-assets">
+                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
                             <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
                             <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
                             <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
-                                <svg viewBox="0 0 24 24" stroke="#0000FF" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5a3 3 0 00-3-3h-1a3 3 0 000 6h2a3 3 0 010 6h-2a3 3 0 01-3-3"/></svg>
+                                <svg viewBox="0 0 24 24" stroke="#0000FF" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                             </div>
                         </div>
-                        <div>
-                            <span class="icon-value" id="summary-fees">$342.50</span>
-                            <span class="icon-name">Total Fees Paid</span>
+                        <div class="sub-stat__content">
+                            <span class="sub-stat__count" id="summary-assets">0</span>
+                            <span class="sub-stat__label">My Assets</span>
                         </div>
                     </div>
-                    <div class="tpl-icon-item">
-                        <div class="p-icon" style="--glow-color:rgba(0,0,255,.1);">
+                    <div class="sub-stat" data-stat="interests">
+                        <div class="p-icon p-icon--sm" style="--glow-color:rgba(0,0,255,.1);">
                             <div class="p-bg p-bg-1" style="background:linear-gradient(135deg,#03FF88 0%,#00CC6F 100%);opacity:0.28;box-shadow:0 2px 8px rgba(3,255,136,.12);"></div>
                             <div class="p-bg p-bg-2" style="background:linear-gradient(135deg,#0000FF 0%,#3344FF 100%);opacity:0.32;box-shadow:0 2px 8px rgba(0,0,255,.1);"></div>
                             <div class="p-front" style="background:linear-gradient(160deg,rgba(255,255,255,.95) 0%,rgba(244,246,255,.78) 40%,rgba(236,240,255,.62) 100%);border:0;box-shadow:0 .5px .5px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,255,.04),0 8px 24px rgba(0,0,255,.025),inset 0 .5px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.7),inset 0 -1px 3px rgba(180,195,255,.08);backdrop-filter:blur(20px)saturate(1.85);-webkit-backdrop-filter:blur(20px)saturate(1.85);">
                                 <svg viewBox="0 0 24 24" stroke="#0000FF" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 .5px 0 rgba(0,0,200,.08));"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><polyline points="8 12 12 16 16 12"/></svg>
                             </div>
                         </div>
-                        <div>
-                            <span class="icon-value" id="summary-interests">1</span>
-                            <span class="icon-name">Active Buy Interests</span>
+                        <div class="sub-stat__content">
+                            <span class="sub-stat__count" id="summary-interests">1</span>
+                            <span class="sub-stat__label">Active Buy Interests</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tabs -->
-                <div class="myt__tabs">
-                    <button class="myt__tab active" data-tab="open-orders">
-                        Open Orders
-                        <span class="myt__tab-count" id="tab-count-orders">3</span>
-                    </button>
-                    <button class="myt__tab" data-tab="buy-interests">
-                        Buy Interests
-                        <span class="myt__tab-count" id="tab-count-interests">1</span>
-                    </button>
-                    <button class="myt__tab" data-tab="my-assets">
-                        My Assets
-                        <span class="myt__tab-count" id="tab-count-assets">0</span>
-                    </button>
-                    <button class="myt__tab" data-tab="trade-history">
-                        Trade History
-                    </button>
+                <!-- Table Card with integrated header tabs (leaderboard pattern) -->
+                <div class="submissions-table-container myt-table-card">
+                    <!-- Card Header: Title + Tabs inline -->
+                    <div class="myt-card-header">
+                        <span class="myt-card-title">Orders & Trading</span>
+                        <div class="myt-card-tabs">
+                            <button class="myt-card-tab active" data-tab="open-orders">
+                                Open Orders
+                                <span class="myt__tab-count" id="tab-count-orders">3</span>
+                            </button>
+                            <button class="myt-card-tab" data-tab="buy-interests">
+                                Buy Interests
+                                <span class="myt__tab-count" id="tab-count-interests">1</span>
+                            </button>
+                            <button class="myt-card-tab" data-tab="my-assets">
+                                My Assets
+                                <span class="myt__tab-count" id="tab-count-assets">0</span>
+                            </button>
+                            <button class="myt-card-tab" data-tab="trade-history">
+                                Trade History
+                            </button>
+                        </div>
+                    </div>
 
-                </div>
-
-                <!-- Tab: Open Orders -->
-                <div class="myt__tab-content active" id="tab-open-orders">
-                    <div class="myt__card">
-                        <table class="myt__table">
+                    <!-- Tab: Open Orders -->
+                    <div class="myt__tab-content active" id="tab-open-orders">
+                        <table class="submissions-table myt__table">
                             <thead>
                                 <tr>
                                     <th>Order ID</th>
@@ -134,12 +132,10 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
 
-                <!-- Tab: Buy Interests -->
-                <div class="myt__tab-content" id="tab-buy-interests">
-                    <div class="myt__card">
-                        <table class="myt__table">
+                    <!-- Tab: Buy Interests -->
+                    <div class="myt__tab-content" id="tab-buy-interests">
+                        <table class="submissions-table myt__table">
                             <thead>
                                 <tr>
                                     <th>Asset</th>
@@ -157,12 +153,10 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
 
-                <!-- Tab: My Assets -->
-                <div class="myt__tab-content" id="tab-my-assets">
-                    <div class="myt__card">
-                        <table class="myt__table">
+                    <!-- Tab: My Assets -->
+                    <div class="myt__tab-content" id="tab-my-assets">
+                        <table class="submissions-table myt__table">
                             <thead>
                                 <tr>
                                     <th>Asset</th>
@@ -180,17 +174,15 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
 
-                <!-- Tab: Trade History -->
-                <div class="myt__tab-content" id="tab-trade-history">
-                    <div class="myt__card">
+                    <!-- Tab: Trade History -->
+                    <div class="myt__tab-content" id="tab-trade-history">
                         <div class="myt__table-header">
                             <div class="myt__table-filter">
-                                <select id="trade-filter-asset" class="myt__select">
+                                <select id="trade-filter-asset" class="ds-select" style="min-width: 140px;">
                                     <option value="">All Assets</option>
                                 </select>
-                                <select id="trade-filter-period" class="myt__select">
+                                <select id="trade-filter-period" class="ds-select" style="min-width: 140px;">
                                     <option value="30d">Last 30 Days</option>
                                     <option value="90d">Last 90 Days</option>
                                     <option value="1y">Last Year</option>
@@ -201,7 +193,7 @@
                                 Net P/L: <strong class="myt__pnl myt__pnl--positive">+$1,245.30</strong>
                             </div>
                         </div>
-                        <table class="myt__table">
+                        <table class="submissions-table myt__table">
                             <thead>
                                 <tr>
                                     <th>Date</th>

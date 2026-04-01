@@ -399,8 +399,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // ── Check 2: Token Balance Invariant ───────────────────────
             let token_mismatches = sqlx::query!(
                 r#"
-                SELECT a.id, a.title, a.tokens_total, a.tokens_available,
-                       COALESCE(inv.total_owned, 0)::int as total_owned
+                SELECT a.id, a.title as "title!", a.tokens_total as "tokens_total!", a.tokens_available as "tokens_available!",
+                       COALESCE(inv.total_owned, 0)::int as "total_owned!"
                 FROM assets a
                 LEFT JOIN (
                     SELECT asset_id, SUM(tokens_owned)::int as total_owned
@@ -425,7 +425,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             let expected_sold = row.tokens_total - row.tokens_available;
                             let msg = format!(
                                 "TOKEN MISMATCH: Asset '{}' ({:?}): sold={} but investments show {} tokens",
-                                row.title, row.id, expected_sold, row.total_owned.unwrap_or(0)
+                                row.title,
+                                row.id,
+                                expected_sold,
+                                row.total_owned
                             );
                             tracing::error!("{}", msg);
                             sentry::capture_message(&msg, sentry::Level::Error);

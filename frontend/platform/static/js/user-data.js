@@ -166,6 +166,20 @@ if (typeof window.getCsrfToken === "undefined") {
           el.setAttribute("data-profile-id", user.email + "-developer");
         });
 
+      // Fix initials for developer accounts as well
+      document
+        .querySelectorAll(
+          "#menu-item-account-olivia-developer .profile-avatar img, " +
+          "#mobile-menu-item-account-olivia-developer .mobile-profile-avatar img, " +
+          "#menu-item-account-developer .profile-avatar img"
+        )
+        .forEach(function (img) {
+          if (img.src.includes("Featured%20icon.webp") || img.src.includes("Featured icon.webp")) {
+             img.src = initialsDataUrl;
+             img.alt = user.name;
+          }
+        });
+
       // ── Update selected state in switcher ───────────────────
       // (savedProfile is already initialized at the top of the IIFE)
 
@@ -408,11 +422,11 @@ if (typeof window.getCsrfToken === "undefined") {
                             <div id="menu-item-account-developer" class="profile-menu-item account-item ${savedProfile === "developer" ? "selected" : ""}" data-profile-id="${escHtml(user.email)}-developer">
                                 <div class="profile-account-content">
                                     <div class="profile-avatar-group">
-                                        <div class="profile-avatar"><img src="/static/images/Featured%20icon.webp" alt="${escHtml(user.name)}">
+                                        <div class="profile-avatar"><img src="${initialsDataUrl}" alt="${escHtml(user.name)}">
                                             <div class="profile-avatar-border"></div>
                                             <div class="profile-online-indicator"></div>
                                         </div>
-                                        <div class="profile-text-wrapper"><span class="profile-account-name">${escHtml(user.name)}</span> <span class="profile-account-type">Developer profile</span></div>
+                                        <div class="profile-text-wrapper"><span class="profile-account-name">${escHtml(user.name)}</span> <span class="profile-account-type">Developer Profile</span></div>
                                     </div>
                                     <div class="profile-checkbox ${savedProfile === "developer" ? "selected" : ""}">
                                         <div class="profile-checkbox-check"></div>

@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, balance_cents \n           FROM wallets \n           WHERE wallet_type = 'affiliate_treasury' AND currency = 'USD'\n           LIMIT 1\n           FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "balance_cents",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "05fe0c0e41782143545099a8a4250d5e0ab6309a3e5016135f3408f20a53f5a4"
+}

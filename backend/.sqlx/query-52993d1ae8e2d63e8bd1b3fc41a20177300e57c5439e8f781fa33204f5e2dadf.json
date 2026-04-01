@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.user_id::text as id, u.email, \n                  a.traffic_source, a.audience_size, a.main_url, a.phone_number, a.company_name, a.created_at::text\n           FROM affiliates a\n           JOIN users u ON u.id = a.user_id\n           WHERE a.status = 'pending_approval'\n           ORDER BY a.created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "traffic_source",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "audience_size",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "main_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "phone_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "company_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "52993d1ae8e2d63e8bd1b3fc41a20177300e57c5439e8f781fa33204f5e2dadf"
+}

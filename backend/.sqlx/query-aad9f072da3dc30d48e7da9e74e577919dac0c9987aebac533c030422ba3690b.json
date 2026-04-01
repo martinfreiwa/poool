@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliates\n                   SET current_tier = $1, commission_rate_bps = $2, updated_at = NOW()\n                   WHERE user_id = $3 AND status = 'active'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "aad9f072da3dc30d48e7da9e74e577919dac0c9987aebac533c030422ba3690b"
+}

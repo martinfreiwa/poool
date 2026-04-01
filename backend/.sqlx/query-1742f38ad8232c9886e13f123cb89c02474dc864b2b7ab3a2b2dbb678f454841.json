@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n               COUNT(*) FILTER (WHERE status = 'attributed') as \"attributed!\",\n               COUNT(*) FILTER (WHERE status = 'registered') as \"registered!\",\n               COUNT(*) FILTER (WHERE status = 'under_holdback') as \"under_holdback!\",\n               COUNT(*) FILTER (WHERE status = 'qualified') as \"qualified!\",\n               COUNT(*) as \"total!\"\n           FROM affiliate_referrals\n           WHERE affiliate_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "attributed!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "registered!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "under_holdback!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "qualified!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "total!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "1742f38ad8232c9886e13f123cb89c02474dc864b2b7ab3a2b2dbb678f454841"
+}

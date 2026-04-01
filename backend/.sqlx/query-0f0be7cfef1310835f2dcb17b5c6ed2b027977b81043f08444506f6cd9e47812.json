@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliate_referrals\n                   SET status = $1, updated_at = NOW()\n                   WHERE id = $2 AND status = 'under_holdback'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0f0be7cfef1310835f2dcb17b5c6ed2b027977b81043f08444506f6cd9e47812"
+}

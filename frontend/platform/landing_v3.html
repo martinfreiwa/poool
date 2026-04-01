@@ -1,0 +1,88 @@
+{% with title="POOOL | Version 3 - App Centric", extra_css=['marketplace'] %}{% include "components/head.html" %}{% endwith %}
+<body class="public-landing">
+  <style>
+    /* Variant 3: Product-Led App Centric */
+    body { background: #f9fafb; font-family: 'TT Norms Pro', sans-serif; margin: 0; padding: 0;}
+    header.v3-header { background: #101828; color: white; padding: 24px 5%; display: flex; justify-content: space-between; align-items: center; }
+    
+    .v3-hero { background: #101828; color: white; padding: 60px 5% 140px; text-align: center; }
+    .v3-hero h1 { font-size: 3.5rem; margin: 0 0 20px; font-weight: 700; letter-spacing: -0.02em; }
+    .v3-hero p { color: #98A2B3; font-size: 1.25rem; max-width: 600px; margin: 0 auto; line-height: 1.5; }
+    
+    .marketplace-container { max-width: 1300px; margin: -80px auto 100px; padding: 0 5%; position: relative; z-index: 10; }
+    
+    .v3-tabs-bar { background: white; border-radius: 16px; padding: 12px; display: inline-flex; justify-content: center; gap: 8px; box-shadow: 0 20px 40px -8px rgba(16, 24, 40, 0.1); margin-bottom: 40px; margin-left: 50%; transform: translateX(-50%);}
+    .v3-tab { background: transparent; border: none; font-size: 1.1rem; font-weight: 600; color: #475467; padding: 14px 40px; border-radius: 12px; cursor: pointer; transition: 0.2s; font-family: inherit;}
+    .v3-tab:hover { color: #101828; }
+    .v3-tab.active { background: #F9FAFB; color: #101828; box-shadow: inset 0 0 0 1px #E4E7EC; }
+
+    /* Mock Card Style */
+    .mock-card { background: white; border: 1px solid #E4E7EC; border-radius: 16px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+    .mock-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -8px rgba(16, 24, 40, 0.08); border-color: #D0D5DD;}
+    .mock-card-img { height: 220px; background-size: cover; background-position: center;}
+    .mock-card-body { padding: 24px; }
+  </style>
+
+  <header class="v3-header">
+    <div style="font-weight: 800; font-size: 28px; letter-spacing: -0.03em;">POOOL<span style="color: #03FF88">.</span></div>
+    <div style="display: flex; gap: 20px; align-items: center;">
+      <a href="/login" style="color: white; text-decoration: none; font-weight: 600;">Sign In</a>
+      <a href="/signup" style="background: #03FF88; color: #101828; text-decoration: none; font-weight: 600; padding: 10px 20px; border-radius: 8px;">Create Account</a>
+    </div>
+  </header>
+
+  <div class="v3-hero">
+    <h1>The Asset Marketplace.</h1>
+    <p>Discover carefully vetted properties and commodities. Own a fraction. Earn the full yield.</p>
+  </div>
+
+  <main class="marketplace-container">
+    <div class="v3-tabs-bar">
+      <button class="v3-tab active">🏠 Real Estate</button>
+      <button class="v3-tab">🪙 Commodities</button>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
+      
+      <!-- Card 1 -->
+      <div class="mock-card">
+        <div class="mock-card-img" style="background-image: url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop');"></div>
+        <div class="mock-card-body">
+          <h3 style="font-size: 1.25rem; margin: 0 0 8px; color: #101828; font-weight: 700;">Luxury Sunset Villa</h3>
+          <div style="font-size: 14px; color: #475467; margin-bottom: 20px;">Canggu, Bali</div>
+          <div style="display: flex; justify-content: space-between; background: #F9FAFB; padding: 16px; border-radius: 12px;">
+            <div><div style="font-size: 12px; color: #667085; text-transform: uppercase; font-weight: 600;">Price</div><div style="font-size: 1.1rem; font-weight: 700; color: #101828;">$50</div></div>
+            <div style="text-align: right;"><div style="font-size: 12px; color: #667085; text-transform: uppercase; font-weight: 600;">Yield p.a.</div><div style="font-size: 1.1rem; font-weight: 700; color: #039855;">14.2%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="mock-card">
+        <div class="mock-card-img" style="background-image: url('https://images.unsplash.com/photo-1628155930542-3c7a64e2c848?q=80&w=2070&auto=format&fit=crop');"></div>
+        <div class="mock-card-body">
+          <h3 style="font-size: 1.25rem; margin: 0 0 8px; color: #101828; font-weight: 700;">Marina Tower Office</h3>
+          <div style="font-size: 14px; color: #475467; margin-bottom: 20px;">Dubai, UAE</div>
+          <div style="display: flex; justify-content: space-between; background: #F9FAFB; padding: 16px; border-radius: 12px;">
+            <div><div style="font-size: 12px; color: #667085; text-transform: uppercase; font-weight: 600;">Price</div><div style="font-size: 1.1rem; font-weight: 700; color: #101828;">$100</div></div>
+            <div style="text-align: right;"><div style="font-size: 12px; color: #667085; text-transform: uppercase; font-weight: 600;">Yield p.a.</div><div style="font-size: 1.1rem; font-weight: 700; color: #039855;">8.5%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="mock-card">
+        <div class="mock-card-img" style="background-image: url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop');"></div>
+        <div class="mock-card-body">
+          <h3 style="font-size: 1.25rem; margin: 0 0 8px; color: #101828; font-weight: 700;">Alpine Retreat</h3>
+          <div style="font-size: 14px; color: #475467; margin-bottom: 20px;">Zermatt, Switzerland</div>
+          <div style="display: flex; justify-content: space-between; background: #F9FAFB; padding: 16px; border-radius: 12px;">
+            <div><div style="font-size: 12px; color: #667085; text-transform: uppercase; font-weight: 600;">Price</div><div style="font-size: 1.1rem; font-weight: 700; color: #101828;">$200</div></div>
+            <div style="text-align: right;"><div style="font-size: 12px; color: #667085; text-transform: uppercase; font-weight: 600;">Yield p.a.</div><div style="font-size: 1.1rem; font-weight: 700; color: #039855;">11.0%</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>

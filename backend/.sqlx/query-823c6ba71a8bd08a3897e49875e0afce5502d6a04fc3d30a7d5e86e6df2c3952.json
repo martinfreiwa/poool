@@ -1,0 +1,80 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.user_id::text as id, u.email, \n                  a.traffic_source, a.audience_size, a.main_url, a.phone_number, a.company_name, a.created_at::text,\n                  COALESCE(up.first_name, '') as fn, COALESCE(up.last_name, '') as ln, a.status\n           FROM affiliates a\n           JOIN users u ON u.id = a.user_id\n           LEFT JOIN user_profiles up ON up.user_id = a.user_id\n           WHERE a.status = 'pending_approval' OR a.status = 'active'\n           ORDER BY a.created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "traffic_source",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "audience_size",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "main_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "phone_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "company_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "fn",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "ln",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "status",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null,
+      null,
+      null,
+      true
+    ]
+  },
+  "hash": "823c6ba71a8bd08a3897e49875e0afce5502d6a04fc3d30a7d5e86e6df2c3952"
+}

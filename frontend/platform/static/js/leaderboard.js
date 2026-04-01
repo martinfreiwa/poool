@@ -714,8 +714,8 @@
     var select = document.getElementById('lb-metric-select');
     if (select) select.value = metric;
 
-    // Update tab active state
-    var metricTabs = document.querySelectorAll('.lb-topbar-tab, .lb-tf-btn[data-metric]');
+    // Update tab active state globally but only for metric components
+    var metricTabs = document.querySelectorAll('.lb-topbar-tab[data-metric], .lb-tf-btn[data-metric]');
     metricTabs.forEach(function (t) {
       if (t.dataset.metric === currentMetric) {
         t.classList.add('active');

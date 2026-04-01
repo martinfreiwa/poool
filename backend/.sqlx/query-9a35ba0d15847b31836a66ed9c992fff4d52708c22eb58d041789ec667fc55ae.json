@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliate_referrals\n               SET status = 'first_investment_done', updated_at = NOW()\n               WHERE id = $1 AND status IN ('registered', 'kyc_approved', 'attributed')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9a35ba0d15847b31836a66ed9c992fff4d52708c22eb58d041789ec667fc55ae"
+}

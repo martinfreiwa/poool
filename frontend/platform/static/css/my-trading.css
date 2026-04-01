@@ -1,6 +1,7 @@
 /* ============================================================
    My Trading — Investor Dashboard
    Open Orders, Buy Interests, Trade History, P2P, Tax Export
+   Uses .sub-stats + .submissions-table from developer-submissions
    ============================================================ */
 
 :root {
@@ -59,28 +60,9 @@ body.my-trading-body {
     width: 100%;
 }
 
-/* === Header === */
-.myt__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 28px;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.myt__header-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.myt__title {
-    font-size: 32px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--myt-text-bright);
-    margin: 0;
+/* === Header — use ds-page-header from submissions === */
+.myt__content-wrapper .ds-page-header {
+    max-width: 1096px !important;
 }
 
 .myt__badge {
@@ -95,12 +77,10 @@ body.my-trading-body {
     background: var(--myt-blue-bg);
     border: 1px solid rgba(0,0,255,0.15);
     border-radius: 20px;
-}
-
-.myt__header-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    margin-left: 12px;
+    vertical-align: middle;
+    position: relative;
+    top: -2px;
 }
 
 .myt__action-btn {
@@ -138,147 +118,82 @@ body.my-trading-body {
     background: #0000cc;
 }
 
-/* === Summary Cards === */
-.myt__summary {
-    display: grid;
+
+/* === Summary Cards — Override sub-stats grid to 4 columns === */
+.myt-stats-row.sub-stats {
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 28px;
+    gap: 12px;
+    margin-bottom: 24px;
+    max-width: 1096px !important;
 }
 
-.myt__summary-card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 20px 22px;
-    background: var(--myt-surface);
-    border: 1px solid var(--myt-border);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}
-
-.myt__summary-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* Holographic p-icon inside sub-stat cards — prevent collapse */
+.myt-stats-row .p-icon {
     flex-shrink: 0;
 }
 
-.myt__summary-icon--blue { background: var(--myt-blue-bg); color: var(--myt-blue); }
-.myt__summary-icon--green { background: var(--myt-green-bg); color: var(--myt-green); }
-.myt__summary-icon--amber { background: var(--myt-amber-bg); color: var(--myt-amber); }
-.myt__summary-icon--purple { background: var(--myt-purple-bg); color: var(--myt-purple); }
 
-/* Glassmorphism vertical layout per holographic edition */
-.tpl-icon-item {
+/* === Card Header with integrated tabs (leaderboard pattern) === */
+.myt-table-card.submissions-table-container {
+    border-radius: 12px;
+    max-width: 1096px !important;
+    overflow: hidden;
+}
+
+.myt-card-header {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.5);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     gap: 16px;
-    padding: 24px 16px;
-    border-radius: 16px;
-    background: var(--myt-surface);
-    border: 1px solid var(--myt-border);
-    transition: all .35s cubic-bezier(.4,0,.2,1);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    cursor: pointer;
-}
-.tpl-icon-item:hover {
-    background: rgba(0,0,255,.02);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0,0,255,.04);
-}
-.tpl-icon-item:hover .p-icon {
-    transform: scale(1.05) translateZ(0);
-}
-.tpl-icon-item .icon-name {
-    font-family: 'TT Norms Pro', system-ui, sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--myt-text-sec);
-    text-align: center;
-    display: block;
-    line-height: 1.35;
-    transition: color .3s;
-}
-.tpl-icon-item .icon-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--myt-text-bright);
-    text-align: center;
-    display: block;
-    margin-top: 4px;
-}
-.tpl-icon-item:hover .icon-name {
-    color: #535862;
+    flex-wrap: wrap;
 }
 
-.myt__summary-content {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.myt__summary-label {
-    font-size: 12px;
-    color: var(--myt-text-sec);
-    font-weight: 500;
-}
-
-.myt__summary-value {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--myt-text-bright);
-    font-variant-numeric: tabular-nums;
-}
-
-/* === Tabs === */
-.myt__tabs {
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--myt-border);
-    margin-bottom: 0;
-}
-
-.myt__tab {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 14px 24px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--myt-text-sec);
-    background: none;
-    border: none;
-    cursor: pointer;
+.myt-card-title {
     font-family: var(--myt-font);
-    transition: color 0.2s;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475467;
     white-space: nowrap;
 }
 
-.myt__tab:hover {
-    color: var(--myt-text);
+.myt-card-tabs {
+    display: flex;
+    align-items: center;
+    gap: 24px;
 }
 
-.myt__tab.active {
-    color: var(--myt-text-bright);
-    font-weight: 600;
+.myt-card-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--myt-font);
+    font-size: 14px;
+    font-weight: 500;
+    color: #475467;
+    cursor: pointer;
+    padding: 4px 0;
+    border: none;
+    background: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
 }
 
-.myt__tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 24px;
-    right: 24px;
-    height: 2px;
-    background: var(--myt-blue);
-    border-radius: 1px;
+.myt-card-tab:hover {
+    color: var(--myt-blue);
+}
+
+.myt-card-tab.active {
+    color: var(--myt-blue);
+    font-weight: 700;
+    border-bottom-color: var(--myt-blue);
 }
 
 .myt__tab-count {
@@ -295,6 +210,11 @@ body.my-trading-body {
     color: var(--myt-text-sec);
 }
 
+.myt-card-tab.active .myt__tab-count {
+    background: var(--myt-blue-bg);
+    color: var(--myt-blue);
+}
+
 .myt__tab-count--alert {
     background: var(--myt-red);
     color: #fff;
@@ -309,49 +229,23 @@ body.my-trading-body {
     display: block;
 }
 
-/* === Card === */
-.myt__card {
-    background: var(--myt-surface);
-    border: 1px solid var(--myt-border);
-    border-radius: 0 0 12px 12px;
-    overflow: hidden;
-}
-
-/* === Table === */
-.myt__table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
+/* Table inside the card */
+.myt-table-card .submissions-table {
     font-variant-numeric: tabular-nums;
 }
 
-.myt__table th {
-    text-align: left;
-    padding: 12px 16px;
+.myt-table-card .submissions-table th {
     font-size: 11px;
-    font-weight: 500;
-    color: var(--myt-text-sec);
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    border-bottom: 1px solid var(--myt-border);
-    background: var(--myt-surface-el);
 }
 
-.myt__table td {
-    padding: 14px 16px;
-    color: var(--myt-text);
-    border-bottom: 1px solid rgba(0,0,0,0.04);
+/* Suppress green hover row background on empty states */
+.myt-table-card .submissions-table tbody tr:has(.ds-table-empty):hover {
+    background: transparent !important;
+    cursor: default;
 }
 
-.myt__table tr:hover td {
-    background: var(--myt-hover);
-}
 
-.myt__table tr:last-child td {
-    border-bottom: none;
-}
-
-/* Table cell helpers */
+/* === Table cell helpers === */
 .myt__side-buy { color: var(--myt-green); font-weight: 600; }
 .myt__side-sell { color: var(--myt-red); font-weight: 600; }
 
@@ -388,7 +282,7 @@ body.my-trading-body {
     background: rgba(220,38,38,0.15);
 }
 
-/* === Table Header (filters + summary) === */
+/* === Table Header (filters + summary) for trade history === */
 .myt__table-header {
     display: flex;
     align-items: center;
@@ -402,23 +296,7 @@ body.my-trading-body {
     gap: 10px;
 }
 
-.myt__select {
-    height: 36px;
-    padding: 0 28px 0 12px;
-    background: var(--myt-input-bg);
-    border: 1px solid var(--myt-input-border);
-    border-radius: 8px;
-    color: var(--myt-text);
-    font-family: var(--myt-font);
-    font-size: 13px;
-    appearance: none;
-    -webkit-appearance: none;
-    cursor: pointer;
-    outline: none;
-    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-}
+
 
 .myt__table-summary {
     font-size: 13px;
@@ -430,85 +308,35 @@ body.my-trading-body {
 .myt__pnl--positive { color: var(--myt-green); }
 .myt__pnl--negative { color: var(--myt-red); }
 
-/* === P2P Section === */
-.myt__p2p-section {
-    background: var(--myt-surface);
-    border: 1px solid var(--myt-border);
-    border-radius: 12px;
-    padding: 20px 24px;
+/* === Empty state inside table === */
+.myt__empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 64px 24px;
+    color: var(--myt-text-sec);
 }
 
-.myt__p2p-subtitle {
+.myt__empty-state svg {
+    opacity: 0.25;
+    margin-bottom: 4px;
+}
+
+.myt__empty-state h3 {
     font-size: 15px;
     font-weight: 600;
-    color: var(--myt-text-bright);
-    margin: 0 0 14px;
-}
-
-.myt__p2p-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    background: var(--myt-surface-el);
-    border: 1px solid var(--myt-border);
-    border-radius: 10px;
-    margin-bottom: 10px;
-    gap: 16px;
-}
-
-.myt__p2p-card:last-child { margin-bottom: 0; }
-
-.myt__p2p-info { flex: 1; }
-
-.myt__p2p-title {
-    font-size: 14px;
-    font-weight: 600;
     color: var(--myt-text);
-    margin-bottom: 3px;
+    margin: 0;
 }
 
-.myt__p2p-details {
-    font-size: 12px;
+.myt__empty-state p {
+    font-size: 13px;
     color: var(--myt-text-sec);
+    margin: 0;
 }
 
-.myt__p2p-details strong { color: var(--myt-text); }
-
-.myt__p2p-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.myt__p2p-accept {
-    padding: 7px 18px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #fff;
-    background: var(--myt-green);
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: var(--myt-font);
-    transition: opacity 0.2s;
-}
-
-.myt__p2p-accept:hover { opacity: 0.85; }
-
-.myt__p2p-decline {
-    padding: 7px 18px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--myt-text-sec);
-    background: var(--myt-hover);
-    border: 1px solid var(--myt-border);
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: var(--myt-font);
-    transition: all 0.2s;
-}
-
-.myt__p2p-decline:hover { color: var(--myt-red); border-color: rgba(220,38,38,0.2); }
 
 /* === Modal === */
 .myt__modal {
@@ -650,12 +478,12 @@ body.my-trading-body {
 /* === Responsive === */
 @media (max-width: 1200px) {
     .myt__main { margin-left: 0; padding: 24px; }
-    .myt__summary { grid-template-columns: repeat(2, 1fr); }
+    .myt-stats-row.sub-stats { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 768px) {
-    .myt__summary { grid-template-columns: 1fr; }
-    .myt__header { flex-direction: column; align-items: flex-start; }
-    .myt__tabs { overflow-x: auto; }
+    .myt-stats-row.sub-stats { grid-template-columns: 1fr; }
+    .myt-card-header { flex-direction: column; align-items: flex-start; }
+    .myt-card-tabs { overflow-x: auto; width: 100%; }
     .myt__table-header { flex-direction: column; gap: 10px; }
 }

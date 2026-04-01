@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO affiliate_policy_acceptances (affiliate_id, policy_name, policy_version, ip_address)\n               VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3ef8763949796400b1dc71bbd8ff0434517674327d678977afe714ce7aa4f88a"
+}

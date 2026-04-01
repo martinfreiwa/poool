@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliate_referrals\n               SET status = 'under_holdback',\n                   holdback_expires_at = NOW() + INTERVAL '30 days',\n                   qualifying_investment_id = (\n                       SELECT id FROM investments WHERE user_id = $1 AND status = 'active' ORDER BY created_at DESC LIMIT 1\n                   ),\n                   updated_at = NOW()\n               WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "16e1fb6ea3e066a081408eaff4012de222ae90df34d3961b459c83aa2a89cffa"
+}

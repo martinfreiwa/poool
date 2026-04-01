@@ -53,16 +53,8 @@
   opacity: 1;
 }
 
-.sub-stat__icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.sub-stats .p-icon {
   flex-shrink: 0;
-  background: var(--btn-primary-bg);
-  color: #03FF88;
 }
 
 .sub-stat__content {

@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO affiliates (\n            user_id, referral_code, status,\n            traffic_source, audience_size, main_url, phone_number, tax_id, company_name\n        )\n        VALUES ($1, $2, 'pending_approval', $3, $4, $5, $6, $7, $8)\n        ON CONFLICT (user_id) DO UPDATE SET \n            status = 'pending_approval',\n            traffic_source = EXCLUDED.traffic_source,\n            audience_size = EXCLUDED.audience_size,\n            main_url = EXCLUDED.main_url,\n            phone_number = EXCLUDED.phone_number,\n            tax_id = EXCLUDED.tax_id,\n            company_name = EXCLUDED.company_name\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Text",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "94974bb1bc45efff18863f9f4fd7bdcf081011d35424b54a9d6e3d88d2444943"
+}

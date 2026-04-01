@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE affiliates \n           SET status = 'terminated'\n           WHERE user_id = $1 AND status = 'pending_approval'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "58818028fd85f066f57b6fb009c8ea9a661b220b65aad9dd2b784cc07950847d"
+}
