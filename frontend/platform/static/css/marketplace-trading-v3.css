@@ -287,23 +287,22 @@ body.tv3-body {
 }
 
 .tv3-gallery-placeholder .tv3-loader-logo {
-    width: 65%;
-    max-width: 280px;
+    width: 64px;
     height: auto;
-    /* Removed static opacity and grayscale to make it vibrant blue */
+    opacity: 0.35;
+    filter: grayscale(1);
     animation: tv3-logo-pulse 2.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* On secondary thumbnails, the logo should fill the space proportionally */
+/* On secondary thumbnails, the logo should be smaller */
 .tv3-mosaic-thumb .tv3-loader-logo {
-    width: 65%;
-    max-width: 140px;
+    width: 32px;
 }
 
 @keyframes tv3-logo-pulse {
-    0% { transform: scale(0.95); opacity: 0.6; }
-    50% { transform: scale(1.05); opacity: 1; }
-    100% { transform: scale(0.95); opacity: 0.6; }
+    0% { transform: scale(0.95); opacity: 0.25; }
+    50% { transform: scale(1.05); opacity: 0.45; }
+    100% { transform: scale(0.95); opacity: 0.25; }
 }
 
 .tv3-mosaic img {
