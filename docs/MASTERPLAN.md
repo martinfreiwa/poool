@@ -7,7 +7,11 @@ Dieses Dokument analysiert die bestehende Systemarchitektur, deckt Limitationen 
 ---
 
 ## Inhaltsverzeichnis (Table of Contents)
-1. [Analyse der aktuellen Systemstruktur](#1-analyse-der-aktuellen-systemstruktur)
+
+> **Last Updated:** 2026-03-28 | **Chapters:** 0-22 | **Total:** ~10,350 lines
+
+0. [Stakeholder-Entscheidungen (2026-03-20)](#0-stakeholder-entscheidungen-2026-03-20)
+1. [Analyse der aktuellen Systemstruktur (Ist-Zustand)](#1-analyse-der-aktuellen-systemstruktur)
     - [1.7. Subsystem-Wechselwirkungen & Gesamtarchitektur](#17-subsystem-wechselwirkungen--gesamtarchitektur-ehrliche-expertenmeinung)
     - [1.8. Kritische Fragen (Security & Best-Practice Audit)](#18-kritische-fragen-die-sich-niemand-stellt-aber-stellen-muss)
     - [1.9. Connection Pool Auto-Scaling & 2-vs-3 Datenbanken](#19-connection-pool-auto-scaling--die-frage-warum-nicht-3-datenbanken)
@@ -15,27 +19,46 @@ Dieses Dokument analysiert die bestehende Systemarchitektur, deckt Limitationen 
     - [1.11. 2FA-Security-Architektur](#111-2fa-security-architektur-authentifizierung-für-trades--withdrawals)
     - [1.12. Financial & Smart Contract Testing Strategy](#112-financial--smart-contract-testing-strategy)
 2. [Die neue Markt-Architektur: Order Book & Trades](#2-die-neue-markt-architektur-order-book--trades)
-    - [2.1. Überblick: Sekundärmarkt](#21-überblick-wie-funktioniert-ein-sekundärmarkt)
-    - [2.2. Order-Typen](#22-order-typen)
-    - [2.3. Redis Orderbook-Architektur](#23-redis-orderbook-architektur-speed-layer)
-    - [2.4. Die Matching-Engine](#24-die-matching-engine-das-herzstück)
-    - [2.5. Settlement-Pipeline (ACID)](#25-settlement-pipeline-postgresql-acid)
-    - [2.6. Fee-Struktur](#26-fee-struktur-wie-poool-am-marketplace-verdient)
-    - [2.7. P2P / OTC Trades](#27-p2p--otc-trades-direkte-angebote)
-    - [2.8. Preisfindung & Candlestick-Charts](#28-preisfindung--candlestick-charts)
-    - [2.9. WebSocket Live-Updates](#29-websocket-live-updates)
-    - [2.10. Circuit Breaker, Konzentrationslimits & Großorder-Handling](#210-circuit-breaker-konzentrationslimits--großorder-handling)
-    - [2.11. On-Chain Settlement (ERC-3643)](#211-on-chain-settlement-erc-3643--smart-contract)
-    - [2.12. API-Endpunkte](#212-zusammenfassung-marketplace-api-endpunkte)
-    - [2.13. Order-Lifecycle & Anti-Manipulation](#213-order-lifecycle-sicherheitsregeln--anti-manipulation)
-    - [2.14. Regulatorische Compliance (OJK)](#214-regulatorische-compliance-ojk-indonesien)
+    - [2.1–2.9. Orderbook, Matching, Settlement, Fees, P2P, Charts, WebSocket](#21-überblick-wie-funktioniert-ein-sekundärmarkt)
+    - [2.10. Circuit Breaker & Großorder-Handling](#210-circuit-breaker-konzentrationslimits--großorder-handling)
+    - [2.11–2.14. On-Chain Settlement, API, Security, OJK Compliance](#211-on-chain-settlement-erc-3643--smart-contract)
 3. [Entwickler-Perspektiven & Tiefe Implementierungs-Guides](#3-entwickler-perspektiven--tiefe-implementierungs-guides)
-    - [3.1. Senior Rust / Backend Engineer (Trading Core & API)](#31-senior-rust--backend-engineer-trading-core--api)
-    - [3.2. Smart Contract / Web3 Security Engineer (On-Chain Settlement)](#32-smart-contract--web3-security-engineer-on-chain-settlement)
-    - [3.3. Database & DevOps Engineer (Daten, Backups & Infrastruktur)](#33-database--devops-engineer-daten-backups--infrastruktur)
-    - [3.4. Frontend / UI Engineer (Data Visualization & Vanilla Web)](#34-frontend--ui-engineer-data-visualization--vanilla-web)
+    - [3.1. Senior Rust / Backend Engineer](#31-senior-rust--backend-engineer-trading-core--api)
+    - [3.2. Smart Contract / Web3 Security Engineer](#32-smart-contract--web3-security-engineer-on-chain-settlement)
+    - [3.3. Database & DevOps Engineer](#33-database--devops-engineer-daten-backups--infrastruktur)
+    - [3.4. Frontend / UI Engineer](#34-frontend--ui-engineer-data-visualization--vanilla-web)
+    - [3.5. Marketplace Admin Dashboard](#35-marketplace-admin-dashboard-steuerung-überwachung--compliance)
 4. [Datenbank-Erweiterungen (PostgreSQL & Redis)](#4-datenbank-erweiterungen-postgresql--redis)
+    - [4.7. Daten-Integritäts-Invarianten](#47-daten-integritäts-invarianten-müssen-zu-jeder-zeit-gelten)
 5. [Benötigtes Entwickler-Team (Hiring Plan)](#5-benötigtes-entwickler-team-hiring-plan)
+6. [Implementierungsplan: Schritt-für-Schritt Roadmap](#6-implementierungsplan-schritt-für-schritt-roadmap)
+    - [6.1–6.9. Phase 0–7 (Infra → Backend → Engine → SC → Frontend → Admin → QA → Launch)](#61-phasen-übersicht)
+    - [6.10. Third-Party Accounts & Services](#610-third-party-accounts--services-checkliste-für-den-pm)
+7. [Extended Community Backlog (Post-M7 Vision)](#7-extended-community-backlog-post-m7-vision)
+
+**Extended Architecture (Chapters 18–22):**
+
+18. [Affiliate & Referral Subsystem](#18-affiliate--referral-subsystem-phase-1)
+    - [18.1–18.5. Master Rule, 5-Stage Funnel, 8-Tier Ladder, Disclosures, Treasury Payouts](#181-the-master-rule--document-architecture)
+    - [18.6. Database Schema (affiliates, commissions, disclosures)](#186-database-schema-additions-core-db)
+    - [18.7–18.10. Gaps, Risks, Frontend Pages, Backend Workflows](#187-der-blinde-fleck-was-im-masterplan-bisher-komplett-fehlt)
+19. [FI-System & Fiat Treasury (Extended Core)](#19-fi-system--fiat-treasury-extended-core)
+    - [19.1. Deposit Processing Engine (Webhooks, Fraud, State Machine)](#191-deposit-processing-engine-erweitert)
+    - [19.2. Withdrawal & Payout Engine (Limits, Velocity, 2FA)](#192-withdrawal--payout-engine-erweitert)
+    - [19.3. 🔴 Platform Fee Float→Decimal Fix (P1-FINANCIAL)](#193-platform-fee-calculation--critical-fix)
+    - [19.4. Treasury Reconciliation Worker (5 Invariants)](#194-treasury-reconciliation-worker-erweitert)
+20. [Core Admin Dashboard & Operations (Extended Core)](#20-core-admin-dashboard--operations-extended-core)
+    - [20.1. Admin Page Status Matrix](#201-core-management-pages-status-übersicht)
+    - [20.2. Missing Operational Tools (Jobs, Webhooks, Sessions, Email)](#202-fehlende-operational-tools)
+    - [20.3. DR & CI/CD Pipeline](#203-disaster-recovery--security-logging-erweitert)
+    - [20.4. Security Hardening (PII Encryption, RBAC, CSRF)](#204-security-hardening-aus-securitymd-audit)
+21. [Smart Contract & Blockchain Integration](#21-smart-contract--blockchain-integration-phase-3--phase-7--phase-8-zusammenführung)
+    - [21.1. Foundry Project & ERC-3643 Contracts](#211-smart-contract-entwicklung-solidity--foundry)
+    - [21.2. Rust ↔ Blockchain Integration (Alloy, KMS, Indexer, Settlement)](#212-backend--blockchain-integration-rust--alloy)
+    - [21.3–21.6. IPFS, Admin Pages, Frontend Updates, SC Audit](#213-ipfs--document-permanence)
+22. [Banking API & 4-Eyes Settlement](#22-banking-api--4-eyes-settlement-extended-financial-core)
+    - [22.1. OCBC Direct Banking Integration](#221-ocbc-direct-banking-integration)
+    - [22.2. 4-Eyes Settlement Protocol](#222-4-eyes-settlement-protocol)
 
 ---
 
@@ -203,7 +226,7 @@ Aktuell ist POOOL als reiner **Primärmarkt** (Over-The-Counter / B2C) konzipier
 | **Min. Instanzen** | 0 (Cold Start möglich) | Mindestens 1 Instanz immer aktiv (kein Cold Start bei Trades) | 🟡 `--min-instances=1` setzen |
 | **Max. Instanzen** | Cloud Run Default | Max. 5 Instanzen (skaliert automatisch bei >100 gleichzeitigen Nutzern) | 🟡 `--max-instances=5` setzen |
 | **Smart Contracts** | Nicht vorhanden | ERC-3643 auf Base L2 (siehe Smart Contract Masterplan) | 🔴 Komplette Neuentwicklung |
-| **Banking-API (Plaid)** | Nicht integriert | Automatische Fiat-Erkennung für Settlement | 🔴 Plaid-Account + Backend-Integration |
+| **Direct Bank API (OCBC)** | Nicht integriert | Automatische Fiat-Erkennung für Settlement (Virtual Accounts / MT940) | 🔴 OCBC API-Account + Webhook-Integration |
 
 #### Bottleneck-Analyse (Wo bricht das System zuerst?)
 
@@ -9712,7 +9735,7 @@ DevOps (W1) → Rust Backend (W2) → Frontend (W6) → QA (W10)
 | 7 | **Basescan** | Contract Verification | Phase 3 | Web3 Dev | Kostenlos | [basescan.org](https://basescan.org) |
 | 8 | **Pinata** | IPFS für Token-Metadata | Phase 3 | Web3 Dev | Free / $20/Mo | [pinata.cloud](https://pinata.cloud) |
 | 9 | **SC Auditor** | Security Audit ERC-3643 | Phase 3 ⚠️ | PM | $5k-$30k | Trail of Bits, OpenZeppelin |
-| 10 | **Plaid / Token.io** | Banking API (Deposit-Matching) | Phase 5 | PM | Pay-per-tx | [plaid.com](https://plaid.com) |
+| 10 | **OCBC Business API** | Direct Bank API (Deposit-Matching) | Phase 5 | PM | Per-Bank-Agreement | [ocbc.com](https://ocbc.com) |
 | 11 | **SendGrid** | E-Mails (2FA, Trades) | Phase 1 | DevOps | Free / $15/Mo | [sendgrid.com](https://sendgrid.com) |
 | 12 | **Cloud Armor** | WAF / DDoS-Schutz | Phase 5 | DevOps | ~$10/Mo | ✅ GCP Add-On |
 
@@ -9804,4 +9827,548 @@ BLOCKER:
 
 ---
 *Dieser Masterplan bildet das unerschütterliche technische Fundament für die Transformation von POOOL in einen echten, lebendigen Finanzmarktplatz.*
+
+## 18. Affiliate & Referral Subsystem (Phase 1)
+
+**Architecture Note:** The POOOL Affiliate Program is a strictly controlled, single-level referral program. It is explicitly **not** an MLM, not a sales network, and strictly prohibits investment advice. The technical architecture acts as an absolute gatekeeper (Zero-Trust approach) and enforces the legal requirements ("Compliance by Code") without compromise.
+
+### 18.1 The "Master Rule" & Document Architecture
+* **Referral Only:** Affiliates may only share approved general information and route users to official POOOL pages. They must not advise, recommend specific assets, guarantee returns, or handle payments.
+* **3-Layer Architecture:** 
+  1. *Blueprint (18 Points):* Source of Truth for the architecture.
+  2. *8 Main Documents:* Full legal and operational rulebooks (Terms, Code of Conduct, Payout Policy, Tax SOP, etc.).
+  3. *8 Website Text Sets:* Derived, user-friendly UI/UX copy (Landing Pages, Onboarding, Disclosures).
+
+### 18.2 The 5-Stage Qualification Funnel
+Affiliate commissions never flow automatically. A referral must survive the following strict, ACID-compliant state machine:
+1. **Attributed (Tracked):** User clicks on `?ref=XYZ`, HttpOnly-cookie (30 days TTL) is set. On registration, `referred_by_id` is saved in the DB. (`status = 'attributed'`)
+2. **KYC & 1st Investment:** User passes KYC (Didit.me) and completes their first qualified, fully paid investment.
+3. **Under Holdback:** An automated 30-day timer starts. Commission is provisional only. (`status = 'under_holdback'`)
+4. **Qualified:** The 30 days have expired. A system check confirms: No chargebacks, no refunds, no fraud flags. (`status = 'qualified'`)
+5. **Payable:** Finance has classified the affiliate (ID Individual, ID Entity, Foreign) and explicitly marked them as `tax_ready`. Only now can the payout batch pick it up. (`status = 'payable'`)
+
+### 18.3 The 8-Tier Performance Ladder
+The system uses an 8-step commission ladder (0.50% to 4.50%): Access, Plus, Pro, Elite, Premium, Platinum, Signature, Sovereign.
+* **Rolling 12-Month Lookback:** A nightly Rust worker aggregates the affiliate's *own qualified referral volume* over the last 365 days and automatically updates the tier and base fee (`commission_rate_bps`). No MLM downline volumes are ever counted!
+
+### 18.4 Dynamic Disclosure Placements (UX)
+To guarantee legal protection while minimizing friction, the frontend adapts dynamically:
+* **Referral Landing Page:** Immediately shows a disclaimer ("You are viewing POOOL through a referral path...").
+* **Registration:** Differentiates copy for direct vs. referred users.
+* **Pre-Investment Checkout:** Hard system gate.
+  * *Direct Customer:* Must accept **3 checkboxes** (Official Info, Independent Decision, Official Docs).
+  * *Referral Customer:* Must accept **6 checkboxes** (Includes "The referrer is not my advisor" and "The referrer may receive a commission").
+  * The backend rejects the `POST /checkout` request if the submitted disclosures do not match the user's classification.
+
+### 18.5 Treasury Payout Mechanics (The Invariant)
+To prevent a "Reconciliation Crash" (money appearing out of nowhere), the system uses a dedicated `POOOL_Treasury_Wallet`. Commissions are transferred atomically during the payout batch: `Treasury Wallet (-$100) ➔ Affiliate Cash Wallet (+$100)`. The system-wide invariant `SUM(wallets) = deposits - withdrawals` remains intact.
+
+### 18.6 Database Schema Additions (Core DB)
+The affiliate system MUST reside in the Core DB, as payouts are tightly coupled to the wallet infrastructure.
+
+```sql
+-- Affiliate Profile & Compliance Gates
+CREATE TABLE affiliates (
+    user_id UUID PRIMARY KEY REFERENCES users(id),
+    referral_code VARCHAR(20) UNIQUE NOT NULL,
+    current_tier VARCHAR(20) DEFAULT 'Access',
+    commission_rate_bps INTEGER DEFAULT 50, -- 0.50%
+    tax_recipient_class VARCHAR(30) CHECK (tax_recipient_class IN ('id_individual', 'id_entity', 'foreign', 'pending')),
+    is_tax_ready BOOLEAN DEFAULT false,
+    status VARCHAR(20) DEFAULT 'pending_approval' CHECK (status IN ('pending_onboarding', 'pending_approval', 'active', 'suspended', 'terminated')),
+    approved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Referral Tracking State Machine
+CREATE TABLE affiliate_referrals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    affiliate_id UUID REFERENCES affiliates(user_id),
+    referred_user_id UUID UNIQUE REFERENCES users(id),
+    qualifying_investment_id UUID REFERENCES investments(id),
+    status VARCHAR(30) DEFAULT 'attributed' CHECK (status IN ('attributed', 'registered', 'kyc_approved', 'first_investment_done', 'under_holdback', 'qualified', 'disqualified', 'reversed')),
+    holdback_expires_at TIMESTAMPTZ,
+    disqualifying_reason TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Provisional & Payable Commissions
+CREATE TABLE affiliate_commissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    referral_id UUID REFERENCES affiliate_referrals(id),
+    affiliate_id UUID REFERENCES affiliates(user_id),
+    source_order_id UUID NOT NULL,
+    provisional_amount_cents BIGINT NOT NULL,
+    status VARCHAR(20) DEFAULT 'provisionally_tracked' CHECK (status IN ('provisionally_tracked', 'on_hold', 'payable', 'paid', 'frozen', 'clawback_pending', 'clawed_back')),
+    payout_batch_id UUID,
+    tier_at_execution VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Immutable Legal Acceptance Log
+CREATE TABLE affiliate_policy_acceptances (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    affiliate_id UUID REFERENCES affiliates(user_id),
+    policy_name VARCHAR(50) NOT NULL,
+    policy_version VARCHAR(20) NOT NULL,
+    ip_address VARCHAR(45),
+    accepted_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Checkout Disclosure Log (Proof of Independent Decision)
+CREATE TABLE investment_disclosures_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    order_id UUID NOT NULL,
+    is_referral_user BOOLEAN NOT NULL,
+    agreed_to_general BOOLEAN NOT NULL,
+    agreed_to_referral BOOLEAN, -- NULL for direct users
+    ip_address VARCHAR(45),
+    agreed_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 18.7 Der blinde Fleck: Was im Masterplan bisher komplett fehlt
+Der aktuelle Masterplan (Phasen 0 bis 17) baut eine Trading-Plattform, Smart Contracts, Community und Primary Issuance. Das Affiliate-Programm fehlt in der aktuellen technischen Roadmap bisher zu 100 %.
+Es gibt im Backend noch keine Tabellen für Affiliates, keine Cronjobs für das 30-Tage-Holdback, keine Steuer-Klassifizierung und im Frontend keine der zwingend geforderten Disclosure-Logiken im Checkout. Dieses Programm ist ein massives eigenes Sub-System, das tief in die Core-Finanzlogik eingreift.
+Wir müssen den Masterplan zwingend um Phase 18 (Affiliate Core & Tracking) und Phase 19 (Affiliate Admin, Tax & Compliance) erweitern.
+
+### 18.8 Schwachstellen- & Risiko-Analyse (Vulnerabilities)
+Die rechtlichen Dokumente (Tax SOP, Payout Policy, etc.) sind ein Meisterwerk der Risikoabsicherung. Wenn wir sie jedoch technisch umsetzen, entstehen fünf gefährliche Flaschenhälse, die wir architektonisch absichern müssen:
+
+| Risiko / Schwachstelle | Beschreibung & Technische Lösung |
+|---|---|
+| **🔴 1. Der Reconciliation-Crash** | **Gefahr:** Der aktuelle Masterplan hat eine eiserne Invariante: `SUM(wallets) = deposits - withdrawals - purchases`. Wenn wir nun Affiliate-Provisionen in die Cash-Wallets der User auszahlen, entsteht dort Geld. Die Invariante wird sofort brechen und der System-Alarm losgehen.<br>**Lösung:** Die Finanz-Invariante muss umgeschrieben werden. Wir benötigen ein dediziertes `POOOL_Treasury_Wallet`. Provisionen müssen atomar vom Treasury in das Affiliate-Wallet verschoben werden: `+ affiliate_payouts - treasury_fees`. |
+| **🔴 2. Race Conditions (Holdback vs. Storno)** | **Gefahr:** Der Holdback beträgt 30 Tage. In Phase 17 (RegTech) gibt es aber ein 48h-Stornorecht (Cooling-off). Was passiert, wenn ein Investor storniert, aber der Cronjob die Provision auf Payable setzt?<br>**Lösung:** Strikte ACID-Transaktionen auf Datenbankebene. Der Status-Wechsel auf Payable darf nicht blind nach 30 Tagen erfolgen, sondern muss per `SELECT ... FOR UPDATE` prüfen, ob das Investment wirklich noch aktiv ist. |
+| **🔴 3. Attribution Loss (Tracking-Abbruch)** | **Gefahr:** Die Policy sagt: "Kein System-Record = keine Provision". Wenn ein User mobil im Instagram-Browser auf den Link klickt, sich aber erst drei Tage später am Desktop registriert, reißt die Cookie-Kette.<br>**Lösung:** Neben robusten First-Party-Cookies (30 Tage TTL) brauchen wir im Registrierungs-Formular ein optionales Feld für einen manuellen Referral Code als Fallback. |
+| **🟡 4. Datenbank-Kollaps beim 8-Tier-System** | **Gefahr:** Das Tier (0.50% bis 4.50%) basiert auf dem Rolling 12-Month Lookback des qualifizierten Volumens. Wenn das bei jedem Page-Load oder Trade live per SQL aggregiert wird, bricht die Datenbank bei Skalierung zusammen.<br>**Lösung:** Wir brauchen einen täglichen asynchronen Rust-Worker (Cronjob), der diese Einstufung nachts berechnet und das neue Tier hart in die User-Tabelle (`current_tier`, `current_fee_bps`) schreibt. |
+| **🟡 5. UX-Friction im Checkout** | **Gefahr:** Die Disclosure Library fordert, dass "Referred Users" beim Pre-Investment 6 Checkboxen (statt 3) abhaken müssen. Das kann die Conversion zerstören.<br>**Lösung:** Das UI muss extrem smart gebaut werden (z. B. "Expandable Disclosure Panels"). Das Backend muss via API sofort mitteilen, ob der User ein Direct- oder Referral-Kunde ist, damit das Frontend nicht flackert. |
+
+### 18.9 Vollständiger Bericht: Zu erstellende Seiten (Frontend & UI)
+Um dieses System zum Leben zu erwecken, müssen wir UI-Elemente auf drei verschiedenen Ebenen bauen. Das ist die Roadmap für das Frontend-Team:
+
+#### A. Public & Customer Flow (Für die Investoren)
+* **Public Affiliate Info Page:** Erklärt das Programm, das 8-Tier-System und verlinkt zu den rechtlichen Dokumenten (Klare Message: "Referral only. Not advice.").
+* **Referral Landing Page (Dynamic):** Eine Landingpage, die bei `?ref=XYZ` zwingend ein Banner anzeigt: "You are viewing POOOL through a referral path..."
+* **Registration Flow (Update):** Dynamisches Einblenden des Registration-Disclaimers, falls ein Referral-Cookie oder Code aktiv ist.
+* **Pre-Investment Checkout (Update):** Dynamische Checkboxen vor dem ersten Kaufabschluss:
+  * *Direct User:* 3 Checkboxen.
+  * *Referral User:* 6 Checkboxen (inkl. "Referrer is not an advisor").
+* **Customer Complaint Form (`/report-affiliate`):** Öffentliches Formular im Help-Center zur Meldung von unethischem Affiliate-Verhalten (inkl. Screenshot-Upload).
+
+#### B. Affiliate Portal (Für die Affiliates, getrennt vom normalen Portfolio)
+* **Onboarding Wizard (Die 7 Gates):** Profil-Daten ➔ KYC-Check (Didit.me) ➔ Tax & Payout Setup ➔ Legal Acceptance (5 Policies per Checkbox) ➔ Mini-Training (Slides) ➔ Pflicht-Quiz ➔ "Pending Admin Approval" Screen. *(Der Referral-Link wird erst nach Approval freigeschaltet!)*
+* **Affiliate Dashboard (Overview):**
+  * Anzeige des Referral-Links.
+  * Tacho für das aktuelle Tier (z. B. "Pro - 1.00%") und ein Fortschrittsbalken zum nächsten Tier.
+  * KPIs: Clicks, Pending Referrals, Provisional Earnings.
+* **Referrals & Payouts (Trichter-Ansicht):** Gnadenlos transparente Listen: Tracked ➔ Under Review (30-Tage Holdback) ➔ Qualified ➔ Payable ➔ Paid (Kunden anonymisiert, z. B. "User A***9").
+* **Marketing Materials Hub:**
+  * Download-Bereich für genehmigte Banner, Texte (versioniert).
+  * Upload-Formular, um eigene Kampagnen/Bilder zur Freigabe durch das POOOL-Team einzureichen.
+* **Settings & Tax Profile:** Maske für Steuernummer und Rechtsform. *(Wichtig: Bei Änderungen friert das System zukünftige Payouts automatisch ein, bis Finance sie neu prüft).*
+
+#### C. Admin Dashboard (Für POOOL Operations, Finance & Compliance)
+*(Erweiterung von Phase 6B des Masterplans)*
+* **Affiliate Applications Desk:** Liste neuer Bewerber. Admin sieht KYC und Quiz-Ergebnisse ➔ Button: Approve (generiert Link) oder Reject.
+* **Finance & Tax Release Board (Tax SOP):**
+  * Ansicht aller Payable Provisionen.
+  * Dropdown zur Klassifizierung: Indonesian Individual, Entity, Foreign.
+  * *Hard-Blocker:* Ohne den Klick auf *Mark Tax-Ready* kann das Geld nicht ausgezahlt werden. Button: *Release Payout Batch*.
+* **Compliance & Case Management (Complaint SOP):** Posteingang für Complaints und System-Alerts. Massive Eskalations-Buttons: Freeze Link, Freeze Payouts, Clawback Commission, Suspend Account.
+
+#### D. Legacy Cleanup (Phase 19.18)
+* Die alten "Rewards" Funktionalitäten (z. B. `rewards.html` und veraltete Backend-Routen) müssen restlos gelöscht werden, um Verwirrung zu vermeiden.
+* **WICHTIG:** Dieser Schritt erfolgt *erst dann*, wenn das komplett neue `affiliate-` System zu 100% visuell abgenommen und technisch funktional ist. Wir bauen es vollständig parallel als `affiliate` auf, tracken es gegen, und reißen das alte Haus erst ganz am Schluss ab.
+* **Materials Approval Board:** Prüfung von eingereichten Custom-Materialien (Approve / Reject / Mark as Withdrawn).
+* **Fraud Visualizer:** Ein Tool zur Erkennung von "Referral Rings" (A wirbt B, B wirbt A) durch IP- und Namensabgleich.
+
+### 18.10 Vollständiger Bericht: Zu erstellende Backend-Abläufe (Workflows)
+Das Rust-Backend muss um das Modul `src/affiliate/` und um folgende "Maschinen" (Asynchrone Tokio-Tasks) erweitert werden:
+
+* **Die Attribution Middleware:** Fängt Klicks auf Affiliate-Links ab, setzt ein sicheres HttpOnly-Cookie und loggt den Click. Beim POST auf `/api/auth/register` wird die `affiliate_id` fest in die users-Tabelle des Neukunden geschrieben (`referred_by_id`).
+* **Die State-Machine (Qualification & Holdback Worker):** Ein täglicher Cronjob. Er sucht alle Tracked Referrals.
+  * Hat der User KYC? Ja. Hat er das erste Investment bezahlt? Ja. ➔ Timer für 30 Tage startet.
+  * Sind 30 Tage um und es gab keinen Refund? ➔ Status-Wechsel in der Datenbank auf `Qualified`.
+* **Die Tier Calculation Engine:** Ein nächtlicher Worker. Er summiert das Qualified Volume der letzten 365 Tage für jeden aktiven Affiliate. Überschreitet das Volumen eine Schwelle, wird das Tier und die Commission Rate in der Datenbank geupdatet.
+* **Der Reversal & Clawback Interceptor:** Wenn im Trading-Core oder beim Primary Issuance ein Kauf rückabgewickelt oder per Chargeback storniert wird, feuert das Backend ein Event. Der Interceptor fängt das Event auf, sucht die dazugehörige Affiliate-Provision und ändert den Status sofort auf `Disqualified` (oder triggert einen Clawback, falls schon ausgezahlt).
+* **Audit-Log Interceptor (Beweissicherung):** Jeder Klick auf "Ich akzeptiere" bei den 5 Legal-Policies im Onboarding muss fälschungssicher (Timestamp, IP, Version der Policy) im Backend geloggt werden, da "der Vertrag allein nicht reicht" (Punkt 16).
+
+---
+
+## 19. FI-System & Fiat Treasury (Extended Core)
+
+> **Referenz-Docs:** `FINANCIAL_FLOW.md`, `SECURITY.md`, `SMART_CONTRACT_IMPLEMENTATION.md` §3, `OPERATIONS.md`
+> **Zustand Stand 2026-03-28:** Basis-Deposit/Withdrawal vorhanden, aber wesentliche Lücken bei Webhooks, Velocity-Limits, Float-Math-Safety und Reconciliation-Automation.
+
+### 19.1 Deposit Processing Engine (Erweitert)
+
+#### 19.1.1 Deposit State Machine (Erweitert)
+Die aktuelle Implementation kennt nur `pending` → `paid` / `cancelled`. Die vollständige State Machine gemäß `FINANCIAL_FLOW.md` erfordert:
+
+```
+[*] → Requested     (User submits deposit intent via UI)
+Requested → Pending  (External proof of payment or webhook received)
+Pending → Verified   (Admin confirms OR automated webhook auto-match)
+Verified → Credited  (ACID transaction: wallet + ledger + audit)
+Pending → Rejected   (Admin cancels or fraud detected)
+Rejected → Refund_Initiated (If funds already received, trigger outbound)
+```
+
+- **Strikte Regel:** Der `Requested` Status darf momentan übersprungen werden (MVP), MUSS aber vor dem Banking-API-Launch implementiert werden.
+
+#### 19.1.2 Webhook Auto-Confirmation (Stripe & OCBC)
+Aktuell wird jede Einzahlung nur manuell vom Admin bestätigt. Für Skalierung MÜSSEN Webhook-Handler existieren:
+
+- **Stripe Webhook (`POST /webhooks/stripe`):**
+  - Verifikation via `Stripe-Signature` Header (HMAC SHA256)
+  - Event-Typen: `payment_intent.succeeded`, `charge.refunded`
+  - Idempotenz: `provider_reference` als Unique Key in `deposit_requests`
+  - Bei Match: `confirm_deposit()` automatisch ausführen (dieselbe ACID-Transaktion)
+
+- **OCBC Virtual Account Webhook (`POST /webhooks/ocbc`):**
+  - mTLS-Zertifikat-Validierung (Production Only)
+  - Matching via Referenz-Code (`POOOL-REF-XXXXX`)
+  - Status-Update: `FUNDS_RECEIVED_SYSTEM` → Admin-Queue für 4-Eyes Approval
+  - Siehe Kapitel 22 (Banking API) für Details
+
+#### 19.1.3 Deposit Fraud Detection
+- **Velocity Check:** Max 5 Deposits pro Tag, max $50.000 pro Woche
+- **Duplicate Detection:** Gleicher Betrag + gleiche Währung innerhalb 60 Sekunden → Auto-Flag
+- **AML Threshold:** Einzahlungen > $10.000 → Automatischer Compliance-Alert + `audit_logs` Eintrag
+
+### 19.2 Withdrawal & Payout Engine (Erweitert)
+
+#### 19.2.1 Withdrawal Safety Architecture
+**Aktueller Stand:** `backend/src/admin/withdrawals.rs` implementiert Approve/Reject. Es fehlen:
+
+- **Daily Caps:** $10.000 pro User pro Tag. Konfigurierbar via `platform_settings`.
+- **Velocity Check:** Mehr als 3 Withdrawals in 24h → Automatische Sperre, Admin-Review erforderlich
+- **Cooldown für neue Accounts:** Erste 72h nach KYC-Verifikation: Max $1.000 Auszahlung
+- **2FA Step-Up:** Jeder Withdrawal > $500 erfordert TOTP-Bestätigung (vgl. Masterplan §1.11)
+- **Hot-Wallet vs. Cold-Storage Limits:** Platform Fee Wallet darf nie mehr als $50.000 halten → Automatischer Sweep zu Cold-Storage
+
+#### 19.2.2 Withdrawal Processing Flow
+```
+User Request → Balance Lock → Pending Ledger TX → Admin Review Queue
+    ↓                                                       ↓
+Rejected → Balance Unlock → Ledger TX: 'failed'     Approved → Disbursement API
+                                                       ↓
+                                                    TX: 'completed' → Audit Log
+```
+
+### 19.3 Platform Fee Calculation — CRITICAL FIX
+
+> **🔴 P1-FINANCIAL BUG:** Die aktuelle Fee-Berechnung in `payments/service.rs:461` nutzt `f64` Floating-Point:
+> ```rust
+> let fee_cents = ((subtotal_cents as f64) * (platform_fee_pct / 100.0)).ceil() as i64;
+> ```
+> Dies verletzt die eiserne "No Floats for Money"-Regel und kann zu Rundungsfehlern führen.
+
+**Fix (MUSS sofort umgesetzt werden):**
+```rust
+use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
+
+let fee_pct = Decimal::from_str(&platform_fee_pct_str).unwrap_or(Decimal::ZERO);
+let subtotal = Decimal::from(subtotal_cents);
+let fee_dec = (subtotal * fee_pct) / Decimal::from(100);
+let fee_cents = fee_dec.ceil().to_i64().unwrap_or(0);
+```
+
+### 19.4 Treasury Reconciliation Worker (Erweitert)
+
+#### 19.4.1 Invariant-Prüfungen (Automatisiert)
+Ein `tokio::spawn` Background Worker (Interval: 6h) prüft die folgenden Invarianten aus §4.7:
+
+| # | Prüfung | SQL Query Skizze | Aktion bei Verletzung |
+|---|---------|-------------------|------------------------|
+| 1 | Cash Balance | `SUM(wallets.balance_cents) = SUM(deposits) - SUM(withdrawals) - SUM(purchases) + SUM(affiliate_payouts)` | 🔴 Trading stop |
+| 2 | Token Balance | `SUM(investments.tokens_owned) = asset.tokens_total` per Asset | 🔴 Asset-specific stop |
+| 3 | No Negative | `MIN(balance_cents) >= 0` across all wallets | 🔴 Immediate alarm |
+| 4 | Fee Reconciliation | `SUM(fee transactions) = platform_fee_wallet.balance` | 🟡 Warning |
+| 5 | Affiliate Treasury | `SUM(affiliate_commissions WHERE status='paid') <= treasury_wallet.debits` | 🔴 Freeze payouts |
+
+- **Ergebnis-Speicherung:** Jeder Run wird in `reconciliation_reports` (Migration 055) gespeichert
+- **Alert-Kanal:** Bei 🔴: E-Mail an `finance@poool.com` + Sentry P0 Alert + Admin Dashboard Banner
+
+#### 19.4.2 Dispute Resolution Engine
+- **Tabelle:** `payment_disputes` (Migration 012 bereits vorhanden)
+- **Status-Flow:** `opened` → `under_review` → `resolved` / `escalated`
+- **Evidence-Tracking:** Upload von Screenshots/PDFs via GCS
+- **Admin-UI:** Dedizierter Tab in `treasury.html` mit Dispute-Liste und Resolution-Buttons
+
+### 19.5 Dividend Precision — CRITICAL FIX
+
+> **Aktueller Stand:** Die neue Phase-9 Distribution Engine in `backend/src/dividends/service.rs` nutzt korrekt `u128` Integer-Math mit Cumulative-Rounding. Die Legacy-Funktion `api_admin_dividends_calculate` in `treasury.rs` nutzt jedoch auch `u128` — dies ist korrekt.
+> **Bestätigt:** Beide Dividend-Pfade verwenden Integer-Arithmetik ✅
+
+---
+
+## 20. Core Admin Dashboard & Operations (Extended Core)
+
+> **Referenz-Docs:** `ADMIN_FEATURES.md`, `SECURITY.md`, `OPERATIONS.md`
+> **Zustand Stand 2026-03-28:** Kern-Admin (Users, KYC, Deposits, Withdrawals, Treasury, Orders, Assets, Support, Settings, Approvals) ist implementiert. Es fehlen: Background Job Monitoring, Webhook Logs, Session Management, CI/CD Pipeline.
+
+### 20.1 Core Management Pages (Status-Übersicht)
+
+| Seite | Backend API | Frontend UI | Status |
+|-------|-------------|-------------|--------|
+| `users.html` | ✅ `admin/users.rs` (36KB) | ✅ Vorhanden | ✅ Funktional |
+| `user-details.html` | ✅ Via users API | ✅ Vorhanden | ✅ Funktional |
+| `kyc.html` | ✅ `admin/kyc.rs` | ✅ Vorhanden | ✅ Funktional |
+| `deposits.html` | ✅ `admin/deposits.rs` | ✅ Vorhanden | ✅ Funktional |
+| `withdrawals.html` | ✅ `admin/withdrawals.rs` | ✅ Vorhanden | ✅ Funktional |
+| `treasury.html` | ✅ `admin/treasury.rs` | ✅ Vorhanden | ✅ Funktional |
+| `orders.html` | ✅ `admin/orders.rs` | ✅ Vorhanden | ✅ Funktional |
+| `assets.html` | ✅ `admin/assets.rs` | ✅ Vorhanden | ✅ Funktional |
+| `support.html` | ✅ `admin/support.rs` | ✅ Vorhanden | ✅ Funktional |
+| `settings.html` | ✅ `admin/settings.rs` | ✅ Vorhanden | ✅ Funktional |
+| `approvals.html` | ✅ `admin/approvals.rs` | ✅ Vorhanden | ✅ Funktional |
+| `reports.html` | ✅ `admin/reports.rs` | ✅ Vorhanden | ✅ Funktional |
+| `rewards.html` | ✅ `admin/rewards.rs` | ✅ Vorhanden | ✅ Funktional |
+
+### 20.2 Fehlende Operational Tools
+
+#### 20.2.1 Background Job Monitoring
+- **Problem:** Kein Visibility in laufende Background-Tasks (Reconciliation, Badge Workers, XP-Aggregation)
+- **Lösung:** `background_job_runs` Tabelle + Admin API `GET /api/admin/system/jobs` + Dashboard-Widget
+- **Felder:** `job_name`, `started_at`, `completed_at`, `status`, `rows_affected`, `error_message`
+
+#### 20.2.2 Webhook Event Logging
+- **Problem:** Stripe/OCBC Webhook-Events werden nicht geloggt → kein Debugging bei Payment-Issues
+- **Lösung:** `webhook_events` Tabelle: `provider`, `event_type`, `payload` (JSONB), `status`, `processed_at`, `error`
+- **Admin UI:** Tab in Settings oder eigene Seite `/admin/webhooks.html`
+
+#### 20.2.3 Session Management (Admin)
+- **Problem:** Bei Kompromittierung eines User-Accounts kann der Admin keine aktiven Sessions sehen/revoken
+- **Lösung gemäß `SECURITY.md` §4:** `GET /api/admin/users/:id/sessions`, `DELETE /api/admin/users/:id/sessions` (Revoke All)
+- **Implementation:** Query `user_sessions` Tabelle, zeige IP, User-Agent, Created-At, Last-Active
+
+#### 20.2.4 Email Campaign Tooling
+- **Aktuell:** `email_campaigns` und `email_system` Tabellen existieren (Migrationen 008), aber kein Admin-UI
+- **Benötigt:** CRUD für E-Mail-Templates, Audience-Segmentierung, Scheduling, Delivery-Stats
+
+### 20.3 Disaster Recovery & Security Logging (Erweitert)
+
+#### 20.3.1 Immutable Audit Logs
+- ✅ **Implementiert:** `audit_logs` Tabelle mit `actor_user_id`, `action`, `entity_type`, `entity_id`, `new_state`
+- **FEHLT:** `client_ip` Column in `audit_logs` (gemäß `SECURITY.md` §3 erforderlich)
+- **FEHLT:** `previous_state` Column für State-Vector-Vergleich
+
+#### 20.3.2 CI/CD Pipeline
+- **FEHLT:** Keine GitHub Actions Workflow-Datei existiert
+- **Benötigt:** `.github/workflows/deploy.yml` mit: `cargo check` → `cargo test` → `cargo audit` → Docker Build → Cloud Run Deploy
+- **Environments:** `staging` (auto-deploy on `main`), `production` (manual trigger only)
+
+#### 20.3.3 Automated PITR Backup
+- **FEHLT:** Kein Cloud Scheduler Job für automatische GCS-Exports
+- **Benötigt:** Täglicher Export via `gcloud sql export sql` + Retention Policy (30 Tage)
+
+### 20.4 Security Hardening (Aus SECURITY.md Audit)
+
+#### 20.4.1 PII Encryption
+- **🔴 P1:** `tax_id` in `user_profiles` ist Klartext gespeichert → MUSS AES-256 verschlüsselt werden
+- **Lösung:** Rust `aes-gcm` Crate, Schlüssel via `$ENCRYPTION_KEY` env var, transparente Encrypt/Decrypt in der Service-Schicht
+
+#### 20.4.2 RBAC Granularität
+- **Aktuell:** 4 effektive Rollen (`super_admin`, `admin`, `developer`, `investor`)
+- **Laut SECURITY.md:** 7 Rollen (`super_admin`, `admin`, `finance`, `compliance`, `support`, `developer`, `investor`)
+- **Aktion:** `finance`, `compliance`, `support` Rollen in `admin_roles` Tabelle anlegen + Permission-Guard erweitern
+
+#### 20.4.3 CSRF Middleware
+- **FEHLT:** Kein expliziter CSRF-Schutz trotz Empfehlung in SECURITY.md
+- **Lösung:** Custom Axum Middleware die `Origin`/`Referer` Header bei POST-Requests gegen `BASE_URL` validiert
+
+---
+
+## 21. Smart Contract & Blockchain Integration (Phase 3 + Phase 7 + Phase 8 Zusammenführung)
+
+> **Referenz-Doc:** `SMART_CONTRACT_IMPLEMENTATION.md` (397 Zeilen, das vollständigste Einzeldokument)
+> **Zustand Stand 2026-03-28:** DB-Tabellen für Blockchain existieren (Migrationen 058-061). Admin-APIs für Blockchain-Verwaltung existieren (49KB `admin/blockchain.rs`). Es fehlt: Jeglicher Solidity-Code, jegliche `alloy-rs` Integration, GCP KMS Wallet-Erstellung, Event-Indexer, IPFS.
+
+### 21.1 Smart Contract Entwicklung (Solidity / Foundry)
+
+#### 21.1.1 Foundry-Projekt Setup
+- **Verzeichnis:** `contracts/` (neues Top-Level-Verzeichnis)
+- **Tools:** Foundry (Forge, Cast, Anvil), OpenZeppelin Contracts, T-REX (ERC-3643)
+- **Setup-Script:** `foundryup && forge init contracts/`
+
+#### 21.1.2 ERC-3643 Token Implementation
+Gemäß `SMART_CONTRACT_IMPLEMENTATION.md` §3 + §5:
+
+```
+contracts/
+├── src/
+│   ├── IdentityRegistry.sol      ← Zentrale KYC-Whitelist (alle Assets referenzieren diese)
+│   ├── PooolToken.sol            ← ERC-3643 Security Token (Compliance + Transfer Restrictions)
+│   ├── AssetFactory.sol          ← Factory (EIP-1167 Clones) für neue Asset-Contracts
+│   ├── compliance/
+│   │   ├── ManualApprovalModule.sol  ← Admin kann Transfers genehmigen/blockieren
+│   │   └── CountryRestriction.sol   ← Länderbeschränkungen für regulierte Jurisdiktionen
+│   └── DividendDistributor.sol   ← Optional: On-Chain USDC Dividend Claims (Phase 2)
+├── test/
+│   ├── IdentityRegistry.t.sol
+│   ├── PooolToken.t.sol
+│   ├── AssetFactory.t.sol
+│   └── invariants/
+│       └── TokenInvariants.t.sol ← Fuzz Tests (10.000+ Runs)
+├── script/
+│   └── Deploy.s.sol              ← Deployment Script für Base Sepolia / Mainnet
+└── foundry.toml
+```
+
+#### 21.1.3 Sicherheits-Anforderungen (Aus §11)
+- **Access Control:** Alle Admin-Funktionen (`pause`, `forceTransfer`, `freeze`) per `onlyRole(ADMIN_ROLE)` geschützt
+- **Reentrancy Guard:** OpenZeppelin `ReentrancyGuard` auf allen Token-Transfer-Funktionen
+- **Integer Safety:** Solidity 0.8+ mit built-in Overflow/Underflow-Checks
+- **Proxy Pattern:** TransparentUpgradeableProxy für Upgrade-Fähigkeit (NICHT UUPS — zu riskant)
+- **Fuzz Testing:** `forge test --fuzz-runs 10000` MUSS vor jedem Deploy bestehen
+
+### 21.2 Backend ↔ Blockchain Integration (Rust / Alloy)
+
+#### 21.2.1 Crate-Abhängigkeiten
+```toml
+# Cargo.toml Ergänzungen
+alloy = { version = "0.x", features = ["full"] }          # Blockchain-Interaktion
+gcp_auth = "0.x"                                           # Google Cloud KMS Auth
+```
+
+#### 21.2.2 Custodial Wallet Service (`backend/src/blockchain/custody.rs`)
+Gemäß `SMART_CONTRACT_IMPLEMENTATION.md` §4:
+
+- **Wallet-Erstellung bei Signup:** Nach erfolgreicher Registrierung generiert der Backend-Service automatisch ein secp256k1 Schlüsselpaar via Google Cloud KMS
+- **Key-Storage:** Privater Schlüssel verlässt NIEMALS GCP KMS — alle Signaturen über die KMS-API
+- **User-Wallet-Tabelle:** `user_wallets` (Migration 058 vorhanden): `user_id`, `wallet_address`, `kms_key_id`
+- **Idempotenz:** `ON CONFLICT (user_id) DO NOTHING` — jeder User bekommt genau 1 Wallet
+
+#### 21.2.3 Event Indexer (`backend/src/blockchain/indexer.rs`)
+Gemäß `SMART_CONTRACT_IMPLEMENTATION.md` §6:
+
+- **Architektur:** `tokio::spawn` Background-Task, Dauerschleife mit 10-Sekunden-Intervall
+- **Funktion:** Pollt die Base L2 RPC nach `Transfer`-Events der POOOL Asset-Contracts
+- **DB-Update:** Synchronisiert `onchain_balances` (Migration 059) mit dem On-Chain Zustand
+- **Regel:** Blockchain ist Source-of-Truth, PostgreSQL ist Read-Cache für schnelles Frontend-Rendering
+- **Replay:** Bei Desynchronisation: `DELETE FROM onchain_balances WHERE asset_id = $1` → Full Rescan ab Block 0
+
+#### 21.2.4 Settlement Worker (`backend/src/blockchain/settlement.rs`)
+- **Trigger:** Nach 4-Eyes Admin-Approval (siehe Kapitel 22)
+- **Ablauf:** Treasury-Wallet nimmt den KMS-Schlüssel → signiert die Transaktion → broadcastet an Base L2
+- **Retry:** Bei RPC-Fehler automatisch 3x Retry mit exponential Backoff
+- **DB-Update:** Transaction Hash wird in `orders.blockchain_tx_hash` gespeichert
+
+### 21.3 IPFS & Document Permanence
+
+Gemäß `SMART_CONTRACT_IMPLEMENTATION.md` §9:
+
+- **Provider:** Pinata.cloud (Free Tier: Gigabytes an PDFs)
+- **Upload-Flow:** Admin lädt SPV-Dokument hoch → Backend pinnt es auf IPFS via Pinata API → IPFS CID wird in `assets.ipfs_cid` gespeichert
+- **Smart Contract Metadata URI:** Zeigt auf `ipfs://{CID}` (NICHT auf GCS!)
+- **Warum:** Bei POOOL-Bankrott bleiben die Dokumente über IPFS weltweit verfügbar (Bankruptcy Remoteness, §9)
+
+### 21.4 Fehlende Admin-Seiten (Aus §14)
+
+| Seite | Zweck | UI-Elemente | Referenz |
+|-------|-------|-------------|----------|
+| `pending-settlements.html` | 4-Augen Settlement Dashboard | Tabelle: Nutzer, Betrag, Ref-Code, Bank-Status, "Genehmigen"-Button (nur aktiv bei Match) | §14.A |
+| `blockchain-treasury.html` | Treasury & Gas Dashboard | KPIs: Wallet-Guthaben, Gas-Kosten, Contract-Liste, EMERGENCY PAUSE Button | §14.A |
+| `asset-tokenize.html` | Tokenize & Go Live Flow | Pre-Flight Checklist (IPFS ✅, Supply ✅, Gas ✅), Deploy-Button, Ergebnis-Anzeige | §14.A |
+
+### 21.5 Frontend-Erweiterungen für Investoren (Aus §14)
+
+| Seite | Neue Elemente | Referenz |
+|-------|---------------|----------|
+| `portfolio.html` | "🔗 Eigentumsbeleg (Blockchain)" Link zu Basescan pro Asset | §14.B |
+| `wallet.html` | Info-Alert: "Ihre Anteile sind als Security Tokens auf der Base-Blockchain gesichert" | §14.B |
+| `checkout.html` | Referenzcode `POOOL-REF-XXXXX` prominent anzeigen bei Banküberweisung | §14.B |
+| `payment-success.html` | Basescan TX-Link als Eigentumsbeleg | §14.B |
+| `property.html` | Info-Box: "Contract: 0xABC..." + Token-Supply-Balken | §14.B |
+| `marketplace.html` | "🔗 On-Chain verified" Badge auf Property-Cards | §14.B |
+| `transactions.html` | Blockchain TX Hash Spalte (gekürzt, klickbar) | §14.B |
+
+### 21.6 Smart Contract Audit (Extern)
+- **Zeitpunkt:** MUSS in Woche 4 beauftragt werden (4-6 Wochen Vorlauf!)
+- **Empfohlene Firmen:** Hacken, Cyfrin, Trail of Bits, OpenZeppelin (je nach Budget)
+- **Kosten:** $5.000 - $30.000 (einmalig)
+- **Ergebnis:** Audit-Report wird öffentlich auf der Website verlinkt (Vertrauenssignal für Investoren)
+
+---
+
+## 22. Banking API & 4-Eyes Settlement (Extended Financial Core)
+
+> **Referenz-Doc:** `SMART_CONTRACT_IMPLEMENTATION.md` §3 (Banking Integration Strategy), §8 (Settlement Flow)
+> **Entscheidung:** Direkte OCBC Business API (KEIN Xendit/Midtrans Gateway)
+
+### 22.1 OCBC Direct Banking Integration
+
+#### 22.1.1 Warum OCBC Direkt?
+- **Keine Gateway-Fees:** Milliarden-Volumen-Szenario ohne Prozentsatz-Abgaben
+- **Institutional Trust:** High-Value Real Estate Transfers direkt auf Tier-1 Bank
+- **Full Reconciliation:** Direkter Webhook-Zugang zum Treasury-Konto
+
+#### 22.1.2 Technische Implementation
+```
+Rust Backend ←→ OCBC REST API (mTLS)
+    │
+    ├── Virtual Account Issuance (Deposit)
+    │     POST /v1/virtual-accounts → User erhält individuelle VA-Nummer
+    │     Webhook: /webhooks/ocbc/deposit → Automatischer Match
+    │
+    ├── Disbursement (Withdrawal/Payout)
+    │     POST /v1/disbursements → GIRO/FAST/BI-FAST Auszahlung
+    │     Webhook: /webhooks/ocbc/disbursement → Status-Update
+    │
+    └── Statement Reconciliation
+          GET /v1/statements → Täglicher MT940/CAMT.053 Abgleich
+```
+
+#### 22.1.3 Sicherheitsanforderungen
+- **mTLS-Zertifikate:** Signing-Certificate im GCP Secret Manager
+- **Request Signing:** HMAC-SHA256 für alle ausgehenden API-Calls
+- **IP Whitelisting:** OCBC erlaubt nur registrierte Cloud Run IPs
+- **Idempotency Key:** Jede Disbursement-Request enthält einen UUID-Key
+
+### 22.2 4-Eyes Settlement Protocol
+
+Gemäß `SMART_CONTRACT_IMPLEMENTATION.md` §8 (Anti-Fraud Settlement):
+
+#### 22.2.1 Ablauf
+```
+Step 1: Order placed → Status: PENDING_PAYMENT → Ref-Code generiert (POOOL-REF-XXXX)
+Step 2: OCBC Webhook fires → System flags: FUNDS_RECEIVED_SYSTEM
+Step 3: Admin 1 sieht Match → Klickt "Approve Settlement"
+        ⚠️ NUR möglich wenn Step 2 (System-Match) BEREITS erfolgt ist!
+Step 4: System executes → Blockchain TX → Token-Transfer auf Base L2
+Step 5: TX-Hash wird in DB gespeichert → User sieht Basescan-Link
+```
+
+#### 22.2.2 Edge Case: Manueller Match
+Wenn der User den Referenzcode vergisst oder falsch eingibt:
+- Admin A erstellt einen **manuellen Match** (mit Begründung)
+- Admin B **bestätigt** den manuellen Match (Second Eyes)
+- Erst DANN wird Step 4 freigeschaltet
+- **Audit:** Beide Admin-IDs + IPs + Timestamps werden in `audit_logs` protokolliert
+
+#### 22.2.3 DB-Erweiterung
+```sql
+ALTER TABLE orders ADD COLUMN settlement_status VARCHAR(30) DEFAULT 'none'
+  CHECK (settlement_status IN ('none', 'funds_received', 'admin_1_approved', 'admin_2_approved', 'executed', 'failed'));
+ALTER TABLE orders ADD COLUMN settlement_approved_by UUID REFERENCES users(id);
+ALTER TABLE orders ADD COLUMN settlement_second_approved_by UUID REFERENCES users(id);
+ALTER TABLE orders ADD COLUMN blockchain_tx_hash VARCHAR(66);
+```
+
+### 22.3 Benötigte Third-Party Accounts
+
+| Service | Zweck | Kosten | Phase |
+|---------|-------|--------|-------|
+| OCBC Business API | Virtual Accounts + Disbursement | Per Bank-Agreement | Phase 22 |
+| Alchemy (Base RPC) | Blockchain-Interaktion | Free / $49/mo | Phase 21 |
+| Pinata (IPFS) | SPV-Dokument-Permanenz | Free / $20/mo | Phase 21 |
+| GCP Cloud KMS | Custodial Wallet Keys | ~$0.03/Key/mo | Phase 21 |
+| SC Audit Firm | Smart Contract Security Review | $5k-$30k (einmalig) | Phase 21 |
+
+---
 

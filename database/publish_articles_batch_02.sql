@@ -492,7 +492,7 @@ For Bali specifically, it solves the exact problems that have historically kept 
 <hr />
 <p><strong>Tags:</strong> real estate tokenization, tokenized real estate Bali, what is real estate tokenization, fractional property Bali, blockchain real estate Indonesia, RWA investment Bali, NFT property certificate, OJK sandbox Indonesia</p>$html_what_is_real_estate_tokenization_bali$,
     'What Is Real Estate Tokenization? Bali Explained Simply | POOOL',
-    'Real estate tokenization explained simply: how digital tokens represent property ownership, how SPVs and smart contracts work, and why Bali investors are leading the shift.',
+    'Tokenization explained: how digital tokens represent ownership, how SPVs and smart contracts work, and why Bali investors lead the shift.',
     '11111111-1111-1111-1111-111111111111',
     (SELECT id FROM blog_categories WHERE slug = 'tokenization'),
     '{"real estate tokenization", "blockchain real estate", "RWA Bali", "NFT property", "fractional property Indonesia", "tokenized assets"}',
@@ -723,7 +723,7 @@ Calm, family-friendly, and increasingly popular with older expats and long-stay 
 <hr />
 <p><strong>Tags:</strong> passive income Bali property, Bali villa rental yield 2026, how much can you earn Bali property, Bali real estate ROI, rental income Bali villa, best rental yield Bali, Bali property investment returns, fractional Bali investment income</p>$html_passive_income_bali_property_2026$,
     'Bali Property Passive Income 2026: Realistic Yield Breakdown | POOOL',
-    'How much can you earn from Bali real estate? Net yields by location, real income calculations, and how fractional investing via POOOL delivers the same returns from Rp 150,000.',
+    'How much can you earn from Bali real estate? Net yields, real income calculations, and how fractional investing via POOOL delivers the same returns.',
     '11111111-1111-1111-1111-111111111111',
     (SELECT id FROM blog_categories WHERE slug = 'market-insights'),
     '{"passive income Bali", "Bali rental yield", "Bali property ROI", "Bali villa rental income", "Bali investment returns 2026"}',

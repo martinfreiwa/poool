@@ -88,6 +88,77 @@ pub async fn get_community_feed(
     Ok(rows)
 }
 
+pub async fn get_announcements(
+    pool: &PgPool,
+    category: Option<String>,
+    limit: i64,
+) -> Result<Vec<crate::community::models::AnnouncementDisplay>, AppError> {
+    let limit = limit.clamp(1, 50);
+
+    let query_str = if category.is_some() && category.as_deref() != Some("") {
+        r#"
+        SELECT p.id, u.display_name as author_name, u.avatar_url as author_avatar, 
+               ac.category, p.content_sanitized, p.content, p.image_urls, 
+               p.reaction_count, p.comment_count, p.is_pinned, p.created_at
+        FROM posts p
+        JOIN announcement_categories ac ON ac.post_id = p.id
+        LEFT JOIN user_profiles u ON u.user_id = p.user_id
+        WHERE p.is_hidden = false AND ac.category = $1
+        ORDER BY p.is_pinned DESC, p.created_at DESC
+        LIMIT $2
+        "#
+    } else {
+        r#"
+        SELECT p.id, u.display_name as author_name, u.avatar_url as author_avatar, 
+               ac.category, p.content_sanitized, p.content, p.image_urls, 
+               p.reaction_count, p.comment_count, p.is_pinned, p.created_at
+        FROM posts p
+        JOIN announcement_categories ac ON ac.post_id = p.id
+        LEFT JOIN user_profiles u ON u.user_id = p.user_id
+        WHERE p.is_hidden = false
+        ORDER BY p.is_pinned DESC, p.created_at DESC
+        LIMIT $2
+        "#
+    };
+
+    use sqlx::Row;
+    let rows = if let Some(cat) = category {
+        if cat.is_empty() {
+             sqlx::query(query_str).bind("").bind(limit).fetch_all(pool).await?
+        } else {
+             sqlx::query(query_str).bind(cat).bind(limit).fetch_all(pool).await?
+        }
+    } else {
+        sqlx::query(query_str).bind("").bind(limit).fetch_all(pool).await?
+    };
+
+    let mut results = Vec::new();
+    for row in rows {
+        let content_sanitized: Option<String> = row.get("content_sanitized");
+        let content: String = row.get("content");
+        let image_urls: Option<serde_json::Value> = row.try_get("image_urls").unwrap_or(None);
+        let parsed_images = match image_urls {
+            Some(v) => serde_json::from_value(v).unwrap_or_default(),
+            None => vec![],
+        };
+        
+        results.push(crate::community::models::AnnouncementDisplay {
+            id: row.get("id"),
+            author_name: row.try_get("author_name").unwrap_or_else(|_| "POOOL Official".into()),
+            author_avatar: row.try_get("author_avatar").ok().flatten(),
+            category: row.get("category"),
+            content: content_sanitized.unwrap_or(content),
+            image_urls: parsed_images,
+            reaction_count: row.get("reaction_count"),
+            comment_count: row.get("comment_count"),
+            is_pinned: row.get("is_pinned"),
+            created_at: row.get("created_at"),
+        });
+    }
+
+    Ok(results)
+}
+
 /// Admin creates an announcement.
 pub async fn create_announcement(
     pool: &PgPool,

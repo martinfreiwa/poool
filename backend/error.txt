@@ -1,0 +1,144 @@
+    Checking poool-backend v0.1.0 (/Users/martin/Projects/poool/backend)
+warning: unused import: `Html`
+   --> src/marketplace/routes.rs:290:26
+    |
+290 |     use axum::response::{Html, Redirect};
+    |                          ^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `sqlx::PgPool`
+ --> src/rewards/workers.rs:1:5
+  |
+1 | use sqlx::PgPool;
+  |     ^^^^^^^^^^^^
+
+warning: unused import: `std::time::Duration`
+ --> src/rewards/workers.rs:2:5
+  |
+2 | use std::time::Duration;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: variable does not need to be mutable
+   --> src/assets/routes.rs:290:9
+    |
+290 |     let mut similar_display: Vec<PropertyDisplayData> = similar_assets
+    |         ----^^^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+error[E0308]: mismatched types
+    --> src/rewards/service.rs:1179:24
+     |
+1179 |             .unwrap_or(false);
+     |              --------- ^^^^^ expected `Option<bool>`, found `bool`
+     |              |
+     |              arguments to this method are incorrect
+     |
+     = note: expected enum `std::option::Option<bool>`
+                found type `bool`
+help: the return type of this call is `bool` due to the type of the argument passed
+    --> src/rewards/service.rs:1172:38
+     |
+1172 |               let order_active: bool = sqlx::query_scalar!(
+     |  ______________________________________^
+1173 | |                 "SELECT status IN ('completed', 'approved') FROM orders WHERE id = $1 LIMIT 1",
+1174 | |                 commission.source_order_id
+...    |
+1178 | |             .unwrap_or(None)
+1179 | |             .unwrap_or(false);
+     | |________________________-----^
+     |                          |
+     |                          this argument influences the return type of `unwrap_or`
+note: method defined here
+    --> /rustc/4a4ef493e3a1488c6e321570238084b38948f6db/library/core/src/option.rs:1038:17
+help: try wrapping the expression in `Some`
+     |
+1179 |             .unwrap_or(Some(false));
+     |                        +++++     +
+
+error[E0308]: mismatched types
+    --> src/rewards/service.rs:1172:38
+     |
+1172 |               let order_active: bool = sqlx::query_scalar!(
+     |  _______________________________----___^
+     | |                               |
+     | |                               expected due to this
+1173 | |                 "SELECT status IN ('completed', 'approved') FROM orders WHERE id = $1 LIMIT 1",
+1174 | |                 commission.source_order_id
+...    |
+1178 | |             .unwrap_or(None)
+1179 | |             .unwrap_or(false);
+     | |_____________________________^ expected `bool`, found `Option<bool>`
+     |
+     = note: expected type `bool`
+                found enum `std::option::Option<bool>`
+help: consider using `Option::expect` to unwrap the `std::option::Option<bool>` value, panicking if the value is an `Option::None`
+     |
+1179 |             .unwrap_or(false).expect("REASON");
+     |                              +++++++++++++++++
+
+warning: unused import: `redis::AsyncCommands`
+   --> src/community/user_bridge.rs:168:21
+    |
+168 |                 use redis::AsyncCommands;
+    |                     ^^^^^^^^^^^^^^^^^^^^
+
+warning: value assigned to `is_completed` is never read
+  --> src/community/challenges.rs:96:13
+   |
+96 |             is_completed = true;
+   |             ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `land_sqm`
+   --> src/cart/routes.rs:597:13
+    |
+597 |         let land_sqm: Option<f64> = row.get("land_size_sqm");
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_land_sqm`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `item_count`
+   --> src/cart/routes.rs:994:9
+    |
+994 |     let item_count = rows.len();
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_item_count`
+
+warning: unused variable: `core_pool`
+  --> src/community/background.rs:18:42
+   |
+18 | async fn check_velocity(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+   |                                          ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_core_pool`
+
+warning: unused variable: `only_following_user_id`
+   --> src/community/routes.rs:280:9
+    |
+280 |     let only_following_user_id: Option<Uuid> = None; // not constrained by following
+    |         ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_only_following_user_id`
+
+warning: unused variable: `user`
+    --> src/community/routes.rs:2116:9
+     |
+2116 |     let user = middleware::get_current_user(&jar, &state.db).await;
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_user`
+
+warning: unused variable: `q`
+    --> src/community/routes.rs:3018:26
+     |
+3018 |     axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+     |                          ^ help: if this is intentional, prefix it with an underscore: `_q`
+
+warning: unused variable: `ip_address`
+   --> src/payments/routes.rs:434:9
+    |
+434 |     let ip_address = parts
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ip_address`
+
+For more information about this error, try `rustc --explain E0308`.
+warning: `poool-backend` (bin "poool-backend") generated 13 warnings
+error: could not compile `poool-backend` (bin "poool-backend") due to 2 previous errors; 13 warnings emitted

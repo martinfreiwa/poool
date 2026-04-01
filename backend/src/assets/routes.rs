@@ -287,7 +287,7 @@ pub async fn page_property(
         d.update_fee(platform_fee_pct);
     }
     
-    let mut similar_display: Vec<PropertyDisplayData> = similar_assets
+    let similar_display: Vec<PropertyDisplayData> = similar_assets
         .iter()
         .map(|a| {
             let mut d = PropertyDisplayData::from_asset(a);

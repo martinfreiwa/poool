@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+window.initCommunityAnnouncements = function() {
     const annContainer = document.getElementById('community-announcements-container');
     const filtersContainer = document.getElementById('ann-category-filters');
     if (!annContainer || !filtersContainer) return;
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const readMore = footerEl.querySelector('.ann-read-more');
                 if (readMore) {
                     readMore.addEventListener('click', () => {
-                        const feedTab = document.querySelector('[data-tab=community-feed-tab]');
+                        const feedTab = document.querySelector('.community-tab-btn[data-tab=community-feed-tab]');
                         if (feedTab) switchCommunityTab(feedTab);
                     });
                 }
@@ -162,4 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial load
     loadAnnouncements();
+};
+
+document.addEventListener('DOMContentLoaded', window.initCommunityAnnouncements);
+document.body.addEventListener('htmx:afterSwap', (e) => {
+    if (e.target.id === 'community-content-area') window.initCommunityAnnouncements();
 });

@@ -1,0 +1,618 @@
+{% with title="Partner Syndicate Application", extra_css=['cards-template', 'forms-template', 'affiliate-promo', 'affiliate-onboarding'], extra_js=['affiliate-onboarding'] %}{% include "components/head.html" %}{% endwith %}
+<body class="app-body fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="app-wrapper">
+    <aside class="app-sidebar">
+      {% include 'components/sidebar.html' %}
+    </aside>
+
+    <!-- Main Content -->
+    <main class="app-content">
+      <div class="onboarding-container">
+
+        <!-- Header -->
+        <header class="onboarding-header">
+          <div class="promo-hero-badge">
+            <img src="/static/images/Logo%20Pool.svg" alt="POOOL" class="onboarding-logo" />
+            POOOL PARTNER SYNDICATE
+          </div>
+          <h1 class="promo-hero-title onboarding-title">
+            Application & <span class="accent">Onboarding</span>
+          </h1>
+          <p class="promo-hero-subtitle onboarding-subtitle">
+            Complete the 5-step qualification process to access high-ticket institutional assets. The compliance exam requires a 100% pass score.
+          </p>
+        </header>
+
+        <!-- Wizard Stepper -->
+        <div id="wizard-stepper" class="wizard-stepper ds-card holo-card">
+           <div class="stepper-progress-bar">
+              <div id="stepper-fill" class="stepper-fill"></div>
+           </div>
+           <div class="stepper-steps">
+              <div class="step-item active" data-step="1">
+                 <div class="step-circle">
+                   <span class="step-number">1</span>
+                   <svg class="step-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                 </div>
+                 <span class="step-label">Profile</span>
+              </div>
+              <div class="step-item" data-step="2">
+                 <div class="step-circle">
+                   <span class="step-number">2</span>
+                   <svg class="step-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                 </div>
+                 <span class="step-label">Identity</span>
+              </div>
+              <div class="step-item" data-step="3">
+                 <div class="step-circle">
+                   <span class="step-number">3</span>
+                   <svg class="step-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                 </div>
+                 <span class="step-label">Tax Setup</span>
+              </div>
+              <div class="step-item" data-step="4">
+                 <div class="step-circle">
+                   <span class="step-number">4</span>
+                   <svg class="step-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                 </div>
+                 <span class="step-label">Agreements</span>
+              </div>
+              <div class="step-item" data-step="5">
+                 <div class="step-circle">
+                   <span class="step-number">5</span>
+                   <svg class="step-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                 </div>
+                 <span class="step-label">Compliance Exam</span>
+              </div>
+           </div>
+        </div>
+
+        <!-- Wizard Content Area -->
+        <div class="wizard-content ds-card holo-card">
+
+          <!-- ═══ STEP 1: Profile ═══ -->
+          <div class="wizard-step" id="step-1" style="display: block;">
+            <div class="wizard-step-header">
+              <h2 class="wizard-step-title">Partner Profile</h2>
+              <p class="wizard-step-desc">Tell us about your audience and traffic sources.</p>
+            </div>
+
+            <form id="profile-form" class="wizard-form">
+              <div class="ds-form-group">
+                <label class="ds-label" for="traffic-source">Primary Traffic Source</label>
+                <select id="traffic-source" name="traffic_source" class="ds-input" required>
+                  <option value="" disabled selected>Select an option...</option>
+                  <option value="newsletter">Financial Newsletter / Substack</option>
+                  <option value="youtube">YouTube / Video Content</option>
+                  <option value="twitter">X / Twitter Community</option>
+                  <option value="wealth">Private Wealth / Advisory</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div class="ds-form-group">
+                <label class="ds-label" for="audience-size">Audience Size</label>
+                <select id="audience-size" name="audience_size" class="ds-input" required>
+                  <option value="" disabled selected>Select audience size...</option>
+                  <option value="under5k">&lt; 5,000</option>
+                  <option value="5k_50k">5,000 – 50,000</option>
+                  <option value="over50k">&gt; 50,000</option>
+                </select>
+              </div>
+
+              <div class="ds-form-group">
+                <label class="ds-label" for="main-url">Main URL or Social Profile</label>
+                <input id="main-url" name="main_url" type="url" class="ds-input" placeholder="https://" required />
+              </div>
+
+              <div class="ds-form-group">
+                <label class="ds-label" for="phone-number">Phone Number</label>
+                <input id="phone-number" name="phone_number" type="tel" class="ds-input" placeholder="+1 (555) 000-0000" required />
+                <p style="font-size: 13px; color: var(--text-tertiary, #A4A7AE); margin-top: 6px; margin-bottom: 0;">In case our team has any questions about your application.</p>
+              </div>
+
+              <div class="wizard-actions wizard-actions--end">
+                <button type="button" class="ds-btn ds-btn--primary" onclick="nextStep(2)">Save &amp; Continue</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- ═══ STEP 2: Identity ═══ -->
+          <div class="wizard-step" id="step-2" style="display: none;">
+            <div class="wizard-step-header">
+              <div class="p-icon p-style-blue wizard-step-icon">
+                <div class="p-bg p-bg-1"></div><div class="p-bg p-bg-2"></div>
+                <div class="p-front">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+              </div>
+              <h2 class="wizard-step-title">Identity Verification</h2>
+              <p class="wizard-step-desc">Institutional compliance requires an active KYC status.</p>
+            </div>
+
+            <div class="wizard-kyc-panel">
+              <p class="wizard-kyc-info">You must complete the standard platform identity verification to receive commission payouts.</p>
+
+              <!-- KYC status is checked dynamically via JS against /api/kyc/status -->
+              <div id="kyc-status-display" class="wizard-kyc-status">
+                <div id="kyc-verified" class="wizard-kyc-verified" style="display: none;">
+                  <img src="/static/images/check-verified-02.svg" class="wizard-kyc-icon wizard-kyc-icon--green" alt="" />
+                  <span class="wizard-kyc-label wizard-kyc-label--green">Identity Verified</span>
+                </div>
+                <div id="kyc-pending" class="wizard-kyc-pending">
+                  <span class="wizard-kyc-label wizard-kyc-label--red">Identity Verification Required</span>
+                  <a href="/kyc" class="ds-btn ds-btn--outline wizard-kyc-btn">Start KYC</a>
+                </div>
+              </div>
+
+              <div class="wizard-actions">
+                <button type="button" class="ds-btn ds-btn--ghost" onclick="prevStep(1)">Back</button>
+                <button type="button" class="ds-btn ds-btn--primary" onclick="nextStep(3)">Continue</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ STEP 3: Tax ═══ -->
+          <div class="wizard-step" id="step-3" style="display: none;">
+            <div class="wizard-step-header">
+              <h2 class="wizard-step-title">Tax Information</h2>
+              <p class="wizard-step-desc">Required for legal commission payouts.</p>
+            </div>
+
+            <form id="tax-form" class="wizard-form">
+              <div class="ds-form-group">
+                <label class="ds-label" for="tax-id">Tax ID Number / VAT ID</label>
+                <input id="tax-id" name="tax_id" type="text" class="ds-input" placeholder="e.g. DE123456789" required />
+              </div>
+
+              <div class="ds-form-group">
+                <label class="ds-label" for="company-name">Legal Company Name (Optional)</label>
+                <input id="company-name" name="company_name" type="text" class="ds-input" placeholder="If invoicing as a business" />
+              </div>
+
+              <div class="wizard-notice-box">
+                <strong>Notice:</strong> All commission payouts are subject to a 30-day provisional holdback. A valid invoice/tax document may be generated automatically.
+              </div>
+
+              <div class="wizard-actions">
+                 <button type="button" class="ds-btn ds-btn--ghost" onclick="prevStep(2)">Back</button>
+                 <button type="button" class="ds-btn ds-btn--primary" onclick="nextStep(4)">Save &amp; Continue</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- ═══ STEP 4: Legal Agreements ═══ -->
+          <div class="wizard-step" id="step-4" style="display: none;">
+            <div class="wizard-step-header">
+              <h2 class="wizard-step-title">Legal Agreements</h2>
+              <p class="wizard-step-desc">The POOOL Affiliate Program is supported by five core documents. Review each document, then confirm acceptance below.</p>
+            </div>
+
+            <!-- Policy Tabs -->
+            <div class="legal-tabs">
+              <button type="button" class="legal-tab active" data-target="tab-terms" onclick="switchLegalTab(this)">
+                Terms &amp; Conditions
+              </button>
+              <button type="button" class="legal-tab" data-target="tab-conduct" onclick="switchLegalTab(this)">
+                Code of Conduct
+              </button>
+              <button type="button" class="legal-tab" data-target="tab-payout" onclick="switchLegalTab(this)">
+                Payout Policy
+              </button>
+              <button type="button" class="legal-tab" data-target="tab-materials" onclick="switchLegalTab(this)">
+                Marketing
+              </button>
+              <button type="button" class="legal-tab" data-target="tab-privacy" onclick="switchLegalTab(this)">
+                Privacy
+              </button>
+            </div>
+
+            <!-- Tab 1: Terms & Conditions -->
+            <div id="tab-terms" class="wizard-legal-box legal-tab-content active">
+              <h4>Affiliate Terms &amp; Conditions</h4>
+
+              <div class="legal-section">
+                <h5>1. Program Structure</h5>
+                <p>The POOOL Affiliate Program is supported by a clear set of core documents covering participation, conduct, approved materials, payouts, and privacy. Each document has a specific role. Together, they define how the program works and what standards apply to affiliate participation.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>2. Required Documents</h5>
+                <p>Before activation, you must review and accept:</p>
+                <ul>
+                  <li>Affiliate Terms &amp; Conditions</li>
+                  <li>Affiliate Code of Conduct</li>
+                  <li>Approved Marketing Materials Policy</li>
+                  <li>Qualified Referral &amp; Payout Policy</li>
+                  <li>Affiliate Privacy Notice</li>
+                </ul>
+              </div>
+
+              <div class="legal-section">
+                <h5>3. Activation &amp; Participation</h5>
+                <p>Your affiliate account cannot be activated until all required document acknowledgements are complete. Acceptance of all core documents is a condition of participation.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>4. Enforcement &amp; Termination</h5>
+                <p>Affiliate participation is subject to ongoing compliance monitoring. POOOL may issue warnings, require corrections, freeze payouts, suspend affiliates, deny or claw back affected commission, or remove affiliates from the program.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>5. Internal Procedures</h5>
+                <p>Some controls, such as complaint handling, investigations, and payout operations, are managed through internal procedures so that the program can be operated consistently and responsibly. Payouts remain subject to the Qualified Referral &amp; Payout Policy and related operational review.</p>
+              </div>
+            </div>
+
+            <!-- Tab 2: Code of Conduct -->
+            <div id="tab-conduct" class="wizard-legal-box legal-tab-content" style="display:none;">
+              <h4>Affiliate Code of Conduct</h4>
+
+              <div class="legal-section">
+                <h5>1. Your Role as a POOOL Affiliate</h5>
+                <p>You may introduce POOOL, share approved materials, use your personal referral link, and direct users to official POOOL information. Your role is <strong>referral only</strong> — not advice, not sales.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>2. What You May Not Do</h5>
+                <ul>
+                  <li>Provide personal investment advice or recommend a specific asset</li>
+                  <li>Promise returns, safety, or guaranteed outcomes</li>
+                  <li>Negotiate terms, close deals, or handle payments on behalf of users</li>
+                  <li>Use private cold outreach (WhatsApp, Telegram, DMs) for affiliate promotion</li>
+                  <li>Create custom pitch decks, misleading edits, or unapproved marketing claims</li>
+                </ul>
+              </div>
+
+              <div class="legal-section">
+                <h5>3. Communication Standards</h5>
+                <p>Affiliate communication must stay within general information and compliant referral activity. If a user asks for advice or a recommendation, you must redirect them to official POOOL information, fees, risk disclosures, and documentation.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>4. Approved Materials Only</h5>
+                <p>Use approved materials and official POOOL sources. Do not create your own claims, custom pitch decks, or misleading edits. Profile, bio, or story links do not remove the affiliate conduct rules. Once you use your referral link, code, call to action, or referral redirection, the affiliate rules apply in full.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>5. Monitoring &amp; Enforcement</h5>
+                <p>Affiliate participation is monitored. Violations may result in: warnings, required corrections, payout freezes, suspension, commission denial or clawback, or permanent removal from the program.</p>
+              </div>
+            </div>
+
+            <!-- Tab 3: Referral & Payout Policy -->
+            <div id="tab-payout" class="wizard-legal-box legal-tab-content" style="display:none;">
+              <h4>Qualified Referral &amp; Payout Policy</h4>
+
+              <div class="legal-section">
+                <h5>1. What Is a Qualified Referral?</h5>
+                <p>A Qualified Referral means a referred user who is validly attributed, completes required onboarding and KYC, completes a first eligible paid investment, clears the review period, has no disqualifying issue, and passes final payout checks.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>2. Tracked → Qualified → Payable</h5>
+                <p>A tracked referral is not yet qualified. A qualified referral is not yet payable. Payout happens only after all final checks are complete. A click, signup, registration, incomplete KYC, or an initiated transaction does <strong>not</strong> by itself create a payable commission.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>3. When Commission Becomes Payable</h5>
+                <p>Commission becomes payable only after the referral is qualified, the review period has cleared, no unresolved issue exists, your payout and tax setup is complete, and the payout is approved for release.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>4. Review Period &amp; Holdback</h5>
+                <p>A referral remains provisional for a 30-day review period after the first eligible paid investment before payout can move forward. Payouts may be held or frozen if attribution is disputed, KYC is incomplete, review is still running, fraud or reversal review is open, self-referral or referral-ring activity is suspected, or payout/tax data is incomplete.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>5. Reversal &amp; Clawback</h5>
+                <p>If the qualifying event is later reversed or invalidated, or if fraud, self-referral, referral-ring activity, policy breach, or another disqualifying event is found, POOOL may deny, freeze, reverse, offset, or claw back the affected commission.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>6. Self-Referral Prohibition</h5>
+                <p>Self-referral is strictly prohibited and leads to disqualification of the referral, removal of commission and tier credit, and further enforcement action.</p>
+              </div>
+            </div>
+
+            <!-- Tab 4: Marketing Materials Policy -->
+            <div id="tab-materials" class="wizard-legal-box legal-tab-content" style="display:none;">
+              <h4>Approved Marketing Materials Policy</h4>
+
+              <div class="legal-section">
+                <h5>1. Approved Materials</h5>
+                <p>Affiliates must use only POOOL-approved marketing materials. This includes banners, landing page links, social media templates, email copy, and educational content provided through the affiliate dashboard.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>2. Prohibited Content</h5>
+                <ul>
+                  <li>Custom pitch decks or presentations not reviewed by POOOL</li>
+                  <li>Modified or altered official POOOL materials</li>
+                  <li>Content that implies guaranteed returns, principal safety, or risk-free investment</li>
+                  <li>Urgency or scarcity messaging not sanctioned by POOOL</li>
+                  <li>Use of POOOL trademarks, logos, or brand assets outside approved templates</li>
+                </ul>
+              </div>
+
+              <div class="legal-section">
+                <h5>3. Material Updates</h5>
+                <p>POOOL may update or retire approved materials at any time. Affiliates are responsible for using the most current versions available in the affiliate dashboard. Continued use of retired materials may result in enforcement action.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>4. Custom Content Review</h5>
+                <p>If you wish to create original content (blog posts, videos, podcasts) that references POOOL, the content must stay within the boundaries of the Code of Conduct: factual, non-advisory, and directing users to official POOOL information for decision-relevant details.</p>
+              </div>
+            </div>
+
+            <!-- Tab 5: Privacy Notice -->
+            <div id="tab-privacy" class="wizard-legal-box legal-tab-content" style="display:none;">
+              <h4>Affiliate Privacy Notice</h4>
+
+              <div class="legal-section">
+                <h5>1. What Data Is Processed</h5>
+                <p>POOOL may process identity and profile data, onboarding and verification data, referral and attribution data, qualification and payout data, complaint or case data, and technical or audit-log data used to operate the affiliate program.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>2. Purpose of Processing</h5>
+                <p>POOOL uses affiliate-program data for onboarding, referral tracking, qualification, payouts, compliance, fraud prevention, support, and program administration.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>3. Minimum Data Principle</h5>
+                <p>POOOL aims to process only the data reasonably necessary to operate, protect, review, pay, and govern the program.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>4. Access &amp; Retention</h5>
+                <p>Access is limited by role and operational need. POOOL keeps affiliate-program data for as long as reasonably needed for program, audit, legal, tax, fraud-prevention, complaint-handling, and compliance purposes.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>5. Security</h5>
+                <p>POOOL aims to protect affiliate-program data through controlled access, secure handling practices, logging, and internal incident-response processes.</p>
+              </div>
+
+              <div class="legal-section">
+                <h5>6. Your Responsibility</h5>
+                <p>You are responsible for providing accurate and current affiliate, payout, and tax profile information and for updating material changes through the approved process.</p>
+              </div>
+            </div>
+
+            <!-- Scroll indicator -->
+            <div id="legal-scroll-hint" class="legal-scroll-hint">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              <span>Scroll to read the full policy</span>
+            </div>
+
+            <!-- 5 Document-Specific Acknowledgements (from approved T&C) -->
+            <div class="wizard-checkboxes">
+               <label class="ds-checkbox-label">
+                 <input type="checkbox" id="cb-terms" class="ds-checkbox-input" required>
+                 <div class="ds-checkbox-custom"></div>
+                 <div class="ds-checkbox-content">
+                    <div class="ds-checkbox-title">I accept the <strong>Affiliate Terms &amp; Conditions</strong>.</div>
+                 </div>
+               </label>
+               <label class="ds-checkbox-label">
+                 <input type="checkbox" id="cb-conduct" class="ds-checkbox-input" required>
+                 <div class="ds-checkbox-custom"></div>
+                 <div class="ds-checkbox-content">
+                    <div class="ds-checkbox-title">I accept the <strong>Affiliate Code of Conduct</strong>.</div>
+                 </div>
+               </label>
+               <label class="ds-checkbox-label">
+                 <input type="checkbox" id="cb-materials" class="ds-checkbox-input" required>
+                 <div class="ds-checkbox-custom"></div>
+                 <div class="ds-checkbox-content">
+                    <div class="ds-checkbox-title">I accept the <strong>Approved Marketing Materials Policy</strong>.</div>
+                 </div>
+               </label>
+               <label class="ds-checkbox-label">
+                 <input type="checkbox" id="cb-payout" class="ds-checkbox-input" required>
+                 <div class="ds-checkbox-custom"></div>
+                 <div class="ds-checkbox-content">
+                    <div class="ds-checkbox-title">I accept the <strong>Qualified Referral &amp; Payout Policy</strong>.</div>
+                 </div>
+               </label>
+               <label class="ds-checkbox-label">
+                 <input type="checkbox" id="cb-privacy" class="ds-checkbox-input" required>
+                 <div class="ds-checkbox-custom"></div>
+                 <div class="ds-checkbox-content">
+                    <div class="ds-checkbox-title">I acknowledge the <strong>Affiliate Privacy Notice</strong>.</div>
+                 </div>
+               </label>
+            </div>
+
+            <div class="wizard-actions">
+                <button type="button" class="ds-btn ds-btn--ghost" onclick="prevStep(3)">Back</button>
+                <button type="button" class="ds-btn ds-btn--primary" onclick="nextStep(5)">Accept &amp; Continue</button>
+            </div>
+          </div>
+
+
+          <!-- ═══ STEP 5: Exam ═══ -->
+          <div class="wizard-step" id="step-5" style="display: none;">
+            <div class="wizard-step-header">
+              <h2 class="wizard-step-title">Compliance Exam</h2>
+              <p class="wizard-step-desc">You must score 100% to successfully activate your partner account.</p>
+            </div>
+
+            <form id="quiz-form" class="wizard-quiz">
+              <!-- Q1 -->
+              <div class="quiz-question">
+                <label class="ds-label quiz-label">1. Are you allowed to provide investment advice for POOOL assets?</label>
+                <div class="radio-card-group">
+                  <label class="radio-card">
+                    <input type="radio" name="q1" value="yes">
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">Yes, if I am a certified advisor.</span>
+                    </span>
+                  </label>
+                  <label class="radio-card">
+                    <input type="radio" name="q1" value="no" required>
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">No, I may only provide referral base information.</span>
+                    </span>
+                  </label>
+                  <label class="radio-card">
+                    <input type="radio" name="q1" value="maybe">
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">Yes, but only in private messages.</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Q2 -->
+              <div class="quiz-question">
+                <label class="ds-label quiz-label">2. Can you guarantee fixed returns or asset security to your audience?</label>
+                <div class="radio-card-group">
+                  <label class="radio-card">
+                    <input type="radio" name="q2" value="no" required>
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">Never, this violates the Code of Conduct.</span>
+                    </span>
+                  </label>
+                  <label class="radio-card">
+                    <input type="radio" name="q2" value="yes">
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">Yes, for specific high-tier properties.</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Q3 -->
+              <div class="quiz-question">
+                <label class="ds-label quiz-label">3. When is your commission officially paid out?</label>
+                <div class="radio-card-group">
+                  <label class="radio-card">
+                    <input type="radio" name="q3" value="instant">
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">Instantly upon user registration.</span>
+                    </span>
+                  </label>
+                  <label class="radio-card">
+                    <input type="radio" name="q3" value="30days" required>
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">After a 30-day holdback, KYC, and tax clearance.</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Q4 -->
+              <div class="quiz-question">
+                <label class="ds-label quiz-label">4. Are you allowed to accept or forward client funds?</label>
+                <div class="radio-card-group">
+                  <label class="radio-card">
+                    <input type="radio" name="q4" value="no" required>
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">Absolutely forbidden.</span>
+                    </span>
+                  </label>
+                  <label class="radio-card">
+                    <input type="radio" name="q4" value="yes">
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">Yes, if they trust me.</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Q5 -->
+              <div class="quiz-question">
+                <label class="ds-label quiz-label">5. Does POOOL permit cold outreach (spam) via WhatsApp or Telegram?</label>
+                <div class="radio-card-group">
+                  <label class="radio-card">
+                    <input type="radio" name="q5" value="no" required>
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">No, spamming is prohibited.</span>
+                    </span>
+                  </label>
+                  <label class="radio-card">
+                    <input type="radio" name="q5" value="yes">
+                    <span class="radio-card-box">
+                      <span class="radio-card-circle"></span>
+                      <span class="radio-card-text">Yes, as long as it converts.</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="wizard-actions wizard-actions--bordered">
+                <button type="button" class="ds-btn ds-btn--ghost" onclick="prevStep(4)">Back</button>
+                <button id="submit-exam-btn" type="button" class="ds-btn ds-btn--primary" onclick="submitExam()">Submit Application</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- ═══ Success State: Pending Review ═══ -->
+          <div class="wizard-step" id="step-success" style="display: none;">
+            <div class="wizard-success">
+              <div class="wizard-success-icon wizard-success-icon--pending">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <h2 class="wizard-success-title">Application Submitted</h2>
+              <p class="wizard-success-desc">
+                You've passed the compliance exam. Your application is now <strong>under review</strong>. Our team will verify your profile and documents before activating your partner account.
+              </p>
+
+              <div class="wizard-review-timeline">
+                <div class="review-step review-step--done">
+                  <div class="review-step-dot"></div>
+                  <div class="review-step-content">
+                    <span class="review-step-label">Onboarding Complete</span>
+                    <span class="review-step-meta">All 5 steps passed</span>
+                  </div>
+                </div>
+                <div class="review-step review-step--active">
+                  <div class="review-step-dot"></div>
+                  <div class="review-step-content">
+                    <span class="review-step-label">Admin Review</span>
+                    <span class="review-step-meta">Typically 1–3 business days</span>
+                  </div>
+                </div>
+                <div class="review-step">
+                  <div class="review-step-dot"></div>
+                  <div class="review-step-content">
+                    <span class="review-step-label">Account Activation</span>
+                    <span class="review-step-meta">Referral link + dashboard access</span>
+                  </div>
+                </div>
+              </div>
+
+              <p class="wizard-success-note">You'll receive an email notification once your application has been reviewed.</p>
+
+              <a href="/rewards" class="ds-btn ds-btn--primary">Go to Dashboard</a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

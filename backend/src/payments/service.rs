@@ -156,7 +156,7 @@ pub async fn get_wallet_balance(
 /// Create a deposit request (intent). Returns the deposit request details.
 ///
 /// For USD: generates Stripe-like instructions (or manual wire).
-/// For IDR: would generate a Xendit Virtual Account (mocked for now).
+/// For IDR: would generate an OCBC Virtual Account (mocked for now).
 pub async fn create_deposit_request(
     pool: &PgPool,
     user_id: Uuid,
@@ -165,7 +165,7 @@ pub async fn create_deposit_request(
 ) -> Result<DepositResponse, sqlx::Error> {
     // Determine provider based on currency
     let provider = match currency {
-        "IDR" => "xendit",
+        "IDR" => "ocbc",
         "USD" => "stripe",
         _ => "manual",
     };
@@ -449,16 +449,18 @@ pub async fn execute_checkout(
     });
 
     // 2.8 Calculate platform fee
-    let platform_fee_pct: f64 = sqlx::query_scalar(
+    let platform_fee_pct: rust_decimal::Decimal = sqlx::query_scalar(
         "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
     )
     .fetch_optional(&mut *tx)
     .await
     .map_err(|e| format!("Platform fee config lookup failed: {}", e))?
     .and_then(|v: String| v.parse().ok())
-    .unwrap_or(0.0);
+    .unwrap_or(rust_decimal::Decimal::from(0));
 
-    let fee_cents = ((subtotal_cents as f64) * (platform_fee_pct / 100.0)).ceil() as i64;
+    let fee_cents_dec = (rust_decimal::Decimal::from(subtotal_cents) * platform_fee_pct) / rust_decimal::Decimal::from(100);
+    use rust_decimal::prelude::ToPrimitive;
+    let fee_cents = fee_cents_dec.ceil().to_i64().ok_or("Fee amount too large to process")?;
     let grand_total_cents = subtotal_cents + fee_cents;
 
     // 3. Handle FX if payment currency differs from asset currency (USD)
@@ -470,7 +472,7 @@ pub async fn execute_checkout(
         // Decimal math: (grand_total_cents * rate) / 100 = IDR whole amount
         let total_dec = Decimal::from(grand_total_cents);
         let idr_total_dec = (total_dec * rate) / Decimal::from(100);
-        let idr_total = idr_total_dec.to_i64().unwrap_or(0);
+        let idr_total = idr_total_dec.to_i64().ok_or("IDR total amount too large to process")?;
         (idr_total, Some(rate))
     } else {
         (grand_total_cents, None)
@@ -739,8 +741,31 @@ pub async fn execute_checkout(
         );
     }
 
+    // 11.6 Track Affiliate Commission (Phase 18)
+    let postback_result = crate::rewards::service::check_and_track_affiliate_commission(
+        &mut tx, user_id, order_id, grand_total_cents
+    ).await;
+    
+    let postback_data = match postback_result {
+        Ok(data) => data,
+        Err(e) => {
+            tracing::error!("Failed to track affiliate commission for user {}: {}", user_id, e);
+            None
+        }
+    };
+
     // 12. Commit everything
     tx.commit().await.map_err(|e| format!("TX commit: {}", e))?;
+
+    if let Some((affiliate_id, sub_id, comm_cents)) = postback_data {
+        crate::rewards::service::trigger_s2s_postback(
+            pool.clone(),
+            affiliate_id,
+            "commission".to_string(),
+            sub_id,
+            comm_cents
+        ).await;
+    }
 
     tracing::info!(
         order_id = %order_id,
@@ -899,29 +924,51 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
             .map_err(|e| e.to_string())?;
 
             // Update investment: subtract tokens and value
-            // Only set status to 'failed' if they have NO tokens left for this asset
-            sqlx::query(
-                r#"
-                UPDATE investments
-                SET tokens_owned = GREATEST(0, tokens_owned - $1),
-                    purchase_value_cents = GREATEST(0, purchase_value_cents - $2),
-                    current_value_cents = GREATEST(0, current_value_cents - $2),
-                    status = CASE
-                        WHEN tokens_owned - $1 <= 0 THEN 'failed'
-                        ELSE status
-                    END,
-                    updated_at = NOW()
-                WHERE asset_id = $3
-                  AND user_id = (SELECT user_id FROM orders WHERE id = $4)
-                "#,
+            // We first identify if this subtraction will result in 0 tokens.
+            // If so, we must DELETE the record to satisfy the "tokens_owned > 0" constraint.
+            let user_id: Uuid = sqlx::query_scalar("SELECT user_id FROM orders WHERE id = $1")
+                .bind(order_id)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|e| e.to_string())?;
+
+            let current_tokens: i32 = sqlx::query_scalar(
+                "SELECT tokens_owned FROM investments WHERE asset_id = $1 AND user_id = $2 FOR UPDATE"
             )
-            .bind(qty)
-            .bind(subtotal)
             .bind(asset_id)
-            .bind(order_id)
-            .execute(&mut *tx)
+            .bind(user_id)
+            .fetch_one(&mut *tx)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| format!("Failed to fetch investment for cleanup: {}", e))?;
+
+            if current_tokens <= qty {
+                // If the entire investment is being reverted, delete the row
+                sqlx::query("DELETE FROM investments WHERE asset_id = $1 AND user_id = $2")
+                    .bind(asset_id)
+                    .bind(user_id)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(|e| format!("Failed to delete expired investment: {}", e))?;
+            } else {
+                // Otherwise update with subtraction
+                sqlx::query(
+                    r#"
+                    UPDATE investments
+                    SET tokens_owned = tokens_owned - $1,
+                        purchase_value_cents = purchase_value_cents - $2,
+                        current_value_cents = current_value_cents - $2,
+                        updated_at = NOW()
+                    WHERE asset_id = $3 AND user_id = $4
+                    "#,
+                )
+                .bind(qty)
+                .bind(subtotal)
+                .bind(asset_id)
+                .bind(user_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| format!("Failed to update investment for cleanup: {}", e))?;
+            }
         }
 
         // 3. Mark order as failed (expired)
@@ -932,6 +979,9 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
             .map_err(|e| e.to_string())?;
     }
 
+    if count > 0 {
+        tracing::info!("♻️ Cleanup: {} expired bank orders purged and tokens restored.", count);
+    }
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(count)
 }
@@ -941,12 +991,17 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
 /// Calculate the final deduction amount (in cents) and the applied FX rate.
 /// If `payment_currency` is "IDR", it applies the mock rate of 15,500 IDR / USD.
 #[allow(dead_code)]
-pub fn calculate_fx_deduction(total_usd_cents: i64, payment_currency: &str) -> (i64, Option<f64>) {
+pub fn calculate_fx_deduction(total_usd_cents: i64, payment_currency: &str) -> (i64, Option<rust_decimal::Decimal>) {
+    use rust_decimal::prelude::FromPrimitive;
+    use rust_decimal::prelude::ToPrimitive;
+    use rust_decimal::Decimal;
     if payment_currency == "IDR" {
         // Mock exchange rate: 1 USD = 15,500 IDR
         // In production, fetch from an FX API (OpenExchangeRates, etc.)
-        let rate: f64 = crate::config::DEFAULT_USD_TO_IDR_RATE;
-        let idr_total = (total_usd_cents as f64 * rate / 100.0) as i64; // Convert USD cents to IDR cents
+        let rate_f64: f64 = crate::config::DEFAULT_USD_TO_IDR_RATE;
+        let rate = Decimal::from_f64(rate_f64).unwrap_or(Decimal::from(15500));
+        let idr_total_dec = (Decimal::from(total_usd_cents) * rate) / Decimal::from(100);
+        let idr_total = idr_total_dec.to_i64().unwrap_or(i64::MAX); // Better ceiling than zero on theoretical overflow
         (idr_total, Some(rate))
     } else {
         (total_usd_cents, None)
@@ -1049,7 +1104,36 @@ pub async fn approve_order(
         );
     }
 
+    // 4.6 Track Affiliate Commission (Phase 18)
+    let order_total: i64 = sqlx::query_scalar("SELECT total_cents FROM orders WHERE id = $1")
+        .bind(order_id)
+        .fetch_one(&mut *tx)
+        .await
+        .unwrap_or(0);
+        
+    let postback_result = crate::rewards::service::check_and_track_affiliate_commission(
+        &mut tx, user_id, order_id, order_total
+    ).await;
+
+    let postback_data = match postback_result {
+        Ok(data) => data,
+        Err(e) => {
+            tracing::error!("Failed to track affiliate commission for user {}: {}", user_id, e);
+            None
+        }
+    };
+
     tx.commit().await.map_err(|e| e.to_string())?;
+
+    if let Some((affiliate_id, sub_id, comm_cents)) = postback_data {
+        crate::rewards::service::trigger_s2s_postback(
+            pool.clone(),
+            affiliate_id,
+            "commission".to_string(),
+            sub_id,
+            comm_cents
+        ).await;
+    }
 
     sentry::add_breadcrumb(sentry::Breadcrumb {
         category: Some("admin.order".into()),

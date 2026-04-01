@@ -14,7 +14,7 @@ tower-http = { version = "0.6", features = ["fs", "cors", "trace", "compression-
 tower = { version = "0.5", features = ["limit"] }
 
 # Database
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json", "macros", "rust_decimal"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json", "macros", "rust_decimal", "ipnetwork"] }
 rust_decimal = "1.33"
 
 # Serialization/Deserialization

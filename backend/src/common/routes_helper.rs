@@ -20,9 +20,21 @@ pub async fn serve_protected(
         None => return Redirect::to("/auth/login").into_response(),
     };
 
+    // Fetch affiliate status
+    let affiliate_status: String = sqlx::query_scalar(
+        "SELECT status FROM affiliates WHERE user_id = $1"
+    )
+    .bind(user.id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None)
+    .unwrap_or_else(|| "unregistered".to_string());
+
+    let is_developer = file.starts_with("developer");
+    
     // Render using Minijinja to resolve {% include %}
     match state.templates.get_template(file) {
-        Ok(template) => match template.render(context! { user => user }) {
+        Ok(template) => match template.render(context! { user => user, affiliate_status => affiliate_status, is_developer => is_developer }) {
             Ok(content) => Html(content).into_response(),
             Err(e) => {
                 error!("Template rendering error for {}: {}", file, e);
@@ -63,6 +75,17 @@ pub async fn serve_protected_with_context<T: serde::Serialize>(
         map.insert("user".to_string(), u_val);
     }
 
+    let affiliate_status: String = sqlx::query_scalar(
+        "SELECT status FROM affiliates WHERE user_id = $1"
+    )
+    .bind(user.id)
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None)
+    .unwrap_or_else(|| "unregistered".to_string());
+    map.insert("affiliate_status".to_string(), serde_json::json!(affiliate_status));
+    map.insert("is_developer".to_string(), serde_json::json!(file.starts_with("developer")));
+
     match state.templates.get_template(file) {
         Ok(template) => match template.render(map) {
             Ok(content) => Html(content).into_response(),
@@ -98,11 +121,23 @@ pub async fn serve_public_with_context<T: serde::Serialize>(
     };
 
     // Optionally inject user if logged in, but DO NOT redirect if missing
-    if let Some(u) = middleware::get_current_user(&jar, &state.db).await {
-        if let Ok(u_val) = serde_json::to_value(&u) {
+    if let Some(user) = middleware::get_current_user(&jar, &state.db).await {
+        if let Ok(u_val) = serde_json::to_value(&user) {
             map.insert("user".to_string(), u_val);
         }
+
+        let affiliate_status: String = sqlx::query_scalar(
+            "SELECT status FROM affiliates WHERE user_id = $1"
+        )
+        .bind(user.id)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap_or(None)
+        .unwrap_or_else(|| "unregistered".to_string());
+        map.insert("affiliate_status".to_string(), serde_json::json!(affiliate_status));
     }
+    
+    map.insert("is_developer".to_string(), serde_json::json!(file.starts_with("developer")));
 
     match state.templates.get_template(file) {
         Ok(template) => match template.render(map) {

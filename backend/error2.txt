@@ -1,0 +1,125 @@
+    Blocking waiting for file lock on artifact directory
+   Compiling poool-backend v0.1.0 (/Users/martin/Projects/poool/backend)
+warning: unused import: `Html`
+   --> src/marketplace/routes.rs:290:26
+    |
+290 |     use axum::response::{Html, Redirect};
+    |                          ^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `sqlx::PgPool`
+ --> src/rewards/workers.rs:1:5
+  |
+1 | use sqlx::PgPool;
+  |     ^^^^^^^^^^^^
+
+warning: unused import: `std::time::Duration`
+ --> src/rewards/workers.rs:2:5
+  |
+2 | use std::time::Duration;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: variable does not need to be mutable
+   --> src/assets/routes.rs:290:9
+    |
+290 |     let mut similar_display: Vec<PropertyDisplayData> = similar_assets
+    |         ----^^^^^^^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+error[E0308]: mismatched types
+   --> src/rewards/routes.rs:820:57
+    |
+820 |                 "status": r.commission_status.unwrap_or(r.referral_status),
+    |                                               --------- ^^^^^^^^^^^^^^^^^ expected `String`, found `Option<String>`
+    |                                               |
+    |                                               arguments to this method are incorrect
+    |
+    = note: expected struct `std::string::String`
+                 found enum `std::option::Option<std::string::String>`
+help: the return type of this call is `std::option::Option<std::string::String>` due to the type of the argument passed
+   --> src/rewards/routes.rs:820:27
+    |
+820 |                 "status": r.commission_status.unwrap_or(r.referral_status),
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^-----------------^
+    |                                                         |
+    |                                                         this argument influences the return type of `unwrap_or`
+note: method defined here
+   --> /rustc/4a4ef493e3a1488c6e321570238084b38948f6db/library/core/src/option.rs:1038:17
+help: consider using `Option::expect` to unwrap the `std::option::Option<std::string::String>` value, panicking if the value is an `Option::None`
+    |
+820 |                 "status": r.commission_status.unwrap_or(r.referral_status.expect("REASON")),
+    |                                                                          +++++++++++++++++
+
+error[E0599]: no method named `unwrap_or` found for type `i64` in the current scope
+   --> src/rewards/routes.rs:823:60
+    |
+823 |                 "amount_cents": r.provisional_amount_cents.unwrap_or(0),
+    |                                                            ^^^^^^^^^ method not found in `i64`
+
+warning: unused import: `redis::AsyncCommands`
+   --> src/community/user_bridge.rs:168:21
+    |
+168 |                 use redis::AsyncCommands;
+    |                     ^^^^^^^^^^^^^^^^^^^^
+
+warning: value assigned to `is_completed` is never read
+  --> src/community/challenges.rs:96:13
+   |
+96 |             is_completed = true;
+   |             ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `land_sqm`
+   --> src/cart/routes.rs:597:13
+    |
+597 |         let land_sqm: Option<f64> = row.get("land_size_sqm");
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_land_sqm`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `item_count`
+   --> src/cart/routes.rs:994:9
+    |
+994 |     let item_count = rows.len();
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_item_count`
+
+warning: unused variable: `core_pool`
+  --> src/community/background.rs:18:42
+   |
+18 | async fn check_velocity(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+   |                                          ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_core_pool`
+
+warning: unused variable: `only_following_user_id`
+   --> src/community/routes.rs:280:9
+    |
+280 |     let only_following_user_id: Option<Uuid> = None; // not constrained by following
+    |         ^^^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_only_following_user_id`
+
+warning: unused variable: `user`
+    --> src/community/routes.rs:2116:9
+     |
+2116 |     let user = middleware::get_current_user(&jar, &state.db).await;
+     |         ^^^^ help: if this is intentional, prefix it with an underscore: `_user`
+
+warning: unused variable: `q`
+    --> src/community/routes.rs:3018:26
+     |
+3018 |     axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+     |                          ^ help: if this is intentional, prefix it with an underscore: `_q`
+
+warning: unused variable: `ip_address`
+   --> src/payments/routes.rs:434:9
+    |
+434 |     let ip_address = parts
+    |         ^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_ip_address`
+
+Some errors have detailed explanations: E0308, E0599.
+For more information about an error, try `rustc --explain E0308`.
+warning: `poool-backend` (bin "poool-backend") generated 13 warnings
+error: could not compile `poool-backend` (bin "poool-backend") due to 2 previous errors; 13 warnings emitted

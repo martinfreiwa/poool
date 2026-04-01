@@ -294,7 +294,7 @@
     const expectedTime =
       provider === "stripe"
         ? "Usually instant"
-        : provider === "xendit"
+        : provider === "ocbc"
           ? "1 business day (IDR)"
           : "1-3 business days (bank wire)";
 
@@ -609,11 +609,11 @@
   };
 
   function providerLabel(provider) {
-    return { bank: "Bank Transfer", manual: "Bank Transfer", stripe: "Stripe", xendit: "Xendit" }[provider] || provider;
+    return { bank: "Bank Transfer", manual: "Bank Transfer", stripe: "Stripe", ocbc: "OCBC" }[provider] || provider;
   }
 
   function methodLabel(method) {
-    return { bank: "Bank Transfer", manual: "Bank Transfer", wallet: "Wallet", stripe: "Stripe", xendit: "Xendit" }[method] || method;
+    return { bank: "Bank Transfer", manual: "Bank Transfer", wallet: "Wallet", stripe: "Stripe", ocbc: "OCBC" }[method] || method;
   }
 
   function formatCents(cents) {

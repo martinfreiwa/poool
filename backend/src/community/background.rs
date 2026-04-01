@@ -15,7 +15,7 @@ pub async fn monitor_asset_velocity(community_pool: PgPool, core_pool: PgPool) {
     }
 }
 
-async fn check_velocity(c_pool: &PgPool, core_pool: &PgPool) -> Result<(), crate::error::AppError> {
+async fn check_velocity(c_pool: &PgPool, _core_pool: &PgPool) -> Result<(), crate::error::AppError> {
     use sqlx::Row;
 
     // Check last 10 minutes

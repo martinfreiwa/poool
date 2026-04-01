@@ -1,45 +1,91 @@
 <div id="dynamic-sidebar-container">
-  <!-- Inline script to prevent flicker and set initial active state synchronously -->
   <script>
     (function () {
-      var profile = localStorage.getItem("selectedProfile");
       var path = window.location.pathname;
       var isDeveloperPage = path.indexOf("/developer/") === 0 || path === "/developer";
       var styles = "";
 
       // Hide investor sidebar immediately if on a developer page
-      // Non-developer pages (marketplace, wallet, portfolio, etc.) always show investor sidebar
       if (isDeveloperPage) {
         styles += '#sidebar-navigation[data-profile="investor"] { display: none !important; }\n';
       }
 
-      // Prevent active tab flicker by explicitly styling the active tab before DOM paint
       var activePage = "";
-      if (path === "/" || (path.includes("/marketplace") && !path.includes("/marketplace-secondary") && !path.includes("/marketplace-trading"))) activePage = "marketplace-parent";
-      else if (path.includes("/my-trading")) activePage = "my-trading";
-      else if (path.includes("/marketplace-secondary") || path.includes("/marketplace-trading")) activePage = "trading-parent";
-      else if (path.includes("/wallet") || path.includes("/transactions")) activePage = "wallet";
-      else if (path.includes("/portfolio")) activePage = "portfolio";
-      else if (path.includes("/cart") || path.includes("/checkout")) activePage = "cart";
-      else if (path.includes("/rewards")) activePage = "rewards";
-      else if (path.includes("/community")) activePage = "community";
-      else if (path.includes("/leaderboard")) activePage = "leaderboard";
-      else if (path.includes("/developer/dashboard")) activePage = "dashboard";
-      else if (path.includes("/developer/submissions")) activePage = "submissions";
-      else if (path.includes("/developer/assets")) activePage = "assets";
-      else if (path.includes("/settings")) activePage = "settings";
-      else if (path.includes("/support")) activePage = "support";
-      else if (path.includes("/cards-template")) activePage = "cards-template";
+      var activeChild = "";
+
+      // Mapping for indicators
+      if (path === "/" || path === "/marketplace" || path === "/commodities-marketplace") {
+        activePage = "marketplace-parent";
+        activeChild = path === "/commodities-marketplace" ? "nav-child-commodities-marketplace" : "nav-child-marketplace";
+      } else if (path.includes("/marketplace-secondary") || path.includes("/my-trading") || path.includes("/marketplace-trading")) {
+        activePage = "trading-parent";
+        if (path.includes("/my-trading")) activeChild = "nav-child-my-trading";
+        else activeChild = "nav-child-overview";
+      } else if (path.includes("/wallet") || path.includes("/transactions")) {
+        activePage = "wallet";
+      } else if (path.includes("/portfolio")) {
+        activePage = "portfolio";
+      } else if (path.includes("/cart") || path.includes("/checkout")) {
+        activePage = "cart";
+      } else if (path.includes("/affiliate")) {
+        activePage = "affiliate";
+      } else if (path.includes("/rewards")) {
+        activePage = "rewards";
+      } else if (path.includes("/community")) {
+        activePage = "community";
+      } else if (path.includes("/leaderboard")) {
+        activePage = "leaderboard";
+      } else if (path.includes("/developer/dashboard")) {
+        activePage = "dashboard";
+      } else if (path.includes("/developer/submissions")) {
+        activePage = "submissions";
+      } else if (path.includes("/developer/assets")) {
+        activePage = "assets";
+      } else if (path.includes("/settings")) {
+        activePage = "settings";
+      } else if (path.includes("/support")) {
+        activePage = "support";
+      }
 
       if (activePage) {
-        styles += '#nav-item-' + activePage + ' .sidebar__nav-item-content { background: rgba(3, 255, 136, 0.15) !important; border-radius: 6px; }\n';
-        styles += '#nav-item-' + activePage + ' .sidebar__nav-text { color: var(--brand-dark-blue) !important; }\n';
-        styles += '#nav-item-' + activePage + ' .nav-icon { filter: brightness(0) saturate(100%) invert(11%) sepia(97%) saturate(7484%) hue-rotate(247deg) brightness(94%) contrast(148%) !important; }\n';
+        // Highlight parent item
+        styles += '#nav-item-' + activePage + ' .sidebar__nav-item-content { background: rgba(3, 255, 136, 0.15) !important; border-radius: 6px; transition: none !important; }\n';
+        styles += '#nav-item-' + activePage + ' .sidebar__nav-text { color: var(--brand-dark-blue) !important; transition: none !important; }\n';
+        styles += '#nav-item-' + activePage + ' .nav-icon { filter: brightness(0) saturate(100%) invert(11%) sepia(97%) saturate(7484%) hue-rotate(247deg) brightness(94%) contrast(148%) !important; transition: none !important; }\n';
+        
+        // Auto-expand parent in localStorage so the expansion script picks it up
+        if (activePage.includes("-parent")) {
+          localStorage.setItem("nav-expanded-" + activePage, "true");
+        }
+      }
+
+      if (activeChild) {
+        // Highlight child item
+        styles += '#' + activeChild + ' { background: rgba(3, 255, 136, 0.1) !important; border-radius: 6px; transition: none !important; }\n';
+        styles += '#' + activeChild + ' .sidebar__nav-child-text { color: var(--brand-dark-blue) !important; font-weight: 600 !important; transition: none !important; }\n';
       }
 
       if (styles) {
-        document.write('<style id="dynamic-sidebar-style">' + styles + '</style>');
+        var styleEl = document.createElement('style');
+        styleEl.id = 'dynamic-sidebar-style';
+        styleEl.textContent = styles;
+        document.head.appendChild(styleEl);
       }
+      
+      // Accessibility update: set aria-current when DOM is ready
+      document.addEventListener("DOMContentLoaded", function () {
+        if (activePage) {
+          var activeLink = document.getElementById("nav-item-" + activePage + "-content");
+          if (!activeLink) {
+              activeLink = document.querySelector("#nav-item-" + activePage + " a.sidebar__nav-item-content");
+          }
+          if (activeLink) activeLink.setAttribute("aria-current", "page");
+        }
+        if (activeChild) {
+          var childLink = document.getElementById(activeChild);
+          if (childLink) childLink.setAttribute("aria-current", "page");
+        }
+      });
     })();
   </script>
 
@@ -57,923 +103,8 @@
   }
 </style>
 
-  <!-- Initial sidebar will be replaced by JavaScript -->
-  <aside id="sidebar-navigation" class="sidebar" data-profile="investor">
-    <div id="sidebar-content" class="sidebar__content">
-      <!-- Navigation Section -->
-      <div id="sidebar-navigation-section" class="sidebar__nav-section">
-        <!-- Header Section -->
-        <div id="sidebar-header" class="sidebar__header">
-          <!-- Logo --><a id="sidebar-logo" href="/" class="sidebar__logo"><img src="/static/images/Logo%20Pool.svg" alt="POOOL"
-              width="139" height="37" /></a><!-- Search Input -->
-          <div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
-            <div id="sidebar-search" class="sidebar__search">
-              <div id="sidebar-search-content" class="sidebar__search-content">
-                <svg id="sidebar-search-icon" class="sidebar__search-icon" width="20" height="20" viewBox="0 0 20 20"
-                  fill="none">
-                  <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.66667"></circle>
-                  <path d="M13 13L17 17" stroke="#717680" stroke-width="1.66667" stroke-linecap="round"></path>
-                </svg>
-                <input id="sidebar-search-input" type="search" placeholder="Search" class="sidebar__search-input"
-                  autocomplete="off" />
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Navigation Menu -->
-        <nav id="sidebar-nav" class="sidebar__nav">
-          <div id="nav-item-marketplace-parent" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Parent Item (expandable) -->
-            <div id="nav-item-marketplace-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
-              data-item-id="marketplace-parent" style="cursor: pointer">
-              <div id="nav-text-icon-marketplace-parent" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-marketplace-parent" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/home-05.svg" alt="Marketplace" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-marketplace-parent" class="sidebar__nav-text">Marketplace</span>
-              </div>
-              <!-- Chevron Icon --><svg id="nav-chevron-marketplace-parent" class="sidebar__nav-chevron" width="16"
-                height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
-                  stroke-linejoin="round"></path>
-              </svg>
-            </div>
-            <!-- Children Container -->
-            <div id="nav-children-marketplace-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
-              <a id="nav-child-marketplace" href="/marketplace" class="sidebar__nav-child"><span
-                  class="sidebar__nav-child-text">Properties</span></a><a id="nav-child-commodities-marketplace"
-                href="/commodities-marketplace" class="sidebar__nav-child"><span
-                  class="sidebar__nav-child-text">Commodities</span></a>
-            </div>
-          </div>
-          <div id="nav-item-trading-parent" class="sidebar__nav-item">
-            <div id="nav-item-trading-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
-              data-item-id="trading-parent" style="cursor: pointer">
-              <div id="nav-text-icon-trading-parent" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-trading-parent" class="sidebar__nav-icon-wrapper">
-                  <img src="/static/images/chart-line-up.svg" alt="Trading" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-trading-parent" class="sidebar__nav-text">Resale Market</span>
-              </div>
-              <svg id="nav-chevron-trading-parent" class="sidebar__nav-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>
-            </div>
-            <div id="nav-children-trading-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
-              <a id="nav-child-overview" href="/marketplace-secondary" class="sidebar__nav-child"><span class="sidebar__nav-child-text">All Properties</span></a>
-              <a id="nav-child-my-trading" href="/my-trading" class="sidebar__nav-child"><span class="sidebar__nav-child-text">My Holdings</span></a>
-            </div>
-          </div>
-          <div id="nav-item-wallet" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
-            <a id="nav-item-wallet-content" href="/wallet" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-wallet" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-wallet" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/wallet-02.svg" alt="Wallet" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-wallet" class="sidebar__nav-text">Wallet</span>
-              </div>
-              <!-- Soon Badge for Rewards and Leaderboard tabs -->
-            </a>
-          </div>
-          <div id="nav-item-portfolio" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
-            <a id="nav-item-portfolio-content" href="/portfolio" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-portfolio" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-portfolio" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/line-chart-up-02.svg" alt="Portfolio" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-portfolio" class="sidebar__nav-text">Portfolio</span>
-              </div>
-              <!-- Soon Badge for Rewards and Leaderboard tabs -->
-            </a>
-          </div>
-          <div id="nav-item-rewards" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Disabled Item -->
-            <a id="nav-item-rewards-content" href="/rewards" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-rewards" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-rewards" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/star-01.svg" alt="Rewards" class="nav-icon" width="20" height="20" />
-                </div>
-                <span id="nav-text-rewards" class="sidebar__nav-text">Rewards</span>
-              </div>
-            </a>
-          </div>
-          <div id="nav-item-cart" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
-            <a id="nav-item-cart-content" href="/cart" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-cart" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-cart" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/shopping-cart-01.svg" alt="Cart" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-cart" class="sidebar__nav-text">Cart</span>
-              </div>
-              <!-- Soon Badge for Rewards and Leaderboard tabs -->
-            </a>
-          </div>
-          <div id="nav-item-leaderboard" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
-            <a id="nav-item-leaderboard-content" href="/leaderboard" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-leaderboard" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-leaderboard" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/award-05.svg" alt="Leaderboard" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-leaderboard" class="sidebar__nav-text">Leaderboard</span>
-              </div>
-            </a>
-          </div>
-          <div id="nav-item-community" class="sidebar__nav-item">
-            <a id="nav-item-community-content" href="/community" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-community" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-community" class="sidebar__nav-icon-wrapper">
-                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </div>
-                <span id="nav-text-community" class="sidebar__nav-text">Community</span>
-              </div>
-              <span class="sidebar__nav-badge" style="background:rgba(3,255,136,0.15);color:#027A48;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;">New</span>
-            </a>
-          </div>
-          <div id="nav-item-cards-template" class="sidebar__nav-item">
-            <a id="nav-item-cards-template-content" href="/cards-template.html" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-cards-template" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-cards-template" class="sidebar__nav-icon-wrapper">
-                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="9" y1="21" x2="9" y2="9"></line>
-                  </svg>
-                </div>
-                <span id="nav-text-cards-template" class="sidebar__nav-text">UI Cards</span>
-              </div>
-            </a>
-          </div>
-        </nav>
-      </div>
-      <!-- Footer Section -->
-      <div id="sidebar-footer" class="sidebar__footer">
-        <!-- Footer Navigation -->
-        <nav id="footer-nav" class="sidebar__footer-nav">
-          <div id="nav-item-notifications" class="sidebar__nav-item" x-data="notificationBadge()" @notifications-read.window="init()">
-            <a id="nav-item-notifications-content" href="/community?tab=notifications" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-notifications" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-notifications" class="sidebar__nav-icon-wrapper">
-                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                  </svg>
-                </div>
-                <span id="nav-text-notifications" class="sidebar__nav-text">Notifications</span>
-              </div>
-              <span id="notification-badge-count" x-show="count > 0" class="sidebar__nav-badge" style="background:#F04438;color:#FFF;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;" x-text="count"></span>
-            </a>
-            <script>
-                document.addEventListener('alpine:init', () => {
-                    Alpine.data('notificationBadge', () => ({
-                        count: 0,
-                        async init() {
-                            try {
-                                const res = await fetch('/api/community/notifications/unread-count');
-                                if (res.ok) {
-                                    const data = await res.json();
-                                    this.count = data.count || 0;
-                                }
-                            } catch (e) {
-                                console.error('Failed to load notification count', e);
-                            }
-                        },
-                        async markAsRead() {
-                            this.count = 0;
-                        }
-                    }));
-                });
-            </script>
-          </div>
-          <div id="nav-item-settings" class="sidebar__nav-item">
-            <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/settings-01.svg" alt="Settings" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-settings" class="sidebar__nav-text">Settings</span>
-              </div>
-            </a>
-          </div>
-          <div id="nav-item-support" class="sidebar__nav-item">
-            <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/message-chat-circle-grey.svg" alt="Support" class="nav-icon"
-                    width="20" height="20" />
-                </div>
-                <span id="nav-text-support" class="sidebar__nav-text">Support</span>
-              </div>
-              <div id="support-badge" class="support-badge">
-                <div id="support-status-dot" class="support-status-dot"></div>
-                <span id="support-badge-text" class="support-badge-text">Online</span>
-              </div>
-            </a>
-          </div>
-        </nav>
-        <!-- Community Card -->
-        <div id="nav-featured-card" class="nav-featured-card sidebar__featured-card">
-          <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close" aria-label="Close">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M14 14L6 6M6 14L14 6" stroke="#2E2EF9" stroke-width="1.66667" stroke-linecap="round">
-              </path>
-            </svg></button><!-- Text and supporting text -->
-          <div id="featured-card-text" class="sidebar__featured-text">
-            <div class="featured-card-title-wrap">
-              <h4 id="featured-card-title" class="sidebar__featured-title">
-                Community soon
-              </h4>
-            </div>
-            <p id="featured-card-description" class="sidebar__featured-description">
-              Check out the new community feature. Connect with other
-              investors soon.
-            </p>
-          </div>
-          <!-- Image wrap -->
-          <div class="sidebar__featured-image">
-            <img src="/static/images/community-illustration.png" alt="Community illustration" loading="lazy" />
-          </div>
-          <!-- Actions -->
-          <div id="featured-card-actions" class="sidebar__featured-actions">
-            <button id="featured-card-dismiss" class="sidebar__featured-button sidebar__featured-button--dismiss">
-              Dismiss
-            </button>
-            <button id="featured-card-action" class="sidebar__featured-button sidebar__featured-button--action">
-              What&#39;s new?
-            </button>
-          </div>
-        </div>
-        <!-- Account Card - Now fully clickable -->
-        <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
-          style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
-          <!-- Avatar Group -->
-          <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
-            <div id="account-avatar" class="sidebar__account-avatar">
-              <img loading="lazy" src="/static/images/Image.webp" alt="" />
-              <div id="account-online-indicator" class="sidebar__account-online"></div>
-            </div>
-            <div id="account-text-wrapper" class="sidebar__account-text">
-              <span id="account-name" class="sidebar__account-name"></span>
-              <span id="account-email" class="sidebar__account-email"></span>
-            </div>
-          </div>
-          <!-- Menu Button Icon (no longer a button) -->
-          <div id="account-menu-button" class="sidebar__account-menu" style="pointer-events: none">
-            <div id="account-menu-button-inner" class="sidebar__account-menu-button" aria-hidden="true">
-              <svg class="sidebar__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
-                  stroke-linejoin="round"></path>
-                <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
-                  stroke-linejoin="round"></path>
-              </svg>
-            </div>
-          </div>
-          <!-- Profile Dropdown Menu -->
-          <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
-            <!-- Menu items wrapper -->
-            <div id="profile-menu-wrapper" class="profile-menu-wrapper">
-              <!-- Top menu items -->
-              <div id="profile-menu-items-top" class="profile-menu-items">
-                <!-- Documentation -->
-                <div id="menu-item-documentation" class="profile-menu-item">
-                  <div class="profile-menu-content">
-                    <div class="profile-icon-text">
-                      <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
-                        <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
-                        </path>
-                      </svg>
-                      <span class="profile-menu-text">Documentation</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- Switch account section -->
-              <div id="profile-switch-section" class="profile-switch-section">
-                <div class="profile-switch-header">
-                  <span class="profile-switch-title">Switch account</span>
-                </div>
-                <!-- Current account (selected) -->
-                <div id="menu-item-current-account" class="profile-menu-item account-item selected">
-                  <div class="profile-account-content">
-                    <div class="profile-avatar-group">
-                      <div class="profile-avatar">
-                        <img loading="lazy" src="/static/images/Image.webp" alt="" />
-                        <div class="profile-avatar-border"></div>
-                        <div class="profile-online-indicator"></div>
-                      </div>
-                      <div class="profile-text-wrapper">
-                        <span class="profile-account-name"></span>
-                        <span class="profile-account-type">Investor Profile</span>
-                      </div>
-                    </div>
-                    <div class="profile-checkbox selected">
-                      <div class="profile-checkbox-check"></div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Other accounts -->
-                <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
-                  <div class="profile-account-content">
-                    <div class="profile-avatar-group">
-                      <div class="profile-avatar">
-                        <img loading="lazy" src="/static/images/Featured%20icon.webp" alt="" />
-                        <div class="profile-avatar-border"></div>
-                        <div class="profile-online-indicator"></div>
-                      </div>
-                      <div class="profile-text-wrapper">
-                        <span class="profile-account-name"></span>
-                        <span class="profile-account-type">Developer profile</span>
-                      </div>
-                    </div>
-                    <div class="profile-checkbox">
-                      <div class="profile-checkbox-check"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- Footer items -->
-            <div id="profile-footer-items" class="profile-footer-items">
-              <!-- Sign out -->
-              <div id="menu-item-sign-out" class="profile-menu-item">
-                <div class="profile-menu-content">
-                  <div class="profile-icon-text">
-                    <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
-                        stroke-linejoin="round"></path>
-                      <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
-                        stroke-width="1.67" stroke-linecap="round"></path>
-                    </svg>
-                    <span class="profile-menu-text">Sign out</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Profile Dropdown JavaScript -->
-    <script>
-      // Profile Dropdown Functions - Global scope
-      window.toggleProfileDropdown = function () {
-        const dropdown = document.getElementById(
-          "profile-dropdown-menu",
-        );
-        const button = document.getElementById(
-          "account-menu-button-inner",
-        );
-
-        if (!dropdown) {
-          return;
-        }
-
-        // SAFARI FIX: Move to body and restore proper styling
-
-        // Move to body to escape stacking context
-        if (dropdown.parentNode !== document.body) {
-          document.body.appendChild(dropdown);
-        }
-
-        // Apply proper dropdown styles (restore original design)
-        dropdown.style.display = "flex";
-        dropdown.style.position = "fixed";
-        dropdown.style.left = "248px"; // Original position
-        dropdown.style.bottom = "20px"; // Original position
-        dropdown.style.width = "264px"; // Original width
-        dropdown.style.height = "auto"; // Original height
-        dropdown.style.background = ""; // Clear test background
-        dropdown.style.border = ""; // Clear test border
-        dropdown.style.zIndex = "99999"; // High z-index for Safari
-
-        // Restore original CSS classes
-        dropdown.className = "profile-dropdown-menu";
-
-        if (button) button.classList.add("active");
-
-        // Add click outside listener
-        setTimeout(() => {
-          document.addEventListener(
-            "click",
-            window.closeDropdownOnClickOutside,
-          );
-        }, 100);
-      };
-
-      window.closeProfileDropdown = function () {
-        const dropdown = document.getElementById(
-          "profile-dropdown-menu",
-        );
-        const button = document.getElementById(
-          "account-menu-button-inner",
-        );
-
-        if (dropdown) dropdown.style.display = "none";
-        if (button) button.classList.remove("active");
-
-        // Remove click outside listener
-        document.removeEventListener(
-          "click",
-          window.closeDropdownOnClickOutside,
-        );
-      };
-
-      window.closeDropdownOnClickOutside = function (event) {
-        const dropdown = document.getElementById(
-          "profile-dropdown-menu",
-        );
-        const accountCard =
-          document.getElementById("nav-account-card");
-
-        if (
-          accountCard &&
-          !accountCard.contains(event.target) &&
-          dropdown &&
-          !dropdown.contains(event.target)
-        ) {
-          window.closeProfileDropdown();
-        }
-      };
-
-      // Profile dropdown functionality is handled by profile-dropdown.js
-    </script>
-  </aside>
-</div>
-<!-- Template for investor sidebar (hidden, for cloning) --><template id="investor-sidebar-template">
-  <aside id="sidebar-navigation" class="sidebar" data-profile="investor">
-    <div id="sidebar-content" class="sidebar__content">
-      <!-- Navigation Section -->
-      <div id="sidebar-navigation-section" class="sidebar__nav-section">
-        <!-- Header Section -->
-        <div id="sidebar-header" class="sidebar__header">
-          <!-- Logo --><a id="sidebar-logo" href="/" class="sidebar__logo"><img src="/static/images/Logo%20Pool.svg" alt="POOOL"
-              width="139" height="37" /></a><!-- Search Input -->
-          <div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
-            <div id="sidebar-search" class="sidebar__search">
-              <div id="sidebar-search-content" class="sidebar__search-content">
-                <svg id="sidebar-search-icon" class="sidebar__search-icon" width="20" height="20" viewBox="0 0 20 20"
-                  fill="none">
-                  <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.66667"></circle>
-                  <path d="M13 13L17 17" stroke="#717680" stroke-width="1.66667" stroke-linecap="round"></path>
-                </svg>
-                <input id="sidebar-search-input" type="search" placeholder="Search" class="sidebar__search-input"
-                  autocomplete="off" />
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Navigation Menu -->
-        <nav id="sidebar-nav" class="sidebar__nav">
-          <div id="nav-item-marketplace-parent" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Parent Item (expandable) -->
-            <div id="nav-item-marketplace-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
-              data-item-id="marketplace-parent" style="cursor: pointer">
-              <div id="nav-text-icon-marketplace-parent" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-marketplace-parent" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/home-05.svg" alt="Marketplace" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-marketplace-parent" class="sidebar__nav-text">Marketplace</span>
-              </div>
-              <!-- Chevron Icon --><svg id="nav-chevron-marketplace-parent" class="sidebar__nav-chevron" width="16"
-                height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
-                  stroke-linejoin="round"></path>
-              </svg>
-            </div>
-            <!-- Children Container -->
-            <div id="nav-children-marketplace-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
-              <a id="nav-child-marketplace" href="/marketplace" class="sidebar__nav-child"><span
-                  class="sidebar__nav-child-text">Properties</span></a><a id="nav-child-commodities-marketplace"
-                href="/commodities-marketplace" class="sidebar__nav-child"><span
-                  class="sidebar__nav-child-text">Commodities</span></a>
-            </div>
-          </div>
-          <div id="nav-item-trading-parent" class="sidebar__nav-item">
-            <div id="nav-item-trading-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
-              data-item-id="trading-parent" style="cursor: pointer">
-              <div id="nav-text-icon-trading-parent" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-trading-parent" class="sidebar__nav-icon-wrapper">
-                  <img src="/static/images/chart-line-up.svg" alt="Trading" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-trading-parent" class="sidebar__nav-text">Resale Market</span>
-              </div>
-              <svg id="nav-chevron-trading-parent" class="sidebar__nav-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>
-            </div>
-            <div id="nav-children-trading-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
-              <a id="nav-child-overview" href="/marketplace-secondary" class="sidebar__nav-child"><span class="sidebar__nav-child-text">All Properties</span></a>
-              <a id="nav-child-my-trading" href="/my-trading" class="sidebar__nav-child"><span class="sidebar__nav-child-text">My Holdings</span></a>
-            </div>
-          </div>
-          <div id="nav-item-wallet" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
-            <a id="nav-item-wallet-content" href="/wallet" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-wallet" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-wallet" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/wallet-02.svg" alt="Wallet" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-wallet" class="sidebar__nav-text">Wallet</span>
-              </div>
-              <!-- Soon Badge for Rewards and Leaderboard tabs -->
-            </a>
-          </div>
-          <div id="nav-item-portfolio" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
-            <a id="nav-item-portfolio-content" href="/portfolio" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-portfolio" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-portfolio" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/line-chart-up-02.svg" alt="Portfolio" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-portfolio" class="sidebar__nav-text">Portfolio</span>
-              </div>
-              <!-- Soon Badge for Rewards and Leaderboard tabs -->
-            </a>
-          </div>
-          <div id="nav-item-rewards" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Disabled Item -->
-            <a id="nav-item-rewards-content" href="/rewards" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-rewards" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-rewards" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/star-01.svg" alt="Rewards" class="nav-icon" width="20" height="20" />
-                </div>
-                <span id="nav-text-rewards" class="sidebar__nav-text">Rewards</span>
-              </div>
-            </a>
-          </div>
-          <div id="nav-item-cart" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
-            <a id="nav-item-cart-content" href="/cart" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-cart" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-cart" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/shopping-cart-01.svg" alt="Cart" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-cart" class="sidebar__nav-text">Cart</span>
-              </div>
-              <!-- Soon Badge for Rewards and Leaderboard tabs -->
-            </a>
-          </div>
-          <div id="nav-item-leaderboard" class="sidebar__nav-item">
-            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
-            <a id="nav-item-leaderboard-content" href="/leaderboard" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-leaderboard" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-leaderboard" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/award-05.svg" alt="Leaderboard" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-leaderboard" class="sidebar__nav-text">Leaderboard</span>
-              </div>
-            </a>
-          </div>
-          <div id="nav-item-community" class="sidebar__nav-item">
-            <a id="nav-item-community-content" href="/community" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-community" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-community" class="sidebar__nav-icon-wrapper">
-                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </div>
-                <span id="nav-text-community" class="sidebar__nav-text">Community</span>
-              </div>
-              <span class="sidebar__nav-badge" style="background:rgba(3,255,136,0.15);color:#027A48;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;">New</span>
-            </a>
-          </div>
-          <div id="nav-item-cards-template" class="sidebar__nav-item">
-            <a id="nav-item-cards-template-content" href="/cards-template.html" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-cards-template" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-cards-template" class="sidebar__nav-icon-wrapper">
-                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="9" y1="21" x2="9" y2="9"></line>
-                  </svg>
-                </div>
-                <span id="nav-text-cards-template" class="sidebar__nav-text">UI Cards</span>
-              </div>
-            </a>
-          </div>
-        </nav>
-      </div>
-      <!-- Footer Section -->
-      <div id="sidebar-footer" class="sidebar__footer">
-        <!-- Footer Navigation -->
-        <nav id="footer-nav" class="sidebar__footer-nav">
-          <div id="nav-item-notifications" class="sidebar__nav-item" x-data="notificationBadge()" @notifications-read.window="init()">
-            <a id="nav-item-notifications-content" href="/community?tab=notifications" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-notifications" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-notifications" class="sidebar__nav-icon-wrapper">
-                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                  </svg>
-                </div>
-                <span id="nav-text-notifications" class="sidebar__nav-text">Notifications</span>
-              </div>
-              <span id="notification-badge-count" x-show="count > 0" class="sidebar__nav-badge" style="background:#F04438;color:#FFF;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;" x-text="count"></span>
-            </a>
-            <script>
-                document.addEventListener('alpine:init', () => {
-                    Alpine.data('notificationBadge', () => ({
-                        count: 0,
-                        async init() {
-                            try {
-                                const res = await fetch('/api/community/notifications/unread-count');
-                                if (res.ok) {
-                                    const data = await res.json();
-                                    this.count = data.count || 0;
-                                }
-                            } catch (e) {
-                                console.error('Failed to load notification count', e);
-                            }
-                        },
-                        async markAsRead() {
-                            this.count = 0;
-                        }
-                    }));
-                });
-            </script>
-          </div>
-          <div id="nav-item-settings" class="sidebar__nav-item">
-            <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/settings-01.svg" alt="Settings" class="nav-icon" width="20"
-                    height="20" />
-                </div>
-                <span id="nav-text-settings" class="sidebar__nav-text">Settings</span>
-              </div>
-            </a>
-          </div>
-          <div id="nav-item-support" class="sidebar__nav-item">
-            <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
-              <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
-                <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
-                  <img  src="/static/images/message-chat-circle-grey.svg" alt="Support" class="nav-icon"
-                    width="20" height="20" />
-                </div>
-                <span id="nav-text-support" class="sidebar__nav-text">Support</span>
-              </div>
-              <div id="support-badge" class="support-badge">
-                <div id="support-status-dot" class="support-status-dot"></div>
-                <span id="support-badge-text" class="support-badge-text">Online</span>
-              </div>
-            </a>
-          </div>
-        </nav>
-        <!-- Community Card -->
-        <div id="nav-featured-card" class="nav-featured-card sidebar__featured-card">
-          <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close" aria-label="Close">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M14 14L6 6M6 14L14 6" stroke="#2E2EF9" stroke-width="1.66667" stroke-linecap="round">
-              </path>
-            </svg></button><!-- Text and supporting text -->
-          <div id="featured-card-text" class="sidebar__featured-text">
-            <div class="featured-card-title-wrap">
-              <h4 id="featured-card-title" class="sidebar__featured-title">
-                Community soon
-              </h4>
-            </div>
-            <p id="featured-card-description" class="sidebar__featured-description">
-              Check out the new community feature. Connect with other
-              investors soon.
-            </p>
-          </div>
-          <!-- Image wrap -->
-          <div class="sidebar__featured-image">
-            <img src="/static/images/community-illustration.png" alt="Community illustration" loading="lazy" />
-          </div>
-          <!-- Actions -->
-          <div id="featured-card-actions" class="sidebar__featured-actions">
-            <button id="featured-card-dismiss" class="sidebar__featured-button sidebar__featured-button--dismiss">
-              Dismiss
-            </button>
-            <button id="featured-card-action" class="sidebar__featured-button sidebar__featured-button--action">
-              What&#39;s new?
-            </button>
-          </div>
-        </div>
-        <!-- Account Card - Now fully clickable -->
-        <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
-          style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
-          <!-- Avatar Group -->
-          <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
-            <div id="account-avatar" class="sidebar__account-avatar">
-              <img loading="lazy" src="/static/images/Image.webp" alt="" />
-              <div id="account-online-indicator" class="sidebar__account-online"></div>
-            </div>
-            <div id="account-text-wrapper" class="sidebar__account-text">
-              <span id="account-name" class="sidebar__account-name"></span>
-              <span id="account-email" class="sidebar__account-email"></span>
-            </div>
-          </div>
-          <!-- Menu Button Icon (no longer a button) -->
-          <div id="account-menu-button" class="sidebar__account-menu" style="pointer-events: none">
-            <div id="account-menu-button-inner" class="sidebar__account-menu-button" aria-hidden="true">
-              <svg class="sidebar__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
-                  stroke-linejoin="round"></path>
-                <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
-                  stroke-linejoin="round"></path>
-              </svg>
-            </div>
-          </div>
-          <!-- Profile Dropdown Menu -->
-          <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
-            <!-- Menu items wrapper -->
-            <div id="profile-menu-wrapper" class="profile-menu-wrapper">
-              <!-- Top menu items -->
-              <div id="profile-menu-items-top" class="profile-menu-items">
-                <!-- Documentation -->
-                <div id="menu-item-documentation" class="profile-menu-item">
-                  <div class="profile-menu-content">
-                    <div class="profile-icon-text">
-                      <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
-                        <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
-                        </path>
-                      </svg>
-                      <span class="profile-menu-text">Documentation</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- Switch account section -->
-              <div id="profile-switch-section" class="profile-switch-section">
-                <div class="profile-switch-header">
-                  <span class="profile-switch-title">Switch account</span>
-                </div>
-                <!-- Current account (selected) -->
-                <div id="menu-item-current-account" class="profile-menu-item account-item selected">
-                  <div class="profile-account-content">
-                    <div class="profile-avatar-group">
-                      <div class="profile-avatar">
-                        <img loading="lazy" src="/static/images/Image.webp" alt="" />
-                        <div class="profile-avatar-border"></div>
-                        <div class="profile-online-indicator"></div>
-                      </div>
-                      <div class="profile-text-wrapper">
-                        <span class="profile-account-name"></span>
-                        <span class="profile-account-type">Investor Profile</span>
-                      </div>
-                    </div>
-                    <div class="profile-checkbox selected">
-                      <div class="profile-checkbox-check"></div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Other accounts -->
-                <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
-                  <div class="profile-account-content">
-                    <div class="profile-avatar-group">
-                      <div class="profile-avatar">
-                        <img loading="lazy" src="/static/images/Featured%20icon.webp" alt="" />
-                        <div class="profile-avatar-border"></div>
-                        <div class="profile-online-indicator"></div>
-                      </div>
-                      <div class="profile-text-wrapper">
-                        <span class="profile-account-name"></span>
-                        <span class="profile-account-type">Developer profile</span>
-                      </div>
-                    </div>
-                    <div class="profile-checkbox">
-                      <div class="profile-checkbox-check"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- Footer items -->
-            <div id="profile-footer-items" class="profile-footer-items">
-              <!-- Sign out -->
-              <div id="menu-item-sign-out" class="profile-menu-item">
-                <div class="profile-menu-content">
-                  <div class="profile-icon-text">
-                    <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
-                        stroke-linejoin="round"></path>
-                      <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
-                        stroke-width="1.67" stroke-linecap="round"></path>
-                    </svg>
-                    <span class="profile-menu-text">Sign out</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Profile Dropdown JavaScript -->
-    <script>
-      // Profile Dropdown Functions - Global scope
-      window.toggleProfileDropdown = function () {
-        const dropdown = document.getElementById(
-          "profile-dropdown-menu",
-        );
-        const button = document.getElementById(
-          "account-menu-button-inner",
-        );
-
-        if (!dropdown) {
-          return;
-        }
-
-        // SAFARI FIX: Move to body and restore proper styling
-
-        // Move to body to escape stacking context
-        if (dropdown.parentNode !== document.body) {
-          document.body.appendChild(dropdown);
-        }
-
-        // Apply proper dropdown styles (restore original design)
-        dropdown.style.display = "flex";
-        dropdown.style.position = "fixed";
-        dropdown.style.left = "248px"; // Original position
-        dropdown.style.bottom = "20px"; // Original position
-        dropdown.style.width = "264px"; // Original width
-        dropdown.style.height = "auto"; // Original height
-        dropdown.style.background = ""; // Clear test background
-        dropdown.style.border = ""; // Clear test border
-        dropdown.style.zIndex = "99999"; // High z-index for Safari
-
-        // Restore original CSS classes
-        dropdown.className = "profile-dropdown-menu";
-
-        if (button) button.classList.add("active");
-
-        // Add click outside listener
-        setTimeout(() => {
-          document.addEventListener(
-            "click",
-            window.closeDropdownOnClickOutside,
-          );
-        }, 100);
-      };
-
-      window.closeProfileDropdown = function () {
-        const dropdown = document.getElementById(
-          "profile-dropdown-menu",
-        );
-        const button = document.getElementById(
-          "account-menu-button-inner",
-        );
-
-        if (dropdown) dropdown.style.display = "none";
-        if (button) button.classList.remove("active");
-
-        // Remove click outside listener
-        document.removeEventListener(
-          "click",
-          window.closeDropdownOnClickOutside,
-        );
-      };
-
-      window.closeDropdownOnClickOutside = function (event) {
-        const dropdown = document.getElementById(
-          "profile-dropdown-menu",
-        );
-        const accountCard =
-          document.getElementById("nav-account-card");
-
-        if (
-          accountCard &&
-          !accountCard.contains(event.target) &&
-          dropdown &&
-          !dropdown.contains(event.target)
-        ) {
-          window.closeProfileDropdown();
-        }
-      };
-
-      // Profile dropdown functionality is handled by profile-dropdown.js
-    </script>
-  </aside>
-</template><!-- Template for developer sidebar (hidden, for cloning) --><template id="developer-sidebar-template">
-  <aside id="sidebar-navigation" class="sidebar">
+  {% if is_developer %}
+<aside id="sidebar-navigation" class="sidebar">
     <div id="sidebar-content" class="sidebar__content">
       <!-- Navigation Section -->
       <div id="sidebar-navigation-section" class="sidebar__nav-section">
@@ -998,7 +129,7 @@
         <!-- Navigation Menu -->
         <nav id="sidebar-nav" class="sidebar__nav">
           <!-- Dashboard -->
-          <div id="nav-item-dashboard" class="sidebar__nav-item">
+          <div id="nav-item-dashboard" class="sidebar__nav-item" class="sidebar__nav-item">
             <a id="nav-item-dashboard-content" href="/developer/dashboard" class="sidebar__nav-item-content">
               <div id="nav-text-icon-dashboard" class="sidebar__nav-text-icon">
                 <div id="nav-icon-wrapper-dashboard" class="sidebar__nav-icon-wrapper">
@@ -1234,6 +365,379 @@
         </div>
       </div>
     </div>
+  </aside>
+  {% else %}
+<aside id="sidebar-navigation" class="sidebar" data-profile="investor">
+    <div id="sidebar-content" class="sidebar__content">
+      <!-- Navigation Section -->
+      <div id="sidebar-navigation-section" class="sidebar__nav-section">
+        <!-- Header Section -->
+        <div id="sidebar-header" class="sidebar__header">
+          <!-- Logo --><a id="sidebar-logo" href="/" class="sidebar__logo"><img src="/static/images/Logo%20Pool.svg" alt="POOOL"
+              width="139" height="37" /></a><!-- Search Input -->
+          <div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
+            <div id="sidebar-search" class="sidebar__search">
+              <div id="sidebar-search-content" class="sidebar__search-content">
+                <svg id="sidebar-search-icon" class="sidebar__search-icon" width="20" height="20" viewBox="0 0 20 20"
+                  fill="none">
+                  <circle cx="9" cy="9" r="6" stroke="#717680" stroke-width="1.66667"></circle>
+                  <path d="M13 13L17 17" stroke="#717680" stroke-width="1.66667" stroke-linecap="round"></path>
+                </svg>
+                <input id="sidebar-search-input" type="search" placeholder="Search" class="sidebar__search-input"
+                  autocomplete="off" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Navigation Menu -->
+        <nav id="sidebar-nav" class="sidebar__nav">
+          <div id="nav-item-marketplace-parent" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Parent Item (expandable) -->
+            <div id="nav-item-marketplace-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
+              data-item-id="marketplace-parent" style="cursor: pointer">
+              <div id="nav-text-icon-marketplace-parent" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-marketplace-parent" class="sidebar__nav-icon-wrapper">
+                  <img  src="/static/images/home-05.svg" alt="Marketplace" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-marketplace-parent" class="sidebar__nav-text">Marketplace</span>
+              </div>
+              <!-- Chevron Icon --><svg id="nav-chevron-marketplace-parent" class="sidebar__nav-chevron" width="16"
+                height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <!-- Children Container -->
+            <div id="nav-children-marketplace-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
+              <a id="nav-child-marketplace" href="/marketplace" class="sidebar__nav-child"><span
+                  class="sidebar__nav-child-text">Properties</span></a><a id="nav-child-commodities-marketplace"
+                href="/commodities-marketplace" class="sidebar__nav-child"><span
+                  class="sidebar__nav-child-text">Commodities</span></a>
+            </div>
+          </div>
+          <div id="nav-item-trading-parent" class="sidebar__nav-item">
+            <div id="nav-item-trading-parent-content" class="sidebar__nav-item-content sidebar__nav-item--parent"
+              data-item-id="trading-parent" style="cursor: pointer">
+              <div id="nav-text-icon-trading-parent" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-trading-parent" class="sidebar__nav-icon-wrapper">
+                  <img src="/static/images/chart-line-up.svg" alt="Trading" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-trading-parent" class="sidebar__nav-text">Resale Market</span>
+              </div>
+              <svg id="nav-chevron-trading-parent" class="sidebar__nav-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </div>
+            <div id="nav-children-trading-parent" class="sidebar__nav-children sidebar__nav-children--collapsed">
+              <a id="nav-child-overview" href="/marketplace-secondary" class="sidebar__nav-child"><span class="sidebar__nav-child-text">All Properties</span></a>
+              <a id="nav-child-my-trading" href="/my-trading" class="sidebar__nav-child"><span class="sidebar__nav-child-text">My Holdings</span></a>
+            </div>
+          </div>
+          <div id="nav-item-wallet" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-wallet-content" href="/wallet" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-wallet" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-wallet" class="sidebar__nav-icon-wrapper">
+                  <img  src="/static/images/wallet-02.svg" alt="Wallet" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-wallet" class="sidebar__nav-text">Wallet</span>
+              </div>
+              <!-- Soon Badge for Rewards and Leaderboard tabs -->
+            </a>
+          </div>
+          <div id="nav-item-portfolio" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-portfolio-content" href="/portfolio" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-portfolio" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-portfolio" class="sidebar__nav-icon-wrapper">
+                  <img  src="/static/images/line-chart-up-02.svg" alt="Portfolio" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-portfolio" class="sidebar__nav-text">Portfolio</span>
+              </div>
+              <!-- Soon Badge for Rewards and Leaderboard tabs -->
+            </a>
+          </div>
+          <div id="nav-item-rewards" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Disabled Item -->
+            <a id="nav-item-rewards-content" href="/rewards" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-rewards" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-rewards" class="sidebar__nav-icon-wrapper">
+                  <img  src="/static/images/star-01.svg" alt="Rewards" class="nav-icon" width="20" height="20" />
+                </div>
+                <span id="nav-text-rewards" class="sidebar__nav-text">Rewards</span>
+              </div>
+            </a>
+          </div>
+          <div id="nav-item-cart" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-cart-content" href="/cart" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-cart" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-cart" class="sidebar__nav-icon-wrapper">
+                  <img  src="/static/images/shopping-cart-01.svg" alt="Cart" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-cart" class="sidebar__nav-text">Cart</span>
+              </div>
+              <!-- Soon Badge for Rewards and Leaderboard tabs -->
+            </a>
+          </div>
+          <div id="nav-item-leaderboard" class="sidebar__nav-item">
+            <!-- Check if item is a parent (expandable) --><!-- Regular Item (clickable link) -->
+            <a id="nav-item-leaderboard-content" href="/leaderboard" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-leaderboard" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-leaderboard" class="sidebar__nav-icon-wrapper">
+                  <img  src="/static/images/award-05.svg" alt="Leaderboard" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-leaderboard" class="sidebar__nav-text">Leaderboard</span>
+              </div>
+            </a>
+          </div>
+          <div id="nav-item-community" class="sidebar__nav-item">
+            <a id="nav-item-community-content" href="/community" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-community" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-community" class="sidebar__nav-icon-wrapper">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+                <span id="nav-text-community" class="sidebar__nav-text">Community</span>
+              </div>
+              <span class="sidebar__nav-badge" style="background:rgba(3,255,136,0.15);color:#027A48;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;">New</span>
+            </a>
+          </div>
+          <div id="nav-item-cards-template" class="sidebar__nav-item">
+            <a id="nav-item-cards-template-content" href="/cards-template.html" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-cards-template" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-cards-template" class="sidebar__nav-icon-wrapper">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="9" y1="21" x2="9" y2="9"></line>
+                  </svg>
+                </div>
+                <span id="nav-text-cards-template" class="sidebar__nav-text">UI Cards</span>
+              </div>
+            </a>
+          </div>
+        </nav>
+      </div>
+      <!-- Footer Section -->
+      <div id="sidebar-footer" class="sidebar__footer">
+        <!-- Footer Navigation -->
+        <nav id="footer-nav" class="sidebar__footer-nav">
+          <div id="nav-item-notifications" class="sidebar__nav-item" x-data="notificationBadge()" @notifications-read.window="init()">
+            <a id="nav-item-notifications-content" href="/community?tab=notifications" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-notifications" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-notifications" class="sidebar__nav-icon-wrapper">
+                  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#717680" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                </div>
+                <span id="nav-text-notifications" class="sidebar__nav-text">Notifications</span>
+              </div>
+              <span id="notification-badge-count" x-show="count > 0" class="sidebar__nav-badge" style="background:#F04438;color:#FFF;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin-left:auto;" x-text="count"></span>
+            </a>
+            <script>
+                document.addEventListener('alpine:init', () => {
+                    Alpine.data('notificationBadge', () => ({
+                        count: 0,
+                        async init() {
+                            try {
+                                const res = await fetch('/api/community/notifications/unread-count');
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    this.count = data.count || 0;
+                                }
+                            } catch (e) {
+                                console.error('Failed to load notification count', e);
+                            }
+                        },
+                        async markAsRead() {
+                            this.count = 0;
+                        }
+                    }));
+                });
+            </script>
+          </div>
+          <div id="nav-item-settings" class="sidebar__nav-item">
+            <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
+                  <img  src="/static/images/settings-01.svg" alt="Settings" class="nav-icon" width="20"
+                    height="20" />
+                </div>
+                <span id="nav-text-settings" class="sidebar__nav-text">Settings</span>
+              </div>
+            </a>
+          </div>
+          <div id="nav-item-support" class="sidebar__nav-item">
+            <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
+              <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
+                <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
+                  <img  src="/static/images/message-chat-circle-grey.svg" alt="Support" class="nav-icon"
+                    width="20" height="20" />
+                </div>
+                <span id="nav-text-support" class="sidebar__nav-text">Support</span>
+              </div>
+              <div id="support-badge" class="support-badge">
+                <div id="support-status-dot" class="support-status-dot"></div>
+                <span id="support-badge-text" class="support-badge-text">Online</span>
+              </div>
+            </a>
+          </div>
+        </nav>
+        <!-- Community Card -->
+        <div id="nav-featured-card" class="nav-featured-card sidebar__featured-card">
+          <!-- Close Button --><button id="featured-card-close" class="sidebar__featured-close" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M14 14L6 6M6 14L14 6" stroke="#2E2EF9" stroke-width="1.66667" stroke-linecap="round">
+              </path>
+            </svg></button><!-- Text and supporting text -->
+          <div id="featured-card-text" class="sidebar__featured-text">
+            <div class="featured-card-title-wrap">
+              <h4 id="featured-card-title" class="sidebar__featured-title">
+                Community soon
+              </h4>
+            </div>
+            <p id="featured-card-description" class="sidebar__featured-description">
+              Check out the new community feature. Connect with other
+              investors soon.
+            </p>
+          </div>
+          <!-- Image wrap -->
+          <div class="sidebar__featured-image">
+            <img src="/static/images/community-illustration.png" alt="Community illustration" loading="lazy" />
+          </div>
+          <!-- Actions -->
+          <div id="featured-card-actions" class="sidebar__featured-actions">
+            <button id="featured-card-dismiss" class="sidebar__featured-button sidebar__featured-button--dismiss">
+              Dismiss
+            </button>
+            <button id="featured-card-action" class="sidebar__featured-button sidebar__featured-button--action">
+              What&#39;s new?
+            </button>
+          </div>
+        </div>
+        <!-- Account Card - Now fully clickable -->
+        <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
+          style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
+          <!-- Avatar Group -->
+          <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
+            <div id="account-avatar" class="sidebar__account-avatar">
+              <img loading="lazy" src="/static/images/Image.webp" alt="" />
+              <div id="account-online-indicator" class="sidebar__account-online"></div>
+            </div>
+            <div id="account-text-wrapper" class="sidebar__account-text">
+              <span id="account-name" class="sidebar__account-name"></span>
+              <span id="account-email" class="sidebar__account-email"></span>
+            </div>
+          </div>
+          <!-- Menu Button Icon (no longer a button) -->
+          <div id="account-menu-button" class="sidebar__account-menu" style="pointer-events: none">
+            <div id="account-menu-button-inner" class="sidebar__account-menu-button" aria-hidden="true">
+              <svg class="sidebar__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+                <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+            </div>
+          </div>
+          <!-- Profile Dropdown Menu -->
+          <div id="profile-dropdown-menu" class="profile-dropdown-menu" style="display: none">
+            <!-- Menu items wrapper -->
+            <div id="profile-menu-wrapper" class="profile-menu-wrapper">
+              <!-- Top menu items -->
+              <div id="profile-menu-items-top" class="profile-menu-items">
+                <!-- Documentation -->
+                <div id="menu-item-documentation" class="profile-menu-item">
+                  <div class="profile-menu-content">
+                    <div class="profile-icon-text">
+                      <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                        <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round">
+                        </path>
+                      </svg>
+                      <span class="profile-menu-text">Documentation</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Switch account section -->
+              <div id="profile-switch-section" class="profile-switch-section">
+                <div class="profile-switch-header">
+                  <span class="profile-switch-title">Switch account</span>
+                </div>
+                <!-- Current account (selected) -->
+                <div id="menu-item-current-account" class="profile-menu-item account-item selected">
+                  <div class="profile-account-content">
+                    <div class="profile-avatar-group">
+                      <div class="profile-avatar">
+                        <img loading="lazy" src="/static/images/Image.webp" alt="" />
+                        <div class="profile-avatar-border"></div>
+                        <div class="profile-online-indicator"></div>
+                      </div>
+                      <div class="profile-text-wrapper">
+                        <span class="profile-account-name"></span>
+                        <span class="profile-account-type">Investor Profile</span>
+                      </div>
+                    </div>
+                    <div class="profile-checkbox selected">
+                      <div class="profile-checkbox-check"></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Other accounts -->
+                <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
+                  <div class="profile-account-content">
+                    <div class="profile-avatar-group">
+                      <div class="profile-avatar">
+                        <img loading="lazy" src="/static/images/Featured%20icon.webp" alt="" />
+                        <div class="profile-avatar-border"></div>
+                        <div class="profile-online-indicator"></div>
+                      </div>
+                      <div class="profile-text-wrapper">
+                        <span class="profile-account-name"></span>
+                        <span class="profile-account-type">Developer profile</span>
+                      </div>
+                    </div>
+                    <div class="profile-checkbox">
+                      <div class="profile-checkbox-check"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Footer items -->
+            <div id="profile-footer-items" class="profile-footer-items">
+              <!-- Sign out -->
+              <div id="menu-item-sign-out" class="profile-menu-item">
+                <div class="profile-menu-content">
+                  <div class="profile-icon-text">
+                    <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                      <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7" stroke="#717680"
+                        stroke-width="1.67" stroke-linecap="round"></path>
+                    </svg>
+                    <span class="profile-menu-text">Sign out</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- Profile Dropdown JavaScript -->
     <script>
       // Profile Dropdown Functions - Global scope
@@ -1315,9 +819,11 @@
           window.closeProfileDropdown();
         }
       };
+
+      // Profile dropdown functionality is handled by profile-dropdown.js
     </script>
   </aside>
-</template><!-- Profile Dropdown Functions - Global scope for all sidebars -->
+  {% endif %}
 <script>
   // GLOBAL Profile Dropdown Functions (persistent across sidebar changes)
   window.toggleProfileDropdown = function () {
@@ -1631,61 +1137,4 @@
     });
   });
 </script>
-<!-- Script to switch sidebars based on saved profile -->
-<script>
-  (function () {
-    // Function to replace sidebar content
-    function replaceSidebar(profileType) {
-      const container = document.getElementById(
-        "dynamic-sidebar-container",
-      );
-      const templateId =
-        profileType === "developer"
-          ? "developer-sidebar-template"
-          : "investor-sidebar-template";
-      const template = document.getElementById(templateId);
-
-      if (container && template) {
-        // Clear current content
-        container.innerHTML = "";
-        // Clone and append new content
-        const newContent = template.content.cloneNode(true);
-        container.appendChild(newContent);
-
-        // Re-initialize profile dropdown functionality
-        if (typeof window.toggleProfileDropdown === "function") {
-          // The dropdown script should already be loaded
-        }
-      }
-    }
-
-    // Check saved profile on page load
-    const savedProfile = localStorage.getItem("selectedProfile");
-
-    // Set default profile if not set
-    if (!savedProfile) {
-      localStorage.setItem("selectedProfile", "investor");
-    }
-
-    // Determine the correct sidebar based on the current page path
-    // Developer pages (/developer/*) always get the developer sidebar
-    // All other pages (marketplace, wallet, portfolio, etc.) always get the investor sidebar
-    const currentPath = window.location.pathname;
-    const isDeveloperPage = currentPath.startsWith("/developer/") || currentPath === "/developer";
-
-    if (isDeveloperPage) {
-      // Developer pages always show developer sidebar
-      replaceSidebar("developer");
-      localStorage.setItem("selectedProfile", "developer");
-    }
-    // Non-developer pages always show investor sidebar (already loaded by default)
-
-    // Listen for profile changes
-    window.addEventListener("storage", function (e) {
-      if (e.key === "selectedProfile") {
-        // Reload page when profile changes
-        window.location.reload();
-      }
-    });
-  })();
-</script>
+</div>

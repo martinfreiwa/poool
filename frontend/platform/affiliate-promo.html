@@ -1,0 +1,409 @@
+{% with title="Affiliate Program", extra_css=['cards-template', 'affiliate-promo'], extra_js=[] %}{% include "components/head.html" %}{% endwith %}
+<body class="app-body fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+  <div class="app-wrapper">
+    <aside class="app-sidebar">
+      {% include 'components/sidebar.html' %}
+    </aside>
+
+    <!-- Main Content -->
+    <main class="app-content">
+      <div class="affiliate-promo-container">
+
+        <!-- ════════════════════════════════════════════════════════
+             HERO — Centered
+             ════════════════════════════════════════════════════════ -->
+        <header class="promo-hero">
+          <div class="promo-hero-content">
+            <div class="promo-hero-badge">
+              <img src="/static/images/Logo%20Pool.svg" alt="POOOL" class="promo-hero-badge-logo" />
+              POOOL PARTNER SYNDICATE
+            </div>
+            <h1 class="promo-hero-title">
+              Monetize your Audience with <span class="accent">Institutional Assets</span>
+            </h1>
+            <p class="promo-hero-subtitle">
+              POOOL is an exclusive fractional Real World Asset platform. We partner strictly with premium financial creators, wealth managers, and established communities to deliver high-ticket, performance-based commissions.
+            </p>
+            <div class="promo-hero-actions">
+              <a href="/affiliate/onboarding" class="ds-btn ds-btn--primary promo-hero-btn" id="hero-apply-btn">
+                Request Partner Access
+              </a>
+              <a href="#who-we-want" class="ds-btn promo-hero-btn promo-hero-btn--green" id="hero-view-tiers-btn">
+                Are You Qualified?
+              </a>
+            </div>
+            <div class="promo-hero-trust">
+              <span class="promo-hero-trust-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Application Required
+              </span>
+              <span class="promo-hero-trust-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Single-Level Performance
+              </span>
+              <span class="promo-hero-trust-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                30-Day Attribution
+              </span>
+            </div>
+          </div>
+        </header>
+
+        <!-- ════════════════════════════════════════════════════════
+             SOCIAL PROOF — Platform Stats
+             ════════════════════════════════════════════════════════ -->
+        <section class="promo-stats-bar reveal">
+          <div class="promo-stat">
+            <span class="promo-stat-value">$12M+</span>
+            <span class="promo-stat-label">Assets Under Management</span>
+          </div>
+          <div class="promo-stats-divider"></div>
+          <div class="promo-stat">
+            <span class="promo-stat-value">24</span>
+            <span class="promo-stat-label">Properties Live</span>
+          </div>
+          <div class="promo-stats-divider"></div>
+          <div class="promo-stat">
+            <span class="promo-stat-value">8</span>
+            <span class="promo-stat-label">Commission Tiers</span>
+          </div>
+          <div class="promo-stats-divider"></div>
+          <div class="promo-stat">
+            <span class="promo-stat-value">4.50%</span>
+            <span class="promo-stat-label">Max Commission Rate</span>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════════════════
+             HOW IT WORKS — 3-Step Process
+             ════════════════════════════════════════════════════════ -->
+        <section class="promo-process-section reveal" id="how-it-works">
+          <div class="promo-section-header">
+            <div class="promo-section-title">
+              <h2>How It Works</h2>
+              <p>From application to earnings in three steps.</p>
+            </div>
+            <div class="promo-section-divider"></div>
+          </div>
+
+          <div class="promo-process-grid">
+            <div class="process-step">
+              <div class="process-step-number">1</div>
+              <h3 class="process-step-title">Apply &amp; Verify</h3>
+              <p class="process-step-desc">Complete the 5-step onboarding wizard: profile, identity verification, tax setup, legal agreements, and a short compliance exam.</p>
+            </div>
+            <div class="process-step-connector">
+              <div class="process-connector-line"></div>
+            </div>
+            <div class="process-step">
+              <div class="process-step-number">2</div>
+              <h3 class="process-step-title">Admin Review</h3>
+              <p class="process-step-desc">Our team reviews your application within 1–3 business days. Once approved, your referral link and partner dashboard are activated.</p>
+            </div>
+            <div class="process-step-connector">
+              <div class="process-connector-line"></div>
+            </div>
+            <div class="process-step">
+              <div class="process-step-number">3</div>
+              <h3 class="process-step-title">Earn Commissions</h3>
+              <p class="process-step-desc">Share your link, drive qualified referrals, and climb the 8-tier ladder. Payouts are released after validation and the 30-day review period.</p>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- ════════════════════════════════════════════════════════
+             TIER TABLE — Institutional Layout
+             ════════════════════════════════════════════════════════ -->
+        <section class="promo-tier-section reveal" id="tiers" aria-labelledby="tiers-heading">
+          <div class="promo-section-header">
+            <div class="promo-section-title">
+              <h2 id="tiers-heading">The 8-Tier Performance Ladder</h2>
+              <p>Move up automatically. Your baseline commission scales purely with your 12-month trailing referral volume.</p>
+            </div>
+            <div class="promo-section-divider"></div>
+          </div>
+
+          <div class="tier-card">
+            <div class="tier-table-wrapper">
+              <table class="tier-table" id="tier-table">
+                <thead>
+                  <tr>
+                    <th>Tier Rank</th>
+                    <th>Commission</th>
+                    <th>Qualification</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-tier="Access">
+                    <td>Access</td>
+                    <td><span class="tier-rate">0.50%</span></td>
+                    <td>Entry — No minimum</td>
+                    <td><span class="tier-badge tier-badge--default">DEFAULT</span></td>
+                  </tr>
+                  <tr data-tier="Plus">
+                    <td>Plus</td>
+                    <td><span class="tier-rate">0.75%</span></td>
+                    <td>$50K+ trailing 12-mo volume</td>
+                    <td><svg class="tier-lock-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></td>
+                  </tr>
+                  <tr data-tier="Pro">
+                    <td>Pro</td>
+                    <td><span class="tier-rate">1.00%</span></td>
+                    <td>$150K+ trailing 12-mo volume</td>
+                    <td><svg class="tier-lock-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></td>
+                  </tr>
+                  <tr data-tier="Elite">
+                    <td>Elite</td>
+                    <td><span class="tier-rate">1.50%</span></td>
+                    <td>$500K+ trailing 12-mo volume</td>
+                    <td><svg class="tier-lock-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></td>
+                  </tr>
+                  <tr data-tier="Premium">
+                    <td>Premium</td>
+                    <td><span class="tier-rate">2.00%</span></td>
+                    <td>$1M+ trailing 12-mo volume</td>
+                    <td><svg class="tier-lock-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></td>
+                  </tr>
+                  <tr data-tier="Platinum">
+                    <td>Platinum</td>
+                    <td><span class="tier-rate">2.75%</span></td>
+                    <td>$2.5M+ trailing 12-mo volume</td>
+                    <td><svg class="tier-lock-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></td>
+                  </tr>
+                  <tr data-tier="Signature">
+                    <td>Signature</td>
+                    <td><span class="tier-rate">3.50%</span></td>
+                    <td>$5M+ trailing 12-mo volume</td>
+                    <td><svg class="tier-lock-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></td>
+                  </tr>
+                  <tr class="tier-elite" data-tier="Sovereign">
+                    <td>Sovereign</td>
+                    <td><span class="tier-rate">4.50%</span></td>
+                    <td>$10M+ trailing 12-mo volume</td>
+                    <td><span class="tier-badge tier-badge--elite">ELITE ACCESS</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════════════════
+             CALCULATOR — Tier-Aware Revenue Calculator
+             ════════════════════════════════════════════════════════ -->
+        <section class="promo-section promo-calc-section reveal" id="calculator">
+          <div class="promo-section-header">
+            <div class="promo-section-title">
+              <h2>Earnings Calculator</h2>
+              <p>Estimate your potential recurring revenue across tiers.</p>
+            </div>
+            <div class="promo-section-divider"></div>
+          </div>
+
+          <div class="ds-card calc-card">
+            <div class="calc-grid">
+              <div class="calc-inputs">
+                <div class="ds-form-group">
+                  <label class="ds-label">Average Investment per Referral</label>
+                  <div class="calc-slider-header">
+                    <span class="calc-slider-unit">USD</span>
+                    <span id="calc-investment-val" class="calc-slider-value">10,000</span>
+                  </div>
+                  <input type="range" id="calc-investment" min="1000" max="100000" step="1000" value="10000" class="ds-range-slider">
+                </div>
+
+                <div class="ds-form-group">
+                  <label class="ds-label">Qualified Referrals per Month</label>
+                  <div class="calc-slider-header">
+                    <span class="calc-slider-unit">Referrals</span>
+                    <span id="calc-referrals-val" class="calc-slider-value">5</span>
+                  </div>
+                  <input type="range" id="calc-referrals" min="1" max="100" step="1" value="5" class="ds-range-slider">
+                </div>
+              </div>
+
+              <div class="calc-results">
+                <div class="calc-results-inner">
+                  <h4 class="calc-results-label">Estimated Monthly Earnings</h4>
+                  <div class="calc-results-amount">
+                    <span class="calc-results-currency">USD</span>
+                    <span id="calc-monthly-earnings">500</span>
+                  </div>
+                  <div class="calc-results-tier">
+                    <span class="calc-results-tier-badge" id="calc-tier-badge">Pro</span>
+                    <span class="calc-results-tier-rate">at <strong id="calc-tier-rate">1.00%</strong> commission</span>
+                  </div>
+                  <div class="calc-results-annual">
+                    <span class="calc-results-annual-label">Annual estimate:</span>
+                    <span class="calc-results-annual-value" id="calc-annual-earnings">$6,000</span>
+                  </div>
+                  <p class="calc-results-note">
+                    Based on your estimated 12-month volume of <strong id="calc-annual-volume">$600,000</strong>. Increase volume to unlock higher tiers.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <script>
+          document.addEventListener('DOMContentLoaded', () => {
+            const invSlider = document.getElementById('calc-investment');
+            const refSlider = document.getElementById('calc-referrals');
+            const invVal = document.getElementById('calc-investment-val');
+            const refVal = document.getElementById('calc-referrals-val');
+            const earningsEl = document.getElementById('calc-monthly-earnings');
+            const tierBadge = document.getElementById('calc-tier-badge');
+            const tierRate = document.getElementById('calc-tier-rate');
+            const annualVol = document.getElementById('calc-annual-volume');
+
+            // Tier thresholds (12-month trailing volume)
+            const tiers = [
+              { name: 'Access',    rate: 0.0050, min: 0 },
+              { name: 'Plus',      rate: 0.0075, min: 50000 },
+              { name: 'Pro',       rate: 0.0100, min: 150000 },
+              { name: 'Elite',     rate: 0.0150, min: 500000 },
+              { name: 'Premium',   rate: 0.0200, min: 1000000 },
+              { name: 'Platinum',  rate: 0.0275, min: 2500000 },
+              { name: 'Signature', rate: 0.0350, min: 5000000 },
+              { name: 'Sovereign', rate: 0.0450, min: 10000000 },
+            ];
+
+            function getTier(annualVolume) {
+              let matched = tiers[0];
+              for (const t of tiers) {
+                if (annualVolume >= t.min) matched = t;
+              }
+              return matched;
+            }
+
+            function calculate() {
+              const investment = parseInt(invSlider.value);
+              const referrals = parseInt(refSlider.value);
+              const monthlyVolume = investment * referrals;
+              const annualVolume = monthlyVolume * 12;
+
+              const invProgress = ((investment - invSlider.min) / (invSlider.max - invSlider.min)) * 100;
+              invSlider.style.setProperty('--slider-progress', `${invProgress}%`);
+              
+              const refProgress = ((referrals - refSlider.min) / (refSlider.max - refSlider.min)) * 100;
+              refSlider.style.setProperty('--slider-progress', `${refProgress}%`);
+
+              const tier = getTier(annualVolume);
+              const monthly = monthlyVolume * tier.rate;
+
+              invVal.textContent = investment.toLocaleString();
+              refVal.textContent = referrals.toLocaleString();
+              earningsEl.textContent = Math.round(monthly).toLocaleString();
+              tierBadge.textContent = tier.name;
+              tierRate.textContent = (tier.rate * 100).toFixed(2) + '%';
+              annualVol.textContent = '$' + annualVolume.toLocaleString();
+
+              // Annual earnings
+              const annualEarningsEl = document.getElementById('calc-annual-earnings');
+              if (annualEarningsEl) {
+                annualEarningsEl.textContent = '$' + Math.round(monthly * 12).toLocaleString();
+              }
+
+              // Sync tier table highlight
+              document.querySelectorAll('#tier-table tbody tr').forEach(row => {
+                row.classList.remove('tier-row--active');
+                if (row.getAttribute('data-tier') === tier.name) {
+                  row.classList.add('tier-row--active');
+                }
+              });
+            }
+
+            invSlider.addEventListener('input', calculate);
+            refSlider.addEventListener('input', calculate);
+            calculate();
+
+            // Scroll-reveal animation
+            const reveals = document.querySelectorAll('.reveal');
+            if (reveals.length && 'IntersectionObserver' in window) {
+              const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                  if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                    observer.unobserve(entry.target);
+                  }
+                });
+              }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+              reveals.forEach(el => observer.observe(el));
+            } else {
+              // Fallback: show everything
+              reveals.forEach(el => el.classList.add('revealed'));
+            }
+          });
+        </script>
+
+        <!-- ════════════════════════════════════════════════════════
+             FAQ — Accordion
+             ════════════════════════════════════════════════════════ -->
+        <section class="promo-faq-section reveal" id="faq">
+          <div class="promo-section-header">
+            <div class="promo-section-title">
+              <h2>Frequently Asked Questions</h2>
+              <p>Common questions about the POOOL Partner Syndicate.</p>
+            </div>
+            <div class="promo-section-divider"></div>
+          </div>
+
+          <div class="faq-list">
+            <details class="faq-item">
+              <summary class="faq-question">What documents govern the POOOL Affiliate Program?</summary>
+              <div class="faq-answer">The core affiliate-facing documents are the Affiliate Terms &amp; Conditions, Affiliate Code of Conduct, Approved Marketing Materials Policy, Qualified Referral &amp; Payout Policy, and Affiliate Privacy Notice. You'll review all five during onboarding.</div>
+            </details>
+            <details class="faq-item">
+              <summary class="faq-question">How does the commission structure work?</summary>
+              <div class="faq-answer">POOOL uses a single-level, performance-based model with 8 tiers. Your commission rate (0.50%–4.50%) is determined purely by your rolling 12-month trailing referral volume. There are no downlines, no recruitment bonuses, and no MLM structure.</div>
+            </details>
+            <details class="faq-item">
+              <summary class="faq-question">When do I get paid?</summary>
+              <div class="faq-answer">Commission becomes payable only after a referral is fully qualified: valid attribution, completed KYC, first eligible paid investment, 30-day review period cleared, no unresolved issues, and your payout/tax setup is complete. Payouts are processed after all checks pass.</div>
+            </details>
+            <details class="faq-item">
+              <summary class="faq-question">What is a Qualified Referral?</summary>
+              <div class="faq-answer">A Qualified Referral is a referred user who is validly attributed to you, completes onboarding and KYC, makes a first eligible paid investment, clears the review period, and passes all final payout checks. A click, signup, or incomplete KYC does not create a payable commission.</div>
+            </details>
+            <details class="faq-item">
+              <summary class="faq-question">Can I create my own marketing materials?</summary>
+              <div class="faq-answer">You must use POOOL-approved marketing materials. If you create original content (blog posts, videos, podcasts) that references POOOL, it must stay factual, non-advisory, and direct users to official POOOL information. Custom pitch decks, modified brand assets, and guaranteed-return claims are strictly prohibited.</div>
+            </details>
+            <details class="faq-item">
+              <summary class="faq-question">How long does the application review take?</summary>
+              <div class="faq-answer">Applications are typically reviewed within 1–3 business days. After completing the 5-step onboarding wizard (profile, identity, tax setup, legal agreements, compliance exam), your application enters admin review. You'll receive an email notification once approved.</div>
+            </details>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════════════════
+             CTA — Dark Cinematic Block
+             ════════════════════════════════════════════════════════ -->
+        <section class="promo-cta-section reveal" id="cta-section">
+          <div class="promo-cta-glow"></div>
+          <div class="promo-cta-grid-overlay"></div>
+          <div class="promo-cta-content">
+            <h2 class="promo-cta-title">
+              Your Audience Deserves <span class="accent">Institutional Quality.</span>
+            </h2>
+            <p class="promo-cta-desc">
+              Submit your qualification request today. Applications are reviewed within 48 hours to ensure ecosystem integrity.
+            </p>
+            <div class="promo-cta-actions">
+              <a href="/affiliate/onboarding" class="promo-cta-btn" id="cta-apply-btn">
+                Submit Qualification Request
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </a>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

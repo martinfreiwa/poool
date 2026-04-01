@@ -1,0 +1,247 @@
+<div id="community-feed-tab" class="community-tab-panel">
+  <div class="community-content-layout">
+
+    <!-- Left: Feed -->
+    <div class="community-feed">
+
+      <!-- HTMX Filter State -->
+      <form id="feed-filters" style="display:none;">
+          <input type="hidden" id="form-feed-mode" name="feed_mode" value="all">
+          <input type="hidden" id="form-sort-by" name="sort_by" value="fresh">
+      </form>
+
+      <!-- Feed Toggle (M3-FE.3) -->
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+        <div style="display:flex; gap:8px; flex: 1; min-width: 200px;">
+          <button type="button" class="feed-toggle-btn active" id="feed-btn-all"
+            onclick="setFeedMode('all')">All Posts</button>
+          <button type="button" class="feed-toggle-btn" id="feed-btn-following"
+            onclick="setFeedMode('following')">Following</button>
+        </div>
+        <!-- Sort Toggle -->
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="feed-toggle-btn active" id="sort-btn-fresh"
+            onclick="setSortMode('fresh')">Fresh</button>
+          <button type="button" class="feed-toggle-btn" id="sort-btn-hot"
+            onclick="setSortMode('hot')">Hot</button>
+        </div>
+      </div>
+
+            <!-- Create Post Inline UI -->
+      <div class="community-create-post" style="padding: 16px; display: flex; flex-direction: column; gap: 16px; background: #fff; border: 1px solid var(--card-border-color); border-radius: 12px; margin-bottom: 24px;">
+        
+        <!-- User Info & Post Type Pill -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div id="fb-compose-avatar" class="ds-avatar ds-avatar--md" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #e4e6eb; color: #050505; font-size: 18px; font-weight: 600;">U</div>
+          <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <span id="fb-compose-name" style="font-weight: 600; font-size: 15px; color: #050505; margin-bottom: 2px;">User</span>
+            
+            <!-- Privacy Dropdown -->
+            <div style="position: relative; display: inline-block;">
+              <select id="fb-post-type-select" onchange="document.getElementById('post-type-input').value = this.value;" style="appearance: none; -webkit-appearance: none; background: #e4e6eb; border: none; padding: 4px 24px 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 600; color: #050505; cursor: pointer;">
+                <option value="general">🌍 General</option>
+                <option value="market_insight">📈 Insight</option>
+                <option value="review">⭐ Review</option>
+              </select>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; right: 8px; top: 8px; pointer-events: none;">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            <input type="hidden" id="post-type-input" value="general">
+          </div>
+        </div>
+
+        <!-- Text Area -->
+        <textarea id="post-content-input" rows="3" style="width: 100%; border: none; outline: none; box-shadow: none; font-size: 18px; line-height: 1.4; resize: none; padding: 0; font-family: inherit; color: #1c1e21;" placeholder="What's on your mind?"></textarea>
+        <div class="ds-helper-text" id="post-disclaimer-warning" style="display: none; color: var(--btn-danger-bg); margin-top: 8px;">
+          ⚠️ Your post appears to discuss investments. A disclaimer will be automatically added.
+        </div>
+
+        <!-- Image Previews -->
+        <div id="post-image-previews" style="display:flex; gap:8px; overflow-x:auto; min-height: 0;"></div>
+        
+        <!-- UX.11: Poll Creator -->
+        <div id="poll-creator" class="poll-creator" style="display: none; border: 1px solid #ced0d4; border-radius: 8px; padding: 16px;">
+          <div class="poll-creator-header" style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 15px;">📊 Create a Poll</h4>
+            <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" onclick="togglePollCreator()" style="border: none; background: transparent; cursor: pointer;">✕</button>
+          </div>
+          <input type="text" id="poll-question-input" class="ds-input" placeholder="Ask a question..." style="margin-bottom: 12px; border-color: #ced0d4;">
+          <div class="poll-option-inputs" id="poll-options-inputs" style="display: flex; flex-direction: column; gap: 8px;">
+            <input type="text" class="ds-input" placeholder="Option 1" style="border-color: #ced0d4;" oninput="updatePollOption(0, this.value)">
+            <input type="text" class="ds-input" placeholder="Option 2" style="border-color: #ced0d4;" oninput="updatePollOption(1, this.value)">
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;">
+            <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" onclick="addPollOption()">+ Add</button>
+            <select id="poll-expiry-select" class="ds-input" style="width: auto; padding: 4px 8px; font-size: 12px;">
+              <option value="">No expiry</option>
+              <option value="24" selected>1 day</option>
+              <option value="168">1 week</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Add to your post -->
+        <div style="border: 1px solid #ced0d4; border-radius: 8px; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+          <span style="font-weight: 600; font-size: 14px; color: #050505;">Add to your post</span>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <input type="file" id="post-image-file-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="uploadPostImage(event)">
+            <!-- Photo Upload Icon -->
+            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="document.getElementById('post-image-file-input').click()" title="Photo/Video">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#45bd62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </button>
+            <!-- Tag People Icon -->
+            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="triggerComposerTag('@')" title="Tag People">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1877f2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line>
+              </svg>
+            </button>
+            <!-- Tag Asset Icon -->
+            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="triggerComposerTag('$')" title="Tag Asset">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e83f5b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </button>
+            <!-- Poll Icon -->
+            <button type="button" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#f2f2f2'" onmouseout="this.style.background='transparent'" onclick="togglePollCreator()" title="Create Poll">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5c33b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="ds-helper-text" id="post-image-uploading" style="display: none; color: var(--brand-blue);">Uploading image...</div>
+        <div>
+          <button type="button" class="ds-btn ds-btn--primary" id="submit-post-btn" onclick="submitUserPost()" style="width: 100%; font-size: 15px; font-weight: 600; padding: 10px; border-radius: 6px;">Post</button>
+        </div>
+      </div>
+
+      <div id="community-feed-container"
+           hx-get="/community/partials/feed/list" 
+           hx-include="#feed-filters"
+           hx-trigger="load, reload-feed from:body">
+          <div style="padding: 40px; text-align: center; color: #98A2B3;">Loading feed...</div>
+      </div>
+    </div> <!-- closing community-feed-container -->
+
+    <!-- Right: Sidebar Panel -->
+    <div class="community-right-panel">
+      <!-- My Profile Card -->
+      <div class="community-profile-card">
+        <div class="profile-card-header">
+          <div id="my-profile-avatar-circle" class="profile-card-avatar-circle">M</div>
+          <div class="profile-card-info">
+            <span id="my-profile-name" class="profile-card-name">Martin F.</span>
+            <div id="my-profile-bio" class="profile-card-bio">Sustainable investor • Long-term holder 🌱</div>
+          </div>
+        </div>
+        <div class="profile-card-stats">
+          <div class="profile-stat"><span id="my-profile-posts" class="profile-stat-value">0</span><span
+              class="profile-stat-label">Posts</span></div>
+          <div class="profile-stat"><span id="my-profile-followers" class="profile-stat-value">0</span><span
+              class="profile-stat-label">Followers</span></div>
+          <div class="profile-stat"><span id="my-profile-following" class="profile-stat-value">0</span><span
+              class="profile-stat-label">Following</span></div>
+        </div>
+        <div class="profile-card-badges" id="my-profile-badges">
+        </div>
+        <button type="button" onclick="window.location.href='/settings'" class="ds-btn ds-btn--ghost profile-edit-btn"
+          style="border:1px solid #EAECF0; background:#F9FAFB; color:#344054; cursor:pointer; width:100%; display: flex; justify-content: center; align-items: center; margin-top: 16px;">Edit
+          Profile</button>
+      </div>
+
+      <!-- Trending Commodities -->
+      <div class="community-trending-card" id="trending-assets-widget">
+        <div class="trending-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+            <polyline points="16 7 22 7 22 13" />
+          </svg>
+          Trending This Week
+        </div>
+        <div id="trending-assets-container">
+          <div style="padding: 16px; text-align: center; color: #98A2B3; font-size: 13px;">
+            Loading trending assets...
+          </div>
+        </div>
+      </div>
+
+      <!-- Trending Tags -->
+      <div class="community-hashtags-card">
+        <div class="hashtag-trending-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="9" x2="20" y2="9"></line>
+            <line x1="4" y1="15" x2="20" y2="15"></line>
+            <line x1="10" y1="3" x2="8" y2="21"></line>
+            <line x1="16" y1="3" x2="14" y2="21"></line>
+          </svg>
+          Trending Tags
+        </div>
+        <div id="trending-hashtags-container">
+          <div style="padding: 12px; text-align: center; color: #98A2B3; font-size: 13px;">
+            Loading trending tags...
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming AMA -->
+      <div class="community-ama-card" id="sidebar-ama-widget" style="display: none;">
+        <div class="ama-card-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+          Upcoming AMA
+        </div>
+        <div class="ama-card-title" id="sidebar-ama-title"></div>
+        <div class="ama-card-expert" id="sidebar-ama-expert"></div>
+        <div class="ama-card-datetime">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span id="sidebar-ama-time"></span>
+        </div>
+        <div class="ama-card-actions">
+          <button class="ama-btn ama-btn--primary"
+            onclick="const amaBtn = document.querySelector('.community-tab-btn[data-tab=community-ama-tab]'); if(amaBtn) switchCommunityTab(amaBtn);">View
+            full AMA</button>
+        </div>
+      </div>
+
+      <!-- Who to Follow -->
+      <div class="community-follow-card" style="display: none;">
+        <div class="follow-card-title">Suggested Investors</div>
+        <div class="follow-item">
+          <div class="follow-item-avatar">EW</div>
+          <div class="follow-item-info"><span class="follow-item-name">Emma W.</span><span
+              class="follow-item-tag">🌱 Sustainable Investor</span></div>
+          <button class="follow-btn"
+            onclick="this.textContent = this.textContent === 'Follow' ? 'Following' : 'Follow'; this.classList.toggle('active');">Follow</button>
+        </div>
+        <div class="follow-item">
+          <div class="follow-item-avatar">JR</div>
+          <div class="follow-item-info"><span class="follow-item-name">James R.</span><span
+              class="follow-item-tag">📈 Growth Seeker • Premium</span></div>
+          <button class="follow-btn"
+            onclick="this.textContent = this.textContent === 'Follow' ? 'Following' : 'Follow'; this.classList.toggle('active');">Follow</button>
+        </div>
+        <div class="follow-item">
+          <div class="follow-item-avatar">LM</div>
+          <div class="follow-item-info"><span class="follow-item-name">Lisa M.</span><span
+              class="follow-item-tag">🔬 Research-driven</span></div><button class="follow-btn"
+            onclick="this.textContent = this.textContent === 'Follow' ? 'Following' : 'Follow'; this.classList.toggle('active');">Follow</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

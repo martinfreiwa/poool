@@ -287,7 +287,7 @@ pub async fn page_tax_report_pdf(
     jar: CookieJar,
     Query(query): Query<TaxExportQuery>,
 ) -> axum::response::Response {
-    use axum::response::{Html, Redirect};
+    use axum::response::Redirect;
     use sqlx::Row;
 
     let user = match crate::auth::middleware::get_current_user(&jar, &state.db).await {

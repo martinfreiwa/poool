@@ -15,6 +15,12 @@ pub struct RewardsOverview {
     pub progress_pct: i32,
     pub referral_code: Option<String>,
     pub referral_url: Option<String>,
+    /// Reward amount in cents that the referred friend receives on signup.
+    pub friend_reward_cents: i64,
+    /// Reward amount in cents that the referrer receives when the friend qualifies.
+    pub user_reward_cents: i64,
+    /// Minimum investment in cents required for a referral to qualify.
+    pub investment_required_cents: i64,
     pub total_clicks: i64,
     pub total_signups: i64,
     pub qualified_investors: i64,
@@ -80,4 +86,24 @@ pub struct SavePayoutSettingsForm {
     pub city: Option<String>,
     pub country: Option<String>,
     pub vat_number: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SubmitOnboardingForm {
+    pub exam_passed: bool,
+    pub status: Option<String>,
+    pub traffic_source: String,
+    pub audience_size: String,
+    pub main_url: String,
+    pub phone_number: String,
+    pub tax_id: String,
+    pub company_name: Option<String>,
+    pub accepted_policies: Vec<String>,
+    /// Server-side exam answer validation — keys are "q1".."q5", values are the selected answer.
+    pub exam_answers: Option<std::collections::HashMap<String, String>>,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct PostbackPayload {
+    pub postback_url: Option<String>,
 }

@@ -1,0 +1,22 @@
+<div id="community-announcements-tab" class="community-tab-panel" x-data="{ currentCategory: '' }">
+  <div class="announcements-filter-bar" id="ann-category-filters">
+    <button class="ann-filter-btn" :class="{ 'active': currentCategory === '' }" @click="currentCategory = ''"
+      hx-get="/community/partials/announcements/list" hx-target="#community-announcements-container">All</button>
+    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'new_commodities' }" @click="currentCategory = 'new_commodities'"
+      hx-get="/community/partials/announcements/list?category=new_commodities" hx-target="#community-announcements-container">New Commodities</button>
+    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'dividends' }" @click="currentCategory = 'dividends'"
+      hx-get="/community/partials/announcements/list?category=dividends" hx-target="#community-announcements-container">Dividends</button>
+    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'platform_updates' }" @click="currentCategory = 'platform_updates'"
+      hx-get="/community/partials/announcements/list?category=platform_updates" hx-target="#community-announcements-container">Platform Updates</button>
+    <button class="ann-filter-btn" :class="{ 'active': currentCategory === 'market_news' }" @click="currentCategory = 'market_news'"
+      hx-get="/community/partials/announcements/list?category=market_news" hx-target="#community-announcements-container">Market News</button>
+  </div>
+
+  <div class="announcements-list" id="community-announcements-container"
+       hx-get="/community/partials/announcements/list" hx-trigger="load">
+    <!-- Populated by HTMX -->
+    <div style="padding: 40px; text-align: center; color: #98A2B3;">
+        Loading announcements...
+    </div>
+  </div>
+</div>

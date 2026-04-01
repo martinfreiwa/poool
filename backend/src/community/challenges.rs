@@ -74,7 +74,7 @@ pub async fn increment_progress(
 
     for challenge in matching_challenges {
         // Upsert progress
-        let (current_val, mut is_completed): (i32, bool) = sqlx::query_as(
+        let (current_val, is_completed): (i32, bool) = sqlx::query_as(
             r#"
             INSERT INTO challenge_progress (user_id, challenge_id, current_value)
             VALUES ($1, $2, $3)
@@ -93,8 +93,6 @@ pub async fn increment_progress(
 
         // Check if just completed
         if !is_completed && current_val >= challenge.requirement_value {
-            is_completed = true;
-
             // Mark completed
             sqlx::query(
                 r#"

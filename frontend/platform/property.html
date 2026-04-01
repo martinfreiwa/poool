@@ -207,18 +207,18 @@
                     <div class="calc-slider-section slider-1">
                       <div class="calc-slider-labels"><span>Amount of Investment</span><span class="calc-slider-value" id="calc-slider-value-1">USD 100,000</span></div>
                       <input type="range" class="calc-slider" id="calc-slider-1" min="500" max="100000" value="100000" />
-                      <div class="calc-slider-limits"><span>$500</span><span>${{ asset.total_value_usd }}</span></div>
+                      <div class="calc-slider-limits"><span>$500</span><span>${{ asset.total_value_usd | default("100,000") }}</span></div>
                     </div>
                     <div class="calc-slider-section slider-2">
                       <div class="calc-slider-labels">
                         <span class="calc-slider-label-wrapper">Property value growth (1 year)
                           <span class="calc-help-tooltip-container">
-                            <svg  class="calc-help-tooltip-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <svg class="calc-help-tooltip-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                               <circle cx="8" cy="8" r="7" stroke="#A4A7AE" stroke-width="1.33"></circle>
                               <path d="M6 6C6 4.89543 6.89543 4 8 4C9.10457 4 10 4.89543 10 6C10 7.10457 9.10457 8 8 8V9" stroke="#A4A7AE" stroke-width="1.33" stroke-linecap="round"></path>
                               <circle cx="8" cy="11" r="0.5" fill="#A4A7AE"></circle>
                             </svg>
-                            <span class="calc-help-tooltip"><span class="calc-help-tooltip-text">Estimated annual rate at which the property value is expected to increase based on market data and historical performance.</span></span>
+                            <span class="calc-help-tooltip"><span class="calc-help-tooltip-text">Estimated annual rate at which the property value is expected to increase based on market data.</span></span>
                           </span>
                         </span>
                         <span class="calc-slider-value" id="calc-slider-value-2">10%</span>
@@ -230,12 +230,12 @@
                       <div class="calc-slider-labels">
                         <span class="calc-slider-label-wrapper">Expected annual rental yield
                           <span class="calc-help-tooltip-container">
-                            <svg  class="calc-help-tooltip-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <svg class="calc-help-tooltip-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                               <circle cx="8" cy="8" r="7" stroke="#A4A7AE" stroke-width="1.33"></circle>
                               <path d="M6 6C6 4.89543 6.89543 4 8 4C9.10457 4 10 4.89543 10 6C10 7.10457 9.10457 8 8 8V9" stroke="#A4A7AE" stroke-width="1.33" stroke-linecap="round"></path>
                               <circle cx="8" cy="11" r="0.5" fill="#A4A7AE"></circle>
                             </svg>
-                            <span class="calc-help-tooltip"><span class="calc-help-tooltip-text">The projected annual rental income as a percentage of the property value, based on current market conditions.</span></span>
+                            <span class="calc-help-tooltip"><span class="calc-help-tooltip-text">The projected annual rental income as a percentage of the property value.</span></span>
                           </span>
                         </span>
                         <span class="calc-slider-value" id="calc-slider-value-3">12%</span>
@@ -621,13 +621,18 @@
         var mainCard = document.getElementById('property-main-card');
         var similarWrapper = document.querySelector('.similar-properties-wrapper');
         var container = document.querySelector('.property-detail-content');
-        if (!mainCard || !similarWrapper || !container) return;
+        if (!mainCard || !container) return;
 
         var cardBottom = mainCard.offsetTop + mainCard.offsetHeight;
-        similarWrapper.style.top = (cardBottom + 48) + 'px';
-
-        var totalHeight = cardBottom + 48 + similarWrapper.offsetHeight + 48;
-        container.style.minHeight = totalHeight + 'px';
+        
+        if (similarWrapper) {
+          similarWrapper.style.top = (cardBottom + 48) + 'px';
+          var totalHeight = cardBottom + 48 + similarWrapper.offsetHeight + 48;
+          container.style.minHeight = totalHeight + 'px';
+        } else {
+          // If no similar properties, ensure the container still has minHeight encompassing mainCard
+          container.style.minHeight = (cardBottom + 48) + 'px';
+        }
       }
 
       if (document.readyState === 'loading') {

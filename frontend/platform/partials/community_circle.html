@@ -1,0 +1,305 @@
+<div id="community-circle-tab" class="community-tab-panel">
+  <div class="circle-layout">
+
+    <!-- XP Summary Card -->
+    <div id="xp-summary-card" class="circle-stats-row" style="margin-bottom:var(--section-gap);">
+      <div class="ds-card"
+        style="flex:2;background:linear-gradient(135deg,#0a0b2e 0%,#1a1b4b 100%);border:none;color:#fff;">
+        <div style="display:flex;align-items:center;gap:16px;width:100%;">
+          <div id="xp-level-icon" style="font-size:40px;">🌱</div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
+              <span id="xp-level-name"
+                style="font-size:20px;font-weight:700;color:#fff;font-family:var(--font-family);">Seedling</span>
+              <span id="xp-level-num" style="font-size:13px;color:#98a2b3;">Level 1</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span id="xp-total"
+                style="font-size:28px;font-weight:700;color:#03FF88;font-family:var(--font-family);">0</span>
+              <span style="font-size:13px;color:#98a2b3;">XP</span>
+            </div>
+            <div class="ds-progress" style="background:rgba(255,255,255,0.1); margin-top:8px;">
+              <div id="xp-progress-bar" class="ds-progress__fill"
+                style="background:linear-gradient(90deg,#03FF88,#0000FF);width:0%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;" class="ds-text-caption">
+              <span id="xp-to-next" style="color:#98a2b3;">0 XP to next level</span>
+              <span id="xp-progress-pct" style="color:#98a2b3;">0%</span>
+            </div>
+            <span id="xp-login-streak"
+              style="display:none;font-size:12px;color:#FDB022;background:rgba(253,176,34,0.15);padding:2px 10px;border-radius:12px;margin-top:8px;display:inline-block;">🔥
+              0-day streak</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Circle Stats Row -->
+    <div class="circle-stats-row" id="circle-stats-row">
+      <div class="ds-card" style="display: flex; gap: 12px; align-items: center; padding: 20px;">
+        <div class="circle-stat-icon" style="background:#EEF4FF;">👥</div>
+        <div style="display: flex; flex-direction: column;">
+          <span id="circle-member-count" class="ds-text-xl"
+            style="font-size: 20px; color: var(--page-title-color); margin: 0; line-height: 1.2;">—</span>
+          <span class="ds-text-caption" style="color: var(--text-secondary); margin-top: 2px;">Members</span>
+        </div>
+      </div>
+      <div class="ds-card" style="display: flex; gap: 12px; align-items: center; padding: 20px;">
+        <div class="circle-stat-icon" style="background:#ECFDF3;">⚡</div>
+        <div style="display: flex; flex-direction: column;">
+          <span id="circle-total-xp" class="ds-text-xl"
+            style="font-size: 20px; color: var(--page-title-color); margin: 0; line-height: 1.2;">—</span>
+          <span class="ds-text-caption" style="color: var(--text-secondary); margin-top: 2px;">Circle XP</span>
+        </div>
+      </div>
+      <div class="ds-card" style="display: flex; gap: 12px; align-items: center; padding: 20px;">
+        <div class="circle-stat-icon" style="background:#FFFAEB;">🏆</div>
+        <div style="display: flex; flex-direction: column;">
+          <span id="circle-level" class="ds-text-xl"
+            style="font-size: 20px; color: var(--page-title-color); margin: 0; line-height: 1.2;">—</span>
+          <span class="ds-text-caption" style="color: var(--text-secondary); margin-top: 2px;">Circle
+            Level</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Circle State -->
+    <div id="no-circle-state" style="display:none;">
+      <div class="ds-card" style="text-align:center;padding:40px 24px;">
+        <div style="font-size:48px;margin-bottom:16px;">🟢</div>
+        <h3 class="ds-text-md" style="margin:0 0 8px;">You're not in a circle yet</h3>
+        <p class="ds-text-body" style="color:var(--text-secondary);margin:0 0 20px;">Create your own circle or
+          browse the leaderboard to find one to join.</p>
+        <button class="ds-btn ds-btn--primary"
+          onclick="document.getElementById('create-circle-modal').style.display='flex'">Create a Circle</button>
+      </div>
+    </div>
+
+    <!-- Circle Content -->
+    <div id="circle-content" style="display:none;">
+      <div class="circle-content-grid">
+        <div class="circle-members-card">
+          <div class="circle-members-header">
+            <h3 class="section-title-std" id="circle-name-header">Your Circle</h3>
+            <div style="display:flex;gap:8px;">
+              <button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="openCircleSettings()">⚙️
+                Settings</button>
+              <button class="ds-btn ds-btn--primary ds-btn--sm"
+                onclick="document.getElementById('invite-modal').style.display='flex'">Invite</button>
+            </div>
+          </div>
+          <div id="circle-member-list" class="circle-member-list">
+            <!-- Dynamically populated -->
+          </div>
+          <div style="padding:8px 16px;text-align:center;">
+            <button class="ds-btn ds-btn--ghost ds-btn--sm" id="leave-circle-btn" onclick="handleLeaveCircle()"
+              style="color:#F04438;font-size:12px;">Leave Circle</button>
+          </div>
+        </div>
+
+        <!-- Circle Leaderboard -->
+        <div class="circle-challenge-card">
+          <div class="circle-challenge-header">
+            <span style="font-size:20px;">🏅</span>
+            <h3 class="section-title-std" style="margin-bottom:0;">Circle Leaderboard</h3>
+          </div>
+          <div id="circle-leaderboard-list" class="circle-leaderboard" style="padding:12px 16px;">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- XP History Section -->
+    <div style="margin-top:24px;">
+      <div
+        style="background:#fff;border:1px solid var(--card-border-color);border-radius:12px;overflow:hidden;">
+        <div
+          style="padding:16px 24px;border-bottom:1px solid var(--card-border-color);display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="font-size:16px;font-weight:600;color:#101828;margin:0;">Recent XP Activity</h3>
+        </div>
+        <div id="xp-history-list" style="padding:0;">
+          <div style="text-align:center;color:#667085;padding:24px;font-size:14px;">Loading XP history...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Invites -->
+    <div id="pending-invites-section" style="display:none;margin-top:24px;">
+      <div
+        style="background:#fff;border:1px solid var(--card-border-color);border-radius:12px;overflow:hidden;">
+        <div style="padding:16px 24px;border-bottom:1px solid var(--card-border-color);">
+          <h3 style="font-size:16px;font-weight:600;color:#101828;margin:0;">📩 Pending Circle Invites</h3>
+        </div>
+        <div id="invite-list" style="padding:12px 16px;"></div>
+      </div>
+    </div>
+
+    <!-- Pending Join Requests (for circle owners/admins) -->
+    <div id="pending-requests-section" style="display:none;margin-top:24px;">
+      <div
+        style="background:#fff;border:1px solid var(--card-border-color);border-radius:12px;overflow:hidden;">
+        <div
+          style="padding:16px 24px;border-bottom:1px solid var(--card-border-color);display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="font-size:16px;font-weight:600;color:#101828;margin:0;">🔒 Join Requests</h3>
+          <span id="requests-count-badge"
+            style="font-size:12px;background:#FEF0C7;color:#B54708;padding:2px 8px;border-radius:12px;font-weight:600;"></span>
+        </div>
+        <div id="requests-list" style="padding:12px 16px;"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Create Circle Modal -->
+  <div id="create-circle-modal"
+    style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div class="ds-card" style="padding:32px;max-width:420px;width:90%;">
+      <h3 class="ds-text-md" style="margin:0 0 16px;">Create Your Circle</h3>
+      <div style="margin-bottom:16px;">
+        <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle Name</label>
+        <input id="circle-name-input" type="text" class="ds-input" maxlength="100"
+          placeholder="e.g. The Green Fund" style="width:100%;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Description
+          (optional)</label>
+        <textarea id="circle-desc-input" class="ds-input" maxlength="500" rows="3"
+          placeholder="What's your circle about?" style="width:100%;resize:vertical;"></textarea>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Emoji</label>
+        <input id="circle-emoji-input" type="text" class="ds-input" maxlength="5" value="🟢"
+          style="width:80px;font-size:24px;text-align:center;">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="ds-btn ds-btn--secondary"
+          onclick="document.getElementById('create-circle-modal').style.display='none'">Cancel</button>
+        <button class="ds-btn ds-btn--primary" onclick="handleCreateCircle()">Create Circle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invite Modal -->
+  <div id="invite-modal"
+    style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div class="ds-card" style="padding:32px;max-width:420px;width:90%;">
+      <h3 class="ds-text-md" style="margin:0 0 8px;">Invite to Circle</h3>
+      <p class="ds-text-body" style="color:var(--text-secondary);margin:0 0 16px;">Share your referral link to
+        invite friends. When they sign up, they'll automatically join your circle!</p>
+      <div
+        style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:12px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+        <input id="circle-invite-link" type="text" readonly
+          style="flex:1;border:none;background:transparent;font-size:13px;color:var(--text-primary);outline:none;"
+          value="">
+        <button class="ds-btn ds-btn--primary ds-btn--sm" onclick="copyInviteLink()">Copy</button>
+      </div>
+      <div style="text-align:right;">
+        <button class="ds-btn ds-btn--secondary"
+          onclick="document.getElementById('invite-modal').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Circle Settings Modal -->
+  <div id="circle-settings-modal"
+    style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;"
+    onclick="if(event.target===this)this.style.display='none'">
+    <div class="ds-card"
+      style="padding:0;max-width:480px;width:90%;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+      <!-- Modal Header -->
+      <div
+        style="padding:24px 28px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div
+            style="width:36px;height:36px;border-radius:8px;background:#EEF4FF;display:flex;align-items:center;justify-content:center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-blue)"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </div>
+          <h3 class="ds-text-md" style="margin:0;">Circle Settings</h3>
+        </div>
+        <button onclick="document.getElementById('circle-settings-modal').style.display='none'"
+          style="background:none;border:none;cursor:pointer;padding:4px;color:var(--text-secondary);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="padding:24px 28px;">
+        <!-- Circle Name -->
+        <div style="margin-bottom:20px;">
+          <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle
+            Name</label>
+          <input id="settings-circle-name" type="text" class="ds-input" maxlength="100"
+            placeholder="e.g. The Green Fund" style="width:100%;">
+        </div>
+
+        <!-- Description -->
+        <div style="margin-bottom:20px;">
+          <label class="ds-text-body"
+            style="font-weight:600;display:block;margin-bottom:6px;">Description</label>
+          <textarea id="settings-circle-desc" class="ds-input" maxlength="500" rows="3"
+            placeholder="What's your circle about?" style="width:100%;resize:vertical;"></textarea>
+        </div>
+
+        <!-- Emoji -->
+        <div style="margin-bottom:20px;">
+          <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle
+            Emoji</label>
+          <input id="settings-circle-emoji" type="text" class="ds-input" maxlength="5"
+            style="width:80px;font-size:24px;text-align:center;">
+        </div>
+
+        <!-- Privacy Toggle -->
+        <div
+          style="margin-bottom:4px;padding:16px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border-color);">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="ds-text-body" style="font-weight:600;margin-bottom:2px;">Public Circle</div>
+              <div class="ds-text-caption" style="color:var(--text-secondary);">Anyone can join your circle
+                without approval</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+              <input id="settings-circle-public" type="checkbox" style="opacity:0;width:0;height:0;">
+              <span id="settings-toggle-track"
+                style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:var(--border-color);border-radius:12px;transition:0.2s;"
+                onclick="this.previousElementSibling.checked = !this.previousElementSibling.checked; this.style.backgroundColor = this.previousElementSibling.checked ? 'var(--brand-blue)' : 'var(--border-color)'; this.querySelector('span').style.transform = this.previousElementSibling.checked ? 'translateX(20px)' : 'translateX(0)';">
+                <span
+                  style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.1);"></span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div
+        style="padding:16px 28px; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-radius:0 0 12px 12px;">
+        <button class="ds-btn ds-btn--ghost ds-btn--sm" style="color:var(--btn-danger-bg);"
+          onclick="if(confirm('Are you sure you want to delete this circle? This cannot be undone.')) handleDeleteCircle()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          </svg>
+          Delete Circle
+        </button>
+        <div style="display:flex;gap:8px;">
+          <button class="ds-btn ds-btn--secondary"
+            onclick="document.getElementById('circle-settings-modal').style.display='none'">Cancel</button>
+          <button id="settings-save-btn" class="ds-btn ds-btn--primary"
+            onclick="handleSaveCircleSettings()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

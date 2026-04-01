@@ -100,11 +100,12 @@ pub async fn login_page(
 
 /// GET /auth/signup – Render the signup page.
 pub async fn signup_page(
+    jar: CookieJar,
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> impl IntoResponse {
     let error = params.get("error").cloned();
-    render_signup(&state, error)
+    render_signup(&state, &jar, error)
 }
 
 /// GET /auth/forgot-password – Render the forgot password page.
@@ -509,11 +510,12 @@ pub async fn signup_submit(
     if let Some(mut code_str) = referral_code.filter(|c| !c.trim().is_empty()) {
         code_str = code_str.trim().to_string();
 
-        let mut subid = None;
-        if let Some(idx) = code_str.find('|') {
-            subid = Some(code_str[idx + 1..].to_string());
-            code_str = code_str[..idx].to_string();
-        }
+        let mut parts = code_str.split('|');
+        let just_code = parts.next().unwrap_or("").to_string();
+        let subid = parts.next().filter(|s| !s.is_empty()).map(String::from);
+        let utm_source = parts.next().filter(|s| !s.is_empty()).map(String::from);
+        
+        code_str = just_code;
 
         // 1. Resolve code to referrer user_id and their tier
         let row = sqlx::query!(
@@ -543,6 +545,17 @@ pub async fn signup_submit(
             )
             .execute(&state.db)
             .await;
+        }
+
+        // Also track in the new affiliate system (Phase 18)
+        // If code matches an active affiliate, create affiliate_referrals record
+        if let Err(e) = crate::rewards::service::attribute_affiliate_referral(
+            &state.db, &code_str, user.id, subid, utm_source, ip.clone()
+        ).await {
+            tracing::error!(
+                "Failed to attribute affiliate referral for code {}: {}",
+                code_str, e
+            );
         }
     }
 
@@ -873,7 +886,7 @@ fn render_login(state: &AppState, error: Option<String>) -> Response {
     Html(html).into_response()
 }
 
-fn render_signup(state: &AppState, error: Option<String>) -> Response {
+fn render_signup(state: &AppState, jar: &CookieJar, error: Option<String>) -> Response {
     let tmpl = match state.templates.get_template("signup.html") {
         Ok(t) => t,
         Err(e) => {
@@ -881,10 +894,16 @@ fn render_signup(state: &AppState, error: Option<String>) -> Response {
             return Html("<h1>Internal Server Error</h1>".to_string()).into_response();
         }
     };
+    
+    let referral_code = jar
+        .get(crate::auth::middleware::REFERRAL_COOKIE)
+        .map(|c| c.value().split('|').next().unwrap_or("").to_string());
+
     let html = tmpl
         .render(context! {
             error => error.unwrap_or_default(),
             google_enabled => state.config.google_oauth_enabled(),
+            referral_code => referral_code,
         })
         .unwrap_or_else(|e| format!("Template error: {}", e));
     Html(html).into_response()

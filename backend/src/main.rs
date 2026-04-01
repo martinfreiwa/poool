@@ -202,6 +202,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Auto-refund worker for expired primary escrow offerings
     tokio::spawn(admin::primary_escrow::run_auto_refund_worker(pool.clone()));
 
+    // Affiliate holdback worker (runs every 6 hours)
+    tokio::spawn(rewards::service::run_affiliate_holdback_worker(pool.clone()));
+
+    // Affiliate tier progression worker (runs every 24 hours)
+    tokio::spawn(rewards::service::run_affiliate_tier_progression_worker(pool.clone()));
+
     // Rate limiter cleanup (every 10 minutes)
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(10 * 60));
@@ -337,7 +343,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     (SELECT COALESCE(SUM(balance_cents), 0)::bigint FROM wallets WHERE wallet_type = 'cash' AND currency = 'USD') as total_wallets,
                     (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM deposit_requests WHERE status IN ('approved', 'completed', 'paid') AND currency = 'USD') as total_deposits,
                     (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM withdrawal_requests WHERE status != 'rejected' AND currency = 'USD') as total_withdrawals,
-                    (SELECT COALESCE(SUM(total_cents), 0)::bigint FROM orders WHERE status IN ('completed', 'pending_kyc') AND payment_method = 'wallet') as total_purchases
+                    (SELECT COALESCE(SUM(total_cents), 0)::bigint FROM orders WHERE status IN ('completed', 'pending_kyc') AND payment_method = 'wallet') as total_purchases,
+                    (SELECT COALESCE(SUM(amount_cents), 0)::bigint FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE wallet_type = 'cash' AND currency = 'USD') AND status = 'completed') as expected_wallets_ledger
                 "#
             )
             .fetch_one(&recon_pool)
@@ -349,13 +356,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let total_deposits = t.total_deposits.unwrap_or(0);
                     let total_withdrawals = t.total_withdrawals.unwrap_or(0);
                     let total_purchases = t.total_purchases.unwrap_or(0);
+                    let expected_wallets = t.expected_wallets_ledger.unwrap_or(0);
 
                     recon_total_wallets = total_wallets;
                     recon_total_deposits = total_deposits;
                     recon_total_withdrawals = total_withdrawals;
                     recon_total_purchases = total_purchases;
-
-                    let expected_wallets = total_deposits - total_withdrawals - total_purchases;
                     let delta = total_wallets - expected_wallets;
                     recon_cash_delta = delta;
 
@@ -688,6 +694,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/api/assets/:asset_id/metadata.json",
             get(api_asset_metadata),
         )
+        // ── Featured assets JSON (for leaderboard spotlight card) ──
+        .route("/api/assets/featured", get(api_assets_featured))
         // ── Reports (still in main.rs pending Phase 5 extraction) ─────
         .route("/api/admin/reports/:report_type", get(api_admin_reports))
         // ── Profile / KYC page redirect ───────────────────────────────
@@ -699,6 +707,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // ── Community (demo + SSR Post Pages) ─────────────────────────
         .route("/community", get(page_community))
         .route("/community/post/:id", get(page_community_post))
+        .route("/community/partials/feed/list", get(community_feed_list_htmx))
+        .route("/community/partials/announcements/list", get(community_announcements_list_htmx))
+        .route("/community/partials/:tab", get(community_htmx_partial))
         // ── Rewards V2 (premium layout) ───────────────────────────────
         .route("/rewards-v2", get(page_rewards_v2))
         // ── Marketplace (demo) ─────────────────────────────────────────
@@ -1721,6 +1732,78 @@ async fn api_asset_metadata(
     }
 }
 
+/// GET /api/assets/featured — returns published featured assets as JSON.
+/// Used by the leaderboard spotlight card to rotate through featured investments.
+async fn api_assets_featured(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    use sqlx::Row;
+
+    if !crate::auth::middleware::is_authenticated(&jar, &state.db).await {
+        return (
+            axum::http::StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({"error": "Unauthorized"})),
+        )
+            .into_response();
+    }
+
+    let rows = sqlx::query(
+        r#"SELECT
+             a.id::text, a.title, a.slug, a.asset_type,
+             a.location_city, a.location_country,
+             a.total_value_cents, a.token_price_cents,
+             a.tokens_total, a.tokens_available,
+             a.annual_yield_bps, a.capital_appreciation_bps,
+             a.funding_status, a.term_months,
+             (SELECT image_url FROM asset_images WHERE asset_id = a.id ORDER BY is_cover DESC, created_at ASC LIMIT 1) as cover_image
+           FROM assets a
+           WHERE a.published = true
+             AND a.featured = true
+             AND a.funding_status IN ('funding_open', 'funding_in_progress')
+           ORDER BY a.created_at DESC
+           LIMIT 10"#,
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let assets: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            let total: i32 = r.get::<Option<i32>, _>("tokens_total").unwrap_or(0);
+            let available: i32 = r.get::<Option<i32>, _>("tokens_available").unwrap_or(0);
+            let funded_pct = if total > 0 {
+                (total - available) as f64 / total as f64 * 100.0
+            } else {
+                0.0
+            };
+            let cover = r.get::<Option<String>, _>("cover_image")
+                .map(|u| crate::storage::service::rewrite_gcs_url(&u))
+                .unwrap_or_else(|| "/images/villa1.webp".to_string());
+
+            serde_json::json!({
+                "id": r.get::<String, _>("id"),
+                "title": r.get::<Option<String>, _>("title"),
+                "slug": r.get::<Option<String>, _>("slug"),
+                "asset_type": r.get::<Option<String>, _>("asset_type"),
+                "location_city": r.get::<Option<String>, _>("location_city"),
+                "location_country": r.get::<Option<String>, _>("location_country"),
+                "total_value_cents": r.get::<Option<i64>, _>("total_value_cents"),
+                "token_price_cents": r.get::<Option<i64>, _>("token_price_cents"),
+                "annual_yield_bps": r.get::<Option<i32>, _>("annual_yield_bps"),
+                "capital_appreciation_bps": r.get::<Option<i32>, _>("capital_appreciation_bps"),
+                "funding_status": r.get::<Option<String>, _>("funding_status"),
+                "term_months": r.get::<Option<i32>, _>("term_months"),
+                "funded_pct": format!("{:.1}", funded_pct),
+                "cover_image": cover,
+            })
+        })
+        .collect();
+
+    Json(serde_json::json!({ "assets": assets })).into_response()
+}
+
 /// GET /api/orders/:order_id — returns order + items for the logged-in user
 async fn api_order_detail(
     jar: CookieJar,
@@ -2018,6 +2101,82 @@ impl tower::Service<axum::http::Request<axum::body::Body>> for HostDispatch {
 /// GET /payment-success  Payment success page (protected).
 async fn page_payment_success(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "payment-success.html").await
+}
+
+/// GET /community/partials/:tab — Serves HTMX partial views for the community tabs.
+async fn community_htmx_partial(
+    Path(tab): Path<String>,
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let template_name = match tab.as_str() {
+        "feed" => "partials/community_feed.html",
+        "announcements" => "partials/community_announcements.html",
+        "circle" => "partials/community_circle.html",
+        "ama" => "partials/community_ama.html",
+        "challenges" => "partials/community_challenges.html",
+        _ => return (axum::http::StatusCode::NOT_FOUND, axum::response::Html("Tab not found".to_string())).into_response(),
+    };
+    common::routes_helper::serve_protected(jar, &state, template_name).await.into_response()
+}
+
+/// GET /community/partials/feed/list — Serves the populated list of posts natively via MiniJinja
+async fn community_feed_list_htmx(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Query(query): axum::extract::Query<crate::community::routes::FeedQuery>,
+) -> impl IntoResponse {
+    let user = crate::auth::middleware::get_current_user(&jar, &state.db).await;
+    let posts = crate::community::routes::get_feed_data(&state, &query, user.as_ref())
+        .await
+        .unwrap_or_default();
+
+    #[derive(serde::Serialize)]
+    struct Context {
+        posts: Vec<crate::community::models::PostDisplay>,
+        current_feed_mode: String,
+        base_url: String,
+    }
+
+    let current_feed_mode = query.feed_mode.clone().unwrap_or_else(|| "all".to_string());
+
+    common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "partials/community_post_list.html",
+        Context { 
+            posts, 
+            current_feed_mode,
+            base_url: state.config.base_url.clone(),
+        },
+    )
+    .await
+    .into_response()
+}
+
+/// GET /community/partials/announcements/list — Serves the populated list of announcements natively via MiniJinja
+async fn community_announcements_list_htmx(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    axum::extract::Query(query): axum::extract::Query<crate::community::routes::FeedQuery>,
+) -> impl IntoResponse {
+    let posts = crate::community::service::get_announcements(&state.db, query.category.clone(), 50)
+        .await
+        .unwrap_or_default();
+
+    #[derive(serde::Serialize)]
+    struct Context {
+        posts: Vec<crate::community::models::AnnouncementDisplay>,
+    }
+
+    common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "partials/community_announcements_list.html",
+        Context { posts },
+    )
+    .await
+    .into_response()
 }
 
 /// GET /community — Community demo page (protected).

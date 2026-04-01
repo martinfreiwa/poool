@@ -2,7 +2,8 @@
  * community-amas.js — Expert AMAs Tab Logic
  * Wires the Expert AMAs tab to /api/community/amas endpoints
  */
-document.addEventListener('DOMContentLoaded', function () {
+window.initCommunityAmas = function () {
+    if (!document.getElementById('ama-loading')) return;
 
     let _activeAmaId = null;  // The "hero" AMA (live, accepting_questions, or upcoming)
 
@@ -375,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ─── Init ───────────────────────────────────────────────────────
 
-    const amaTabBtn = document.querySelector('[data-tab="community-ama-tab"]');
+    const amaTabBtn = document.querySelector('.community-tab-btn[data-tab="community-ama-tab"]');
     if (amaTabBtn) {
         amaTabBtn.addEventListener('click', function () {
             loadAmas();
@@ -383,4 +384,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     window.loadAmas = loadAmas;
+};
+
+document.addEventListener('DOMContentLoaded', window.initCommunityAmas);
+document.body.addEventListener('htmx:afterSwap', (e) => {
+    if (e.target.id === 'community-content-area') window.initCommunityAmas();
 });

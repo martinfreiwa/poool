@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS deposit_requests (
     currency            VARCHAR(3) NOT NULL,
     amount_cents        BIGINT NOT NULL CHECK (amount_cents > 0),
     provider            VARCHAR(30) NOT NULL
-                        CHECK (provider IN ('stripe', 'xendit', 'midtrans', 'mangopay', 'manual')),
+                        CHECK (provider IN ('stripe', 'ocbc', 'midtrans', 'mangopay', 'manual')),
     provider_reference  VARCHAR(255),
     status              VARCHAR(20) NOT NULL DEFAULT 'pending'
                         CHECK (status IN ('pending', 'paid', 'expired', 'failed', 'cancelled')),

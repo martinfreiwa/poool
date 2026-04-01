@@ -1,6 +1,7 @@
 {% with title="Community", meta_description="Connect with other POOOL investors. Share insights, celebrate milestones,
 and grow together.",
-extra_css=['community'], extra_js=['htmx-init', 'profile-dropdown', 'community-feed', 'community-announcements', 'community-circles'] %}{%
+extra_css=['community', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown', 'community-feed',
+'community-circles'] %}{%
 include
 "components/head.html" %}{% endwith %}
 
@@ -15,859 +16,271 @@ include
   </script>
   {% include 'components/mobile-menu.html' %}
 
-  <div id="app-wrapper" class="app-wrapper community-page">
-    {% include 'components/sidebar.html' %}
+  <div class="lb-page">
+    <div class="lb-sidebar">
+      {% include 'components/sidebar.html' %}
+    </div>
 
-    <main id="app-content" class="ds-main community-main">
-      <div class="community-container">
-
-        <!-- Page Header (ds-page-header pattern) -->
-        <div class="ds-page-header community-page-header">
-          <div class="ds-page-header__title-row community-title-wrapper">
-            <!---->
-            <h1 class="ds-page-header__title community-title">Community</h1>
-          </div>
-          <div style="background:#F2F4F7; color:#475467; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:6px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            Preview — Coming Soon
+    <main class="ds-main lb-main">
+      <!-- Sticky Top Bar -->
+      <header class="lb-topbar">
+        <div class="lb-topbar-left">
+          <span class="lb-topbar-title">Community</span>
+          <div class="lb-topbar-tabs">
+            <button type="button" class="lb-topbar-tab active community-tab-btn" data-tab="community-feed-tab"
+              hx-get="/community/partials/feed" hx-target="#community-content-area" hx-push-url="?tab=feed"
+              onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Feed</button>
+            <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-announcements-tab"
+              hx-get="/community/partials/announcements" hx-target="#community-content-area" hx-push-url="?tab=announcements"
+              onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Announcements</button>
+            <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-circle-tab"
+              hx-get="/community/partials/circle" hx-target="#community-content-area" hx-push-url="?tab=circle"
+              onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">My Circle</button>
+            <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-ama-tab"
+              hx-get="/community/partials/ama" hx-target="#community-content-area" hx-push-url="?tab=ama"
+              onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Expert AMAs</button>
+            <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-challenges-tab"
+              hx-get="/community/partials/challenges" hx-target="#community-content-area" hx-push-url="?tab=challenges"
+              onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Challenges</button>
           </div>
         </div>
+        <div class="lb-topbar-right">
+          <div class="lb-topbar-search" style="opacity: 0.5;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" placeholder="Search community..." disabled />
+          </div>
+        </div>
+      </header>
 
-        <!-- Tab Navigation (rewards-tab-nav pattern) -->
+      <div class="lb-container" style="padding-top: 16px;">
+
+        <!-- Tab Navigation — HTMX-driven via topbar buttons -->
         <script>
+          /**
+           * switchCommunityTab — programmatically activates a topbar HTMX tab button.
+           * Works by clicking the button, which triggers both the HTMX swap and the
+           * onclick active-state handler.
+           */
           function switchCommunityTab(clickedBtn) {
+            if (!clickedBtn) return;
+            // Update active states
             document.querySelectorAll('.community-tab-btn').forEach(function (b) { b.classList.remove('active'); });
-            document.querySelectorAll('.community-tab-panel').forEach(function (p) { p.classList.add('hidden'); });
             clickedBtn.classList.add('active');
-            var panel = document.getElementById(clickedBtn.getAttribute('data-tab'));
-            if (panel) panel.classList.remove('hidden');
+            // Trigger HTMX swap by clicking the button
+            if (typeof htmx !== 'undefined') {
+              htmx.trigger(clickedBtn, 'click');
+            }
           }
-          
+
           window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const tab = urlParams.get('tab');
-            if (tab) {
+            if (tab && tab !== 'feed') {
               const targetTab = document.querySelector(`.community-tab-btn[data-tab="community-${tab}-tab"]`);
               if (targetTab) {
                 switchCommunityTab(targetTab);
               }
-            } else {
-              // Default to feed
-              const feedTab = document.querySelector('.community-tab-btn[data-tab="community-feed-tab"]');
-              if (feedTab) switchCommunityTab(feedTab);
             }
+            // Default (feed) is already loaded via hx-trigger="load" on #community-content-area
           });
         </script>
-        <div class="community-tab-nav">
-          <button type="button" class="community-tab-btn active" data-tab="community-feed-tab"
-            onclick="switchCommunityTab(this)">
-            Feed
-          </button>
-          <button type="button" class="community-tab-btn" data-tab="community-search-tab"
-            onclick="switchCommunityTab(this)">
-            Search
-          </button>
-          <button type="button" class="community-tab-btn" data-tab="community-announcements-tab"
-            onclick="switchCommunityTab(this)">
-            Announcements
-          </button>
-          <button type="button" class="community-tab-btn" data-tab="community-circle-tab"
-            onclick="switchCommunityTab(this)">
-            My Circle
-          </button>
-          <button type="button" class="community-tab-btn" data-tab="community-ama-tab"
-            onclick="switchCommunityTab(this)">
-            Expert AMAs
-          </button>
-          <button type="button" class="community-tab-btn" data-tab="community-challenges-tab"
-            onclick="switchCommunityTab(this)">
-            Challenges
-          </button>
-          <button type="button" class="community-tab-btn" data-tab="community-notifications-tab"
-            onclick="switchCommunityTab(this)">
-            Notifications
-          </button>
-          <button type="button" class="community-tab-btn" data-tab="community-saved-tab"
-            onclick="switchCommunityTab(this); if(window.loadSavedPosts) loadSavedPosts();">
-            Saved
-          </button>
+        <div style="display: none;" class="community-tab-nav">
+          <!-- Hidden old tab nav to not break any external scripts if they look for this wrapper -->
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════
              TAB: SEARCH
              ═══════════════════════════════════════════════════════════ -->
         <div id="community-search-tab" class="community-tab-panel hidden" x-data="communitySearch()">
-          <div class="community-content-layout" style="display: block; max-width: 800px; margin: 0 auto; padding-bottom: 60px;">
-            
+          <div class="community-content-layout"
+            style="display: block; max-width: 800px; margin: 0 auto; padding-bottom: 60px;">
+
             <div style="margin-bottom: 24px;">
               <h2 class="ds-text-xl" style="margin-bottom: 16px;">Search Community</h2>
               <form @submit.prevent="executeSearch()" style="display: flex; gap: 8px; margin-bottom: 16px;">
-                <input type="text" x-model="query" class="ds-input" placeholder="Search keywords, hashtags, users..." style="flex: 1; padding: 12px; font-size: 16px;">
+                <input type="text" x-model="query" class="ds-input" placeholder="Search keywords, hashtags, users..."
+                  style="flex: 1; padding: 12px; font-size: 16px;">
                 <button type="submit" class="ds-btn ds-btn--primary" style="padding: 12px 24px; height: auto;">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
                 </button>
               </form>
-              
+
               <div style="display: flex; gap: 8px;">
-                <button type="button" @click="setType('all')" :class="type === 'all' ? 'ds-btn--primary' : 'ds-btn--secondary'" class="ds-btn ds-btn--sm">All</button>
-                <button type="button" @click="setType('posts')" :class="type === 'posts' ? 'ds-btn--primary' : 'ds-btn--secondary'" class="ds-btn ds-btn--sm">Posts</button>
-                <button type="button" @click="setType('users')" :class="type === 'users' ? 'ds-btn--primary' : 'ds-btn--secondary'" class="ds-btn ds-btn--sm">Users</button>
+                <button type="button" @click="setType('all')"
+                  :class="type === 'all' ? 'ds-btn--primary' : 'ds-btn--secondary'"
+                  class="ds-btn ds-btn--sm">All</button>
+                <button type="button" @click="setType('posts')"
+                  :class="type === 'posts' ? 'ds-btn--primary' : 'ds-btn--secondary'"
+                  class="ds-btn ds-btn--sm">Posts</button>
+                <button type="button" @click="setType('users')"
+                  :class="type === 'users' ? 'ds-btn--primary' : 'ds-btn--secondary'"
+                  class="ds-btn ds-btn--sm">Users</button>
               </div>
             </div>
 
             <!-- Loading State -->
             <div x-show="loading" class="ds-text-subtitle" style="text-align: center; padding: 40px;">
-               Searching...
+              Searching...
             </div>
 
             <div x-show="!loading && hasSearched">
-                <!-- Users Results -->
-                <div x-show="users.length > 0 && (type === 'all' || type === 'users')" style="margin-bottom: 32px;">
-                    <h3 class="ds-text-md" style="margin-bottom: 16px;">Users</h3>
-                    <div style="display: grid; gap: 12px;">
-                        <template x-for="u in users" :key="u.user_id">
-                            <div class="ds-card" style="display: flex; align-items: center; justify-content: space-between; padding: 16px; cursor: pointer; transition: all 0.2s;" @click="window.location.href='/community/feed?profile=' + u.user_id" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--card-shadow)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <template x-if="u.avatar_url">
-                                        <img :src="u.avatar_url" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
-                                    </template>
-                                    <template x-if="!u.avatar_url">
-                                        <div style="width: 48px; height: 48px; border-radius: 50%; background: #EEF4FF; color: var(--btn-primary-bg, #0000FF); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px;" x-text="u.display_name.charAt(0)"></div>
-                                    </template>
-                                    <div>
-                                        <div class="ds-text-body-lg" style="font-weight: 600;" x-text="u.display_name"></div>
-                                        <div class="ds-text-caption" style="color: var(--text-secondary);" x-text="u.follower_count + ' Followers'"></div>
-                                    </div>
-                                </div>
-                                <button class="ds-btn ds-btn--secondary ds-btn--sm" @click.stop="">Follow</button>
-                            </div>
+              <!-- Users Results -->
+              <div x-show="users.length > 0 && (type === 'all' || type === 'users')" style="margin-bottom: 32px;">
+                <h3 class="ds-text-md" style="margin-bottom: 16px;">Users</h3>
+                <div style="display: grid; gap: 12px;">
+                  <template x-for="u in users" :key="u.user_id">
+                    <div class="ds-card"
+                      style="display: flex; align-items: center; justify-content: space-between; padding: 16px; cursor: pointer; transition: all 0.2s;"
+                      @click="window.location.href='/community/feed?profile=' + u.user_id"
+                      onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--card-shadow)';"
+                      onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                      <div style="display: flex; align-items: center; gap: 12px;">
+                        <template x-if="u.avatar_url">
+                          <img :src="u.avatar_url"
+                            style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
                         </template>
-                    </div>
-                </div>
-
-                <!-- Posts Results -->
-                <div x-show="posts.length > 0 && (type === 'all' || type === 'posts')">
-                    <h3 class="ds-text-md" style="margin-bottom: 16px;">Posts</h3>
-                    <div style="display: flex; flex-direction: column; gap: 16px;">
-                        <template x-for="p in posts" :key="p.id">
-                            <div class="ds-card feed-post-card" @click="window.location.href='/community/feed?post=' + p.id" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--card-shadow)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
-                                <div class="feed-post-header">
-                                    <div class="feed-post-avatar-wrapper">
-                                        <template x-if="p.author_avatar">
-                                            <img :src="p.author_avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                                        </template>
-                                        <template x-if="!p.author_avatar">
-                                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #EEF4FF; color: var(--btn-primary-bg, #0000FF); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px;" x-text="p.author_name.charAt(0)"></div>
-                                        </template>
-                                    </div>
-                                    <div class="feed-post-author-info">
-                                        <div class="ds-text-body" style="font-weight: 600;" x-text="p.author_name"></div>
-                                        <div class="ds-text-caption" style="color: var(--text-secondary);" x-text="new Date(p.created_at).toLocaleDateString()"></div>
-                                    </div>
-                                </div>
-                                <div class="feed-post-body">
-                                    <div class="ds-text-body" x-html="p.content" style="max-height: 100px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; line-clamp: 4; -webkit-box-orient: vertical;"></div>
-                                </div>
-                            </div>
+                        <template x-if="!u.avatar_url">
+                          <div
+                            style="width: 48px; height: 48px; border-radius: 50%; background: #EEF4FF; color: var(--btn-primary-bg, #0000FF); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px;"
+                            x-text="u.display_name.charAt(0)"></div>
                         </template>
+                        <div>
+                          <div class="ds-text-body-lg" style="font-weight: 600;" x-text="u.display_name"></div>
+                          <div class="ds-text-caption" style="color: var(--text-secondary);"
+                            x-text="u.follower_count + ' Followers'"></div>
+                        </div>
+                      </div>
+                      <button class="ds-btn ds-btn--secondary ds-btn--sm" @click.stop="">Follow</button>
                     </div>
+                  </template>
                 </div>
+              </div>
 
-                <!-- Empty State -->
-                <div x-show="users.length === 0 && posts.length === 0" class="ds-card" style="text-align: center; border: 1px dashed var(--card-border-color); box-shadow: none;">
-                  <p class="ds-text-subtitle" style="margin: 0;">No results found for your search.</p>
+              <!-- Posts Results -->
+              <div x-show="posts.length > 0 && (type === 'all' || type === 'posts')">
+                <h3 class="ds-text-md" style="margin-bottom: 16px;">Posts</h3>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <template x-for="p in posts" :key="p.id">
+                    <div class="ds-card feed-post-card" @click="window.location.href='/community/feed?post=' + p.id"
+                      style="cursor: pointer; transition: all 0.2s;"
+                      onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--card-shadow)';"
+                      onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                      <div class="feed-post-header">
+                        <div class="feed-post-avatar-wrapper">
+                          <template x-if="p.author_avatar">
+                            <img :src="p.author_avatar"
+                              style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                          </template>
+                          <template x-if="!p.author_avatar">
+                            <div
+                              style="width: 40px; height: 40px; border-radius: 50%; background: #EEF4FF; color: var(--btn-primary-bg, #0000FF); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px;"
+                              x-text="p.author_name.charAt(0)"></div>
+                          </template>
+                        </div>
+                        <div class="feed-post-author-info">
+                          <div class="ds-text-body" style="font-weight: 600;" x-text="p.author_name"></div>
+                          <div class="ds-text-caption" style="color: var(--text-secondary);"
+                            x-text="new Date(p.created_at).toLocaleDateString()"></div>
+                        </div>
+                      </div>
+                      <div class="feed-post-body">
+                        <div class="ds-text-body" x-text="p.content"
+                          style="max-height: 100px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; line-clamp: 4; -webkit-box-orient: vertical;">
+                        </div>
+                      </div>
+                    </div>
+                  </template>
                 </div>
+              </div>
+
+              <!-- Empty State -->
+              <div x-show="users.length === 0 && posts.length === 0" class="ds-card"
+                style="text-align: center; border: 1px dashed var(--card-border-color); box-shadow: none;">
+                <p class="ds-text-subtitle" style="margin: 0;">No results found for your search.</p>
+              </div>
             </div>
 
           </div>
         </div>
 
         <script>
-        document.addEventListener('alpine:init', () => {
+          document.addEventListener('alpine:init', () => {
             Alpine.data('communitySearch', () => ({
-                query: '',
-                type: 'all',
-                loading: false,
-                hasSearched: false,
-                users: [],
-                posts: [],
-                
-                setType(newType) {
-                    this.type = newType;
-                    if (this.query.trim() !== '') {
-                        this.executeSearch();
-                    }
-                },
+              query: '',
+              type: 'all',
+              loading: false,
+              hasSearched: false,
+              users: [],
+              posts: [],
 
-                async executeSearch() {
-                    const q = this.query.trim();
-                    if (!q) return;
-
-                    this.loading = true;
-                    this.hasSearched = true;
-                    
-                    try {
-                        const url = new URL('/api/community/search', window.location.origin);
-                        url.searchParams.set('q', q);
-                        url.searchParams.set('type', this.type);
-                        
-                        const res = await fetch(url.toString());
-                        if (res.ok) {
-                            const data = await res.json();
-                            this.users = data.users || [];
-                            this.posts = data.posts || [];
-                        }
-                    } catch (e) {
-                        console.error('Search failed', e);
-                    } finally {
-                        this.loading = false;
-                    }
+              setType(newType) {
+                this.type = newType;
+                if (this.query.trim() !== '') {
+                  this.executeSearch();
                 }
+              },
+
+              async executeSearch() {
+                const q = this.query.trim();
+                if (!q) return;
+
+                this.loading = true;
+                this.hasSearched = true;
+
+                try {
+                  const url = new URL('/api/community/search', window.location.origin);
+                  url.searchParams.set('q', q);
+                  url.searchParams.set('type', this.type);
+
+                  const res = await fetch(url.toString());
+                  if (res.ok) {
+                    const data = await res.json();
+                    this.users = data.users || [];
+                    this.posts = data.posts || [];
+                  }
+                } catch (e) {
+                  console.error('Search failed', e);
+                } finally {
+                  this.loading = false;
+                }
+              }
             }));
-        });
+          });
         </script>
 
         <!-- ═══════════════════════════════════════════════════════════
              TAB 1: FEED
              ═══════════════════════════════════════════════════════════ -->
-        <div id="community-feed-tab" class="community-tab-panel">
-          <div class="community-content-layout">
-
-            <!-- Left: Feed -->
-            <div class="community-feed">
-
-              <!-- Feed Toggle (M3-FE.3) -->
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
-                <div style="display:flex; gap:8px; flex: 1; min-width: 200px;">
-                  <button type="button" class="feed-toggle-btn active" id="feed-btn-all" onclick="setFeedMode('all')">All Posts</button>
-                  <button type="button" class="feed-toggle-btn" id="feed-btn-following" onclick="setFeedMode('following')">Following</button>
-                </div>
-                <!-- Sort Toggle -->
-                <div style="display:flex; gap:8px;">
-                    <button type="button" class="feed-toggle-btn active" id="sort-btn-fresh" onclick="setSortMode('fresh')">Fresh</button>
-                    <button type="button" class="feed-toggle-btn" id="sort-btn-hot" onclick="setSortMode('hot')">Hot</button>
-                </div>
-              </div>
-
-              <!-- Create Post -->
-              <div class="community-create-post">
-                <div class="create-post-avatar-circle" id="create-post-my-avatar">M</div>
-                <div class="create-post-input-wrap">
-                  <div class="create-post-input" onclick="openCreatePostModal('general')">Share an insight, tip, or investment story...</div>
-                  <div class="create-post-actions">
-                    <button class="create-post-action-btn" onclick="openCreatePostModal('general', true)">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
-                      </svg>
-                      Photo
-                    </button>
-                    <button class="create-post-action-btn" onclick="openCreatePostModal('market_insight')">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="20" x2="18" y2="10" />
-                        <line x1="12" y1="20" x2="12" y2="4" />
-                        <line x1="6" y1="20" x2="6" y2="14" />
-                      </svg>
-                      Market Insight
-                    </button>
-                    <button class="create-post-action-btn" onclick="openCreatePostModal('review')">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon
-                          points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                      </svg>
-                      Review
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div id="community-feed-container"></div>
-            </div> <!-- closing community-feed-container -->
-
-            <!-- Right: Sidebar Panel -->
-            <div class="community-right-panel">
-              <!-- My Profile Card -->
-              <div class="community-profile-card">
-                <div class="profile-card-header">
-                  <div id="my-profile-avatar-circle" class="profile-card-avatar-circle">M</div>
-                  <div class="profile-card-info">
-                    <span id="my-profile-name" class="profile-card-name">Martin F.</span>
-                    <div id="my-profile-bio" class="profile-card-bio">Sustainable investor • Long-term holder 🌱</div>
-                  </div>
-                </div>
-                <div class="profile-card-stats">
-                  <div class="profile-stat"><span id="my-profile-posts" class="profile-stat-value">0</span><span
-                      class="profile-stat-label">Posts</span></div>
-                  <div class="profile-stat"><span id="my-profile-followers" class="profile-stat-value">0</span><span
-                      class="profile-stat-label">Followers</span></div>
-                  <div class="profile-stat"><span id="my-profile-following" class="profile-stat-value">0</span><span
-                      class="profile-stat-label">Following</span></div>
-                </div>
-                <div class="profile-card-badges" id="my-profile-badges">
-                </div>
-                <button type="button" onclick="openProfileEditModal()" class="ds-btn ds-btn--ghost profile-edit-btn" style="border:1px solid #EAECF0; background:#F9FAFB; color:#344054; cursor:pointer; width:100%; display: flex; justify-content: center; align-items: center; margin-top: 16px;">Edit Profile</button>
-              </div>
-
-              <!-- Trending Commodities -->
-              <div class="community-trending-card" id="trending-assets-widget">
-                <div class="trending-card-title">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                    <polyline points="16 7 22 7 22 13" />
-                  </svg>
-                  Trending This Week
-                </div>
-                <div id="trending-assets-container">
-                  <div style="padding: 16px; text-align: center; color: #98A2B3; font-size: 13px;">
-                    Loading trending assets...
-                  </div>
-                </div>
-              </div>
-
-              <!-- Trending Tags -->
-              <div class="community-hashtags-card">
-                <div class="hashtag-trending-title">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="4" y1="9" x2="20" y2="9"></line>
-                    <line x1="4" y1="15" x2="20" y2="15"></line>
-                    <line x1="10" y1="3" x2="8" y2="21"></line>
-                    <line x1="16" y1="3" x2="14" y2="21"></line>
-                  </svg>
-                  Trending Tags
-                </div>
-                <div id="trending-hashtags-container">
-                  <div style="padding: 12px; text-align: center; color: #98A2B3; font-size: 13px;">
-                    Loading trending tags...
-                  </div>
-                </div>
-              </div>
-
-              <!-- Upcoming AMA -->
-              <div class="community-ama-card" id="sidebar-ama-widget" style="display: none;">
-                <div class="ama-card-label">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 6v6l4 2" />
-                  </svg>
-                  Upcoming AMA
-                </div>
-                <div class="ama-card-title" id="sidebar-ama-title"></div>
-                <div class="ama-card-expert" id="sidebar-ama-expert"></div>
-                <div class="ama-card-datetime">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  <span id="sidebar-ama-time"></span>
-                </div>
-                <div class="ama-card-actions">
-                  <button class="ama-btn ama-btn--primary" onclick="const feedTab = document.querySelector('.community-tab[data-tab=community-ama-tab]'); if(feedTab) switchCommunityTab(feedTab);">View full AMA</button>
-                </div>
-              </div>
-
-              <!-- Who to Follow -->
-              <div class="community-follow-card" style="display: none;">
-                <div class="follow-card-title">Suggested Investors</div>
-                <div class="follow-item">
-                  <div class="follow-item-avatar">EW</div>
-                  <div class="follow-item-info"><span class="follow-item-name">Emma W.</span><span
-                      class="follow-item-tag">🌱 Sustainable Investor</span></div>
-                  <button class="follow-btn" onclick="this.textContent = this.textContent === 'Follow' ? 'Following' : 'Follow'; this.classList.toggle('active');">Follow</button>
-                </div>
-                <div class="follow-item">
-                  <div class="follow-item-avatar">JR</div>
-                  <div class="follow-item-info"><span class="follow-item-name">James R.</span><span
-                      class="follow-item-tag">📈 Growth Seeker • Premium</span></div>
-                  <button class="follow-btn" onclick="this.textContent = this.textContent === 'Follow' ? 'Following' : 'Follow'; this.classList.toggle('active');">Follow</button>
-                </div>
-                <div class="follow-item">
-                  <div class="follow-item-avatar">LM</div>
-                  <div class="follow-item-info"><span class="follow-item-name">Lisa M.</span><span
-                      class="follow-item-tag">🔬 Research-driven</span></div><button class="follow-btn" onclick="this.textContent = this.textContent === 'Follow' ? 'Following' : 'Follow'; this.classList.toggle('active');">Follow</button>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div id="community-content-area" hx-get="/community/partials/feed" hx-trigger="load">
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════════
-             TAB 2: ANNOUNCEMENTS
-             ═══════════════════════════════════════════════════════════ -->
-        <div id="community-announcements-tab" class="community-tab-panel hidden">
-          <div class="announcements-filter-bar" id="ann-category-filters">
-            <button class="ann-filter-btn active" data-category="">All</button>
-            <button class="ann-filter-btn" data-category="new_commodities">New Commodities</button>
-            <button class="ann-filter-btn" data-category="dividends">Dividends</button>
-            <button class="ann-filter-btn" data-category="platform_updates">Platform Updates</button>
-            <button class="ann-filter-btn" data-category="market_news">Market News</button>
-          </div>
-
-          <div class="announcements-list" id="community-announcements-container">
-            <!-- Populated by JS -->
 
 
 
 
 
-
-          </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════════════════════════
-             TAB 3: MY CIRCLE
-             ═══════════════════════════════════════════════════════════ -->
-        <div id="community-circle-tab" class="community-tab-panel hidden">
-          <div class="circle-layout">
-
-            <!-- XP Summary Card -->
-            <div id="xp-summary-card" class="circle-stats-row" style="margin-bottom:var(--section-gap);">
-              <div class="ds-card" style="flex:2;background:linear-gradient(135deg,#0a0b2e 0%,#1a1b4b 100%);border:none;color:#fff;">
-                <div style="display:flex;align-items:center;gap:16px;width:100%;">
-                  <div id="xp-level-icon" style="font-size:40px;">🌱</div>
-                  <div style="flex:1;">
-                    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;">
-                      <span id="xp-level-name" style="font-size:20px;font-weight:700;color:#fff;font-family:var(--font-family);">Seedling</span>
-                      <span id="xp-level-num" style="font-size:13px;color:#98a2b3;">Level 1</span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <span id="xp-total" style="font-size:28px;font-weight:700;color:#03FF88;font-family:var(--font-family);">0</span>
-                      <span style="font-size:13px;color:#98a2b3;">XP</span>
-                    </div>
-                    <div class="ds-progress" style="background:rgba(255,255,255,0.1); margin-top:8px;">
-                      <div id="xp-progress-bar" class="ds-progress__fill" style="background:linear-gradient(90deg,#03FF88,#0000FF);width:0%;"></div>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;margin-top:4px;" class="ds-text-caption">
-                      <span id="xp-to-next" style="color:#98a2b3;">0 XP to next level</span>
-                      <span id="xp-progress-pct" style="color:#98a2b3;">0%</span>
-                    </div>
-                    <span id="xp-login-streak" style="display:none;font-size:12px;color:#FDB022;background:rgba(253,176,34,0.15);padding:2px 10px;border-radius:12px;margin-top:8px;display:inline-block;">🔥 0-day streak</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Circle Stats Row -->
-            <div class="circle-stats-row" id="circle-stats-row">
-              <div class="ds-card" style="display: flex; gap: 12px; align-items: center; padding: 20px;">
-                <div class="circle-stat-icon" style="background:#EEF4FF;">👥</div>
-                <div style="display: flex; flex-direction: column;">
-                  <span id="circle-member-count" class="ds-text-xl" style="font-size: 20px; color: var(--page-title-color); margin: 0; line-height: 1.2;">—</span>
-                  <span class="ds-text-caption" style="color: var(--text-secondary); margin-top: 2px;">Members</span>
-                </div>
-              </div>
-              <div class="ds-card" style="display: flex; gap: 12px; align-items: center; padding: 20px;">
-                <div class="circle-stat-icon" style="background:#ECFDF3;">⚡</div>
-                <div style="display: flex; flex-direction: column;">
-                  <span id="circle-total-xp" class="ds-text-xl" style="font-size: 20px; color: var(--page-title-color); margin: 0; line-height: 1.2;">—</span>
-                  <span class="ds-text-caption" style="color: var(--text-secondary); margin-top: 2px;">Circle XP</span>
-                </div>
-              </div>
-              <div class="ds-card" style="display: flex; gap: 12px; align-items: center; padding: 20px;">
-                <div class="circle-stat-icon" style="background:#FFFAEB;">🏆</div>
-                <div style="display: flex; flex-direction: column;">
-                  <span id="circle-level" class="ds-text-xl" style="font-size: 20px; color: var(--page-title-color); margin: 0; line-height: 1.2;">—</span>
-                  <span class="ds-text-caption" style="color: var(--text-secondary); margin-top: 2px;">Circle Level</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- No Circle State -->
-            <div id="no-circle-state" style="display:none;">
-              <div class="ds-card" style="text-align:center;padding:40px 24px;">
-                <div style="font-size:48px;margin-bottom:16px;">🟢</div>
-                <h3 class="ds-text-md" style="margin:0 0 8px;">You're not in a circle yet</h3>
-                <p class="ds-text-body" style="color:var(--text-secondary);margin:0 0 20px;">Create your own circle or browse the leaderboard to find one to join.</p>
-                <button class="ds-btn ds-btn--primary" onclick="document.getElementById('create-circle-modal').style.display='flex'">Create a Circle</button>
-              </div>
-            </div>
-
-            <!-- Circle Content -->
-            <div id="circle-content" style="display:none;">
-              <div class="circle-content-grid">
-                <div class="circle-members-card">
-                  <div class="circle-members-header">
-                    <h3 class="section-title-std" id="circle-name-header">Your Circle</h3>
-                    <div style="display:flex;gap:8px;">
-                      <button class="ds-btn ds-btn--secondary ds-btn--sm" onclick="openCircleSettings()">⚙️ Settings</button>
-                      <button class="ds-btn ds-btn--primary ds-btn--sm" onclick="document.getElementById('invite-modal').style.display='flex'">Invite</button>
-                    </div>
-                  </div>
-                  <div id="circle-member-list" class="circle-member-list">
-                    <!-- Dynamically populated -->
-                  </div>
-                  <div style="padding:8px 16px;text-align:center;">
-                    <button class="ds-btn ds-btn--ghost ds-btn--sm" id="leave-circle-btn" onclick="handleLeaveCircle()" style="color:#F04438;font-size:12px;">Leave Circle</button>
-                  </div>
-                </div>
-
-                <!-- Circle Leaderboard -->
-                <div class="circle-challenge-card">
-                  <div class="circle-challenge-header">
-                    <span style="font-size:20px;">🏅</span>
-                    <h3 class="section-title-std" style="margin-bottom:0;">Circle Leaderboard</h3>
-                  </div>
-                  <div id="circle-leaderboard-list" class="circle-leaderboard" style="padding:12px 16px;">
-                    <!-- Dynamically populated -->
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- XP History Section -->
-            <div style="margin-top:24px;">
-              <div style="background:#fff;border:1px solid var(--card-border-color);border-radius:12px;overflow:hidden;">
-                <div style="padding:16px 24px;border-bottom:1px solid var(--card-border-color);display:flex;justify-content:space-between;align-items:center;">
-                  <h3 style="font-size:16px;font-weight:600;color:#101828;margin:0;">Recent XP Activity</h3>
-                </div>
-                <div id="xp-history-list" style="padding:0;">
-                  <div style="text-align:center;color:#667085;padding:24px;font-size:14px;">Loading XP history...</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Pending Invites -->
-            <div id="pending-invites-section" style="display:none;margin-top:24px;">
-              <div style="background:#fff;border:1px solid var(--card-border-color);border-radius:12px;overflow:hidden;">
-                <div style="padding:16px 24px;border-bottom:1px solid var(--card-border-color);">
-                  <h3 style="font-size:16px;font-weight:600;color:#101828;margin:0;">📩 Pending Circle Invites</h3>
-                </div>
-                <div id="invite-list" style="padding:12px 16px;"></div>
-              </div>
-            </div>
-
-            <!-- Pending Join Requests (for circle owners/admins) -->
-            <div id="pending-requests-section" style="display:none;margin-top:24px;">
-              <div style="background:#fff;border:1px solid var(--card-border-color);border-radius:12px;overflow:hidden;">
-                <div style="padding:16px 24px;border-bottom:1px solid var(--card-border-color);display:flex;justify-content:space-between;align-items:center;">
-                  <h3 style="font-size:16px;font-weight:600;color:#101828;margin:0;">🔒 Join Requests</h3>
-                  <span id="requests-count-badge" style="font-size:12px;background:#FEF0C7;color:#B54708;padding:2px 8px;border-radius:12px;font-weight:600;"></span>
-                </div>
-                <div id="requests-list" style="padding:12px 16px;"></div>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Create Circle Modal -->
-          <div id="create-circle-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
-            <div class="ds-card" style="padding:32px;max-width:420px;width:90%;">
-              <h3 class="ds-text-md" style="margin:0 0 16px;">Create Your Circle</h3>
-              <div style="margin-bottom:16px;">
-                <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle Name</label>
-                <input id="circle-name-input" type="text" class="ds-input" maxlength="100" placeholder="e.g. The Green Fund" style="width:100%;">
-              </div>
-              <div style="margin-bottom:16px;">
-                <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Description (optional)</label>
-                <textarea id="circle-desc-input" class="ds-input" maxlength="500" rows="3" placeholder="What's your circle about?" style="width:100%;resize:vertical;"></textarea>
-              </div>
-              <div style="margin-bottom:20px;">
-                <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Emoji</label>
-                <input id="circle-emoji-input" type="text" class="ds-input" maxlength="5" value="🟢" style="width:80px;font-size:24px;text-align:center;">
-              </div>
-              <div style="display:flex;gap:8px;justify-content:flex-end;">
-                <button class="ds-btn ds-btn--secondary" onclick="document.getElementById('create-circle-modal').style.display='none'">Cancel</button>
-                <button class="ds-btn ds-btn--primary" onclick="handleCreateCircle()">Create Circle</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Invite Modal -->
-          <div id="invite-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
-            <div class="ds-card" style="padding:32px;max-width:420px;width:90%;">
-              <h3 class="ds-text-md" style="margin:0 0 8px;">Invite to Circle</h3>
-              <p class="ds-text-body" style="color:var(--text-secondary);margin:0 0 16px;">Share your referral link to invite friends. When they sign up, they'll automatically join your circle!</p>
-              <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:12px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
-                <input id="circle-invite-link" type="text" readonly style="flex:1;border:none;background:transparent;font-size:13px;color:var(--text-primary);outline:none;" value="">
-                <button class="ds-btn ds-btn--primary ds-btn--sm" onclick="copyInviteLink()">Copy</button>
-              </div>
-              <div style="text-align:right;">
-                <button class="ds-btn ds-btn--secondary" onclick="document.getElementById('invite-modal').style.display='none'">Close</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Circle Settings Modal -->
-          <div id="circle-settings-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
-            <div class="ds-card" style="padding:0;max-width:480px;width:90%;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
-              <!-- Modal Header -->
-              <div style="padding:24px 28px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:12px;">
-                  <div style="width:36px;height:36px;border-radius:8px;background:#EEF4FF;display:flex;align-items:center;justify-content:center;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                    </svg>
-                  </div>
-                  <h3 class="ds-text-md" style="margin:0;">Circle Settings</h3>
-                </div>
-                <button onclick="document.getElementById('circle-settings-modal').style.display='none'" style="background:none;border:none;cursor:pointer;padding:4px;color:var(--text-secondary);">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
-
-              <!-- Modal Body -->
-              <div style="padding:24px 28px;">
-                <!-- Circle Name -->
-                <div style="margin-bottom:20px;">
-                  <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle Name</label>
-                  <input id="settings-circle-name" type="text" class="ds-input" maxlength="100" placeholder="e.g. The Green Fund" style="width:100%;">
-                </div>
-
-                <!-- Description -->
-                <div style="margin-bottom:20px;">
-                  <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Description</label>
-                  <textarea id="settings-circle-desc" class="ds-input" maxlength="500" rows="3" placeholder="What's your circle about?" style="width:100%;resize:vertical;"></textarea>
-                </div>
-
-                <!-- Emoji -->
-                <div style="margin-bottom:20px;">
-                  <label class="ds-text-body" style="font-weight:600;display:block;margin-bottom:6px;">Circle Emoji</label>
-                  <input id="settings-circle-emoji" type="text" class="ds-input" maxlength="5" style="width:80px;font-size:24px;text-align:center;">
-                </div>
-
-                <!-- Privacy Toggle -->
-                <div style="margin-bottom:4px;padding:16px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border-color);">
-                  <div style="display:flex;align-items:center;justify-content:space-between;">
-                    <div>
-                      <div class="ds-text-body" style="font-weight:600;margin-bottom:2px;">Public Circle</div>
-                      <div class="ds-text-caption" style="color:var(--text-secondary);">Anyone can join your circle without approval</div>
-                    </div>
-                    <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
-                      <input id="settings-circle-public" type="checkbox" style="opacity:0;width:0;height:0;">
-                      <span id="settings-toggle-track" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:var(--border-color);border-radius:12px;transition:0.2s;" onclick="this.previousElementSibling.checked = !this.previousElementSibling.checked; this.style.backgroundColor = this.previousElementSibling.checked ? 'var(--brand-blue)' : 'var(--border-color)'; this.querySelector('span').style.transform = this.previousElementSibling.checked ? 'translateX(20px)' : 'translateX(0)';">
-                        <span style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.1);"></span>
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Modal Footer -->
-              <div style="padding:16px 28px; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; background:var(--bg-secondary); border-radius:0 0 12px 12px;">
-                <button class="ds-btn ds-btn--ghost ds-btn--sm" style="color:var(--btn-danger-bg);" onclick="if(confirm('Are you sure you want to delete this circle? This cannot be undone.')) handleDeleteCircle()">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
-                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                  Delete Circle
-                </button>
-                <div style="display:flex;gap:8px;">
-                  <button class="ds-btn ds-btn--secondary" onclick="document.getElementById('circle-settings-modal').style.display='none'">Cancel</button>
-                  <button id="settings-save-btn" class="ds-btn ds-btn--primary" onclick="handleSaveCircleSettings()">Save Changes</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- ═══════════════════════════════════════════════════════════
-             TAB 4: EXPERT AMAS
-             ═══════════════════════════════════════════════════════════ -->
-        <div id="community-ama-tab" class="community-tab-panel hidden">
-          <div class="ama-layout">
-
-            <!-- Loading State -->
-            <div id="ama-loading" style="text-align:center;padding:48px 0;">
-              <div class="ds-spinner" style="margin:0 auto 16px;"></div>
-              <p class="ds-text-body" style="color:var(--text-secondary);">Loading Expert AMAs...</p>
-            </div>
-
-            <!-- Empty State -->
-            <div id="ama-empty" style="display:none;text-align:center;padding:64px 24px;">
-              <div style="font-size:48px;margin-bottom:16px;">🎙️</div>
-              <h3 class="ds-text-md" style="margin:0 0 8px;">No AMAs Scheduled Yet</h3>
-              <p class="ds-text-body" style="color:var(--text-secondary);max-width:400px;margin:0 auto;">Expert AMAs are being planned. Check back soon to submit questions and join live Q&A sessions with industry experts.</p>
-            </div>
-
-            <!-- Hero: Active/Upcoming AMA -->
-            <div id="ama-hero" style="display:none;" class="ama-hero-card">
-              <div id="ama-hero-badge" class="ama-hero-badge">UPCOMING</div>
-              <h2 id="ama-hero-title" class="ama-hero-title"></h2>
-              <p id="ama-hero-expert" class="ama-hero-expert"></p>
-              <div id="ama-hero-desc" class="ds-text-body" style="color:var(--text-secondary);margin-top:8px;line-height:1.5;"></div>
-              <div class="ama-hero-meta" style="margin-top:16px;">
-                <span id="ama-hero-date" class="ama-hero-date">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  <span id="ama-hero-date-text"></span>
-                </span>
-                <span id="ama-hero-questions" class="ama-hero-questions"></span>
-              </div>
-              <div class="ama-hero-actions" style="margin-top:20px;">
-                <button id="ama-submit-question-btn" class="ds-btn ds-btn--primary" onclick="openQuestionModal()">Submit a Question</button>
-              </div>
-            </div>
-
-            <!-- Questions for Active AMA -->
-            <div id="ama-questions-section" style="display:none;margin-top:32px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-                <h3 class="ds-text-md" style="margin:0;">Community Questions</h3>
-                <span id="ama-question-count" class="ds-text-caption" style="color:var(--text-secondary);"></span>
-              </div>
-              <div id="ama-questions-list" style="display:flex;flex-direction:column;gap:12px;">
-                <!-- Rendered dynamically -->
-              </div>
-            </div>
-
-            <!-- Past AMAs -->
-            <div id="ama-past-section" style="display:none;margin-top:40px;">
-              <h2 class="ds-text-xl" style="margin-bottom:16px;">Past AMAs</h2>
-              <div id="ama-past-grid" class="ama-archive-grid">
-                <!-- Rendered dynamically -->
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Question Submission Modal -->
-          <div id="ama-question-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center;">
-            <div class="ds-card" style="padding:32px;max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-                <h3 class="ds-text-md" style="margin:0;">Submit Your Question</h3>
-                <button onclick="closeQuestionModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary);">✕</button>
-              </div>
-              <p class="ds-text-caption" style="color:var(--text-secondary);margin:0 0 16px;">Your question will be visible to the community. Top-voted questions get answered first. Max 3 per AMA.</p>
-              <textarea id="ama-question-input" class="ds-input" placeholder="Ask the expert something thoughtful..." rows="4" maxlength="500" style="width:100%;resize:none;"></textarea>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
-                <span id="ama-question-charcount" style="font-size:12px;color:#98a2b3;">0 / 500</span>
-                <button id="ama-question-submit-btn" class="ds-btn ds-btn--primary" onclick="submitQuestion()" style="min-width:120px;">Submit</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ═══════════════════════════════════════════════════════════
-             TAB 5: CHALLENGES
-             ═══════════════════════════════════════════════════════════ -->
-        <div id="community-challenges-tab" class="community-tab-panel hidden" x-data="communityChallenges()">
-          <div class="community-content-layout" style="display: block; max-width: 800px; margin: 0 auto; ">
-            
-            <!-- Page Header -->
-            <div style="margin-bottom: 32px; text-align: center;">
-              <h2 class="ds-text-xl" style="margin-bottom: 8px;">Gamified Challenges</h2>
-              <p class="ds-text-subtitle">Complete quests to earn XP, level up, and unlock exclusive platform features.</p>
-            </div>
-
-            <!-- Loading State -->
-            <div x-show="loading" class="ds-text-subtitle" style="text-align: center; padding: 40px;">
-              Loading your challenges...
-            </div>
-
-            <!-- Challenges Grid -->
-            <div x-show="!loading" style="display: flex; flex-direction: column; gap: var(--section-gap);">
-              <template x-for="c in challenges" :key="c.id">
-                <div class="ds-card" style="display: flex; gap: 20px; align-items: center;" :style="c.is_completed ? 'border-color: #D1FADF; background: #F8FFF9;' : ''">
-                  
-                  <!-- Icon -->
-                  <div style="width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" :style="c.is_completed ? 'background: #D1FADF; color: #027A48;' : 'background: #F2F4F7; color: var(--text-secondary);'">
-                    <template x-if="c.is_completed">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                    </template>
-                    <template x-if="!c.is_completed">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
-                    </template>
-                  </div>
-
-                  <!-- Content -->
-                  <div style="flex: 1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                      <h3 class="ds-text-md" style="margin: 0;" x-text="c.title"></h3>
-                      <div class="ds-badge ds-badge--warning">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                        <span x-text="c.xp_reward + ' XP'"></span>
-                      </div>
-                    </div>
-                    <p class="ds-text-body" style="margin: 0 0 16px 0; color: var(--text-secondary);" x-text="c.description"></p>
-                    
-                    <!-- Progress Bar -->
-                    <div class="ds-progress" style="margin-bottom: 8px;">
-                      <div class="ds-progress__fill" :style="c.is_completed ? 'background: var(--badge-success-color); width: ' + Math.min((c.current_value / c.requirement_value) * 100, 100) + '%;' : 'width: ' + Math.min((c.current_value / c.requirement_value) * 100, 100) + '%;'"></div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;" class="ds-text-caption">
-                      <span :style="c.is_completed ? 'color: var(--badge-success-color); display: inline-flex; align-items: center; gap: 4px;' : 'display: inline-flex; align-items: center; gap: 4px;'">
-                        <span x-text="c.is_completed ? 'Completed' : 'In Progress'"></span>
-                      </span>
-                      <span x-text="Math.min(c.current_value, c.requirement_value) + ' / ' + c.requirement_value" style="color: var(--text-secondary);"></span>
-                    </div>
-                  </div>
-                  
-                </div>
-              </template>
-              
-              <!-- Empty State -->
-              <div x-show="challenges.length === 0" class="ds-card" style="text-align: center; border: 1px dashed var(--card-border-color); box-shadow: none;">
-                <p class="ds-text-subtitle" style="margin: 0;">No active challenges right now. Check back later!</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('communityChallenges', () => ({
-                challenges: [],
-                loading: true,
-
-                async init() {
-                    setTimeout(() => { this.loadData(); }, 100);
-                    
-                    document.addEventListener('tab-changed', (e) => {
-                       if (e.detail.tab === 'community-challenges-tab' && this.challenges.length === 0) {
-                           this.loadData();
-                       }
-                    });
-                },
-
-                async loadData() {
-                    this.loading = true;
-                    try {
-                        const res = await fetch('/api/community/challenges');
-                        if (res.ok) {
-                            const data = await res.json();
-                            this.challenges = data.challenges || [];
-                        }
-                    } catch (e) {
-                        console.error('Failed to load challenges', e);
-                    } finally {
-                        this.loading = false;
-                    }
-                }
-            }));
-        });
-        </script>
 
         <!-- ═══════════════════════════════════════════════════════════
              TAB 6: NOTIFICATIONS
              ═══════════════════════════════════════════════════════════ -->
-        <div id="community-notifications-tab" class="community-tab-panel hidden">
-          <div class="notif-page-layout" x-data="notificationsTab()">
+        <div id="community-notifications-tab" class="community-tab-panel hidden" x-data="notificationsTab()">
+          <div class="notif-page-layout">
 
             <!-- Header -->
             <div class="notif-header">
               <div class="notif-header__left">
                 <div class="notif-header__icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                   </svg>
                 </div>
                 <div>
@@ -878,13 +291,11 @@ include
                 </div>
               </div>
               <div class="notif-header__actions">
-                <button type="button"
-                        class="ds-btn ds-btn--ghost ds-btn--sm"
-                        @click="markAllAsRead()"
-                        x-show="notifications.some(n => !n.is_read)"
-                        style="display:flex; align-items:center; gap:6px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"/>
+                <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" @click="markAllAsRead()"
+                  x-show="notifications.some(n => !n.is_read)" style="display:flex; align-items:center; gap:6px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
                   </svg>
                   Mark all as read
                 </button>
@@ -893,10 +304,13 @@ include
 
             <!-- Filter pills -->
             <div class="notif-filters">
-              <button type="button" class="notif-filter-pill" :class="{ active: filter === 'all' }" @click="filter = 'all'">All</button>
-              <button type="button" class="notif-filter-pill" :class="{ active: filter === 'unread' }" @click="filter = 'unread'">
+              <button type="button" class="notif-filter-pill" :class="{ active: filter === 'all' }"
+                @click="filter = 'all'">All</button>
+              <button type="button" class="notif-filter-pill" :class="{ active: filter === 'unread' }"
+                @click="filter = 'unread'">
                 Unread
-                <span class="notif-filter-badge" x-show="notifications.filter(n => !n.is_read).length > 0" x-text="notifications.filter(n => !n.is_read).length"></span>
+                <span class="notif-filter-badge" x-show="notifications.filter(n => !n.is_read).length > 0"
+                  x-text="notifications.filter(n => !n.is_read).length"></span>
               </button>
             </div>
 
@@ -910,21 +324,23 @@ include
             <!-- Empty state -->
             <div x-show="!loading && filteredNotifications().length === 0" class="notif-empty-state">
               <div class="notif-empty-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D0D5DD" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D0D5DD" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
               </div>
-              <h3 class="notif-empty-title" x-text="filter === 'unread' ? 'All caught up!' : 'No notifications yet'"></h3>
-              <p class="notif-empty-desc" x-text="filter === 'unread' ? 'You\'ve read all your notifications.' : 'When something happens, you\'ll see it here.'"></p>
+              <h3 class="notif-empty-title" x-text="filter === 'unread' ? 'All caught up!' : 'No notifications yet'">
+              </h3>
+              <p class="notif-empty-desc"
+                x-text="filter === 'unread' ? 'You\'ve read all your notifications.' : 'When something happens, you\'ll see it here.'">
+              </p>
             </div>
 
             <!-- Notification list -->
             <div class="notif-list" x-show="!loading || notifications.length > 0">
               <template x-for="notif in filteredNotifications()" :key="notif.id">
-                <div class="notif-item"
-                     :class="{ 'notif-item--unread': !notif.is_read }"
-                     @click="handleClick(notif)">
+                <div class="notif-item" :class="{ 'notif-item--unread': !notif.is_read }" @click="handleClick(notif)">
 
                   <!-- Unread accent bar -->
                   <div class="notif-item__accent" x-show="!notif.is_read"></div>
@@ -955,126 +371,126 @@ include
             </div>
 
             <!-- Load more -->
-            <button x-show="hasMore && filteredNotifications().length > 0"
-                    type="button"
-                    class="ds-btn ds-btn--ghost notif-load-more"
-                    @click="loadMore()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/>
+            <button x-show="hasMore && filteredNotifications().length > 0" type="button"
+              class="ds-btn ds-btn--ghost notif-load-more" @click="loadMore()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="7 13 12 18 17 13" />
+                <polyline points="7 6 12 11 17 6" />
               </svg>
               Load more notifications
             </button>
 
           </div>
           <script>
-          document.addEventListener('alpine:init', () => {
+            document.addEventListener('alpine:init', () => {
               Alpine.data('notificationsTab', () => ({
-                  notifications: [],
-                  loading: true,
-                  offset: 0,
-                  limit: 20,
-                  hasMore: true,
-                  filter: 'all',
+                notifications: [],
+                loading: true,
+                offset: 0,
+                limit: 20,
+                hasMore: true,
+                filter: 'all',
 
-                  async init() {
-                      await this.loadMore();
-                  },
+                async init() {
+                  await this.loadMore();
+                },
 
-                  filteredNotifications() {
-                      if (this.filter === 'unread') return this.notifications.filter(n => !n.is_read);
-                      return this.notifications;
-                  },
+                filteredNotifications() {
+                  if (this.filter === 'unread') return this.notifications.filter(n => !n.is_read);
+                  return this.notifications;
+                },
 
-                  async loadMore() {
-                      if (!this.hasMore && this.offset !== 0) return;
-                      this.loading = true;
-                      try {
-                          const res = await fetch(`/api/community/notifications?limit=${this.limit}&offset=${this.offset}`, { credentials: 'same-origin' });
-                          if (res.ok) {
-                              const data = await res.json();
-                              if (data.notifications.length < this.limit) {
-                                  this.hasMore = false;
-                              }
-                              this.notifications = [...this.notifications, ...data.notifications];
-                              this.offset += this.limit;
-                          }
-                      } catch (e) {
-                          console.error('Failed to load notifications', e);
-                      } finally {
-                          this.loading = false;
+                async loadMore() {
+                  if (!this.hasMore && this.offset !== 0) return;
+                  this.loading = true;
+                  try {
+                    const res = await fetch(`/api/community/notifications?limit=${this.limit}&offset=${this.offset}`, { credentials: 'same-origin' });
+                    if (res.ok) {
+                      const data = await res.json();
+                      if (data.notifications.length < this.limit) {
+                        this.hasMore = false;
                       }
-                  },
-
-                  async markAllAsRead() {
-                      try {
-                          await fetch('/api/community/notifications/read-all', { method: 'POST', credentials: 'same-origin' });
-                          this.notifications.forEach(n => n.is_read = true);
-                          window.dispatchEvent(new Event('notifications-read'));
-                      } catch (e) {
-                          console.error(e);
-                      }
-                  },
-
-                  async handleClick(notif) {
-                      if (!notif.is_read) {
-                          try {
-                              await fetch(`/api/community/notifications/${notif.id}/read`, { method: 'POST', credentials: 'same-origin' });
-                              notif.is_read = true;
-                              window.dispatchEvent(new Event('notifications-read'));
-                          } catch (e) {
-                              console.error(e);
-                          }
-                      }
-                      if (notif.link_url) {
-                          window.location.href = notif.link_url;
-                      }
-                  },
-
-                  timeAgo(dt) {
-                      if (!dt) return '';
-                      const now = new Date();
-                      const date = new Date(dt);
-                      const seconds = Math.floor((now - date) / 1000);
-                      if (seconds < 60) return 'Just now';
-                      const minutes = Math.floor(seconds / 60);
-                      if (minutes < 60) return `${minutes}m ago`;
-                      const hours = Math.floor(minutes / 60);
-                      if (hours < 24) return `${hours}h ago`;
-                      const days = Math.floor(hours / 24);
-                      if (days < 7) return `${days}d ago`;
-                      if (days < 30) return `${Math.floor(days / 7)}w ago`;
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                  },
-
-                  getTypeIconClass(type) {
-                      const map = {
-                          'level_up': 'notif-icon--level',
-                          'new_follower': 'notif-icon--social',
-                          'post_like': 'notif-icon--like',
-                          'post_comment': 'notif-icon--comment',
-                          'mention': 'notif-icon--mention',
-                          'announcement': 'notif-icon--announce',
-                          'reward': 'notif-icon--reward',
-                          'system': 'notif-icon--system',
-                      };
-                      return map[type] || 'notif-icon--default';
-                  },
-
-                  getTypeIcon(type) {
-                      const icons = {
-                          'level_up': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="m18 14-6-6-6 6"/></svg>',
-                          'new_follower': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>',
-                          'post_like': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
-                          'post_comment': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-                          'mention': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>',
-                          'announcement': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>',
-                          'reward': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>',
-                          'system': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-                      };
-                      return icons[type] || icons['system'];
+                      this.notifications = [...this.notifications, ...data.notifications];
+                      this.offset += this.limit;
+                    }
+                  } catch (e) {
+                    console.error('Failed to load notifications', e);
+                  } finally {
+                    this.loading = false;
                   }
+                },
+
+                async markAllAsRead() {
+                  try {
+                    await fetch('/api/community/notifications/read-all', { method: 'POST', credentials: 'same-origin' });
+                    this.notifications.forEach(n => n.is_read = true);
+                    window.dispatchEvent(new Event('notifications-read'));
+                  } catch (e) {
+                    console.error(e);
+                  }
+                },
+
+                async handleClick(notif) {
+                  if (!notif.is_read) {
+                    try {
+                      await fetch(`/api/community/notifications/${notif.id}/read`, { method: 'POST', credentials: 'same-origin' });
+                      notif.is_read = true;
+                      window.dispatchEvent(new Event('notifications-read'));
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }
+                  if (notif.link_url) {
+                    window.location.href = notif.link_url;
+                  }
+                },
+
+                timeAgo(dt) {
+                  if (!dt) return '';
+                  const now = new Date();
+                  const date = new Date(dt);
+                  const seconds = Math.floor((now - date) / 1000);
+                  if (seconds < 60) return 'Just now';
+                  const minutes = Math.floor(seconds / 60);
+                  if (minutes < 60) return `${minutes}m ago`;
+                  const hours = Math.floor(minutes / 60);
+                  if (hours < 24) return `${hours}h ago`;
+                  const days = Math.floor(hours / 24);
+                  if (days < 7) return `${days}d ago`;
+                  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+                  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                },
+
+                getTypeIconClass(type) {
+                  const map = {
+                    'level_up': 'notif-icon--level',
+                    'new_follower': 'notif-icon--social',
+                    'post_like': 'notif-icon--like',
+                    'post_comment': 'notif-icon--comment',
+                    'mention': 'notif-icon--mention',
+                    'announcement': 'notif-icon--announce',
+                    'reward': 'notif-icon--reward',
+                    'system': 'notif-icon--system',
+                  };
+                  return map[type] || 'notif-icon--default';
+                },
+
+                getTypeIcon(type) {
+                  const icons = {
+                    'level_up': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="m18 14-6-6-6 6"/></svg>',
+                    'new_follower': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>',
+                    'post_like': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+                    'post_comment': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+                    'mention': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>',
+                    'announcement': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>',
+                    'reward': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>',
+                    'system': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+                  };
+                  return icons[type] || icons['system'];
+                }
               }));
-          });
+            });
           </script>
         </div>
 
@@ -1084,8 +500,10 @@ include
         <div id="community-saved-tab" class="community-tab-panel hidden">
           <div class="community-content-layout" style="display: block; max-width: 800px;">
             <div style="margin-bottom: 24px;">
-              <h2 class="ds-text-xl" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">Saved Posts</h2>
-              <p class="ds-text-body" style="color:var(--text-secondary); margin: 0;">Posts you've bookmarked for later.</p>
+              <h2 class="ds-text-xl" style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">Saved
+                Posts</h2>
+              <p class="ds-text-body" style="color:var(--text-secondary); margin: 0;">Posts you've bookmarked for later.
+              </p>
             </div>
             <div id="saved-posts-container" class="community-feed"></div>
           </div>
@@ -1094,108 +512,39 @@ include
         <!-- ═══════════════════════════════════════════════════════════
              MODALS for M2 (Community User Posts)
              ═══════════════════════════════════════════════════════════ -->
-        
-        <!-- Create Post Modal -->
-        <div id="create-post-modal" class="ds-modal" style="display: none;">
-          <div class="ds-modal__backdrop" onclick="document.getElementById('create-post-modal').style.display='none'"></div>
-          <div class="ds-modal__content" style="max-width: 600px;">
-            <div class="ds-modal__header">
-              <h3 class="ds-modal__title">Create Post</h3>
-              <button type="button" class="ds-modal__close" onclick="document.getElementById('create-post-modal').style.display='none'">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-            <div class="ds-modal__body">
-              <div class="ds-form-group">
-                <label class="ds-label">Post Type</label>
-                <div style="display: flex; gap: 8px;">
-                  <button type="button" class="ds-btn ds-btn--secondary post-type-btn active" data-type="general" onclick="selectPostType(this)">General</button>
-                  <button type="button" class="ds-btn ds-btn--secondary post-type-btn" data-type="market_insight" onclick="selectPostType(this)">Market Insight</button>
-                  <button type="button" class="ds-btn ds-btn--secondary post-type-btn" data-type="review" onclick="selectPostType(this)">Review</button>
-                </div>
-                <input type="hidden" id="post-type-input" value="general">
-              </div>
-              <div class="ds-form-group">
-                <label class="ds-label">Content</label>
-                <textarea id="post-content-input" class="ds-input" rows="5" placeholder="What's on your mind? Include insights, questions, or updates..."></textarea>
-                <div class="ds-helper-text" id="post-disclaimer-warning" style="display: none; color: var(--btn-danger-bg); margin-top: 8px;">
-                  ⚠️ Your post appears to discuss investments. A disclaimer will be automatically added.
-                </div>
-              </div>
-              <!-- Image Upload (M2-BE.5) -->
-              <div class="ds-form-group">
-                <label class="ds-label">Attach Images (Max 4)</label>
-                <div id="post-image-previews" style="display:flex; gap:8px; margin-bottom:8px; overflow-x:auto; min-height: 0;"></div>
-                <input type="file" id="post-image-file-input" class="ds-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="uploadPostImage(event)">
-                <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" onclick="document.getElementById('post-image-file-input').click()">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
-                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-                 </svg>
-                  Add Image
-                </button>
-                <div class="ds-helper-text" id="post-image-uploading" style="display: none; color: var(--brand-blue); margin-top: 8px;">
-                  Uploading image...
-                </div>
-              </div>
-              <!-- UX.11: Poll Creator -->
-              <div class="ds-form-group">
-                <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="poll-toggle-btn" onclick="togglePollCreator()" style="display: inline-flex; align-items: center; gap: 6px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>
-                  </svg>
-                  Add Poll
-                </button>
-                <div id="poll-creator" class="poll-creator" style="display: none;">
-                  <div class="poll-creator-header">
-                    <h4>📊 Create a Poll</h4>
-                    <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" onclick="togglePollCreator()" style="font-size: 12px;">Remove Poll</button>
-                  </div>
-                  <div class="ds-form-group" style="margin-bottom: 12px;">
-                    <input type="text" id="poll-question-input" class="ds-input" placeholder="Ask a question..." maxlength="500">
-                  </div>
-                  <div class="poll-option-inputs" id="poll-options-inputs">
-                    <div class="poll-option-input-row">
-                      <input type="text" placeholder="Option 1" maxlength="200" oninput="updatePollOption(0, this.value)">
-                    </div>
-                    <div class="poll-option-input-row">
-                      <input type="text" placeholder="Option 2" maxlength="200" oninput="updatePollOption(1, this.value)">
-                    </div>
-                  </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm ds-text-body" onclick="addPollOption()">+ Add Option</button>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <label class="ds-text-caption" style="color:var(--text-secondary);">Expires in:</label>
-                      <select id="poll-expiry-select" class="ds-input" style="width: auto; padding: 4px 8px; font-size: 12px;">
-                        <option value="">No expiry</option>
-                        <option value="1">1 hour</option>
-                        <option value="6">6 hours</option>
-                        <option value="24" selected>24 hours</option>
-                        <option value="72">3 days</option>
-                        <option value="168">7 days</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="ds-modal__footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
-              <button type="button" class="ds-btn ds-btn--secondary" onclick="document.getElementById('create-post-modal').style.display='none'">Cancel</button>
-              <button type="button" class="ds-btn ds-btn--primary" id="submit-post-btn" onclick="submitUserPost()">Post</button>
-            </div>
-          </div>
-        </div>
+
+
+
+        <script>
+          function triggerComposerTag(charType) {
+            const textarea = document.getElementById('post-content-input');
+            if (!textarea) return;
+            
+            let val = textarea.value;
+            // Pad with a space if there's no trailing whitespace
+            if (val.length > 0 && !val.endsWith(' ') && !val.endsWith('\n')) {
+              textarea.value += ' ' + charType;
+            } else {
+              textarea.value += charType;
+            }
+            
+            textarea.focus();
+            const len = textarea.value.length;
+            textarea.setSelectionRange(len, len);
+          }
+        </script>
 
         <!-- Report Post Modal -->
         <div id="report-post-modal" class="ds-modal" style="display: none;">
-          <div class="ds-modal__backdrop" onclick="document.getElementById('report-post-modal').style.display='none'"></div>
+          <div class="ds-modal__backdrop" onclick="document.getElementById('report-post-modal').style.display='none'">
+          </div>
           <div class="ds-modal__content" style="max-width: 400px;">
             <div class="ds-modal__header">
               <h3 class="ds-modal__title">Report Post</h3>
-              <button type="button" class="ds-modal__close" onclick="document.getElementById('report-post-modal').style.display='none'">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <button type="button" class="ds-modal__close"
+                onclick="document.getElementById('report-post-modal').style.display='none'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -1213,21 +562,27 @@ include
                 </select>
               </div>
             </div>
-            <div class="ds-modal__footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
-              <button type="button" class="ds-btn ds-btn--secondary" onclick="document.getElementById('report-post-modal').style.display='none'">Cancel</button>
-              <button type="button" class="ds-btn ds-btn--primary" id="submit-report-btn" onclick="submitReport()" style="background: #D92D20; color: white; border: none;">Submit Report</button>
+            <div class="ds-modal__footer"
+              style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
+              <button type="button" class="ds-btn ds-btn--secondary"
+                onclick="document.getElementById('report-post-modal').style.display='none'">Cancel</button>
+              <button type="button" class="ds-btn ds-btn--primary" id="submit-report-btn" onclick="submitReport()"
+                style="background: #D92D20; color: white; border: none;">Submit Report</button>
             </div>
           </div>
         </div>
 
         <!-- Edit Profile Modal -->
         <div id="edit-profile-modal" class="ds-modal" style="display: none;">
-          <div class="ds-modal__backdrop" onclick="document.getElementById('edit-profile-modal').style.display='none'"></div>
+          <div class="ds-modal__backdrop" onclick="document.getElementById('edit-profile-modal').style.display='none'">
+          </div>
           <div class="ds-modal__content" style="max-width: 480px;">
             <div class="ds-modal__header">
               <h3 class="ds-modal__title">Edit Profile</h3>
-              <button type="button" class="ds-modal__close" onclick="document.getElementById('edit-profile-modal').style.display='none'">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <button type="button" class="ds-modal__close"
+                onclick="document.getElementById('edit-profile-modal').style.display='none'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -1236,32 +591,39 @@ include
             <div class="ds-modal__body">
               <div class="ds-form-group">
                 <label class="ds-label">Bio</label>
-                <textarea id="edit-profile-bio" class="ds-input" rows="3" placeholder="Tell the community about your investment style..." maxlength="160"></textarea>
+                <textarea id="edit-profile-bio" class="ds-input" rows="3"
+                  placeholder="Tell the community about your investment style..." maxlength="160"></textarea>
                 <div class="ds-helper-text">Maximum 160 characters.</div>
               </div>
             </div>
-            <div class="ds-modal__footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
-              <button type="button" class="ds-btn ds-btn--secondary" onclick="document.getElementById('edit-profile-modal').style.display='none'">Cancel</button>
-              <button type="button" class="ds-btn ds-btn--primary" id="save-profile-btn" onclick="saveProfileDetails()">Save Changes</button>
+            <div class="ds-modal__footer"
+              style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #EAECF0;">
+              <button type="button" class="ds-btn ds-btn--secondary"
+                onclick="document.getElementById('edit-profile-modal').style.display='none'">Cancel</button>
+              <button type="button" class="ds-btn ds-btn--primary" id="save-profile-btn"
+                onclick="saveProfileDetails()">Save Changes</button>
             </div>
           </div>
         </div>
 
         <!-- User Profile Modal (M3-FE.2) -->
         <div id="user-profile-modal" class="ds-modal" style="display: none;">
-          <div class="ds-modal__backdrop" onclick="document.getElementById('user-profile-modal').style.display='none'"></div>
+          <div class="ds-modal__backdrop" onclick="document.getElementById('user-profile-modal').style.display='none'">
+          </div>
           <div class="ds-modal__content" style="max-width: 480px;">
-             <!-- Loading State -->
+            <!-- Loading State -->
             <div id="profile-loading-state" style="padding: 40px; text-align: center;">
               <div class="ds-spinner" style="margin: 0 auto;"></div>
               <p style="margin-top: 16px; color: #667085;">Loading profile...</p>
             </div>
-            
+
             <!-- Content State -->
             <div id="profile-content-state" style="display: none;">
               <div class="ds-modal__header" style="border-bottom: none; padding-bottom: 0;">
-                <button type="button" class="ds-modal__close" onclick="document.getElementById('user-profile-modal').style.display='none'">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <button type="button" class="ds-modal__close"
+                  onclick="document.getElementById('user-profile-modal').style.display='none'">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
@@ -1272,8 +634,9 @@ include
                   <span id="profile-modal-initials">U</span>
                 </div>
                 <h2 id="profile-modal-name" class="ds-heading" style="margin-bottom: 4px;">User Name</h2>
-                <p id="profile-modal-bio" style="color: #667085; font-size: 14px; margin-bottom: 16px;">This user hasn't written a bio yet.</p>
-                
+                <p id="profile-modal-bio" style="color: #667085; font-size: 14px; margin-bottom: 16px;">This user hasn't
+                  written a bio yet.</p>
+
                 <!-- Stats row -->
                 <div style="display: flex; justify-content: center; gap: 24px; margin-bottom: 24px;">
                   <div style="text-align: center;">
@@ -1291,13 +654,15 @@ include
                 </div>
 
                 <!-- Badges / Labels -->
-                <div id="profile-modal-badges" style="display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap;">
+                <div id="profile-modal-badges"
+                  style="display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap;">
                   <!-- Badges will go here later -->
                 </div>
 
                 <!-- Action Button -->
                 <div style="display:flex; justify-content: center;">
-                  <button type="button" id="profile-modal-follow-btn" class="ds-btn ds-btn--primary" style="width: 100%;">
+                  <button type="button" id="profile-modal-follow-btn" class="ds-btn ds-btn--primary"
+                    style="width: 100%;">
                     Follow User
                   </button>
                 </div>
@@ -1311,40 +676,7 @@ include
   </div>
 
 
-  <!-- ==============================================
-       First-Time Onboarding Modal (M3-FE.5)
-       ============================================== -->
-  <div id="onboarding-modal" class="modal-overlay" style="display: none; align-items:center; justify-content:center; padding:20px;">
-    <div class="modal-content" style="max-width: 480px; padding: 32px; border-radius: 16px; background: #fff; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
-      <div style="text-align:center; margin-bottom: 24px;">
-        <div style="font-size: 48px; margin-bottom: 12px;">👋</div>
-        <h2 style="font-size: 22px; font-weight: 700; color: #101828; margin: 0 0 8px 0; font-family: var(--font-family);">Welcome to the POOOL Community!</h2>
-        <p style="font-size: 15px; color: #667085; margin: 0; line-height: 1.5;">Connect with other investors, learn from market experts, and grow your portfolio together.</p>
-      </div>
 
-      <div style="background: #F9FAFB; border: 1px solid #EAECF0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-        <h3 style="font-size: 14px; font-weight: 600; color: #344054; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.5px;">Your First Steps <span style="font-weight:normal; color:#98A2B3; text-transform:none; float:right;">Earn 50 XP!</span></h3>
-        
-        <div style="display:flex; align-items:flex-start; margin-bottom: 16px;">
-          <input type="checkbox" id="ob-bio" disabled style="margin-top: 4px; accent-color: var(--btn-primary-bg, #0000FF);">
-          <label style="margin-left: 12px;">
-            <div style="font-weight: 500; color: #101828; font-size: 15px; margin-bottom: 4px;">Complete your Profile</div>
-            <div style="font-size: 13px; color: #667085;">Add a short bio so others know what you invest in.</div>
-          </label>
-        </div>
-
-        <div style="display:flex; align-items:flex-start;">
-          <input type="checkbox" id="ob-post" disabled style="margin-top: 4px; accent-color: var(--btn-primary-bg, #0000FF);">
-          <label style="margin-left: 12px;">
-            <div style="font-weight: 500; color: #101828; font-size: 15px; margin-bottom: 4px;">Make your first post or comment</div>
-            <div style="font-size: 13px; color: #667085;">Say hello, ask a question, or share an insight.</div>
-          </label>
-        </div>
-      </div>
-
-      <button onclick="closeOnboardingModal()" class="ds-btn ds-btn--primary" style="width: 100%; font-size: 16px; padding: 12px;">Let's Go!</button>
-    </div>
-  </div>
 
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>

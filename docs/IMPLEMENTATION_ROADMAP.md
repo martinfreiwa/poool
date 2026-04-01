@@ -87,6 +87,7 @@ Every task declares a **File Zone** (which directories/files it touches). Check 
 | `2026-03-23 00:30` | `Antigravity` | `14.5` | `community/xp.rs, circles.rs, routes.rs, community-circles.js` | `✅ Check-Out` | Community M4 Circles & XP COMPLETE: 15/15 tasks. XP system (award, daily caps, levels, history, aggregation worker). Circles (CRUD, invite, join/leave, kick, leaderboard, referral auto-join). Login streak tracker (daily + 7/30-day bonuses). Level-gated features (L2 circles, L3 invites). Circle retry worker. 18 new API endpoints. Frontend: dynamic My Circle tab, XP card w/ streak, leaderboard, level-up animation. |
 | `2026-03-23 11:45` | `Antigravity` | `11.6` | `tests/e2e/` | `✅ Check-Out` | Playwright E2E testing framework expanded for Journey, Settings, Community, Marketplace, and Circles. |
 | `2026-03-24 10:35` | `Antigravity` | `14.6` | `frontend/platform/community.html` | `✅ Check-Out` | Completed 10 Module 5.5 UI Data Wiring tasks in community.html and related JS. Replaced static/broken data with live API endpoints. |
+| `2026-03-28 04:50` | `Antigravity` | `5.14` | `marketplace-trading-v3.html, property.html, property-detail.css` | `✅ Check-Out` | Unified investment calculator sliders across V3 and standard property pages. Applied premium design, fixed hardcoded limits, and wired dynamic JS population. |
 
 ---
 
@@ -207,6 +208,7 @@ Every task declares a **File Zone** (which directories/files it touches). Check 
 | **5.11** | Accessibility | ARIA labels, keyboard nav, focus management, `role="alert"` on toasts, reduced-motion (§3.4.10) | `✅ DONE` | Antigravity | `❌` | Skip-link, focus-visible outlines, prefers-reduced-motion, ARIA landmarks (nav, main, breadcrumb), sr-only class. |
 | **5.12** | Responsive Design | Mobile-first: 360px → 1920px, touch-friendly order form (§3.4.12) | `✅ DONE` | Antigravity | `❌` | 3 breakpoints (1100px/768px/480px). Chart toolbar horizontal scroll. P2P modal full-width mobile. Orderbook compact mode. Toast full-width mobile. |
 | **5.13** | Orchestration (`marketplace-trading.js`) | `DOMContentLoaded` init: WS → Chart → Orderbook → OrderForm → P2P → visibility API → cleanup (§3.4.8) | `✅ DONE` | Antigravity | `❌` | ~400 lines. Full lifecycle init. 30s polling backup. |
+| **5.14** | Investment Calculator Unification | Unify slider UI/UX across `marketplace-trading-v3` and `property.html`. Dynamic limits based on property value. (§3.4) | `✅ DONE` | Antigravity | `✅` | Applied premium V3 design to standard pages. Fixed hardcoded limits in V3. |
 
 ---
 
@@ -459,13 +461,186 @@ Every task declares a **File Zone** (which directories/files it touches). Check 
 
 ---
 
+## PHASE 18: FI-System & Fiat Treasury (MP Chapter 19)
+
+*Backend + Frontend — The financial backbone for deposits, withdrawals, reconciliation, and dispute management.*
+
+### 18A: Deposit Processing (Webhook + Fraud)
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **18.1** | Deposit State Machine Expansion | Add `requested` state to `deposit_requests`. Current flow skips directly to `pending`. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.1.1 |
+| **18.2** | Stripe Webhook Handler | `POST /webhooks/stripe` — Signature verification (HMAC SHA256), auto-match `provider_reference`, call `confirm_deposit()` atomically | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.1.2, `FINANCIAL_FLOW.md` |
+| **18.3** | OCBC Webhook Handler | `POST /webhooks/ocbc` — mTLS cert validation, ref-code matching, queue for 4-Eyes approval | `⚪ NOT STARTED` | - | `❌` | Ref: MP §22.1, `SMART_CONTRACT_IMPLEMENTATION.md` §3 |
+| **18.4** | Deposit Fraud Detection | Velocity checks (5/day, $50k/week), duplicate detection (same amount+currency in 60s), AML threshold alerts | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.1.3 |
+| **18.5** | Webhook Event Logging Table | `webhook_events` table: provider, event_type, payload (JSONB), status, processed_at, error | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.2.2 |
+
+### 18B: Withdrawal Safety & Limits
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **18.6** | Withdrawal Daily Cap | $10,000/user/day limit, configurable via `platform_settings` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.2.1 |
+| **18.7** | Withdrawal Velocity Check | >3 withdrawals in 24h → auto-freeze, require admin review | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.2.1 |
+| **18.8** | New Account Cooldown | First 72h after KYC: max $1,000 withdrawal | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.2.1 |
+| **18.9** | 2FA Step-Up for Withdrawals | Withdrawal >$500 requires TOTP confirmation | `⚪ NOT STARTED` | - | `❌` | Ref: MP §1.11, §19.2.1 |
+
+### 18C: Treasury & Reconciliation
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **18.10** | 🔴 Platform Fee Float→Decimal Fix | **P1-FINANCIAL**: `payments/service.rs:461` uses f64 for fee calc → MUST use `rust_decimal::Decimal` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.3 |
+| **18.11** | Reconciliation Background Worker | `tokio::spawn` worker (6h interval) checking 5 invariants. Store results in `reconciliation_reports`. Send Sentry P0 on violation. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.4.1, §4.7 |
+| **18.12** | Dispute Resolution Engine | Wire `payment_disputes` (migration 012) status flow: opened→under_review→resolved/escalated. GCS evidence upload. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.4.2 |
+| **18.13** | Treasury Admin UI Expansion | Add Dispute tab to `treasury.html`. Reconciliation report history. Alert banner for invariant violations. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.4, `ADMIN_FEATURES.md` |
+| **18.14** | Deposit Admin UI: Webhook Status | Show auto-matched vs manual deposits in `deposits.html`. Webhook event log viewer. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.2.2 |
+| **18.15** | Affiliate Treasury Invariant | Extend reconciliation worker: `SUM(affiliate_commissions WHERE paid) ≤ treasury_wallet.debits` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §19.4.1 #5 |
+
+---
+
+## PHASE 19: Affiliate & Referral Subsystem (MP Chapter 18)
+
+*Backend + Frontend — User growth, commission lifecycle, and compliance system.*
+
+### 19A: Database & Backend Core
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **19.1** | Affiliate DB Schema | Create `affiliates`, `affiliate_referrals`, `affiliate_commissions`, `affiliate_policy_acceptances`, `investment_disclosures_log` tables | `✅ DONE` | Antigravity | `✅` | Handled via migration 072 |
+| **19.2** | Attribution Middleware | HttpOnly cookie (30-day TTL) on `?ref=XYZ` clicks. On registration, bind `referred_by_id` to user. Fallback: manual code field. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §18.10 |
+| **19.3** | 5-Stage Qualification State Machine | Backend state transitions: `attributed` → `registered` → `kyc_approved` → `first_investment_done` → `under_holdback` → `qualified` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §18.2 |
+| **19.4** | 30-Day Holdback Worker | Nightly cron: check if holdback expired AND investment still active (FOR UPDATE lock) → promote to `qualified` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §18.10 |
+| **19.5** | 8-Tier Calculation Engine | Nightly worker: aggregate 365-day qualified volume per affiliate → update `current_tier` and `commission_rate_bps` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §18.3, §18.10 |
+| **19.6** | Reversal & Clawback Interceptor | On investment cancellation/chargeback → find linked commission → set status `disqualified` or trigger clawback | `⚪ NOT STARTED` | - | `❌` | Ref: MP §18.10 |
+| **19.7** | Treasury Payout Batch | Atomic: `Treasury Wallet (-$X) → Affiliate Cash Wallet (+$X)`. Only for `payable` commissions where `is_tax_ready = true`. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §18.5, §18.9 |
+
+### 19B: Checkout Disclosure Gates
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **19.8** | Dynamic Checkout Disclosures | API returns `is_referral_user` flag. Direct users: 3 checkboxes. Referral users: 6 checkboxes (hardcoded). Backend rejects if mismatch. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §18.4 |
+| **19.9** | Disclosure Logging | All acceptance events stored in `investment_disclosures_log` (timestamp, IP, policy version). Immutable. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §18.6 (DDL provided) |
+
+### 19C: Frontend Ecosystem (Affiliate Portal & Admin)
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **19.95**| Affiliate: Promo & Locked State| `affiliate-promo.html` -> Blocked access wall for unapproved users. Promo landing page to sell the program. CTA to 'Apply' | `⚪ NOT STARTED` | - | `❌` | Ref: AFFILIATE_ROADMAP §5.0 |
+| **19.10** | Affiliate: Onboarding & Quiz | `affiliate-onboarding.html` -> KYC, Tax, 5 Legal Policies. Must pass 5-question multiple choice Quiz (100% correct). | `⚪ NOT STARTED` | - | `❌` | Ref: AFFILIATE_ROADMAP §5.1 |
+| **19.11** | Affiliate: Dashboard | `affiliate-dashboard.html` -> Progress bar to next tier, Link Widget, Earnings Card (Provisional + Payable). | `⚪ NOT STARTED` | - | `❌` | Ref: AFFILIATE_ROADMAP §5.2 |
+| **19.12** | Affiliate: Referrals Funnel | `affiliate-referrals.html` -> Funnel data table (Tracked ➔ Under Review ➔ Payable ➔ Paid). | `⚪ NOT STARTED` | - | `❌` | Ref: AFFILIATE_ROADMAP §5.3 |
+| **19.13** | Affiliate: Materials & Settings | `affiliate-materials.html` (Upload/Download Assets), `affiliate-settings.html` (Tax forms, freeze account on change). | `⚪ NOT STARTED` | - | `❌` | Ref: AFFILIATE_ROADMAP §5.4 |
+| **19.14** | Admin: Affiliate Applications | `admin-affiliate-applications.html` -> Review onboarding/KYC/Quiz. Approve/Reject new marketers. | `⚪ NOT STARTED` | - | `❌` | Ref: AFFILIATE_ROADMAP §6.1 |
+| **19.15** | Admin: Finance & Tax Board | `admin-affiliate-finance.html` -> Set tax class, Mark Tax-Ready. Run massive Treasury Release Batch (ACID). | `⚪ NOT STARTED` | - | `❌` | Ref: AFFILIATE_ROADMAP §6.2 |
+| **19.16** | Admin: Compliance Case Mgmt | `admin-affiliate-compliance.html` -> Freeze Link, Clawback Commission (`negative_transaction`), Suspend Account. | `⚪ NOT STARTED` | - | `❌` | Ref: AFFILIATE_ROADMAP §6.3 |
+| **19.17** | Admin: Fraud Visualizer | `admin-affiliate-fraud.html` -> Detect referral rings and cross-IP relationships via recursion tree. | `⚪ NOT STARTED` | - | `❌` | Ref: AFFILIATE_ROADMAP §6.4 |
+| **19.18** | Legacy Cleanup | Delete old `rewards.html` and legacy backend routes. Execute only after Phase 19 is fully complete. | `⚪ NOT STARTED` | - | `❌` | Ref: AFFILIATE_ROADMAP §7.1 |
+
+---
+
+## PHASE 20: Core Admin Dashboard & Operations (MP Chapter 20)
+
+*Frontend + Backend + Ops — Full management suite, security hardening, CI/CD.*
+
+### 20A: Missing Admin Features
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **20.1** | Background Job Monitoring | `background_job_runs` table + `GET /api/admin/system/jobs` API + dashboard widget | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.2.1 |
+| **20.2** | Webhook Logs Admin UI | Wire `webhook_events` table to `/admin/webhooks.html` or Settings tab | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.2.2 |
+| **20.3** | Session Management API | `GET /api/admin/users/:id/sessions` + `DELETE` (Revoke All). Show IP, UA, Last-Active. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.2.3, `SECURITY.md` §4 |
+| **20.4** | Email Campaign UI | CRUD for templates, audience segmentation, scheduling, delivery stats | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.2.4 (tables exist from migration 008) |
+
+### 20B: Security Hardening (from SECURITY.md audit)
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **20.5** | 🔴 PII Encryption: `tax_id` | Encrypt `tax_id` in `user_profiles` using AES-256-GCM (`aes-gcm` crate). Key via `$ENCRYPTION_KEY` env var. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.4.1, `SECURITY.md` §2 |
+| **20.6** | RBAC Role Expansion | Add `finance`, `compliance`, `support` roles to `admin_roles`. Update permission-guard middleware. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.4.2, `SECURITY.md` §1 |
+| **20.7** | CSRF Middleware | Custom Axum middleware: validate `Origin`/`Referer` vs `BASE_URL` on POST. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.4.3, `SECURITY.md` §4 |
+| **20.8** | Rate Limiting: Deposits & Withdrawals | Redis-backed rate limit on `/api/deposits` and `/api/wallets/withdraw` | `⚪ NOT STARTED` | - | `❌` | Ref: `SECURITY.md` §4 |
+| **20.9** | Audit Log: Add `client_ip` Column | Migration: `ALTER TABLE audit_logs ADD COLUMN client_ip VARCHAR(45)`. Update all audit log inserts. | `⚪ NOT STARTED` | - | `❌` | Ref: `SECURITY.md` §3 |
+
+### 20C: Infrastructure & Ops
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **20.10** | CI/CD Pipeline (GitHub Actions) | `.github/workflows/deploy.yml`: cargo check → cargo test → cargo audit → Docker Build → Cloud Run Deploy | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.3.2, `OPERATIONS.md` |
+| **20.11** | Automated PITR Backup | Cloud Scheduler job: `gcloud sql export sql` daily → GCS bucket (30-day retention) | `⚪ NOT STARTED` | - | `❌` | Ref: MP §20.3.3, `OPERATIONS.md` §2 |
+| **20.12** | Monitoring Alert Policies | Cloud Monitoring: 5xx >1%, P95 >800ms, CPU >80% → PagerDuty/email | `⚪ NOT STARTED` | - | `❌` | Ref: `OPERATIONS.md` §3 |
+| **20.13** | Incident Response Script | `scripts/incident-response.sh`: Suspend user, revoke sessions, rotate credentials | `⚪ NOT STARTED` | - | `❌` | Ref: `OPERATIONS.md` §4 |
+
+### 20D: Documentation Maintenance
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **20.14** | DATABASE_SCHEMA.md Update | Add 40+ missing tables from migrations 024-071 to the schema doc | `⚪ NOT STARTED` | - | `❌` | Gap: 40+ undocumented tables |
+| **20.15** | AUTH_FLOW.md Update | Document OAuth (Google/Facebook) and 2FA (TOTP) flows | `⚪ NOT STARTED` | - | `❌` | Gap: OAuth + 2FA not documented |
+
+---
+
+## PHASE 21: Smart Contract & Blockchain (MP Chapter 21)
+
+*Solidity + Rust + DevOps — Full ERC-3643 security token pipeline on Base L2.*
+
+### 21A: Foundry Project & Contracts
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **21.1** | Foundry Project Setup | `forge init contracts/`, OpenZeppelin, T-REX dependencies | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.1.1, `SMART_CONTRACT_IMPLEMENTATION.md` |
+| **21.2** | IdentityRegistry.sol | On-chain KYC whitelist. All assets reference this single registry. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.1.2, SC doc §5 |
+| **21.3** | PooolToken.sol (ERC-3643) | Security token with compliance hooks, transfer restrictions, pause, freeze | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.1.2, SC doc §5 |
+| **21.4** | AssetFactory.sol (EIP-1167 Clones) | Factory pattern for deploying new asset tokens from admin panel | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.1.2, SC doc §5 |
+| **21.5** | Compliance Modules | ManualApprovalModule.sol + CountryRestriction.sol | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.1.2, SC doc §5 |
+| **21.6** | Foundry Unit + Fuzz Tests | Full test suite. `forge test --fuzz-runs 10000` MUST pass before deploy. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.1.3 |
+| **21.7** | Base Sepolia Testnet Deploy | Deploy + verify contracts on testnet | `⚪ NOT STARTED` | - | `❌` | Ref: SC doc §7 |
+| **21.8** | Smart Contract Audit (External) | Commission audit firm in Week 4 (4-6 week lead time!) | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.6 ⚠️ |
+
+### 21B: Rust ↔ Blockchain Integration
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **21.9** | `alloy-rs` Crate Integration | Add `alloy`, `gcp_auth` to Cargo.toml. Create `backend/src/blockchain/` module. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.2.1 |
+| **21.10** | GCP KMS Custodial Wallet Service | Auto-generate secp256k1 keypair on signup via Cloud KMS. Store in `user_wallets`. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.2.2, SC doc §4 |
+| **21.11** | Event Indexer (Background Task) | `tokio::spawn` loop: poll Base L2 for Transfer events → sync `onchain_balances` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.2.3, SC doc §6 |
+| **21.12** | Settlement Worker | On 4-Eyes approval → sign TX via KMS → broadcast to Base L2 → store TX hash | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.2.4 |
+| **21.13** | IPFS Upload Service (Pinata) | Pin SPV docs to IPFS → store CID in `assets.ipfs_cid` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.3 |
+
+### 21C: Admin & Frontend Blockchain UI
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **21.14** | Admin: `pending-settlements.html` | 4-Eyes settlement dashboard. Match table, approve button (only active on system match). | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.4, SC doc §14.A |
+| **21.15** | Admin: `blockchain-treasury.html` | Treasury & gas dashboard. Wallet balances, gas costs, EMERGENCY PAUSE button. | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.4, SC doc §14.A |
+| **21.16** | Admin: `asset-tokenize.html` | Pre-flight checklist (IPFS ✅, Supply ✅, Gas ✅) → Deploy button → Result display | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.4, SC doc §14.A |
+| **21.17** | Investor: Blockchain Proof Links | Add Basescan TX links to portfolio, payment-success, transactions pages | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.5 |
+| **21.18** | Investor: On-Chain Verification Badges | "🔗 On-Chain verified" badge on property cards in marketplace | `⚪ NOT STARTED` | - | `❌` | Ref: MP §21.5 |
+
+---
+
+## PHASE 22: Banking API & 4-Eyes Settlement (MP Chapter 22)
+
+*Backend + Ops — OCBC Direct Banking integration and dual-approval settlement protocol.*
+
+| ID | Task | Description | Status | Assignee | Tested? | Notes |
+|:---|:---|:---|:---|:---|:---|:---|
+| **22.1** | OCBC Virtual Account Issuance | `POST /v1/virtual-accounts` — Create per-user VA numbers for deposits | `⚪ NOT STARTED` | - | `❌` | Ref: MP §22.1.2, SC doc §3 |
+| **22.2** | OCBC Disbursement API | `POST /v1/disbursements` — GIRO/FAST/BI-FAST payout execution | `⚪ NOT STARTED` | - | `❌` | Ref: MP §22.1.2 |
+| **22.3** | OCBC Statement Reconciliation | `GET /v1/statements` — Daily MT940/CAMT.053 automated matching | `⚪ NOT STARTED` | - | `❌` | Ref: MP §22.1.2 |
+| **22.4** | mTLS & Request Signing | Signing certificate in GCP Secret Manager, HMAC-SHA256 for outgoing calls | `⚪ NOT STARTED` | - | `❌` | Ref: MP §22.1.3 |
+| **22.5** | 4-Eyes Settlement DB Schema | `ALTER TABLE orders` — Add `settlement_status`, `settlement_approved_by`, `settlement_second_approved_by`, `blockchain_tx_hash` | `⚪ NOT STARTED` | - | `❌` | Ref: MP §22.2.3 |
+| **22.6** | 4-Eyes Settlement Backend Logic | Admin 1 approves (only if system-match exists) → Admin 2 confirms → Execute blockchain TX | `⚪ NOT STARTED` | - | `❌` | Ref: MP §22.2.1 |
+| **22.7** | Manual Match Flow | Admin A creates manual match (with reason) → Admin B confirms → Audit log both actors | `⚪ NOT STARTED` | - | `❌` | Ref: MP §22.2.2 |
+| **22.8** | OCBC Account Setup (External) | Bank agreement, API credentials, IP whitelist registration | `⚪ NOT STARTED` | - | `❌` | External dependency |
+
+---
+
 ## 📊 Data Integrity Invariants (Must ALWAYS Hold — §4.7)
 
 These are automatically checked by the reconciliation job and enforced by DB constraints:
 
 | # | Invariant | Check | Response if Violated |
 |:---|:---|:---|:---|
-| 1 | **Cash Balance** | `SUM(balance + held) = SUM(deposits) - SUM(withdrawals) - SUM(purchases)` | 🔴 Stop trading, manual audit |
+| 1 | **Cash Balance** | `SUM(balance + held) = SUM(deposits) - SUM(withdrawals) - SUM(purchases) + SUM(affiliate_payouts)` | 🔴 Stop trading, manual audit |
 | 2 | **Token Balance** | `SUM(tokens_owned + held_tokens) = asset.tokens_total` per asset | 🔴 Stop trading for asset |
 | 3 | **Held ≤ Available** | `held_balance_cents ≤ balance_cents` per wallet | 🔴 Cancel all user orders |
 | 4 | **Filled ≤ Quantity** | `quantity_filled ≤ quantity` per order | 🔴 Manual order correction |
@@ -475,6 +650,7 @@ These are automatically checked by the reconciliation job and enforced by DB con
 | 8 | **On-Chain Sync** | `SUM(onchain_balances)` per asset = on-chain `totalSupply()` | 🟡 Replay event indexer |
 | 9 | **Settlement Complete** | No trades with `on_chain_status = 'pending'` older than 48h | 🟡 Manual settlement |
 | 10 | **Wallet Consistency** | Every KYC-verified user has exactly 1 `user_wallets` entry | 🟡 Re-run identity worker |
+| 11 | **Affiliate Treasury** | `SUM(commissions WHERE status='paid') ≤ treasury_wallet.total_debits` | 🔴 Freeze affiliate payouts |
 
 ---
 
@@ -489,7 +665,7 @@ These are automatically checked by the reconciliation job and enforced by DB con
 | **2** | DB Migrations | `🔒 LOCKED` | Phase 0 (DB running) | Phase 0.1 is `✅ DONE` | `database/*.sql` |
 | **3** | Trading Engine | `🔒 LOCKED` | Phase 1 + Phase 2 | Phase 1 ALL `✅` + Phase 2 ALL `✅` | `backend/src/marketplace/` |
 | **4** | WebSocket Server | `🔒 LOCKED` | Phase 3.1-3.7 | Phase 3.7 is `✅ DONE` | `backend/src/marketplace/websocket.rs` |
-| **5** | Frontend Trading UI | `🔒 LOCKED` | Phase 3.5 + 3.10 (APIs exist) | Phase 3.5 + 3.10 are `✅ DONE` | `frontend/platform/marketplace*`, `frontend/platform/static/js/marketplace-*` |
+| **5** | Frontend Trading UI | `🔒 LOCKED` | Phase 3.5 + 3.10 (APIs exist) | Phase 3.5 + 3.10 are `✅ DONE` | `frontend/platform/marketplace*` |
 | **6A** | Admin Backend APIs | `🟢 OPEN` | Phase 3.7 (settlement exists) | Phase 3.7 is `✅ DONE` ✅ | `backend/src/admin/marketplace/` | 14/15 DONE |
 | **6B** | Admin Frontend Pages | `🟢 OPEN` | Phase 6A (APIs exist) | Phase 6A.1-6A.7 are `✅ DONE` ✅ | `frontend/platform/admin/marketplace/` | 13/14 DONE |
 | **7** | Smart Contracts | `🟢 OPEN` | None (runs parallel!) | Anytime | `contracts/` (new directory) |
@@ -503,6 +679,11 @@ These are automatically checked by the reconciliation job and enforced by DB con
 | **15** | Soft Launch | `🔒 LOCKED` | Phase 11 (all tests pass) | Phase 11 ALL `✅` | `Dockerfile`, deployment configs |
 | **16** | Primary Issuance | `🟢 OPEN` | Phase 1 & 2 (Core) | Phase 1 & 2 are `✅ DONE` | `backend/src/issuance/` |
 | **17** | RegTech | `🟢 OPEN` | Phase 3 (Trading Engine) | Phase 3 is `✅ DONE` | `backend/src/compliance/` |
+| **18** | FI-System & Treasury | `🟢 OPEN` | None (core payments code exists) | Anytime | `backend/src/payments/`, `backend/src/admin/treasury.rs` |
+| **19** | Affiliate Subsystem | `🟢 OPEN` | Phase 2 (DB Migrations) | Phase 2 is `✅ DONE` | `backend/src/affiliate/`, `frontend/platform/affiliate*` |
+| **20** | Core Admin & Operations | `🟢 OPEN` | None (extends existing admin) | Anytime | `frontend/platform/admin*`, `.github/workflows/` |
+| **21** | Smart Contract & Blockchain | `🟢 OPEN` | None (runs parallel!) | Anytime (Foundry is independent) | `contracts/`, `backend/src/blockchain/` |
+| **22** | Banking API & Settlement | `🔒 LOCKED` | Phase 21.12 + Phase 18.3 | Phase 21.12 + 18.3 are `✅ DONE` | `backend/src/banking/` |
 
 ---
 
@@ -513,9 +694,9 @@ These are automatically checked by the reconciliation job and enforced by DB con
 
 | File Zone | Description | Which Phases Touch This Zone |
 |:---|:---|:---|
-| `database/*.sql` | DB migration scripts | Phase 2, Phase 8A |
+| `database/*.sql` | DB migration scripts | Phase 2, Phase 8A, Phase 18, Phase 19, Phase 22 |
 | `backend/src/db.rs` | DB pool configuration | Phase 1.1, 1.2, 1.3 |
-| `backend/src/auth/` | Auth, 2FA, sessions | Phase 1.4, 1.5, 1.6 |
+| `backend/src/auth/` | Auth, 2FA, sessions | Phase 1.4, 1.5, 1.6, Phase 20.3 |
 | `backend/src/marketplace/` | **Trading engine core** | Phase 3 (ALL), Phase 4 |
 | `backend/src/marketplace/models.rs` | Data structs | Phase 3.2 |
 | `backend/src/marketplace/routes.rs` | API endpoints | Phase 3.5, 3.9, 3.10 |
@@ -524,17 +705,26 @@ These are automatically checked by the reconciliation job and enforced by DB con
 | `backend/src/marketplace/websocket.rs` | WebSocket server | Phase 4 |
 | `backend/src/marketplace/background.rs` | Background workers | Phase 3.13 |
 | `backend/src/admin/marketplace/` | Admin APIs | Phase 6A |
-| `backend/src/main.rs` | Route registration | Phase 3.16, 4.1, 6A (⚠️ shared!) |
+| `backend/src/payments/` | **Deposit, checkout, FX, fees** | Phase 18 (ALL) ⚠️ |
+| `backend/src/payments/service.rs` | Core financial logic | Phase 18.2, 18.10 ⚠️ Critical |
+| `backend/src/admin/treasury.rs` | Treasury + dividends admin | Phase 18.11, 18.12, 18.13 |
+| `backend/src/admin/deposits.rs` | Deposit admin APIs | Phase 18.14 |
+| `backend/src/admin/withdrawals.rs` | Withdrawal admin APIs | Phase 18.6-18.9 |
+| `backend/src/affiliate/` | **Affiliate subsystem (NEW)** | Phase 19 (ALL) |
+| `backend/src/blockchain/` | Blockchain integration | Phase 8B, Phase 21B |
+| `backend/src/banking/` | **OCBC banking API (NEW)** | Phase 22 (ALL) |
+| `backend/src/main.rs` | Route registration | Phase 3.16, 4.1, 6A, 18, 19, 22 (⚠️ shared!) |
 | `backend/src/error.rs` | AppError enum | Phase 1.11 (⚠️ shared!) |
+| `contracts/` | **Solidity smart contracts (NEW)** | Phase 21A (ALL) |
 | `frontend/platform/marketplace*` | Trading UI HTML | Phase 5 |
 | `frontend/platform/static/js/marketplace-*` | Trading UI JS | Phase 5 |
 | `frontend/platform/static/css/marketplace-*` | Trading UI CSS | Phase 5 |
 | `frontend/platform/admin/marketplace/` | Admin pages | Phase 6B |
-| `contracts/` | Solidity smart contracts | Phase 7 |
-| `backend/src/blockchain/` | Blockchain integration | Phase 8B |
-| `backend/src/admin/blockchain.rs` | Admin Blockchain API | Phase 8C |
-| `frontend/platform/admin/blockchain*` | Admin Blockchain UI | Phase 8C |
+| `frontend/platform/admin/blockchain*` | Admin Blockchain UI | Phase 8C, Phase 21C |
 | `frontend/platform/admin/asset*` | Admin Asset UI | Phase 8C |
+| `frontend/platform/affiliate*` | **Affiliate portal (NEW)** | Phase 19C |
+| `.github/workflows/` | **CI/CD Pipeline (NEW)** | Phase 20C |
+| `scripts/` | **Ops scripts (NEW)** | Phase 20C |
 | `backend/src/issuance/` | Primary Issuance Logic | Phase 16 |
 | `frontend/platform/issuance*` | Issuer Portal UI | Phase 16 |
 | `backend/src/compliance/` | Compliance & RegTech | Phase 13, Phase 17 |
@@ -546,12 +736,67 @@ These are automatically checked by the reconciliation job and enforced by DB con
 > 2. Add your additions at the END of the relevant section to minimize merge conflicts.
 > 3. If two agents both need `main.rs`, they must work **sequentially**, not in parallel.
 
+> [!WARNING]
+> **⚠️ FINANCIAL CRITICAL FILES** — `payments/service.rs` and `admin/treasury.rs` handle real money.
+> Any modification MUST be wrapped in a DB transaction, use `i64` cents (NEVER floats), and be verified with `cargo check` AND `cargo test`.
+> Only ONE agent may edit these files at a time.
+
 ---
 
 ## 🗓️ Concurrency Map (What Can Run In Parallel)
 
 ```
 TIMELINE         Agent 1 (Backend)       Agent 2 (Frontend)      Agent 3 (DB/DevOps)     Agent 4 (Web3)
+─────────────────────────────────────────────────────────────────────────────────────────────────────────
+Week 1-2         ░░░░░░░░░░░░░░░░░░░░░   ░░░░░░░░░░░░░░░░░░░░   Phase 0 (Infra) ████    ░░░░░░░░░░░░░░░
+                                                                   Phase 2 (Migrations)██
+
+Week 2-4         Phase 1 (Hardening) ██   ░░░ WAITING ░░░░░░░░   ░░░░░░░░░░░░░░░░░░░░   Phase 7 (SC) ████
+                 Phase 18.10 (Fee Fix)    Phase 20 (Admin Ops) █                          Phase 21A ██████
+                 ⬇ GATE: Phase 1 done
+
+Week 4-8         Phase 3 (Engine) ██████   Phase 20B (Security)   Monitoring & backups    Phase 21A contd ██
+                 Phase 18A (Deposits) ██   ░░░░░░░░░░░░░░░░░░░                            Phase 21B ████████
+                 ⬇ GATE: Phase 3.5+3.10 done
+
+Week 6-10        Phase 4 (WebSocket) ██    Phase 5 (Trading UI)   Phase 20C (CI/CD) ███   Phase 21.7 (Deploy)
+                 Phase 6A (Admin APIs) █   ██████████████████████
+                 Phase 18B (Withdrawals)
+                 ⬇ GATE: Phase 6A done
+
+Week 8-12        Phase 3 finish ████████   Phase 6B (Admin UI)    Phase 8A (BC Migrations) Phase 8B ██████
+                 Phase 19A (Affiliate) █   Phase 19C (Aff Portal)  Phase 20.11 (Backups)
+                                             ██████████████████████
+
+Week 10-14       Phase 18C (Treasury) ██   Phase 10 (Integration)  ░░░░░░░░░░░░░░░░░░░░   Phase 21C (BC UI)
+                 Phase 19B (Disclosures)   Phase 21C contd ████████
+                 Phase 11 (Testing) ███    Phase 11 contd ████████
+
+Week 14-16       Phase 22 (Banking) █████████████████████████████████████�
+ning | 11 | Mixed |
+| 2 | DB Migrations | 10 | Mixed |
+| 3 | Trading Engine | 16 | Mixed |
+| 4 | WebSocket Server | 4 | Mixed |
+| 5 | Frontend Trading UI | 10 | Mixed |
+| 6A | Admin Backend APIs | 15 | 14/15 DONE |
+| 6B | Admin Frontend Pages | 14 | 13/14 DONE |
+| 7 | Smart Contracts | — | Future |
+| 8 | Blockchain Integration | — | Future |
+| 9 | Dividend System | — | Future |
+| 10 | Integration & Security | — | ✅ DONE |
+| 11 | Testing & QA | — | Future |
+| 12-13 | Legal / OJK | — | External |
+| 14 | Community | — | Mixed |
+| 15 | Soft Launch | — | Future |
+| 16 | Primary Issuance | — | Future |
+| 17 | RegTech | 5 | 2/5 DONE |
+| **18** | **FI-System & Treasury** | **15** | **⚪ 0/15** |
+| **19** | **Affiliate Subsystem** | **12** | **⚪ 0/12** |
+| **20** | **Core Admin & Operations** | **15** | **⚪ 0/15** |
+| **21** | **Smart Contract & Blockchain** | **18** | **⚪ 0/18** |
+| **22** | **Banking API & Settlement** | **8** | **⚪ 0/8** |
+| | **TOTAL NEW TASKS** | **68** | |
+tend)      Agent 3 (DB/DevOps)     Agent 4 (Web3)
 ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 Week 1-2         ░░░░░░░░░░░░░░░░░░░░░   ░░░░░░░░░░░░░░░░░░░░   Phase 0 (Infra) ████    ░░░░░░░░░░░░░░░
                                                                   Phase 2 (Migrations)██

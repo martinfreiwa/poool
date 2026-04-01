@@ -30,6 +30,15 @@ pub async fn trigger_transactional_email(
         "order_confirmation" => "Order Confirmation",
         "invoice_available" => "Invoice Available for Download",
         "asset_funded" => "An Asset You Follow is 100% Funded",
+        
+        // Affiliate Partner Syndicate Operations
+        "affiliate_application_received" => "Application Received - POOOL Partner Syndicate",
+        "affiliate_approved" => "Welcome to the POOOL Partner Syndicate!",
+        "affiliate_rejected" => "Update on your POOOL Partner Application",
+        "affiliate_suspended" => "Urgent: Your POOOL Affiliate Account Status",
+        "affiliate_payout_released" => "Your POOOL Affiliate Payout Details",
+        "affiliate_commission_earned" => "New Commission Tracked - POOOL Partner Syndicate",
+
         _ => "You Have a New Notification",
     };
 

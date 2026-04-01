@@ -3,7 +3,7 @@ CREATE TABLE payment_disputes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     transaction_id UUID REFERENCES wallet_transactions(id),
-    provider VARCHAR(50) NOT NULL, -- stripe, xendit, mangopay
+    provider VARCHAR(50) NOT NULL, -- stripe, ocbc, mangopay
     provider_dispute_id VARCHAR(255) NOT NULL UNIQUE,
     amount_cents BIGINT NOT NULL,
     currency VARCHAR(3) NOT NULL,

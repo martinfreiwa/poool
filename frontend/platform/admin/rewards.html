@@ -24,9 +24,7 @@
 <body class="admin-body dom-ready">
   <div class="admin-wrapper">
     <!-- SIDEBAR -->
-    <!-- Sidebar Placeholder -->
-    <div id="admin-sidebar-placeholder"></div>
-    <script src="/static/js/admin-sidebar-loader.js"></script>
+    {% include 'admin/components/sidebar.html' %}
 
     <main class="admin-main">
       <header class="admin-topbar">
@@ -123,6 +121,23 @@
               <circle cx="8" cy="14" r="2" />
             </svg>
             Referral Programme
+          </button>
+          <button class="admin-tab" id="tab-applications" onclick="switchTab('applications')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Applications
+          </button>
+          <button class="admin-tab" id="tab-payouts" onclick="switchTab('payouts')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Pending Payouts
           </button>
         </div>
 
@@ -638,6 +653,90 @@
             </div>
           </div>
         </div>
+
+        <!-- ═══════════════ TAB: AFFILIATE APPLICATIONS ═══════════════ -->
+        <div id="panel-applications" style="display: none">
+          <div class="admin-card" style="margin-bottom: 16px">
+            <div style="padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <h2 style="font-size: 16px; font-weight: 600; margin: 0; color: var(--admin-text-primary);">Pending Applications</h2>
+              <span style="font-size: 12px; background: rgba(240, 68, 56, 0.1); color: var(--admin-error); padding: 4px 8px; border-radius: 12px; font-weight: 600;" id="app-count-badge">0 Pending</span>
+              
+              <div class="admin-search" style="width: 260px; margin-left: auto;">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input type="text" placeholder="Search applicant email..." id="app-search" />
+              </div>
+            </div>
+          </div>
+          
+          <div class="admin-card">
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table" id="applications-table">
+                <thead>
+                  <tr>
+                    <th>Applicant Name</th>
+                    <th>Traffic Source</th>
+                    <th>Audience Size</th>
+                    <th>Main URL</th>
+                    <th>Applied On</th>
+                    <th style="width: 120px">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="applications-body">
+                  <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                      Loading applications…
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════════ TAB: PENDING PAYOUTS ═══════════════ -->
+        <div id="panel-payouts" style="display: none">
+          <div class="admin-card" style="margin-bottom: 16px">
+            <div style="padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <h2 style="font-size: 16px; font-weight: 600; margin: 0; color: var(--admin-text-primary);">Pending Batch Payouts</h2>
+              <span style="font-size: 12px; background: rgba(240, 68, 56, 0.1); color: var(--admin-error); padding: 4px 8px; border-radius: 12px; font-weight: 600;" id="payout-count-badge">0 Pending</span>
+              
+              <div class="admin-search" style="width: 260px; margin-left: auto;">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input type="text" placeholder="Search affiliate..." id="payout-search" />
+              </div>
+            </div>
+          </div>
+          
+          <div class="admin-card">
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table" id="payouts-table">
+                <thead>
+                  <tr>
+                    <th>Affiliate</th>
+                    <th>Referral Code</th>
+                    <th>Pending Amount</th>
+                    <th>Count</th>
+                    <th style="width: 140px; text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="payouts-body">
+                  <tr>
+                    <td colspan="5" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+                      Loading payouts…
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
