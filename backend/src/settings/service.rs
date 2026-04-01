@@ -890,14 +890,19 @@ pub async fn delete_account_selective(
         }
     }
 
+    // 5. Begin transaction for atomic check and deletion
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to start deletion transaction: {}", e)))?;
+
     // 2. Check for non-zero wallet balance — cannot delete with funds
     let balance: i64 = sqlx::query_scalar(
         "SELECT COALESCE(SUM(balance_cents), 0)::bigint FROM wallets WHERE user_id = $1",
     )
     .bind(user_id)
-    .fetch_one(pool)
-    .await
-    .unwrap_or(0);
+    .fetch_one(&mut *tx)
+    .await?;
 
     if balance > 0 {
         return Err(AppError::BadRequest(
@@ -911,9 +916,8 @@ pub async fn delete_account_selective(
         "SELECT COUNT(*)::bigint FROM investments WHERE user_id = $1 AND status IN ('funding_in_progress', 'active')",
     )
     .bind(user_id)
-    .fetch_one(pool)
-    .await
-    .unwrap_or(0);
+    .fetch_one(&mut *tx)
+    .await?;
 
     if active_investments > 0 {
         return Err(AppError::BadRequest(
@@ -926,12 +930,6 @@ pub async fn delete_account_selective(
     let anon_hash = format!("deleted_{}", &user_id.to_string()[..8]);
     let anon_email = format!("{}@deleted.poool.co", anon_hash);
 
-    // 5. Begin transaction for atomic deletion
-    let mut tx = pool
-        .begin()
-        .await
-        .map_err(|e| AppError::Internal(format!("Failed to start deletion transaction: {}", e)))?;
-
     // 5a. Anonymize user record — keep the row but clear all PII
     sqlx::query(
         r#"UPDATE users SET
@@ -941,7 +939,7 @@ pub async fn delete_account_selective(
             email_verified = FALSE,
             status = 'deleted',
             updated_at = NOW()
-           WHERE id = $1"#,
+           WHERE id = $1"#
     )
     .bind(user_id)
     .bind(&anon_email)
@@ -964,7 +962,7 @@ pub async fn delete_account_selective(
             date_of_birth = NULL,
             annual_income_cents = NULL,
             updated_at = NOW()
-           WHERE user_id = $1"#,
+           WHERE user_id = $1"#
     )
     .bind(user_id)
     .execute(&mut *tx)

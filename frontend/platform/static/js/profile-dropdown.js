@@ -212,10 +212,10 @@ function loadSavedProfile() {
       }
     });
 
-    const selectedItem = document.querySelector(
+    const selectedItem = document.getElementById(
       savedAccountId === "olivia-investor"
-        ? "#menu-item-current-account"
-        : `#menu-item-account-${savedAccountId}`,
+        ? "menu-item-current-account"
+        : `menu-item-account-${savedAccountId}`
     );
 
     if (selectedItem) {

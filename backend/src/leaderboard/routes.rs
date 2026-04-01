@@ -55,7 +55,12 @@ pub async fn get_rankings(
         .and_then(|p| p.parse().ok())
         .unwrap_or(1)
         .max(1);
-    let per_page: i64 = 50;
+    let per_page: i64 = params
+        .get("per_page")
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(10)
+        .max(1)
+        .min(100);
 
     let tier_id: Option<i32> = params.get("tier_id").and_then(|t| t.parse().ok());
     let search: Option<String> = params

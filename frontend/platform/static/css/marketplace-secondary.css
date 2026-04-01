@@ -222,7 +222,6 @@ body.mp-secondary-body {
     align-items: center;
     padding: 6px;
     gap: 4px;
-    margin-bottom: 16px;
     background: var(--mp-surface);
     border: 1px solid var(--mp-border);
     border-radius: 30px;
@@ -291,11 +290,18 @@ body.mp-secondary-body {
     align-items: center;
     padding: 4px;
     gap: 0;
-    margin-bottom: 20px;
     background: var(--mp-surface);
     border: 1px solid var(--mp-border);
     border-radius: 30px;
     width: fit-content;
+}
+
+.mp-sec__controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
 }
 
 .mp-sec__status-tab {

@@ -2286,7 +2286,7 @@
 .commissions-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 }
 
 .commissions-form-row {
@@ -2303,8 +2303,8 @@
 .commissions-form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-width: 300px;
+  gap: 8px;
+  flex: 1;
 }
 
 .commissions-form-field--wide {

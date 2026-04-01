@@ -1,6 +1,7 @@
 /**
- * Leaderboard Page — Client-side logic
- * Fetches rankings, populates podium + table, handles metric toggle & visibility preferences.
+ * Leaderboard Page — "Neon Ethos" Institutional Redesign
+ * Fetches rankings, populates bento top-3 cards + institutional ledger table,
+ * handles metric/timeframe switching, search, filters, visibility preferences.
  */
 
 (function () {
@@ -19,6 +20,7 @@
   let currentPage = 1;
   let currentSearch = '';
   let currentTier = '';
+  let currentPerPage = 10;
   let hasMore = true;
   let isFetching = false;
   let searchTimeout = null;
@@ -26,23 +28,30 @@
   let usingDemoData = false;
 
   // ─── Sample / Demo Data ─────────────────────────────────────────
-  // Shown when the leaderboard has 0 real participants. Replaced
-  // automatically once real investors appear.
   var DEMO_RANKINGS = [
-    { rank: 1, display_name: 'Alexander K.',  avatar_url: null, tier_name: 'Premium', tier_badge_color: '#7F56D9', metric_value: 4825000, is_current_user: false, metrics: { total_invested_cents: 4825000, asset_count: 12, portfolio_roi_bps: 1450, affiliate_count: 8,  referral_revenue_cents: 920000, highest_investment_cents: 1500000 }},
-    { rank: 2, display_name: 'Sophia M.',     avatar_url: null, tier_name: 'Elite',   tier_badge_color: '#2E90FA', metric_value: 3690000, is_current_user: false, metrics: { total_invested_cents: 3690000, asset_count: 9,  portfolio_roi_bps: 1280, affiliate_count: 5,  referral_revenue_cents: 410000, highest_investment_cents: 1200000 }},
-    { rank: 3, display_name: 'Maximilian R.', avatar_url: null, tier_name: 'Elite',   tier_badge_color: '#2E90FA', metric_value: 2850000, is_current_user: false, metrics: { total_invested_cents: 2850000, asset_count: 7,  portfolio_roi_bps: 1120, affiliate_count: 3,  referral_revenue_cents: 180000, highest_investment_cents: 950000 }},
-    { rank: 4, display_name: 'Emma L.',       avatar_url: null, tier_name: 'Pro',     tier_badge_color: '#12B76A', metric_value: 2150000, is_current_user: false, metrics: { total_invested_cents: 2150000, asset_count: 6,  portfolio_roi_bps: 980,  affiliate_count: 11, referral_revenue_cents: 750000, highest_investment_cents: 800000 }},
-    { rank: 5, display_name: 'Lukas W.',      avatar_url: null, tier_name: 'Pro',     tier_badge_color: '#12B76A', metric_value: 1780000, is_current_user: false, metrics: { total_invested_cents: 1780000, asset_count: 5,  portfolio_roi_bps: 1340, affiliate_count: 2,  referral_revenue_cents: 95000,  highest_investment_cents: 750000 }},
-    { rank: 6, display_name: 'Hannah B.',     avatar_url: null, tier_name: 'Pro',     tier_badge_color: '#12B76A', metric_value: 1320000, is_current_user: false, metrics: { total_invested_cents: 1320000, asset_count: 4,  portfolio_roi_bps: 870,  affiliate_count: 6,  referral_revenue_cents: 320000, highest_investment_cents: 600000 }},
-    { rank: 7, display_name: 'Noah S.',       avatar_url: null, tier_name: 'Plus',    tier_badge_color: '#F79009', metric_value: 980000,  is_current_user: false, metrics: { total_invested_cents: 980000,  asset_count: 3,  portfolio_roi_bps: 760,  affiliate_count: 1,  referral_revenue_cents: 45000,  highest_investment_cents: 500000 }},
-    { rank: 8, display_name: 'Mia F.',        avatar_url: null, tier_name: 'Plus',    tier_badge_color: '#F79009', metric_value: 750000,  is_current_user: false, metrics: { total_invested_cents: 750000,  asset_count: 3,  portfolio_roi_bps: 920,  affiliate_count: 4,  referral_revenue_cents: 210000, highest_investment_cents: 350000 }},
-    { rank: 9, display_name: 'Julian D.',     avatar_url: null, tier_name: 'Plus',    tier_badge_color: '#F79009', metric_value: 520000,  is_current_user: false, metrics: { total_invested_cents: 520000,  asset_count: 2,  portfolio_roi_bps: 650,  affiliate_count: 0,  referral_revenue_cents: 0,      highest_investment_cents: 300000 }},
-    { rank: 10, display_name: 'Lena V.',      avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 350000,  is_current_user: false, metrics: { total_invested_cents: 350000,  asset_count: 1,  portfolio_roi_bps: 480,  affiliate_count: 0,  referral_revenue_cents: 0,      highest_investment_cents: 350000 }},
+    { rank: 1,  display_name: 'Alexander K.',  avatar_url: null, tier_name: 'Premium', tier_badge_color: '#7F56D9', metric_value: 4825000, is_current_user: false, metrics: { total_invested_cents: 4825000, asset_count: 12, portfolio_roi_bps: 1450, affiliate_count: 8,  referral_revenue_cents: 920000,  highest_investment_cents: 1500000 }},
+    { rank: 2,  display_name: 'Sophia M.',     avatar_url: null, tier_name: 'Elite',   tier_badge_color: '#2E90FA', metric_value: 3690000, is_current_user: false, metrics: { total_invested_cents: 3690000, asset_count: 9,  portfolio_roi_bps: 1280, affiliate_count: 5,  referral_revenue_cents: 410000,  highest_investment_cents: 1200000 }},
+    { rank: 3,  display_name: 'Maximilian R.', avatar_url: null, tier_name: 'Elite',   tier_badge_color: '#2E90FA', metric_value: 2850000, is_current_user: false, metrics: { total_invested_cents: 2850000, asset_count: 7,  portfolio_roi_bps: 1120, affiliate_count: 3,  referral_revenue_cents: 180000,  highest_investment_cents: 950000  }},
+    { rank: 4,  display_name: 'Emma L.',       avatar_url: null, tier_name: 'Pro',     tier_badge_color: '#12B76A', metric_value: 2150000, is_current_user: false, metrics: { total_invested_cents: 2150000, asset_count: 6,  portfolio_roi_bps: 980,  affiliate_count: 11, referral_revenue_cents: 750000,  highest_investment_cents: 800000  }},
+    { rank: 5,  display_name: 'Lukas W.',      avatar_url: null, tier_name: 'Pro',     tier_badge_color: '#12B76A', metric_value: 1780000, is_current_user: false, metrics: { total_invested_cents: 1780000, asset_count: 5,  portfolio_roi_bps: 1340, affiliate_count: 2,  referral_revenue_cents: 95000,   highest_investment_cents: 750000  }},
+    { rank: 6,  display_name: 'Hannah B.',     avatar_url: null, tier_name: 'Pro',     tier_badge_color: '#12B76A', metric_value: 1320000, is_current_user: false, metrics: { total_invested_cents: 1320000, asset_count: 4,  portfolio_roi_bps: 870,  affiliate_count: 6,  referral_revenue_cents: 320000,  highest_investment_cents: 600000  }},
+    { rank: 7,  display_name: 'Noah S.',       avatar_url: null, tier_name: 'Plus',    tier_badge_color: '#F79009', metric_value: 980000,  is_current_user: false, metrics: { total_invested_cents: 980000,  asset_count: 3,  portfolio_roi_bps: 760,  affiliate_count: 1,  referral_revenue_cents: 45000,   highest_investment_cents: 500000  }},
+    { rank: 8,  display_name: 'Mia F.',        avatar_url: null, tier_name: 'Plus',    tier_badge_color: '#F79009', metric_value: 750000,  is_current_user: false, metrics: { total_invested_cents: 750000,  asset_count: 3,  portfolio_roi_bps: 920,  affiliate_count: 4,  referral_revenue_cents: 210000,  highest_investment_cents: 350000  }},
+    { rank: 9,  display_name: 'Julian D.',     avatar_url: null, tier_name: 'Plus',    tier_badge_color: '#F79009', metric_value: 520000,  is_current_user: false, metrics: { total_invested_cents: 520000,  asset_count: 2,  portfolio_roi_bps: 650,  affiliate_count: 0,  referral_revenue_cents: 0,       highest_investment_cents: 300000  }},
+    { rank: 10, display_name: 'Lena V.',       avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 350000,  is_current_user: false, metrics: { total_invested_cents: 350000,  asset_count: 1,  portfolio_roi_bps: 480,  affiliate_count: 0,  referral_revenue_cents: 0,       highest_investment_cents: 350000  }},
+    { rank: 11, display_name: 'Oliver P.',     avatar_url: null, tier_name: 'Plus',    tier_badge_color: '#F79009', metric_value: 310000,  is_current_user: false, metrics: { total_invested_cents: 310000,  asset_count: 2,  portfolio_roi_bps: 540,  affiliate_count: 3,  referral_revenue_cents: 62000,   highest_investment_cents: 200000  }},
+    { rank: 12, display_name: 'Isabelle T.',   avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 275000,  is_current_user: false, metrics: { total_invested_cents: 275000,  asset_count: 1,  portfolio_roi_bps: 390,  affiliate_count: 1,  referral_revenue_cents: 18000,   highest_investment_cents: 275000  }},
+    { rank: 13, display_name: 'Marcus H.',     avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 240000,  is_current_user: false, metrics: { total_invested_cents: 240000,  asset_count: 1,  portfolio_roi_bps: 310,  affiliate_count: 0,  referral_revenue_cents: 0,       highest_investment_cents: 240000  }},
+    { rank: 14, display_name: 'Clara N.',      avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 195000,  is_current_user: false, metrics: { total_invested_cents: 195000,  asset_count: 1,  portfolio_roi_bps: 280,  affiliate_count: 2,  referral_revenue_cents: 9500,    highest_investment_cents: 195000  }},
+    { rank: 15, display_name: 'Felix A.',      avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 160000,  is_current_user: false, metrics: { total_invested_cents: 160000,  asset_count: 1,  portfolio_roi_bps: 220,  affiliate_count: 0,  referral_revenue_cents: 0,       highest_investment_cents: 160000  }},
+    { rank: 16, display_name: 'Anna C.',       avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 132000,  is_current_user: false, metrics: { total_invested_cents: 132000,  asset_count: 1,  portfolio_roi_bps: 190,  affiliate_count: 1,  referral_revenue_cents: 5000,    highest_investment_cents: 132000  }},
+    { rank: 17, display_name: 'David R.',      avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 110000,  is_current_user: false, metrics: { total_invested_cents: 110000,  asset_count: 1,  portfolio_roi_bps: 160,  affiliate_count: 0,  referral_revenue_cents: 0,       highest_investment_cents: 110000  }},
+    { rank: 18, display_name: 'Yuki T.',       avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 85000,   is_current_user: false, metrics: { total_invested_cents: 85000,   asset_count: 1,  portfolio_roi_bps: 120,  affiliate_count: 0,  referral_revenue_cents: 0,       highest_investment_cents: 85000   }},
+    { rank: 19, display_name: 'Sara K.',       avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 60000,   is_current_user: false, metrics: { total_invested_cents: 60000,   asset_count: 1,  portfolio_roi_bps: 90,   affiliate_count: 0,  referral_revenue_cents: 0,       highest_investment_cents: 60000   }},
+    { rank: 20, display_name: 'Tom B.',        avatar_url: null, tier_name: 'Intro',   tier_badge_color: '#D0D5DD', metric_value: 40000,   is_current_user: true,  metrics: { total_invested_cents: 40000,   asset_count: 1,  portfolio_roi_bps: 60,   affiliate_count: 0,  referral_revenue_cents: 0,       highest_investment_cents: 40000   }},
   ];
 
   function getDemoData(realData) {
-    // Re-rank demo data based on the currently selected metric
     var metricKey = {
       'invested':    'total_invested_cents',
       'assets':      'asset_count',
@@ -53,26 +62,24 @@
     }[currentMetric] || 'total_invested_cents';
 
     var timeframeMultiplier = currentTimeframe === 'weekly' ? 0.05 : (currentTimeframe === 'monthly' ? 0.2 : 1);
-
     var copied = JSON.parse(JSON.stringify(DEMO_RANKINGS));
-
     var sorted = copied.sort(function (a, b) {
       return b.metrics[metricKey] - a.metrics[metricKey];
     });
 
     sorted.forEach(function (entry, i) {
       entry.rank = i + 1;
-      // Apply timeframe multiplier to value
       if (metricKey !== 'asset_count' && metricKey !== 'affiliate_count' && metricKey !== 'portfolio_roi_bps') {
          entry.metrics[metricKey] = Math.round(entry.metrics[metricKey] * timeframeMultiplier);
       }
       entry.metric_value = entry.metrics[metricKey];
     });
 
+    var mockMe = sorted.find(function(r) { return r.is_current_user; }) || sorted[sorted.length-1];
     return {
       rankings: sorted,
-      my_rank: realData && realData.my_rank ? realData.my_rank : { rank: null, metric_value: 0, metrics: { total_invested_cents: 0, asset_count: 0, portfolio_roi_bps: 0, affiliate_count: 0, referral_revenue_cents: 0, highest_investment_cents: 0 }},
-      total_participants: 10,
+      my_rank: (realData && realData.my_rank && realData.my_rank.rank) ? realData.my_rank : mockMe,
+      total_participants: 20,
       metric_type: currentMetric,
       timeframe: currentTimeframe,
       last_updated: new Date().toISOString(),
@@ -80,13 +87,9 @@
     };
   }
 
-  function showDemoBadge(show) {
-    var badge = document.getElementById('lb-demo-badge');
-    if (badge) {
-      badge.style.display = show ? 'inline-flex' : 'none';
-    }
-  }
 
+
+  // ─── Formatters ────────────────────────────────────────────────
   function formatMetric(val, type) {
     if (type === 'invested' || type === 'revenue' || type === 'highest_inv') {
       return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(val / 100);
@@ -97,8 +100,14 @@
     }
   }
 
+  function formatCompact(val) {
+    if (val >= 1000000) return '€' + (val / 100000000).toFixed(2) + 'M';
+    if (val >= 100000) return '€' + (val / 100000).toFixed(0) + 'K';
+    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(val / 100);
+  }
+
   function getMetricName(type) {
-    const map = {
+    var map = {
       'invested': 'Total Investment',
       'assets': 'Number of Assets',
       'roi': 'Portfolio ROI',
@@ -109,40 +118,68 @@
     return map[type] || 'Score';
   }
 
+  function getInitials(name) {
+    if (!name) return '??';
+    var parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  }
+
+  // Compute percentages for asset mix donut/bar
+  function getAssetMixPct(entry) {
+    var inv = entry.metrics ? (entry.metrics.total_invested_cents || 0) : 0;
+    var ref = entry.metrics ? (entry.metrics.referral_revenue_cents || 0) : 0;
+    var total = inv + ref;
+    if (total === 0) return { primary: 100, secondary: 0 };
+    var p = Math.round((inv / total) * 100);
+    return { primary: Math.max(p, 5), secondary: Math.max(100 - p, 5) };
+  }
+
   // ─── Init ──────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', init);
 
   async function init() {
+    initSpotlight(); // Fire-and-forget background init for the spotlight card
     try {
-      const [data, prefs] = await Promise.all([
+      var results = await Promise.all([
         fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier),
         fetchPreferences(),
       ]);
+      var data = results[0];
+      var prefs = results[1];
 
       cachedPrefs = prefs;
 
-      if (!data || data.total_participants === 0) {
-        // Use demo data instead of empty state
+      var forceLive = new URLSearchParams(window.location.search).has('live');
+      var forceDemo = new URLSearchParams(window.location.search).has('demo');
+
+      // Use demo data if forced or if real data has fewer than 20 participants
+      if (forceDemo || (!forceLive && (!data || data.total_participants < 20))) {
         usingDemoData = true;
         var demo = getDemoData(data);
-        renderPodium(demo.rankings);
+        
+        // Demo pagination implementation
+        var start = (currentPage - 1) * currentPerPage;
+        var sliced = demo.rankings.slice(start, start + currentPerPage);
+        
+        renderBentoCards(demo.rankings); // Keep hero cards static from the full list
+        renderMinorCards(demo.rankings); // Keep minor cards static
         renderMyRank(demo.my_rank);
-        renderTable(demo.rankings);
+        renderTable(sliced, false); // Only show sliced for the ledger
         renderMeta(demo);
-        renderLoadMore(demo);
+        renderPagination(demo);
         applyPrefs(prefs);
-        showDemoBadge(true);
         showLayer('content');
         return;
       }
 
       usingDemoData = false;
-      showDemoBadge(false);
-      renderPodium(data.rankings);
+      renderBentoCards(data.rankings);
+      renderMinorCards(data.rankings);
       renderMyRank(data.my_rank);
-      renderTable(data.rankings);
+      renderTable(data.rankings, false);
       renderMeta(data);
-      renderLoadMore(data);
+      renderPagination(data);
       applyPrefs(prefs);
       showLayer('content');
     } catch (err) {
@@ -151,27 +188,186 @@
     }
   }
 
+  // ─── Featured Spotlight ────────────────────────────────────────
+  async function initSpotlight() {
+    try {
+      var res = await fetch('/api/assets/featured', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('Failed to fetch featured assets');
+      var data = await res.json();
+      var assets = data.assets || [];
+      
+      var card = document.getElementById('lb-spotlight-card');
+      if (assets.length === 0) {
+        if (card) card.style.display = 'none';
+        return;
+      }
+      if (card) card.style.display = '';
+
+      var currentIndex = 0;
+      var intervalTimer = null;
+
+      function renderAsset(index) {
+        var asset = assets[index];
+        if (!asset) return;
+        
+        var imgEl = document.getElementById('lb-spotlight-img');
+        var titleEl = document.getElementById('lb-spotlight-title');
+        var locationEl = document.getElementById('lb-spotlight-location');
+        var yieldEl = document.getElementById('lb-spotlight-yield');
+        var returnEl = document.getElementById('lb-spotlight-return');
+        var fundedEl = document.getElementById('lb-spotlight-funded');
+        var barEl = document.getElementById('lb-spotlight-bar');
+        var ctaEl = document.getElementById('lb-spotlight-cta');
+        var dotsContainer = document.getElementById('lb-spotlight-dots');
+
+        if (imgEl) imgEl.style.opacity = '0';
+        setTimeout(function() {
+          if (imgEl) {
+            imgEl.src = escHtml(asset.cover_image);
+            imgEl.style.opacity = '1';
+          }
+        }, 300);
+
+        if (titleEl) titleEl.innerText = asset.title || 'Featured Asset';
+        if (locationEl && asset.location_country && asset.location_city) {
+          locationEl.innerHTML = '<img src="/images/' + escHtml(asset.location_country) + '.webp" onerror="this.style.display=\'none\'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;"> ' + escHtml(asset.location_city) + ', ' + escHtml(asset.location_country);
+        } else if (locationEl) {
+          locationEl.innerText = 'Global';
+        }
+
+        if (yieldEl) yieldEl.innerText = ((asset.annual_yield_bps || 0) / 100).toFixed(2) + '%';
+        if (returnEl) returnEl.innerText = ((asset.capital_appreciation_bps || 0) / 100).toFixed(2) + '%';
+        if (fundedEl) fundedEl.innerText = asset.funded_pct + '%';
+        
+        if (barEl) {
+          barEl.style.width = '0%';
+          setTimeout(function() { barEl.style.width = asset.funded_pct + '%'; }, 100);
+        }
+
+        if (ctaEl) ctaEl.href = '/property/' + encodeURIComponent(asset.slug || asset.id);
+
+        if (dotsContainer) {
+          dotsContainer.innerHTML = '';
+          if (assets.length > 1) {
+            assets.forEach(function(_, i) {
+              var dot = document.createElement('div');
+              dot.className = 'lb-spotlight-dot' + (i === index ? ' active' : '');
+              dot.onclick = function() {
+                currentIndex = i;
+                renderAsset(currentIndex);
+                resetInterval();
+              };
+              dotsContainer.appendChild(dot);
+            });
+          }
+        }
+      }
+
+      function nextAsset() {
+        if (assets.length <= 1) return;
+        currentIndex = (currentIndex + 1) % assets.length;
+        renderAsset(currentIndex);
+      }
+
+      function resetInterval() {
+        if (intervalTimer) clearInterval(intervalTimer);
+        intervalTimer = setInterval(nextAsset, 10000); // 10s rotation
+      }
+
+      // Initial render & start
+      renderAsset(0);
+      resetInterval();
+
+    } catch (e) {
+      console.error('Spotlight error:', e);
+      var card = document.getElementById('lb-spotlight-card');
+      if (card) card.style.display = 'none';
+    }
+  }
+
   // ─── API Calls ─────────────────────────────────────────────────
-  async function fetchRankings(metric, timeframe, page, search, tier) {
+  async function fetchRankings(metric, timeframe, page, search, tier, perPage) {
     page = page || 1;
     timeframe = timeframe || 'alltime';
-    let url = `/api/leaderboard?metric=${metric}&timeframe=${timeframe}&page=${page}`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    if (tier) url += `&tier_id=${tier}`;
+    perPage = perPage || currentPerPage;
+    var url = '/api/leaderboard?metric=' + metric + '&timeframe=' + timeframe + '&page=' + page + '&per_page=' + perPage;
+    if (search) url += '&search=' + encodeURIComponent(search);
+    if (tier) url += '&tier_id=' + tier;
 
-    const res = await fetch(url, { credentials: 'same-origin' });
+    var res = await fetch(url, { credentials: 'same-origin' });
     if (!res.ok) throw new Error('Failed to fetch rankings');
     return res.json();
   }
 
+  // ─── Pagination & Controls ─────────────────────────────────────
+  window.changePerPage = async function (val) {
+    currentPerPage = parseInt(val, 10);
+    currentPage = 1;
+    await refetchAndRender();
+  };
+
+  window.goToPage = async function (page) {
+    if (isFetching || page < 1) return;
+    currentPage = page;
+    await refetchAndRender();
+  };
+
+  function renderPagination(data) {
+    var container = document.getElementById('lb-pagination-controls');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!data || data.total_participants <= currentPerPage) {
+      return;
+    }
+
+    var totalPages = Math.ceil(data.total_participants / currentPerPage);
+    
+    // Previous Button
+    var prev = document.createElement('button');
+    prev.className = 'lb-pag-btn';
+    prev.innerHTML = '&laquo;';
+    prev.disabled = currentPage === 1;
+    prev.onclick = function() { goToPage(currentPage - 1); };
+    container.appendChild(prev);
+
+    // Page Numbers (Simplified logic)
+    for (var i = 1; i <= totalPages; i++) {
+       // Only show near pages
+       if (totalPages > 7 && i > 3 && i < totalPages - 2 && Math.abs(i - currentPage) > 1) {
+          if (i === 4 || i === totalPages - 3) {
+            var dot = document.createElement('span');
+            dot.innerText = '...';
+            dot.style.padding = '0 8px';
+            container.appendChild(dot);
+          }
+          continue;
+       }
+       
+       var btn = document.createElement('button');
+       btn.className = 'lb-pag-btn' + (currentPage === i ? ' active' : '');
+       btn.innerText = i;
+       (function(p) {
+         btn.onclick = function() { goToPage(p); };
+       })(i);
+       container.appendChild(btn);
+    }
+
+    // Next Button
+    var next = document.createElement('button');
+    next.className = 'lb-pag-btn';
+    next.innerHTML = '&raquo;';
+    next.disabled = currentPage === totalPages;
+    next.onclick = function() { goToPage(currentPage + 1); };
+    container.appendChild(next);
+  }
+
   async function fetchPreferences() {
     try {
-      const res = await fetch('/api/leaderboard/preferences', {
-        credentials: 'same-origin',
-      });
+      var res = await fetch('/api/leaderboard/preferences', { credentials: 'same-origin' });
       if (!res.ok) return { visible: false, show_avatar: false };
       return res.json();
-    } catch {
+    } catch (e) {
       return { visible: false, show_avatar: false };
     }
   }
@@ -196,7 +392,7 @@
       var el = document.getElementById('lb-' + l + '-layer');
       if (!el) return;
       if (l === layer) {
-        el.style.display = l === 'content' ? 'block' : 'flex';
+        el.style.display = l === 'content' ? 'flex' : 'flex';
         el.classList.remove('hidden');
       } else {
         el.style.display = 'none';
@@ -205,156 +401,284 @@
     });
   }
 
-  // ─── Podium ────────────────────────────────────────────────────
-  function renderPodium(rankings) {
-    var positions = [
-      { slot: 1, index: 0 },
-      { slot: 2, index: 1 },
-      { slot: 3, index: 2 },
-    ];
+  // ─── Bento Cards (Top 3) ──────────────────────────────────────
+  function renderBentoCards(rankings) {
+    var grid = document.getElementById('lb-bento-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
 
-    positions.forEach(function (pos) {
-      var entry = rankings[pos.index];
-      
-      var nameEl = document.getElementById('lb-podium-' + pos.slot + '-name');
-      var scoreEl = document.getElementById('lb-podium-' + pos.slot + '-score');
-      var avatarEl = document.getElementById('lb-podium-' + pos.slot + '-avatar');
-      var tierEl = document.getElementById('lb-podium-' + pos.slot + '-tier');
+    var top3 = rankings.slice(0, 3);
+    if (top3.length === 0) return;
 
-      if (!entry) {
-        // Reset to empty state if nobody exists for this slot
-        if (nameEl) nameEl.textContent = '—';
-        if (scoreEl) scoreEl.textContent = '—';
-        if (avatarEl) avatarEl.src = '/static/images/Image.webp';
-        if (tierEl) {
-          tierEl.textContent = '';
-          tierEl.style.background = 'transparent';
-        }
-        return;
-      }
+    var tierBgColors = {
+      'Premium': '#7F56D9',
+      'Elite': '#2E90FA',
+      'Pro': '#12B76A',
+      'Plus': '#F79009',
+      'Intro': '#D0D5DD'
+    };
 
-      if (nameEl) nameEl.textContent = entry.display_name;
-      if (scoreEl) scoreEl.textContent = formatMetric(entry.metric_value, currentMetric);
-      if (avatarEl && entry.avatar_url) avatarEl.src = entry.avatar_url;
-      if (tierEl) {
-        tierEl.textContent = entry.tier_name || '';
-        tierEl.style.background = entry.tier_badge_color || '#D0D5DD';
-      }
+    top3.forEach(function (entry, i) {
+      var rankNum = String(i + 1).padStart(2, '0');
+      var mix = getAssetMixPct(entry);
+      var roi = entry.metrics ? entry.metrics.portfolio_roi_bps : 0;
+      var roiPct = (roi / 100).toFixed(1);
+      var isPositive = roi >= 0;
+      var tierColor = entry.tier_badge_color || tierBgColors[entry.tier_name] || '#D0D5DD';
+      var assetCount = entry.metrics ? entry.metrics.asset_count : 0;
+
+      // Donut SVG values
+      var circumference = 2 * Math.PI * 28; // r=28 → ~175.9
+      var primaryArc = (mix.primary / 100) * circumference;
+      var secondaryArc = (mix.secondary / 100) * circumference;
+      var primaryOffset = circumference - primaryArc;
+      var secondaryOffset = circumference - secondaryArc;
+      // Rotate the secondary arc to start after primary
+      var secondaryRotation = (mix.primary / 100) * 360;
+
+      var card = document.createElement('div');
+      card.className = 'lb-bento-card';
+      card.innerHTML =
+        '<div class="lb-bento-watermark">' + rankNum + '</div>' +
+        '<div class="lb-bento-header">' +
+          '<div class="lb-bento-info">' +
+            '<span class="lb-bento-tier-badge" style="background:' + escHtml(tierColor) + '">' + escHtml(entry.tier_name) + '</span>' +
+            '<div class="lb-bento-name">' + escHtml(entry.display_name) + '</div>' +
+            '<div class="lb-bento-subtitle">' + assetCount + ' Asset' + (assetCount !== 1 ? 's' : '') + '</div>' +
+          '</div>' +
+          '<div class="lb-bento-donut">' +
+            '<svg viewBox="0 0 64 64">' +
+              '<circle cx="32" cy="32" r="28" fill="transparent" stroke="#f2f4f7" stroke-width="7"></circle>' +
+              '<circle cx="32" cy="32" r="28" fill="transparent" stroke="#0000FF" stroke-width="7" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + primaryOffset + '"></circle>' +
+              '<circle cx="32" cy="32" r="28" fill="transparent" stroke="#03FF88" stroke-width="7" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + secondaryOffset + '" style="transform: rotate(' + secondaryRotation + 'deg); transform-origin: center;"></circle>' +
+            '</svg>' +
+            '<span class="lb-bento-donut-label">MIX</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="lb-bento-values">' +
+          '<div>' +
+            '<div class="lb-bento-aum-label">' + escHtml(getMetricName(currentMetric)) + '</div>' +
+            '<div class="lb-bento-aum-value">' + escHtml(formatMetric(entry.metric_value, currentMetric)) + '</div>' +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            '<span class="lb-bento-yield ' + (isPositive ? 'positive' : 'negative') + '">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="' + (isPositive ? '23 6 13.5 15.5 8.5 10.5 1 18' : '23 18 13.5 8.5 8.5 13.5 1 6') + '"></polyline></svg>' +
+              (isPositive ? '+' : '') + roiPct + '%' +
+            '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="lb-bento-legend">' +
+          '<div class="lb-bento-legend-item"><span class="lb-bento-legend-dot primary"></span>' + mix.primary + '% Direct</div>' +
+          '<div class="lb-bento-legend-item"><span class="lb-bento-legend-dot green"></span>' + mix.secondary + '% Referral</div>' +
+        '</div>';
+
+      grid.appendChild(card);
+    });
+  }
+
+  // ─── Minor Cards (Ranks 4–9) ──────────────────────────────────
+  function renderMinorCards(rankings) {
+    var grid = document.getElementById('lb-minor-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    var minor = rankings.slice(3, 9);
+    if (minor.length === 0) {
+      grid.style.display = 'none';
+      return;
+    }
+    grid.style.display = '';
+
+    var tierBgColors = {
+      'Premium': '#7F56D9',
+      'Elite': '#2E90FA',
+      'Pro': '#12B76A',
+      'Plus': '#F79009',
+      'Intro': '#D0D5DD'
+    };
+
+    minor.forEach(function (entry) {
+      var rankNum = String(entry.rank).padStart(2, '0');
+      var roi = entry.metrics ? entry.metrics.portfolio_roi_bps : 0;
+      var roiPct = (roi / 100).toFixed(1);
+      var isPositive = roi >= 0;
+      var tierColor = entry.tier_badge_color || tierBgColors[entry.tier_name] || '#D0D5DD';
+      var initials = getInitials(entry.display_name);
+
+      var card = document.createElement('div');
+      card.className = 'lb-minor-card';
+      card.innerHTML =
+        '<div class="lb-minor-watermark">' + rankNum + '</div>' +
+        '<div class="lb-minor-top">' +
+          (entry.avatar_url
+            ? '<div class="lb-minor-avatar" style="background:' + escHtml(tierColor) + '"><img src="' + escHtml(entry.avatar_url) + '" alt="' + escHtml(entry.display_name) + '"/></div>'
+            : '<div class="lb-minor-avatar" style="background:' + escHtml(tierColor) + '">' + escHtml(initials) + '</div>'
+          ) +
+          '<div class="lb-minor-info">' +
+            '<div class="lb-minor-name">' + escHtml(entry.display_name) + '</div>' +
+            '<div class="lb-minor-tier">' + escHtml(entry.tier_name) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="lb-minor-bottom">' +
+          '<div class="lb-minor-value">' + escHtml(formatMetric(entry.metric_value, currentMetric)) + '</div>' +
+          '<span class="lb-minor-yield ' + (isPositive ? 'positive' : 'negative') + '">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="' + (isPositive ? '23 6 13.5 15.5 8.5 10.5 1 18' : '23 18 13.5 8.5 8.5 13.5 1 6') + '"></polyline></svg>' +
+            (isPositive ? '+' : '') + roiPct + '%' +
+          '</span>' +
+        '</div>';
+
+      grid.appendChild(card);
     });
   }
 
   // ─── My Rank ───────────────────────────────────────────────────
   function renderMyRank(myRank) {
+    if (!myRank) return;
+
     var rankEl = document.getElementById('lb-my-rank');
-    var scoreEl = document.getElementById('lb-my-score');
     var labelEl = document.getElementById('lb-my-metric-label');
+    var card = document.getElementById('lb-my-rank-card');
 
     if (rankEl) {
       rankEl.textContent = myRank.rank ? '#' + myRank.rank : '#—';
     }
-    if (scoreEl) {
-      scoreEl.textContent = formatMetric(myRank.metric_value, currentMetric);
+    
+    // Add dynamic breakdown if we have other ranks
+    if (card && myRank.metrics && myRank.rank) {
+       // Remove existing breakdown if any
+       var existing = card.querySelector('.lb-rank-breakdown');
+       if (existing) existing.remove();
+       
+       var breakdown = document.createElement('div');
+       breakdown.className = 'lb-rank-breakdown';
+       breakdown.style.marginTop = '16px';
+       breakdown.style.display = 'grid';
+       breakdown.style.gridTemplateColumns = 'repeat(2, 1fr)';
+       breakdown.style.gap = '16px 24px';
+       breakdown.style.fontSize = '13px';
+       breakdown.style.opacity = '0.9';
+
+       var items = [
+         { label: 'Holdings', val: myRank.metrics.total_invested_cents },
+         { label: 'Assets', val: myRank.metrics.asset_count },
+         { label: 'Yield', val: (myRank.metrics.portfolio_roi_bps/100).toFixed(1) + '%' },
+         { label: 'Affiliates', val: myRank.metrics.affiliate_count }
+       ];
+       
+       items.forEach(function(it) {
+         var item = document.createElement('div');
+         item.innerHTML = '<span style="font-weight:700">' + it.label + ':</span> ' + (typeof it.val === 'number' && it.label !== 'Assets' && it.label !== 'Affiliates' ? formatCompact(it.val) : it.val);
+         breakdown.appendChild(item);
+       });
+       
+       card.appendChild(breakdown);
     }
+
     if (labelEl) {
-      labelEl.textContent = getMetricName(currentMetric);
+      labelEl.textContent = myRank.rank ? 'You are currently in the top tier of institutional traders.' : 'Start investing to get ranked.';
     }
   }
 
-  // ─── Table ─────────────────────────────────────────────────────
-  function renderTable(rankings, append = false) {
+  // ─── Table (Institutional Ledger) ─────────────────────────────
+  function renderTable(rankings, append) {
     var tbody = document.getElementById('lb-rankings-body');
     if (!tbody) return;
     if (!append) {
       tbody.innerHTML = '';
       if (rankings.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#667085;padding:24px;">No investors found matching your filters.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#667085;padding:24px;">No investors found matching your filters.</td></tr>';
         return;
       }
     }
 
-    // Update table header to dynamic metric name
+    // Update header
     var headerEl = document.getElementById('lb-table-metric-header');
-    if (headerEl) {
-      headerEl.textContent = getMetricName(currentMetric);
-    }
+    if (headerEl) headerEl.textContent = getMetricName(currentMetric);
 
-    rankings.forEach(function (entry) {
+    for (var idx = 0; idx < rankings.length; idx++) {
+      var entry = rankings[idx];
       var tr = document.createElement('tr');
       if (entry.is_current_user) tr.classList.add('is-me');
 
-      // Rank cell
-      var rankTd = document.createElement('td');
-      rankTd.className = 'rank-cell' + (entry.rank <= 3 ? ' top-3' : '');
-      rankTd.textContent = entry.rank;
-      tr.appendChild(rankTd);
+      var mix = getAssetMixPct(entry);
+      var roi = entry.metrics ? entry.metrics.portfolio_roi_bps : 0;
+      var roiPct = (roi / 100).toFixed(1);
+      var isPositive = roi >= 0;
+      var tierColor = entry.tier_badge_color || '#D0D5DD';
+      var initials = getInitials(entry.display_name);
 
-      // Investor cell
-      var investorTd = document.createElement('td');
-      var investorDiv = document.createElement('div');
-      investorDiv.className = 'lb-investor-cell';
+      // Rank
+      var tdRank = document.createElement('td');
+      tdRank.innerHTML = '<span class="lb-rank-cell">' + String(entry.rank).padStart(2, '0') + '</span>';
+      tr.appendChild(tdRank);
 
-      var avatarImg = document.createElement('img');
-      avatarImg.className = 'lb-row-avatar';
-      avatarImg.src = entry.avatar_url || '/static/images/Image.webp';
-      avatarImg.alt = entry.display_name;
-      investorDiv.appendChild(avatarImg);
-
-      var nameSpan = document.createElement('span');
-      nameSpan.className = 'lb-row-name';
-      nameSpan.textContent = entry.display_name;
-      investorDiv.appendChild(nameSpan);
-
+      // Entity
+      var tdEntity = document.createElement('td');
+      var entityHtml = '<div class="lb-entity-cell">';
+      if (entry.avatar_url) {
+        entityHtml += '<div class="lb-entity-avatar" style="background:' + escHtml(tierColor) + '"><img src="' + escHtml(entry.avatar_url) + '" alt="' + escHtml(entry.display_name) + '"/></div>';
+      } else {
+        entityHtml += '<div class="lb-entity-avatar" style="background:' + escHtml(tierColor) + '">' + escHtml(initials) + '</div>';
+      }
+      entityHtml += '<div class="lb-entity-details">';
+      entityHtml += '<div class="lb-entity-name">' + escHtml(entry.display_name) + '</div>';
+      entityHtml += '<div class="lb-entity-sub">' + escHtml(entry.tier_name) + '</div>';
+      entityHtml += '</div>';
       if (entry.is_current_user) {
-        var meB = document.createElement('span');
-        meB.className = 'lb-row-me-badge';
-        meB.textContent = 'You';
-        investorDiv.appendChild(meB);
+        entityHtml += '<span class="lb-me-badge">You</span>';
       }
+      entityHtml += '</div>';
+      tdEntity.innerHTML = entityHtml;
+      tr.appendChild(tdEntity);
 
-      investorTd.appendChild(investorDiv);
-      tr.appendChild(investorTd);
+      // Asset Mix
+      var tdMix = document.createElement('td');
+      tdMix.className = 'col-mix';
+      tdMix.innerHTML =
+        '<div class="lb-mix-bar-cell">' +
+          '<div class="lb-mix-bar">' +
+            '<div class="lb-mix-bar-primary" style="width:' + mix.primary + '%"></div>' +
+            '<div class="lb-mix-bar-green" style="width:' + mix.secondary + '%"></div>' +
+          '</div>' +
+          '<span class="lb-mix-ratio">' + mix.primary + '/' + mix.secondary + '</span>' +
+        '</div>';
+      tr.appendChild(tdMix);
 
-      // Score cell
-      var scoreTd = document.createElement('td');
-      var scoreDiv = document.createElement('div');
-      scoreDiv.className = 'lb-score-bar-cell';
-      scoreDiv.style.flexDirection = 'row';
-      scoreDiv.style.alignItems = 'center';
-
-      var scoreNum = document.createElement('span');
-      scoreNum.className = 'score-number ds-text-money';
-      scoreNum.textContent = formatMetric(entry.metric_value, currentMetric);
-      scoreDiv.appendChild(scoreNum);
-
-      // --- Add hover tooltip for raw metrics ---
+      // Holdings (with tooltip)
+      var tdHoldings = document.createElement('td');
+      tdHoldings.className = 'text-right lb-holdings-cell';
+      var holdingsHtml = '<span class="lb-holdings-value">' + escHtml(formatMetric(entry.metric_value, currentMetric)) + '</span>';
       if (entry.metrics) {
-        var tt = document.createElement('div');
-        tt.className = 'lb-score-tooltip';
-        tt.innerHTML =
-          '<div class="lb-tt-header">Investor Details</div>' +
-          '<div class="lb-tt-row"><span>Total Investment:</span> <span>' + escHtml(formatMetric(entry.metrics.total_invested_cents, 'invested')) + '</span></div>' +
-          '<div class="lb-tt-row"><span>Assets:</span> <span>' + escHtml(String(entry.metrics.asset_count)) + '</span></div>' +
-          '<div class="lb-tt-row"><span>Portfolio ROI:</span> <span>' + escHtml(formatMetric(entry.metrics.portfolio_roi_bps, 'roi')) + '</span></div>' +
-          '<div class="lb-tt-row"><span>Affiliates:</span> <span>' + escHtml(String(entry.metrics.affiliate_count)) + '</span></div>' +
-          '<div class="lb-tt-row"><span>Ref Revenue:</span> <span>' + escHtml(formatMetric(entry.metrics.referral_revenue_cents, 'revenue')) + '</span></div>' +
-          '<div class="lb-tt-row"><span>Highest Inv:</span> <span>' + escHtml(formatMetric(entry.metrics.highest_investment_cents, 'highest_inv')) + '</span></div>';
-        scoreDiv.appendChild(tt);
+        holdingsHtml +=
+          '<div class="lb-score-tooltip">' +
+            '<div class="lb-tt-header">Investor Details</div>' +
+            '<div class="lb-tt-row"><span>Total Investment:</span> <span>' + escHtml(formatMetric(entry.metrics.total_invested_cents, 'invested')) + '</span></div>' +
+            '<div class="lb-tt-row"><span>Assets:</span> <span>' + escHtml(String(entry.metrics.asset_count)) + '</span></div>' +
+            '<div class="lb-tt-row"><span>Portfolio ROI:</span> <span>' + escHtml(formatMetric(entry.metrics.portfolio_roi_bps, 'roi')) + '</span></div>' +
+            '<div class="lb-tt-row"><span>Affiliates:</span> <span>' + escHtml(String(entry.metrics.affiliate_count)) + '</span></div>' +
+            '<div class="lb-tt-row"><span>Ref Revenue:</span> <span>' + escHtml(formatMetric(entry.metrics.referral_revenue_cents, 'revenue')) + '</span></div>' +
+            '<div class="lb-tt-row"><span>Highest Inv:</span> <span>' + escHtml(formatMetric(entry.metrics.highest_investment_cents, 'highest_inv')) + '</span></div>' +
+          '</div>';
       }
+      tdHoldings.innerHTML = holdingsHtml;
+      tr.appendChild(tdHoldings);
 
-      scoreTd.appendChild(scoreDiv);
-      tr.appendChild(scoreTd);
+      // Yield
+      var tdYield = document.createElement('td');
+      tdYield.className = 'text-right col-yield';
+      tdYield.innerHTML = '<span class="lb-yield-value ' + (isPositive ? 'positive' : 'negative') + '">' + (isPositive ? '+' : '') + roiPct + '%</span>';
+      tr.appendChild(tdYield);
 
-      // Tier cell
-      var tierTd = document.createElement('td');
-      var pill = document.createElement('span');
-      pill.className = 'lb-tier-pill';
-      pill.textContent = entry.tier_name;
-      pill.style.background = entry.tier_badge_color || '#D0D5DD';
-      tierTd.appendChild(pill);
-      tr.appendChild(tierTd);
+      // Status
+      var tdStatus = document.createElement('td');
+      tdStatus.className = 'text-right col-status';
+      var statusClass = (entry.metrics && entry.metrics.portfolio_roi_bps < 0) ? 'lb-status-hedged' : 'lb-status-active';
+      var statusText = (entry.metrics && entry.metrics.portfolio_roi_bps < 0) ? 'HEDGED' : 'ACTIVE';
+      tdStatus.innerHTML = '<span class="lb-status-pill ' + statusClass + '">' + statusText + '</span>';
+      tr.appendChild(tdStatus);
 
       tbody.appendChild(tr);
-    });
+    }
   }
 
   // ─── Meta ──────────────────────────────────────────────────────
@@ -367,60 +691,57 @@
     var updatedEl = document.getElementById('lb-last-updated');
     if (updatedEl && data.last_updated) {
       var d = new Date(data.last_updated);
-      updatedEl.textContent = 'Last updated: ' + d.toLocaleString();
+      updatedEl.textContent = 'Updated: ' + d.toLocaleString();
     }
   }
 
-  // ─── Load More ─────────────────────────────────────────────────
-  function renderLoadMore(data) {
-    hasMore = data.has_more;
-    var btn = document.getElementById('lb-load-more-btn');
-    var container = document.getElementById('lb-load-more-container');
-    if (btn && container) {
-      if (hasMore) {
-        container.classList.remove('hidden');
-        container.style.display = 'block';
-        btn.disabled = false;
-        btn.textContent = 'Load More Rankings';
-      } else {
-        container.classList.add('hidden');
-        container.style.display = 'none';
-      }
-    }
-  }
+
 
   // ─── Preferences ───────────────────────────────────────────────
   function applyPrefs(prefs) {
     var toggle = document.getElementById('lb-visibility-toggle');
-    if (toggle) {
-      toggle.checked = prefs.visible;
-    }
+    if (toggle) toggle.checked = prefs.visible;
   }
 
   // ─── Global Handlers ──────────────────────────────────────────
-  window.switchMetric = async function () {
-    var select = document.getElementById('lb-metric-select');
-    if (!select) return;
-    
-    currentMetric = select.value;
+
+  // Top bar metric tabs
+  window.switchMetricTab = async function (metric, btn) {
+    currentMetric = metric;
     currentPage = 1;
+
+    // Sync the dropdown too
+    var select = document.getElementById('lb-metric-select');
+    if (select) select.value = metric;
+
+    // Update tab active state
+    var metricTabs = document.querySelectorAll('.lb-topbar-tab, .lb-tf-btn[data-metric]');
+    metricTabs.forEach(function (t) {
+      if (t.dataset.metric === currentMetric) {
+        t.classList.add('active');
+      } else {
+        t.classList.remove('active');
+      }
+    });
+
     await refetchAndRender();
   };
 
   window.switchTimeframe = async function (tf, btn) {
     currentTimeframe = tf;
     currentPage = 1;
-    // Update active button styling
     var buttons = document.querySelectorAll('.lb-tf-btn[data-timeframe]');
     buttons.forEach(function (b) { b.classList.remove('active'); });
     if (btn) btn.classList.add('active');
     await refetchAndRender();
   };
 
-  window.applyFilters = async function() {
-    var tierSelect = document.getElementById('lb-tier-filter');
-    currentTier = tierSelect ? tierSelect.value : '';
+  window.switchTier = async function (tier, btn) {
+    currentTier = tier;
     currentPage = 1;
+    var buttons = document.querySelectorAll('#lb-tier-tabs .lb-tf-btn');
+    buttons.forEach(function (b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
     await refetchAndRender();
   };
 
@@ -433,72 +754,53 @@
     }, 300);
   };
 
-  window.loadMore = async function() {
-    if (!hasMore || isFetching) return;
-    isFetching = true;
-    var btn = document.getElementById('lb-load-more-btn');
-    if (btn) btn.textContent = 'Loading...';
-
-    currentPage++;
-    try {
-      var data = await fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier);
-      renderTable(data.rankings, true);
-      renderLoadMore(data);
-    } catch (e) {
-      console.error(e);
-      currentPage--;
-    } finally {
-      isFetching = false;
-    }
-  };
-
   async function refetchAndRender() {
-    // When filters are active, only fade the table (podium stays as the global top 3).
+    isFetching = true;
     var hasFilters = !!(currentSearch || currentTier);
-    var podium = document.getElementById('lb-podium');
-    var rankCard = document.getElementById('lb-my-rank-card');
+    var bentoGrid = document.getElementById('lb-bento-grid');
+    var summaryGrid = document.getElementById('lb-summary-grid');
     var table = document.getElementById('lb-rankings-table');
-    var fadables = hasFilters ? [table].filter(Boolean) : [podium, rankCard, table].filter(Boolean);
+    var fadables = hasFilters ? [table].filter(Boolean) : [bentoGrid, summaryGrid, table].filter(Boolean);
 
     fadables.forEach(function (el) {
-      el.style.transition = 'opacity 0.2s ease';
       el.style.opacity = '0.4';
       el.style.pointerEvents = 'none';
     });
 
     try {
-      var data = await fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier);
+      var data = await fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier, currentPerPage);
 
-      // If no real data and no filters, use demo data
-      if (!data || (data.total_participants === 0 && !hasFilters)) {
+      var forceLive = new URLSearchParams(window.location.search).has('live');
+      var forceDemo = new URLSearchParams(window.location.search).has('demo');
+
+      if (forceDemo || (!forceLive && (!data || data.total_participants < 20))) {
         usingDemoData = true;
         var demo = getDemoData(data);
-        showLayer('content');
-        renderPodium(demo.rankings);
+        
+        // Demo pagination implementation
+        var start = (currentPage - 1) * currentPerPage;
+        var sliced = demo.rankings.slice(start, start + currentPerPage);
+        
+        renderBentoCards(demo.rankings); // Keep hero cards static from the full list
+        renderMinorCards(demo.rankings); // Keep minor cards static
         renderMyRank(demo.my_rank);
-        renderTable(demo.rankings, false);
+        renderTable(sliced, false);
         renderMeta(demo);
-        renderLoadMore(demo);
-        showDemoBadge(true);
-        return;
-      }
-
-      usingDemoData = false;
-      showDemoBadge(false);
-      showLayer('content');
-
-      // Re-render podium only when there's no active filter (so podium always shows real global top 3)
-      if (!hasFilters) {
-        renderPodium(data.rankings);
+        renderPagination(demo);
+      } else {
+        usingDemoData = false;
+        renderBentoCards(data.rankings);
+        renderMinorCards(data.rankings);
         renderMyRank(data.my_rank);
+        renderTable(data.rankings, false);
+        renderMeta(data);
+        renderPagination(data);
       }
-
-      renderTable(data.rankings, false);
-      renderMeta(data);
-      renderLoadMore(data);
+      showLayer('content');
     } catch (err) {
       console.error('Refetch failed:', err);
     } finally {
+      isFetching = false;
       fadables.forEach(function (el) {
         el.style.opacity = '1';
         el.style.pointerEvents = '';
@@ -507,7 +809,6 @@
   }
 
   window.toggleVisibility = function (checkbox) {
-    // Preserve avatar preference — only update visibility
     var prefs = {
       visible: checkbox.checked,
       show_avatar: cachedPrefs ? (cachedPrefs.show_avatar || false) : false,

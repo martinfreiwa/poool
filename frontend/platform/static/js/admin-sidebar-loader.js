@@ -161,6 +161,23 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                             <span>Rewards</span>
                         </a>
+                        <a href="/admin/pending-settlements.html" class="admin-nav-item ${isPathActive(["/admin/pending-settlements.html"]) ? "active" : ""}" id="nav-settlements">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span>Pending Settlements</span>
+                        </a>
+                        <a href="/admin/affiliate-applications.html" class="admin-nav-item ${isPathActive(["/admin/affiliate-applications.html"]) ? "active" : ""}" id="nav-affiliate-apps">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                            <span>Affiliate Apps</span>
+                            <span id="affiliate-apps-badge" style="display:none;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 5px;background:#f59e0b;color:#fff;border-radius:10px;font-size:10px;font-weight:700;margin-left:auto;"></span>
+                        </a>
+                        <a href="/admin/affiliate-finance.html" class="admin-nav-item ${isPathActive(["/admin/affiliate-finance.html"]) ? "active" : ""}" id="nav-affiliate-finance">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                            <span>Affiliate Finance</span>
+                        </a>
+                        <a href="/admin/admin-affiliate-fraud.html" class="admin-nav-item ${isPathActive(["/admin/admin-affiliate-fraud.html"]) ? "active" : ""}" id="nav-affiliate-fraud">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>Syndicate Fraud</span>
+                        </a>
                     </div>
 
                     <!-- Marketplace -->
@@ -286,10 +303,6 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><line x1="22" y1="10" x2="2" y2="10"></line><line x1="8" y1="20" x2="8" y2="10"></line></svg>
                             <span>Data Tables</span>
                         </a>
-                        <a href="/cards-template.html" class="admin-nav-item ${isPathActive(["/cards-template.html"]) ? "active" : ""}" id="nav-tpl-cards">
-                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-                            <span>UI Cards</span>
-                        </a>
                         <a href="/overlays-template.html" class="admin-nav-item ${isPathActive(["/overlays-template.html"]) ? "active" : ""}" id="nav-tpl-overlays">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22 6 12 13 2 6"></polyline></svg>
                             <span>Overlays & Modals</span>
@@ -411,6 +424,26 @@
                 const data = await comReportsResp.json();
                 const pending = data.length || 0;
                 const badge = document.getElementById("com-reports-badge");
+                if (badge) {
+                    if (pending > 0) {
+                        badge.textContent = pending;
+                        badge.style.display = "";
+                    } else {
+                        badge.style.display = "none";
+                    }
+                }
+            }
+        } catch (e) {
+            // Silently fail
+        }
+
+        try {
+            // Fetch pending affiliate applications count for sidebar badge
+            const affResp = await fetch("/api/admin/rewards/affiliates/pending");
+            if (affResp.ok) {
+                const data = await affResp.json();
+                const pending = (data.pending || []).length;
+                const badge = document.getElementById("affiliate-apps-badge");
                 if (badge) {
                     if (pending > 0) {
                         badge.textContent = pending;

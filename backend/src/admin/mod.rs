@@ -146,6 +146,44 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/support-ticket", get(page_admin_generic))
         .route("/admin/approvals.html", get(page_admin_generic))
         .route("/admin/approvals", get(page_admin_generic))
+        // ── Admin Community Pages ─────────────────────────────────
+        .route("/admin/community/", get(page_admin_generic))
+        .route("/admin/community/index.html", get(page_admin_generic))
+        .route("/admin/community/amas.html", get(page_admin_generic))
+        .route("/admin/community/amas", get(page_admin_generic))
+        .route("/admin/community/announcements.html", get(page_admin_generic))
+        .route("/admin/community/announcements", get(page_admin_generic))
+        .route("/admin/community/badges.html", get(page_admin_generic))
+        .route("/admin/community/badges", get(page_admin_generic))
+        .route("/admin/community/challenges.html", get(page_admin_generic))
+        .route("/admin/community/challenges", get(page_admin_generic))
+        .route("/admin/community/circle-detail.html", get(page_admin_generic))
+        .route("/admin/community/circle-detail", get(page_admin_generic))
+        .route("/admin/community/circles.html", get(page_admin_generic))
+        .route("/admin/community/circles", get(page_admin_generic))
+        .route("/admin/community/comments.html", get(page_admin_generic))
+        .route("/admin/community/comments", get(page_admin_generic))
+        .route("/admin/community/leaderboard.html", get(page_admin_generic))
+        .route("/admin/community/leaderboard", get(page_admin_generic))
+        .route("/admin/community/post-detail.html", get(page_admin_generic))
+        .route("/admin/community/post-detail", get(page_admin_generic))
+        .route("/admin/community/posts.html", get(page_admin_generic))
+        .route("/admin/community/posts", get(page_admin_generic))
+        .route("/admin/community/reports.html", get(page_admin_generic))
+        .route("/admin/community/reports", get(page_admin_generic))
+        .route("/admin/community/user-detail.html", get(page_admin_generic))
+        .route("/admin/community/user-detail", get(page_admin_generic))
+        .route("/admin/community/users.html", get(page_admin_generic))
+        .route("/admin/community/users", get(page_admin_generic))
+        // ── Admin Affiliate Pages ─────────────────────────────────
+        .route("/admin/affiliate-applications.html", get(page_admin_generic))
+        .route("/admin/affiliate-applications", get(page_admin_generic))
+        .route("/admin/affiliate-finance.html", get(page_admin_generic))
+        .route("/admin/affiliate-finance", get(page_admin_generic))
+        .route("/admin/affiliate-fraud.html", get(page_admin_generic))
+        .route("/admin/affiliate-fraud", get(page_admin_generic))
+        .route("/admin/affiliate-compliance.html", get(page_admin_generic))
+        .route("/admin/affiliate-compliance", get(page_admin_generic))
         // ── Admin Blockchain Pages ───────────────────────────────
         .route("/admin/asset-tokenize.html", get(page_admin_generic))
         .route("/admin/asset-tokenize", get(page_admin_generic))
@@ -349,6 +387,48 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/rewards/referrals/:ref_id",
             patch(api_admin_referral_update),
+        )
+        // Affiliates Onboarding & Payouts
+        .route(
+            "/api/admin/rewards/affiliates/pending",
+            get(api_admin_affiliates_pending),
+        )
+        .route(
+            "/api/admin/rewards/affiliates/fraud-scan",
+            get(crate::admin::rewards::api_admin_affiliate_fraud_scan),
+        )
+        .route(
+            "/api/admin/rewards/affiliates/:id/approve",
+            post(api_admin_affiliate_approve),
+        )
+        .route(
+            "/api/admin/rewards/affiliates/:id/reject",
+            post(api_admin_affiliate_reject),
+        )
+        .route(
+            "/api/admin/rewards/affiliates/:id/suspend",
+            post(api_admin_affiliate_suspend),
+        )
+        .route(
+            "/api/admin/rewards/affiliates/payouts/pending",
+            get(api_admin_affiliate_payouts_pending),
+        )
+        .route(
+            "/api/admin/rewards/affiliates/:id/payout",
+            post(api_admin_affiliate_batch_payout),
+        )
+        .route(
+            "/api/admin/rewards/affiliates/:id/clawback",
+            post(api_admin_affiliate_clawback),
+        )
+        // GAP-11: Materials review board
+        .route(
+            "/api/admin/rewards/affiliates/materials",
+            get(api_admin_affiliate_materials_list),
+        )
+        .route(
+            "/api/admin/rewards/affiliates/materials/:id/review",
+            post(api_admin_affiliate_material_review),
         )
         // Change Requests
         .route(

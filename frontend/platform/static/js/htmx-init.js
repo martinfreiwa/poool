@@ -20,7 +20,7 @@
       // ── Anti-flicker: hide main before swap starts ──
       document.body.addEventListener("htmx:beforeSwap", function (evt) {
         var target = evt.detail.target;
-        if (target && (target.tagName === "MAIN" || target.id === "marketplace-main" || target.classList.contains("app-content"))) {
+        if (target && (target.tagName === "MAIN" || target.id === "marketplace-main" || target.classList.contains("app-content") || target.id === "community-content-area")) {
           target.style.opacity = "0";
           target.style.transition = "none";
         }
@@ -35,7 +35,8 @@
         if (
           target.tagName === "MAIN" ||
           target.id === "marketplace-main" ||
-          target.classList.contains("app-content")
+          target.classList.contains("app-content") ||
+          target.id === "community-content-area"
         ) {
           var path = window.location.pathname;
 
@@ -139,7 +140,7 @@
 
       // Re-initialize Alpine.js components if present
       if (window.Alpine) {
-        var main = document.querySelector("main") || document.getElementById("marketplace-main");
+        var main = document.querySelector("main") || document.getElementById("marketplace-main") || document.getElementById("community-content-area");
         if (main) {
           window.Alpine.initTree(main);
         }

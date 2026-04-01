@@ -148,23 +148,31 @@ pub async fn add_to_cart(
     // Parse dollars to cents using string manipulation to avoid float rounding errors
     let amount_cents: i64 = {
         let parts: Vec<&str> = amount_str.split('.').collect();
-        let dollars: i64 = parts[0].parse().unwrap_or(500);
+        let dollars: i64 = match parts[0].parse() {
+            Ok(v) => v,
+            Err(_) => return Redirect::to("/cart?error=invalid_amount").into_response(),
+        };
         let cents: i64 = if parts.len() > 1 {
             let frac = parts[1];
             match frac.len() {
                 0 => 0,
-                1 => frac.parse::<i64>().unwrap_or(0) * 10,
-                _ => frac[..2].parse::<i64>().unwrap_or(0),
+                1 => match frac.parse::<i64>() {
+                    Ok(v) => v * 10,
+                    Err(_) => return Redirect::to("/cart?error=invalid_amount").into_response(),
+                },
+                _ => match frac[..2].parse::<i64>() {
+                    Ok(v) => v,
+                    Err(_) => return Redirect::to("/cart?error=invalid_amount").into_response(),
+                },
             }
         } else {
             0
         };
         let total = dollars * 100 + cents;
         if total <= 0 {
-            50_000
-        } else {
-            total
-        } // Default $500
+            return Redirect::to("/cart?error=invalid_amount").into_response();
+        }
+        total
     };
 
     // 3. Resolve asset_id from property_id – can be a UUID *or* a slug
@@ -594,7 +602,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         let bedrooms: Option<i32> = row.get("bedrooms");
         let bathrooms: Option<i32> = row.get("bathrooms");
         let building_sqm: Option<f64> = row.get("building_size_sqm");
-        let land_sqm: Option<f64> = row.get("land_size_sqm");
+        let _land_sqm: Option<f64> = row.get("land_size_sqm");
 
         let item_total = tokens_qty as i64 * token_price_cents;
         total_cents += item_total;
@@ -991,7 +999,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         ""
     };
 
-    let item_count = rows.len();
+    let _item_count = rows.len();
     let subtotal_idr = format_idr(total_cents);
 
     // KFS Logic for Primary Offerings

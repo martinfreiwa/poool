@@ -2,7 +2,8 @@
  * community-circles.js — Circles & XP Tab Logic
  * Wires the My Circle tab to real /api/community/ endpoints
  */
-document.addEventListener('DOMContentLoaded', function () {
+window.initCommunityCircles = function () {
+    if (!document.getElementById('xp-level-icon')) return;
 
     const XP_REASON_LABELS = {
         'post_created': '📝 Post Created',
@@ -546,6 +547,41 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    // ─── Join / Request Join Handlers ─────────────────────────────
+
+    window.handleJoinCircle = async function (circleId) {
+        try {
+            const res = await fetch(`/api/community/circles/${circleId}/join`, {
+                method: 'POST',
+                credentials: 'same-origin'
+            });
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err);
+            }
+            loadAll();
+        } catch (e) {
+            alert('Failed to join circle: ' + e.message);
+        }
+    };
+
+    window.handleRequestJoinCircle = async function (circleId) {
+        try {
+            const res = await fetch(`/api/community/circles/${circleId}/request`, {
+                method: 'POST',
+                credentials: 'same-origin'
+            });
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err);
+            }
+            myJoinRequestCircleIds.add(circleId);
+            loadCircleLeaderboard(); // Re-render to show "Pending"
+        } catch (e) {
+            alert('Failed to send request: ' + e.message);
+        }
+    };
+
     // ─── Init ────────────────────────────────────────────────────
 
     function loadAll() {
@@ -558,7 +594,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    // Only load when the tab becomes visible
+    // Only load when the tab becomes visible (via HTMX swap or direct click)
     const circleTabBtn = document.querySelector('[data-tab="community-circle-tab"]');
     if (circleTabBtn) {
         circleTabBtn.addEventListener('click', function () {
@@ -569,4 +605,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Also expose for other scripts
     window.loadCirclesAndXp = loadAll;
     window.showLevelUpAnimation = showLevelUpAnimation;
+};
+
+document.addEventListener('DOMContentLoaded', window.initCommunityCircles);
+document.addEventListener('htmx:afterSwap', (e) => {
+    if (e.target.id === 'community-content-area') window.initCommunityCircles();
 });

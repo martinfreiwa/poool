@@ -74,12 +74,12 @@ const RewardsDataService = (function () {
             progressPercentage: progressPercentage
         };
 
-        // 3. Referral Daten aufbereiten
+        // 3. Referral Daten aufbereiten — values now served from API (was hardcoded)
         const referral = {
             referralLink: rawData.referral_url || '',
-            friendRewardAmount: 3000, // Könnte perspektivisch aus der DB/Config kommen (in Cent)
-            userRewardAmount: 3000,
-            investmentRequired: 100000
+            friendRewardAmount: rawData.friend_reward_cents || 3000,
+            userRewardAmount: rawData.user_reward_cents || 3000,
+            investmentRequired: rawData.investment_required_cents || 100000
         };
 
         // 4. Partner Metrics aufbereiten

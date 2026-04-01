@@ -7,7 +7,8 @@ let tiers = [],
   userTiers = [],
   balances = [],
   referrals = [],
-  referralCodes = [];
+  referralCodes = [],
+  applications = [];
 let editingTier = null;
 
 let utSortField = "invested_12m",
@@ -201,12 +202,15 @@ function setupSorting() {
 // ═══════════════ Tab Switching ═══════════════
 
 window.switchTab = function (tab) {
-  ["tiers", "user-tiers", "balances", "referrals"].forEach((t) => {
+  ["tiers", "user-tiers", "balances", "referrals", "applications", "payouts"].forEach((t) => {
     const panel = document.getElementById("panel-" + t);
     const btn = document.getElementById("tab-" + t);
     if (panel) panel.style.display = t === tab ? "" : "none";
     if (btn) btn.classList.toggle("active", t === tab);
   });
+  if (tab === "payouts") {
+    loadPayouts();
+  }
 };
 
 // ═══════════════ Data Loading ═══════════════
@@ -221,6 +225,7 @@ async function loadAll() {
       balances = d.balances || [];
       referrals = d.referrals || [];
       referralCodes = d.referral_codes || [];
+      applications = d.applications || [];
     } else {
     }
   } catch (e) {
@@ -234,6 +239,7 @@ async function loadAll() {
   renderBalances();
   renderReferrals();
   renderCodes();
+  renderApplications();
 }
 
 function updateKPIs() {
@@ -882,3 +888,138 @@ function refBadge(status) {
   const [c, l] = m[status] || ["admin-badge--neutral", status];
   return `<span class="admin-badge ${c}">${l}</span>`;
 }
+
+// ═══════════════ Tab 5: Affiliate Applications ═══════════════
+
+function renderApplications() {
+  const search = (el("app-search")?.value || "").toLowerCase();
+  let list = [...applications];
+  if (search) {
+    list = list.filter((a) =>
+      `${a.user_name} ${a.user_email}`.toLowerCase().includes(search)
+    );
+  }
+
+  const pendingCount = list.filter(a => a.status === 'pending_approval').length;
+  el("app-count-badge").textContent = `${pendingCount} Pending`;
+
+  const tbody = el("applications-body");
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No applications found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map((a) => {
+    let actionBtn = "";
+    if (a.status === 'pending_approval') {
+      actionBtn = `<button class="admin-btn admin-btn--primary admin-btn--sm" onclick="approveApp('${a.user_id}')">Approve</button>`;
+    } else {
+      actionBtn = `<span style="font-size: 12px; color: var(--admin-success); font-weight: 600;">✓ Active</span>`;
+    }
+
+    return `<tr>
+      <td><div class="admin-user-inline"><div><div class="admin-user-inline-name">${esc(a.user_name)}</div><div class="admin-user-inline-email">${esc(a.user_email)}</div></div></div></td>
+      <td style="font-size:13px;">${esc(a.traffic_source || 'N/A')}</td>
+      <td style="font-size:13px; font-weight: 600;">${esc(a.audience_size || 'N/A')}</td>
+      <td style="font-size:13px;"><a href="${esc(a.main_url)}" target="_blank" style="color: var(--admin-accent); text-decoration: none;">Link</a></td>
+      <td style="font-size:12px;color:var(--admin-text-muted);">${fmtDate(a.created_at)}</td>
+      <td>${actionBtn}</td>
+    </tr>`;
+  }).join("");
+}
+
+window.approveApp = async function(user_id) {
+  if (!await pooolConfirm({ title: 'Approve Affiliate', message: 'This will issue a real referral code and grant them access to the Rewards dashboard.', confirmText: 'Approve', type: 'success' })) return;
+
+  try {
+    const r = await fetch(`/api/admin/affiliates/${user_id}/approve`, {
+      method: "POST"
+    });
+    if (r.ok) {
+      showToast('Affiliate approved successfully.', 'success');
+      loadAll();
+    } else {
+      const err = await r.json();
+      alert("Failed: " + (err.error || "Unknown error"));
+    }
+  } catch(e) {
+    alert("Err: " + e.message);
+  }
+};
+
+// ═══════════════ Affiliate Payouts Load & Render ═══════════════
+
+let payouts = [];
+
+async function loadPayouts() {
+  try {
+    const res = await fetch("/api/admin/rewards/affiliates/payouts/pending");
+    if (res.ok) {
+      payouts = await res.json();
+      renderPayouts();
+      const badge = document.getElementById("payout-count-badge");
+      if (badge) {
+        badge.textContent = `${payouts.length} Pending`;
+        badge.style.background = payouts.length > 0 ? "rgba(240, 68, 56, 0.1)" : "rgba(18, 183, 106, 0.1)";
+        badge.style.color = payouts.length > 0 ? "var(--admin-error)" : "var(--admin-success)";
+      }
+    }
+  } catch (e) {
+    console.error("Failed to load payouts:", e);
+  }
+}
+
+function renderPayouts() {
+  const t = document.getElementById("payouts-body");
+  if (!t) return;
+  t.innerHTML = "";
+
+  const q = document.getElementById("payout-search")?.value.toLowerCase() || "";
+  let filtered = payouts.filter(p => !q || p.email.toLowerCase().includes(q) || p.name.toLowerCase().includes(q));
+
+  if (filtered.length === 0) {
+    t.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">No pending payouts found.</td></tr>`;
+    return;
+  }
+
+  filtered.forEach(p => {
+    const amountStr = "$" + (p.total_payable_cents / 100).toFixed(2);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div style="font-weight:500;color:var(--admin-text-primary);">${escapeHtml(p.name)}</div>
+        <div style="font-size:12px;color:var(--admin-text-muted);">${escapeHtml(p.email)}</div>
+      </td>
+      <td><code>${escapeHtml(p.referral_code)}</code></td>
+      <td style="font-weight:600;color:var(--admin-success);">${amountStr}</td>
+      <td>${p.commission_count} commissions</td>
+      <td style="text-align: right;">
+        <button class="btn btn-primary" style="padding:4px 12px; font-size:12px;" onclick="executePayout('${p.affiliate_id}')">Payout Batch</button>
+      </td>
+    `;
+    t.appendChild(tr);
+  });
+}
+
+window.executePayout = async function(id) {
+  if (!confirm("Execute batch payout to this affiliate's cash balance?")) return;
+  try {
+    const r = await fetch(`/api/admin/rewards/affiliates/${id}/payout`, { method: "POST" });
+    if (r.ok) {
+      if (typeof showToast === 'function') {
+        showToast('Batch payout successfully executed!', 'success');
+      } else {
+        alert("Success");
+      }
+      loadPayouts();
+    } else {
+      const err = await r.json();
+      alert("Failed: " + (err.error || "Unknown error"));
+    }
+  } catch(e) {
+    alert("Err: " + e.message);
+  }
+};
+
+document.getElementById("payout-search")?.addEventListener("input", debounce(() => renderPayouts(), 250));
+

@@ -1,0 +1,712 @@
+/* ==========================================================================
+   Affiliate Wizard Onboarding Styling
+   All inline styles extracted. Tokens from DESIGN.md.
+   ========================================================================== */
+
+/* ─── Page Container ─── */
+.onboarding-container {
+    max-width: 1096px;
+    margin: 0;
+    padding: 64px 32px 80px;
+}
+
+/* ─── Header ─── */
+.onboarding-header {
+    text-align: left;
+    margin-bottom: 48px;
+}
+
+.onboarding-header .promo-hero-badge {
+    margin: 0 0 16px 0;
+}
+
+.onboarding-logo {
+    height: 16px;
+    width: auto;
+    margin-right: 4px;
+}
+
+.onboarding-title {
+    font-size: 40px !important;
+    margin-bottom: 16px !important;
+}
+
+.onboarding-subtitle {
+    font-size: 16px !important;
+    max-width: 600px;
+    margin: 0 !important;
+}
+
+/* ─── Stepper ─── */
+.wizard-stepper {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 32px;
+    padding: 24px;
+}
+
+.stepper-progress-bar {
+    position: relative;
+    height: 4px;
+    background: #E5E7EB;
+    border-radius: 4px;
+    margin: 0 24px 24px 24px;
+}
+
+.stepper-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: var(--brand-electric-blue, #0000FF);
+    width: 0%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.stepper-steps {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+}
+
+/* ─── Step Items ─── */
+.step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.45;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.step-item.active,
+.step-item.completed {
+    opacity: 1;
+}
+
+.step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #F8F9FB;
+    border: 2px solid #E5E7EB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-tertiary);
+    transition: all 0.3s ease;
+    z-index: 2;
+    position: relative;
+}
+
+.step-number {
+    line-height: 1;
+}
+
+.step-check {
+    display: none;
+    width: 16px;
+    height: 16px;
+}
+
+/* Active State */
+.step-item.active .step-circle {
+    background: var(--brand-electric-blue, #0000FF);
+    border-color: var(--brand-electric-blue, #0000FF);
+    color: white;
+    box-shadow: 0 0 0 4px rgba(0, 0, 255, 0.1), 0 0 12px rgba(0, 0, 255, 0.25);
+}
+
+/* Completed State — green with checkmark */
+.step-item.completed .step-circle {
+    background: #039855;
+    border-color: #039855;
+    color: white;
+    box-shadow: 0 0 0 4px rgba(3, 152, 85, 0.1);
+}
+
+.step-item.completed .step-number {
+    display: none;
+}
+
+.step-item.completed .step-check {
+    display: block;
+}
+
+.step-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.step-item.active .step-label {
+    color: var(--brand-electric-blue, #0000FF);
+}
+
+.step-item.completed .step-label {
+    color: #039855;
+}
+
+/* ─── Wizard Content Card ─── */
+.wizard-content {
+    min-height: 400px;
+    position: relative;
+    overflow: hidden;
+    padding: 48px;
+    background: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* ─── Steps ─── */
+.wizard-step {
+    animation: wizardFadeIn 0.4s ease-out;
+}
+
+@keyframes wizardFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Step Headers ─── */
+.wizard-step-header {
+    margin-bottom: 32px;
+    text-align: left;
+}
+
+.wizard-step-icon {
+    margin: 0 0 16px 0;
+}
+
+.wizard-step-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.wizard-step-desc {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+/* ─── Forms ─── */
+.wizard-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.wizard-quiz {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.quiz-question {
+    /* Spacer — inherits gap from .wizard-quiz parent */
+    display: block;
+}
+
+.quiz-label {
+    font-size: 16px !important;
+    margin-bottom: 16px !important;
+}
+
+/* ─── Action Buttons ─── */
+.wizard-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+}
+
+.wizard-actions--end {
+    justify-content: flex-end;
+}
+
+.wizard-actions--bordered {
+    border-top: 1px solid #E5E7EB;
+    padding-top: 24px;
+}
+
+/* ─── Checkboxes ─── */
+.wizard-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 28px;
+    margin-bottom: 32px;
+    text-align: left;
+}
+
+.wizard-checkboxes .ds-checkbox-title {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: normal;
+}
+
+/* ─── KYC Panel (Step 2) ─── */
+.wizard-kyc-panel {
+    background: #F8F9FB;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: left;
+}
+
+.wizard-kyc-info {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+
+.wizard-kyc-status {
+    margin-bottom: 24px;
+}
+
+.wizard-kyc-verified,
+.wizard-kyc-pending {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.wizard-kyc-verified {
+    background: transparent;
+}
+
+.wizard-kyc-pending {
+    background: #FEF3F2;
+    border: 1px solid #FEE4E2;
+}
+
+.wizard-kyc-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.wizard-kyc-icon--green {
+    filter: invert(41%) sepia(85%) saturate(464%) hue-rotate(106deg) brightness(88%) contrast(92%);
+}
+
+.wizard-kyc-label {
+    font-weight: 600;
+}
+
+.wizard-kyc-label--green {
+    color: #039855;
+}
+
+.wizard-kyc-label--red {
+    color: #B42318;
+}
+
+.wizard-kyc-btn {
+    padding: 4px 12px !important;
+}
+
+/* ─── Informational Alerts & Boxes ─── */
+.wizard-notice-box {
+    background: #FFFBEA;
+    border: 1px solid #FEF0C7;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #B54708;
+}
+
+.wizard-legal-box {
+    background: #F8F9FB;
+    border: 1px solid #E5E7EB;
+    border-radius: 0 0 12px 12px;
+    height: 320px;
+    overflow-y: auto;
+    padding: 24px;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    scroll-behavior: smooth;
+}
+
+.wizard-legal-box h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--page-title-color, #181D27);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+/* ─── Legal Tabs ─── */
+.legal-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0;
+}
+
+.legal-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 8px;
+    background: #F1F3F5;
+    border: 1px solid #E5E7EB;
+    border-bottom: none;
+    border-left: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.legal-tab:first-child {
+    border-radius: 12px 0 0 0;
+    border-left: 1px solid #E5E7EB;
+}
+
+.legal-tab:last-child {
+    border-radius: 0 12px 0 0;
+}
+
+.legal-tab.active {
+    background: #F8F9FB;
+    color: var(--brand-electric-blue, #0000FF);
+    border-bottom: 2px solid var(--brand-electric-blue, #0000FF);
+    margin-bottom: -1px;
+}
+
+.legal-tab:hover:not(.active) {
+    background: #ECEDF0;
+}
+
+.legal-tab svg {
+    flex-shrink: 0;
+}
+
+/* ─── Legal Sections ─── */
+.legal-section {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.legal-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.legal-section h5 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--page-title-color, #181D27);
+    margin-bottom: 8px;
+}
+
+.legal-section p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.legal-section ul {
+    margin: 4px 0 0 0;
+    padding-left: 20px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+}
+
+.legal-section li {
+    margin-bottom: 4px;
+}
+
+/* ─── Tab Content Visibility ─── */
+.legal-tab-content {
+    display: none;
+}
+
+.legal-tab-content.active {
+    display: block;
+}
+
+/* ─── Scroll Hint ─── */
+.legal-scroll-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 0 20px;
+    font-size: 12px;
+    color: var(--text-tertiary, #A4A7AE);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.legal-scroll-hint.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ─── Success / Pending Review State ─── */
+.wizard-success {
+    text-align: left;
+    padding: 48px 0;
+}
+
+.wizard-success-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #D1FADF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 24px 0;
+}
+
+.wizard-success-icon img {
+    width: 32px;
+    height: 32px;
+}
+
+/* Pending variant — amber/blue clock icon */
+.wizard-success-icon--pending {
+    background: #EFF4FF;
+    border: 1px solid #D1E0FF;
+    color: var(--brand-electric-blue, #0000FF);
+}
+
+.wizard-success-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--page-title-color, #181D27);
+    margin-bottom: 12px;
+}
+
+.wizard-success-desc {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    max-width: 500px;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.wizard-success-note {
+    font-size: 13px;
+    color: var(--text-tertiary, #A4A7AE);
+    margin-bottom: 24px;
+}
+
+/* ─── Review Timeline ─── */
+.wizard-review-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 320px;
+    margin: 0 0 32px 0;
+    text-align: left;
+}
+
+.review-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    position: relative;
+    padding-bottom: 24px;
+}
+
+.review-step:last-child {
+    padding-bottom: 0;
+}
+
+/* Vertical connector line */
+.review-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 18px;
+    width: 2px;
+    height: calc(100% - 10px);
+    background: #E5E7EB;
+}
+
+.review-step--done:not(:last-child)::after {
+    background: #039855;
+}
+
+.review-step--active:not(:last-child)::after {
+    background: linear-gradient(180deg, var(--brand-electric-blue, #0000FF) 0%, #E5E7EB 100%);
+}
+
+/* Dot */
+.review-step-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #E5E7EB;
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+    z-index: 1;
+}
+
+.review-step--done .review-step-dot {
+    background: #039855;
+    box-shadow: 0 0 0 3px rgba(3, 152, 85, 0.1);
+}
+
+.review-step--active .review-step-dot {
+    background: var(--brand-electric-blue, #0000FF);
+    box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.1);
+    animation: reviewPulse 2s ease-in-out infinite;
+}
+
+@keyframes reviewPulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.1); }
+    50% { box-shadow: 0 0 0 6px rgba(0, 0, 255, 0.15); }
+}
+
+/* Content */
+.review-step-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.review-step-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-tertiary, #A4A7AE);
+}
+
+.review-step--done .review-step-label {
+    color: #039855;
+}
+
+.review-step--active .review-step-label {
+    color: var(--page-title-color, #181D27);
+}
+
+.review-step-meta {
+    font-size: 13px;
+    color: var(--text-tertiary, #A4A7AE);
+}
+
+/* ─── Premium Quiz Radio Cards ─── */
+.radio-card-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.radio-card {
+    cursor: pointer;
+    position: relative;
+    display: block;
+}
+
+.radio-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.radio-card-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.radio-card:hover .radio-card-box {
+    border-color: #CBD5E1;
+    background: #F8FAFC;
+}
+
+.radio-card-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #CBD5E1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.radio-card-text {
+    font-size: 15px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+/* Checked State */
+.radio-card input[type="radio"]:checked + .radio-card-box {
+    border-color: var(--brand-electric-blue, #0000FF);
+    background: rgba(0, 0, 255, 0.02);
+    box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.1);
+}
+
+.radio-card input[type="radio"]:checked + .radio-card-box .radio-card-circle {
+    border-color: var(--brand-electric-blue, #0000FF);
+    border-width: 6px;
+    background: white;
+}
+
+.radio-card input[type="radio"]:checked + .radio-card-box .radio-card-text {
+    color: var(--page-title-color, #181D27);
+    font-weight: 600;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+    .onboarding-container {
+        padding: 24px 16px 64px;
+    }
+
+    .onboarding-title {
+        font-size: 28px !important;
+    }
+
+    .step-label {
+        display: none;
+    }
+
+    .stepper-progress-bar {
+        margin: 0 8px 16px 8px;
+    }
+
+    .wizard-content {
+        padding: 24px !important;
+    }
+
+    .wizard-success {
+        padding: 24px 0;
+    }
+
+    .wizard-success-title {
+        font-size: 24px;
+    }
+}

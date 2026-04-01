@@ -191,82 +191,147 @@ fn extract_meta_tag(html: &str, property: &str) -> Option<String> {
 
 // ─── Route Handlers ──────────────────────────────────────────────────────────
 
-async fn get_feed(
-    jar: CookieJar,
-    State(state): State<AppState>,
-    Query(query): Query<FeedQuery>,
-) -> Result<impl IntoResponse, AppError> {
-    // Auth check
-    let user = middleware::get_current_user(&jar, &state.db).await;
+pub fn map_to_post_display(
+    p: &models::Post,
+    author_name: String,
+    author_avatar: Option<String>,
+    author_badges: Vec<String>,
+) -> PostDisplay {
+    let mut author_initials = String::new();
+    let parts: Vec<&str> = author_name.split_whitespace().collect();
+    if parts.len() > 1 {
+        author_initials.push(parts[0].chars().next().unwrap_or('?'));
+        author_initials.push(parts[1].chars().next().unwrap_or('?'));
+    } else if !author_name.is_empty() {
+        author_initials.push(author_name.chars().next().unwrap_or('?'));
+    } else {
+        author_initials.push('?');
+    }
+    author_initials = author_initials.to_uppercase();
 
-    // Determine if we need to enforce auth based on query
+    let link_preview_domain = p.link_preview.as_ref().and_then(|v| {
+        v.get("url").and_then(|s| s.as_str()).and_then(|url| {
+            url::Url::parse(url)
+                .ok()
+                .and_then(|u| u.domain().map(|d| d.trim_start_matches("www.").to_string()))
+        })
+    });
+
+    let raw_content = p.content_sanitized.clone().unwrap_or_else(|| p.content.clone());
+    let re = regex::Regex::new(r"(#[\w\u00C0-\u024F]+|@[\w\u00C0-\u024F_-]+)").unwrap();
+    let rendered_content = if p.post_type == "announcement" {
+        raw_content.clone()
+    } else {
+        re.replace_all(&raw_content, |caps: &regex::Captures| {
+            let matched = &caps[0];
+            if matched.starts_with('#') {
+                let tag = matched[1..].to_lowercase();
+                format!("<span class='hashtag-tag' style='color: var(--btn-primary-bg, #0000FF); font-weight: 600; cursor: pointer; transition: opacity 0.2s;' hx-get='/community/partials/feed/list?hashtag={}' hx-target='#community-feed-container'>{}</span>", tag, matched)
+            } else {
+                let user = &matched[1..];
+                format!("<span class='mention-tag' style='color: #7F56D9; font-weight: 600; cursor: pointer; transition: opacity 0.2s;' hx-get='/community/partials/feed/list?mention={}' hx-target='#community-feed-container'>{}</span>", user, matched)
+            }
+        }).into_owned()
+    };
+    
+    let image_urls = p
+        .image_urls
+        .clone()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|u| crate::storage::service::rewrite_gcs_url(&u))
+        .collect();
+
+    PostDisplay {
+        id: p.id,
+        author_name,
+        author_initials,
+        author_id: p.user_id,
+        author_avatar,
+        author_badges,
+        post_type: p.post_type.clone(),
+        content: raw_content,
+        rendered_content,
+        asset_id: p.asset_id,
+        image_urls,
+        link_preview: p.link_preview.clone(),
+        link_preview_domain,
+        reaction_count: p.reaction_count,
+        comment_count: p.comment_count,
+        is_hidden: p.is_hidden,
+        is_pinned: p.is_pinned,
+        disclaimer_shown: p.disclaimer_shown,
+        verified_owner: false,
+        created_at: p.created_at,
+    }
+}
+
+
+pub async fn get_feed_data(
+    state: &AppState,
+    query: &FeedQuery,
+    user: Option<&crate::auth::models::User>,
+) -> Result<Vec<PostDisplay>, AppError> {
     if query.feed_mode.as_deref() == Some("following") && user.is_none() {
         return Err(AppError::Unauthorized(
             "You must be logged in to view your following feed.".into(),
         ));
     }
 
-    let c_pool = get_community_pool(&state)?;
+    let c_pool = get_community_pool(state)?;
 
     let limit = 20;
     let offset = (query.page.unwrap_or(1).max(1) - 1) * limit;
 
     let only_following_user_id = if query.feed_mode.as_deref() == Some("following") {
-        user.as_ref().map(|u| u.id)
+        user.map(|u| u.id)
     } else {
         None
     };
 
     let posts = service::get_community_feed(
         &c_pool,
-        query.category,
+        query.category.clone(),
         only_following_user_id,
-        query.sort_by,
+        query.sort_by.clone(),
         limit,
         offset,
     )
     .await?;
 
-    // Build user_ids list for batch fetching
     let user_ids: Vec<Uuid> = posts.iter().map(|p| p.user_id).collect();
     let authors =
         user_bridge::get_users_info_batch(&state.db, state.redis.as_ref(), &user_ids).await?;
     let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
 
-    // Construct Display views
     let mut feed = Vec::with_capacity(posts.len());
+    
+    
     for p in posts {
         let author = authors.get(&p.user_id);
         let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
+        let author_name = author
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Anonymous".into());
 
-        feed.push(PostDisplay {
-            id: p.id,
-            author_name: author
-                .map(|a| a.display_name.clone())
-                .unwrap_or_else(|| "Anonymous".into()),
-            author_id: p.user_id,
-            author_avatar: author.and_then(|a| a.avatar_url.clone()),
+        feed.push(map_to_post_display(
+            &p,
+            author_name,
+            author.and_then(|a| a.avatar_url.clone()),
             author_badges,
-            post_type: p.post_type.clone(),
-            content: p.content_sanitized.unwrap_or(p.content),
-            asset_id: p.asset_id,
-            image_urls: p
-                .image_urls
-                .unwrap_or_default()
-                .into_iter()
-                .map(|u| crate::storage::service::rewrite_gcs_url(&u))
-                .collect(),
-            link_preview: p.link_preview,
-            reaction_count: p.reaction_count,
-            comment_count: p.comment_count,
-            is_hidden: p.is_hidden,
-            is_pinned: p.is_pinned,
-            disclaimer_shown: p.disclaimer_shown,
-            verified_owner: false, // FIX-F4: Computed per-post; feed doesn't have this context yet
-            created_at: p.created_at,
-        });
+        ));
     }
 
+    Ok(feed)
+}
+
+async fn get_feed(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Query(query): Query<FeedQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let user = middleware::get_current_user(&jar, &state.db).await;
+    let feed = get_feed_data(&state, &query, user.as_ref()).await?;
     Ok(Json(feed))
 }
 
@@ -277,7 +342,7 @@ async fn get_post_detail(
 ) -> Result<impl IntoResponse, AppError> {
     // allow public read, but if user logged in we can fetch them
     let user = middleware::get_current_user(&jar, &state.db).await;
-    let only_following_user_id: Option<Uuid> = None; // not constrained by following
+    let _only_following_user_id: Option<Uuid> = None; // not constrained by following
     let c_pool = get_community_pool(&state)?;
 
     let post = sqlx::query_as::<_, models::Post>(
@@ -311,33 +376,17 @@ async fn get_post_detail(
         author_badges = b_map.remove(&p.user_id).unwrap_or_default();
     }
 
-    let response = PostDisplay {
-        id: p.id,
-        author_name: author_info
-            .as_ref()
-            .map(|a| a.display_name.clone())
-            .unwrap_or_else(|| "Anonymous".into()),
-        author_id: p.user_id,
-        author_avatar: author_info.and_then(|a| a.avatar_url.clone()),
+    let author_name = author_info
+        .as_ref()
+        .map(|a| a.display_name.clone())
+        .unwrap_or_else(|| "Anonymous".into());
+
+    let response = map_to_post_display(
+        &p,
+        author_name,
+        author_info.and_then(|a| a.avatar_url.clone()),
         author_badges,
-        post_type: p.post_type.clone(),
-        content: p.content_sanitized.unwrap_or(p.content),
-        asset_id: p.asset_id,
-        image_urls: p
-            .image_urls
-            .unwrap_or_default()
-            .into_iter()
-            .map(|u| crate::storage::service::rewrite_gcs_url(&u))
-            .collect(),
-        link_preview: p.link_preview,
-        reaction_count: p.reaction_count,
-        comment_count: p.comment_count,
-        is_hidden: p.is_hidden,
-        is_pinned: p.is_pinned,
-        disclaimer_shown: p.disclaimer_shown,
-        verified_owner: false,
-        created_at: p.created_at,
-    };
+    );
 
     Ok(Json(response))
 }
@@ -2113,7 +2162,7 @@ async fn search_community(
     State(state): State<AppState>,
     Query(query): Query<SearchQuery>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = middleware::get_current_user(&jar, &state.db).await;
+    let _user = middleware::get_current_user(&jar, &state.db).await;
     let c_pool = get_community_pool(&state)?;
 
     let limit = 20;
@@ -2233,27 +2282,16 @@ async fn search_community(
     for p in posts_result {
         let auth = authors.get(&p.user_id);
         let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
-        posts_formatted.push(PostDisplay {
-            id: p.id,
-            author_name: auth
-                .map(|a| a.display_name.clone())
-                .unwrap_or_else(|| "Anonymous".into()),
-            author_id: p.user_id,
-            author_avatar: auth.and_then(|a| a.avatar_url.clone()),
+        let author_name = auth
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Anonymous".into());
+
+        posts_formatted.push(map_to_post_display(
+            &p,
+            author_name,
+            auth.and_then(|a| a.avatar_url.clone()),
             author_badges,
-            post_type: p.post_type,
-            content: p.content_sanitized.unwrap_or(p.content),
-            asset_id: p.asset_id,
-            image_urls: p.image_urls.unwrap_or_default(),
-            link_preview: p.link_preview,
-            reaction_count: p.reaction_count,
-            comment_count: p.comment_count,
-            is_hidden: p.is_hidden,
-            is_pinned: p.is_pinned,
-            disclaimer_shown: p.disclaimer_shown,
-            verified_owner: false,
-            created_at: p.created_at,
-        });
+        ));
     }
 
     Ok(Json(serde_json::json!({
@@ -3015,7 +3053,7 @@ async fn delete_asset_review(
     jar: CookieJar,
     State(state): State<AppState>,
     Path(asset_id): Path<Uuid>, // We use the asset ID for standardizing route structure but delete relies on lookup
-    axum::extract::Query(q): axum::extract::Query<std::collections::HashMap<String, String>>,
+    axum::extract::Query(_q): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, AppError> {
     let user = middleware::get_current_user(&jar, &state.db)
         .await
@@ -4159,27 +4197,16 @@ async fn list_bookmarks(
         let author = authors.get(&p.user_id);
         let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
 
-        feed.push(PostDisplay {
-            id: p.id,
-            author_name: author
-                .map(|a| a.display_name.clone())
-                .unwrap_or_else(|| "Anonymous".into()),
-            author_id: p.user_id,
-            author_avatar: author.and_then(|a| a.avatar_url.clone()),
+        let author_name = author
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Anonymous".into());
+
+        feed.push(map_to_post_display(
+            &p,
+            author_name,
+            author.and_then(|a| a.avatar_url.clone()),
             author_badges,
-            post_type: p.post_type.clone(),
-            content: p.content_sanitized.unwrap_or(p.content),
-            asset_id: p.asset_id,
-            image_urls: p.image_urls.unwrap_or_default(),
-            link_preview: p.link_preview,
-            reaction_count: p.reaction_count,
-            comment_count: p.comment_count,
-            is_hidden: p.is_hidden,
-            is_pinned: p.is_pinned,
-            disclaimer_shown: p.disclaimer_shown,
-            verified_owner: false,
-            created_at: p.created_at,
-        });
+        ));
     }
 
     Ok(Json(feed))
@@ -4463,27 +4490,16 @@ async fn get_posts_by_hashtag(
         let author = authors.get(&p.user_id);
         let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();
 
-        feed.push(PostDisplay {
-            id: p.id,
-            author_name: author
-                .map(|a| a.display_name.clone())
-                .unwrap_or_else(|| "Anonymous".into()),
-            author_id: p.user_id,
-            author_avatar: author.and_then(|a| a.avatar_url.clone()),
+        let author_name = author
+            .map(|a| a.display_name.clone())
+            .unwrap_or_else(|| "Anonymous".into());
+
+        feed.push(map_to_post_display(
+            &p,
+            author_name,
+            author.and_then(|a| a.avatar_url.clone()),
             author_badges,
-            post_type: p.post_type.clone(),
-            content: p.content_sanitized.unwrap_or(p.content),
-            asset_id: p.asset_id,
-            image_urls: p.image_urls.unwrap_or_default(),
-            link_preview: p.link_preview,
-            reaction_count: p.reaction_count,
-            comment_count: p.comment_count,
-            is_hidden: p.is_hidden,
-            is_pinned: p.is_pinned,
-            disclaimer_shown: p.disclaimer_shown,
-            verified_owner: false,
-            created_at: p.created_at,
-        });
+        ));
     }
 
     Ok(Json(serde_json::json!({

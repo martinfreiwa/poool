@@ -148,7 +148,7 @@ A major vulnerability in tokenization is the "Fiat-to-Crypto Bridge." If a simpl
 To prevent this, POOOL must implement **Enterprise-Grade Bank Reconciliation** using the following industry-standard flow:
 
 1. **The Order is placed:** A user buys $500 of an asset. The PostgreSQL database logs an order with status `PENDING_PAYMENT` and generates a unique canonical reference code (e.g., `POOOL-REF-9X2A`). The user is instructed to include this exact code in their bank transfer purpose field.
-2. **Automated Bank API (The First Eye):** Do not rely on human data entry. POOOL must integrate a Banking API (like Token.io, Plaid, or Finicity) or process automated daily MT940/CAMT.053 bank statement files. 
+2. **Automated Bank API (The First Eye):** Do not rely on human data entry. POOOL must integrate the OCBC Business API (Direct Banking) via their Virtual Accounts (VA) / API endpoints or process automated daily MT940/CAMT.053 bank statement files directly from OCBC. 
    * When the API spots an incoming $500 transfer matching `POOOL-REF-9X2A`, the system flags the order as `FUNDS_RECEIVED_SYSTEM`.
 3. **The 4-Eyes Principle (The Second Eye):** The system does **not** instantly move tokens. Instead, it enters an internal Admin Queue.
    * An authorized financial officer at POOOL must log into the Admin panel and click `Approve Settlement`. 
@@ -180,7 +180,7 @@ For POOOL, there are two distinct ways to handle this. The recommended starting 
 This is how POOOL operates under your current architecture:
 1. **The Math (Backend):** Every month, the physical SPV LLC receives rent in Euros. The POOOL Rust backend looks at the PostgreSQL database (`onchain_balances` table) and checks exactly who held tokens *on the specific payout date*.
 2. **Virtual Balance Credit:** The backend calculates the dividend (in BIGINT cents, e.g., 5000 cents for €50) and credits the user's `wallet` (the virtual fiat balance inside the POOOL app, not their crypto wallet). 
-3. **The Payout (Bank Transfer):** The user logs into POOOL, sees they have €50 available, and clicks "Withdraw." Plaid (or your banking provider) executes an old-fashioned SEPA bank transfer from the POOOL Treasury bank account directly into the user's personal IBAN. 
+3. **The Payout (Bank Transfer / Disbursement):** The user logs into POOOL, sees they have €50 available, and clicks "Withdraw." The OCBC API executes an automated outbound bank transfer (e.g. GIRO/FAST/BI-FAST) from the POOOL Treasury account directly into the user's personal bank account. 
 * *Advantage:* Users don't have to understand stablecoins, gas fees, or crypto exchanges to buy a coffee with their rental income.
 
 #### Method 2: The Fully Decentralized Way (On-Chain USDC)
@@ -253,28 +253,23 @@ You never simply write a smart contract and deploy it straight to the blockchain
 - Auto-generate a custodial wallet for new signups.
 
 ### Phase 3: Banking API & 4-Eyes Settlement (Weeks 7-9)
-- **Banking Provider:** Integrate **Plaid** for automated fiat detection (Decision finalized: highly transparent Pay-per-Success model, unmatched developer UX, and free testing tier).
+- **Banking Provider:** Integrate **OCBC API** for automated fiat detection via Webhooks (Decision finalized: Leveraging existing bank infrastructure removes third-party gateway fees and maximizes institutional trust).
 - **Admin Settlement Portal:** Build the `FUNDS_RECEIVED_SYSTEM` logic and the 4-Eyes administrative approval interface described in Section 8.
 - **Blockchain Execution Engine:** Tie the 4-Eyes approval to the Rust GCP KMS signer to automatically execute the Base network asset transfer.
 
-#### Banking API Vendor Comparison (Plaid vs. Finicity vs. Token.io)
-To achieve the automated settlement described above, POOOL needs an Open Banking API to read incoming bank transfers. Here is the expert breakdown based on safety, ease of use, and cost for a startup:
+#### Banking Integration Strategy (Direct OCBC API vs. Third-Party Gateways)
+Because POOOL holds an exclusive OCBC account, the goal is to bypass payment gateways like Xendit or Midtrans completely and do all Deposit Matching and Payouts via **OCBC's Direct Business API**.
 
-1. **Plaid (Expert Recommendation 🏆)**
-   * **Pros:** Absolute market leader. The developer experience (especially for Rust/Node backends) is unmatched. They have pre-built drop-in UIs. 
-   * **Cons:** Can get expensive if you scale to millions of automated balance checks.
-   * **Pricing (Startup Friendly):** Plaid has a **Free Development Tier** for building and testing, and a "Limited Production" tier where you get your first **100 live API connections completely for free**. After that, it’s a "Pay as You Go" model (approx. $0.30 to $1.50 per verification/account sync) with no massive upfront enterprise fees.
+1. **OCBC Business API (The Direct Approach 🏆)**
+   * **Pros:** 
+     - **No Middleman Fees:** By avoiding third-party gateways, POOOL saves significantly on massive retail transaction volume.
+     - **Institutional Trust:** Real Estate investors strongly prefer sending high-value funds directly to a tier-1 recognized bank (OCBC) instead of a startup's Virtual Account.
+     - **Reconciliation Transparency:** Seamless accounting because POOOL has direct webhook access to the actual treasury account where the funds immediately land.
+   * **Cons:** 
+     - Slower technical onboarding compared to self-serve developer platforms like Xendit.
+     - Requires mTLS, signing certificates, and elevated bank compliance to consume the REST API endpoints.
 
-2. **Finicity (Owned by Mastercard)**
-   * **Pros:** Unbelievably accurate categorization, specifically built for high-level underwriting and lending (verifying income/assets). Deeply integrated with traditional finance.
-   * **Cons:** They do not have public, transparent "startup" pricing. Everything is highly customized, meaning you have to get on sales calls to even get API keys for production.
-   * **Pricing:** Usage-based, but heavily geared toward enterprise contracts. Not recommended for a lean startup trying to test an MVP quickly.
-
-3. **Token.io**
-   * **Pros:** Highly specialized in Europe (PSD2 compliant) for Account-to-Account (A2A) payments. If your banking is strictly European, they are a powerhouse.
-   * **Cons:** Less global coverage than Plaid. Like Finicity, their open pricing is opaque, forcing you into custom volume-based enterprise sales negotiations.
-
-**The Verdict:** Choose **Plaid**. You can sign up right now, use their free sandbox immediately in your Rust backend, and process your first 100 live paying customers for $0. It is definitively the cheapest and fastest way to achieve the required banking automation.
+**The Verdict:** Proceed strictly with the **OCBC Business API**. POOOL will utilize OCBC's endpoints to issue Virtual Accounts. Upon incoming deposit, the OCBC webhook engine will notify the POOOL Rust backend. Upon withdrawal requests, POOOL's backend will sign a payout payload and dispatch it to OCBC. This guarantees the absolute lowest transaction cost profile and the highest institutional trust rating.
 
 ### Phase 4: Tokenize & Index (Weeks 10-12)
 - Deploy the `AssetFactory`.
@@ -324,7 +319,7 @@ Wenn du und das Team heute mit dem Bau beginnen wollt, müsst ihr bestimmte Acco
 ### 1. Benötigte Fremd-Accounts & Lizenzen
 *(Wichtig: Ihr braucht **keinen** Coinbase-Account, um Base zu nutzen, da Base ein öffentliches Netzwerk ist!)*
 * [ ] **Google Cloud Platform (GCP):** Aktiviert die **Cloud KMS API**. Das ist euer digitaler Tresor, der die Krypto-Schlüssel eurer Kunden generiert, ohne dass ihr sie jemals im Klartext seht.
-* [ ] **Plaid Account:** Registriert euch bei Plaid für die Bank-API. Nutzt zuerst das kostenlose Sandbox/Development-Environment.
+* [ ] **OCBC API Access:** Beantragt die API-Schlüssel für euer OCBC Corporate Account. Fordert gezielt die "Virtual Account" und "Disbursement" API-Docs an.
 * [ ] **RPC Provider (Alchemy oder Infura):** Ihr müsst mit der Blockchain "sprechen". Dafür braucht ihr einen kostenlosen Account bei Alchemy.com, welcher euch eine API-URL gibt (z.B. `https://base-mainnet.g.alchemy.com/...`), über die euer Rust-Backend die Blockchain-Daten abfragt.
 * [ ] **Pinata (IPFS):** Ein kostenloser Account bei Pinata.cloud, um eure PDFs (Kaufverträge der SPVs) hochzuladen, damit sie auf Lebenszeit in der IPFS-Cloud fixiert ("gepinnt") werden.
 
@@ -337,8 +332,8 @@ Damit ihr im nächsten Schritt direkt mit dem Bauen der statischen HTML-Seiten b
 * [ ] **`pending-settlements.html` (4-Augen Settlement Dashboard)**
   * **Zweck:** Die zentrale Clearing-Stelle. Hier werden eingehende Banküberweisungen (Fiat) mit Token-Transfers (Krypto) logisch verknüpft.
   * **UI-Elemente:**
-    * Eine Tabelle mit Spalten: `Nutzer`, `Betrag`, `Referenzcode (z.B. POOOL-REF-123)`, `Plaid Status (API-Match / Manuell)`.
-    * **Action-Button:** Ein dicker Button "Genehmigen & Tokens senden". *Logik (später):* Nur klickbar, wenn der Plaid-Status auf "Match" steht oder ein zweiter Admin "Manuell bestätigt" hat.
+    * Eine Tabelle mit Spalten: `Nutzer`, `Betrag`, `Referenzcode (z.B. POOOL-REF-123)`, `Bank Status (Webhook-Match / Manuell)`.
+    * **Action-Button:** Ein dicker Button "Genehmigen & Tokens senden". *Logik (später):* Nur klickbar, wenn der Bank-Status auf "Match" steht oder ein zweiter Admin "Manuell bestätigt" hat.
 * [ ] **`blockchain-treasury.html` (Treasury & Gas Dashboard)**
   * **Zweck:** Verwaltung des Firmen-Wallets (Deployer Wallet aus dem GCP KMS) und Übersicht über Gas-Kosten.
   * **UI-Elemente:**
@@ -365,7 +360,7 @@ Damit ihr im nächsten Schritt direkt mit dem Bauen der statischen HTML-Seiten b
 * [ ] **`orders.html` (Bestellübersicht)**
   * **Neue Elemente:** Eine neue Tabellenspalte "Blockchain TX". Hier kommt ein klickbarer Link (z.B. "TX: 0x123...") rein, der als absoluter, manipulationssicherer Beweis für den abgewickelten Kauf dient.
 * [ ] **`deposits.html` (Einzahlungen)**
-  * **Neue Elemente:** Integration des automatischen Bank-Feeds. Neben jeder Einzahlung muss ein Plaid-Status-Badge ("Verified APIs" vs. "Manual Entry") stehen.
+  * **Neue Elemente:** Integration des automatischen Bank-Feeds. Neben jeder Einzahlung muss ein Bank-Status-Badge ("Verified Webhook" vs. "Manual Entry") stehen.
 * [ ] **`dividends.html` (Dividenden-Berechnung)**
   * **Neue Elemente:** Ein Hinweistext oder Badge bei der Dividendenausschüttung: "Berechnung basiert auf Ethereum/Base On-Chain Snapshot (Block #1234567)".
 
@@ -394,8 +389,8 @@ Euer Entwickler-Team muss das aktuelle Tech-Stack aufrüsten:
 * [ ] **Crates (Bibliotheken) installieren:** 
   * `alloy`: Das Standard-Framework in Rust, um mit Ethereum/Base Smart Contracts zu sprechen. (Nachfolger von `ethers-rs`).
   * `gcp_auth` / `google-cloud-kms`: Um die Signatur-Befehle an den Google Tresor zu schicken.
-  * `reqwest`: Für die API-Calls zu Plaid.
+  * `reqwest`: Für die API-Calls zur OCBC.
 * [ ] **Hintergrund-Indexer (`tokio` task) bauen:** Ihr braucht einen Daemon-Prozess, der in einer Dauerschleife läuft und prüft: *"Hat es gerade auf der Base-Blockchain eine Transaktion gegeben, die POOOL betrifft? Wenn ja, update sofort unsere PostgreSQL-Datenbank."*
 * [ ] **Smart Contract Tooling (Lokal):** Eure Entwickler müssen **Foundry** (ein Toolkit bestehend aus Forge, Cast und Anvil) lokal auf ihren Rechnern installieren. Nur damit schreibt, testet und fuzzt man den eigentlichen Solidity-Code.
 
-Zusammenfassung: Ihr müsst weder eigene Krypto-Nodes betreiben noch Coinbase-Konten besitzen. Das Rust-Backend orchestriert einfach die verschiedenen APIs (Plaid für Fiat, Alchemy für Base, Google KMS für Keys), während das Admin-Panel die nötigen Sicherheits-Gateways ("Genehmigen"-Buttons) für euch als Betreiber bereitstellt.
+Zusammenfassung: Ihr müsst weder eigene Krypto-Nodes betreiben noch Coinbase-Konten besitzen. Das Rust-Backend orchestriert einfach die verschiedenen APIs (OCBC API für Fiat, Alchemy für Base, Google KMS für Keys), während das Admin-Panel die nötigen Sicherheits-Gateways ("Genehmigen"-Buttons) für euch als Betreiber bereitstellt.

@@ -1,0 +1,209 @@
+{% with title="Affiliate Dashboard", extra_css=['cards-template', 'forms-template', 'affiliate-dashboard'], extra_js=['https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js', 'affiliate-dashboard'] %}{% include "components/head.html" %}{% endwith %}
+<body class="app-body fouc-guard">
+  {% include 'components/mobile-menu.html' %}
+
+  <div class="app-wrapper">
+    <aside class="app-sidebar">
+      {% include 'components/sidebar.html' %}
+    </aside>
+
+    <main class="app-content">
+      <div class="affiliate-dashboard-container">
+        
+        <!-- Header -->
+        <header class="affiliate-header">
+          <div>
+            <h1 class="affiliate-title">Partner Syndicate</h1>
+            <p class="affiliate-subtitle">Track your referrals, manage your tier, and view earnings.</p>
+          </div>
+          <div class="tier-badge" id="current-tier-badge">
+            <span class="tier-icon">💎</span>
+            <span class="tier-name" id="tier-name">Loading...</span>
+            <span class="tier-rate" id="tier-rate">— bps</span>
+          </div>
+        </header>
+
+        <!-- KPI Cards Grid -->
+        <div class="affiliate-kpi-grid">
+          <!-- Total Earnings -->
+          <div class="ds-card kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-label">Total Earnings</span>
+              <img src="/static/images/coins-swap-01.svg" class="kpi-icon" alt="" />
+            </div>
+            <div class="kpi-value" id="kpi-total-earnings">$0.00</div>
+            <div class="kpi-meta">
+              <span class="meta-dot bg-success"></span>
+              <span id="kpi-paid-earnings">$0.00</span> paid out
+            </div>
+          </div>
+          
+          <!-- Payable Balance -->
+          <div class="ds-card kpi-card highlight-card">
+            <div class="kpi-header">
+              <span class="kpi-label">Available to Payout</span>
+              <img src="/static/images/bank-note-01.svg" class="kpi-icon" alt="" />
+            </div>
+            <div class="kpi-value" id="kpi-payable-earnings">$0.00</div>
+            <div class="kpi-meta">
+              Ready for immediate withdrawal
+            </div>
+            <button class="ds-btn ds-btn-primary btn-sm payout-btn" id="request-payout-btn" disabled>Request Payout</button>
+          </div>
+
+          <!-- Provisional Balance -->
+          <div class="ds-card kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-label">Under 30-Day Holdback</span>
+              <img src="/static/images/clock.svg" class="kpi-icon" alt="" />
+            </div>
+            <div class="kpi-value" id="kpi-provisional-earnings">$0.00</div>
+            <div class="kpi-meta">
+              <span class="meta-dot bg-warning"></span>
+              Pending qualification
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-split">
+          <!-- Left Column -->
+          <div class="dashboard-main-col">
+            <!-- Referral Link Widget -->
+            <div class="ds-card link-widget-card">
+              <div class="link-widget-header">
+                <h3>Your Referral Link</h3>
+                <p>Share this link to start earning commissions on qualified investments.</p>
+              </div>
+              
+              <!-- Dynamic Link Generator -->
+              <div class="dynamic-link-generator" style="margin-bottom: 20px; background: var(--admin-bg-main); border: 1px solid var(--admin-border); padding: 16px; border-radius: 8px;">
+                <h4 style="font-size: 13px; font-weight: 600; margin-top: 0; margin-bottom: 12px; color: var(--admin-text-primary);">Advanced Tracking (Optional)</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                  <div>
+                    <label style="font-size: 11px; margin-bottom: 4px; display: block; color: var(--admin-text-muted);">SubID</label>
+                    <input type="text" id="link-gen-subid" class="ds-input ds-input-sm" placeholder="e.g. email_blast_1" style="padding: 8px; font-size: 13px; height: 32px;" />
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; margin-bottom: 4px; display: block; color: var(--admin-text-muted);">UTM Source</label>
+                    <input type="text" id="link-gen-utm" class="ds-input ds-input-sm" placeholder="e.g. twitter" style="padding: 8px; font-size: 13px; height: 32px;" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="link-copier-container">
+                <input type="text" id="referral-url-input" class="ds-input ref-input" readonly value="Loading..." />
+                <button class="ds-btn ds-btn-primary" id="copy-ref-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  Copy Link
+                </button>
+              </div>
+
+              <!-- Postback Webhooks Config -->
+              <div class="link-widget-header" style="margin-top: 32px; border-top: 1px solid var(--admin-border); padding-top: 24px;">
+                <h3>S2S Postback Webhook</h3>
+                <p>Advanced tracking (Voluum, RedTrack, etc). URL will be pinged with <code>?subid=X&payout=Y</code>.</p>
+              </div>
+              <div class="link-copier-container">
+                <input type="text" id="postback-url-input" class="ds-input ref-input" placeholder="https://your-tracker.com/postback" value="" />
+                <button class="ds-btn ds-btn-secondary" id="save-postback-btn">
+                  Save
+                </button>
+              </div>
+              <div class="qr-container">
+                <div id="qrcode" class="qr-box"></div>
+                <div class="qr-text">Scan to share</div>
+              </div>
+            </div>
+
+             <!-- Funnel Metrics -->
+             <div class="ds-card stats-card">
+                <div class="stats-header">
+                  <h3>Referral Funnel</h3>
+                  <a href="/affiliate/referrals" class="view-all-link">View All Referrals →</a>
+                </div>
+                <div class="funnel-grid">
+                  <div class="funnel-step">
+                    <div class="f-num" id="f-clicks">0</div>
+                    <div class="f-lbl">Clicks</div>
+                  </div>
+                  <div class="funnel-arr">›</div>
+                  <div class="funnel-step">
+                    <div class="f-num" id="f-registered">0</div>
+                    <div class="f-lbl">Signups</div>
+                  </div>
+                  <div class="funnel-arr">›</div>
+                  <div class="funnel-step">
+                    <div class="f-num" id="f-holdback">0</div>
+                    <div class="f-lbl">Invested (Hold)</div>
+                  </div>
+                  <div class="funnel-arr">›</div>
+                  <div class="funnel-step">
+                    <div class="f-num" id="f-qualified">0</div>
+                    <div class="f-lbl">Qualified</div>
+                  </div>
+                </div>
+             </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="dashboard-side-col">
+            <!-- Tier Progress -->
+            <div class="ds-card tier-progress-card">
+              <h3>Tier Progression</h3>
+              <p class="tier-hint">Upgrade your tier to earn higher commission rates by referring more qualified volume.</p>
+              
+              <div class="tier-visual">
+                <div class="tier-bar-bg">
+                  <div class="tier-bar-fill" id="tier-progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="tier-markers" id="tier-markers">
+                  <!-- Filled by JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="ds-card activity-card" style="margin-bottom: 24px;">
+              <h3>Recent Commissions</h3>
+              <ul class="activity-list" id="recent-commissions-list">
+                <li class="empty-activity">No recent commissions</li>
+              </ul>
+            </div>
+
+            <!-- SubID Tracking Report -->
+            <div class="ds-card table-card">
+              <h3>SubID Tracking Report</h3>
+              <div style="overflow-x: auto;">
+                <table class="ds-table" style="width: 100%; text-align: left; border-collapse: collapse; margin-top: 12px;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--admin-border);">
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">SubID</th>
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Clicks</th>
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Registrations</th>
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Earned (USD)</th>
+                      <th style="padding: 12px; font-weight: 500; color: var(--admin-text-muted);">Pending (USD)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="subid-stats-body">
+                    <tr>
+                      <td colspan="5" style="padding: 24px; text-align: center; color: var(--admin-text-muted);">Loading SubID stats...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // FOUC shield removal
+    document.addEventListener("DOMContentLoaded", () => {
+      document.body.classList.remove('fouc-guard');
+    });
+  </script>
+</body>
+</html>

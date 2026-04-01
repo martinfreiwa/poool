@@ -338,6 +338,15 @@ pub async fn checkout_page(
         serde_json::from_str(service::BANK_DETAILS_IDR).unwrap_or_default();
     let bank_json = serde_json::json!({ "USD": usd, "IDR": idr }).to_string();
 
+    // Check if user is a referred investor for affiliate disclosure display
+    let is_referral_user: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM affiliate_referrals WHERE referred_user_id = $1 LIMIT 1)"
+    )
+    .bind(user.id)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(false);
+
     let template = match state.templates.get_template("checkout.html") {
         Ok(t) => t,
         Err(_) => {
@@ -353,6 +362,7 @@ pub async fn checkout_page(
         cart_json => cart_json,
         wallet_json => wallet_json,
         bank_json => bank_json,
+        is_referral_user => is_referral_user,
     }) {
         Ok(content) => content,
         Err(_) => {
@@ -380,6 +390,13 @@ pub async fn handle_checkout(
     request: axum::http::Request<axum::body::Body>,
 ) -> axum::response::Response {
     let (parts, body) = request.into_parts();
+
+    let client_ip = parts
+        .headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.split(',').next().unwrap_or("0.0.0.0").trim().to_string())
+        .unwrap_or_else(|| "0.0.0.0".to_string());
 
     // Authenticate from the cookie jar extracted from headers
     let cookie_jar = axum_extra::extract::CookieJar::from_headers(&parts.headers);
@@ -414,6 +431,17 @@ pub async fn handle_checkout(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
+    let _ip_address = parts
+        .headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("0.0.0.0")
+        .split(',')
+        .next()
+        .unwrap_or("0.0.0.0")
+        .trim()
+        .to_string();
+
     if let Some(key) = &idempotency_key {
         let insert_res = sqlx::query(
             "INSERT INTO idempotency_keys (key, user_id, request_path, request_method) VALUES ($1, $2, '/checkout', 'POST') ON CONFLICT (key) DO NOTHING"
@@ -441,7 +469,7 @@ pub async fn handle_checkout(
                         let mut headers = HeaderMap::new();
                         headers.insert(
                             axum::http::header::CONTENT_TYPE,
-                            "application/json".parse().unwrap(),
+                            "application/json".parse().unwrap_or_else(|_| axum::http::HeaderValue::from_static("application/json")),
                         );
                         if let Some(redirect) = body.get("redirect_url").and_then(|v| v.as_str()) {
                             if let Ok(hx_redir) = redirect.parse() {
@@ -470,6 +498,7 @@ pub async fn handle_checkout(
     let mut payment_currency_opt: Option<String> = None;
     let mut payment_method_opt: Option<String> = None;
     let mut proof_url: Option<String> = None;
+    let mut disclosure_accepted = false;
 
     if content_type.contains("multipart/form-data") {
         // Rebuild the request to extract multipart
@@ -536,6 +565,11 @@ pub async fn handle_checkout(
                             }
                         }
                     }
+                    "affiliate_disclosure_accepted" => {
+                        if let Ok(text) = field.text().await {
+                            disclosure_accepted = text == "on" || text == "true";
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -551,6 +585,7 @@ pub async fn handle_checkout(
         if let Ok(axum::extract::Form(map)) = form {
             payment_currency_opt = map.get("payment_currency").cloned();
             payment_method_opt = map.get("payment_method").cloned();
+            disclosure_accepted = map.get("affiliate_disclosure_accepted").map(|s| s == "on" || s == "true").unwrap_or(false);
         }
     }
 
@@ -609,13 +644,28 @@ pub async fn handle_checkout(
                 }
             }
 
+            // Masterplan Priority 4: Log Investment Disclosures for tracking
+            if disclosure_accepted {
+                let _ = sqlx::query!(
+                    r#"INSERT INTO investment_disclosures_log
+                       (user_id, order_id, is_referral_user, agreed_to_general, agreed_to_referral, ip_address)
+                       VALUES ($1, $2, true, true, true, $3)"#,
+                    user.id,
+                    result.order_id,
+                    client_ip
+                )
+                .execute(&state.db)
+                .await;
+            }
+
             // Return JSON with redirect URL so the frontend fetch() can reliably read it.
             // Also include HX-Redirect for any HTMX-based callers.
             let mut headers = HeaderMap::new();
-            headers.insert("HX-Redirect", redirect_url.parse().unwrap());
+            let header_val = redirect_url.parse().unwrap_or_else(|_| axum::http::HeaderValue::from_static("/portfolio"));
+            headers.insert("HX-Redirect", header_val);
             headers.insert(
                 axum::http::header::CONTENT_TYPE,
-                "application/json".parse().unwrap(),
+                "application/json".parse().unwrap_or_else(|_| axum::http::HeaderValue::from_static("application/json")),
             );
 
             let json_body = serde_json::json!({
@@ -665,10 +715,11 @@ pub async fn handle_checkout(
                     );
 
                     let mut headers = HeaderMap::new();
-                    headers.insert("HX-Redirect", redirect_url.parse().unwrap());
+                    let header_val = redirect_url.parse().unwrap_or_else(|_| axum::http::HeaderValue::from_static("/portfolio"));
+                    headers.insert("HX-Redirect", header_val);
                     headers.insert(
                         axum::http::header::CONTENT_TYPE,
-                        "application/json".parse().unwrap(),
+                        "application/json".parse().unwrap_or_else(|_| axum::http::HeaderValue::from_static("application/json")),
                     );
 
                     return (

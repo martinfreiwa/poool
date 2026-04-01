@@ -1,5 +1,5 @@
 {% with title="Leaderboard", meta_description="See how you rank among POOOL investors. Track your investor score and compete for top positions.",
-extra_css=['marketplace', 'wallet', 'portfolio', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown',
+extra_css=['leaderboard'], extra_js=['htmx-init', 'profile-dropdown',
 'marketplace-search', 'poool-dropdown'] %}{%
 include
 "components/head.html" %}{% endwith %}
@@ -13,184 +13,128 @@ include
     </div>
 
     <main class="ds-main lb-main">
-      <div class="lb-container">
-        <div class="ds-page-header lb-page-header">
-          <div class="ds-page-header__title-row lb-title-wrapper">
-            <h1 class="ds-page-header__title">Leaderboard</h1>
+      <!-- Sticky Top Bar -->
+      <header class="lb-topbar">
+        <div class="lb-topbar-left">
+          <span class="lb-topbar-title">Leaderboard</span>
+          <div class="lb-topbar-tabs">
+            <button class="lb-topbar-tab active" data-metric="invested" onclick="switchMetricTab('invested', this)">Investment</button>
+            <button class="lb-topbar-tab" data-metric="assets" onclick="switchMetricTab('assets', this)">Assets</button>
+            <button class="lb-topbar-tab" data-metric="roi" onclick="switchMetricTab('roi', this)">ROI</button>
+            <button class="lb-topbar-tab" data-metric="affiliates" onclick="switchMetricTab('affiliates', this)">Affiliates</button>
+            <button class="lb-topbar-tab" data-metric="revenue" onclick="switchMetricTab('revenue', this)">Revenue</button>
+            <button class="lb-topbar-tab" data-metric="highest_inv" onclick="switchMetricTab('highest_inv', this)">Highest Inv.</button>
           </div>
-          <span id="lb-last-updated" class="lb-last-updated"></span>
         </div>
+        <div class="lb-topbar-right">
+          <div class="lb-topbar-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="lb-search-input" placeholder="Search portfolios..." onkeyup="debounceSearch(event)" />
+          </div>
+        </div>
+      </header>
 
-        <!-- Demo data indicator -->
-        <div id="lb-demo-badge" class="lb-demo-badge" style="display: none;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-          </svg>
-          <span>Sample data — rankings update once investments are made</span>
-        </div>
+      <div class="lb-container">
+
 
         <!-- 1. LOADING STATE (Skeleton) -->
         <div id="lb-loading-layer" class="lb-loading-layer">
-          <div class="lb-skeleton-podium">
-            <div class="skeleton-box sk-podium-item"></div>
-            <div class="skeleton-box sk-podium-item sk-podium-first"></div>
-            <div class="skeleton-box sk-podium-item"></div>
+          <div class="lb-skeleton-bento">
+            <div class="skeleton-box sk-bento-item"></div>
+            <div class="skeleton-box sk-bento-item"></div>
+            <div class="skeleton-box sk-bento-item"></div>
           </div>
-          <div class="skeleton-box sk-rank-card"></div>
           <div class="skeleton-box sk-table"></div>
         </div>
 
         <!-- 2. ERROR STATE -->
         <div id="lb-error-layer" class="lb-error-layer">
-          <svg  class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           <h3 class="state-title">Failed to load leaderboard</h3>
           <p class="state-desc">We couldn't fetch the rankings. Please try again or contact support.</p>
-          <button class="ds-btn ds-btn--secondary retry-btn" onclick="location.reload()">Retry Connection</button>
+          <button class="retry-btn" onclick="location.reload()">Retry Connection</button>
         </div>
 
         <!-- 3. EMPTY STATE -->
         <div id="lb-empty-layer" class="lb-empty-layer">
-          <svg  class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M8 21h8M12 17v4M7 4h10M17 4v8a5 5 0 0 1-10 0V4" />
           </svg>
           <h3 class="state-title">Be the first on the leaderboard</h3>
           <p class="state-desc">Start investing to earn your Investor Score and climb the rankings.</p>
-          <a href="/marketplace" class="ds-btn ds-btn--primary retry-btn" style="text-decoration:none;">Explore Marketplace</a>
+          <a href="/marketplace" class="retry-btn">Explore Marketplace</a>
         </div>
 
         <!-- 4. CONTENT STATE -->
         <div id="lb-content-layer" class="lb-content-layer hidden">
 
-          <!-- Controls: Timeframe + Metric -->
-          <div class="lb-timeframe-bar" style="margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-            <!-- Timeframe toggle (left) -->
-            <div style="display: flex; gap: 0; background: #ffffff; border: 1px solid var(--card-border-color); border-radius: 10px; padding: 4px;">
+          <!-- Controls: Timeframe + Metric Select -->
+          <div class="lb-controls-bar">
+            <div class="lb-tf-group">
               <button class="lb-tf-btn active" data-timeframe="alltime" onclick="switchTimeframe('alltime', this)">All-Time</button>
               <button class="lb-tf-btn" data-timeframe="weekly" onclick="switchTimeframe('weekly', this)">This Week</button>
               <button class="lb-tf-btn" data-timeframe="monthly" onclick="switchTimeframe('monthly', this)">This Month</button>
             </div>
-            <!-- Metric dropdown (right) -->
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <span style="font-weight: 500; color: var(--body-color); white-space: nowrap;">Ranking By:</span>
-              <select id="lb-metric-select" class="ds-select lb-select" onchange="switchMetric()" style="min-width: 250px;">
-                <option value="invested">Total Investment</option>
-                <option value="assets">Number of Assets</option>
-                <option value="roi">Portfolio ROI</option>
-                <option value="affiliates">Affiliates Count</option>
-                <option value="revenue">Affiliate Revenue</option>
-                <option value="highest_inv">Highest Single Investment</option>
-              </select>
-            </div>
+
+
           </div>
 
-          <!-- Podium: Top 3 -->
-          <div class="lb-podium" id="lb-podium">
-            <!-- #2 -->
-            <div class="lb-podium-slot lb-podium-second" id="lb-podium-2">
-              <div class="lb-podium-avatar-wrap silver">
-                <img id="lb-podium-2-avatar" src="/static/images/Image.webp" alt="2nd place" class="lb-podium-avatar" />
-                <div class="lb-podium-medal">2</div>
-              </div>
-              <span id="lb-podium-2-name" class="lb-podium-name">—</span>
-              <span id="lb-podium-2-score" class="lb-podium-score">—</span>
-              <span id="lb-podium-2-tier" class="lb-podium-tier-badge"></span>
-            </div>
-            <!-- #1 -->
-            <div class="lb-podium-slot lb-podium-first" id="lb-podium-1">
-              <div class="lb-podium-crown">
-                <svg  width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
-                  <path d="M5 16h14v4H5z" />
-                </svg>
-              </div>
-              <div class="lb-podium-avatar-wrap gold">
-                <img id="lb-podium-1-avatar" src="/static/images/Image.webp" alt="1st place" class="lb-podium-avatar" />
-                <div class="lb-podium-medal">1</div>
-              </div>
-              <span id="lb-podium-1-name" class="lb-podium-name">—</span>
-              <span id="lb-podium-1-score" class="lb-podium-score">—</span>
-              <span id="lb-podium-1-tier" class="lb-podium-tier-badge"></span>
-            </div>
-            <!-- #3 -->
-            <div class="lb-podium-slot lb-podium-third" id="lb-podium-3">
-              <div class="lb-podium-avatar-wrap bronze">
-                <img id="lb-podium-3-avatar" src="/static/images/Image.webp" alt="3rd place" class="lb-podium-avatar" />
-                <div class="lb-podium-medal">3</div>
-              </div>
-              <span id="lb-podium-3-name" class="lb-podium-name">—</span>
-              <span id="lb-podium-3-score" class="lb-podium-score">—</span>
-              <span id="lb-podium-3-tier" class="lb-podium-tier-badge"></span>
-            </div>
+          <!-- Top 3: Bento Cards -->
+          <div class="lb-bento-grid" id="lb-bento-grid">
+            <!-- Dynamically populated by JS -->
           </div>
 
-          <!-- Your Rank Card -->
-          <div class="ds-card lb-your-rank-card" id="lb-my-rank-card">
-            <div class="lb-yr-left">
-              <span class="lb-yr-label">Your Position</span>
-              <div class="lb-yr-rank-row">
-                <span class="lb-yr-rank" id="lb-my-rank">#—</span>
-              </div>
-            </div>
-            <div class="lb-yr-center" style="flex: 1; text-align: center;">
-              <span class="lb-yr-score-label" id="lb-my-metric-label">Total Investment</span>
-              <span class="lb-yr-score ds-text-money" id="lb-my-score">0</span>
-            </div>
-            <div class="lb-yr-visibility">
-              <label class="lb-toggle-label">
-                <input type="checkbox" id="lb-visibility-toggle" onchange="toggleVisibility(this)" />
-                <span class="lb-toggle-slider"></span>
-              </label>
-              <span class="lb-yr-vis-text">Show my name</span>
-            </div>
+
+          <!-- Ranks 4–9: Compact Cards -->
+          <div class="lb-minor-grid" id="lb-minor-grid">
+            <!-- Dynamically populated by JS -->
           </div>
 
-        <!-- Rankings Table -->
-          <div class="ds-table-container lb-table-card">
-            <div class="lb-table-header">
-              <h3>Rankings</h3>
-              <div class="lb-table-filters">
-                <div class="lb-search-wrap">
-                  <svg  class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                  </svg>
-                  <input type="text" id="lb-search-input" class="ds-input" placeholder="Search investor..." onkeyup="debounceSearch(event)" />
-                </div>
-                <select id="lb-tier-filter" class="ds-select lb-select" onchange="applyFilters()">
-                  <option value="">All Tiers</option>
-                  <option value="5">Premium</option>
-                  <option value="4">Elite</option>
-                  <option value="3">Pro</option>
-                  <option value="2">Plus</option>
-                  <option value="1">Intro</option>
+          <!-- Rankings Ledger Table -->
+          <div class="lb-ledger-card">
+            <div class="lb-ledger-header">
+              <h2 class="lb-ledger-title">Global Tier Listings</h2>
+              <div class="lb-ledger-actions">
+                <span id="lb-total-participants" class="lb-ledger-title" style="opacity: 0.6;"></span>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="lb-ledger-table" id="lb-rankings-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Entity</th>
+                    <th class="col-mix">Asset Mix</th>
+                    <th class="text-right" id="lb-table-metric-header">Holdings</th>
+                    <th class="text-right col-yield">Yield (ROI)</th>
+                    <th class="text-right col-status">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="lb-rankings-body">
+                  <!-- Filled by JS -->
+                </tbody>
+              </table>
+            </div>
+            <div class="lb-ledger-footer">
+              <div class="lb-per-page">
+                <span>Rows per page:</span>
+                <select id="lb-per-page-select" class="ds-select lb-select-mini" onchange="changePerPage(this.value)">
+                  <option value="10" selected>10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
                 </select>
               </div>
-            </div>
-            <div class="lb-table-meta">
-              <span id="lb-total-participants" class="lb-participants-count"></span>
-            </div>
-            <table class="ds-table lb-table" id="lb-rankings-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Investor</th>
-                  <th id="lb-table-metric-header">Total Investment</th>
-                  <th>Tier</th>
-                </tr>
-              </thead>
-              <tbody id="lb-rankings-body">
-                <!-- Filled by JS -->
-              </tbody>
-            </table>
-            <div class="lb-load-more" id="lb-load-more-container">
-              <button id="lb-load-more-btn" class="ds-btn ds-btn--secondary" onclick="loadMore()">Load More Rankings</button>
+              <div class="lb-pagination" id="lb-pagination-controls">
+                <!-- Dynamically populated by JS (Prev, 1, 2, 3..., Next) -->
+              </div>
             </div>
           </div>
 
@@ -199,7 +143,7 @@ include
     </main>
   </div>
 
-  <script src="/static/js/leaderboard.js?v=3"></script>
+  <script src="/static/js/leaderboard.js?v=4"></script>
   <script src="/static/js/legal-enhancements.js"></script>
   <script src="/static/js/mobile-navigation.js"></script>
 </body>

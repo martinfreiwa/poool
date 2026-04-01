@@ -12,8 +12,9 @@ use axum::{
 pub fn router() -> Router<AppState> {
     use routes::*;
     Router::new()
-        // HTML page — V2 is now the primary settings page
-        .route("/settings", get(page_settings_2))
+        // HTML page — V3 is now the primary settings page
+        .route("/settings", get(page_settings_3))
+        .route("/settings-2", get(page_settings_2))
         .route("/settings-3", get(page_settings_3))
         .route("/account-deletion", get(page_account_deletion))
         // JSON API

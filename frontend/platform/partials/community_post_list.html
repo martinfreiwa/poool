@@ -1,0 +1,25 @@
+{% if posts | length == 0 %}
+    {% if current_feed_mode == 'following' %}
+        <div style="padding: 40px 24px; color: #667085; text-align: center; background: white; border-radius: 12px; border: 1px solid #EAECF0;">
+            <div style="font-size: 24px; margin-bottom: 12px;">🔭</div>
+            <h3 style="margin-bottom: 8px; font-weight: 600; color: #101828;">Nothing to see here yet</h3>
+            <p style="font-size: 14px;">You aren't following anyone yet, or the people you follow haven't posted.</p>
+            <button class="ds-btn ds-btn--secondary" style="margin-top: 16px;" hx-get="/community/partials/feed/list?feed_mode=all" hx-target="#community-feed-container">View All Posts</button>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px 20px; color: #667085;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D0D5DD" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;">
+                <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <path d="M2 15h10"></path>
+                <path d="M9 18l3-3-3-3"></path>
+            </svg>
+            <div style="font-size: 16px; font-weight: 500; color: #101828; margin-bottom: 4px;">No posts found</div>
+            <div style="font-size: 14px;">There are no posts in this feed yet.</div>
+        </div>
+    {% endif %}
+{% else %}
+    {% for p in posts %}
+        {% include "partials/community_post_card.html" %}
+    {% endfor %}
+{% endif %}

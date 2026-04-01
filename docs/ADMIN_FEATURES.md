@@ -364,7 +364,7 @@ All sidebar links are **clickable and functional** (`admin-sidebar-loader.js` dy
 | Search | `#deposit-search` | ✅ Working |
 | Status filter | `#filter-status` | ✅ Working (Pending, Confirmed, Expired, Failed, Cancelled) |
 | Currency filter | `#filter-currency` | ✅ Working (USD, IDR) |
-| Provider filter | `#filter-provider` | ✅ Working (Stripe, Xendit, Manual/Wire) |
+| Provider filter | `#filter-provider` | ✅ Working (Stripe, OCBC, Manual/Wire) |
 
 ### Deposit Actions (per row, for pending deposits)
 

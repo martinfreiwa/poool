@@ -14,7 +14,18 @@ include
       {% include 'components/sidebar.html' %}
     </div>
 
-    <main class="ds-main rewards-main">
+    {% if affiliate_status == 'pending_approval' %}
+    <!-- Pending Approval Blur Overlay -->
+    <div style="position: fixed; top: 0; left: 248px; right: 0; bottom: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2);">
+       <div class="ds-card" style="max-width: 440px; padding: 48px 32px; text-align: center; box-shadow: 0 16px 48px rgba(0,0,0,0.1); background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(0,0,0,0.05); border-radius: 24px;">
+
+         <h2 style="font-size: 24px; margin-bottom: 12px; color: #101828; font-family: 'TT Norms Pro', sans-serif; font-weight: 500;">Application Under Review</h2>
+         <p style="color: #475467; font-size: 16px; line-height: 1.6; margin-bottom: 0;">Our compliance team is currently reviewing your Partner Syndicate profile. Activation typically takes 1-3 business days.</p>
+       </div>
+    </div>
+    {% endif %}
+
+    <main class="ds-main rewards-main" {% if affiliate_status == 'pending_approval' %}style="filter: blur(8px); pointer-events: none; user-select: none;"{% endif %}>
       <div class="rewards-container">
         <div class="ds-page-header rewards-page-header">
           <div class="ds-page-header__title-row rewards-title-wrapper">
@@ -552,13 +563,9 @@ include
                     Total Clicks
                   </span>
                 </div>
-                <div class="metric-card-value">1,248</div>
-                <div class="metric-card-trend positive">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3.5 8.5L8.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                    <path d="M8.5 8.5V3.5H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                  </svg>
-                  <span class="financials-percent">+12% mo.</span>
+                <div class="metric-card-value">--</div>
+                <div class="metric-card-trend neutral">
+                  <span class="financials-percent"></span>
                 </div>
               </div>
 
@@ -577,13 +584,9 @@ include
                     Total Signups
                   </span>
                 </div>
-                <div class="metric-card-value">84</div>
+                <div class="metric-card-value">--</div>
                 <div class="metric-card-trend neutral">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="22" y1="12" x2="2" y2="12" />
-                    <polyline points="15 5 22 12 15 19" />
-                  </svg>
-                  <span class="financials-percent">6.7% CVR mo.</span>
+                  <span class="financials-percent"></span>
                 </div>
               </div>
 
@@ -602,13 +605,9 @@ include
                     Qualified Investors
                   </span>
                 </div>
-                <div class="metric-card-value">12</div>
-                <div class="metric-card-trend positive">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3.5 8.5L8.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                    <path d="M8.5 8.5V3.5H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                  </svg>
-                  <span class="financials-percent">+2 mo.</span>
+                <div class="metric-card-value">--</div>
+                <div class="metric-card-trend neutral">
+                  <span class="financials-percent"></span>
                 </div>
               </div>
 
@@ -627,13 +626,9 @@ include
                     Total Affiliate
                   </span>
                 </div>
-                <div class="metric-card-value">USD 45k</div>
-                <div class="metric-card-trend positive">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3.5 8.5L8.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                    <path d="M8.5 8.5V3.5H3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                  </svg>
-                  <span class="financials-percent">Top 5% mo.</span>
+                <div class="metric-card-value">--</div>
+                <div class="metric-card-trend neutral">
+                  <span class="financials-percent"></span>
                 </div>
               </div>
             </div>
@@ -1347,7 +1342,38 @@ include
 
           <!-- Tab 5: Commissions -->
           <div id="commissions-tab" class="rewards-tab-panel hidden">
+            
+            <!-- Commissions Summary Grid -->
+            <div class="commissions-summary-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px;">
+              <div class="quick-insights-card">
+                <div class="insights-content" style="display:flex; flex-direction:column; gap:8px;">
+                  <span class="insights-title" style="color:#667085; font-size:14px;">Total earned</span>
+                  <div class="insights-value">
+                    <span class="financials-currency" style="font-size:24px;">$</span>
+                    <span id="commissions-total-earned" class="financials-amount" style="font-size:24px;">0</span>
+                  </div>
+                </div>
+              </div>
+              <div class="quick-insights-card">
+                <div class="insights-content" style="display:flex; flex-direction:column; gap:8px;">
+                  <span class="insights-title" style="color:#667085; font-size:14px;">Available balance</span>
+                  <div class="insights-value">
+                    <span class="financials-currency" style="font-size:24px;">$</span>
+                    <span id="commissions-available-balance" class="financials-amount" style="font-size:24px;">0</span>
+                  </div>
+                </div>
+              </div>
+              <div class="quick-insights-card">
+                <div class="insights-content" style="display:flex; flex-direction:column; gap:8px;">
+                  <span class="insights-title" style="color:#667085; font-size:14px;">Next payout</span>
+                  <div class="insights-value">
+                    <span id="commissions-next-payout" class="financials-amount" style="font-size:24px; font-weight:600;">--</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
+            <h2 class="section-title">Payout settings</h2>
             <!-- Payout Method Card -->
             <div class="commissions-card">
               <div class="commissions-card-header">
@@ -1356,7 +1382,6 @@ include
                   <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
                   <line x1="1" y1="10" x2="23" y2="10"></line>
                 </svg>
-                <h3>Payout method</h3>
               </div>
 
               <form id="payout-settings-form" class="commissions-form" onsubmit="savePayoutSettings(event)">
@@ -1364,49 +1389,40 @@ include
                   <div class="commissions-form-field">
                     <label for="payout-payment-method" class="settings-form-row__label"
                       style="padding:0; margin-bottom: 2px;">Payment method</label>
-                    <div class="settings-select-wrapper" style="width: 100%;">
-                      <select id="payout-payment-method" class="settings-select">
-                        <option value="paypal">PayPal</option>
-                        <option value="bank_transfer" selected>Bank Transfer</option>
-                      </select>
-                      <svg class="settings-select-wrapper__icon-right" width="16" height="16" viewBox="0 0 16 16"
-                        fill="none">
-                        <path d="M4 6L8 10L12 6" stroke="#717680" stroke-width="1.33" stroke-linecap="round"
-                          stroke-linejoin="round" />
-                      </svg>
-                    </div>
+                    <select id="payout-payment-method" class="ds-select" style="width: 100%;">
+                      <option value="paypal">PayPal</option>
+                      <option value="bank_transfer" selected>Bank Transfer</option>
+                    </select>
                   </div>
                 </div>
 
-                <div class="commissions-form-row commissions-form-row--2col">
+                <div class="commissions-form-row">
                   <div class="commissions-form-field">
-                    <label for="payout-account-email" class="settings-form-row__label"
-                      style="padding:0; margin-bottom: 2px;">Account</label>
-                    <input type="text" id="payout-account-email" class="settings-input"
-                      placeholder="e.g. your@email.com" />
+                    <label for="payout-account-email" class="settings-form-row__label">Account email</label>
+                    <input type="text" id="payout-account-email" class="settings-input" placeholder="e.g. your@email.com" />
                   </div>
                   <div class="commissions-form-field">
-                    <label for="payout-full-name" class="settings-form-row__label"
-                      style="padding:0; margin-bottom: 2px;">Full name / Company name</label>
+                    <label for="payout-full-name" class="settings-form-row__label">Full name / Company name</label>
                     <input type="text" id="payout-full-name" class="settings-input" placeholder="Full name" />
                   </div>
                 </div>
 
                 <div class="commissions-form-row">
                   <div class="commissions-form-field">
-                    <label for="payout-vat" class="settings-form-row__label" style="padding:0; margin-bottom: 2px;">VAT
-                      No (optional)</label>
+                    <label for="payout-vat" class="settings-form-row__label">VAT No (optional)</label>
                     <input type="text" id="payout-vat" class="settings-input" placeholder="e.g. U12345678" />
                   </div>
+                  <div class="commissions-form-field"></div>
                 </div>
 
-                <button type="submit" class="ds-btn ds-btn--primary settings-btn settings-btn--primary"
-                  id="payout-save-btn" style="margin-top: 8px;">SAVE</button>
+                <button type="submit" class="ds-btn ds-btn--primary"
+                  id="payout-save-btn" style="margin-top: 8px; width: 100%;">Save settings</button>
               </form>
             </div>
 
             <!-- Commissions List Card -->
-            <div class="commissions-card" style="margin-top: 32px;">
+            <h2 class="section-title" style="margin-top: 32px;">Commissions</h2>
+            <div class="commissions-card">
               <div class="commissions-card-header">
                 <div class="commissions-list-title">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="1.5"
@@ -1417,7 +1433,6 @@ include
                     <line x1="16" y1="17" x2="8" y2="17"></line>
                     <polyline points="10 9 9 9 8 9"></polyline>
                   </svg>
-                  <h3>Commissions list</h3>
                 </div>
                 <div class="commissions-date-picker">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2"
@@ -1434,19 +1449,53 @@ include
               </div>
 
               <div class="commissions-table-wrap">
-                <table class="commissions-table" id="commissions-table">
-                  <thead>
+                <table class="ds-table data-table" id="commissions-table">
+                  <thead class="data-table__header">
                     <tr>
-                      <th>PAYMENT PERIOD</th>
-                      <th style="text-align:right">PAYMENT AMOUNT</th>
-                      <th>PAYMENT METHOD</th>
-                      <th>STATUS</th>
-                      <th style="text-align:right">INVOICE</th>
+                      <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB; width: 30%;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                          <img src="/static/images/calendar-check-02.svg" width="16" height="16" alt="Period">
+                          PAYMENT PERIOD
+                        </div>
+                      </th>
+                      <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB; text-align:right;">
+                        <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
+                          <img src="/static/images/coins-stacked-03.svg" width="16" height="16" alt="Amount">
+                          AMOUNT
+                        </div>
+                      </th>
+                      <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                          <img src="/static/images/wallet-02.svg" width="16" height="16" alt="Method">
+                          METHOD
+                        </div>
+                      </th>
+                      <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                          <img src="/static/images/check-verified-02.svg" width="16" height="16" alt="Status">
+                          STATUS
+                        </div>
+                      </th>
+                      <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB; text-align:right;">
+                        <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
+                          INVOICE
+                          <img src="/static/images/arrow-down.svg" width="12" height="12" alt="Sort">
+                        </div>
+                      </th>
                     </tr>
                   </thead>
-                  <tbody id="commissions-table-body">
-                    <tr>
-                      <td colspan="5" style="text-align:center; padding:32px 0; color:#98a2b3;">Loading commissions…
+                  <tbody class="data-table__body" id="commissions-table-body">
+                    <tr class="data-table__row">
+                      <td class="data-table__td" colspan="5" style="text-align:center; padding:64px 24px; color:#667085; border-bottom:none;">
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+                          <div style="width:48px; height:48px; background:#f9fafb; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+                            <img src="/static/images/coins-stacked-03.svg" width="24" height="24" style="opacity:0.4">
+                          </div>
+                          <div>
+                            <div style="font-weight:600; color:#101828; font-size:16px; margin-bottom:4px;">No commissions found</div>
+                            <div style="font-size:14px;">We couldn't find any payouts for the selected period.</div>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   </tbody>

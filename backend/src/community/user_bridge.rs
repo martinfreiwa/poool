@@ -165,7 +165,7 @@ pub async fn get_users_info_batch(
         if let Some(pool) = redis_pool {
             if let Ok(mut conn) = pool.get().await {
                 // Using a pipeline for efficient batch setting
-                use redis::AsyncCommands;
+
                 let mut p = redis::pipe();
                 for r in &rows {
                     let info = UserBridgeInfo {

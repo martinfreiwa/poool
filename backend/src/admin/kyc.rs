@@ -147,6 +147,20 @@ pub async fn api_admin_kyc_approve(
 
     match updated {
         Ok(r) if r.rows_affected() > 0 => {
+            // GAP-06: Affiliate referral state machine — advance any 'registered' referral to 'kyc_approved'
+            // for this user so that the funnel stages are accurately tracked.
+            let _ = sqlx::query(
+                r#"UPDATE affiliate_referrals
+                   SET status = 'kyc_approved', updated_at = NOW()
+                   WHERE referred_user_id = (
+                       SELECT user_id FROM kyc_records WHERE id = $1 LIMIT 1
+                   )
+                   AND status = 'registered'"#
+            )
+            .bind(uid)
+            .execute(&state.db)
+            .await;
+
             Ok(Json(serde_json::json!({"status": "approved"})).into_response())
         }
         Ok(_) => Err(ApiError::NotFound(

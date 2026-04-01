@@ -261,6 +261,19 @@ pub async fn process_webhook_update(
         }
     }
 
+    // Phase 18 / 19: Intermediate Funnel Checkpoints (Affiliate Sync)
+    // Update any pending referral stages to 'kyc_approved'
+    if new_status == "approved" {
+        let _ = sqlx::query(
+            r#"UPDATE affiliate_referrals 
+               SET status = 'kyc_approved', updated_at = NOW() 
+               WHERE referred_user_id = $1 AND status IN ('attributed', 'registered')"#
+        )
+        .bind(user_id)
+        .execute(pool)
+        .await;
+    }
+
     // Audit log
     let _ = sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
