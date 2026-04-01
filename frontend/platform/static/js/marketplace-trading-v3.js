@@ -220,12 +220,16 @@
 
         // Gallery — Mosaic layout
         const mainImg = document.getElementById('tv3-main-img');
+        mainImg.classList.remove('loaded');
+        mainImg.parentElement.classList.remove('img-loading-complete');
         mainImg.src = asset.images[0];
         mainImg.alt = asset.name;
 
         // Fill 4 mosaic grid thumbnails
-        const mosaicThumbs = document.querySelectorAll('.tv3-mosaic-thumb img');
+        const mosaicThumbs = document.querySelectorAll('.tv3-mosaic-thumb > img:not(.tv3-loader-logo)');
         mosaicThumbs.forEach((img, i) => {
+            img.classList.remove('loaded');
+            img.parentElement.classList.remove('img-loading-complete');
             const imgIdx = i + 1;
             if (asset.images[imgIdx]) {
                 img.src = asset.images[imgIdx];
@@ -240,9 +244,23 @@
         document.querySelectorAll('.tv3-mosaic-thumb').forEach((thumb) => {
             thumb.addEventListener('click', () => {
                 const thumbImg = thumb.querySelector('img');
-                const oldMain = mainImg.src;
-                mainImg.src = thumbImg.src;
-                thumbImg.src = oldMain;
+                if (!thumbImg || !mainImg) return;
+                
+                // Track swap
+                const oldMainSrc = mainImg.src;
+                const newMainSrc = thumbImg.src;
+                
+                if (oldMainSrc === newMainSrc) return;
+
+                // Reset loading state for both to trigger fade-in again
+                mainImg.classList.remove('loaded');
+                mainImg.parentElement.classList.remove('img-loading-complete');
+                thumbImg.classList.remove('loaded');
+                thumbImg.parentElement.classList.remove('img-loading-complete');
+
+                // Perform swap — the 'onload' attribute in HTML will trigger the fade-back-in
+                mainImg.src = newMainSrc;
+                thumbImg.src = oldMainSrc;
             });
         });
     }
@@ -278,7 +296,8 @@
         document.getElementById('tv3-fin-note2').textContent = 'Based on ' + asset.annualYield + '% annual rental yield';
 
         // Location
-        document.getElementById('tv3-loc-subtitle').textContent = asset.city + ', ' + asset.country;
+        const locSubtitle = document.getElementById('tv3-loc-subtitle');
+        if (locSubtitle) locSubtitle.textContent = asset.city + ', ' + asset.country;
         document.getElementById('tv3-loc-desc').textContent = asset.locationDesc || '';
     }
 
@@ -316,6 +335,25 @@
             depthBuy.textContent = buyData.totalShares > 0
                 ? buyData.totalShares + ' buy offers from ' + fmt(buyData.bestPrice)
                 : 'No buy offers placed';
+        }
+    }
+
+    function populateCalculator(asset) {
+        const slider = document.getElementById('tv3-calc-slider-1');
+        const limitLabel = document.getElementById('tv3-calc-slider-limit-1');
+        if (slider && asset.propertyValue) {
+            slider.max = Math.round(asset.propertyValue);
+            // If the current value is still the default 100k, we set it to the max if max < 100k, 
+            // or keep it at 100k if max > 100k.
+            if (slider.value === "100000") {
+                slider.value = Math.min(100000, asset.propertyValue).toString();
+            }
+            if (limitLabel) {
+                limitLabel.textContent = '$' + new Intl.NumberFormat('en-US').format(Math.round(asset.propertyValue));
+            }
+            // Trigger track fill update
+            const event = new Event('input');
+            slider.dispatchEvent(event);
         }
     }
 
@@ -521,6 +559,7 @@
         populateHero(asset);
         populateDetails(asset);
         populateTradeWidget(asset);
+        populateCalculator(asset);
 
         // Initialize trade widget
         updateMarketInfo();
