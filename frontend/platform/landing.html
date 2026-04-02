@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>POOOL – Fractional Real World Asset Investment</title>
+  <meta name="description" content="Invest in fractional real world assets starting from $500. Premium Bali villas, beachfront properties, and commodities.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/static/css/bundle.css">
+  <link rel="stylesheet" href="/static/css/marketplace.css">
+  <link rel="stylesheet" href="/static/css/landing.css">
+  <link rel="stylesheet" href="/static/css/landing-property-cards.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="lp-header" id="lp-header">
+    <div class="container header-inner">
+      <a href="/" class="header-logo"><img src="/static/images/logo-pool.svg" alt="POOOL"></a>
+      <div class="header-search-pill" onclick="document.getElementById('marketplace').scrollIntoView({behavior:'smooth'})">
+        <div class="pill-segment">Bali</div>
+        <div class="pill-segment">Villas</div>
+        <div class="pill-segment">Any yield</div>
+        <button class="pill-search-btn" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16 16l4 4"/></svg></button>
+      </div>
+      <div class="header-actions">
+        <a href="/login" class="header-action-link">List your property</a>
+        <button class="user-menu-btn" onclick="window.location.href='/login'">
+          <svg class="hamburger-icon" viewBox="0 0 16 16"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
+          <div class="avatar-circle"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="hero-text anim-in">
+          <div class="hero-eyebrow">✦ Fractional Real World Assets</div>
+          <h1 class="hero-title">Own premium assets<br><span class="text-gradient">one token at a time</span></h1>
+          <p class="hero-sub">POOOL democratizes high-yield real estate and secure commodities. Start with $500 and earn monthly dividends backed by notarised legal ownership.</p>
+          <div class="hero-btns">
+            <a href="#marketplace" class="btn-primary">Browse Marketplace</a>
+            <a href="#how" class="btn-secondary">How it Works</a>
+          </div>
+          <div class="hero-metrics">
+            <div class="metric-item"><strong>$42.5M+</strong><span>Total Volume</span></div>
+            <div class="metric-item"><strong>12.4%</strong><span>Avg. Annual Return</span></div>
+            <div class="metric-item"><strong>850+</strong><span>Active Investors</span></div>
+          </div>
+        </div>
+        <div class="hero-media anim-in" style="animation-delay:0.2s">
+          <div class="hero-card-stack">
+            <div class="hero-main-card">
+              <img src="/static/images/villa1.webp" alt="Property">
+              <div class="main-card-content">
+                <div class="main-card-tag">NEW LISTING</div>
+                <h3>Sunset Luxury Villa</h3>
+                <div class="main-card-price">USD 500,000</div>
+              </div>
+            </div>
+            <div class="hero-float-card card-1"><div class="float-icon">🏠</div><div><h4>Asset Backed</h4><p>Notarised deeds</p></div></div>
+            <div class="hero-float-card card-2"><div class="float-icon">💰</div><div><h4>Monthly Yields</h4><p>Paid in USD</p></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LISTINGS -->
+  <section class="marketplace-section" style="background:#F9FAFB" id="marketplace">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" style="font-size:24px">Featured Opportunities</h2>
+          <p class="section-sub">Browse our hand-picked selection of premium real estate and commodities.</p>
+        </div>
+      </div>
+
+      <div class="property-grid lp-grid card-v19">
+        <!-- V19 Layout is now the Standard -->
+        <div class="property-card">
+          <div class="property-gallery">
+            <div class="property-image-container">
+              <img src="/static/images/villa1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Villa">
+              <img src="/static/images/villa1_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa">
+              <img src="/static/images/villa1_3.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa">
+              <img src="/static/images/villa1_4.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa">
+              <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div><div class="property-dot"></div></div>
+            </div>
+            <div class="property-badge ds-badge ds-badge--overlay ds-badge--leasehold"><span class="badge-text">Standard Leasehold</span></div>
+          </div>
+          <div class="property-content">
+            <div class="card-meta-row">
+              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Beds" width="16" height="16"><span>4</span></div>
+              <div class="card-meta-divider"></div>
+              <div class="card-meta-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg>
+                <span>4 Bath</span>
+              </div>
+              <div class="card-meta-divider"></div>
+              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="ID"><span>Canggu, ID</span></div>
+            </div>
+            <div class="property-heading"><h3 class="property-title">Sunset Luxury Villa</h3></div>
+            <div class="property-pricing">
+              <div class="price-wrapper"><span class="property-price">USD 500</span><span class="funded-percentage">68% funded</span></div>
+              <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:68%"></div></div>
+            </div>
+            <div class="investment-details">
+              <div class="investment-row"><span class="investment-label">Investment duration</span><span class="investment-value">—</span></div>
+              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">6.0%</span></div>
+              <div class="investment-row"><span class="investment-label">Projected annualised net return</span><span class="investment-value">12.4%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="property-card">
+          <div class="property-gallery">
+            <div class="property-image-container">
+              <img src="/static/images/villa4_1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Villa">
+              <img src="/static/images/villa4_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa">
+              <img src="/static/images/villa2_1.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa">
+              <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div></div>
+            </div>
+            <div class="property-badge ds-badge ds-badge--overlay ds-badge--freehold"><span class="badge-text">Freehold</span></div>
+          </div>
+          <div class="property-content">
+            <div class="card-meta-row">
+              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Beds" width="16" height="16"><span>2</span></div>
+              <div class="card-meta-divider"></div>
+              <div class="card-meta-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg>
+                <span>2 Bath</span>
+              </div>
+              <div class="card-meta-divider"></div>
+              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="ID"><span>Seminyak, ID</span></div>
+            </div>
+            <div class="property-heading"><h3 class="property-title">Ocean Breeze Penthouse</h3></div>
+            <div class="property-pricing">
+              <div class="price-wrapper"><span class="property-price">USD 380</span><span class="funded-percentage">91% funded</span></div>
+              <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:91%"></div></div>
+            </div>
+            <div class="investment-details">
+              <div class="investment-row"><span class="investment-label">Investment duration</span><span class="investment-value">—</span></div>
+              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">3.8%</span></div>
+              <div class="investment-row"><span class="investment-label">Projected annualised net return</span><span class="investment-value">11.2%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="property-card">
+          <div class="property-gallery">
+            <div class="property-image-container">
+              <img src="/static/images/villa3_2.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Villa">
+              <img src="/static/images/villa3_1.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa">
+              <img src="/static/images/villa2_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa">
+              <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div></div>
+            </div>
+            <div class="property-badge ds-badge ds-badge--overlay ds-badge--leasehold"><span class="badge-text">Standard Leasehold</span></div>
+          </div>
+          <div class="property-content">
+            <div class="card-meta-row">
+              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Beds" width="16" height="16"><span>2</span></div>
+              <div class="card-meta-divider"></div>
+              <div class="card-meta-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg>
+                <span>2 Bath</span>
+              </div>
+              <div class="card-meta-divider"></div>
+              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="ID"><span>Canggu, ID</span></div>
+            </div>
+            <div class="property-heading"><h3 class="property-title">Echo Beach Loft</h3></div>
+            <div class="property-pricing">
+              <div class="price-wrapper"><span class="property-price">USD 280</span><span class="funded-percentage">8% funded</span></div>
+              <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:8%"></div></div>
+            </div>
+            <div class="investment-details">
+              <div class="investment-row"><span class="investment-label">Investment duration</span><span class="investment-value">—</span></div>
+              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">8.0%</span></div>
+              <div class="investment-row"><span class="investment-label">Projected annualised net return</span><span class="investment-value">16.2%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY POOOL -->
+  <section class="why-section" id="why">
+    <div class="container">
+      <div class="section-header" style="margin-bottom:48px;">
+        <div>
+          <h2 class="section-title">Why investors choose POOOL</h2>
+          <p class="section-sub">Institutional-grade infrastructure meets consumer simplicity</p>
+        </div>
+      </div>
+      <div class="why-grid">
+        <div class="why-card">
+          <div class="why-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>100% Legal & Notarised</h3>
+          <p>Every asset is fully notarised with Indonesian notary public. Your ownership is legally binding and documented.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3l-4 4-4-4"/></svg>
+          </div>
+          <h3>Start from $15</h3>
+          <p>No minimum investment barriers. Own fractional shares in premium assets previously reserved for high-net-worth individuals.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3>Monthly Passive Income</h3>
+          <p>Receive rental yields and commodity returns paid directly to your wallet every month. Track earnings in real-time.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+          </div>
+          <h3>Vetted & Managed</h3>
+          <p>Our team inspects every property, audits every commodity source, and manages ongoing operations professionally.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.5"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+          </div>
+          <h3>Secondary Market</h3>
+          <p>Full liquidity. Trade your shares anytime on our built-in peer-to-peer secondary marketplace.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <h3>Community of 850+ Investors</h3>
+          <p>Join a growing community of international investors who trust POOOL to diversify their portfolios.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section" id="how">
+    <div class="container">
+      <div class="how-header">
+        <h2>How POOOL Works</h2>
+        <p>Three simple steps to start building your real-estate portfolio</p>
+      </div>
+      <div class="how-grid">
+        <div class="how-step">
+          <img src="/static/images/how-it-works/step1.png" alt="Create Account" class="how-step-img">
+          <div class="how-step-number">1</div>
+          <h3>Create Account</h3>
+          <p>Sign up and verify your identity in under 3 minutes through our secure KYC process. All you need is an ID document.</p>
+        </div>
+        <div class="how-step">
+          <img src="/static/images/how-it-works/step2.png" alt="Choose Assets" class="how-step-img">
+          <div class="how-step-number">2</div>
+          <h3>Choose Assets</h3>
+          <p>Browse vetted properties & commodities. Read the exposé, check the financials, and buy shares starting at just $15 per token.</p>
+        </div>
+        <div class="how-step">
+          <img src="/static/images/how-it-works/step3.png" alt="Earn & Trade" class="how-step-img">
+          <div class="how-step-number">3</div>
+          <h3>Earn & Trade</h3>
+          <p>Receive monthly rental income directly to your wallet. Want to exit early? Trade your shares on the secondary market anytime.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-box">
+        <h2>Ready to own a piece<br>of paradise?</h2>
+        <p>Join thousands of investors earning monthly returns from premium Bali real estate and commodities.</p>
+        <a href="/signup" class="btn-primary">Create Free Account</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="lp-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="/" class="header-logo"><img src="/static/images/logo-pool.svg" alt="POOOL" style="height:28px;"></a>
+          <p>Democratizing access to high-yield real estate and secure commodities through fractional ownership.</p>
+        </div>
+        <div class="footer-col"><h4>Marketplace</h4><a href="#">Real Estate</a><a href="#">Commodities</a><a href="#">Secondary Market</a><a href="#">New Listings</a></div>
+        <div class="footer-col"><h4>Company</h4><a href="#">About Us</a><a href="#">Careers</a><a href="#">Contact Support</a><a href="#">Blog</a></div>
+        <div class="footer-col"><h4>Legal</h4><a href="#">Terms of Service</a><a href="#">Privacy Policy</a><a href="#">Risk Disclaimer</a><a href="#">Cookie Policy</a></div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">© 2026 PT. POOOL International Group. All rights reserved.</span>
+        <div class="footer-legal"><a href="#">Terms</a><a href="#">Privacy</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/js/marketplace.js"></script>
+  <script>
+    const header = document.getElementById('lp-header');
+    window.addEventListener('scroll', () => { header.classList.toggle('scrolled', window.scrollY > 10); }, { passive: true });
+    const obs = new IntersectionObserver(entries => { entries.forEach(e => { if (e.isIntersecting) e.target.style.animationPlayState = 'running'; }); }, { threshold: 0.1 });
+    document.querySelectorAll('.anim-in').forEach(el => { el.style.animationPlayState = 'paused'; obs.observe(el); });
+    document.querySelectorAll('.faq-item').forEach(d => { d.addEventListener('toggle', () => { if (d.open) document.querySelectorAll('.faq-item').forEach(o => { if (o !== d) o.open = false; }); }); });
+  </script>
+
+</body>
+</html>
