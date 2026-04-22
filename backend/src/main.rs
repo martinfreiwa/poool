@@ -643,8 +643,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/sitemap.xml",
             ServeFile::new("../frontend/www/sitemap.xml"),
         )
-        // All other paths → serve from /en/ (Angular SPA root)
-        // This handles /, /chunk-*.js, /styles-*.css, /main-*.js, etc.
+        // Shared assets for landing-v2
+        .nest_service("/static", ServeDir::new("../frontend/platform/static"))
+        .nest_service("/images", ServeDir::new("../frontend/platform/images"))
         .route(
             "/platform",
             get(|| async { Redirect::to("https://platform.poool.app/") }),
@@ -653,9 +654,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/platform/",
             get(|| async { Redirect::to("https://platform.poool.app/") }),
         )
+        // Root → landing-v2
+        .route_service("/", ServeFile::new("../frontend/platform/landing-v2.html"))
         .fallback_service(
             ServeDir::new("../frontend/www/en")
-                .fallback(ServeFile::new("../frontend/www/en/index.html")),
+                .fallback(ServeFile::new("../frontend/platform/landing-v2.html")),
         )
         .layer(tower_http::compression::CompressionLayer::new())
         .layer(axum::middleware::from_fn(apply_security_headers));
@@ -2082,8 +2085,34 @@ impl tower::Service<axum::http::Request<axum::body::Body>> for HostDispatch {
                 let resp = tower::Service::call(&mut router, req).await;
                 Ok(resp.into_response())
             })
+        } else if host == "localhost" {
+            // localhost dev: landing-page asset paths → www router, platform paths → platform router
+            let path = req.uri().path().to_string();
+            let is_www_path = path == "/"
+                || path.starts_with("/en")
+                || path.starts_with("/id")
+                || path.starts_with("/webp")
+                || path.starts_with("/png")
+                || path.starts_with("/svg")
+                || path.starts_with("/webm")
+                || path.starts_with("/fonts")
+                || path == "/robots.txt"
+                || path == "/sitemap.xml";
+            if is_www_path {
+                let mut router = self.www.clone();
+                Box::pin(async move {
+                    let resp = tower::Service::call(&mut router, req).await;
+                    Ok(resp.into_response())
+                })
+            } else {
+                let mut router = self.platform.clone();
+                Box::pin(async move {
+                    let resp = tower::Service::call(&mut router, req).await;
+                    Ok(resp.into_response())
+                })
+            }
         } else {
-            // Everything else (platform, localhost, Cloud Run URL) → platform
+            // Everything else (platform, Cloud Run URL) → platform
             let mut router = self.platform.clone();
             Box::pin(async move {
                 let resp = tower::Service::call(&mut router, req).await;
