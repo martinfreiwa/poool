@@ -94,3 +94,8 @@ server.log
 
 # Runtime artifacts
 artifacts/
+
+# Cache directories
+.tmp/
+.pytest_cache/
+.ruff_cache/
