@@ -85,3 +85,12 @@ backups/
 *.tar.gz
 *.bak
 *.backup
+
+# Log files
+*.log
+backend_log.txt
+backend_run.log
+server.log
+
+# Runtime artifacts
+artifacts/
