@@ -230,7 +230,7 @@
 
         if (titleEl) titleEl.innerText = asset.title || 'Featured Asset';
         if (locationEl && asset.location_country && asset.location_city) {
-          locationEl.innerHTML = '<img src="/images/' + escHtml(asset.location_country) + '.webp" onerror="this.style.display=\'none\'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;"> ' + escHtml(asset.location_city) + ', ' + escHtml(asset.location_country);
+          locationEl.innerHTML = '<img src="/static/images/profiles/' + escHtml(asset.location_country) + '.webp" onerror="this.style.display=\'none\'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;"> ' + escHtml(asset.location_city) + ', ' + escHtml(asset.location_country);
         } else if (locationEl) {
           locationEl.innerText = 'Global';
         }
