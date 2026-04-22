@@ -1,6 +1,10 @@
 {% with title="Login – POOOL", meta_description="Log in to your POOOL account to access the marketplace, manage your portfolio, and track your investments in real world assets." %}{% include "components/auth-head.html" %}{% endwith %}
 
 <body>
+  <a id="back-link" href="/">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    Back
+  </a>
   <div id="login-container">
     <section id="left-section">
       <div id="container">
@@ -8,7 +12,7 @@
           <!-- Header -->
           <div id="header">
             <div id="logo-pool">
-              <img src="/static/images/icons/logo-pool.svg" alt="Pool Logo" width="184" height="48">
+              <img src="/static/images/logo-pool.svg" alt="Pool Logo" width="184" height="48">
             </div>
             <div id="text-and-supporting-text">
               <h1 id="text">Welcome back</h1>
@@ -23,7 +27,7 @@
           <div id="social-buttons">
             <button id="google-button" class="social-button" onclick="window.location.href='/auth/google'">
               <div class="social-icon">
-                <img  src="/static/images/icons/social-google.svg" alt="Google" width="24" height="24">
+                <img  src="/static/images/social-google.svg" alt="Google" width="24" height="24">
               </div>
               <span class="social-text">Log in with Google</span>
             </button>
@@ -52,6 +56,10 @@
                 <label for="password-input" class="input-label">Password</label>
                 <div class="input-wrapper">
                   <input type="password" id="password-input" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                  <button type="button" id="toggle-password" onclick="var i=document.getElementById('password-input');i.type=i.type==='password'?'text':'password';this.querySelector('.eye-off').style.display=i.type==='password'?'none':'block';this.querySelector('.eye-on').style.display=i.type==='password'?'block':'none';">
+                    <svg class="eye-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -86,26 +94,26 @@
       <div id="testimonial-container">
         <div id="quote-panel">
           <div id="attribution-card">
-            <h2 id="testimonial-quote">"Through <span class="highlight-green">POOOL</span>, I invested in a Bali villa. Real estate felt complex, but now I can invest in minutes from my phone."</h2>
+            <h2 id="testimonial-quote">"All my real estate experience was building up to this moment — launching <span class="highlight-green">POOOL</span>."</h2>
             <div id="name-and-stars">
               <div id="text-and-supporting">
-                <span id="author-name">Dewi Lestari</span>
-                <span id="author-company">Real Estate investor</span>
+                <span id="author-name">Jonas Freiwald</span>
+                <span id="author-company">Co-CEO, Founder</span>
               </div>
               <div id="stars-container">
-                <img src="/static/images/icons/star.svg" alt="star" width="20" height="20">
-                <img src="/static/images/icons/star.svg" alt="star" width="20" height="20">
-                <img src="/static/images/icons/star.svg" alt="star" width="20" height="20">
-                <img src="/static/images/icons/star.svg" alt="star" width="20" height="20">
-                <img src="/static/images/icons/star.svg" alt="star" width="20" height="20">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
               </div>
             </div>
           </div>
           <div id="arrows-container">
-            <button class="carousel-arrow">
+            <button class="carousel-arrow" id="prev-arrow">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
             </button>
-            <button class="carousel-arrow">
+            <button class="carousel-arrow" id="next-arrow">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
             </button>
           </div>
@@ -113,6 +121,48 @@
       </div>
     </section>
   </div>
+
+  <script>
+    var team = [
+      { img: '/webp/team/Jonas Freiwald.webp',       quote: 'All my real estate experience was building up to this moment — launching <span class="highlight-green">POOOL</span>.', name: 'Jonas Freiwald',       role: 'Co-CEO, Founder' },
+      { img: '/webp/team/Dmitry Sikorski.webp',       quote: 'I know what it\'s like to build from zero. <span class="highlight-green">POOOL</span> gives that chance to anyone.', name: 'Dmitry Sikorski',       role: 'Co-CEO, Founder' },
+      { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Before it was a rich man\'s game. <span class="highlight-green">POOOL</span> hacked the rules for everyone.', name: 'Nikita Kokhanevych',    role: 'CTO, Blockchain' },
+      { img: '/webp/team/Mykyta Hlukhuvskyi.webp',   quote: 'Investing in real estate is now simpler than ordering a taxi. That\'s <span class="highlight-green">POOOL</span>.', name: 'Mykyta Hlukhuvskyi',   role: 'CTO, Back-end' },
+      { img: '/webp/team/Nataly Vovque.webp',         quote: 'Old money owned the buildings. <span class="highlight-green">POOOL</span> lets new money own the future.', name: 'Nataly Vovque',         role: 'Branding' },
+      { img: '/png/Jonathan Rizky.webp',              quote: 'For me, <span class="highlight-green">POOOL</span> is where compliance meets innovation — trust built on regulation.', name: 'Jonathan Rizky',         role: 'Compliance Officer' },
+      { img: '/png/Khai.webp',                        quote: 'For me, <span class="highlight-green">POOOL</span> is where ideas turn into action, and teamwork creates real change.', name: 'Khairatul Raudah',       role: 'Corporate Assistant' },
+      { img: '/webp/team/Sean Reno.webp',             quote: 'Seen so many platforms promise trust — <span class="highlight-green">POOOL</span> actually backs it up with law.', name: 'Sean Reno',              role: 'Government Relations' },
+      { img: '/webp/team/Patrick Werner.webp',        quote: '<span class="highlight-green">POOOL</span> is a fantastic tool to help people from around the world invest money.', name: 'Patrick Werner',         role: 'Local Director' },
+      { img: '/webp/team/Daniel Todorov.webp',        quote: 'Everyone sells dreams. We built <span class="highlight-green">POOOL</span> to fractionalize what\'s real.', name: 'Daniel Todorov',         role: 'Head of Design' },
+      { img: '/webp/team/Jonas Freiwald.webp',       quote: 'Through <span class="highlight-green">POOOL</span>, I invested in a Bali villa. Real estate felt complex, but now I can invest in minutes from my phone.', name: 'Dewi Lestari',           role: 'Real Estate Investor' },
+      { img: '/webp/team/Patrick Werner.webp',        quote: '<span class="highlight-green">POOOL</span> gave me access to properties I never thought I could afford. My first investment was €500 in a Lisbon apartment.', name: 'Marco Fernandes',        role: 'Software Engineer' },
+      { img: '/webp/team/Sean Reno.webp',             quote: 'I\'ve tried stocks, crypto, and now real estate via <span class="highlight-green">POOOL</span>. This is the most transparent platform I\'ve used.', name: 'Aiko Tanaka',             role: 'Portfolio Investor' },
+      { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Finally a platform where a teacher\'s salary can buy into real estate. <span class="highlight-green">POOOL</span> changed what I thought was possible.', name: 'Fatima Al-Rashid',        role: 'Educator & Investor' },
+      { img: '/webp/team/Nataly Vovque.webp',         quote: 'No bank ever offered me this. <span class="highlight-green">POOOL</span> let me diversify across three countries with one account.', name: 'Lena Hoffmann',           role: 'Independent Investor' },
+    ];
+    var current = 0;
+    var container = document.getElementById('testimonial-container');
+    var quoteEl   = document.getElementById('testimonial-quote');
+    var nameEl    = document.getElementById('author-name');
+    var roleEl    = document.getElementById('author-company');
+
+    function show(idx) {
+      var t = team[idx];
+      container.style.backgroundImage = 'url("' + t.img + '")';
+      quoteEl.innerHTML = '\u201c' + t.quote + '\u201d';
+      nameEl.textContent = t.name;
+      roleEl.textContent = t.role;
+    }
+
+    document.getElementById('prev-arrow').addEventListener('click', function () {
+      current = (current - 1 + team.length) % team.length;
+      show(current);
+    });
+    document.getElementById('next-arrow').addEventListener('click', function () {
+      current = (current + 1) % team.length;
+      show(current);
+    });
+  </script>
 
   <script>
     document.body.addEventListener('htmx:beforeSwap', function (evt) {

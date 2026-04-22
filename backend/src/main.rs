@@ -643,8 +643,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/sitemap.xml",
             ServeFile::new("../frontend/www/sitemap.xml"),
         )
-        // All other paths → serve from /en/ (Angular SPA root)
-        // This handles /, /chunk-*.js, /styles-*.css, /main-*.js, etc.
+        // Shared assets for landing-v2
+        .nest_service("/static", ServeDir::new("../frontend/platform/static"))
+        .nest_service("/images", ServeDir::new("../frontend/platform/images"))
         .route(
             "/platform",
             get(|| async { Redirect::to("https://platform.poool.app/") }),
@@ -653,9 +654,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/platform/",
             get(|| async { Redirect::to("https://platform.poool.app/") }),
         )
+        // Root → landing-v2
+        .route_service("/", ServeFile::new("../frontend/platform/landing-v2.html"))
         .fallback_service(
             ServeDir::new("../frontend/www/en")
-                .fallback(ServeFile::new("../frontend/www/en/index.html")),
+                .fallback(ServeFile::new("../frontend/platform/landing-v2.html")),
         )
         .layer(tower_http::compression::CompressionLayer::new())
         .layer(axum::middleware::from_fn(apply_security_headers));
@@ -724,15 +727,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/tax-report", get(marketplace::routes::page_tax_report_pdf))
         // ── Static file serving & fallbacks ───────────────────────────
         .route("/", get(handle_root))
-        .route("/landing-v2.html", get(page_landing_v2))
-        .route(
-            "/landing-v2",
-            get(|| async { Redirect::to("/landing-v2.html") }),
-        )
         .nest_service("/en", ServeDir::new("../frontend/www/en"))
         .nest_service("/id", ServeDir::new("../frontend/www/id"))
         .nest_service("/fonts", ServeDir::new("../frontend/www/fonts"))
         .nest_service("/static", ServeDir::new("../frontend/platform/static"))
+        .nest_service("/images", ServeDir::new("../frontend/platform/images"))
         .nest_service("/uploads", ServeDir::new("../uploads"))
         .route("/health", get(handle_health))
         .fallback_service(
@@ -882,6 +881,7 @@ async fn sentry_user_context(
     // Skip static-asset paths — no session to look up
     if !path.starts_with("/static/")
         && !path.starts_with("/fonts/")
+        && !path.starts_with("/images/")
         && !path.starts_with("/en/")
         && !path.starts_with("/id/")
     {
@@ -1786,7 +1786,7 @@ async fn api_assets_featured(
             };
             let cover = r.get::<Option<String>, _>("cover_image")
                 .map(|u| crate::storage::service::rewrite_gcs_url(&u))
-                .unwrap_or_else(|| "/static/images/seed/villa1.webp".to_string());
+                .unwrap_or_else(|| "/images/villa1.webp".to_string());
 
             serde_json::json!({
                 "id": r.get::<String, _>("id"),
@@ -2088,36 +2088,16 @@ impl tower::Service<axum::http::Request<axum::body::Body>> for HostDispatch {
         } else if host == "localhost" {
             // localhost dev: landing-page asset paths → www router, platform paths → platform router
             let path = req.uri().path().to_string();
-            let is_platform_path = path.starts_with("/auth")
-                || path.starts_with("/api")
-                || path.starts_with("/static")
-                || path.starts_with("/images")
-                || path.starts_with("/uploads")
-                || path.starts_with("/platform")
-                || path.starts_with("/marketplace")
-                || path.starts_with("/community")
-                || path.starts_with("/profile")
-                || path.starts_with("/logout")
-                || path.starts_with("/payment")
-                || path.starts_with("/wallet")
-                || path.starts_with("/portfolio")
-                || path.starts_with("/admin")
-                || path.starts_with("/rewards")
-                || path.starts_with("/trade")
-                || path.starts_with("/leaderboard")
-                || path.starts_with("/settings")
-                || path.starts_with("/cart")
-                || path.starts_with("/kyc")
-                || path.starts_with("/health")
-                || path.starts_with("/blog")
-                || path.starts_with("/support")
-                || path.starts_with("/developer")
-                || path.starts_with("/legal")
-                || path.starts_with("/welcome")
-                || path.starts_with("/my-trading")
-                || path.starts_with("/tax-report")
-                || path.starts_with("/trade-success");
-            let is_www_path = !is_platform_path;
+            let is_www_path = path == "/"
+                || path.starts_with("/en")
+                || path.starts_with("/id")
+                || path.starts_with("/webp")
+                || path.starts_with("/png")
+                || path.starts_with("/svg")
+                || path.starts_with("/webm")
+                || path.starts_with("/fonts")
+                || path == "/robots.txt"
+                || path == "/sitemap.xml";
             if is_www_path {
                 let mut router = self.www.clone();
                 Box::pin(async move {
@@ -2153,16 +2133,6 @@ impl tower::Service<axum::http::Request<axum::body::Body>> for HostDispatch {
 /// GET /payment-success  Payment success page (protected).
 async fn page_payment_success(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "payment-success.html").await
-}
-
-async fn page_landing_v2(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
-    common::routes_helper::serve_public_with_context(
-        jar,
-        &state,
-        "landing-v2.html",
-        serde_json::json!({}),
-    )
-    .await
 }
 
 /// GET /community/partials/:tab — Serves HTMX partial views for the community tabs.
