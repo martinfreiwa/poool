@@ -1,0 +1,255 @@
+{
+  "campaign": {
+    "title": "Abu Dhabi Bitcoin Mining Infrastructure",
+    "pitch_message": "Hi WMW team\n\nWe are opening a limited number of confidential conversations around an Abu Dhabi digital infrastructure opportunity in Bitcoin mining with strong structural power economics at $0.0125/kWh. The opportunity is infrastructure-led, execution-ready, and intended for a serious private-capital audience. Would you be open to a brief introduction?\n\nRegards Jonas Freiwald",
+    "sender_email": "jonasfreiwald@poool.app",
+    "start_date": "2026-04-22"
+  },
+  "prioritized_outreach_order": [
+    {
+      "phase": 1,
+      "name": "Tier 1 - Sovereign Wealth Funds",
+      "priority": "HIGHEST",
+      "rationale": "Largest capital pools, infrastructure mandates, active infrastructure investors",
+      "investors": [
+        {
+          "rank": 1,
+          "name": "Abu Dhabi Investment Authority (ADIA)",
+          "email": "contact@adia.ae",
+          "alternative_email": "Email format: First.Last@adia.ae",
+          "phone": "+971 2 415 0000",
+          "contact_approach": "Email via contact form + direct institutional investor relations",
+          "key_person_title": "Infrastructure Investment Team",
+          "notes": "Most appropriate: Infrastructure team or Business Development"
+        },
+        {
+          "rank": 2,
+          "name": "Mubadala Investment Company",
+          "email": "info@mubadala.com",
+          "phone": "TBD",
+          "contact_approach": "Visit mubadala.com/en/contact-us for specific infrastructure inquiries",
+          "key_contact": "Infrastructure Investment Team",
+          "notes": "Most active SWF globally - Best fit. Ask for infrastructure/digital infrastructure team"
+        },
+        {
+          "rank": 3,
+          "name": "Saudi Public Investment Fund (PIF)",
+          "email": "Info@pif.gov.sa",
+          "alternative_emails": [
+            "Media@pif.gov.sa"
+          ],
+          "phone": "TBD",
+          "address": "Information Technology Complex, Building CS01, Al Nakhil District, PO Box 6847, Riyadh 11452",
+          "contact_approach": "Email with formal introduction + mention HUMAIN AI infrastructure focus",
+          "key_focus_area": "HUMAIN (AI Infrastructure), Digital Infrastructure, Energy",
+          "notes": "$36.2B deployed in 2025 - World's most active SWF. High priority."
+        },
+        {
+          "rank": 4,
+          "name": "Kuwait Investment Authority (KIA)",
+          "email": "information@kia.gov.kw",
+          "phone": "TBD",
+          "infrastructure_contact": "ahmadbdr@kia.gov.kw (Ahmad Al-Bader, Director - Real Estate & Infrastructure)",
+          "address": "Block 1, Street 201, Building 900028, Sharq, P.O. Box 64, Safat, 13001 Kuwait City",
+          "contact_approach": "Email directly to infrastructure director with focus on power economics",
+          "notes": "Recently joined $30B Microsoft AI Infrastructure Partnership - Very active in infrastructure"
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Tier 2 - Infrastructure-Focused Funds",
+      "priority": "HIGH",
+      "rationale": "Dedicated infrastructure expertise, active in similar deal structures",
+      "investors": [
+        {
+          "name": "DigitalBridge",
+          "email": "ir@digitalbridge.com",
+          "alternative_contacts": [
+            {
+              "name": "Chris Moon",
+              "title": "Managing Director - Private Credit Origination",
+              "email": "chris.moon@digitalbridge.com"
+            }
+          ],
+          "phone": "+1 561 570 4644",
+          "address": "750 Park of Commerce Drive, Suite 210, Boca Raton, FL 33487",
+          "contact_approach": "Email to investor relations, mention PIF partnership for Saudi Arabia data center expansion",
+          "notes": "Major data center investor with GCC operations. Perfect alignment."
+        },
+        {
+          "name": "Global Infrastructure Partners (GIP)",
+          "email": "contact@global-infra.com",
+          "email_format": "First.Last@global-infra.com",
+          "phone": "TBD",
+          "contact_approach": "Visit global-infra.com/contact-us for specific inquiries",
+          "key_partnership": "Partnering with BlackRock on $40B Aligned Data Centers deal in UAE",
+          "notes": "Recently acquired by BlackRock. Strong data center infrastructure focus."
+        },
+        {
+          "name": "Blackstone Infrastructure",
+          "email": "investor-relations@bxsl.com",
+          "phone": "+1 888 756 8443 (US) or +1 646 313 6590 (International)",
+          "address": "345 Park Avenue, New York, NY 10154",
+          "contact_approach": "Email investor relations with GCC infrastructure focus",
+          "notes": "Major infrastructure investor with ADNOC partnership experience"
+        },
+        {
+          "name": "Brookfield Infrastructure",
+          "email": "investor-relations@bip.brookfield.com",
+          "phone": "North America: 1-866-989-0311 | Global: +1 416 363 9491",
+          "contact_approach": "Email investor relations for partnership inquiries",
+          "notes": "$200B+ in assets. Global infrastructure operator experience."
+        },
+        {
+          "name": "KKR Infrastructure",
+          "email": "Investor-Relations@kkr.com",
+          "alternative_contact": {
+            "name": "K-INFRA",
+            "email": "contact@kinfra.com",
+            "phone": "888.920.1959"
+          },
+          "phone": "+1 877 610 4910",
+          "contact_approach": "Email investor relations or contact K-INFRA team directly",
+          "notes": "Among most active private infrastructure investors globally. ADNOC partnership experience."
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Tier 3 - Crypto & Bitcoin Focused Investors",
+      "priority": "MEDIUM-HIGH",
+      "rationale": "Bitcoin mining expertise and understanding of mining economics",
+      "investors": [
+        {
+          "name": "MGX Abu Dhabi",
+          "email": "compliance@mgx.ae",
+          "contact_form": "https://www.mgx.ae/en/contact-us",
+          "address": "Abu Dhabi Global Market Square, Al Maryah Island, Abu Dhabi",
+          "focus_areas": "AI, Blockchain, Cryptocurrency, Digital Infrastructure",
+          "partnerships": "BlackRock, Microsoft, GIP (Global AI Infrastructure); OpenAI, SoftBank, Oracle (Stargate); Aligned Data Centers acquisition",
+          "notes": "$100B target AUM. Backed by Mubadala & G42. Excellent alignment."
+        },
+        {
+          "name": "Sanabil (Saudi PIF subsidiary)",
+          "email": "TBD",
+          "contact_approach": "Contact via main PIF channels (Info@pif.gov.sa) requesting Sanabil venture capital team",
+          "notes": "Limited partner in Andreessen Horowitz, Haun Ventures - top crypto VCs"
+        },
+        {
+          "name": "AMINA Bank",
+          "email": "contact@amina.ae",
+          "phone": "+971 269 228 22",
+          "address": "Unit 08, Floor 07, Al Sarab Tower ADGM Square, Al Maryah Island Abu Dhabi",
+          "notes": "First shariah-compliant digital bank. Swiss-regulated. Abu Dhabi presence."
+        },
+        {
+          "name": "Rain Financial",
+          "email": "support-ae@rain.com",
+          "address": "12, 10th Floor, Al Khatem Tower, ADGM Square, Al Maryah Island, Abu Dhabi",
+          "licensed_by": "ADGM FSRA",
+          "focus": "Institutional Bitcoin/Ethereum trading, MEA-focused",
+          "notes": "Licensed crypto exchange serving MEA region. Strong local expertise."
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Tier 4 - Family Offices & Private Equity",
+      "priority": "MEDIUM",
+      "rationale": "Portfolio diversification, infrastructure exposure",
+      "investors": [
+        {
+          "name": "Waha Capital",
+          "email": "info@wahacapital.com",
+          "phone": "+971 2 6677343",
+          "address": "17th Floor, Al Khatem Tower ADGM, Al Maryah Island, Abu Dhabi",
+          "aum": "$5+ billion",
+          "sectors": "Aircraft leasing, Healthcare, Financial Services, Energy, Infrastructure",
+          "notes": "Abu Dhabi-listed investment company. Mubadala-backed."
+        },
+        {
+          "name": "Gulf Capital",
+          "email": "info@gulfcapital.com",
+          "phone": "+971 2 671 6060 (Abu Dhabi) or +971 4 375 8403 (Dubai)",
+          "address": "Level 8 \u2013 Al Sila Tower, Abu Dhabi Global Market, Al Maryah Island",
+          "aum": "$3+ billion",
+          "focus": "Late-stage control buy-outs, Growth capital, Real estate, Private debt",
+          "notes": "Abu Dhabi-based. Infrastructure portfolio experience."
+        },
+        {
+          "name": "Shuaa Capital",
+          "email": "info@shuaa.com",
+          "key_contact": "Umar Mirza (Director, Private Markets)",
+          "phone": "+971 4 330 3600",
+          "address": "Office No. 1502, P.O. Box 31045 Dubai",
+          "focus": "Private markets, Direct investments across MENA region",
+          "notes": "Asset management and investment banking platform."
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Tier 5 - Strategic Corporates & Energy Companies",
+      "priority": "MEDIUM",
+      "rationale": "Strategic alignment with energy/infrastructure operations",
+      "investors": [
+        {
+          "name": "ADNOC XRG",
+          "website": "https://xrg.com/en",
+          "email": "TBD - Contact through main ADNOC channels",
+          "focus": "International energy and chemicals investment, Data center energy systems",
+          "portfolio_value": "$150+ billion",
+          "notes": "Investing in data center energy infrastructure. Direct alignment with Bitcoin mining power needs."
+        },
+        {
+          "name": "Saudi Aramco Ventures",
+          "website": "https://aramcoventures.com",
+          "email": "TBD - Contact through website",
+          "programs": [
+            "Aramco Ventures (corporate VC)",
+            "Prosperity7 Ventures",
+            "Wa'ed Ventures"
+          ],
+          "notes": "Corporate venture capital arm. Infrastructure and energy focus."
+        },
+        {
+          "name": "Energy Capital Partners (ECP)",
+          "email": "info@ecpgp.com",
+          "phone": "TBD",
+          "address": "40 Beechwood Road, Summit, New Jersey 07901",
+          "email_format": "FLast@ecpartners.com",
+          "partnership": "$25 billion with ADQ for energy/data center infrastructure",
+          "notes": "Leading investor in energy transition. ADQ partnership for power generation."
+        }
+      ]
+    }
+  ],
+  "email_template": {
+    "subject_line": "Confidential Investment Opportunity - Abu Dhabi Bitcoin Mining Infrastructure",
+    "body": "Hi [INVESTOR_NAME_TEAM],\n\nWe are opening a limited number of confidential conversations around an Abu Dhabi digital infrastructure opportunity in Bitcoin mining with strong structural power economics at $0.0125/kWh. The opportunity is infrastructure-led, execution-ready, and intended for a serious private-capital audience.\n\nGiven [INVESTOR_NAME]'s focus on [SPECIFIC_FOCUS: infrastructure/digital infrastructure/energy/AI], we believe this could be of strategic interest.\n\nWould you be open to a brief introduction?\n\nRegards,\nJonas Freiwald\njonas@poool.com\nPoool\n+971 XX XXX XXXX",
+    "customization_tips": [
+      "Reference their recent infrastructure investments",
+      "Mention their specific focus areas (AI, energy, digital infrastructure)",
+      "Reference any GCC-focused initiatives",
+      "For SWFs, emphasize infrastructure mandate alignment",
+      "For crypto investors, emphasize Bitcoin mining economics"
+    ]
+  },
+  "outreach_metrics": {
+    "total_investors": 28,
+    "by_phase": {
+      "phase_1": 4,
+      "phase_2": 5,
+      "phase_3": 5,
+      "phase_4": 3,
+      "phase_5": 4
+    },
+    "by_type": {
+      "sovereign_wealth_funds": 6,
+      "infrastructure_funds": 8,
+      "crypto_bitcoin": 6,
+      "family_offices_pe": 4
+    }
+  }
+}

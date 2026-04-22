@@ -44,11 +44,11 @@
   width: calc(100% - 256px);
   min-height: 100vh;
   margin-left: 256px;
-  padding: 48px 24px 64px 24px;
+  padding: 0;
   background: var(--content-bg);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 0;
   z-index: 0;
 }
 
@@ -56,16 +56,28 @@
   .rewards-main {
     width: 100%;
     margin-left: 0;
-    padding: 16px;
-    padding-top: 80px;
+    padding: 0;
   }
+
 }
 
 /* --- Rewards Main Container --- */
 .rewards-container {
-  padding: 0;
+  padding: var(--page-padding-top, 48px) var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
   width: 100%;
-  max-width: 1096px;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+@media (max-width: 768px) {
+  .rewards-container {
+    padding: 16px;
+    padding-top: 80px;
+    max-width: none;
+    gap: 24px;
+  }
 }
 
 /* --- Header --- */
@@ -114,7 +126,7 @@
   border-bottom: 2px solid var(--card-border-color);
 }
 
-.rewards-tab-btn {
+.rewards-tab-nav .rewards-tab-btn {
   padding: 12px 24px;
   font-family: 'TT Norms Pro', sans-serif;
   font-size: 14px;
@@ -129,11 +141,11 @@
   white-space: nowrap;
 }
 
-.rewards-tab-btn:hover {
+.rewards-tab-nav .rewards-tab-btn:hover {
   color: var(--page-title-color);
 }
 
-.rewards-tab-btn.active {
+.rewards-tab-nav .rewards-tab-btn.active {
   color: var(--primary-color, var(--btn-primary-bg));
   border-bottom-color: var(--primary-color, var(--btn-primary-bg));
 }

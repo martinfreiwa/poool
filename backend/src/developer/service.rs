@@ -396,7 +396,7 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
                 title: row.title,
                 cover_image_url: rewrite_gcs_url(
                     &row.cover_image_url
-                        .unwrap_or_else(|| "/images/villa1.webp".to_string()),
+                        .unwrap_or_else(|| "/static/images/seed/villa1.webp".to_string()),
                 ),
                 total_sales_display: format_usd_compact(row.total_sales_cents),
                 total_sales_cents: row.total_sales_cents,
@@ -484,7 +484,7 @@ pub async fn fetch_all_assets(pool: &PgPool, developer_id: Uuid) -> Vec<Develope
                 title: row.title,
                 cover_image_url: rewrite_gcs_url(
                     &row.cover_image_url
-                        .unwrap_or_else(|| "/images/villa1.webp".to_string()),
+                        .unwrap_or_else(|| "/static/images/seed/villa1.webp".to_string()),
                 ),
                 total_sales_display: format_usd_compact(row.total_sales_cents),
                 total_sales_cents: row.total_sales_cents,

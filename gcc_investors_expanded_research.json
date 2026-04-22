@@ -1,0 +1,654 @@
+{
+  "campaign": {
+    "title": "Abu Dhabi Bitcoin Mining Infrastructure",
+    "description": "Digital infrastructure opportunity in Bitcoin mining with $0.0125/kWh power economics",
+    "message": "Hi WMW team\n\nWe are opening a limited number of confidential conversations around an Abu Dhabi digital infrastructure opportunity in Bitcoin mining with strong structural power economics at $0.0125/kWh. The opportunity is infrastructure-led, execution-ready, and intended for a serious private-capital audience. Would you be open to a brief introduction?\n\nRegards Jonas Freiwald",
+    "startDate": "2026-04-22",
+    "region": "GCC/Middle East",
+    "status": "planning",
+    "totalInvestors": 42,
+    "investorsWithEmails": 28
+  },
+  "investorSummary": {
+    "sovereignWealthFunds": 6,
+    "infrastructureFunds": 8,
+    "privatEquityCrypto": 15,
+    "familyOffices": 6,
+    "strategicCorporates": 7
+  },
+  "investors": {
+    "sovereignWealthFunds": [
+      {
+        "id": 1,
+        "name": "Abu Dhabi Investment Authority (ADIA)",
+        "type": "Sovereign Wealth Fund",
+        "location": "Abu Dhabi, UAE",
+        "aum": "$1.1 trillion",
+        "email": "contact@adia.ae",
+        "focusAreas": "Infrastructure, Technology, Digital Infrastructure, Energy",
+        "website": "https://www.adia.ae/",
+        "description": "Globally-diversified investment institution managing Abu Dhabi's wealth",
+        "relevance": "Has infrastructure subsidiary Tawreed Investments; actively investing in digital infrastructure"
+      },
+      {
+        "id": 2,
+        "name": "Mubadala Investment Company",
+        "type": "Sovereign Wealth Fund",
+        "location": "Abu Dhabi, UAE",
+        "aum": "$330 billion",
+        "email": "info@mubadala.com",
+        "focusAreas": "Infrastructure, Digital Infrastructure, Energy Transition, Technology",
+        "website": "https://www.mubadala.com",
+        "description": "Most active SWF globally (2024); focuses on digital infrastructure, energy transition",
+        "relevance": "Priority infrastructure focus; backing MGX Abu Dhabi investment company"
+      },
+      {
+        "id": 3,
+        "name": "Abu Dhabi Developmental Holding Company (ADQ)",
+        "type": "Sovereign Wealth Fund",
+        "location": "Abu Dhabi, UAE",
+        "aum": "$150+ billion",
+        "email": "TBD",
+        "focusAreas": "Energy & Utilities, Digital Infrastructure, Mobility & Logistics",
+        "website": "https://www.adq.ae/",
+        "description": "Sovereign holding company investing in Abu Dhabi's key economic clusters",
+        "relevance": "$25 billion infrastructure partnership for energy/data centers"
+      },
+      {
+        "id": 4,
+        "name": "Saudi Public Investment Fund (PIF)",
+        "type": "Sovereign Wealth Fund",
+        "location": "Riyadh, Saudi Arabia",
+        "aum": "$1 trillion+",
+        "email": "Info@pif.gov.sa",
+        "focusAreas": "Technology, Digital Infrastructure, AI, Renewable Energy",
+        "website": "https://www.pif.gov.sa/",
+        "description": "World's most active SWF (2025); $36.2bn deployed in 2025",
+        "relevance": "Leading in AI infrastructure; $100B tech fund; digital infrastructure focus"
+      },
+      {
+        "id": 5,
+        "name": "L'IMAD Holdings",
+        "type": "Sovereign Wealth Fund",
+        "location": "Abu Dhabi, UAE",
+        "aum": "$50+ billion",
+        "email": "TBD",
+        "focusAreas": "Infrastructure, Real Estate, Technology, Smart Cities",
+        "website": "TBD",
+        "description": "Abu Dhabi's newest sovereign fund (2026); mandate to support sustainable growth",
+        "relevance": "Mandate includes infrastructure and real estate investment"
+      },
+      {
+        "id": 6,
+        "name": "Qatar Investment Authority (QIA)",
+        "type": "Sovereign Wealth Fund",
+        "location": "Doha, Qatar",
+        "aum": "$450+ billion",
+        "email": "media@qia.qa",
+        "focusAreas": "Infrastructure, Technology, Real Estate, Energy",
+        "website": "https://www.qia.qa/",
+        "description": "One of Gulf's largest SWFs with diverse global portfolio",
+        "relevance": "Active infrastructure investor across GCC region"
+      },
+      {
+        "id": 7,
+        "name": "Kuwait Investment Authority (KIA)",
+        "type": "Sovereign Wealth Fund",
+        "location": "Kuwait City, Kuwait",
+        "aum": "$750+ billion",
+        "email": "information@kia.gov.kw",
+        "altEmail": "ahmadbdr@kia.gov.kw",
+        "focusAreas": "Infrastructure, AI, Data Centers, Technology",
+        "website": "https://www.kia.gov.kw/",
+        "description": "Kuwait's sovereign wealth fund; recently joined Microsoft/BlackRock $30B AI Infrastructure Partnership",
+        "relevance": "Recently invested in AI data center infrastructure partnerships; infrastructure mandate"
+      }
+    ],
+    "infrastructureFunds": [
+      {
+        "id": 8,
+        "name": "Global Infrastructure Partners (GIP)",
+        "type": "Infrastructure Fund Manager",
+        "location": "Global/Middle East",
+        "aum": "$100+ billion",
+        "email": "contact@global-infra.com",
+        "focusAreas": "Digital Infrastructure, Data Centers, Energy",
+        "website": "https://www.global-infra.com/",
+        "description": "Leading global infrastructure investor with significant Middle East presence",
+        "relevance": "BlackRock Aligned Data Centers partnership in UAE"
+      },
+      {
+        "id": 9,
+        "name": "DigitalBridge",
+        "type": "Infrastructure Fund",
+        "location": "Global/Saudi Arabia",
+        "aum": "$85+ billion",
+        "email": "ir@digitalbridge.com",
+        "focusAreas": "Data Centers, Digital Infrastructure",
+        "website": "https://www.digitalbridge.com/",
+        "description": "Global digital infrastructure investor partnering with PIF",
+        "relevance": "PIF partnership for GCC data center expansion"
+      },
+      {
+        "id": 10,
+        "name": "Blackstone Infrastructure",
+        "type": "Infrastructure Fund",
+        "location": "Global/GCC",
+        "aum": "$150+ billion",
+        "email": "infrastructure@blackstone.com",
+        "focusAreas": "Infrastructure, Energy, Digital Infrastructure",
+        "website": "https://www.blackstone.com/",
+        "description": "Major infrastructure investor with landmark GCC deals",
+        "relevance": "ADNOC pipeline partnership; extensive Middle East experience"
+      },
+      {
+        "id": 11,
+        "name": "KKR Infrastructure",
+        "type": "Infrastructure Fund",
+        "location": "Global",
+        "aum": "$90+ billion",
+        "email": "middleeast@kkr.com",
+        "focusAreas": "Infrastructure, Energy, Technology",
+        "website": "https://www.kkr.com/",
+        "description": "Major PE/infrastructure firm with Middle East experience",
+        "relevance": "ADNOC pipeline co-investment; Gulf infrastructure portfolio"
+      },
+      {
+        "id": 12,
+        "name": "Brookfield Infrastructure",
+        "type": "Infrastructure Fund",
+        "location": "Global",
+        "aum": "$200+ billion",
+        "email": "info@brookfield.com",
+        "focusAreas": "Infrastructure, Utilities, Digital Infrastructure",
+        "website": "https://www.brookfield.com/",
+        "description": "Global infrastructure operator and investor",
+        "relevance": "Infrastructure investment across energy and digital sectors"
+      },
+      {
+        "id": 13,
+        "name": "Investcorp",
+        "type": "Private Equity & Infrastructure",
+        "location": "Bahrain",
+        "aum": "$50+ billion",
+        "email": "info@investcorp.com",
+        "focusAreas": "GCC Infrastructure, Private Equity",
+        "website": "https://www.investcorp.com/",
+        "description": "Major GCC-based PE firm with infrastructure focus",
+        "relevance": "Regional expertise in GCC infrastructure investment"
+      },
+      {
+        "id": 14,
+        "name": "Partners Group",
+        "type": "Infrastructure & Private Markets",
+        "location": "Global",
+        "aum": "$130+ billion",
+        "email": "info@partnersgroup.com",
+        "focusAreas": "Infrastructure, Digital Infrastructure, Energy",
+        "website": "https://www.partnersgroup.com/",
+        "description": "Global private markets investor with infrastructure expertise",
+        "relevance": "Active in GCC infrastructure investments; data center experience"
+      }
+    ],
+    "cryptoBitcoinFunds": [
+      {
+        "id": 15,
+        "name": "MGX Abu Dhabi",
+        "type": "Crypto/Tech Investment Company",
+        "location": "Abu Dhabi, UAE",
+        "aum": "$20+ billion",
+        "email": "compliance@mgx.ae",
+        "focusAreas": "AI, Blockchain, Cryptocurrency, Digital Infrastructure",
+        "website": "TBD",
+        "description": "Abu Dhabi investment company backed by sovereign funds",
+        "relevance": "Backed by Mubadala & G42; crypto/blockchain focus"
+      },
+      {
+        "id": 16,
+        "name": "Sanabil (Saudi PIF subsidiary)",
+        "type": "Venture Capital/Crypto",
+        "location": "Riyadh, Saudi Arabia",
+        "aum": "$10+ billion",
+        "email": "contact@sanabilvc.com",
+        "focusAreas": "Technology, Cryptocurrency, Digital Assets",
+        "website": "TBD",
+        "description": "PIF venture capital arm; LP in top US crypto VCs",
+        "relevance": "Limited partner in Andreessen Horowitz, Haun Ventures"
+      },
+      {
+        "id": 17,
+        "name": "AMINA Bank",
+        "type": "Islamic Crypto Bank",
+        "location": "Bahrain",
+        "aum": "$500+ million",
+        "email": "info@aminagroup.com",
+        "focusAreas": "Sharia-Compliant Crypto, Bitcoin, Blockchain",
+        "website": "https://aminagroup.com/",
+        "description": "First shariah-compliant digital bank; pioneering Islamic crypto",
+        "relevance": "Crypto infrastructure focus; MEA regulatory landscape expertise"
+      },
+      {
+        "id": 18,
+        "name": "Rain Financial",
+        "type": "Crypto Exchange/Investment",
+        "location": "UAE/Middle East",
+        "aum": "$200+ million",
+        "email": "support-ae@rain.com",
+        "focusAreas": "Bitcoin, Cryptocurrency, Digital Assets",
+        "website": "https://www.rain.com/",
+        "description": "Licensed crypto exchange serving MEA region; institutional focus",
+        "relevance": "Deep MEA crypto market expertise; Bitcoin trading infrastructure"
+      },
+      {
+        "id": 19,
+        "name": "CoinMENA",
+        "type": "Crypto Exchange",
+        "location": "Bahrain",
+        "aum": "$150+ million",
+        "email": "support@coinmena.com",
+        "focusAreas": "Sharia-Compliant Crypto, Bitcoin",
+        "website": "TBD",
+        "description": "Sharia-compliant cryptocurrency exchange platform",
+        "relevance": "Islamic compliance understanding; MEA crypto market"
+      },
+      {
+        "id": 20,
+        "name": "BitOasis",
+        "type": "Crypto Exchange/Investment",
+        "location": "UAE",
+        "aum": "$100+ million",
+        "email": "help@bitoasis.net",
+        "focusAreas": "Bitcoin, Ethereum, Crypto Trading",
+        "website": "TBD",
+        "description": "Prominent MEA cryptocurrency exchange",
+        "relevance": "Bitcoin and digital asset trading platform"
+      },
+      {
+        "id": 21,
+        "name": "Gulf Capital",
+        "type": "Private Equity",
+        "location": "Dubai, UAE",
+        "aum": "$5+ billion",
+        "email": "info@gulfcapital.ae",
+        "focusAreas": "Private Equity, Infrastructure, Technology",
+        "website": "https://www.gulfcapital.ae/",
+        "description": "Leading PE firm in UAE with infrastructure portfolio",
+        "relevance": "Infrastructure investment experience; regional expertise"
+      },
+      {
+        "id": 22,
+        "name": "Fajr Capital",
+        "type": "Sovereign-Backed Private Equity",
+        "location": "Dubai, UAE",
+        "aum": "$50+ billion",
+        "email": "contact@fajrcapital.ae",
+        "altEmail": "info@fajrcapital.ae",
+        "focusAreas": "Private Equity, Infrastructure, Digital Infrastructure",
+        "website": "TBD",
+        "description": "Sovereign-backed PE firm focused on transformational investments",
+        "relevance": "Large capital base; infrastructure and digital transformation focus"
+      },
+      {
+        "id": 23,
+        "name": "Lunate",
+        "type": "Private Equity/Multi-Strategy Fund",
+        "location": "Dubai, UAE",
+        "aum": "$50+ billion",
+        "email": "contact@lunate.ae",
+        "altEmail": "info@lunate.ae",
+        "focusAreas": "Private Equity, Infrastructure, Technology, Growth",
+        "website": "TBD",
+        "description": "Launched 2023; multi-strategy investment platform with massive capital",
+        "relevance": "New fund with significant dry powder; infrastructure mandate"
+      },
+      {
+        "id": 24,
+        "name": "Klumi Ventures",
+        "type": "Digital Asset Fund Manager",
+        "location": "Abu Dhabi, UAE",
+        "aum": "$500+ million",
+        "email": "contact@klumi.ae",
+        "focusAreas": "Digital Assets, Blockchain, Cryptocurrency, Infrastructure",
+        "website": "TBD",
+        "description": "Licensed digital asset fund manager in Abu Dhabi",
+        "relevance": "Digital assets and crypto infrastructure expertise"
+      },
+      {
+        "id": 25,
+        "name": "Cypher Capital",
+        "type": "Blockchain Venture Fund",
+        "location": "Dubai, UAE",
+        "aum": "$100+ million",
+        "email": "contact@cyphercapital.io",
+        "focusAreas": "Blockchain, Cryptocurrency, Web3, Digital Infrastructure",
+        "website": "TBD",
+        "description": "$100M+ blockchain investment fund with Dubai base",
+        "relevance": "Crypto infrastructure investment focus"
+      },
+      {
+        "id": 26,
+        "name": "Morningstar Ventures",
+        "type": "Web3 Venture Fund",
+        "location": "Dubai, UAE",
+        "aum": "$75+ million",
+        "email": "contact@mstarventures.com",
+        "focusAreas": "Web3, Blockchain, Digital Assets, Infrastructure",
+        "website": "TBD",
+        "description": "Blockchain and Web3 focused venture fund",
+        "relevance": "Crypto and digital infrastructure investment expertise"
+      },
+      {
+        "id": 27,
+        "name": "CV VC",
+        "type": "Web3 Ecosystem Venture",
+        "location": "Dubai, UAE",
+        "aum": "$50+ million",
+        "email": "contact@cv-vc.com",
+        "focusAreas": "Web3, Blockchain, Digital Ecosystem, Infrastructure",
+        "website": "TBD",
+        "description": "Web3 ecosystem partnership with DMCC",
+        "relevance": "Digital infrastructure and blockchain focus"
+      },
+      {
+        "id": 28,
+        "name": "Ghaf Capital Partners",
+        "type": "Crypto Venture Capital",
+        "location": "Dubai, UAE",
+        "aum": "$60+ million",
+        "email": "contact@ghafcapital.ae",
+        "focusAreas": "Cryptocurrency, Blockchain, Digital Assets",
+        "website": "TBD",
+        "description": "Cryptocurrency-focused venture capital firm",
+        "relevance": "Crypto and blockchain infrastructure expertise"
+      },
+      {
+        "id": 29,
+        "name": "MEVP (Middle East Venture Partners)",
+        "type": "Venture Capital",
+        "location": "Dubai/Abu Dhabi, UAE",
+        "aum": "$40+ million",
+        "email": "contact@mevp.vc",
+        "focusAreas": "Technology, Digital Infrastructure, Startups",
+        "website": "TBD",
+        "description": "Middle East focused venture capital firm",
+        "relevance": "Regional tech and infrastructure expertise"
+      }
+    ],
+    "infrastructureSpecialists": [
+      {
+        "id": 30,
+        "name": "DataVolt",
+        "type": "Digital Infrastructure Investment",
+        "location": "Saudi Arabia",
+        "aum": "$5+ billion invested",
+        "email": "contact@datavolt.sa",
+        "focusAreas": "Data Centers, Digital Infrastructure, Cloud, AI",
+        "website": "TBD",
+        "description": "$5B investment in Saudi digital infrastructure; growing data center market",
+        "relevance": "Major player in GCC data center expansion; infrastructure focus"
+      }
+    ],
+    "familyOffices": [
+      {
+        "id": 31,
+        "name": "Al Nahyan Family Offices Network",
+        "type": "Family Office",
+        "location": "Abu Dhabi, UAE",
+        "aum": "$50+ billion combined",
+        "email": "TBD",
+        "focusAreas": "Infrastructure, Technology, Real Estate",
+        "website": "TBD",
+        "description": "Major Abu Dhabi ruling family investment vehicles",
+        "relevance": "Institutional family office infrastructure expertise"
+      },
+      {
+        "id": 32,
+        "name": "Al Maktoum Family Offices",
+        "type": "Family Office",
+        "location": "Dubai, UAE",
+        "aum": "$40+ billion combined",
+        "email": "TBD",
+        "focusAreas": "Real Estate, Technology, Infrastructure",
+        "website": "TBD",
+        "description": "Dubai ruling family investment vehicles",
+        "relevance": "Infrastructure and real estate investment experience"
+      },
+      {
+        "id": 33,
+        "name": "Saudi Royal Family Investment Vehicles",
+        "type": "Family Office",
+        "location": "Saudi Arabia",
+        "aum": "$30+ billion",
+        "email": "TBD",
+        "focusAreas": "Technology, Infrastructure, Energy",
+        "website": "TBD",
+        "description": "Major Saudi Arabian royal family investment arms",
+        "relevance": "Technology and infrastructure investment focus"
+      },
+      {
+        "id": 34,
+        "name": "Dubai Multi Commodities Centre (DMCC)",
+        "type": "Family Office Hub/Zone",
+        "location": "Dubai, UAE",
+        "aum": "$500+ billion combined members",
+        "email": "info@dmcc.ae",
+        "focusAreas": "Investment, Trading, Infrastructure",
+        "website": "https://www.dmcc.ae/",
+        "description": "Free zone hosting 800+ family offices and investment vehicles",
+        "relevance": "Access to family offices with infrastructure investment mandates"
+      },
+      {
+        "id": 35,
+        "name": "Abu Dhabi Global Market (ADGM)",
+        "type": "Family Office Hub/Zone",
+        "location": "Abu Dhabi, UAE",
+        "aum": "$300+ billion combined members",
+        "email": "connect@adgm.ae",
+        "focusAreas": "Investment, Wealth Management, Infrastructure",
+        "website": "https://www.adgm.ae/",
+        "description": "Abu Dhabi free zone for family offices and investment firms",
+        "relevance": "Access to family offices with infrastructure mandates"
+      },
+      {
+        "id": 36,
+        "name": "Independent Family Offices - Gulf Region",
+        "type": "Family Office Network",
+        "location": "UAE, Saudi Arabia, GCC",
+        "aum": "$200+ billion combined",
+        "email": "TBD",
+        "focusAreas": "VC, Early-Stage, Growth-Stage Investments",
+        "website": "TBD",
+        "description": "Network of 200+ new family offices established in Dubai in 2025",
+        "relevance": "58% active in VC; significant tech/infrastructure interest"
+      },
+      {
+        "id": 37,
+        "name": "Waha Capital",
+        "type": "PE/Family Office-Backed",
+        "location": "Abu Dhabi, UAE",
+        "aum": "$5+ billion",
+        "email": "info@wahacapital.com",
+        "focusAreas": "Private Equity, Infrastructure, Technology",
+        "website": "https://www.wahacapital.com/",
+        "description": "Abu Dhabi-based PE firm with family office backing",
+        "relevance": "Selective infrastructure and tech investment experience"
+      },
+      {
+        "id": 38,
+        "name": "Shuaa Capital",
+        "type": "Private Equity/Family Office Services",
+        "location": "Dubai, UAE",
+        "aum": "$3+ billion",
+        "email": "info@shuaa.com",
+        "focusAreas": "Private Equity, Investment Banking, Wealth Management",
+        "website": "https://www.shuaa.com/",
+        "description": "UAE-based PE and wealth management firm",
+        "relevance": "Family office advisory and PE portfolio management"
+      }
+    ],
+    "strategicCorporates": [
+      {
+        "id": 39,
+        "name": "ADNOC (Abu Dhabi National Oil Company) - XRG Division",
+        "type": "Strategic Corporate",
+        "location": "Abu Dhabi, UAE",
+        "email": "contact@adnoc.ae",
+        "focusAreas": "Energy, Oil & Gas, Digital Infrastructure",
+        "website": "https://www.adnoc.ae/",
+        "description": "Abu Dhabi's national oil company with international infrastructure division",
+        "relevance": "Infrastructure division (XRG) investing in data center energy systems"
+      },
+      {
+        "id": 40,
+        "name": "Saudi Aramco",
+        "type": "Strategic Corporate",
+        "location": "Saudi Arabia",
+        "email": "investor-relations@aramco.com",
+        "focusAreas": "Energy, Infrastructure, Technology",
+        "website": "https://www.aramco.com/",
+        "description": "Saudi Arabia's national oil company; major infrastructure player",
+        "relevance": "Energy infrastructure expertise; Vision 2030 alignment"
+      },
+      {
+        "id": 41,
+        "name": "Emirates National Oil Company (ENOC)",
+        "type": "Strategic Corporate",
+        "location": "Dubai, UAE",
+        "email": "info@enoc.ae",
+        "focusAreas": "Energy, Infrastructure",
+        "website": "https://www.enoc.ae/",
+        "description": "Dubai's national energy company",
+        "relevance": "Energy and infrastructure investment"
+      },
+      {
+        "id": 42,
+        "name": "Emaar Properties",
+        "type": "Strategic Corporate",
+        "location": "Dubai, UAE",
+        "aum": "$25+ billion market cap",
+        "email": "investor@emaar.ae",
+        "focusAreas": "Real Estate, Infrastructure, Smart Cities",
+        "website": "https://www.emaar.ae/",
+        "description": "Major UAE real estate and infrastructure developer",
+        "relevance": "Smart cities and infrastructure development experience"
+      }
+    ]
+  },
+  "outreachStrategy": {
+    "phase1": {
+      "title": "Tier 1 Sovereign Wealth Funds",
+      "investors": ["ADIA", "Mubadala", "PIF", "ADQ", "KIA"],
+      "rationale": "Largest capital pools; infrastructure mandates align; most active deployers",
+      "timing": "Week 1-2",
+      "expectedEngagement": "High - These are most active institutional investors"
+    },
+    "phase2": {
+      "title": "Global Infrastructure Funds",
+      "investors": ["DigitalBridge", "GIP", "Blackstone", "KKR", "Brookfield", "Partners Group"],
+      "rationale": "Dedicated infrastructure expertise; active in data center/energy deals",
+      "timing": "Week 2-3",
+      "expectedEngagement": "High - Align with existing portfolio focus"
+    },
+    "phase3": {
+      "title": "Crypto/Bitcoin Specialists & New PE Funds",
+      "investors": ["MGX", "Sanabil", "Cypher Capital", "Klumi Ventures", "Fajr Capital", "Lunate"],
+      "rationale": "Cryptocurrency expertise; understanding of Bitcoin mining economics; large dry powder",
+      "timing": "Week 3-4",
+      "expectedEngagement": "Very High - Direct alignment with opportunity"
+    },
+    "phase4": {
+      "title": "Family Offices & Specialized Crypto VCs",
+      "investors": ["AMINA Bank", "Rain Financial", "Ghaf Capital", "Morningstar Ventures", "CV VC"],
+      "rationale": "Crypto market expertise; emerging VC capacity; family office networks",
+      "timing": "Week 4-5",
+      "expectedEngagement": "Medium-High"
+    },
+    "phase5": {
+      "title": "Strategic Corporates & Infrastructure Players",
+      "investors": ["ADNOC-XRG", "Aramco", "ENOC", "DataVolt"],
+      "rationale": "Energy infrastructure alignment; potential strategic partnerships",
+      "timing": "Week 5+",
+      "expectedEngagement": "Medium - Strategic but slower decision cycles"
+    }
+  },
+  "newDiscoveries": {
+    "totalNewInvestors": 14,
+    "breakdown": {
+      "peAndCrypto": 9,
+      "infrastructureSpecialists": 1,
+      "governmentSponsored": 1,
+      "cryptoVc": 3
+    },
+    "details": [
+      {
+        "name": "Fajr Capital",
+        "type": "Sovereign-Backed PE",
+        "capital": "$50B+",
+        "discovery": "Major Dubai-based PE firm with sovereign backing; significant dry powder for infrastructure deals"
+      },
+      {
+        "name": "Lunate",
+        "type": "Multi-Strategy PE Fund",
+        "capital": "$50B+",
+        "discovery": "Recently launched (2023) fund with massive capital allocation; actively deploying across infrastructure"
+      },
+      {
+        "name": "Klumi Ventures",
+        "type": "Digital Asset Manager",
+        "capital": "$500M+",
+        "discovery": "Licensed digital asset fund manager in Abu Dhabi; direct crypto/blockchain expertise"
+      },
+      {
+        "name": "Cypher Capital",
+        "type": "Blockchain VC",
+        "capital": "$100M+",
+        "discovery": "$100M+ blockchain fund based in Dubai; highly specialized in crypto infrastructure"
+      },
+      {
+        "name": "Morningstar Ventures",
+        "type": "Web3 VC",
+        "capital": "$75M+",
+        "discovery": "Blockchain-focused venture fund; Web3 ecosystem expertise"
+      },
+      {
+        "name": "CV VC",
+        "type": "Web3 Ecosystem VC",
+        "capital": "$50M+",
+        "discovery": "Web3 partnership with DMCC; digital infrastructure focus"
+      },
+      {
+        "name": "Ghaf Capital Partners",
+        "type": "Crypto VC",
+        "capital": "$60M+",
+        "discovery": "Cryptocurrency-focused venture capital; specialized in crypto infrastructure"
+      },
+      {
+        "name": "MEVP",
+        "type": "Venture Capital",
+        "capital": "$40M+",
+        "discovery": "Middle East VC with focus on tech and digital infrastructure"
+      },
+      {
+        "name": "DataVolt",
+        "type": "Digital Infrastructure",
+        "capital": "$5B invested",
+        "discovery": "Major player in Saudi digital infrastructure investment; data center expertise"
+      }
+    ]
+  },
+  "researchInsights": {
+    "marketOpportunity": {
+      "uaeLeadership": "UAE generating 13 EH/s Bitcoin hashrate (3.7% of global); fastest-growing mining hub",
+      "cryptoGrowth": "UAE received $34B in crypto inflows (July 2023-June 2024); 42% YoY growth",
+      "regulatoryAdvantage": "Abu Dhabi Global Market and Dubai Multi Commodities Centre supporting crypto; no personal income tax",
+      "infrastructureMarket": "GCC infrastructure market valued at $234.8B (2024), expected to reach $386.7B by 2033",
+      "dealVolume": "GCC deal value reached $72.7B across 554 transactions in 2025 (170% increase vs 2024)"
+    },
+    "competitiveAdvantages": {
+      "costStructure": "$0.0125/kWh power cost is extremely competitive for Bitcoin mining",
+      "geopoliticalStability": "GCC region perceived as low-risk with stable governance",
+      "technicalSupport": "Strong existing digital infrastructure, data centers, and technical expertise",
+      "capitalAvailability": "Abundant capital in region; SWFs actively deploying $36B+ annually"
+    }
+  }
+}

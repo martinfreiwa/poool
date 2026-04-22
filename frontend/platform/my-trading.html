@@ -1,5 +1,5 @@
 {% set title="My Trading" %}
-{% set extra_css=['my-trading', 'cards-template', 'developer-submissions'] %}
+{% set extra_css=['leaderboard', 'my-trading', 'cards-template', 'developer-submissions'] %}
 {% set extra_js=['my-trading'] %}
 {% set body_class="my-trading-body fouc-guard" %}
 
@@ -18,17 +18,16 @@
         <main class="myt__main">
             <div class="myt__content-wrapper">
                 <!-- Page Header -->
-                <div class="ds-page-header">
-                    <div class="ds-page-header__title-row">
-                        <h1 id="my-trading-page-title" class="ds-page-header__title">
-                            My Trading
+                <header class="lb-topbar">
+                    <div class="lb-topbar-inner">
+                        <div class="lb-topbar-left">
+                            <span id="my-trading-page-title" class="lb-topbar-title">My Trading</span>
                             <span class="myt__badge">Marketplace</span>
-                        </h1>
+                        </div>
+                        <div class="lb-topbar-right">
+                        </div>
                     </div>
-                    <div class="ds-page-header__actions">
-                        <!-- Buttons removed per user request -->
-                    </div>
-                </div>
+                </header>
 
                 <!-- Summary Stat Cards — matches submissions .sub-stats layout, original holographic icons -->
                 <div class="sub-stats myt-stats-row">

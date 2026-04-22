@@ -186,7 +186,7 @@
       body.innerHTML = `
         <div class="portfolio-assets-row" style="justify-content:center; padding:48px;">
             <div style="display:flex; flex-direction:column; align-items:center; gap:12px; justify-content:center;">
-              <img src="/static/images/home-smile.svg" alt="No assets" width="48" height="48" style="opacity:0.4;">
+              <img src="/static/images/icons/home-smile.svg" alt="No assets" width="48" height="48" style="opacity:0.4;">
               <span style="color:#667085; font-size:14px;">No investments found.</span>
               <a href="/marketplace" style="color:#0000ff; font-size:14px; text-decoration:none;">Browse the Marketplace →</a>
             </div>
@@ -283,7 +283,7 @@
         <td class="mobile-assets-cell-property">
           <div class="mobile-assets-property-content">
             <img loading="lazy" src="${cover}" alt="Property"
-              class="mobile-assets-property-image" onerror="this.src='/static/images/property-placeholder.webp'" />
+              class="mobile-assets-property-image" onerror="this.src='/static/images/ui/property-placeholder.webp'" />
             <div class="mobile-assets-property-text-wrapper">
               <span class="mobile-assets-property-line"
                 style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; display:inline-block;">

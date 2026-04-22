@@ -1,0 +1,34 @@
+<header class="lb-topbar developer-lb-topbar">
+  <div class="lb-topbar-inner">
+    <div class="lb-topbar-left">
+      <span class="lb-topbar-title">{{ dev_nav_title | default("Developer") }}</span>
+      <nav class="lb-topbar-tabs" aria-label="Developer dashboard navigation">
+        <a href="/developer/dashboard" class="lb-topbar-tab {% if dev_nav_active == 'dashboard' %}active{% endif %}">Dashboard</a>
+        <a href="/developer/assets" class="lb-topbar-tab {% if dev_nav_active == 'assets' %}active{% endif %}">My Assets</a>
+        <a href="/developer/submissions" class="lb-topbar-tab {% if dev_nav_active == 'submissions' %}active{% endif %}">Submissions</a>
+        <a href="/developer/settings" class="lb-topbar-tab {% if dev_nav_active == 'settings' %}active{% endif %}">Settings</a>
+      </nav>
+    </div>
+
+    <div class="lb-topbar-right">
+      {% if dev_nav_show_search %}
+      <button type="button" class="developer-lb-topbar-search" onclick="openSettingsSearch()" id="settings-search-trigger">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="7.5" cy="7.5" r="5" stroke="#717680" stroke-width="1.33"></circle>
+          <path d="M10.5 10.5L13.5 13.5" stroke="#717680" stroke-width="1.33" stroke-linecap="round"></path>
+        </svg>
+        <span>Search settings...</span>
+      </button>
+      {% endif %}
+
+      {% if dev_nav_show_add_asset %}
+      <a href="/developer/add-asset" class="developer-lb-topbar-action{% if dev_add_asset_btn_class %} {{ dev_add_asset_btn_class }}{% endif %}"{% if dev_add_asset_btn_id %} id="{{ dev_add_asset_btn_id }}"{% endif %}>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M10 4v12M4 10h12"></path>
+        </svg>
+        <span>Add Asset</span>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</header>

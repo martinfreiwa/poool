@@ -1,11 +1,11 @@
-{% with title="KYC Verification | POOOL", extra_css=['kyc'], extra_js=['profile-dropdown', 'mobile-navigation',
+{% with title="KYC Verification | POOOL", extra_css=['leaderboard', 'kyc'], extra_js=['profile-dropdown', 'mobile-navigation',
 'kyc-page'] %}{%
 include "components/head.html" %}{% endwith %}
 
 <body id="kyc-body" class="fouc-guard" x-data="kycForm" x-init="initKyc()" x-cloak>
   <!-- Mobile Header -->
   <header id="mobile-header" class="mobile-header">
-    <a href="/marketplace" class="mobile-header__logo"><img src="/static/images/Logo%20Pool.svg" alt="POOOL" /></a>
+    <a href="/marketplace" class="mobile-header__logo"><img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL" /></a>
     <div class="mobile-header__icons">
       <button id="mobile-burger-btn" class="mobile-header__icon-btn mobile-header__icon-btn--burger"
         onclick="toggleMobileMenu()" aria-label="Menu">
@@ -27,23 +27,16 @@ include "components/head.html" %}{% endwith %}
     </div>
 
     <main class="ds-main kyc-main">
-      <div class="kyc-container">
-
-        <!-- Page Header — uses ds-page-header system -->
-        <div class="ds-page-header">
-          <div class="ds-page-header__title-row">
-            <div class="ds-page-header__icon poool-icon-custom">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-            </div>
-            <div>
-              <h1 class="ds-page-header__title">Identity Verification</h1>
-              <p class="kyc-subtitle" x-text="getStatusMessage()"></p>
-            </div>
+      <header class="lb-topbar">
+        <div class="lb-topbar-inner">
+          <div class="lb-topbar-left kyc-topbar-title-wrap">
+            <span class="lb-topbar-title">Identity Verification</span>
+            <p class="kyc-subtitle" x-text="getStatusMessage()"></p>
           </div>
         </div>
+      </header>
+
+      <div class="kyc-container">
 
         <!-- Content Wrapper -->
         <div class="kyc-content-wrapper">

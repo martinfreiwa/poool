@@ -4581,7 +4581,7 @@ var Ca = (() => {
             ["variant", "secondary"],
             [
               "href",
-              "/platform/",
+              "/auth/login",
               "target",
               "_blank",
               "rel",
@@ -8135,7 +8135,7 @@ var Ga = (() => {
             ["variant", "primary"],
             [
               "href",
-              "/platform/",
+              "/auth/login",
               "target",
               "_blank",
               "rel",

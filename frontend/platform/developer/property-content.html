@@ -1,4 +1,4 @@
-{% with title="Developer Property Content", meta_description="Add property content and media for listing on POOOL.", extra_css=['property-content', 'developer-property-content', 'developer-document-upload-step3', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-property-content', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Developer Property Content", meta_description="Add property content and media for listing on POOOL.", extra_css=['leaderboard', 'property-content', 'developer-property-content', 'developer-document-upload-step3', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-property-content', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="property-content-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -10,20 +10,24 @@
     <!-- Main Content Area -->
     <main id="property-content-main" class="ds-main cart-page-main">
       <!-- Page Header -->
-      <div class="ds-page-header cart-page-header">
-        <div class="ds-page-header__title-row cart-title-wrapper">
-          <h1 class="ds-page-header__title cart-page-title">Property Content</h1>
+      <header class="lb-topbar cart-page-header">
+        <div class="lb-topbar-inner">
+          <div class="lb-topbar-left">
+            <span class="lb-topbar-title">Property Content</span>
+          </div>
+          <div class="lb-topbar-right">
+            <div class="checkout-steps">
+              <a href="/developer/add-asset" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Asset Type</a>
+              <span class="checkout-steps__divider">→</span>
+              <a href="/developer/application-form" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Property Info</a>
+              <span class="checkout-steps__divider">→</span>
+              <a href="/developer/document-upload-step3" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Documents</a>
+              <span class="checkout-steps__divider">→</span>
+              <span class="checkout-steps__step checkout-steps__step--active">Review</span>
+            </div>
+          </div>
         </div>
-        <div class="checkout-steps">
-          <a href="/developer/add-asset" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Asset Type</a>
-          <span class="checkout-steps__divider">→</span>
-          <a href="/developer/application-form" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Property Info</a>
-          <span class="checkout-steps__divider">→</span>
-          <a href="/developer/document-upload-step3" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Documents</a>
-          <span class="checkout-steps__divider">→</span>
-          <span class="checkout-steps__step checkout-steps__step--active">Review</span>
-        </div>
-      </div>
+      </header>
       <!-- Form Container -->
       <form id="property-content-form" class="property-content-form">
         <div id="property-details-section" class="form-section property-details-section">

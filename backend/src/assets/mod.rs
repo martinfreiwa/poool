@@ -1,4 +1,5 @@
 pub mod models;
+pub mod public_assets;
 pub mod routes;
 
 use crate::auth::routes::AppState;
@@ -20,6 +21,8 @@ pub fn router() -> Router<AppState> {
         .route("/commodities-marketplace/tab", get(api_commodities_tab))
         .route("/property", get(page_property))
         .route("/property/:slug", get(page_property))
+        // Public property detail page (no auth) — linked from landing-v2.html
+        .route("/p/:slug", get(page_property_public))
         .route("/commodity", get(page_commodity))
         .route("/commodity/:slug", get(page_commodity))
         .route("/api/assets/search", get(api_asset_search))

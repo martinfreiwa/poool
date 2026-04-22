@@ -209,7 +209,7 @@
   order: 0;
   flex-grow: 0;
   display: inline-block;
-  background: url("/static/images/arrow-up-right.svg") no-repeat center;
+  background: url("/static/images/icons/arrow-up-right.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
@@ -261,7 +261,7 @@
 
 
 .status-success .portfolio-assets-status-icon {
-  background: url("/static/images/check-circle.svg") no-repeat center;
+  background: url("/static/images/icons/check-circle.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
@@ -273,7 +273,7 @@
 }
 
 .status-progress .portfolio-assets-status-icon {
-  background: url("/static/images/clock-refresh.svg") no-repeat center;
+  background: url("/static/images/icons/clock-refresh.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
@@ -285,7 +285,7 @@
 }
 
 .status-warning .portfolio-assets-status-icon {
-  background: url("/static/images/coins-swap-02.svg") no-repeat center;
+  background: url("/static/images/icons/coins-swap-02.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
@@ -297,7 +297,7 @@
 }
 
 .status-neutral .portfolio-assets-status-icon {
-  background: url("/static/images/check-verified-02.svg") no-repeat center;
+  background: url("/static/images/icons/check-verified-02.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
@@ -309,7 +309,7 @@
 }
 
 .status-default .portfolio-assets-status-icon {
-  background: url("/static/images/check-circle.svg") no-repeat center;
+  background: url("/static/images/icons/check-circle.svg") no-repeat center;
   background-size: 12px 12px;
 }
 

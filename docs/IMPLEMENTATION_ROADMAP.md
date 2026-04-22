@@ -49,6 +49,11 @@ Every task declares a **File Zone** (which directories/files it touches). Check 
 
 | Date/Time (UTC) | Agent Name | Claimed Task ID | File Zone | Action / Status | Notes |
 |:---|:---|:---|:---|:---|:---|
+| `2026-04-22 09:40` | `Codex` | `UI Hotfix (Landing Why-Us Repair)` | `frontend/platform/landing-v2.html` | `✅ Check-Out` | Reworked `#why-us` responsive grid + fan-card behavior to remove broken overlap/stacking and stabilize desktop/mobile layouts. |
+| `2026-04-21 10:52` | `Codex` | `UI Hotfix (Investor Navbar Standardization)` | `frontend/platform/components/sidebar.html` | `✅ Check-Out` | Added shared leaderboard-style investor topbar navigation injected globally on investor routes (path-aware active state, mobile hidden, skips pages that already have lb-topbar). |
+| `2026-04-21 10:42` | `Codex` | `UI Hotfix (Developer Navbar Standardization)` | `frontend/platform/developer/*.html, frontend/platform/settings-2.html, frontend/platform/components/developer-topbar.html, frontend/platform/static/css/developer-leaderboard-navbar.css` | `✅ Check-Out` | Standardized developer dashboard navigation using leaderboard-style topbar across Dashboard, Assets, Submissions, and Developer Settings (conditional for developer context). |
+| `2026-04-21 10:08` | `Codex` | `UI Hotfix (Public Property Parity v2)` | `frontend/platform/property-public.html, backend/src/assets/public_assets.rs` | `✅ Check-Out` | Restored public price-card visual parity (inputs + quick chips) and guaranteed 5-image gallery rendering for `/p/:slug` cards. |
+| `2026-04-21 08:00` | `Codex` | `UI Hotfix (Public Property Parity)` | `frontend/platform/property-public.html` | `✅ Check-Out` | Synced public `/p/:slug` property content structure with `/property/:slug` while keeping no-sidebar public header and signup CTAs. |
 | `2026-03-21 05:45` | `Antigravity` | `Global` | `docs/` | `✅ Check-Out` | Generated multi-agent tracking system. |
 | `2026-03-21 06:30` | `Antigravity` | `Global` | `docs/` | `✅ Check-Out` | Full Masterplan audit. Roadmap expanded to 120+ tasks. |
 | `2026-03-21 06:25` | `Antigravity` | `2.1–2.10` | `database/*.sql` | `✅ Check-Out` | Phase 2 DB migrations complete: 050b, 050c, 050, 051, 052, 053, 054, 055 applied. Tasks 2.9/2.10 blocked (TimescaleDB). |

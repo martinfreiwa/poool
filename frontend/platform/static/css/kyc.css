@@ -21,17 +21,26 @@
   width: calc(100% - var(--sidebar-width, 256px));
   min-height: 100vh;
   margin-left: var(--sidebar-width, 256px);
-  padding: var(--page-padding-top, 48px) var(--page-padding-x, 32px) 64px;
+  padding: 0;
   background: var(--content-bg);
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   position: relative;
   z-index: 0;
 }
 
 .kyc-container {
   width: 100%;
+  padding: var(--page-padding-top, 48px) var(--page-padding-x, 32px) 64px;
   max-width: 780px;
+}
+
+.kyc-topbar-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 /* ── Subtitle (below page header title) ── */

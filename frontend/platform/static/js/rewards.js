@@ -846,7 +846,7 @@
             <td class="data-table__td" colspan="5" style="text-align:center; padding:64px 24px; color:#667085; border-bottom:none;">
               <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
                 <div style="width:48px; height:48px; background:#f9fafb; border-radius:10px; display:flex; align-items:center; justify-content:center;">
-                  <img src="/static/images/coins-stacked-03.svg" width="24" height="24" style="opacity:0.4" />
+                  <img src="/static/images/icons/coins-stacked-03.svg" width="24" height="24" style="opacity:0.4" />
                 </div>
                 <div>
                   <div style="font-weight:600; color:#101828; font-size:16px; margin-bottom:4px;">No commissions found</div>

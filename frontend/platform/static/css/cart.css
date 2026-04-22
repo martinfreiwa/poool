@@ -18,16 +18,25 @@
   width: calc(100% - 256px);
   min-height: 100vh;
   margin-left: 256px;
-  padding: 48px 24px 64px 24px;
+  padding: 0;
   background: #fafafa;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 0;
   flex: 1;
   order: 1;
   z-index: 0;
   box-sizing: border-box;
   align-items: flex-start !important;
+}
+
+#cart-content-wrapper {
+  padding: var(--page-padding-top, 48px) var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 /* Cart Header */
@@ -977,6 +986,22 @@
     width: 100%;
   }
 }
+
+@media (max-width: 768px) {
+  .cart-page-main {
+    width: 100%;
+    margin-left: 0;
+    padding: 0;
+  }
+
+  #cart-content-wrapper {
+    padding: 16px;
+    padding-top: 80px;
+    max-width: none;
+    gap: 24px;
+  }
+}
+
 
 /* ── Dynamic (server-rendered) Cart Item Cards ──────────────────── */
 /* These classes are injected by the Rust backend page_cart handler  */

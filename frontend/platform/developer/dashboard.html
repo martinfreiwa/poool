@@ -1,4 +1,5 @@
 {% with title="Developer Dashboard – POOOL", no_index=True, extra_css=['developer-dashboard',
+'developer-leaderboard-navbar',
 'unified-styles', 'unified-cards', 'mobile-developer-dashboard'],
 extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% include
 "components/head.html" %}{% endwith %}
@@ -41,12 +42,9 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
       <!-- Dashboard Content Wrapper -->
       <div id="dashboard-content-wrapper">
 
-        <!-- Page Title -->
-        <div id="dashboard-header" class="ds-page-header dashboard-page-header">
-          <div class="ds-page-header__title-row dashboard-title-wrapper">
-            <h1 id="dashboard-title" class="ds-page-header__title dashboard-page-title">Dashboard</h1>
-          </div>
-        </div>
+        {% with dev_nav_title="Developer", dev_nav_active="dashboard" %}
+        {% include "components/developer-topbar.html" %}
+        {% endwith %}
 
         <!-- Developer Dashboard Content -->
         <div id="dashboard-main-content" class="dashboard-main-content">

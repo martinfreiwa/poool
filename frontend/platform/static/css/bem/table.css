@@ -693,7 +693,7 @@
   order: 0;
   flex-grow: 0;
   display: inline-block;
-  background: url("/static/images/arrow-up-right.svg") no-repeat center;
+  background: url("/static/images/icons/arrow-up-right.svg") no-repeat center;
   background-size: 12px 12px;
 }
 

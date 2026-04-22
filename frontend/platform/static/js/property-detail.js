@@ -44,7 +44,7 @@ function getGalleryImages() {
 
   return fallbackImages.length > 0
     ? fallbackImages
-    : [{ src: "/static/images/villa1.webp", caption: "Main property view" }];
+    : [{ src: "/static/images/seed/villa1.webp", caption: "Main property view" }];
 }
 
 // Initialize FAQ expansion monitoring

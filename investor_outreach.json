@@ -1,0 +1,61 @@
+{
+  "campaign": {
+    "title": "Abu Dhabi Bitcoin Mining Infrastructure",
+    "description": "Digital infrastructure opportunity in Bitcoin mining with $0.0125/kWh power economics",
+    "message": "Hi WMW team\n\nWe are opening a limited number of confidential conversations around an Abu Dhabi digital infrastructure opportunity in Bitcoin mining with strong structural power economics at $0.0125/kWh. The opportunity is infrastructure-led, execution-ready, and intended for a serious private-capital audience. Would you be open to a brief introduction?\n\nRegards Jonas Freiwald",
+    "startDate": "2026-04-22",
+    "status": "planning"
+  },
+  "investors": [
+    {
+      "id": 1,
+      "name": "Investor/Fund Name",
+      "contact": "contact@example.com",
+      "contactPerson": "Name",
+      "investorType": "Family Office / VC / PE / Hedge Fund / Infrastructure Fund",
+      "focusAreas": "Bitcoin, Mining, Infrastructure, Energy",
+      "estimatedAUM": "$X million",
+      "previousInvestments": "Similar companies if known",
+      "notes": "",
+      "status": "pending",
+      "emailSentDate": null,
+      "responseDate": null,
+      "outcome": null
+    }
+  ],
+  "investorTypesTargeting": {
+    "description": "Recommended investor types for Bitcoin mining infrastructure",
+    "categories": [
+      {
+        "type": "Infrastructure Funds",
+        "description": "Funds focused on digital and energy infrastructure",
+        "examples": "BlackRock Infrastructure, KKR Infrastructure, Brookfield"
+      },
+      {
+        "type": "Bitcoin/Crypto Focused VCs",
+        "description": "Venture capital firms with crypto/blockchain focus",
+        "examples": "Pantera Capital, Galaxy Digital, Paradigm"
+      },
+      {
+        "type": "Energy-Focused PE",
+        "description": "Private equity firms specializing in energy assets",
+        "examples": "Energy infrastructure funds, utility investors"
+      },
+      {
+        "type": "Family Offices",
+        "description": "High-net-worth family investment vehicles with infrastructure interest",
+        "examples": "UHNW family offices with energy/tech focus"
+      },
+      {
+        "type": "Sovereign Wealth Funds",
+        "description": "SWFs interested in Middle East digital infrastructure",
+        "examples": "UAE funds, Saudi funds, other GCC investors"
+      },
+      {
+        "type": "Strategic Corporates",
+        "description": "Energy companies and infrastructure operators",
+        "examples": "Energy majors, infrastructure operators"
+      }
+    ]
+  }
+}

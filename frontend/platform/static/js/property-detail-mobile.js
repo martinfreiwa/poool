@@ -153,7 +153,7 @@ function initializeAddToCart() {
 
       // Get first image from gallery
       const galleryImg = document.querySelector(".mobile-gallery-img");
-      let propertyImage = galleryImg?.src || "/static/images/villa1.webp";
+      let propertyImage = galleryImg?.src || "/static/images/seed/villa1.webp";
       if (propertyImage.startsWith("http")) {
         propertyImage = new URL(propertyImage).pathname;
       }

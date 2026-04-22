@@ -49,12 +49,12 @@
                 <!-- 2. Categories Section -->
                 <div id="property-categories" class="categories-section">
                   <div class="category-badge">
-                    <img  src="/static/images/Bed.svg" alt="Beds" class="badge-icon" width="24" height="24" />
+                    <img  src="/static/images/icons/Bed.svg" alt="Beds" class="badge-icon" width="24" height="24" />
                     <span class="badge-text">{{ asset.bedrooms | default(4) }}</span>
                   </div>
                   <div class="category-separator"></div>
                   <div class="category-badge">
-                    <img  src="/static/images/bookmark-check.svg" alt="Ready" class="badge-icon" width="16" height="16" />
+                    <img  src="/static/images/icons/bookmark-check.svg" alt="Ready" class="badge-icon" width="16" height="16" />
                     <span class="badge-text">Ready</span>
                   </div>
                   <div class="category-separator"></div>
@@ -336,7 +336,7 @@
                   </div>
                   <div class="developer-card">
                     <div class="developer-logo-wrapper">
-                      <div class="developer-logo"><img src="/static/images/alexvillas.webp" alt="Alex Villas Logo" /></div>
+                      <div class="developer-logo"><img src="/static/images/seed/alexvillas.webp" alt="Alex Villas Logo" /></div>
                     </div>
                     <div class="developer-text">
                       <h4 class="developer-name">ALEX VILLAS</h4>
@@ -589,9 +589,9 @@
           <h1 class="mobile-property-title">{{ asset.title | default('Property Details') }}</h1>
         </div>
         <div class="mobile-categories">
-          <div class="mobile-category-badge"><img  src="/static/images/Bed.svg" alt="Beds" width="24" height="24" /><span>{{ asset.bedrooms | default(4) }}</span></div>
+          <div class="mobile-category-badge"><img  src="/static/images/icons/Bed.svg" alt="Beds" width="24" height="24" /><span>{{ asset.bedrooms | default(4) }}</span></div>
           <div class="mobile-category-divider"></div>
-          <div class="mobile-category-badge"><img  src="/static/images/bookmark-check.svg" alt="Ready" width="16" height="16" /><span>Ready</span></div>
+          <div class="mobile-category-badge"><img  src="/static/images/icons/bookmark-check.svg" alt="Ready" width="16" height="16" /><span>Ready</span></div>
           <div class="mobile-category-divider"></div>
           <div class="mobile-category-badge"><img  src="/static/images/prop-details/maximize-02.svg" alt="Area" width="16" height="16" /><span>{% if asset.land_size_sqm %}{{ asset.land_size_sqm }} m²{% else %}128 m²{% endif %}</span></div>
           <div class="mobile-category-divider"></div>

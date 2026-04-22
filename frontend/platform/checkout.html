@@ -1,5 +1,5 @@
 {% with title="Checkout", meta_description="Complete your investment safely and securely through the POOOL checkout.",
-extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html" %}{% endwith
+extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html" %}{% endwith
 %}
 
 <body id="checkout-body" class="fouc-guard">
@@ -31,23 +31,26 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
 
     <main class="ds-main checkout-main">
       <!-- Header -->
-      <div class="ds-page-header checkout-header">
-        <div class="ds-page-header__title-row">
-          <h1 class="ds-page-header__title">Checkout</h1>
+      <header class="lb-topbar checkout-header">
+        <div class="lb-topbar-inner">
+          <div class="lb-topbar-left">
+            <span class="lb-topbar-title">Checkout</span>
+          </div>
+          <div class="lb-topbar-right">
+            <div class="checkout-steps">
+              <a href="/cart" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Cart</a>
+              <span class="checkout-steps__divider">→</span>
+              <span class="checkout-steps__step checkout-steps__step--active">Payment</span>
+              <span class="checkout-steps__divider">→</span>
+              <span class="checkout-steps__step">Confirmation</span>
+            </div>
+          </div>
         </div>
-        <div class="checkout-steps">
-          <a href="/cart" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Cart</a>
-          <span class="checkout-steps__divider">→</span>
-          <span class="checkout-steps__step checkout-steps__step--active">Payment</span>
-          <span class="checkout-steps__divider">→</span>
-          <span class="checkout-steps__step">Confirmation</span>
-        </div>
-      </div>
+      </header>
 
-      <hr class="page-header-divider">
-
-      <!-- Content -->
-      <div class="checkout-content">
+      <div class="checkout-content-wrapper">
+        <!-- Content -->
+        <div class="checkout-content">
         <!-- Left Column - Order Items + Wallet + Order Summary -->
         <div class="checkout-items" id="checkout-items">
           <!-- Loading state -->
@@ -209,6 +212,7 @@ extra_css=['checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html
 
 
           </form>
+        </div>
         </div>
       </div>
     </main>

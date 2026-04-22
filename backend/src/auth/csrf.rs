@@ -25,7 +25,7 @@ pub async fn csrf_middleware(
     let path = req.uri().path().to_string();
     if path.starts_with("/static/")
         || path.starts_with("/fonts/")
-        || path.starts_with("/images/")
+        || path.starts_with("/static/images/")
         || path.starts_with("/en/")
         || path.starts_with("/id/")
         || path.starts_with("/webhook")

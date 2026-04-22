@@ -1,0 +1,29 @@
+ID,Investor_Name,Type,Location,AUM,Contact_Email,Phone,Website,Priority_Phase,Key_Notes
+1,Abu Dhabi Investment Authority (ADIA),Sovereign Wealth Fund,"Abu Dhabi, UAE",$1.1 trillion,contact@adia.ae,+971 2 415 0000,https://www.adia.ae/,1,Email format: First.Last@adia.ae
+2,Mubadala Investment Company,Sovereign Wealth Fund,"Abu Dhabi, UAE",$330 billion,info@mubadala.com,TBD,https://www.mubadala.com/,1,Most active SWF globally
+3,Saudi Public Investment Fund (PIF),Sovereign Wealth Fund,"Riyadh, Saudi Arabia",$1 trillion+,Info@pif.gov.sa,TBD,https://www.pif.gov.sa/,1,World's most active SWF (2025) - $36.2B deployed
+4,Kuwait Investment Authority (KIA),Sovereign Wealth Fund,Kuwait City,$700+ billion,information@kia.gov.kw,TBD,https://www.kia.gov.kw/,1,Infrastructure Director: ahmadbdr@kia.gov.kw
+5,L'IMAD Holdings,Sovereign Wealth Fund,"Abu Dhabi, UAE",$50+ billion,TBD,TBD,TBD,1,Abu Dhabi's newest sovereign fund (2026)
+6,Qatar Investment Authority (QIA),Sovereign Wealth Fund,"Doha, Qatar",$450+ billion,TBD,TBD,https://www.qia.qa/,1,One of Gulf's largest SWFs
+7,DigitalBridge,Infrastructure Fund,Global/Saudi,$85+ billion,ir@digitalbridge.com,+1 561 570 4644,https://www.digitalbridge.com/,2,Major data center investor; PIF partnership
+8,Global Infrastructure Partners (GIP),Infrastructure Fund,Global,$100+ billion,contact@global-infra.com,TBD,https://www.global-infra.com/,2,Email format: First.Last@global-infra.com
+9,Blackstone Infrastructure,Infrastructure Fund,"New York, USA",$150+ billion,investor-relations@bxsl.com,+1 888 756 8443,https://www.blackstone.com/,2,ADNOC partnership experience
+10,Brookfield Infrastructure,Infrastructure Fund,Global,$200+ billion,investor-relations@bip.brookfield.com,+1 866 989 0311,https://bip.brookfield.com/,2,Global infrastructure operator
+11,KKR Infrastructure,Infrastructure Fund,Global,$90+ billion,Investor-Relations@kkr.com,+1 877 610 4910,https://www.kkr.com/,2,K-INFRA: contact@kinfra.com
+12,Investcorp,Private Equity & Infrastructure,Bahrain/UAE,$50+ billion,info@investcorp.com,+1 212 599 4700,https://www.investcorp.com/,2,Abu Dhabi: +971 2 2016000
+13,Energy Capital Partners (ECP),Private Equity/Infrastructure,"Summit, NJ",$25+ billion,info@ecpgp.com,TBD,https://www.ecpgp.com/,2,$25B partnership with ADQ
+14,Gulf Infrastructure Fund,Infrastructure Fund,GCC Region,$25+ billion,TBD,TBD,TBD,2,Actively expanding digital infrastructure
+15,MGX Abu Dhabi,Crypto/Tech Investment,"Abu Dhabi, UAE",$20+ billion,compliance@mgx.ae,TBD,https://www.mgx.ae/,3,Backed by Mubadala & G42; BlackRock partnership
+16,Sanabil (Saudi PIF subsidiary),Venture Capital/Crypto,Riyadh,$10+ billion,Contact via PIF (Info@pif.gov.sa),TBD,TBD,3,"LP in top crypto VCs (A16Z, Haun)"
+17,AMINA Bank,Islamic Crypto Bank,Abu Dhabi,$500+ million,contact@amina.ae,+971 269 228 22,https://aminagroup.com/,3,First shariah-compliant digital bank
+18,Rain Financial,Crypto Exchange,"Abu Dhabi, UAE",$200+ million,support-ae@rain.com,TBD,https://www.rain.com/,3,Licensed by ADGM FSRA
+19,CoinMENA,Crypto Exchange,Bahrain,$150+ million,TBD,TBD,TBD,3,Sharia-compliant crypto platform
+20,BitOasis,Crypto Exchange,UAE,$100+ million,TBD,TBD,TBD,3,Prominent MEA crypto exchange
+21,Waha Capital,Private Equity/Family Office,"Abu Dhabi, UAE",$5+ billion,info@wahacapital.com,+971 2 6677343,https://www.wahacapital.com/,4,Mubadala-backed; infrastructure portfolio
+22,Gulf Capital,Private Equity,Abu Dhabi/Dubai,$3+ billion,info@gulfcapital.com,+971 2 671 6060,https://www.gulfcapital.com/,4,Selective infrastructure investments
+23,Shuaa Capital,Private Equity,"Dubai, UAE",$3+ billion,info@shuaa.com,+971 4 330 3600,https://www.shuaa.com/,4,Director PM: Umar Mirza
+24,ADNOC XRG,Strategic Corporate/Investment,"Abu Dhabi, UAE",$150+ billion,Contact via ADNOC,TBD,https://xrg.com/,5,Data center energy infrastructure focus
+25,Saudi Aramco Ventures,Corporate Venture Capital,Dhahran,$2-20M deals,Contact via website,TBD,https://aramcoventures.com/,5,Energy infrastructure focus
+26,Energy Capital Partners,Strategic Corporate,Multiple,$25 billion,info@ecpgp.com,TBD,https://www.ecpgp.com/,5,ADQ partnership for power generation
+27,Microsoft/BlackRock AI Infrastructure,Strategic Partnership,Global,$30+ billion,TBD,TBD,TBD,5,KIA recently joined as financial anchor
+28,L'IMAD Holdings,Sovereign Wealth Fund,"Abu Dhabi, UAE",$50+ billion,TBD,TBD,TBD,1,Infrastructure and real estate focus

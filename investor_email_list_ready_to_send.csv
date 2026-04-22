@@ -1,0 +1,29 @@
+ID,Investor Name,Email Address(es),Phone,Type,Location,Priority,Notes
+1,Abu Dhabi Investment Authority (ADIA),contact@adia.ae,+971 2 415 0000,Sovereign Wealth Fund,"Abu Dhabi, UAE",1,Email format: First.Last@adia.ae
+2,Mubadala Investment Company,info@mubadala.com,TBD,Sovereign Wealth Fund,"Abu Dhabi, UAE",1,Visit mubadala.com/en/contact-us
+3,Saudi Public Investment Fund (PIF),Info@pif.gov.sa,TBD,Sovereign Wealth Fund,"Riyadh, Saudi Arabia",1,Also: Media@pif.gov.sa
+4,Kuwait Investment Authority (KIA),information@kia.gov.kw,TBD,Sovereign Wealth Fund,Kuwait City,1,Infrastructure: ahmadbdr@kia.gov.kw
+5,Qatar Investment Authority (QIA),media@qia.qa,+974 4499 5919,Sovereign Wealth Fund,"Doha, Qatar",1,Format: F.Last@qia.qa
+6,L'IMAD Holdings,contact@mediaoffice.abudhabi,TBD,Sovereign Wealth Fund,"Abu Dhabi, UAE",1,Abu Dhabi Government fund
+7,DigitalBridge,ir@digitalbridge.com,+1 561 570 4644,Infrastructure Fund,Global/Saudi,2,Private Credit: chris.moon@digitalbridge.com
+8,Global Infrastructure Partners (GIP),contact@global-infra.com,TBD,Infrastructure Fund,Global,2,Format: First.Last@global-infra.com
+9,Blackstone Infrastructure,investor-relations@bxsl.com,+1 888 756 8443,Infrastructure Fund,"New York, USA",2,International: +1 646 313 6590
+10,Brookfield Infrastructure,investor-relations@bip.brookfield.com,+1 866 989 0311,Infrastructure Fund,Global,2,Global: +1 416 363 9491
+11,KKR Infrastructure,Investor-Relations@kkr.com,+1 877 610 4910,Infrastructure Fund,Global,2,K-INFRA: contact@kinfra.com
+12,Investcorp,info@investcorp.com,+1 212 599 4700,Private Equity & Infrastructure,Bahrain/UAE,2,Infrastructure: greg.pearce@asinvestcorp.com
+13,Energy Capital Partners (ECP),info@ecpgp.com,TBD,Private Equity/Infrastructure,"Summit, NJ",2,Format: FLast@ecpartners.com
+14,Gulf Infrastructure Fund,contact@gulfinfrastructurefund.com,TBD,Infrastructure Fund,GCC Region,2,gulfinfrastructurefund.com
+15,MGX Abu Dhabi,compliance@mgx.ae,TBD,Crypto/Tech Investment,"Abu Dhabi, UAE",3,Contact form: mgx.ae/en/contact-us
+16,Sanabil (Saudi PIF),investment@sanabil.com,TBD,Venture Capital/Crypto,Riyadh,3,Format: F.Last@sanabil.com
+17,AMINA Bank,contact@amina.ae,+971 269 228 22,Islamic Crypto Bank,Abu Dhabi,3,Swiss-regulated bank
+18,Rain Financial,support-ae@rain.com,TBD,Crypto Exchange,"Abu Dhabi, UAE",3,Licensed by ADGM FSRA
+19,CoinMENA,support@coinmena.com,TBD,Crypto Exchange,Bahrain,3,Licensed by Central Bank of Bahrain
+20,BitOasis,help@bitoasis.net,+971505241822,Crypto Exchange,UAE/Bahrain,3,Support & WhatsApp
+21,Waha Capital,info@wahacapital.com,+971 2 6677343,Private Equity,"Abu Dhabi, UAE",4,Media: media@wahacapital.com
+22,Gulf Capital,info@gulfcapital.com,+971 2 671 6060,Private Equity,Abu Dhabi/Dubai,4,Dubai: +971 4 375 8403
+23,Shuaa Capital,info@shuaa.com,+971 4 330 3600,Private Equity,"Dubai, UAE",4,Umar Mirza - Private Markets Director
+24,ADNOC XRG,contact@xrg.com,TBD,Strategic Corporate,"Abu Dhabi, UAE",5,Contact form: xrg.com
+25,Saudi Aramco Ventures,hotline@aramcoventures.com,+966 13 874 9458,Corporate Venture Capital,"Dhahran, Saudi Arabia",5,Format: First.Last@aramco.com
+26,ENOC Dubai,first.last@enoc.com,800-3662,Strategic Corporate,Dubai,5,Email format commonly used
+27,Saudi Aramco,investor.relations@aramco.com,+966 11 297 8775,Strategic Corporate,Saudi Arabia,5,Investor Relations team
+28,Microsoft/BlackRock AI Infrastructure,contact@microsoft.com,TBD,Strategic Partnership,Global,5,AI Infrastructure Partnership

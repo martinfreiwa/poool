@@ -4,7 +4,7 @@
 <head>
 	<meta charset="UTF-8">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
-    <link rel="icon" type="image/svg+xml" href="/static/images/logo-pool.svg" />
+    <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Settings | Developer | POOOL</title>
 	<meta name="description"
@@ -61,7 +61,7 @@
 
 <body id="marketplace-body" class="fouc-guard"><!-- Mobile Header (hidden on desktop) --><!-- Mobile Header -->
 	<header id="mobile-header" class="mobile-header"><!-- Logo --><a href="/marketplace"
-			class="mobile-header__logo"><img src="/static/images/Logo%20Pool.svg" alt="POOOL"></a><!-- Icons Container -->
+			class="mobile-header__logo"><img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL"></a><!-- Icons Container -->
 		<div class="mobile-header__icons"><!-- Notification Button --><button id="mobile-notification-btn"
 				class="mobile-header__icon-btn mobile-header__icon-btn--notification" aria-label="Notifications"><svg
 					class="mobile-header__icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -101,7 +101,7 @@
 		<nav id="mobile-burger-menu" class="mobile-burger-menu"><!-- Header -->
 			<div class="mobile-burger-menu__header">
 				<div class="mobile-burger-menu__header-container"><!-- Logo -->
-					<div class="mobile-burger-menu__logo"><img src="/static/images/Logo%20premium.svg" alt="POOOL"></div>
+					<div class="mobile-burger-menu__logo"><img src="/static/images/logos/Logo%20premium.svg" alt="POOOL"></div>
 					<!-- Close Button --><button class="mobile-burger-menu__close" onclick="closeMobileMenu()"
 						aria-label="Close menu"><span class="mobile-burger-menu__close-icon"></span></button>
 				</div>
@@ -112,7 +112,7 @@
 				<div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--parent"
 					data-item-id="marketplace" onclick="toggleMobileMarketplaceDropdown(event)">
 					<div class="mobile-burger-menu__nav-text-wrapper">
-						<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/home-05.svg"
+						<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/icons/home-05.svg"
 								alt="Marketplace" class="mobile-burger-menu__nav-icon"></div><span
 							class="mobile-burger-menu__nav-text">Marketplace</span>
 					</div><svg class="mobile-burger-menu__nav-chevron mobile-burger-menu__nav-chevron--expanded"
@@ -127,36 +127,36 @@
 						href="/commodities-marketplace" class="mobile-burger-menu__nav-child"><span
 							class="mobile-burger-menu__nav-child-text">Commodities</span></a></div><!-- Wallet --> <a
 					href="/wallet" class="mobile-burger-menu__nav-item">
-					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/wallet-02.svg"
+					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/icons/wallet-02.svg"
 							alt="Wallet" class="mobile-burger-menu__nav-icon"></div><span
 						class="mobile-burger-menu__nav-text">Wallet</span>
 				</a><!-- Portfolio --> <a href="/portfolio" class="mobile-burger-menu__nav-item">
 					<div class="mobile-burger-menu__nav-icon-wrapper"><img 
-							src="/static/images/line-chart-up-02.svg" alt="Portfolio" class="mobile-burger-menu__nav-icon">
+							src="/static/images/icons/line-chart-up-02.svg" alt="Portfolio" class="mobile-burger-menu__nav-icon">
 					</div><span class="mobile-burger-menu__nav-text">Portfolio</span>
 				</a><!-- Rewards -->
 				<a href="/rewards" class="mobile-burger-menu__nav-item">
-					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/star-01.svg"
+					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/icons/star-01.svg"
 							alt="Rewards" class="mobile-burger-menu__nav-icon"></div><span
 						class="mobile-burger-menu__nav-text">Rewards</span>
 				</a><!-- Cart --> <a href="/cart" class="mobile-burger-menu__nav-item">
 					<div class="mobile-burger-menu__nav-icon-wrapper"><img 
-							src="/static/images/shopping-cart-01.svg" alt="Cart" class="mobile-burger-menu__nav-icon"></div>
+							src="/static/images/icons/shopping-cart-01.svg" alt="Cart" class="mobile-burger-menu__nav-icon"></div>
 					<span class="mobile-burger-menu__nav-text">Cart</span>
 				</a><!-- Leaderboard -->
 				<div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
-					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/award-05.svg"
+					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/icons/award-05.svg"
 							alt="Leaderboard" class="mobile-burger-menu__nav-icon"></div><span
 						class="mobile-burger-menu__nav-text">Leaderboard</span> <span
 						class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
 				</div><!-- Settings -->
 				<div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
-					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/settings-01.svg"
+					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/icons/settings-01.svg"
 							alt="Settings" class="mobile-burger-menu__nav-icon"></div><span
 						class="mobile-burger-menu__nav-text">Settings</span>
 				</div><!-- Support --> <a href="/support" class="mobile-burger-menu__nav-item">
 					<div class="mobile-burger-menu__nav-icon-wrapper"><img 
-							src="/static/images/message-chat-circle-grey.svg" alt="Support"
+							src="/static/images/icons/message-chat-circle-grey.svg" alt="Support"
 							class="mobile-burger-menu__nav-icon"></div><span
 						class="mobile-burger-menu__nav-text">Support</span>
 					<div class="mobile-burger-menu__support-badge"><span class="mobile-burger-menu__support-dot"></span>
@@ -183,7 +183,7 @@
 					onclick="toggleMobileProfileDropdown(event)" style="cursor: pointer;" role="button"
 					aria-label="Account menu" tabindex="0">
 					<div class="mobile-burger-menu__avatar-group">
-						<div class="mobile-burger-menu__avatar"><img loading="lazy" src="/static/images/Image.webp" alt="">
+						<div class="mobile-burger-menu__avatar"><img loading="lazy" src="/static/images/ui/Image.webp" alt="">
 							<div class="mobile-burger-menu__avatar-online"></div>
 						</div>
 						<div class="mobile-burger-menu__account-text"><span
@@ -225,7 +225,7 @@
 								style="cursor: pointer;">
 								<div class="mobile-profile-account-content">
 									<div class="mobile-profile-avatar-group">
-										<div class="mobile-profile-avatar"><img loading="lazy" src="/static/images/Image.webp"
+										<div class="mobile-profile-avatar"><img loading="lazy" src="/static/images/ui/Image.webp"
 												alt="">
 											<div class="mobile-profile-avatar-border"></div>
 											<div class="mobile-profile-online-indicator"></div>
@@ -246,7 +246,7 @@
 								<div class="mobile-profile-account-content">
 									<div class="mobile-profile-avatar-group">
 										<div class="mobile-profile-avatar"><img loading="lazy"
-												src="/static/images/Featured%20icon.webp" alt="">
+												src="/static/images/ui/Featured%20icon.webp" alt="">
 											<div class="mobile-profile-avatar-border"></div>
 											<div class="mobile-profile-online-indicator"></div>
 										</div>
@@ -508,7 +508,7 @@
 		<nav id="mobile-burger-menu" class="mobile-burger-menu"><!-- Header -->
 			<div class="mobile-burger-menu__header">
 				<div class="mobile-burger-menu__header-container"><!-- Logo -->
-					<div class="mobile-burger-menu__logo"><img src="/static/images/Logo%20premium.svg" alt="POOOL"></div>
+					<div class="mobile-burger-menu__logo"><img src="/static/images/logos/Logo%20premium.svg" alt="POOOL"></div>
 					<!-- Close Button --><button class="mobile-burger-menu__close" onclick="closeMobileMenu()"
 						aria-label="Close menu"><span class="mobile-burger-menu__close-icon"></span></button>
 				</div>
@@ -519,7 +519,7 @@
 				<div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--parent"
 					data-item-id="marketplace" onclick="toggleMobileMarketplaceDropdown(event)">
 					<div class="mobile-burger-menu__nav-text-wrapper">
-						<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/home-05.svg"
+						<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/icons/home-05.svg"
 								alt="Marketplace" class="mobile-burger-menu__nav-icon"></div><span
 							class="mobile-burger-menu__nav-text">Marketplace</span>
 					</div><svg class="mobile-burger-menu__nav-chevron mobile-burger-menu__nav-chevron--expanded"
@@ -534,36 +534,36 @@
 						href="/commodities-marketplace" class="mobile-burger-menu__nav-child"><span
 							class="mobile-burger-menu__nav-child-text">Commodities</span></a></div><!-- Wallet --> <a
 					href="/wallet" class="mobile-burger-menu__nav-item">
-					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/wallet-02.svg"
+					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/icons/wallet-02.svg"
 							alt="Wallet" class="mobile-burger-menu__nav-icon"></div><span
 						class="mobile-burger-menu__nav-text">Wallet</span>
 				</a><!-- Portfolio --> <a href="/portfolio" class="mobile-burger-menu__nav-item">
 					<div class="mobile-burger-menu__nav-icon-wrapper"><img 
-							src="/static/images/line-chart-up-02.svg" alt="Portfolio" class="mobile-burger-menu__nav-icon">
+							src="/static/images/icons/line-chart-up-02.svg" alt="Portfolio" class="mobile-burger-menu__nav-icon">
 					</div><span class="mobile-burger-menu__nav-text">Portfolio</span>
 				</a><!-- Rewards -->
 				<a href="/rewards" class="mobile-burger-menu__nav-item">
-					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/star-01.svg"
+					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/icons/star-01.svg"
 							alt="Rewards" class="mobile-burger-menu__nav-icon"></div><span
 						class="mobile-burger-menu__nav-text">Rewards</span>
 				</a><!-- Cart --> <a href="/cart" class="mobile-burger-menu__nav-item">
 					<div class="mobile-burger-menu__nav-icon-wrapper"><img 
-							src="/static/images/shopping-cart-01.svg" alt="Cart" class="mobile-burger-menu__nav-icon"></div>
+							src="/static/images/icons/shopping-cart-01.svg" alt="Cart" class="mobile-burger-menu__nav-icon"></div>
 					<span class="mobile-burger-menu__nav-text">Cart</span>
 				</a><!-- Leaderboard -->
 				<div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
-					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/award-05.svg"
+					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/icons/award-05.svg"
 							alt="Leaderboard" class="mobile-burger-menu__nav-icon"></div><span
 						class="mobile-burger-menu__nav-text">Leaderboard</span> <span
 						class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
 				</div><!-- Settings -->
 				<div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
-					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/settings-01.svg"
+					<div class="mobile-burger-menu__nav-icon-wrapper"><img  src="/static/images/icons/settings-01.svg"
 							alt="Settings" class="mobile-burger-menu__nav-icon"></div><span
 						class="mobile-burger-menu__nav-text">Settings</span>
 				</div><!-- Support --> <a href="/support" class="mobile-burger-menu__nav-item">
 					<div class="mobile-burger-menu__nav-icon-wrapper"><img 
-							src="/static/images/message-chat-circle-grey.svg" alt="Support"
+							src="/static/images/icons/message-chat-circle-grey.svg" alt="Support"
 							class="mobile-burger-menu__nav-icon"></div><span
 						class="mobile-burger-menu__nav-text">Support</span>
 					<div class="mobile-burger-menu__support-badge"><span class="mobile-burger-menu__support-dot"></span>
@@ -590,7 +590,7 @@
 					onclick="toggleMobileProfileDropdown(event)" style="cursor: pointer;" role="button"
 					aria-label="Account menu" tabindex="0">
 					<div class="mobile-burger-menu__avatar-group">
-						<div class="mobile-burger-menu__avatar"><img loading="lazy" src="/static/images/Image.webp" alt="">
+						<div class="mobile-burger-menu__avatar"><img loading="lazy" src="/static/images/ui/Image.webp" alt="">
 							<div class="mobile-burger-menu__avatar-online"></div>
 						</div>
 						<div class="mobile-burger-menu__account-text"><span
@@ -632,7 +632,7 @@
 								style="cursor: pointer;">
 								<div class="mobile-profile-account-content">
 									<div class="mobile-profile-avatar-group">
-										<div class="mobile-profile-avatar"><img loading="lazy" src="/static/images/Image.webp"
+										<div class="mobile-profile-avatar"><img loading="lazy" src="/static/images/ui/Image.webp"
 												alt="">
 											<div class="mobile-profile-avatar-border"></div>
 											<div class="mobile-profile-online-indicator"></div>
@@ -653,7 +653,7 @@
 								<div class="mobile-profile-account-content">
 									<div class="mobile-profile-avatar-group">
 										<div class="mobile-profile-avatar"><img loading="lazy"
-												src="/static/images/Featured%20icon.webp" alt="">
+												src="/static/images/ui/Featured%20icon.webp" alt="">
 											<div class="mobile-profile-avatar-border"></div>
 											<div class="mobile-profile-online-indicator"></div>
 										</div>
@@ -915,7 +915,7 @@
 		<nav id="mobile-burger-menu" class="mobile-burger-menu"><!-- Header -->
 			<div class="mobile-burger-menu__header">
 				<div class="mobile-burger-menu__header-container"><!-- Logo -->
-					<div class="mobile-burger-menu__logo"><img src="/static/images/Logo%20premium.svg" alt="POOOL"></div>
+					<div class="mobile-burger-menu__logo"><img src="/static/images/logos/Logo%20premium.svg" alt="POOOL"></div>
 					<!-- Close Button --><button class="mobile-burger-menu__close" onclick="closeMobileMenu()"
 						aria-label="Close menu"><span class="mobile-burger-menu__close-icon"></span></button>
 				</div>
@@ -995,7 +995,7 @@
 					onclick="toggleMobileProfileDropdown(event)" style="cursor: pointer;" role="button"
 					aria-label="Account menu" tabindex="0">
 					<div class="mobile-burger-menu__avatar-group">
-						<div class="mobile-burger-menu__avatar"><img loading="lazy" src="/static/images/Image.webp" alt="">
+						<div class="mobile-burger-menu__avatar"><img loading="lazy" src="/static/images/ui/Image.webp" alt="">
 							<div class="mobile-burger-menu__avatar-online"></div>
 						</div>
 						<div class="mobile-burger-menu__account-text"><span
@@ -1037,7 +1037,7 @@
 								style="cursor: pointer;">
 								<div class="mobile-profile-account-content">
 									<div class="mobile-profile-avatar-group">
-										<div class="mobile-profile-avatar"><img loading="lazy" src="/static/images/Image.webp"
+										<div class="mobile-profile-avatar"><img loading="lazy" src="/static/images/ui/Image.webp"
 												alt="">
 											<div class="mobile-profile-avatar-border"></div>
 											<div class="mobile-profile-online-indicator"></div>
@@ -1058,7 +1058,7 @@
 								<div class="mobile-profile-account-content">
 									<div class="mobile-profile-avatar-group">
 										<div class="mobile-profile-avatar"><img loading="lazy"
-												src="/static/images/Featured%20icon.webp" alt="">
+												src="/static/images/ui/Featured%20icon.webp" alt="">
 											<div class="mobile-profile-avatar-border"></div>
 											<div class="mobile-profile-online-indicator"></div>
 										</div>
@@ -1376,7 +1376,7 @@
 					<div id="sidebar-content" class="sidebar__content"><!-- Navigation Section -->
 						<div id="sidebar-navigation-section" class="sidebar__nav-section"><!-- Header Section -->
 							<div id="sidebar-header" class="sidebar__header"><!-- Logo --><a id="sidebar-logo" href="/"
-									class="sidebar__logo"><img src="/static/images/Logo%20Pool.svg" alt="POOOL" width="139"
+									class="sidebar__logo"><img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL" width="139"
 										height="37"></a><!-- Search Input -->
 								<div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
 									<div id="sidebar-search" class="sidebar__search">
@@ -1401,7 +1401,7 @@
 										<div id="nav-text-icon-marketplace-parent" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-marketplace-parent"
 												class="sidebar__nav-icon-wrapper"><img 
-													src="/static/images/home-05.svg" alt="Marketplace" class="nav-icon"
+													src="/static/images/icons/home-05.svg" alt="Marketplace" class="nav-icon"
 													width="20" height="20"></div>
 											<span id="nav-text-marketplace-parent"
 												class="sidebar__nav-text">Marketplace</span>
@@ -1425,7 +1425,7 @@
 									<a id="nav-item-wallet-content" href="/wallet" class="sidebar__nav-item-content">
 										<div id="nav-text-icon-wallet" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-wallet" class="sidebar__nav-icon-wrapper"><img
-													 src="/static/images/wallet-02.svg" alt="Wallet"
+													 src="/static/images/icons/wallet-02.svg" alt="Wallet"
 													class="nav-icon" width="20" height="20"></div><span
 												id="nav-text-wallet" class="sidebar__nav-text">Wallet</span>
 										</div><!-- Soon Badge for Rewards and Leaderboard tabs -->
@@ -1437,7 +1437,7 @@
 										class="sidebar__nav-item-content">
 										<div id="nav-text-icon-portfolio" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-portfolio" class="sidebar__nav-icon-wrapper"><img
-													 src="/static/images/line-chart-up-02.svg" alt="Portfolio"
+													 src="/static/images/icons/line-chart-up-02.svg" alt="Portfolio"
 													class="nav-icon" width="20" height="20"></div><span
 												id="nav-text-portfolio" class="sidebar__nav-text">Portfolio</span>
 										</div><!-- Soon Badge for Rewards and Leaderboard tabs -->
@@ -1448,7 +1448,7 @@
 										id="nav-item-rewards-content" href="/rewards" class="sidebar__nav-item-content">
 										<div id="nav-text-icon-rewards" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-rewards" class="sidebar__nav-icon-wrapper">
-												<img  src="/static/images/star-01.svg" alt="Rewards"
+												<img  src="/static/images/icons/star-01.svg" alt="Rewards"
 													class="nav-icon" width="20" height="20">
 											</div>
 											<span id="nav-text-rewards" class="sidebar__nav-text">Rewards</span>
@@ -1460,7 +1460,7 @@
 									<a id="nav-item-cart-content" href="/cart" class="sidebar__nav-item-content">
 										<div id="nav-text-icon-cart" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-cart" class="sidebar__nav-icon-wrapper"><img
-													 src="/static/images/shopping-cart-01.svg" alt="Cart"
+													 src="/static/images/icons/shopping-cart-01.svg" alt="Cart"
 													class="nav-icon" width="20" height="20"></div><span
 												id="nav-text-cart" class="sidebar__nav-text">Cart</span>
 										</div><!-- Soon Badge for Rewards and Leaderboard tabs -->
@@ -1472,7 +1472,7 @@
 										class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
 										<div id="nav-text-icon-leaderboard" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-leaderboard" class="sidebar__nav-icon-wrapper">
-												<img  src="/static/images/award-05.svg" alt="Leaderboard"
+												<img  src="/static/images/icons/award-05.svg" alt="Leaderboard"
 													class="nav-icon" width="20" height="20">
 											</div><span id="nav-text-leaderboard"
 												class="sidebar__nav-text">Leaderboard</span>
@@ -1488,7 +1488,7 @@
 										href="/settings" class="sidebar__nav-item-content">
 										<div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper"><img
-													 src="/static/images/settings-01.svg" alt="Settings"
+													 src="/static/images/icons/settings-01.svg" alt="Settings"
 													class="nav-icon" width="20" height="20"></div><span
 												id="nav-text-settings" class="sidebar__nav-text">Settings</span>
 										</div>
@@ -1497,7 +1497,7 @@
 										href="/support" class="sidebar__nav-item-content">
 										<div id="nav-text-icon-support" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper"><img
-													 src="/static/images/message-chat-circle-grey.svg"
+													 src="/static/images/icons/message-chat-circle-grey.svg"
 													alt="Support" class="nav-icon" width="20" height="20"></div><span
 												id="nav-text-support" class="sidebar__nav-text">Support</span>
 										</div>
@@ -1534,7 +1534,7 @@
 								<div id="account-avatar-group" class="sidebar__account-avatar-group"
 									style="pointer-events: none;">
 									<div id="account-avatar" class="sidebar__account-avatar"><img loading="lazy"
-											src="/static/images/Image.webp" alt="">
+											src="/static/images/ui/Image.webp" alt="">
 										<div id="account-online-indicator" class="sidebar__account-online"></div>
 									</div>
 									<div id="account-text-wrapper" class="sidebar__account-text"><span id="account-name"
@@ -1578,7 +1578,7 @@
 												<div class="profile-account-content">
 													<div class="profile-avatar-group">
 														<div class="profile-avatar"><img loading="lazy"
-																src="/static/images/Image.webp" alt="">
+																src="/static/images/ui/Image.webp" alt="">
 															<div class="profile-avatar-border"></div>
 															<div class="profile-online-indicator"></div>
 														</div>
@@ -1597,7 +1597,7 @@
 												<div class="profile-account-content">
 													<div class="profile-avatar-group">
 														<div class="profile-avatar"><img loading="lazy"
-																src="/static/images/Featured%20icon.webp" alt="">
+																src="/static/images/ui/Featured%20icon.webp" alt="">
 															<div class="profile-avatar-border"></div>
 															<div class="profile-online-indicator"></div>
 														</div>
@@ -1701,7 +1701,7 @@
 					<div id="sidebar-content" class="sidebar__content"><!-- Navigation Section -->
 						<div id="sidebar-navigation-section" class="sidebar__nav-section"><!-- Header Section -->
 							<div id="sidebar-header" class="sidebar__header"><!-- Logo --><a id="sidebar-logo" href="/"
-									class="sidebar__logo"><img src="/static/images/Logo%20Pool.svg" alt="POOOL" width="139"
+									class="sidebar__logo"><img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL" width="139"
 										height="37"></a><!-- Search Input -->
 								<div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
 									<div id="sidebar-search" class="sidebar__search">
@@ -1726,7 +1726,7 @@
 										<div id="nav-text-icon-marketplace-parent" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-marketplace-parent"
 												class="sidebar__nav-icon-wrapper"><img 
-													src="/static/images/home-05.svg" alt="Marketplace" class="nav-icon"
+													src="/static/images/icons/home-05.svg" alt="Marketplace" class="nav-icon"
 													width="20" height="20"></div>
 											<span id="nav-text-marketplace-parent"
 												class="sidebar__nav-text">Marketplace</span>
@@ -1750,7 +1750,7 @@
 									<a id="nav-item-wallet-content" href="/wallet" class="sidebar__nav-item-content">
 										<div id="nav-text-icon-wallet" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-wallet" class="sidebar__nav-icon-wrapper"><img
-													 src="/static/images/wallet-02.svg" alt="Wallet"
+													 src="/static/images/icons/wallet-02.svg" alt="Wallet"
 													class="nav-icon" width="20" height="20"></div><span
 												id="nav-text-wallet" class="sidebar__nav-text">Wallet</span>
 										</div><!-- Soon Badge for Rewards and Leaderboard tabs -->
@@ -1762,7 +1762,7 @@
 										class="sidebar__nav-item-content">
 										<div id="nav-text-icon-portfolio" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-portfolio" class="sidebar__nav-icon-wrapper"><img
-													 src="/static/images/line-chart-up-02.svg" alt="Portfolio"
+													 src="/static/images/icons/line-chart-up-02.svg" alt="Portfolio"
 													class="nav-icon" width="20" height="20"></div><span
 												id="nav-text-portfolio" class="sidebar__nav-text">Portfolio</span>
 										</div><!-- Soon Badge for Rewards and Leaderboard tabs -->
@@ -1773,7 +1773,7 @@
 										id="nav-item-rewards-content" href="/rewards" class="sidebar__nav-item-content">
 										<div id="nav-text-icon-rewards" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-rewards" class="sidebar__nav-icon-wrapper">
-												<img  src="/static/images/star-01.svg" alt="Rewards"
+												<img  src="/static/images/icons/star-01.svg" alt="Rewards"
 													class="nav-icon" width="20" height="20">
 											</div>
 											<span id="nav-text-rewards" class="sidebar__nav-text">Rewards</span>
@@ -1785,7 +1785,7 @@
 									<a id="nav-item-cart-content" href="/cart" class="sidebar__nav-item-content">
 										<div id="nav-text-icon-cart" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-cart" class="sidebar__nav-icon-wrapper"><img
-													 src="/static/images/shopping-cart-01.svg" alt="Cart"
+													 src="/static/images/icons/shopping-cart-01.svg" alt="Cart"
 													class="nav-icon" width="20" height="20"></div><span
 												id="nav-text-cart" class="sidebar__nav-text">Cart</span>
 										</div><!-- Soon Badge for Rewards and Leaderboard tabs -->
@@ -1797,7 +1797,7 @@
 										class="sidebar__nav-item-content sidebar__nav-item-content--disabled">
 										<div id="nav-text-icon-leaderboard" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-leaderboard" class="sidebar__nav-icon-wrapper">
-												<img  src="/static/images/award-05.svg" alt="Leaderboard"
+												<img  src="/static/images/icons/award-05.svg" alt="Leaderboard"
 													class="nav-icon" width="20" height="20">
 											</div><span id="nav-text-leaderboard"
 												class="sidebar__nav-text">Leaderboard</span>
@@ -1813,7 +1813,7 @@
 										href="/settings" class="sidebar__nav-item-content">
 										<div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper"><img
-													 src="/static/images/settings-01.svg" alt="Settings"
+													 src="/static/images/icons/settings-01.svg" alt="Settings"
 													class="nav-icon" width="20" height="20"></div><span
 												id="nav-text-settings" class="sidebar__nav-text">Settings</span>
 										</div>
@@ -1822,7 +1822,7 @@
 										href="/support" class="sidebar__nav-item-content">
 										<div id="nav-text-icon-support" class="sidebar__nav-text-icon">
 											<div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper"><img
-													 src="/static/images/message-chat-circle-grey.svg"
+													 src="/static/images/icons/message-chat-circle-grey.svg"
 													alt="Support" class="nav-icon" width="20" height="20"></div><span
 												id="nav-text-support" class="sidebar__nav-text">Support</span>
 										</div>
@@ -1859,7 +1859,7 @@
 								<div id="account-avatar-group" class="sidebar__account-avatar-group"
 									style="pointer-events: none;">
 									<div id="account-avatar" class="sidebar__account-avatar"><img loading="lazy"
-											src="/static/images/Image.webp" alt="">
+											src="/static/images/ui/Image.webp" alt="">
 										<div id="account-online-indicator" class="sidebar__account-online"></div>
 									</div>
 									<div id="account-text-wrapper" class="sidebar__account-text"><span id="account-name"
@@ -1903,7 +1903,7 @@
 												<div class="profile-account-content">
 													<div class="profile-avatar-group">
 														<div class="profile-avatar"><img loading="lazy"
-																src="/static/images/Image.webp" alt="">
+																src="/static/images/ui/Image.webp" alt="">
 															<div class="profile-avatar-border"></div>
 															<div class="profile-online-indicator"></div>
 														</div>
@@ -1922,7 +1922,7 @@
 												<div class="profile-account-content">
 													<div class="profile-avatar-group">
 														<div class="profile-avatar"><img loading="lazy"
-																src="/static/images/Featured%20icon.webp" alt="">
+																src="/static/images/ui/Featured%20icon.webp" alt="">
 															<div class="profile-avatar-border"></div>
 															<div class="profile-online-indicator"></div>
 														</div>
@@ -2027,7 +2027,7 @@
 					<div id="sidebar-content" class="sidebar__content"><!-- Navigation Section -->
 						<div id="sidebar-navigation-section" class="sidebar__nav-section"><!-- Header Section -->
 							<div id="sidebar-header" class="sidebar__header"><!-- Logo --><a id="sidebar-logo" href="/"
-									class="sidebar__logo"><img src="/static/images/Logo%20Pool.svg" alt="POOOL" width="139"
+									class="sidebar__logo"><img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL" width="139"
 										height="37"></a><!-- Search Input -->
 								<div id="sidebar-search-wrapper" class="sidebar__search-wrapper">
 									<div id="sidebar-search" class="sidebar__search">
@@ -2144,7 +2144,7 @@
 										<h4 class="sidebar__featured-title">Have questions?</h4>
 										<p class="sidebar__featured-description">Our support team is here to help.</p>
 									</div><button class="sidebar__featured-button sidebar__featured-button--chat"><img
-											 src="/static/images/message-chat-circle-grey.svg"
+											 src="/static/images/icons/message-chat-circle-grey.svg"
 											alt="Support" width="20" height="20"> <span>Chat to support</span></button>
 								</div>
 							</div><!-- Account Card - Now fully clickable -->
@@ -2154,7 +2154,7 @@
 								<div id="account-avatar-group" class="sidebar__account-avatar-group"
 									style="pointer-events: none;">
 									<div id="account-avatar" class="sidebar__account-avatar"><img loading="lazy"
-											src="/static/images/Image.webp" alt="">
+											src="/static/images/ui/Image.webp" alt="">
 										<div id="account-online-indicator" class="sidebar__account-online"></div>
 									</div>
 									<div id="account-text-wrapper" class="sidebar__account-text"><span id="account-name"
@@ -2198,7 +2198,7 @@
 												<div class="profile-account-content">
 													<div class="profile-avatar-group">
 														<div class="profile-avatar"><img loading="lazy"
-																src="/static/images/Image.webp" alt="">
+																src="/static/images/ui/Image.webp" alt="">
 															<div class="profile-avatar-border"></div>
 															<div class="profile-online-indicator"></div>
 														</div>
@@ -2217,7 +2217,7 @@
 												<div class="profile-account-content">
 													<div class="profile-avatar-group">
 														<div class="profile-avatar"><img loading="lazy"
-																src="/static/images/Featured%20icon.webp" alt="">
+																src="/static/images/ui/Featured%20icon.webp" alt="">
 															<div class="profile-avatar-border"></div>
 															<div class="profile-online-indicator"></div>
 														</div>
@@ -2664,7 +2664,7 @@
 							will be displayed on your profile.</span>
 					</div>
 					<div class="settings-photo-current">
-						<img loading="lazy" src="/static/images/olivia-profile.webp" alt="">
+						<img loading="lazy" src="/static/images/profiles/olivia-profile.webp" alt="">
 					</div>
 					<div class="settings-photo-upload">
 						<svg class="settings-photo-upload__icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -3555,7 +3555,7 @@
 				<div class="settings-learn-grid">
 					<!-- Card 1 -->
 					<a href="javascript:void(0)" class="settings-learn-card">
-						<img loading="lazy" src="/static/images/Glass1.webp" alt="Real Estate 101" class="settings-learn-img">
+						<img loading="lazy" src="/static/images/ui/Glass1.webp" alt="Real Estate 101" class="settings-learn-img">
 						<div class="settings-learn-tags">
 							<span class="settings-learn-tag">
 								<span class="settings-learn-tag-dot"></span> Investing
@@ -3571,7 +3571,7 @@
 							</svg>
 						</div>
 						<div class="settings-learn-author">
-							<img loading="lazy" src="/static/images/Image.webp" alt="POOOL" class="settings-learn-author-img">
+							<img loading="lazy" src="/static/images/ui/Image.webp" alt="POOOL" class="settings-learn-author-img">
 							<div style="display: flex; flex-direction: column; justify-content: center;">
 								<span class="settings-learn-author-name" style="line-height:1.2;">POOOL</span>
 								<span class="settings-learn-author-date" style="line-height:1.2; margin-top: 2px;">18
@@ -3582,7 +3582,7 @@
 
 					<!-- Card 2 -->
 					<a href="javascript:void(0)" class="settings-learn-card">
-						<img loading="lazy" src="/static/images/Glass2.webp" alt="Fractional Ownership"
+						<img loading="lazy" src="/static/images/ui/Glass2.webp" alt="Fractional Ownership"
 							class="settings-learn-img">
 						<div class="settings-learn-tags">
 							<span class="settings-learn-tag">
@@ -3599,7 +3599,7 @@
 							</svg>
 						</div>
 						<div class="settings-learn-author">
-							<img loading="lazy" src="/static/images/olivia-profile.webp" alt="POOOL"
+							<img loading="lazy" src="/static/images/profiles/olivia-profile.webp" alt="POOOL"
 								class="settings-learn-author-img">
 							<div style="display: flex; flex-direction: column; justify-content: center;">
 								<span class="settings-learn-author-name" style="line-height:1.2;">POOOL</span>
@@ -3611,7 +3611,7 @@
 
 					<!-- Card 3 -->
 					<a href="javascript:void(0)" class="settings-learn-card">
-						<img  src="/static/images/Glass3.webp" alt="Bali Real Estate" class="settings-learn-img">
+						<img  src="/static/images/ui/Glass3.webp" alt="Bali Real Estate" class="settings-learn-img">
 						<div class="settings-learn-tags">
 							<span class="settings-learn-tag">
 								<span class="settings-learn-tag-dot"></span> Fractional Real Estate
@@ -3627,7 +3627,7 @@
 							</svg>
 						</div>
 						<div class="settings-learn-author">
-							<img loading="lazy" src="/static/images/Image.webp" alt="POOOL" class="settings-learn-author-img">
+							<img loading="lazy" src="/static/images/ui/Image.webp" alt="POOOL" class="settings-learn-author-img">
 							<div style="display: flex; flex-direction: column; justify-content: center;">
 								<span class="settings-learn-author-name" style="line-height:1.2;">POOOL</span>
 								<span class="settings-learn-author-date" style="line-height:1.2; margin-top: 2px;">12

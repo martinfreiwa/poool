@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>POOOL – Testimonial Concepts</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/css/bundle.css">
+  <link rel="stylesheet" href="/static/css/marketplace.css">
+  <link rel="stylesheet" href="/static/css/landing.css">
+  <link rel="stylesheet" href="/static/css/landing-property-cards.css">
+  <style>
+    /* Global Base Helpers for Concepts */
+    .concept-divider {
+      text-align: center;
+      padding: 60px 20px;
+      margin: 80px 0;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .concept-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    .concept-desc {
+      color: #6b7280;
+      font-size: 1.125rem;
+    }
+
+    /* WEALTH TERMINAL HOLOGRAPHIC VARIABLES */
+    :root {
+      --primary-color: #0000FF;
+      --brand-greeny-green: #03FF88;
+      --btn-primary-bg: #0000FF;
+    }
+
+    /* Common test avatar sizes */
+    .avatar-sm { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.8); }
+    .avatar-md { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.8); }
+    .avatar-lg { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid rgba(0,0,255,0.1); }
+  </style>
+</head>
+<body style="background: #FAFAFA;">
+
+  <!-- CONCEPT 1 -->
+  <div class="concept-divider">
+    <div class="container">
+      <h2 class="concept-title">Concept 1: The Holographic Glass Grid</h2>
+      <p class="concept-desc">Utilizes the core .holo-card properties from the Wealth Terminal design system. Physical mass, blur, and lighting simulation.</p>
+    </div>
+  </div>
+
+  <section class="testi-concept-1" style="padding: 80px 0; position: relative;">
+    <div style="position: absolute; inset: 0; background-image: radial-gradient(circle at top left, rgba(3, 255, 136, 0.05), transparent 40%), radial-gradient(circle at bottom right, rgba(0, 0, 255, 0.05), transparent 40%); z-index: 0; pointer-events: none;"></div>
+    
+    <div class="container" style="position: relative; z-index: 1;">
+      <div style="text-align: center; margin-bottom: 64px;">
+        <span style="color: #0000FF; font-weight: 700; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; margin-bottom: 12px; background: rgba(0,0,255,0.05); padding: 6px 16px; border-radius: 100px;">Investor Success</span>
+        <h2 style="font-size: clamp(2.5rem, 4vw, 3.5rem); font-weight: 800; color: #181D27; letter-spacing: -0.02em; line-height: 1.1;">Trusted by investors worldwide</h2>
+      </div>
+
+      <style>
+        .hc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+        .holo-testi-card {
+          background: linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.75) 100%);
+          backdrop-filter: blur(20px) saturate(1.8);
+          border: 1px solid rgba(0, 0, 0, 0.03);
+          border-radius: 24px;
+          padding: 32px;
+          box-shadow: 0 4px 6px -2px rgba(0,0,0,0.02), 0 12px 32px -4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 2px rgba(0,0,0,0.01);
+          transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+          position: relative;
+        }
+        .holo-testi-card::before {
+          content: ""; position: absolute; inset: 0; pointer-events: none;
+          background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 40%);
+          border-radius: inherit;
+        }
+        .holo-testi-card:hover {
+          transform: translateY(-4px) scale(1.005);
+          box-shadow: 0 12px 20px -4px rgba(0,0,0,0.04), 0 24px 48px -12px rgba(0,0,0,0.08), inset 0 1px 0 #fff, inset 0 -1px 2px rgba(0,0,0,0.01);
+        }
+        .ht-quote {
+          font-size: 1.125rem; line-height: 1.6; color: #344054; margin-bottom: 32px; font-weight: 400; position: relative; z-index: 1;
+        }
+        .ht-stars { margin-bottom: 16px; position: relative; z-index: 1; display: flex; gap: 4px;}
+        .ht-stars svg { width: 20px; height: 20px; fill: #0000FF; }
+      </style>
+
+      <div class="hc-grid">
+        <div class="holo-testi-card">
+          <div class="ht-stars"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+          <p class="ht-quote">"<img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> democratized the Bali property market for everyday investors. Securing high-yield rental properties used to require massive capital, but fractional ownership changed the game entirely."</p>
+          <div style="display: flex; align-items: center; gap: 16px; position: relative; z-index: 1;">
+            <img class="avatar-md" src="/static/images/profiles/Khai.webp" alt="Sarah">
+            <div>
+              <div style="font-weight: 700; color: #181D27; font-size: 1rem; letter-spacing: -0.01em;">Sarah Jenkins</div>
+              <div style="color: #667085; font-size: 0.875rem;">Real Estate Analyst</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="holo-testi-card">
+          <div class="ht-stars"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+          <p class="ht-quote">"The ability to diversify into real, physical assets seamlessly while tracking everything through the <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> dashboard is incredible. My monthly payouts arrive like clockwork."</p>
+          <div style="display: flex; align-items: center; gap: 16px; position: relative; z-index: 1;">
+            <img class="avatar-md" src="/static/images/profiles/Team.webp" alt="Mark">
+            <div>
+              <div style="font-weight: 700; color: #181D27; font-size: 1rem; letter-spacing: -0.01em;">Mark Donovan</div>
+              <div style="color: #667085; font-size: 0.875rem;">Retail Investor</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="holo-testi-card">
+          <div class="ht-stars"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+          <p class="ht-quote">"I started with $500, strictly testing the waters. The <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> process was so transparent and the legal structure gave me total peace of mind. I'm now fully invested in three continuous projects."</p>
+          <div style="display: flex; align-items: center; gap: 16px; position: relative; z-index: 1;">
+            <img class="avatar-md" src="/static/images/profiles/monique-howeth-mobile.webp" alt="Elena">
+            <div>
+              <div style="font-weight: 700; color: #181D27; font-size: 1rem; letter-spacing: -0.01em;">Elena Rostova</div>
+              <div style="color: #667085; font-size: 0.875rem;">Digital Nomad</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEPT 2 -->
+  <div class="concept-divider">
+    <div class="container">
+      <h2 class="concept-title">Concept 2: The Bento Box Layout</h2>
+      <p class="concept-desc">An asymmetric "bento" grid showcasing a primary hero review alongside supporting reviews. Uses the holographic inner container styling.</p>
+    </div>
+  </div>
+
+  <section style="padding: 80px 0;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 48px;">
+        <div style="max-width: 500px;">
+          <h2 style="font-size: clamp(2rem, 3vw, 2.5rem); font-weight: 800; color: #181D27; letter-spacing: -0.02em; margin-bottom: 16px;">What our investors are saying</h2>
+          <p style="color: #535862; font-size: 1.125rem;">Real experiences from our global community.</p>
+        </div>
+        <a href="#" style="color: #0000FF; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 8px;">Read all stories <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+      </div>
+
+      <style>
+        .bento-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          grid-template-rows: auto auto;
+          gap: 24px;
+        }
+        @media (max-width: 900px) {
+          .bento-grid { grid-template-columns: 1fr; }
+        }
+        .bento-hero {
+          grid-column: 1 / 2;
+          grid-row: 1 / 3;
+          background: linear-gradient(145deg, #00044A 0%, #000ABF 100%);
+          color: white;
+          border-radius: 24px;
+          padding: 48px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+        }
+        .bento-hero::after {
+          content: ""; position: absolute; bottom: -50%; right: -20%; width: 500px; height: 500px;
+          background: radial-gradient(circle, rgba(152,251,150,0.15) 0%, transparent 60%); pointer-events: none;
+        }
+        .bento-hero svg.quote-icon { width: 48px; height: 48px; fill: rgba(152,251,150,0.2); margin-bottom: 24px; }
+        .bento-small {
+          background: #FFFFFF;
+          border: 1px solid #E9EAEB;
+          border-radius: 20px;
+          padding: 32px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          transition: transform 0.3s ease;
+        }
+        .bento-small:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.04); }
+      </style>
+
+      <div class="bento-grid">
+        <div class="bento-hero">
+          <svg class="quote-icon" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+          <div style="font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 500; line-height: 1.4; color: #FFFFFF; margin-bottom: 40px; position: relative; z-index: 1;">
+            "<img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em); filter: brightness(0) invert(1);"> completely reshaped my perspective on property investment. Having direct ownership with absolutely no middlemen allows me to retain the highest possible ROI. The monthly payouts are incredibly consistent."
+          </div>
+          <div style="display: flex; align-items: center; gap: 20px; position: relative; z-index: 1;">
+            <img class="avatar-lg" src="/static/images/profiles/Khai.webp" alt="Sarah">
+            <div>
+              <div style="font-weight: 700; color: #FFFFFF; font-size: 1.125rem; letter-spacing: -0.01em;">Sarah Jenkins</div>
+              <div style="color: rgba(255,255,255,0.7); font-size: 0.875rem;">Real Estate Analyst</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-small">
+          <div style="color: #344054; font-size: 1rem; line-height: 1.6; margin-bottom: 24px;">"The ability to diversify into real, physical assets seamlessly while tracking everything through the <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> dashboard is incredible."</div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img class="avatar-sm" src="/static/images/profiles/Team.webp" alt="Mark">
+            <div>
+              <div style="font-weight: 700; color: #181D27; font-size: 0.875rem;">Mark Donovan</div>
+              <div style="color: #667085; font-size: 0.75rem;">Retail Investor</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-small">
+          <div style="color: #344054; font-size: 1rem; line-height: 1.6; margin-bottom: 24px;">"The <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> process was so transparent and the legal structure gave me total peace of mind. I'm now fully invested in three continuous projects."</div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img class="avatar-sm" src="/static/images/profiles/monique-howeth-mobile.webp" alt="Elena">
+            <div>
+              <div style="font-weight: 700; color: #181D27; font-size: 0.875rem;">Elena Rostova</div>
+              <div style="color: #667085; font-size: 0.75rem;">Digital Nomad</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEPT 3 -->
+  <div class="concept-divider">
+    <div class="container">
+      <h2 class="concept-title">Concept 3: The Holographic Swiper Presentation</h2>
+      <p class="concept-desc">Uses Swiper JS 'Cards' effect combined with holographic glassmorphism. Perfect for high engagement and interactive feel, similar to the main CTA banner.</p>
+    </div>
+  </div>
+
+  <section style="padding: 100px 0; background: #fff; overflow: hidden; position: relative;">
+    <!-- Large background text -->
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20vw; font-weight: 800; color: rgba(0,0,255,0.02); white-space: nowrap; pointer-events: none; z-index: 0; letter-spacing: -0.05em;">TRUST</div>
+    
+    <div class="container" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 64px; position: relative; z-index: 1;">
+      
+      <div style="flex: 1 1 400px; max-width: 500px;">
+        <div style="width: 56px; height: 56px; background: rgba(3, 255, 136, 0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.02z"/><path d="M2 9v9a2 2 0 0 0 2 2h4l4 4V9H2z"/><path d="M22 9v9a2 2 0 0 1-2 2h-4l-4 4V9h10z"/></svg>
+        </div>
+        <h2 style="font-size: clamp(2.5rem, 4vw, 3rem); font-weight: 800; color: #181D27; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 24px;">Don't just take our word for it.</h2>
+        <p style="color: #535862; font-size: 1.125rem; line-height: 1.6; margin-bottom: 32px;">Over 850+ forward-thinking individuals rely on <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> to secure premium assets and generate consistent monthly yields.</p>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <!-- Custom navigation -->
+          <button class="testi-prev" style="width: 48px; height: 48px; border-radius: 50%; border: 1px solid #E5E7EB; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#181D27" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="testi-next" style="width: 48px; height: 48px; border-radius: 50%; border: 1px solid #E5E7EB; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#181D27" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+
+      <!-- Swiper CSS included globally earlier, assuming swiper is available on the platform, if not adding from cdn -->
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+      <style>
+        .testi-swiper {
+          width: 380px;
+          height: 440px;
+          overflow: visible !important;
+        }
+        @media (max-width: 500px) {
+          .testi-swiper { width: 300px; height: 400px; }
+        }
+        .ts-slide {
+          background: linear-gradient(160deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.85) 100%);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(0,0,255,0.1);
+          border-radius: 28px;
+          padding: 40px;
+          box-shadow: 0 24px 48px -12px rgba(0,0,0,0.1);
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+      </style>
+      
+      <div style="flex: 0 0 auto; perspective: 1200px;">
+        <div class="swiper testi-swiper">
+          <div class="swiper-wrapper">
+            <div class="swiper-slide ts-slide">
+              <svg style="width:32px; height:32px; fill:var(--brand-greeny-green); margin-bottom:24px;" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+              <p style="font-size: 1.125rem; line-height: 1.6; color: #181D27; font-weight: 500; margin-bottom: 32px; flex: 1;">"<img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> democratized the Bali property market for everyday investors. Securing high-yield rental properties used to require massive capital, but fractional ownership changed the game entirely."</p>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <img class="avatar-md" src="/static/images/profiles/Khai.webp" alt="Sarah">
+                <div>
+                  <div style="font-weight: 700; color: #181D27; font-size: 1rem;">Sarah Jenkins</div>
+                  <div style="color: #667085; font-size: 0.875rem;">Real Estate Analyst</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="swiper-slide ts-slide">
+              <svg style="width:32px; height:32px; fill:var(--brand-greeny-green); margin-bottom:24px;" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+              <p style="font-size: 1.125rem; line-height: 1.6; color: #181D27; font-weight: 500; margin-bottom: 32px; flex: 1;">"The ability to diversify into real, physical assets seamlessly while tracking everything through the <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> dashboard is incredible. My monthly payouts arrive like clockwork."</p>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <img class="avatar-md" src="/static/images/profiles/Team.webp" alt="Mark">
+                <div>
+                  <div style="font-weight: 700; color: #181D27; font-size: 1rem;">Mark Donovan</div>
+                  <div style="color: #667085; font-size: 0.875rem;">Retail Investor</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="swiper-slide ts-slide">
+              <svg style="width:32px; height:32px; fill:var(--brand-greeny-green); margin-bottom:24px;" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+              <p style="font-size: 1.125rem; line-height: 1.6; color: #181D27; font-weight: 500; margin-bottom: 32px; flex: 1;">"I started with $500, strictly testing the waters. The <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> process was so transparent and the legal structure gave me total peace of mind. I'm now fully invested."</p>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <img class="avatar-md" src="/static/images/profiles/monique-howeth-mobile.webp" alt="Elena">
+                <div>
+                  <div style="font-weight: 700; color: #181D27; font-size: 1rem;">Elena Rostova</div>
+                  <div style="color: #667085; font-size: 0.875rem;">Digital Nomad</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        new Swiper(".testi-swiper", {
+          effect: "cards",
+          grabCursor: true,
+          navigation: {
+            nextEl: ".testi-next",
+            prevEl: ".testi-prev",
+          },
+          cardsEffect: {
+            perSlideOffset: 16,
+            perSlideRotate: 4,
+            slideShadows: true,
+          }
+        });
+      });
+    </script>
+  </section>
+
+  <!-- CONCEPT 4 -->
+  <div class="concept-divider">
+    <div class="container">
+      <h2 class="concept-title">Concept 4: Minimal Horizontal Track</h2>
+      <p class="concept-desc">Apple-inspired full-bleed scrolling list. Subtle borders, sharp typography, emphasis on white space.</p>
+    </div>
+  </div>
+
+  <section style="padding: 120px 0; background: #FFFFFF; border-top: 1px solid #E9EAEB; border-bottom: 1px solid #E9EAEB;">
+    <div class="container" style="margin-bottom: 64px;">
+      <h2 style="font-size: 3rem; font-weight: 800; color: #181D27; letter-spacing: -0.03em;">Join the community.</h2>
+    </div>
+
+    <!-- Scroller -->
+    <style>
+      .hz-scroll {
+        display: flex;
+        overflow-x: auto;
+        gap: 32px;
+        padding-left: max(32px, calc((100vw - 1200px) / 2)); /* align with container */
+        padding-right: 32px;
+        padding-bottom: 40px;
+        scroll-snap-type: x mandatory;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .hz-scroll::-webkit-scrollbar { display: none; }
+      .hz-card {
+        flex: 0 0 500px;
+        scroll-snap-align: start;
+        border-left: 2px solid #0000FF;
+        padding-left: 32px;
+      }
+      @media (max-width: 768px) {
+        .hz-scroll { padding-left: 16px; }
+        .hz-card { flex: 0 0 300px; padding-left: 20px; }
+      }
+    </style>
+    <div class="hz-scroll">
+      <div class="hz-card">
+        <p style="font-size: 1.5rem; line-height: 1.4; color: #181D27; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 32px;">"<img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> democratized the Bali property market for everyday investors. Securing high-yield rental properties used to require massive capital, but fractional ownership changed the game entirely."</p>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <img class="avatar-sm" src="/static/images/profiles/Khai.webp" alt="Sarah">
+          <div>
+            <div style="font-weight: 700; color: #181D27;">Sarah Jenkins</div>
+            <div style="color: #667085; font-size: 0.875rem;">Real Estate Analyst</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hz-card">
+        <p style="font-size: 1.5rem; line-height: 1.4; color: #181D27; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 32px;">"The ability to diversify into real, physical assets seamlessly while tracking everything through the <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> dashboard is incredible. My monthly payouts arrive like clockwork."</p>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <img class="avatar-sm" src="/static/images/profiles/Team.webp" alt="Mark">
+          <div>
+            <div style="font-weight: 700; color: #181D27;">Mark Donovan</div>
+            <div style="color: #667085; font-size: 0.875rem;">Retail Investor</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hz-card">
+        <p style="font-size: 1.5rem; line-height: 1.4; color: #181D27; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 32px;">"I started with $500, strictly testing the waters. The <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> process was so transparent and the legal structure gave me total peace of mind. I'm now fully invested."</p>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <img class="avatar-sm" src="/static/images/profiles/monique-howeth-mobile.webp" alt="Elena">
+          <div>
+            <div style="font-weight: 700; color: #181D27;">Elena Rostova</div>
+            <div style="color: #667085; font-size: 0.875rem;">Digital Nomad</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Blank spacer at the end to allow scrolling past the last item -->
+      <div style="flex: 0 0 32px;"></div>
+    </div>
+  </section>
+
+  <!-- CONCEPT 5 -->
+  <div class="concept-divider">
+    <div class="container">
+      <h2 class="concept-title">Concept 5: The P-Icon Dark Mode Elegance</h2>
+      <p class="concept-desc">Using the P-Icon holographic style logic but adapted for a dark section to provide high contrast separation on the landing page.</p>
+    </div>
+  </div>
+
+  <section style="padding: 100px 0; background: linear-gradient(180deg, #050510 0%, #00044A 100%); position: relative; overflow: hidden;">
+    <!-- Architect Grid -->
+    <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 64px 64px; pointer-events: none;"></div>
+    <!-- Glow -->
+    <div style="position: absolute; top: -100px; left: 50%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,0,255,0.4) 0%, transparent 70%); transform: translateX(-50%); pointer-events: none;"></div>
+
+    <div class="container" style="position: relative; z-index: 1;">
+      <div style="text-align: center; margin-bottom: 80px;">
+        <h2 style="font-size: clamp(2.5rem, 4vw, 3.5rem); font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em;">Voices of Authority</h2>
+        <p style="color: rgba(255,255,255,0.6); font-size: 1.25rem; font-weight: 300;">What the professionals say about the Terminal.</p>
+      </div>
+
+      <style>
+        .dark-hc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+        @media (max-width: 900px) { .dark-hc-grid { grid-template-columns: 1fr; } }
+        .dark-card {
+          background: rgba(255,255,255,0.03);
+          backdrop-filter: blur(24px) saturate(1.5);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 24px;
+          padding: 40px;
+          position: relative;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        /* Top glowing edge */
+        .dark-card::before {
+          content: ""; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(152,251,150,0.5), transparent);
+        }
+      </style>
+
+      <div class="dark-hc-grid">
+        <div class="dark-card">
+          <!-- The p-icon implementation mock -->
+          <div style="width: 48px; height: 48px; margin-bottom: 24px; position: relative;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #03FF88, #00CC6F); border-radius: 12px; transform: rotate(10deg); opacity: 0.5;"></div>
+            <div style="position: absolute; inset: 0; background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </div>
+          </div>
+          <p style="font-size: 1rem; line-height: 1.7; color: rgba(255,255,255,0.85); margin-bottom: 32px; font-weight: 300;">"<img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em); filter: brightness(0) invert(1);"> democratized the Bali property market for everyday investors. Securing high-yield rental properties used to require massive capital, but fractional ownership changed the game entirely."</p>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img class="avatar-sm" style="border-color: rgba(255,255,255,0.2);" src="/static/images/profiles/Khai.webp" alt="Sarah">
+            <div>
+              <div style="font-weight: 600; color: #FFFFFF;">Sarah Jenkins</div>
+              <div style="color: rgba(255,255,255,0.5); font-size: 0.875rem;">Real Estate Analyst</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dark-card">
+          <div style="width: 48px; height: 48px; margin-bottom: 24px; position: relative;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #03FF88, #00CC6F); border-radius: 12px; transform: rotate(10deg); opacity: 0.5;"></div>
+            <div style="position: absolute; inset: 0; background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </div>
+          </div>
+          <p style="font-size: 1rem; line-height: 1.7; color: rgba(255,255,255,0.85); margin-bottom: 32px; font-weight: 300;">"The ability to diversify into real, physical assets seamlessly while tracking everything through the <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em); filter: brightness(0) invert(1);"> dashboard is incredible. My payouts arrive precisely on time."</p>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img class="avatar-sm" style="border-color: rgba(255,255,255,0.2);" src="/static/images/profiles/Team.webp" alt="Mark">
+            <div>
+              <div style="font-weight: 600; color: #FFFFFF;">Mark Donovan</div>
+              <div style="color: rgba(255,255,255,0.5); font-size: 0.875rem;">Retail Investor</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dark-card">
+          <div style="width: 48px; height: 48px; margin-bottom: 24px; position: relative;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #03FF88, #00CC6F); border-radius: 12px; transform: rotate(10deg); opacity: 0.5;"></div>
+            <div style="position: absolute; inset: 0; background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </div>
+          </div>
+          <p style="font-size: 1rem; line-height: 1.7; color: rgba(255,255,255,0.85); margin-bottom: 32px; font-weight: 300;">"I started strictly testing the waters. The <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em); filter: brightness(0) invert(1);"> process was so transparent and the legal structure gave me total peace of mind. I'm now fully invested in three continuous projects."</p>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img class="avatar-sm" style="border-color: rgba(255,255,255,0.2);" src="/static/images/profiles/monique-howeth-mobile.webp" alt="Elena">
+            <div>
+              <div style="font-weight: 600; color: #FFFFFF;">Elena Rostova</div>
+              <div style="color: rgba(255,255,255,0.5); font-size: 0.875rem;">Digital Nomad</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEPT 6 -->
+  <div class="concept-divider">
+    <div class="container">
+      <h2 class="concept-title">Concept 6: Holographic Swiper (Branded Background)</h2>
+      <p class="concept-desc">A refined version of Concept 3 featuring the POOOL logo in the background, a branded header, and updated typography highlights.</p>
+    </div>
+  </div>
+
+  <section style="padding: 100px 0; background: #fff; overflow: hidden; position: relative;">
+    <!-- Large background logo -->
+    <img src="/static/images/icons/logo-pool.svg" alt="POOOL Background" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; max-width: 1200px; opacity: 0.03; pointer-events: none; z-index: 0;">
+    
+    <div class="container" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 64px; position: relative; z-index: 1;">
+      
+      <div style="flex: 1 1 400px; max-width: 500px;">
+        <div style="margin-bottom: 24px;">
+           <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 36px; width: auto; opacity: 0.9;">
+        </div>
+        <h2 style="font-size: clamp(2.5rem, 4vw, 3rem); font-weight: 800; color: #181D27; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 24px;">We let our <span style="color: #0000FF;">investors</span> do the talking.</h2>
+        <p style="color: #535862; font-size: 1.125rem; line-height: 1.6; margin-bottom: 32px;">Over 850+ forward-thinking individuals rely on <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> to secure premium assets and generate consistent monthly yields.</p>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <!-- Custom navigation -->
+          <button class="testi-prev-2" style="width: 48px; height: 48px; border-radius: 50%; border: 1px solid #E5E7EB; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#181D27" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="testi-next-2" style="width: 48px; height: 48px; border-radius: 50%; border: 1px solid #E5E7EB; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#181D27" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+
+      <style>
+        .testi-swiper-2 {
+          width: 380px;
+          height: 440px;
+          overflow: visible !important;
+        }
+        @media (max-width: 500px) {
+          .testi-swiper-2 { width: 300px; height: 400px; }
+        }
+      </style>
+      
+      <div style="flex: 0 0 auto; perspective: 1200px;">
+        <div class="swiper testi-swiper-2">
+          <div class="swiper-wrapper">
+            <div class="swiper-slide ts-slide">
+              <svg style="width:32px; height:32px; fill:var(--brand-greeny-green); margin-bottom:24px;" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+              <p style="font-size: 1.125rem; line-height: 1.6; color: #181D27; font-weight: 500; margin-bottom: 32px; flex: 1;">"<img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> democratized the Bali property market for everyday investors. Securing high-yield rental properties used to require massive capital, but fractional ownership changed the game entirely."</p>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <img class="avatar-md" src="/static/images/profiles/Khai.webp" alt="Sarah">
+                <div>
+                  <div style="font-weight: 700; color: #181D27; font-size: 1rem;">Sarah Jenkins</div>
+                  <div style="color: #667085; font-size: 0.875rem;">Real Estate Analyst</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="swiper-slide ts-slide">
+              <svg style="width:32px; height:32px; fill:var(--brand-greeny-green); margin-bottom:24px;" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+              <p style="font-size: 1.125rem; line-height: 1.6; color: #181D27; font-weight: 500; margin-bottom: 32px; flex: 1;">"The ability to diversify into real, physical assets seamlessly while tracking everything through the <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> dashboard is incredible. My monthly payouts arrive like clockwork."</p>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <img class="avatar-md" src="/static/images/profiles/Team.webp" alt="Mark">
+                <div>
+                  <div style="font-weight: 700; color: #181D27; font-size: 1rem;">Mark Donovan</div>
+                  <div style="color: #667085; font-size: 0.875rem;">Retail Investor</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="swiper-slide ts-slide">
+              <svg style="width:32px; height:32px; fill:var(--brand-greeny-green); margin-bottom:24px;" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+              <p style="font-size: 1.125rem; line-height: 1.6; color: #181D27; font-weight: 500; margin-bottom: 32px; flex: 1;">"I started with $500, strictly testing the waters. The <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 0.85em; width: auto; vertical-align: baseline; transform: translateY(0.1em);"> process was so transparent and the legal structure gave me total peace of mind. I'm now fully invested."</p>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <img class="avatar-md" src="/static/images/profiles/monique-howeth-mobile.webp" alt="Elena">
+                <div>
+                  <div style="font-weight: 700; color: #181D27; font-size: 1rem;">Elena Rostova</div>
+                  <div style="color: #667085; font-size: 0.875rem;">Digital Nomad</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        new Swiper(".testi-swiper-2", {
+          effect: "cards",
+          grabCursor: true,
+          navigation: {
+            nextEl: ".testi-next-2",
+            prevEl: ".testi-prev-2",
+          },
+          cardsEffect: {
+            perSlideOffset: 16,
+            perSlideRotate: 4,
+            slideShadows: true,
+          }
+        });
+      });
+    </script>
+  </section>
+
+  <!-- GSAP & VanillaTilt Plugins -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+
+  <!-- CONCEPT 7: The Infinite Glass Marquee -->
+  <div class="concept-divider">
+    <div class="container">
+      <h2 class="concept-title">Concept 7: The Infinite Glass Marquee</h2>
+      <p class="concept-desc">A premium continuous scroll with 3D tilt cards. Screams luxury scaling.</p>
+    </div>
+  </div>
+  <section style="padding: 100px 0; background: #020205; overflow: hidden; position: relative;">
+    <div class="container" style="margin-bottom: 60px;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
+        <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="height: 48px; filter: brightness(0) invert(1);">
+        <h2 style="font-size: clamp(2rem, 3vw, 2.5rem); font-weight: 300; color: #fff; letter-spacing: -0.02em; margin:0;">Our investors. <span style="font-weight: 700; color: #03FF88;">Let them talk.</span></h2>
+      </div>
+    </div>
+    <style>
+      .marquee-wrapper { display: flex; width: 200%; animation: marquee 30s linear infinite; gap: 32px; padding: 20px 0; }
+      .marquee-wrapper:hover { animation-play-state: paused; }
+      @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+      .mq-card { flex: 0 0 450px; background: rgba(255,255,255,0.02); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 40px; color: #fff; transform-style: preserve-3d; transition: border-color 0.3s; }
+      .mq-card:hover { border-color: rgba(3,255,136,0.3); box-shadow: 0 0 40px rgba(3,255,136,0.1); }
+    </style>
+    <div style="width: 100vw; position: relative;">
+      <div class="marquee-wrapper">
+        <div class="mq-card" data-tilt data-tilt-max="5" data-tilt-glare data-tilt-max-glare="0.2">
+          <p style="font-size: 1.125rem; line-height: 1.6; color: #e5e7eb; margin-bottom: 32px; font-weight: 300;">"<img src="/static/images/icons/logo-pool.svg" style="height:0.85em; transform:translateY(0.1em); filter:brightness(0) invert(1);"> democratized the Bali property market. Securing high-yield rental properties used to require massive capital, but fractional ownership changed the game."</p>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img class="avatar-sm" src="/static/images/profiles/Khai.webp"><div style="font-weight:700;">Sarah Jenkins<div style="color:#9ca3af;font-size:0.875rem;">Real Estate Analyst</div></div>
+          </div>
+        </div>
+        <div class="mq-card" data-tilt data-tilt-max="5" data-tilt-glare data-tilt-max-glare="0.2">
+          <p style="font-size: 1.125rem; line-height: 1.6; color: #e5e7eb; margin-bottom: 32px; font-weight: 300;">"The ability to diversify seamlessly while tracking everything through the <img src="/static/images/icons/logo-pool.svg" style="height:0.85em; transform:translateY(0.1em); filter:brightness(0) invert(1);"> dashboard is incredible. Payouts arrive like clockwork."</p>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img class="avatar-sm" src="/static/images/profiles/Team.webp"><div style="font-weight:700;">Mark Donovan<div style="color:#9ca3af;font-size:0.875rem;">Retail Investor</div></div>
+          </div>
+        </div>
+        <div class="mq-card" data-tilt data-tilt-max="5" data-tilt-glare data-tilt-max-glare="0.2">
+          <p style="font-size: 1.125rem; line-height: 1.6; color: #e5e7eb; margin-bottom: 32px; font-weight: 300;">"I started with $500. The <img src="/static/images/icons/logo-pool.svg" style="height:0.85em; transform:translateY(0.1em); filter:brightness(0) invert(1);"> process was incredible and the legal structure gave me peace of mind."</p>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img class="avatar-sm" src="/static/images/profiles/monique-howeth-mobile.webp"><div style="font-weight:700;">Elena Rostova<div style="color:#9ca3af;font-size:0.875rem;">Digital Nomad</div></div>
+          </div>
+        </div>
+        <div class="mq-card" data-tilt data-tilt-max="5" data-tilt-glare data-tilt-max-glare="0.2">
+          <p style="font-size: 1.125rem; line-height: 1.6; color: #e5e7eb; margin-bottom: 32px; font-weight: 300;">"<img src="/static/images/icons/logo-pool.svg" style="height:0.85em; transform:translateY(0.1em); filter:brightness(0) invert(1);"> democratized the Bali property market. Securing high-yield rental properties used to require massive capital, but fractional ownership changed the game."</p>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img class="avatar-sm" src="/static/images/profiles/Khai.webp"><div style="font-weight:700;">Sarah Jenkins<div style="color:#9ca3af;font-size:0.875rem;">Real Estate Analyst</div></div>
+          </div>
+        </div>
+        <div class="mq-card" data-tilt data-tilt-max="5" data-tilt-glare data-tilt-max-glare="0.2">
+          <p style="font-size: 1.125rem; line-height: 1.6; color: #e5e7eb; margin-bottom: 32px; font-weight: 300;">"The ability to diversify seamlessly while tracking everything through the <img src="/static/images/icons/logo-pool.svg" style="height:0.85em; transform:translateY(0.1em); filter:brightness(0) invert(1);"> dashboard is incredible. Payouts arrive like clockwork."</p>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img class="avatar-sm" src="/static/images/profiles/Team.webp"><div style="font-weight:700;">Mark Donovan<div style="color:#9ca3af;font-size:0.875rem;">Retail Investor</div></div>
+          </div>
+        </div>
+        <div class="mq-card" data-tilt data-tilt-max="5" data-tilt-glare data-tilt-max-glare="0.2">
+          <p style="font-size: 1.125rem; line-height: 1.6; color: #e5e7eb; margin-bottom: 32px; font-weight: 300;">"I started with $500. The <img src="/static/images/icons/logo-pool.svg" style="height:0.85em; transform:translateY(0.1em); filter:brightness(0) invert(1);"> process was incredible and the legal structure gave me peace of mind."</p>
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <img class="avatar-sm" src="/static/images/profiles/monique-howeth-mobile.webp"><div style="font-weight:700;">Elena Rostova<div style="color:#9ca3af;font-size:0.875rem;">Digital Nomad</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEPT 8: The Terminal Typewriter -->
+  <div class="concept-divider">
+    <div class="container"><h2 class="concept-title">Concept 8: Terminal Insight</h2><p class="concept-desc">Institutional terminal data stream representing raw investor stats.</p></div>
+  </div>
+  <section style="padding: 100px 0; background: #000; position: relative;">
+    <div class="container">
+      <div style="display:flex;align-items:center;margin-bottom:60px; justify-content:flex-start;">
+        <img src="/static/images/icons/logo-pool.svg" style="height:32px;filter:brightness(0) invert(1);margin-right:20px;">
+        <h2 style="font-family:monospace;color:#03FF88; font-size:1.5rem; margin:0;">// OUR_INVESTORS.let_them_talk()</h2>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;">
+        <div style="border:1px solid #333;padding:32px;background:#111;border-radius:12px;">
+          <div style="color:#888;font-family:monospace;margin-bottom:16px;">> Fetching User: Jenkins_S</div>
+          <p style="font-family:monospace;color:#e5e7eb;min-height:120px; font-size:1rem; line-height:1.5;">"<img src="/static/images/icons/logo-pool.svg" style="height:1em;filter:brightness(0) invert(1); transform:translateY(0.1em);"> completely democratized the fractional market."</p>
+          <div style="border-top:1px dashed #333;padding-top:16px;"><span style="color:#03FF88;">Sarah J.</span> | Analyst</div>
+        </div>
+        <div style="border:1px solid #333;padding:32px;background:#111;border-radius:12px;">
+          <div style="color:#888;font-family:monospace;margin-bottom:16px;">> Fetching User: Donovan_M</div>
+          <p style="font-family:monospace;color:#e5e7eb;min-height:120px; font-size:1rem; line-height:1.5;">"<img src="/static/images/icons/logo-pool.svg" style="height:1em;filter:brightness(0) invert(1); transform:translateY(0.1em);"> dashboard is flawless. Payouts arrive strictly on time."</p>
+          <div style="border-top:1px dashed #333;padding-top:16px;"><span style="color:#03FF88;">Mark D.</span> | Retail</div>
+        </div>
+        <div style="border:1px solid #333;padding:32px;background:#111;border-radius:12px;">
+          <div style="color:#888;font-family:monospace;margin-bottom:16px;">> Fetching User: Rostova_E</div>
+          <p style="font-family:monospace;color:#e5e7eb;min-height:120px; font-size:1rem; line-height:1.5;">"<img src="/static/images/icons/logo-pool.svg" style="height:1em;filter:brightness(0) invert(1); transform:translateY(0.1em);"> legal structure gave me total peace of mind for my portfolio."</p>
+          <div style="border-top:1px dashed #333;padding-top:16px;"><span style="color:#03FF88;">Elena R.</span> | Nomad</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEPT 9: Coverflow -->
+  <div class="concept-divider"><div class="container"><h2 class="concept-title">Concept 9: The Coverflow Showcase</h2></div></div>
+  <section style="padding: 100px 0; background: #FFF;">
+    <div class="container" style="text-align: center; margin-bottom: 40px;">
+      <h2 style="font-size: 2.5rem; letter-spacing: -0.02em;">Our investors. <br><img src="/static/images/icons/logo-pool.svg" style="height: 48px; margin-top:24px;"> Let them talk.</h2>
+    </div>
+    <style>
+      .cov-swiper { width: 100%; padding: 40px 0; }
+      .cov-slide { width: 400px; padding: 40px; background: #fff; border: 1px solid #E5E7EB; border-radius: 20px; box-shadow: 0 40px 60px -20px rgba(0,0,0,0.1); }
+      @media (max-width: 500px) { .cov-slide { width: 300px; } }
+    </style>
+    <div class="swiper cov-swiper">
+      <div class="swiper-wrapper">
+        <div class="swiper-slide cov-slide"><p style="font-size:1.125rem;line-height:1.6;">"<img src="/static/images/icons/logo-pool.svg" style="height:1em;transform:translateY(0.1em);"> made investing simple and fully transparent." <br><br><b>Sarah J.</b></p></div>
+        <div class="swiper-slide cov-slide"><p style="font-size:1.125rem;line-height:1.6;">"<img src="/static/images/icons/logo-pool.svg" style="height:1em;transform:translateY(0.1em);"> yields are perfectly consistent." <br><br><b>Mark D.</b></p></div>
+        <div class="swiper-slide cov-slide"><p style="font-size:1.125rem;line-height:1.6;">"<img src="/static/images/icons/logo-pool.svg" style="height:1em;transform:translateY(0.1em);"> structurally bulletproof and secure." <br><br><b>Elena R.</b></p></div>
+      </div>
+    </div>
+    <script>document.addEventListener('DOMContentLoaded', ()=>new Swiper('.cov-swiper',{effect:'coverflow', centeredSlides:true, slidesPerView:'auto', loop:true}));</script>
+  </section>
+
+  <!-- CONCEPT 10: Stack -->
+  <div class="concept-divider"><div class="container"><h2 class="concept-title">Concept 10: The Executive Sticky Stack</h2></div></div>
+  <section style="background: #0A0A0B;">
+    <div style="height: 250vh;">
+      <div class="container" style="padding-top:100px; text-align:center;">
+        <h2 style="font-size: clamp(2.5rem, 5vw, 4rem); color: #fff; font-weight: 800;">Our investors. <br><img src="/static/images/icons/logo-pool.svg" style="height: 64px; filter: brightness(0) invert(1); margin-top:24px;"> Let them talk.</h2>
+      </div>
+      <div class="container" style="position: relative;">
+        <div style="position: sticky; top: 20vh; max-width:800px; margin:0 auto; padding:60px; background:linear-gradient(to right, #111, #1a1a24); border-radius:24px; color:#fff; border:1px solid #333; box-shadow: 0 -20px 40px rgba(0,0,0,0.5); z-index:1;">
+          <p style="font-size:1.5rem; font-weight:300; line-height:1.4;">"The <img src="/static/images/icons/logo-pool.svg" style="height:1em;filter:brightness(0) invert(1);transform:translateY(0.1em);"> structure is brilliant and entirely redefined accessibility."</p>
+          <div style="margin-top:32px; color:#03FF88; font-weight:700;">Sarah Jenkins</div>
+        </div>
+        <div style="position: sticky; top: 25vh; max-width:800px; margin:50vh auto 0; padding:60px; background:linear-gradient(to right, #1a1a24, #111); border-radius:24px; color:#fff; border:1px solid #444; box-shadow: 0 -20px 40px rgba(0,0,0,0.5); z-index:2;">
+          <p style="font-size:1.5rem; font-weight:300; line-height:1.4;">"<img src="/static/images/icons/logo-pool.svg" style="height:1em;filter:brightness(0) invert(1);transform:translateY(0.1em);"> yields are unmatched and the interface is frictionless."</p>
+          <div style="margin-top:32px; color:#03FF88; font-weight:700;">Mark Donovan</div>
+        </div>
+        <div style="position: sticky; top: 30vh; max-width:800px; margin:50vh auto 50vh; padding:60px; background:linear-gradient(to bottom, #151515, #000); border-radius:24px; color:#fff; border:1px solid #0000FF; box-shadow: 0 -20px 80px rgba(0,0,0,0.8); z-index:3;">
+          <p style="font-size:1.5rem; font-weight:300; line-height:1.4;">"Trust in <img src="/static/images/icons/logo-pool.svg" style="height:1em;filter:brightness(0) invert(1);transform:translateY(0.1em);"> is absolute. Total peace of mind."</p>
+          <div style="margin-top:32px; color:#03FF88; font-weight:700;">Elena Rostova</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEPT 11: Monolith -->
+  <div class="concept-divider"><div class="container"><h2 class="concept-title">Concept 11: The Heroic Monolith</h2></div></div>
+  <section style="padding: 150px 0; background: #0000FF; color: white; text-align: center; position:relative;">
+    <div style="position:absolute; inset:0; background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%); pointer-events:none;"></div>
+    <div class="container" style="position:relative; z-index:1;">
+      <img src="/static/images/icons/logo-pool.svg" style="height: 64px; filter: brightness(0) invert(1); margin-bottom: 24px;">
+      <h2 style="font-size: clamp(3rem, 6vw, 5rem); font-weight: 800; line-height:1; letter-spacing:-0.03em;">Our investors. <br><span style="color: #03FF88;">Let them talk.</span></h2>
+      <div style="max-width: 900px; margin: 80px auto; padding: 60px; background: rgba(255,255,255,0.05); backdrop-filter: blur(40px); border-radius: 32px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 40px 100px rgba(0,0,0,0.3);">
+        <p style="font-size: clamp(1.5rem, 3vw, 2.5rem); font-weight: 300; line-height:1.4;">"<img src="/static/images/icons/logo-pool.svg" style="height: 0.8em; filter:brightness(0) invert(1); transform:translateY(0.1em);"> democratized the Bali property market entirely."</p>
+        <div style="font-weight: 700; margin-top:40px; font-size: 1.25rem;">Sarah Jenkins</div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="text-align: center; padding: 40px; color: #667085; font-size: 0.875rem;">
+    &copy; 2026 POOOL Testimonial Concepts
+  </footer>
+
+</body>
+</html>

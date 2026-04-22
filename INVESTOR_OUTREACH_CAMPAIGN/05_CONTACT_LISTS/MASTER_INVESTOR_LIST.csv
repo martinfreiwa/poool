@@ -1,0 +1,106 @@
+ID,Name,Shorthand,Email,Type,Location,AUM,Priority,Category,Notes
+1,Abu Dhabi Investment Authority,ADIA,contact@adia.ae,Sovereign Wealth Fund,"Abu Dhabi, UAE",$1.1T,High,Sovereign Wealth Fund,World's largest SWF; increasing BTC ETF exposure
+2,Mubadala Investment Company,Mubadala,info@mubadala.com,Sovereign Wealth Fund,"Abu Dhabi, UAE",$330B,High,Sovereign Wealth Fund,Most active SWF globally; ADIC unit tripled BTC ETF position 2025
+3,ADQ — Abu Dhabi Developmental Holding,ADQ,ir@adq.ae,Sovereign Wealth Fund,"Abu Dhabi, UAE",$150B+,High,Sovereign Wealth Fund,Infrastructure-focused SWF; white paper on $100T global infra gap
+4,MGX Abu Dhabi,MGX,info@mgx.ae,Sovereign Digital Infra Fund,"Abu Dhabi, UAE",$20B+,Very High,Sovereign Wealth Fund,Mubadala+G42 JV; $2B Binance investment; AI & Bitcoin infra mandate
+5,Saudi Public Investment Fund,PIF,info@pif.gov.sa,Sovereign Wealth Fund,"Riyadh, Saudi Arabia",$1T+,High,Sovereign Wealth Fund,Largest GCC SWF; digital infra mandate via Sanabil arm
+6,Qatar Investment Authority,QIA,media@qia.qa,Sovereign Wealth Fund,"Doha, Qatar",$450B+,High,Sovereign Wealth Fund,Qatar SWF; diversified mandate; increasing digital exposure
+7,Kuwait Investment Authority,KIA,information@kia.gov.kw,Sovereign Wealth Fund,"Kuwait City, Kuwait",$750B+,Medium,Sovereign Wealth Fund,Conservative GCC SWF; long-term capital
+8,Oman Investment Authority,OIA,info@oia.gov.om,Sovereign Wealth Fund,"Muscat, Oman",$40B+,High,Sovereign Wealth Fund,Invested in Crusoe Energy for BTC mining; Mubadala co-investor
+9,Sanabil Investments,Sanabil,contact@sanabilvc.com,Sovereign VC,Saudi Arabia,$10B+,High,Sovereign Wealth Fund,PIF-backed VC arm; active crypto and digital asset mandate
+10,L'IMAD Holdings,L'IMAD,info@limad.ae,Sovereign Wealth Fund,"Abu Dhabi, UAE",$50B+,Medium,Sovereign Wealth Fund,Abu Dhabi-based SWF
+11,Emirates Investment Authority,EIA,info@eia.gov.ae,Sovereign Wealth Fund,"Abu Dhabi, UAE",$45B+,Medium,Sovereign Wealth Fund,UAE federal SWF; infra and energy mandate
+12,Global Infrastructure Partners,GIP,contact@global-infra.com,Infrastructure Fund,Global,$100B+,High,Infrastructure / PE,Largest infra PE fund globally
+13,DigitalBridge,DigitalBridge,ir@digitalbridge.com,Digital Infrastructure Fund,Boca Raton / Global,$85B+,High,Infrastructure / PE,"Specialist digital infra PE; data centres, towers, fibre"
+14,Blackstone Infrastructure,Blackstone,infrastructure@blackstone.com,Infrastructure Fund,New York / Global,$150B+,High,Infrastructure / PE,World's largest alt asset manager; infra arm growing fast
+15,KKR Infrastructure,KKR,middleeast@kkr.com,Infrastructure Fund,Global / Dubai office,$90B+,High,Infrastructure / PE,Active ME office; digital and energy infra mandate
+16,Brookfield Infrastructure,Brookfield,info@brookfield.com,Infrastructure Fund,Toronto / Global,$200B+,High,Infrastructure / PE,One of largest infra platforms globally; data centre expansion
+17,Partners Group,Partners Group,info@partnersgroup.com,Infrastructure Fund,"Baar, Switzerland",$130B+,Medium,Infrastructure / PE,Swiss-based global infra and private markets PE
+18,Investcorp,Investcorp,ir@investcorp.com,Alternative Asset Manager,Bahrain / Abu Dhabi,$50B+,High,Infrastructure / PE,GCC alt asset manager; strong FO network; right ticket size for this deal
+19,Fajr Capital,Fajr Capital,contact@fajrcapital.ae,Sovereign-Backed PE,"Dubai, UAE",$50B+,Very High,Infrastructure / PE,GCC sovereign-backed PE; direct infra mandate
+20,Lunate,Lunate,contact@lunate.ae,PE / Multi-Strategy,"Abu Dhabi, UAE",$50B+,Very High,Infrastructure / PE,UAE multi-strategy PE; strong infra appetite
+21,Gulf Capital,Gulf Capital,info@gulfcapital.ae,Private Equity,"Abu Dhabi, UAE",$5B+,Medium,Infrastructure / PE,UAE-based PE; tech and infra focus
+22,Waha Capital,Waha Capital,info@wahacapital.com,PE / Investment Co.,"Abu Dhabi, UAE",$5B+,Medium,Infrastructure / PE,Abu Dhabi PE; energy and tech exposure
+23,Shuaa Capital,Shuaa Capital,info@shuaa.com,PE / Asset Mgmt,"Dubai, UAE",$3B+,Medium,Infrastructure / PE,Dubai PE/asset manager; digital expansion
+24,Arcapita,Arcapita,info@arcapita.com,Sharia-Compliant PE,Bahrain / Atlanta,$4B+,Medium,Infrastructure / PE,Sharia-compliant PE; GCC infra and technology
+25,GFH Capital,GFH Capital,info@gfh.com,PE / Investment Bank,Bahrain,$15B+,Medium,Infrastructure / PE,Gulf Finance House PE arm; infra and real assets
+26,EFG Hermes / EFG Holding,EFG Hermes,ir@efgholding.com,Investment Bank / PE,Cairo / Dubai,$5B+ managed,Medium,Infrastructure / PE,Pan-Arab IB with PE arm; MENA infra focus
+27,DataVolt,DataVolt,contact@datavolt.sa,Digital Infrastructure Developer,Saudi Arabia,$5B deployed,High,Infrastructure / PE,KSA digital infra developer; HPC and data centre mandate
+28,Actis,Actis,info@act.is,Emerging Markets PE,London / Global,$12B+,Medium,Infrastructure / PE,EM-focused energy & infra PE; strong MENA pipeline
+29,Pantera Capital,Pantera,info@panteracapital.com,Crypto Hedge Fund / VC,"Menlo Park, CA",$5B+,High,Crypto-Native Fund,Longest-running crypto fund; BTC infra conviction; $10M+ check size
+30,Dragonfly Capital,Dragonfly,contact@dragonfly.xyz,Crypto VC,San Francisco / Singapore,$650M+ (latest fund),High,Crypto-Native Fund,Asia + ME roots; crypto infra focus; Haseeb Qureshi & Bo Feng
+31,Galaxy Digital / Galaxy Ventures,Galaxy,invest@galaxyventures.com,Crypto Asset Mgmt / VC,"New York, NY",$10B+ platform,Medium,Crypto-Native Fund,$175M venture fund; digital infra; pivoting to AI/HPC
+32,a16z Crypto (Andreessen Horowitz),a16z Crypto,crypto@a16z.com,Crypto VC,"Menlo Park, CA",$7.6B+ crypto,High,Crypto-Native Fund,Largest crypto VC fund; deep Bitcoin infrastructure research
+33,Paradigm,Paradigm,contact@paradigm.xyz,Crypto VC / Research Fund,"San Francisco, CA",$8.5B+ raised,High,Crypto-Native Fund,Research-driven crypto VC; Fred Ehrsam + Matt Huang; seed to growth
+34,Polychain Capital,Polychain,contact@polychain.capital,Crypto VC / Hedge Fund,"San Francisco, CA",$400M+ (Fund IV),High,Crypto-Native Fund,Founded by Olaf Carlson-Wee; protocols and infrastructure focus
+35,Electric Capital,Electric Capital,contact@electriccapital.com,Crypto VC,"Palo Alto, CA",$1B+,High,Crypto-Native Fund,Developer platform and infrastructure focus; data-driven approach
+36,Haun Ventures,Haun Ventures,hello@haun.com,Crypto VC,"Palo Alto, CA",$1.5B+,Medium,Crypto-Native Fund,Founded by Katie Haun; crypto veterans; regulatory expertise
+37,Multicoin Capital,Multicoin,contact@multicoin.capital,Crypto VC,"Austin, TX",$430M+,Medium,Crypto-Native Fund,Thesis-driven; infrastructure + protocol layer
+38,Framework Ventures,Framework,info@framework.ventures,DeFi / Infra VC,"San Francisco, CA",$400M+,Medium,Crypto-Native Fund,DeFi and gaming fund; crypto infrastructure mandate
+39,HashKey Capital,HashKey,info@hashkey.com,Crypto VC / Asset Mgmt,Hong Kong / Global,$500M (new fund),High,Crypto-Native Fund,$500M Digital Asset Treasury fund; blockchain infra; Asia-GCC bridge
+40,Fasanara Capital,Fasanara,info@fasanara.com,Alt Asset Mgr / Crypto VC,"London, UK",$350M crypto fund,Medium,Crypto-Native Fund,European institutional capital; $350M crypto + fintech VC fund
+41,1kx Network,1kx,info@1kx.network,Crypto VC,Global / Remote,$200M+,Medium,Crypto-Native Fund,"Consumer crypto, middleware and infrastructure; seed to Series A"
+42,Variant Fund,Variant,hello@variant.fund,Crypto VC,"New York, NY",$450M+,Medium,Crypto-Native Fund,"Early-stage crypto; backed Uniswap, Phantom, Farcaster"
+43,CoinFund,CoinFund,hello@coinfund.io,Crypto VC,"New York, NY",$300M+,Medium,Crypto-Native Fund,One of earliest crypto VCs; web3 infrastructure mandate
+44,Spartan Group,Spartan Group,contact@spartangroup.io,Crypto VC / Hedge Fund,Singapore / Global,$300M+,Medium,Crypto-Native Fund,Asia-focused crypto fund; Bitcoin and infra investments
+45,DWF Labs,DWF Labs,contact@dwf-labs.com,Crypto Market Maker / Investor,Dubai / Singapore,$1B+ deployed,High,Crypto-Native Fund,Dubai-based; one of largest crypto market makers; active deal flow in MENA
+46,Binance Labs,Binance Labs,labs@binance.com,Crypto VC / Incubator,Global / Dubai,$7.5B+ deployed,High,Crypto-Native Fund,Binance's VC arm; largest crypto ecosystem fund; Dubai base
+47,OKX Ventures,OKX Ventures,ventures@okx.com,Crypto VC,Dubai / Seychelles,$1B+,High,Crypto-Native Fund,OKX exchange VC arm; Dubai-based; active Bitcoin infra investments
+48,Animoca Brands,Animoca,partnerships@animocabrands.com,Web3 / Gaming VC,Hong Kong / Dubai,$2B+ portfolio,Low,Crypto-Native Fund,Web3 gaming VC; less direct fit but large crypto capital pool
+49,Delphi Digital,Delphi Digital,contact@delphidigital.io,Crypto Research / VC,Global / Remote,$100M+,Medium,Crypto-Native Fund,Research-driven crypto VC; infrastructure thesis
+50,Grayscale Investments,Grayscale,ir@grayscale.com,Crypto Asset Manager,"Stamford, CT",$25B+ AUM,Medium,Crypto-Native Fund,Largest digital asset manager; Bitcoin mining ETF (MNRS)
+51,Coinbase Ventures,Coinbase Ventures,ventures@coinbase.com,Crypto VC,"San Francisco, CA",$1B+ deployed,Medium,Crypto-Native Fund,Coinbase's VC arm; broad crypto infra investments
+52,Ghaf Capital Partners,Ghaf Capital,contact@ghafcapital.ae,Crypto VC,"Dubai, UAE",$60M+,Very High,UAE/GCC Crypto Fund,Only dedicated crypto VC domiciled in UAE; perfect regional fit
+53,Klumi Ventures,Klumi,contact@klumi.ae,Digital Assets VC,"Abu Dhabi, UAE",$500M+,Very High,UAE/GCC Crypto Fund,Abu Dhabi digital assets fund; right jurisdiction and mandate
+54,Cypher Capital,Cypher,contact@cyphercapital.io,Blockchain VC,"Dubai, UAE",$100M+,Very High,UAE/GCC Crypto Fund,UAE blockchain VC; infrastructure and Bitcoin appetite
+55,Morningstar Ventures,Morningstar,contact@mstarventures.com,Web3 VC,"Dubai, UAE",$75M+,High,UAE/GCC Crypto Fund,Dubai Web3 VC; Bitcoin and DeFi infrastructure
+56,CV VC,CV VC,contact@cv-vc.com,Web3 VC,"Dubai, UAE",$50M+,High,UAE/GCC Crypto Fund,Dubai Web3 VC; Swiss-backed; MENA focus
+57,MEVP,MEVP,contact@mevp.vc,Venture Capital,"Dubai, UAE",$40M+,Medium,UAE/GCC Crypto Fund,MENA VC firm; growing digital mandate
+58,AMINA Bank,AMINA Bank,info@aminagroup.com,Crypto Bank,Bahrain,$500M+,Medium,UAE/GCC Crypto Fund,MENA regulated crypto bank; institutional crypto services
+59,MARA Holdings (Marathon Digital),MARA,ir@mara.com,Bitcoin Mining Co. / Strategic,Fort Lauderdale / Abu Dhabi,$4B+ market cap,Very High,Bitcoin Mining Strategic,Largest public BTC miner; already operating 250MW in Abu Dhabi via Zero Two JV at Masdar City
+60,Zero Two,Zero Two,contact@zerotwo.ae,Digital Infrastructure Co.,"Abu Dhabi, UAE",250MW Abu Dhabi op.,Very High,Bitcoin Mining Strategic,Abu Dhabi-based; MARA JV partner for 250MW immersion-cooled BTC mining at Masdar City
+61,UAE Royal Group / Citadel Mining,Royal Group,investments@royalgroup.ae,Royal Family Office / Mining,"Abu Dhabi, UAE",$453M+ BTC reserve,Very High,Bitcoin Mining Strategic,Largest BTC miner in MENA; 6782 BTC mined; Sheikh Tahnoon-linked; natural strategic partner
+62,Phoenix Group,Phoenix Group,ir@phoenixgroup.io,Bitcoin Mining Co.,Abu Dhabi (ADX listed),725MW+ infra,Very High,Bitcoin Mining Strategic,"Listed on Abu Dhabi Stock Exchange; 725MW across MENA, N.America, Europe; ideal strategic partner"
+63,Crusoe Energy Systems,Crusoe Energy,partnerships@crusoe.ai,Energy-Backed Mining Co.,Denver / Muscat,N/A,High,Bitcoin Mining Strategic,Flared-gas BTC mining pioneer; backed by Mubadala + Oman Investment Authority
+64,Riot Platforms,Riot Platforms,ir@riotplatforms.com,Bitcoin Mining Co.,"Castle Rock, CO",$3B+ market cap,Medium,Bitcoin Mining Strategic,Major US-listed BTC miner; $500M convertible note raise 2025; strategic partnerships
+65,CleanSpark,CleanSpark,ir@cleanspark.com,Bitcoin Mining Co.,"Henderson, NV",$3B+ market cap,Medium,Bitcoin Mining Strategic,Green BTC miner; $1.15B convertible note raise 2025; renewable energy focus
+66,Bitdeer Technologies,Bitdeer,institutional@bitdeer.com,Bitcoin Mining Co.,Singapore / Global,$1B+ market cap,Medium,Bitcoin Mining Strategic,Listed miner with global ops; institutional mining services
+67,Iris Energy (IREN),Iris Energy,ir@irisenergy.co,Bitcoin Mining Co.,Sydney / Vancouver,$2B+ market cap,Medium,Bitcoin Mining Strategic,Renewable energy BTC miner; dual BTC + AI cloud strategy
+68,Tensai Holdings,Tensai,info@tensaiholdings.com,Family Office,UAE / Global,$9.33B,High,Family Office — UAE/GCC,UAE FO; infra + alternative mandates; right ticket size
+69,Al Ghurair Investments,Al Ghurair,info@alghurair.com,UAE Family Office,"Dubai, UAE",$6B+,Medium,Family Office — UAE/GCC,One of UAE's largest business families; expanding into digital ventures
+70,DAMAC Capital,DAMAC Capital,investments@damacgroup.com,Family Office,"Dubai, UAE",$10B+,High,Family Office — UAE/GCC,Hussain Sajwani's FO arm; tech and innovation focus; took Anthropic stake
+71,Majid Al Futtaim Trust,MAF Trust,corporate@maf.ae,Family Office,"Dubai, UAE",$10B+,Medium,Family Office — UAE/GCC,UAE's largest private employer; diversified FO arm; digital asset exploration
+72,Al Habtoor Group,Al Habtoor,info@alhabtoorgroup.com,UAE Conglomerate / FO,"Dubai, UAE",$5B+,Medium,Family Office — UAE/GCC,Dubai conglomerate; hotel + real estate base; exploring digital diversification
+73,Al Nahyan Family Offices Network,Al Nahyan FOs,TBD — via ADGM intermediary,Royal Family Office Network,"Abu Dhabi, UAE",$50B+ combined,High,Family Office — UAE/GCC,Abu Dhabi royal family office network; indirect access via ADGM
+74,Al Maktoum Family Offices,Al Maktoum FOs,TBD — via DMCC intermediary,Royal Family Office,"Dubai, UAE",$40B+ combined,High,Family Office — UAE/GCC,Dubai royal family office; access via DMCC and intermediaries
+75,Abu Dhabi Global Market (ADGM),ADGM,connect@adgm.ae,Family Office Hub / Regulator,"Abu Dhabi, UAE",$300B+ members,Very High,Family Office — UAE/GCC,AD FO hub; regulator + network — gateway to hundreds of family offices
+76,Dubai Multi Commodities Centre (DMCC),DMCC,info@dmcc.ae,Family Office Hub,"Dubai, UAE",$500B+ members,Very High,Family Office — UAE/GCC,Dubai FO hub; network effect; gateway to major wealth families
+77,Rothschild Family Office (Edmond de Rothschild),Edmond de Rothschild,ir@edmond-de-rothschild.com,Family Office / Private Bank,"Geneva, Switzerland",$180B+,Low,Family Office — Intl,Global wealth; increasing alternatives + digital asset exposure
+78,Andreessen Family Office,A.Horowitz FO,info@andreessen.com,Family Office,"Menlo Park, CA",$5B+ est.,Low,Family Office — Intl,Tech-forward FO; runs alongside a16z; BTC conviction documented
+79,MassMutual / Barings (BTC Holder),MassMutual,ir@massmutual.com,Insurance / Institutional,"Springfield, MA",$300B+,Low,Family Office — Intl,Early institutional BTC buyer ($100M in 2020); infra-quality mandate
+80,Rain Financial,Rain,support-ae@rain.com,Crypto Exchange,UAE / Bahrain,$200M+,Medium,Crypto Exchange / Strategic,UAE-based regulated crypto exchange; expanding into infrastructure
+81,CoinMENA,CoinMENA,support@coinmena.com,Crypto Exchange,Bahrain,$150M+,Medium,Crypto Exchange / Strategic,GCC crypto exchange; Bahrain-licensed; growing institutional arm
+82,BitOasis,BitOasis,help@bitoasis.net,Crypto Exchange,UAE,$100M+,Medium,Crypto Exchange / Strategic,UAE crypto exchange; potential strategic acquirer / co-investor
+83,MicroStrategy (Strategy),MicroStrategy,ir@microstrategy.com,Bitcoin Treasury Co.,"Tysons Corner, VA",$45B+ BTC treasury,Medium,Crypto Exchange / Strategic,World's largest corporate Bitcoin holder; potential strategic partner
+84,ADNOC / XRG Division,ADNOC-XRG,contact@adnoc.ae,Energy Strategic,"Abu Dhabi, UAE",N/A,Medium,Crypto Exchange / Strategic,Energy synergy: ADNOC could supply power infrastructure for mining ops
+85,Saudi Aramco,Aramco,investor.relations@aramco.com,Energy Strategic,"Dhahran, Saudi Arabia",N/A,Medium,Crypto Exchange / Strategic,World's largest energy company; flared gas monetisation via mining
+86,Abu Dhabi Future Energy Company (Masdar),Masdar,info@masdar.ae,Energy Strategic,"Abu Dhabi, UAE",$20B+,High,Crypto Exchange / Strategic,Masdar City hosts MARA/Zero Two 200MW mining site; natural infrastructure partner
+87,Apollo Global Management,Apollo,ir@apollo.com,Alternative Asset Manager,New York / Dubai,$650B+,Low,Global Alt Asset Manager,Expanding digital infra; data centre JV activity in 2025
+88,Carlyle Group,Carlyle,ir@carlyle.com,Private Equity,Washington DC / Dubai,$435B+,Low,Global Alt Asset Manager,Global PE; ME office in Dubai; digital infra mandate growing
+89,TPG Capital,TPG,ir@tpg.com,Private Equity,Fort Worth / Global,$230B+,Low,Global Alt Asset Manager,PE giant; TPG Rise Climate fund relevant for energy infra
+90,Warburg Pincus,Warburg Pincus,contactus@warburgpincus.com,Private Equity,New York / Global,$85B+,Low,Global Alt Asset Manager,Growth equity PE; tech and energy focus; ME presence
+91,Advent International,Advent Intl,info@adventinternational.com,Private Equity,Boston / Global,$90B+,Low,Global Alt Asset Manager,Global PE; growing digital infrastructure thesis
+92,General Atlantic,General Atlantic,information@generalatlantic.com,Growth Equity,New York / Dubai,$100B+,Low,Global Alt Asset Manager,Growth equity; Dubai office; fintech and digital infrastructure
+93,First Abu Dhabi Bank (FAB),FAB,investor.relations@bankfab.com,Bank / Financial Institution,"Abu Dhabi, UAE",$330B+ assets,Medium,MENA Banking / FI,UAE's largest bank; growing digital asset and fintech arm
+94,Emirates NBD,Emirates NBD,contact@emiratesnbd.com,Bank / Financial Institution,"Dubai, UAE",$250B+ assets,Low,MENA Banking / FI,Dubai government-linked bank; digital assets pilot programs
+95,Abu Dhabi Commercial Bank (ADCB),ADCB,ir@adcb.com,Bank / Financial Institution,"Abu Dhabi, UAE",$130B+ assets,Low,MENA Banking / FI,Abu Dhabi government-linked bank; infrastructure lending capacity
+96,Dubai Islamic Bank (DIB),DIB,info@dib.ae,Islamic Bank,"Dubai, UAE",$100B+ assets,Low,MENA Banking / FI,Sharia-compliant; project finance capability for infra
+97,Borderless Capital,Borderless Capital,info@borderless.capital,Crypto VC,"Miami, FL",$100M+,Medium,Crypto-Native Fund,Algorand-focused but expanding to broader crypto infra
+98,Outlier Ventures,Outlier Ventures,hello@outlierventures.io,Web3 VC / Accelerator,London / Dubai,$200M+,Medium,Crypto-Native Fund,Dubai office; Web3 infra and open metaverse; MENA presence
+99,Amber Group,Amber Group,ir@ambergroup.io,Crypto Financial Services,Hong Kong / Dubai,$3B+ managed,Medium,Crypto-Native Fund,Crypto trading + institutional services; ME expansion in 2025
+100,NGC Ventures,NGC Ventures,contact@ngc.fund,Blockchain VC,Singapore,$400M+,Medium,Crypto-Native Fund,Asia blockchain VC; Bitcoin and infra thesis; SG-ME bridge
+101,Hashed,Hashed,contact@hashed.com,Crypto VC,Seoul / Singapore,$600M+,Medium,Crypto-Native Fund,Korea's top crypto VC; infrastructure and protocol focus
+102,Primitive Crypto,Primitive Crypto,hello@primitive.xyz,Crypto VC,Global / Remote,$100M+,Low,Crypto-Native Fund,Early-stage crypto protocols and infrastructure
+103,Maven 11 Capital,Maven 11,info@maven11.com,Crypto VC / Hedge Fund,Amsterdam / Global,$200M+,Medium,Crypto-Native Fund,European crypto VC; infra and DeFi; institutional LP base
+104,Kenetic Capital,Kenetic Capital,info@kenetic.capital,Crypto VC / Hedge Fund,Hong Kong,$150M+,Low,Crypto-Native Fund,Asia crypto VC; blockchain infrastructure investments
+105,XBTO,XBTO,ir@xbto.com,Crypto Financial Services / FO,Nassau / Dubai,$1B+ managed,High,Crypto-Native Fund,Bahamas + Dubai base; crypto FO services and direct investments; ME connection

@@ -1,5 +1,5 @@
 {% with title="Developer Assets", meta_description="Manage your properties and assets on POOOL.",
-extra_css=['developer-assets', 'mobile-developer-assets', 'marketplace', 'cart', 'checkout', 'poool-icon-custom'],
+extra_css=['developer-assets', 'developer-leaderboard-navbar', 'mobile-developer-assets', 'marketplace', 'cart', 'checkout', 'poool-icon-custom'],
 extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigation', 'marketplace'] %}{% include
 "components/head.html" %}{% endwith %}
 
@@ -12,23 +12,9 @@ extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigatio
     </div>
     <!-- Main Content Area -->
     <main id="developer-assets-main" class="ds-main">
-      <!-- Page Header -->
-      <div id="developer-assets-page-header" class="ds-page-header">
-        <div class="ds-page-header__title-row">
-          <h1 id="developer-assets-page-title" class="ds-page-header__title">
-            My Assets
-          </h1>
-        </div>
-        <div class="ds-page-header__actions">
-          <a href="/developer/add-asset" class="add-asset-btn">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#98FB96" stroke-width="1.66667"
-              stroke-linecap="round">
-              <path d="M10 4v12M4 10h12" />
-            </svg>
-            <span class="add-asset-text">Add Asset</span>
-          </a>
-        </div>
-      </div>
+      {% with dev_nav_title="Developer", dev_nav_active="assets", dev_nav_show_add_asset=true %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
 
 
       <!-- Status Tabs: Available / Funded -->
@@ -99,7 +85,7 @@ extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigatio
             <div class="card-meta-row">
               {% if asset.bedrooms %}
               <div class="card-meta-item">
-                <img src="/static/images/Bed.svg" alt="Beds" width="16" height="16">
+                <img src="/static/images/icons/Bed.svg" alt="Beds" width="16" height="16">
                 <span>{{ asset.bedrooms }}</span>
               </div>
               <div class="card-meta-divider"></div>
@@ -175,7 +161,7 @@ extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigatio
         {% for _ in range(8) %}
         <div class="ghost-card" style="display:none;">
           <div class="ghost-card__image">
-            <img src="/static/images/logo-pool.svg" alt="POOOL" style="width: 48px; height: auto; opacity: 0.18;">
+            <img src="/static/images/icons/logo-pool.svg" alt="POOOL" style="width: 48px; height: auto; opacity: 0.18;">
           </div>
           <div class="property-content" style="flex: 1;">
             <div class="card-meta-row" style="opacity: 0.5;">

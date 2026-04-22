@@ -1,5 +1,5 @@
 {% with title="Cart", meta_description="Review your selected investments and proceed to secure checkout on POOOL.",
-extra_css=['cart', 'mobile-cart', 'checkout'] %}{% include "components/head.html" %}{% endwith %}
+extra_css=['leaderboard', 'cart', 'mobile-cart', 'checkout'] %}{% include "components/head.html" %}{% endwith %}
 
   <!-- Custom POOOL Icon Styles -->
   <style>
@@ -33,17 +33,16 @@ extra_css=['cart', 'mobile-cart', 'checkout'] %}{% include "components/head.html
       </div>
       <!-- Main Content -->
       <main id="cart-main" class="ds-main cart-page-main">
-        <!-- Cart Content Wrapper for HTMX Updates -->
-        <div id="cart-content-wrapper">
-          <!-- Cart Header -->
-          <div id="cart-page-header" class="ds-page-header cart-page-header">
-            <div class="ds-page-header__title-row cart-title-wrapper">
-              <h1 id="cart-page-title" class="ds-page-header__title cart-page-title">
-                Cart
-              </h1>
+        <!-- Leaderboard-style Top Bar -->
+        <header class="lb-topbar cart-lb-topbar">
+          <div class="lb-topbar-inner cart-lb-topbar-inner">
+            <div class="lb-topbar-left">
+              <span class="lb-topbar-title">Cart</span>
             </div>
           </div>
-          <hr class="page-header-divider">
+        </header>
+        <!-- Cart Content Wrapper for HTMX Updates -->
+        <div id="cart-content-wrapper">
           <!-- Cart Content -->
           <div id="cart-page-content" class="cart-page-content">
             <!-- Populated Cart State (Default for now) -->

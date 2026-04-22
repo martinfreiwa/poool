@@ -1,6 +1,6 @@
 {% with title="Wallet", meta_description="Access your POOOL wallet to manage deposits, withdrawals, and view your
 transaction history securely.", no_index=True, extra_css=['wallet', 'bem/table', 'bem/table-wallet', 'htmx-fixes',
-'mobile-wallet'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation'],
+'mobile-wallet', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation'],
 external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="wallet-body" class="fouc-guard">
@@ -14,32 +14,33 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
     <main class="ds-main wallet-main">
 
       <div class="wallet-container">
-        <!-- Wallet Header -->
-        <div id="wallet-header" class="ds-page-header wallet-header">
-          <div class="ds-page-header__title-row wallet-header-left">
-            <h1 id="wallet-page-title" class="ds-page-header__title wallet-page-title">Wallet</h1>
+        <header class="lb-topbar">
+          <div class="lb-topbar-inner">
+            <div class="lb-topbar-left">
+              <span class="lb-topbar-title">Wallet</span>
+            </div>
+            <div class="lb-topbar-right" id="wallet-header-actions">
+              <button id="deposit-btn" class="ds-btn ds-btn--primary ">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="currentColor" stroke-width="1.66667"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Deposit</span>
+              </button>
+              <button id="withdraw-btn" class="ds-btn ds-btn--secondary ">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="currentColor" stroke-width="1.66667"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Withdraw</span>
+              </button>
+            </div>
           </div>
-          <div id="wallet-header-actions" class="ds-page-header__actions wallet-header-actions">
-            <button id="deposit-btn" class="ds-btn ds-btn--primary ">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="currentColor" stroke-width="1.66667"
-                  stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <span>Deposit</span>
-            </button>
-            <button id="withdraw-btn" class="ds-btn ds-btn--secondary ">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="currentColor" stroke-width="1.66667"
-                  stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <span>Withdraw</span>
-            </button>
-          </div>
-        </div>
+        </header>
 
         <!-- Mobile Wallet Header -->
         <div id="mobile-wallet-title" class="mobile-wallet-title">
-          <!--  <img class="mobile-wallet-title__icon" src="/static/images/wallet-02.svg" alt="Wallet" width="24" height="24" /> -->
+          <!--  <img class="mobile-wallet-title__icon" src="/static/images/icons/wallet-02.svg" alt="Wallet" width="24" height="24" /> -->
           <div class="mobile-wallet-title__text">Wallet</div>
         </div>
 
@@ -138,31 +139,31 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                   </div>
                   <div class="table__header-cell table__header-cell--status">
                     <div class="table__header-content">
-                      <img src="/static/images/bookmark-check.svg" alt="Status" width="16" height="16" /><span
+                      <img src="/static/images/icons/bookmark-check.svg" alt="Status" width="16" height="16" /><span
                         class="table__header-text">Status</span>
                     </div>
                   </div>
                   <div class="table__header-cell table__header-cell--date">
                     <div class="table__header-content">
-                      <img src="/static/images/calendar-check-02.svg" alt="Date" width="16" height="16" /><span
+                      <img src="/static/images/icons/calendar-check-02.svg" alt="Date" width="16" height="16" /><span
                         class="table__header-text">Date</span>
                     </div>
                   </div>
                   <div class="table__header-cell table__header-cell--wallet">
                     <div class="table__header-content">
-                      <img src="/static/images/wallet-04.svg" alt="Wallet" width="16" height="16" /><span
+                      <img src="/static/images/icons/wallet-04.svg" alt="Wallet" width="16" height="16" /><span
                         class="table__header-text">Wallet</span>
                     </div>
                   </div>
                   <div class="table__header-cell table__header-cell--amount">
                     <div class="table__header-content">
-                      <img src="/static/images/coins-stacked-03.svg" alt="Amount" width="16" height="16" /><span
+                      <img src="/static/images/icons/coins-stacked-03.svg" alt="Amount" width="16" height="16" /><span
                         class="table__header-text">Amount</span>
                     </div>
                   </div>
                   <div class="table__header-cell table__header-cell--actions">
                     <div class="table__header-content">
-                      <span class="table__header-text">Actions</span><img src="/static/images/arrow-down.svg" alt="Sort"
+                      <span class="table__header-text">Actions</span><img src="/static/images/icons/arrow-down.svg" alt="Sort"
                         width="12" height="12" />
                     </div>
                   </div>
@@ -279,8 +280,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                     </path>
                   </svg>
                   <span style="flex-grow: 1; text-align: left;">Add new card</span>
-                  <img src="/static/images/visa.webp" alt="Visa" height="18" class="wallet-accepted-card-icon" />
-                  <img src="/static/images/mastercard.svg" alt="Mastercard" height="18"
+                  <img src="/static/images/icons/visa.webp" alt="Visa" height="18" class="wallet-accepted-card-icon" />
+                  <img src="/static/images/icons/mastercard.svg" alt="Mastercard" height="18"
                     class="wallet-accepted-card-icon" />
                 </button>
               </div>
@@ -360,24 +361,24 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                     <div class="table__header-content"><span class="table__header-text">Type</span></div>
                   </div>
                   <div class="table__header-cell table__header-cell--status" style="width: 163px">
-                    <div class="table__header-content"><img src="/static/images/bookmark-check.svg" alt="Status"
+                    <div class="table__header-content"><img src="/static/images/icons/bookmark-check.svg" alt="Status"
                         width="16" height="16" /><span class="table__header-text">Status</span></div>
                   </div>
                   <div class="table__header-cell table__header-cell--date" style="width: 200px">
-                    <div class="table__header-content"><img src="/static/images/calendar-check-02.svg" alt="Date"
+                    <div class="table__header-content"><img src="/static/images/icons/calendar-check-02.svg" alt="Date"
                         width="16" height="16" /><span class="table__header-text">Date</span></div>
                   </div>
                   <div class="table__header-cell table__header-cell--wallet" style="width: 180px">
-                    <div class="table__header-content"><img src="/static/images/wallet-04.svg" alt="Wallet" width="16"
+                    <div class="table__header-content"><img src="/static/images/icons/wallet-04.svg" alt="Wallet" width="16"
                         height="16" /><span class="table__header-text">Wallet</span></div>
                   </div>
                   <div class="table__header-cell table__header-cell--amount" style="width: 183px">
-                    <div class="table__header-content"><img src="/static/images/coins-stacked-03.svg" alt="Amount"
+                    <div class="table__header-content"><img src="/static/images/icons/coins-stacked-03.svg" alt="Amount"
                         width="16" height="16" /><span class="table__header-text">Amount</span></div>
                   </div>
                   <div class="table__header-cell table__header-cell--actions" style="width: 188px">
                     <div class="table__header-content"><span class="table__header-text">Actions</span><img
-                        src="/static/images/arrow-down.svg" alt="Sort" width="12" height="12" />
+                        src="/static/images/icons/arrow-down.svg" alt="Sort" width="12" height="12" />
                     </div>
                   </div>
                 </div>
@@ -735,10 +736,10 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             // Manual Card Logic (Formatting & Brand Detection)
             // ----------------------------------------------------
             var CARD_BRANDS = [
-              { name: "Visa", pattern: /^4/, img: "/static/images/visa.webp" },
-              { name: "Mastercard", pattern: /^5[1-5]|^2(2[2-9]|[3-6]|7[01]|720)/, img: "/static/images/mastercard.svg" },
-              { name: "Amex", pattern: /^3[47]/, img: "/static/images/card-default.svg" },
-              { name: "Discover", pattern: /^6(?:011|5)/, img: "/static/images/card-default.svg" },
+              { name: "Visa", pattern: /^4/, img: "/static/images/icons/visa.webp" },
+              { name: "Mastercard", pattern: /^5[1-5]|^2(2[2-9]|[3-6]|7[01]|720)/, img: "/static/images/icons/mastercard.svg" },
+              { name: "Amex", pattern: /^3[47]/, img: "/static/images/icons/card-default.svg" },
+              { name: "Discover", pattern: /^6(?:011|5)/, img: "/static/images/icons/card-default.svg" },
             ];
 
             function detectManualCardBrand(num) {

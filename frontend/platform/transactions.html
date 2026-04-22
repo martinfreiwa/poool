@@ -1,6 +1,6 @@
 {% with title="Transactions", meta_description="View your full POOOL transaction history including deposits,
 withdrawals, and platform investments.", extra_css=['wallet', 'bem/table', 'bem/table-wallet', 'htmx-fixes',
-'mobile-wallet'], extra_js=['htmx-init', 'profile-dropdown',
+'mobile-wallet', 'leaderboard'], extra_js=['htmx-init', 'profile-dropdown',
 'legal-enhancements', 'mobile-navigation', 'transactions'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="wallet-body" class="fouc-guard">
@@ -65,12 +65,13 @@ withdrawals, and platform investments.", extra_css=['wallet', 'bem/table', 'bem/
                 <!-- Main Content -->
                 <div id="transactions-content" class="hidden">
 
-                    <!-- Header -->
-                    <div class="wallet-header" style="margin-bottom: 24px;">
-                        <div class="wallet-header-left">
-                            <h1 class="wallet-page-title">Transactions</h1>
+                    <header class="lb-topbar">
+                        <div class="lb-topbar-inner">
+                            <div class="lb-topbar-left">
+                                <span class="lb-topbar-title">Transactions</span>
+                            </div>
                         </div>
-                    </div>
+                    </header>
 
                     <!-- No Transactions Empty State -->
                     <div id="wallet-transactions-empty" class="hidden">
@@ -109,27 +110,27 @@ withdrawals, and platform investments.", extra_css=['wallet', 'bem/table', 'bem/
                                     </div>
                                     <div class="table__header-cell table__header-cell--status">
                                         <div class="table__header-content">
-                                            <img  src="/static/images/bookmark-check.svg" alt="Status"
+                                            <img  src="/static/images/icons/bookmark-check.svg" alt="Status"
                                                 width="16" height="16" /><span
                                                 class="table__header-text">Status</span>
                                         </div>
                                     </div>
                                     <div class="table__header-cell table__header-cell--date">
                                         <div class="table__header-content">
-                                            <img  src="/static/images/calendar-check-02.svg" alt="Date"
+                                            <img  src="/static/images/icons/calendar-check-02.svg" alt="Date"
                                                 width="16" height="16" /><span class="table__header-text">Date</span>
                                         </div>
                                     </div>
                                     <div class="table__header-cell table__header-cell--wallet">
                                         <div class="table__header-content">
-                                            <img  src="/static/images/wallet-04.svg" alt="Wallet"
+                                            <img  src="/static/images/icons/wallet-04.svg" alt="Wallet"
                                                 width="16" height="16" /><span
                                                 class="table__header-text">Wallet</span>
                                         </div>
                                     </div>
                                     <div class="table__header-cell table__header-cell--amount">
                                         <div class="table__header-content">
-                                            <img  src="/static/images/coins-stacked-03.svg" alt="Amount"
+                                            <img  src="/static/images/icons/coins-stacked-03.svg" alt="Amount"
                                                 width="16" height="16" /><span
                                                 class="table__header-text">Amount</span>
                                         </div>
@@ -138,7 +139,7 @@ withdrawals, and platform investments.", extra_css=['wallet', 'bem/table', 'bem/
                                     <div class="table__header-cell table__header-cell--actions">
                                         <div class="table__header-content">
                                             <span class="table__header-text">Actions</span><img 
-                                                src="/static/images/arrow-down.svg" alt="Sort" width="12"
+                                                src="/static/images/icons/arrow-down.svg" alt="Sort" width="12"
                                                 height="12" />
                                         </div>
                                     </div>

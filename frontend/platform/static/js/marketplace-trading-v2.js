@@ -24,9 +24,9 @@
             bedrooms: 4,
             rentStatus: 'Rented',
             images: [
-                '/static/images/villa1.webp',
-                '/static/images/villa1.webp',
-                '/static/images/villa1.webp',
+                '/static/images/seed/villa1.webp',
+                '/static/images/seed/villa1.webp',
+                '/static/images/seed/villa1.webp',
             ],
             sellOrders: [
                 { seller: 'Investor_A2', tokens: 15, price: 108.50 },
@@ -55,7 +55,7 @@
             landSize: '56 m²',
             bedrooms: 2,
             rentStatus: 'Rented',
-            images: ['/static/images/villa1.webp'],
+            images: ['/static/images/seed/villa1.webp'],
             sellOrders: [
                 { seller: 'Investor_E3', tokens: 5, price: 89.00 },
                 { seller: 'Investor_G2', tokens: 12, price: 90.50 },
@@ -79,7 +79,7 @@
             landSize: '180 m²',
             bedrooms: 0,
             rentStatus: 'Leased (Corporate)',
-            images: ['/static/images/villa1.webp'],
+            images: ['/static/images/seed/villa1.webp'],
             sellOrders: [
                 { seller: 'Investor_H1', tokens: 30, price: 155.00 },
                 { seller: 'Investor_K4', tokens: 10, price: 156.50 },
@@ -122,7 +122,7 @@
 
         // Gallery
         const mainImg = document.getElementById('tv2-main-img');
-        mainImg.src = asset.images[0] || '/static/images/villa1.webp';
+        mainImg.src = asset.images[0] || '/static/images/seed/villa1.webp';
         mainImg.alt = asset.name;
 
         const thumbContainer = document.getElementById('tv2-gallery-thumbs');

@@ -1,7 +1,7 @@
 {% with title="Commodities Marketplace", meta_description="Explore commodity investments on the POOOL marketplace.
 Diversify your portfolio with fractional ownership of high-value assets.", extra_css=['marketplace', 'wallet',
 'portfolio', 'cart',
-'assets-table-populated', 'htmx-fixes'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements',
+'assets-table-populated', 'htmx-fixes', 'leaderboard'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements',
 'mobile-navigation', 'marketplace-search', 'commodities-marketplace'] %}{% include "components/head.html" %}{% endwith
 %}
 
@@ -19,11 +19,13 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
       <!-- Marketplace Content with Padding -->
       <div class="marketplace-content-wrapper">
         <!-- Page Title -->
-        <div id="commodities-page-header" class="ds-page-header page-header">
-          <div class="ds-page-header__title-row">
-            <h1 id="commodities-page-title" class="ds-page-header__title page-title">Commodities</h1>
+        <header id="commodities-page-header" class="lb-topbar">
+          <div class="lb-topbar-inner">
+            <div class="lb-topbar-left">
+              <span id="commodities-page-title" class="lb-topbar-title">Commodities</span>
+            </div>
           </div>
-        </div>
+        </header>
         <!-- Filter Bar --><!-- Status Tabs -->
         <div id="filter-bar-status-tabs" class="status-tabs">
           <button id="filter-bar-tab-available" class="status-tab active"
@@ -47,7 +49,7 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
                 <label id="filter-bar-location-label" class="filter-label"><span
                     class="filter-label-text">Location</span></label>
                 <div id="filter-bar-location-dropdown" class="dropdown-wrapper">
-                  <img  id="filter-bar-location-icon" src="/static/images/ID.webp" alt=""
+                  <img  id="filter-bar-location-icon" src="/static/images/ui/ID.webp" alt=""
                     class="dropdown-icon" />
                   <select id="filter-bar-location-select" class="dropdown-select">
                     <option value="bali-canggu" selected>Bali, Canggu</option>
@@ -73,7 +75,7 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
                     <path d="M8 8.67V5.33" stroke="#A4A7AE" stroke-width="1.33" stroke-linecap="round"></path>
                   </svg></label>
                 <div id="filter-bar-investment-dropdown" class="dropdown-wrapper">
-                  <img  id="filter-bar-investment-icon" src="/static/images/dollar.svg" alt=""
+                  <img  id="filter-bar-investment-icon" src="/static/images/icons/dollar.svg" alt=""
                     class="dropdown-icon" />
                   <select id="filter-bar-investment-select" class="dropdown-select">
                     <option value="any">Any type</option>
@@ -99,7 +101,7 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
                     <path d="M8 8.67V5.33" stroke="#A4A7AE" stroke-width="1.33" stroke-linecap="round"></path>
                   </svg></label>
                 <div id="filter-bar-property-dropdown" class="dropdown-wrapper">
-                  <img  id="filter-bar-property-icon" src="/static/images/home-03.svg" alt=""
+                  <img  id="filter-bar-property-icon" src="/static/images/icons/home-03.svg" alt=""
                     class="dropdown-icon" />
                   <select id="filter-bar-property-select" class="dropdown-select">
                     <option value="any">Any type</option>
@@ -179,7 +181,7 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
                         {% endif %}
                       {% endfor %}
                     {% else %}
-                      <img src="{{ asset.cover_image_url | default('/static/images/villa1.webp') }}" loading="lazy" class="property-image active"
+                      <img src="{{ asset.cover_image_url | default('/static/images/seed/villa1.webp') }}" loading="lazy" class="property-image active"
                         style="object-fit: cover; object-position: center;"
                         alt="{{ asset.title }}">
                     {% endif %}

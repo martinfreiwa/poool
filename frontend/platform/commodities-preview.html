@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Commodities Section Preview | Wealth Terminal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/css/bundle.css">
+  <link rel="stylesheet" href="/static/css/marketplace.css">
+  <link rel="stylesheet" href="/static/css/landing.css">
+  <link rel="stylesheet" href="/static/css/landing-property-cards.css">
+  <style>
+    /* ═══════════════════════════════════════════
+       COMMODITIES PREVIEW — Wealth Terminal v2.4
+       Brand Colors Enforced:
+       var(--blue) -> #0000FF
+       var(--green) -> #03FF88
+       ═══════════════════════════════════════════ */
+
+    body {
+      background-color: #f9fafb;
+      font-family: 'TT Norms Pro', -apple-system, sans-serif;
+      margin: 0;
+    }
+
+    /* ─── PREVIEW CHROME & TABS ─── */
+    .preview-header { padding: 40px 0 0; text-align: center; position: relative; background: #ffffff; z-index: 50; }
+    .preview-header::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: radial-gradient(rgba(0,0,255,0.04) 1px, transparent 1px);
+      background-size: 24px 24px; pointer-events: none;
+      mask-image: radial-gradient(ellipse at center, white 0%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse at center, white 0%, transparent 80%);
+    }
+    .preview-header h1 { font-size: 2.75rem; font-weight: 800; color: #111827; margin-bottom: 8px; text-transform: uppercase; letter-spacing: -0.04em; position: relative; z-index: 2; }
+    .preview-header p { font-size: 0.95rem; color: #4b5563; margin: 0 auto 32px; position: relative; z-index: 2; }
+
+    .layout-switcher-container {
+      display: flex; flex-direction: column; gap: 12px; align-items: center; position: relative; z-index: 10;
+      transform: translateY(50%);
+    }
+    .layout-switcher-row {
+      display: flex; gap: 8px; align-items: center; background: #f3f4f6; padding: 6px; border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;
+    }
+    .layout-switcher-row::before {
+      content: attr(data-label); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #9ca3af;
+      padding: 0 12px; letter-spacing: 1px;
+    }
+    .switcher-btn {
+      background: transparent; border: none; padding: 10px 16px; border-radius: 8px;
+      font-family: inherit; font-weight: 700; font-size: 0.85rem; color: #6b7280; cursor: pointer; transition: all 0.2s ease;
+    }
+    .switcher-btn:hover { color: #111827; background: rgba(255,255,255,0.5); }
+    .switcher-btn.active { background: var(--blue); color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,255,0.2); }
+    .switcher-btn span { opacity: 0.6; margin-right: 4px; font-size: 0.75rem; }
+
+    .option-container { padding: 120px 0; position: relative; overflow: hidden; display: none; min-height: 100vh; }
+    .option-container.active { display: block; animation: fadeInOpt 0.4s ease-out forwards; }
+    @keyframes fadeInOpt { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ─── SHARED COMPONENTS ─── */
+    .scarcity-badge { background: var(--blue); color: #fff; padding: 6px 14px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; display: inline-flex; align-items: center; gap: 6px; }
+    .scarcity-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 1.5s steps(2) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .info-badge { background: rgba(0,0,255,0.06); color: var(--blue); padding: 6px 12px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; border: 1px solid rgba(0,0,255,0.1); }
+
+    .content-tabs { margin-top: 24px; }
+    .tab-headers { display: flex; gap: 24px; border-bottom: 2px solid #e5e7eb; margin-bottom: 24px; }
+    .tab-btn { padding: 12px 0; font-size: 1.05rem; font-weight: 700; color: #9ca3af; cursor: pointer; position: relative; border: none; background: transparent; transition: color 0.2s ease; }
+    .tab-btn:hover { color: #6b7280; }
+    .tab-btn.active { color: var(--blue); }
+    .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 2px; background: var(--blue); transition: all 0.3s ease; }
+    .tab-pane { display: none; animation: fadeInTab 0.3s ease-out; }
+    .tab-pane.active { display: block; }
+    @keyframes fadeInTab { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .overview-paragraph { font-size: 1.05rem; line-height: 1.7; color: #4b5563; margin-bottom: 16px; }
+    
+    /* Stats Block Reusable */
+    .stats-block { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; background: #f3f4f6; padding: 24px; border-radius: 12px; position: relative; }
+    .stats-block::after { content: ''; position: absolute; top: 24px; right: 24px; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+    .stat-lbl { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; }
+    .stat-val { font-size: 1.25rem; font-weight: 800; color: #111827; margin-top: 4px; }
+
+    /* ═══════════════════════════════════════
+       BASE LAYOUTS (1, 2, 3, 4)
+       ═══════════════════════════════════════ */
+    /* 01 Dossier */
+    .opt1-wrap { display: flex; gap: 48px; align-items: flex-start; max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+    .opt1-card-col { flex: 0 0 380px; max-width: 380px; }
+    .opt1-info-col { flex: 1; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 24px; padding: 56px; position: relative; overflow: hidden; }
+    .opt1-info-col::before { content: ''; position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: linear-gradient(180deg, var(--blue), var(--green)); }
+    /* 02 Bento */
+    .opt2-bento { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+    .opt2-feature { background: #0a0f1e; border-radius: 28px; padding: 56px; color: #fff; display: flex; flex-direction: column; }
+    .opt2-card-wrap { background: #f3f4f6; border-radius: 28px; padding: 28px; display: flex; justify-content: center; align-items: center; position: relative; }
+    .opt2-overview-bento { grid-column: 1 / -1; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 28px; padding: 48px 56px; display: flex; gap: 40px; }
+    /* 03 Vault */
+    .opt3-bg { background: #070b14; position: relative; }
+    .opt3-inner { max-width: 1280px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 2; }
+    .opt3-layout { display: flex; gap: 48px; justify-content: center; margin-bottom: 60px; }
+    .opt3-overview-panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 56px; }
+    /* 04 Scarcity */
+    .opt4-layout { display: flex; gap: 80px; max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+
+    /* ═══════════════════════════════════════
+       NEW DOSSIER STUDIES (5, 6, 7, 8, 9)
+       ═══════════════════════════════════════ */
+    
+    /* 05 Glass Dossier */
+    .opt5-bg {
+      background: radial-gradient(circle at 10% 20%, rgba(0,0,255,0.03) 0%, transparent 50%),
+                  radial-gradient(circle at 90% 80%, rgba(3,255,136,0.03) 0%, transparent 50%);
+    }
+    .opt5-wrap {
+      display: flex; gap: 64px; max-width: 1180px; margin: 0 auto; padding: 64px;
+      background: rgba(255,255,255,0.4); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.8); border-radius: 40px; box-shadow: 0 40px 80px -20px rgba(0,0,255,0.08);
+    }
+    .opt5-info-col { flex: 1; }
+
+    /* 06 Blueprint Dossier */
+    .opt6-bg { background: #ffffff; }
+    .opt6-wrap {
+      display: flex; max-width: 1400px; margin: 0 auto;
+      border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;
+    }
+    .opt6-card-col { flex: 0 0 480px; padding: 80px; border-right: 1px solid #e5e7eb; background: #ffffff; display: flex; justify-content: center; }
+    .opt6-info-col { flex: 1; padding: 80px; background: #f8fafc; }
+    /* Architect tabs */
+    .opt6-tab-btn { border: 1px solid #e5e7eb; background: #fff; padding: 12px 24px; border-radius: 0; margin-right: -1px; font-weight: 700; color: #6b7280; cursor: pointer; }
+    .opt6-tab-btn.active { background: #111827; color: #fff; border-color: #111827; z-index: 2; position: relative; }
+
+    /* 07 Asymmetric Dossier */
+    .opt7-bg { background: #fafafa; }
+    .opt7-header { max-width: 1280px; margin: 0 auto; padding: 0 48px; margin-bottom: -40px; position: relative; z-index: 10; }
+    .opt7-wrap { display: flex; gap: 80px; max-width: 1280px; margin: 0 auto; padding: 0 48px; }
+    .opt7-card-col { flex: 0 0 380px; }
+    .opt7-info-col { flex: 1; padding-top: 100px; }
+    .opt7-headline { font-size: 5rem; font-weight: 800; color: #111827; line-height: 0.9; letter-spacing: -0.05em; }
+
+    /* 08 Dual Tone Dossier */
+    .opt8-bg { position: relative; padding: 0; }
+    .opt8-split-bg { position: absolute; inset: 0; display: flex; z-index: 0; }
+    .opt8-split-left { flex: 0 0 45%; background: #070b14; }
+    .opt8-split-right { flex: 1; background: #ffffff; }
+    .opt8-wrap { display: flex; max-width: 1280px; margin: 0 auto; padding: 120px 24px; position: relative; z-index: 1; align-items: center; }
+    .opt8-card-col { flex: 0 0 45%; padding-right: 80px; }
+    .opt8-info-col { flex: 1; padding-left: 80px; }
+
+    /* 09 Floating Dossier */
+    .opt9-bg { background: #f1f5f9; }
+    .opt9-wrap { display: flex; gap: 80px; max-width: 1280px; margin: 0 auto; padding: 0 24px; align-items: center; }
+    .opt9-card-col { flex: 0 0 400px; }
+    .opt9-card-col .property-card { box-shadow: 0 40px 100px -20px rgba(0,0,255,0.15) !important; border: none !important; }
+    .opt9-info-col { flex: 1; }
+    /* Pill tabs */
+    .opt9-tab-headers { display: inline-flex; background: #fff; padding: 8px; border-radius: 100px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 32px; }
+    .opt9-tab-btn { background: transparent; border: none; padding: 12px 24px; border-radius: 100px; font-weight: 700; color: #6b7280; cursor: pointer; transition: 0.2s; }
+    .opt9-tab-btn.active { background: var(--blue); color: #fff; }
+
+  </style>
+</head>
+<body>
+
+  <!-- ─── HEADER & TAB SWITCHER ─── -->
+  <header class="preview-header">
+    <h1>Commodities Layout Studies</h1>
+    
+    <div class="layout-switcher-container">
+      <div class="layout-switcher-row" data-label="Original Concepts">
+        <button class="switcher-btn active" data-target="opt-1"><span>01</span> Dossier</button>
+        <button class="switcher-btn" data-target="opt-2"><span>02</span> Bento</button>
+        <button class="switcher-btn" data-target="opt-3"><span>03</span> Vault</button>
+        <button class="switcher-btn" data-target="opt-4"><span>04</span> Scarcity</button>
+      </div>
+      <div class="layout-switcher-row" data-label="Dossier Iterations">
+        <button class="switcher-btn" data-target="opt-5"><span>05</span> Glass</button>
+        <button class="switcher-btn" data-target="opt-6"><span>06</span> Blueprint</button>
+        <button class="switcher-btn" data-target="opt-7"><span>07</span> Asymmetric</button>
+        <button class="switcher-btn" data-target="opt-8"><span>08</span> Dual-Tone</button>
+        <button class="switcher-btn" data-target="opt-9"><span>09</span> Floating</button>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ═══════════════════════════════════════════
+       LAYOUT 01: THE EXECUTIVE DOSSIER (Classic)
+       ═══════════════════════════════════════════ -->
+  <section id="opt-1" class="option-container active" style="background: #ffffff;">
+    <div class="opt1-wrap">
+      <div class="opt1-card-col">
+        <div class="lp-grid card-v19" style="width: 100%;">
+          <div class="property-card" style="margin: 0; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.08);">
+            <div class="property-gallery">
+              <div class="property-image-container"><img src="/static/images/seed/villa1.webp" class="property-image active"></div>
+              <div class="property-badge ds-badge ds-badge--overlay" style="background: var(--blue);"><span class="badge-text" style="color:#fff;">Ministerial Priority</span></div>
+            </div>
+            <div class="property-content">
+              <div class="card-meta-row">
+                <div class="card-meta-item"><span style="color:var(--blue);font-weight:700;">Guaranteed: 14.2%</span></div>
+              </div>
+              <div class="property-heading" style="margin-top:8px;"><h3 class="property-title">National Chilli Reserve Project</h3></div>
+              <button class="btn-primary" style="width:100%;margin-top:24px;background:var(--blue);border:none;color:#fff;justify-content:center;">Invest Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="opt1-info-col tabs-container">
+        <div style="display:flex;gap:10px;margin-bottom:24px;">
+          <span class="info-badge">Extreme Security</span>
+          <span class="scarcity-badge">First Come, First Served</span>
+        </div>
+        <h2 style="font-size: 2.75rem; font-weight: 800; color: #111827; margin-bottom: 16px; line-height: 1.08; letter-spacing: -0.03em;">
+          Exclusive Sovereign Yields.<br><span style="color:var(--blue);">Guaranteed.</span>
+        </h2>
+        <div class="content-tabs">
+          <div class="tab-headers">
+            <button class="tab-btn active" onclick="switchInnerTab(this, 'pane-1-1')">Overview</button>
+            <button class="tab-btn" onclick="switchInnerTab(this, 'pane-1-2')">Financials</button>
+          </div>
+          <div class="tab-content">
+            <div class="tab-pane active pane-1-1"><p class="overview-paragraph">Funds are deployed directly into infrastructure, yield enhancements, and storage facilities.</p></div>
+            <div class="tab-pane pane-1-2"><p class="overview-paragraph">Financial structures are locked via smart contract. A guaranteed 14.2% yield.</p></div>
+            <div class="stats-block">
+               <div><div class="stat-lbl">Duration</div><div class="stat-val">36 Months</div></div>
+               <div><div class="stat-lbl">Disbursements</div><div class="stat-val">Quarterly</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Layous 2, 3, 4 abbreviated structurally for codebase focus, identical to previous -->
+  <section id="opt-2" class="option-container" style="background:#f9fafb;"><div style="text-align:center;color:#6b7280;margin-top:100px;">(Base Layout Hidden - Bento Matrix)</div></section>
+  <section id="opt-3" class="option-container" style="background:#070b14;"><div style="text-align:center;color:#6b7280;margin-top:100px;">(Base Layout Hidden - Institutional Vault)</div></section>
+  <section id="opt-4" class="option-container" style="background:#fff;"><div style="text-align:center;color:#6b7280;margin-top:100px;">(Base Layout Hidden - Scarcity Split)</div></section>
+
+
+  <!-- ═══════════════════════════════════════════
+       NEW LAYOUT 05: THE GLASS DOSSIER
+       ═══════════════════════════════════════════ -->
+  <section id="opt-5" class="option-container opt5-bg">
+    <div class="opt5-wrap">
+      <div class="opt1-card-col">
+        <div class="lp-grid card-v19" style="width: 100%;">
+          <div class="property-card" style="margin: 0; width: 100%; border: none; background: rgba(255,255,255,0.8); box-shadow: 0 10px 40px rgba(0,0,0,0.06);">
+            <div class="property-gallery">
+              <div class="property-image-container"><img src="/static/images/seed/villa1.webp" class="property-image active"></div>
+            </div>
+            <div class="property-content">
+              <h3 class="property-title">National Chilli Reserve Project</h3>
+              <div class="property-pricing" style="margin-top: 16px;">
+                <div class="price-wrapper"><span class="property-price">USD 15</span></div>
+                <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:85%; background: var(--blue);"></div></div>
+              </div>
+              <button class="btn-primary" style="width: 100%; margin-top: 24px; background: var(--blue); color: #fff; justify-content: center;">Invest Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="opt5-info-col tabs-container">
+        <h2 style="font-size: 3rem; font-weight: 800; color: #111827; letter-spacing: -0.04em; margin-bottom: 24px;">Project Dossier.</h2>
+        
+        <div class="content-tabs">
+          <div class="tab-headers">
+            <button class="tab-btn active" onclick="switchInnerTab(this, 'pane-5-1')">Overview</button>
+            <button class="tab-btn" onclick="switchInnerTab(this, 'pane-5-2')">Security</button>
+          </div>
+          <div class="tab-content">
+            <div class="tab-pane active pane-5-1">
+              <p class="overview-paragraph">The ultimate crossover of institutional security and retail liquidity. Fused with glassmorphic transparency.</p>
+            </div>
+            <div class="tab-pane pane-5-2">
+              <p class="overview-paragraph">100% principal protection natively secured via ministerial underwritten allocations.</p>
+            </div>
+            <div class="stats-block" style="background: rgba(255,255,255,0.5); backdrop-filter: blur(5px);">
+               <div><div class="stat-lbl">Yield</div><div class="stat-val" style="color:var(--blue);">14.2% APY</div></div>
+               <div><div class="stat-lbl">Term Length</div><div class="stat-val">36 Mos</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       NEW LAYOUT 06: THE BLUEPRINT DOSSIER
+       ═══════════════════════════════════════════ -->
+  <section id="opt-6" class="option-container opt6-bg">
+    <div class="opt6-wrap tabs-container">
+      <div class="opt6-card-col">
+        <div class="lp-grid card-v19" style="width: 100%; max-width: 360px;">
+          <div class="property-card" style="margin: 0; width: 100%; border: 1px solid #111827; box-shadow: 8px 8px 0px rgba(0,0,255,0.1);">
+            <div class="property-gallery">
+              <div class="property-image-container"><img src="/static/images/seed/villa1.webp" class="property-image active" style="filter: grayscale(20%);"></div>
+              <div class="property-badge ds-badge ds-badge--overlay" style="background: #111827; border-radius: 0; border: none;"><span class="badge-text" style="color:#fff;">Blueprint #06</span></div>
+            </div>
+            <div class="property-content">
+              <h3 class="property-title">National Chilli Asset</h3>
+              <button class="btn-primary" style="width: 100%; margin-top: 24px; background: #111827; color: #fff; border-radius: 0; justify-content: center;">Authorize Tranche</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="opt6-info-col">
+        <span style="display:block;font-size:0.75rem;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:16px;">System Schema</span>
+        <h2 style="font-size: 2.5rem; font-weight: 800; color: #111827; letter-spacing: -0.03em; margin-bottom: 40px; border-bottom: 2px solid #111827; padding-bottom: 16px;">Architectural View</h2>
+
+        <div style="display: flex; margin-bottom: 32px;">
+          <button class="opt6-tab-btn active tab-btn" onclick="switchInnerTab(this, 'pane-6-1')">Data Floorplan</button>
+          <button class="opt6-tab-btn tab-btn" onclick="switchInnerTab(this, 'pane-6-2')">Yield Metrics</button>
+        </div>
+
+        <div class="tab-content">
+          <div class="tab-pane active pane-6-1">
+            <p class="overview-paragraph" style="font-family: monospace; font-size: 0.9rem;">
+              > INITIALIZING CHILLI RESERVE PROTOCOL<br><br>
+              Direct supply chain routing ensures capital bypasses traditional banking layers. Maximum efficiency detected. Rigid grid structure minimizes layout shift.
+            </p>
+          </div>
+          <div class="tab-pane pane-6-2">
+            <p class="overview-paragraph" style="font-family: monospace; font-size: 0.9rem;">
+              > 14.2% ANNUALIZED YIELD CONFIRMED<br><br>
+              > 100% PRINCIPAL SHIELD ENGAGED.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       NEW LAYOUT 07: ASYMMETRIC DOSSIER
+       ═══════════════════════════════════════════ -->
+  <section id="opt-7" class="option-container opt7-bg">
+    <div class="opt7-header">
+      <h2 class="opt7-headline">Sovereign.<br>Guaranteed.</h2>
+    </div>
+    
+    <div class="opt7-wrap tabs-container">
+      <div class="opt7-card-col">
+        <div class="lp-grid card-v19" style="width: 100%;">
+          <div class="property-card" style="margin: 0; width: 100%; box-shadow: 0 30px 60px rgba(0,0,0,0.15);">
+            <div class="property-gallery">
+              <div class="property-image-container"><img src="/static/images/seed/villa1.webp" class="property-image active"></div>
+            </div>
+            <div class="property-content">
+              <h3 class="property-title">Indonesian Chilli</h3>
+              <div class="property-pricing" style="margin-top: 16px;">
+                <div class="price-wrapper"><span class="property-price">USD 15</span></div>
+                <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:85%; background: var(--blue);"></div></div>
+              </div>
+              <button class="btn-primary" style="width: 100%; margin-top: 24px; background: var(--blue); border: none; color: #fff; justify-content: center;">Invest Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="opt7-info-col">
+        <div class="content-tabs" style="margin-top: 0;">
+          <div class="tab-headers">
+            <button class="tab-btn active" onclick="switchInnerTab(this, 'pane-7-1')">The Concept</button>
+            <button class="tab-btn" onclick="switchInnerTab(this, 'pane-7-2')">Execution</button>
+          </div>
+          <div class="tab-content">
+            <div class="tab-pane active pane-7-1"><p class="overview-paragraph">By breaking the grid, the asymmetrical layout catches the eye instantly. The card leaps upward while the content grounds the right side naturally.</p></div>
+            <div class="tab-pane pane-7-2"><p class="overview-paragraph">Yields are locked. Execution is instant. 14.2% APY distributed quarterly over 36 months.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       NEW LAYOUT 08: DUAL-TONE DOSSIER
+       ═══════════════════════════════════════════ -->
+  <section id="opt-8" class="option-container opt8-bg">
+    <div class="opt8-split-bg">
+      <div class="opt8-split-left"></div>
+      <div class="opt8-split-right"></div>
+    </div>
+
+    <div class="opt8-wrap tabs-container">
+      <div class="opt8-card-col">
+        <div style="margin-bottom: 32px;">
+          <span style="color: var(--green); font-weight: 800; font-size: 0.75rem; text-transform: uppercase;">100% Protected</span>
+          <h2 style="font-size: 3rem; font-weight: 800; color: #fff; line-height: 1; margin-top: 8px;">Institutional<br>Grade.</h2>
+        </div>
+        <div class="lp-grid card-v19" style="width: 100%;">
+          <div class="property-card" style="margin: 0; width: 100%; border: 1px solid rgba(255,255,255,0.1); background: #111827;">
+            <div class="property-gallery">
+              <div class="property-image-container"><img src="/static/images/seed/villa1.webp" class="property-image active"></div>
+            </div>
+            <div class="property-content">
+              <h3 class="property-title" style="color:#fff;">Chilli Reserve Split</h3>
+              <button class="btn-primary" style="width: 100%; margin-top: 24px; background: var(--green); color: #111827; border:none; justify-content: center; font-weight:800;">Secure Allocation</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="opt8-info-col">
+        <div class="content-tabs" style="margin-top: 0;">
+          <div class="tab-headers">
+            <button class="tab-btn active" onclick="switchInnerTab(this, 'pane-8-1')">Overview</button>
+            <button class="tab-btn" onclick="switchInnerTab(this, 'pane-8-2')">Yield Analysis</button>
+          </div>
+          <div class="tab-content" style="margin-top: 32px;">
+            <div class="tab-pane active pane-8-1">
+              <p class="overview-paragraph">The dark side establishes the premium aesthetic and the immediate purchasing gateway. The light side provides optimal reading contrast for long-form narrative text.</p>
+              <div class="stats-block" style="background: transparent; border: 1px solid #e5e7eb;">
+                 <div><div class="stat-lbl">Duration</div><div class="stat-val">36 Months</div></div>
+                 <div><div class="stat-lbl">APY</div><div class="stat-val" style="color:var(--blue);">14.2%</div></div>
+              </div>
+            </div>
+            <div class="tab-pane pane-8-2">
+              <p class="overview-paragraph">Heavy contrast ensures the reader doesn't lose focus. Financial analysis text is perfectly framed on pure white backgrounds.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       NEW LAYOUT 09: FLOATING DOSSIER
+       ═══════════════════════════════════════════ -->
+  <section id="opt-9" class="option-container opt9-bg">
+    <div class="opt9-wrap tabs-container">
+      <div class="opt9-card-col">
+        <div class="lp-grid card-v19" style="width: 100%;">
+          <div class="property-card" style="margin: 0; width: 100%;">
+            <div class="property-gallery">
+              <div class="property-image-container"><img src="/static/images/seed/villa1.webp" class="property-image active"></div>
+              <div class="property-badge ds-badge ds-badge--overlay" style="background: var(--blue);border:none;"><span class="badge-text" style="color:#fff;">Premium</span></div>
+            </div>
+            <div class="property-content" style="padding: 32px;">
+              <h3 class="property-title">The Floating Dossier</h3>
+              <button class="btn-primary" style="width: 100%; margin-top: 24px; background: var(--blue); color: #fff; border:none; border-radius: 100px; justify-content: center;">Invest Now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="opt9-info-col">
+        <div class="opt9-tab-headers">
+          <button class="opt9-tab-btn active tab-btn" onclick="switchInnerTab(this, 'pane-9-1')">Overview</button>
+          <button class="opt9-tab-btn tab-btn" onclick="switchInnerTab(this, 'pane-9-2')">Pact Logic</button>
+        </div>
+        
+        <div class="tab-content">
+          <div class="tab-pane active pane-9-1">
+            <h2 style="font-size: 2.5rem; font-weight: 800; color: #111827; letter-spacing: -0.03em; margin-bottom: 24px;">Detached Elegance.</h2>
+            <p class="overview-paragraph">By removing all structural bounding boxes and connecting lines, the card and text float harmoniously across the canvas. The pill-shaped navigation tabs reinforce the smooth, borderless aesthetic.</p>
+          </div>
+          <div class="tab-pane pane-9-2">
+            <h2 style="font-size: 2.5rem; font-weight: 800; color: #111827; letter-spacing: -0.03em; margin-bottom: 24px;">Sovereign Pact.</h2>
+            <p class="overview-paragraph">Pill buttons act exactly like standard tabs under the hood, but provide a slightly softer visual interface for end users browsing the platform.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── JAVASCRIPT FOR TABS ─── -->
+  <script>
+    const buttons = document.querySelectorAll('.switcher-btn');
+    const sections = document.querySelectorAll('.option-container');
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => b.classList.remove('active'));
+        sections.forEach(s => s.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.target).classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    function switchInnerTab(btnElem, targetClass) {
+      const container = btnElem.closest('.tabs-container');
+      const tabBtns = container.querySelectorAll('.tab-btn');
+      // For option 6 specific case
+      if (btnElem.classList.contains('opt6-tab-btn')) {
+        tabBtns.forEach(b => b.classList.remove('active'));
+      } else if (btnElem.classList.contains('opt9-tab-btn')) {
+        tabBtns.forEach(b => b.classList.remove('active'));
+      } else {
+        tabBtns.forEach(b => b.classList.remove('active'));
+      }
+      
+      const panes = container.querySelectorAll('.tab-pane');
+      panes.forEach(p => p.style.display = 'none');
+      
+      btnElem.classList.add('active');
+      container.querySelector(`.${targetClass}`).style.display = 'block';
+    }
+  </script>
+</body>
+</html>

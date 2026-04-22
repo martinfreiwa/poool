@@ -26,7 +26,7 @@
                 <!-- Logo -->
                 <div class="admin-sidebar-header">
                     <a href="/admin/" class="admin-sidebar-logo">
-                        <img src="/static/images/Logo%20Pool.svg" alt="POOOL">
+                        <img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL">
                         <span class="admin-sidebar-logo-badge">Admin</span>
                     </a>
                 </div>
@@ -323,7 +323,7 @@
                         <span id="theme-toggle-label">Light</span>
                     </button>
                     <div class="admin-sidebar-user">
-                        <img src="/static/images/Image.webp" alt="Admin" class="admin-sidebar-avatar" id="sidebar-user-avatar">
+                        <img src="/static/images/ui/Image.webp" alt="Admin" class="admin-sidebar-avatar" id="sidebar-user-avatar">
                         <div class="admin-sidebar-user-info">
                             <div class="admin-sidebar-user-name" id="sidebar-user-name">Admin User</div>
                             <div class="admin-sidebar-user-role" id="sidebar-user-role">Super Admin</div>

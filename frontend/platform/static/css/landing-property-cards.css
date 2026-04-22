@@ -158,3 +158,54 @@
 .lp-grid.card-v19 .property-dot.active {
   background: #03FF88 !important;
 }
+
+/* ── Clickable card wrapper ──────────────────────────────────────────
+   Each card is wrapped in <a href="/p/{slug}"> so the entire card navigates
+   to the public property detail page. Keep the wrapper visually invisible
+   so the existing card styles remain unchanged. */
+.property-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.property-card-link:hover,
+.property-card-link:focus,
+.property-card-link:visited {
+  color: inherit;
+  text-decoration: none;
+}
+.property-card-link:focus-visible {
+  outline: 2px solid #0000FF;
+  outline-offset: 4px;
+  border-radius: 16px;
+}
+/* Ensure inner nav arrows and buttons still stop propagation — they already
+   call event.stopPropagation() inline, so clicks on the arrows don't follow
+   the card link. */
+
+/* ── Fully-funded card variant ───────────────────────────────────────
+   Shown on cards where the property has been completely funded and is no
+   longer accepting new investment. Visually muted so it reads as "closed"
+   while remaining clickable (click still opens the detail page). */
+.property-card--funded {
+  position: relative;
+}
+.property-card--funded .property-gallery .property-image {
+  filter: saturate(0.85);
+}
+.property-card--funded .funded-percentage--complete {
+  color: #03A770 !important;
+}
+.ds-badge--funded {
+  background: #03FF88 !important;
+  color: #003C2D !important;
+  border-color: #03FF88 !important;
+}
+.ds-badge--funded .badge-text {
+  color: #003C2D !important;
+  font-weight: 700 !important;
+}
+.ds-progress__fill--complete {
+  background: #03FF88 !important;
+}

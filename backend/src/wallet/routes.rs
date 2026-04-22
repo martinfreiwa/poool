@@ -224,7 +224,7 @@ fn build_payment_method_html(
 
         // Delete button (desktop)
         let menu_html = format!(
-            r##"<button class="wallet-payment-item-menu" hx-delete="/api/payment-methods/{}" hx-swap="none" onclick="if(confirm('Are you sure you want to delete this payment method?')) {{ document.location.reload(); return true; }} else {{ return false; }}"><img src="/static/images/trash-icon.svg" onerror="this.src='/static/images/dots-vertical.svg'" alt="Delete" width="24" height="24"></button>"##,
+            r##"<button class="wallet-payment-item-menu" hx-delete="/api/payment-methods/{}" hx-swap="none" onclick="if(confirm('Are you sure you want to delete this payment method?')) {{ document.location.reload(); return true; }} else {{ return false; }}"><img src="/static/images/icons/trash-icon.svg" onerror="this.src='/static/images/icons/dots-vertical.svg'" alt="Delete" width="24" height="24"></button>"##,
             pm.id
         );
         // Delete button (mobile)
@@ -239,12 +239,12 @@ fn build_payment_method_html(
             let brand_lower = pm.brand.as_deref().unwrap_or("").to_lowercase();
             let label_lower = label.to_lowercase();
             let img = if brand_lower.contains("visa") || label_lower.contains("visa") {
-                "/static/images/visa.webp"
+                "/static/images/icons/visa.webp"
             } else if brand_lower.contains("mastercard") || label_lower.contains("mastercard") {
-                "/static/images/mastercard.svg"
+                "/static/images/icons/mastercard.svg"
             } else {
                 // Covers amex, other brands, and unknown cards
-                "/static/images/card-default.svg"
+                "/static/images/icons/card-default.svg"
             };
 
             cards_html.push_str(&format!(

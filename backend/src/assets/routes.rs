@@ -313,6 +313,68 @@ pub async fn page_property(
     }
 }
 
+/// Public property detail page (no auth required).
+///
+/// Renders a hardcoded property from [`super::public_assets`] using the
+/// `property-public.html` template — the same layout as the authenticated
+/// property page, but without the sidebar or authenticated chrome.
+///
+/// Linked from the real-estate cards on `/landing-v2.html`. Returns 404 for
+/// any slug that is not in the hardcoded public-property list.
+pub async fn page_property_public(
+    State(state): State<AppState>,
+    Path(slug): Path<String>,
+) -> impl IntoResponse {
+    let mut display_data = match super::public_assets::lookup(&slug) {
+        Some(d) => d,
+        None => {
+            return (
+                axum::http::StatusCode::NOT_FOUND,
+                Html("<h1>Property not found</h1>".to_string()),
+            )
+                .into_response();
+        }
+    };
+
+    // Use the same platform fee logic as the authenticated property page so
+    // displayed totals match the dashboard view for the same asset.
+    let platform_fee_pct: f64 = sqlx::query_scalar(
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
+    )
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v: String| v.parse::<f64>().ok())
+    .unwrap_or(5.0);
+
+    let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
+        format!("{:.0}", platform_fee_pct)
+    } else {
+        format!("{:.1}", platform_fee_pct)
+    };
+
+    display_data.update_fee(platform_fee_pct);
+
+    match state.templates.get_template("property-public.html") {
+        Ok(template) => match template.render(context! {
+            asset => display_data,
+            fee_pct => platform_fee_pct,
+            fee_pct_display => fee_pct_display,
+        }) {
+            Ok(html) => Html(html).into_response(),
+            Err(e) => {
+                tracing::error!("Template rendering error (property-public): {}", e);
+                Html(format!("<h1>Internal Server Error</h1><p>{}</p>", e)).into_response()
+            }
+        },
+        Err(e) => {
+            tracing::error!("Template missing (property-public): {}", e);
+            Html("<h1>Internal Server Error: Template Missing</h1>".to_string()).into_response()
+        }
+    }
+}
+
 pub async fn page_commodity(
     jar: CookieJar,
     State(state): State<AppState>,
@@ -606,7 +668,7 @@ pub async fn api_marketplace_tab(
             &image_urls
                 .first()
                 .cloned()
-                .unwrap_or_else(|| "/images/villa1.webp".to_string()),
+                .unwrap_or_else(|| "/static/images/seed/villa1.webp".to_string()),
         );
 
         let bedrooms = asset.get::<Option<i32>, _>("bedrooms");
@@ -628,7 +690,7 @@ pub async fn api_marketplace_tab(
         let bedrooms_html = match bedrooms {
             Some(b) => {
                 format!(
-                    "<div class=\"card-meta-item\"><img src=\"/static/images/Bed.svg\" alt=\"Beds\" width=\"16\" height=\"16\"><span>{b}</span></div><div class=\"card-meta-divider\"></div>",
+                    "<div class=\"card-meta-item\"><img src=\"/static/images/icons/Bed.svg\" alt=\"Beds\" width=\"16\" height=\"16\"><span>{b}</span></div><div class=\"card-meta-divider\"></div>",
                     b = b,
                 )
             }
@@ -644,7 +706,7 @@ pub async fn api_marketplace_tab(
 
         let mut images_html = String::new();
         let mut dots_html = String::new();
-        let default_images = vec!["/images/villa1.webp".to_string()];
+        let default_images = vec!["/static/images/seed/villa1.webp".to_string()];
         let urls = if image_urls.is_empty() {
             &default_images
         } else {
@@ -690,7 +752,7 @@ pub async fn api_marketplace_tab(
                         </div>
                         <div class="card-meta-divider"></div>
                         <div class="card-meta-item">
-                            <img src="/images/{location_country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{location_country}">
+                            <img src="/static/images/profiles/{location_country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{location_country}">
                             <span>{location_city}, {location_country}</span>
                         </div>
                     </div>
@@ -913,7 +975,7 @@ pub async fn api_commodities_tab(
             &image_urls
                 .first()
                 .cloned()
-                .unwrap_or_else(|| "/images/villa1.webp".to_string()),
+                .unwrap_or_else(|| "/static/images/seed/villa1.webp".to_string()),
         );
 
         let status = asset.get::<String, _>("funding_status");
@@ -965,7 +1027,7 @@ pub async fn api_commodities_tab(
 
         let mut images_html = String::new();
         let mut dots_html = String::new();
-        let default_images = vec!["/images/villa1.webp".to_string()];
+        let default_images = vec!["/static/images/seed/villa1.webp".to_string()];
         let urls = if image_urls.is_empty() {
             &default_images
         } else {
@@ -1015,7 +1077,7 @@ pub async fn api_commodities_tab(
                         </div>
                         <div class="card-meta-divider"></div>
                         <div class="card-meta-item">
-                            <img src="/images/{location_country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{location_country}">
+                            <img src="/static/images/profiles/{location_country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{location_country}">
                             <span>{location_city}, {location_country}</span>
                         </div>
                     </div>

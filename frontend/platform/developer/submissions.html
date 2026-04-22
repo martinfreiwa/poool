@@ -1,4 +1,4 @@
-{% with title="My Submissions", meta_description="Manage your property submissions on POOOL.", extra_css=['developer-submissions', 'developer-assets', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-submissions'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="My Submissions", meta_description="Manage your property submissions on POOOL.", extra_css=['developer-submissions', 'developer-assets', 'developer-leaderboard-navbar', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-submissions'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="developer-submissions-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -9,23 +9,9 @@
     </div>
     <!-- Main Content Area -->
     <main id="developer-submissions-main" class="ds-main">
-      <!-- Page Header -->
-      <div class="ds-page-header">
-        <div class="ds-page-header__title-row">
-          <h1 id="developer-submissions-page-title" class="ds-page-header__title">
-            My Submissions
-          </h1>
-        </div>
-        <div class="ds-page-header__actions">
-          <a href="/developer/add-asset" class="add-asset-btn" id="header-add-asset-btn">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#98FB96" stroke-width="1.66667"
-              stroke-linecap="round">
-              <path d="M10 4v12M4 10h12" />
-            </svg>
-            <span class="add-asset-text">Add Asset</span>
-          </a>
-        </div>
-      </div>
+      {% with dev_nav_title="Developer", dev_nav_active="submissions", dev_nav_show_add_asset=true, dev_add_asset_btn_id="header-add-asset-btn" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
 
       <!-- Summary Stat Cards -->
       <div id="sub-stats-row" class="sub-stats" style="display: none;">

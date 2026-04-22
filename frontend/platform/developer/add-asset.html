@@ -1,4 +1,4 @@
-{% with title="Developer Add Asset", meta_description="Add a new property or asset to POOOL.", extra_css=['developer-add-asset', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['htmx-init', 'developer-add-asset', 'profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Developer Add Asset", meta_description="Add a new property or asset to POOOL.", extra_css=['leaderboard', 'developer-add-asset', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['htmx-init', 'developer-add-asset', 'profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="developer-add-asset-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -9,20 +9,24 @@
 
     <main id="developer-add-asset-main" class="ds-main cart-page-main">
       <!-- Page Header -->
-      <div id="developer-add-asset-page-header" class="ds-page-header cart-page-header">
-        <div class="ds-page-header__title-row cart-title-wrapper">
-          <h1 class="ds-page-header__title cart-page-title">Add Asset</h1>
+      <header id="developer-add-asset-page-header" class="lb-topbar cart-page-header">
+        <div class="lb-topbar-inner">
+          <div class="lb-topbar-left">
+            <span class="lb-topbar-title">Add Asset</span>
+          </div>
+          <div class="lb-topbar-right">
+            <div class="checkout-steps">
+              <span class="checkout-steps__step checkout-steps__step--active">Asset Type</span>
+              <span class="checkout-steps__divider">→</span>
+              <span class="checkout-steps__step">Property Info</span>
+              <span class="checkout-steps__divider">→</span>
+              <span class="checkout-steps__step">Documents</span>
+              <span class="checkout-steps__divider">→</span>
+              <span class="checkout-steps__step">Review</span>
+            </div>
+          </div>
         </div>
-        <div class="checkout-steps">
-          <span class="checkout-steps__step checkout-steps__step--active">Asset Type</span>
-          <span class="checkout-steps__divider">→</span>
-          <span class="checkout-steps__step">Property Info</span>
-          <span class="checkout-steps__divider">→</span>
-          <span class="checkout-steps__step">Documents</span>
-          <span class="checkout-steps__divider">→</span>
-          <span class="checkout-steps__step">Review</span>
-        </div>
-      </div>
+      </header>
       <!-- Asset Type Header -->
       <div class="asset-type-header">
         <h2 class="asset-type-header__title">Choose asset type</h2>
@@ -38,7 +42,7 @@
         </script>
         <div id="asset-type-card-real-estate" class="asset-type-card selected"
           onclick="__templ_selectAssetTypeScript_6b97(&#34;real-estate&#34;)">
-          <div class="asset-type-image" data-image-url="/static/images/Glass1.webp">
+          <div class="asset-type-image" data-image-url="/static/images/ui/Glass1.webp">
             <div class="asset-type-glass"></div>
             <div class="asset-type-icon-wrapper">
               <svg class="asset-type-icon" width="35" height="35" viewBox="0 0 35 35" fill="none">
@@ -55,7 +59,7 @@
         </div>
         <div id="asset-type-card-commercial-property" class="asset-type-card coming-soon">
           <span class="coming-soon-badge">Coming Soon</span>
-          <div class="asset-type-image" data-image-url="/static/images/Glass2.webp">
+          <div class="asset-type-image" data-image-url="/static/images/ui/Glass2.webp">
             <div class="asset-type-glass"></div>
             <div class="asset-type-icon-wrapper">
               <svg class="asset-type-icon" width="35" height="35" viewBox="0 0 35 35" fill="none">
@@ -72,7 +76,7 @@
         </div>
         <div id="asset-type-card-commodities" class="asset-type-card"
           onclick="__templ_selectAssetTypeScript_6b97(&#34;commodities&#34;)">
-          <div class="asset-type-image" data-image-url="/static/images/Glass3.webp">
+          <div class="asset-type-image" data-image-url="/static/images/ui/Glass3.webp">
             <div class="asset-type-glass"></div>
             <div class="asset-type-icon-wrapper">
               <svg class="asset-type-icon" width="35" height="35" viewBox="0 0 35 35" fill="none">
@@ -90,7 +94,7 @@
         </div>
         <div id="asset-type-card-business" class="asset-type-card coming-soon">
           <span class="coming-soon-badge">Coming Soon</span>
-          <div class="asset-type-image" data-image-url="/static/images/Glass4.webp">
+          <div class="asset-type-image" data-image-url="/static/images/ui/Glass4.webp">
             <div class="asset-type-glass"></div>
             <div class="asset-type-icon-wrapper">
               <svg class="asset-type-icon" width="35" height="35" viewBox="0 0 35 35" fill="none">
@@ -107,7 +111,7 @@
         </div>
         <div id="asset-type-card-startups" class="asset-type-card coming-soon">
           <span class="coming-soon-badge">Coming Soon</span>
-          <div class="asset-type-image" data-image-url="/static/images/Glass5.webp">
+          <div class="asset-type-image" data-image-url="/static/images/ui/Glass5.webp">
             <div class="asset-type-glass"></div>
             <div class="asset-type-icon-wrapper">
               <svg class="asset-type-icon" width="35" height="35" viewBox="0 0 35 35" fill="none">
@@ -124,7 +128,7 @@
         </div>
         <div id="asset-type-card-land-plots" class="asset-type-card coming-soon">
           <span class="coming-soon-badge">Coming Soon</span>
-          <div class="asset-type-image" data-image-url="/static/images/Glass6.webp">
+          <div class="asset-type-image" data-image-url="/static/images/ui/Glass6.webp">
             <div class="asset-type-glass"></div>
             <div class="asset-type-icon-wrapper">
               <svg class="asset-type-icon" width="35" height="35" viewBox="0 0 35 35" fill="none">

@@ -1,5 +1,5 @@
 {% with title="Referral Network", meta_description="View all referrals, holdback periods, and detailed payouts.",
-extra_css=['affiliate-referrals'],
+extra_css=['leaderboard', 'affiliate-referrals'],
 extra_js=['htmx-init', 'profile-dropdown', 'affiliate-referrals'] %}{%
 include
 "components/head.html" %}{% endwith %}
@@ -15,34 +15,20 @@ include
     <main class="ds-main ds-content">
       <div class="ds-container">
         <!-- Page Header -->
-        <div class="ds-page-header">
-          <div class="ds-page-header__title-row">
-            <div class="ds-page-header__icon" style="transform: scale(1.1); margin-right: 12px;">
-              <div class="p-icon p-style-purple">
-                <div class="p-bg p-bg-1"></div>
-                <div class="p-bg p-bg-2"></div>
-                <div class="p-front">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </div>
-              </div>
+        <header class="lb-topbar">
+          <div class="lb-topbar-inner">
+            <div class="lb-topbar-left">
+              <span class="lb-topbar-title">Referrals & Payouts</span>
             </div>
-            <div>
-              <h1 class="ds-page-title">Referrals & Payouts</h1>
-            </div>
-          </div>
-          <div class="ds-page-header__actions">
+            <div class="lb-topbar-right">
             <button class="ds-btn ds-btn--secondary" onclick="exportReferralCSV()">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Export CSV
             </button>
             <a href="/affiliate/dashboard" class="ds-btn ds-btn--ghost">Back to Dashboard</a>
+            </div>
           </div>
-        </div>
+        </header>
         <p class="ds-page-subtitle">Detailed breakdown of your network conversions, holdback statuses, and commission batches.</p>
 
         <!-- Loading State -->

@@ -1,0 +1,43 @@
+ID,Shorthand,Full Name,Email,Type,Location,AUM/Capital,Priority
+1,ADIA,Abu Dhabi Investment Authority,contact@adia.ae,Sovereign Wealth Fund,"Abu Dhabi, UAE",$1.1T,High
+2,Mubadala,Mubadala Investment Company,info@mubadala.com,Sovereign Wealth Fund,"Abu Dhabi, UAE",$330B,High
+3,ADQ,Abu Dhabi Developmental Holding,TBD,Sovereign Wealth Fund,"Abu Dhabi, UAE",$150B+,High
+4,PIF,Saudi Public Investment Fund,Info@pif.gov.sa,Sovereign Wealth Fund,"Riyadh, Saudi Arabia",$1T+,High
+5,L'IMAD,L'IMAD Holdings,TBD,Sovereign Wealth Fund,"Abu Dhabi, UAE",$50B+,High
+6,QIA,Qatar Investment Authority,media@qia.qa,Sovereign Wealth Fund,"Doha, Qatar",$450B+,High
+7,KIA,Kuwait Investment Authority,information@kia.gov.kw,Sovereign Wealth Fund,Kuwait City,$750B+,High
+8,GIP,Global Infrastructure Partners,contact@global-infra.com,Infrastructure Fund,Global,$100B+,High
+9,DigitalBridge,DigitalBridge,ir@digitalbridge.com,Infrastructure Fund,Global/Saudi,$85B+,High
+10,Blackstone,Blackstone Infrastructure,infrastructure@blackstone.com,Infrastructure Fund,Global,$150B+,High
+11,KKR,KKR Infrastructure,middleeast@kkr.com,Infrastructure Fund,Global,$90B+,High
+12,Brookfield,Brookfield Infrastructure,info@brookfield.com,Infrastructure Fund,Global,$200B+,High
+13,Investcorp,Investcorp,info@investcorp.com,PE/Infrastructure,Bahrain,$50B+,Medium
+14,Partners Group,Partners Group,info@partnersgroup.com,Infrastructure,Global,$130B+,High
+15,MGX,MGX Abu Dhabi,compliance@mgx.ae,Crypto/Tech,"Abu Dhabi, UAE",$20B+,High
+16,Sanabil,Sanabil,contact@sanabilvc.com,Crypto/VC,Saudi Arabia,$10B+,High
+17,AMINA,AMINA Bank,info@aminagroup.com,Crypto Bank,Bahrain,$500M+,Medium
+18,Rain,Rain Financial,support-ae@rain.com,Crypto Exchange,UAE,$200M+,Medium
+19,CoinMENA,CoinMENA,support@coinmena.com,Crypto Exchange,Bahrain,$150M+,Medium
+20,BitOasis,BitOasis,help@bitoasis.net,Crypto Exchange,UAE,$100M+,Medium
+21,Gulf Capital,Gulf Capital,info@gulfcapital.ae,Private Equity,"Dubai, UAE",$5B+,Medium
+22,Fajr Capital,Fajr Capital,contact@fajrcapital.ae,Sovereign-Backed PE,"Dubai, UAE",$50B+,Very High
+23,Lunate,Lunate,contact@lunate.ae,PE/Multi-Strategy,"Dubai, UAE",$50B+,Very High
+24,Klumi Ventures,Klumi Ventures,contact@klumi.ae,Digital Assets,"Abu Dhabi, UAE",$500M+,Very High
+25,Cypher Capital,Cypher Capital,contact@cyphercapital.io,Blockchain VC,"Dubai, UAE",$100M+,Very High
+26,Morningstar Ventures,Morningstar Ventures,contact@mstarventures.com,Web3 VC,"Dubai, UAE",$75M+,Very High
+27,CV VC,CV VC,contact@cv-vc.com,Web3 VC,"Dubai, UAE",$50M+,High
+28,Ghaf Capital,Ghaf Capital Partners,contact@ghafcapital.ae,Crypto VC,"Dubai, UAE",$60M+,Very High
+29,MEVP,MEVP,contact@mevp.vc,Venture Capital,"Dubai, UAE",$40M+,Medium
+30,DataVolt,DataVolt,contact@datavolt.sa,Digital Infrastructure,Saudi Arabia,$5B invested,High
+31,Al Nahyan FOs,Al Nahyan Family Offices Network,TBD,Family Office,"Abu Dhabi, UAE",$50B+ combined,High
+32,Al Maktoum FOs,Al Maktoum Family Offices,TBD,Family Office,"Dubai, UAE",$40B+ combined,High
+33,Saudi Royal FOs,Saudi Royal Family Investment,TBD,Family Office,Saudi Arabia,$30B+,High
+34,DMCC,Dubai Multi Commodities Centre,info@dmcc.ae,Family Office Hub,"Dubai, UAE",$500B+ members,Very High
+35,ADGM,Abu Dhabi Global Market,connect@adgm.ae,Family Office Hub,"Abu Dhabi, UAE",$300B+ members,Very High
+36,Independent FOs,Independent Family Offices - Gulf Region,TBD,Family Office Network,GCC,$200B+ combined,High
+37,Waha Capital,Waha Capital,info@wahacapital.com,PE/Family Office,"Abu Dhabi, UAE",$5B+,Medium
+38,Shuaa Capital,Shuaa Capital,info@shuaa.com,PE/Family Office,"Dubai, UAE",$3B+,Medium
+39,ADNOC-XRG,ADNOC (XRG Division),contact@adnoc.ae,Strategic Corporate,"Abu Dhabi, UAE",N/A,Medium
+40,Aramco,Saudi Aramco,investor-relations@aramco.com,Strategic Corporate,Saudi Arabia,N/A,Medium
+41,ENOC,Emirates National Oil Company,info@enoc.ae,Strategic Corporate,"Dubai, UAE",N/A,Low
+42,Emaar,Emaar Properties,investor@emaar.ae,Strategic Corporate,"Dubai, UAE",$25B+ market cap,Low

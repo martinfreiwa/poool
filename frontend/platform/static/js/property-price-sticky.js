@@ -2,6 +2,8 @@
 document.addEventListener("DOMContentLoaded", function () {
   const priceCard = document.getElementById("property-price-card");
   const kycBannerElement = document.querySelector(".kyc-banner");
+  const publicHeaderElement = document.getElementById("lp-header");
+  const footerElement = document.getElementById("footer");
   // Look for similar properties first, fallback to main card bottom boundary
   const stopElement = document.querySelector(".similar-properties-wrapper") || document.getElementById("property-main-card");
 
@@ -14,15 +16,21 @@ document.addEventListener("DOMContentLoaded", function () {
   
   // Create a reliable measurement for the top boundary
   function getStickyTopOffset() {
+    let maxBottom = 0;
+
     if (kycBannerElement) {
-      return {
-        height: kycBannerElement.getBoundingClientRect().height,
-        bottom: kycBannerElement.getBoundingClientRect().bottom
-      };
+      const kycRect = kycBannerElement.getBoundingClientRect();
+      maxBottom = Math.max(maxBottom, kycRect.bottom);
     }
-    // Fallback if no KYC banner - this is a sidebar app, so there is no top navbar!
-    // We just return 0 to stick it near the top of the viewport.
-    return { height: 0, bottom: 0 };
+
+    // Public property page uses landing-style sticky header.
+    // Respect it so the right card doesn't collide with the navbar.
+    if (publicHeaderElement) {
+      const headerRect = publicHeaderElement.getBoundingClientRect();
+      maxBottom = Math.max(maxBottom, headerRect.bottom);
+    }
+
+    return { height: Math.max(maxBottom, 0), bottom: Math.max(maxBottom, 0) };
   }
 
   const initialTopOffset = getStickyTopOffset();
@@ -58,11 +66,33 @@ document.addEventListener("DOMContentLoaded", function () {
       boundaryY = stopElementRect.bottom + scrollY;
     }
 
-    const maxScrollBeforeStop =
+    let maxScrollBeforeStop =
       boundaryY -
       priceCardHeight -
       currentTopOffset.height -
       DISTANCE_FROM_BANNER;
+    let absoluteStopTop =
+      boundaryY -
+      priceCardHeight -
+      DISTANCE_FROM_BANNER;
+
+    // Never allow the sticky card to overlap the page footer.
+    if (footerElement) {
+      const footerRect = footerElement.getBoundingClientRect();
+      const footerTopY = footerRect.top + scrollY;
+      const maxBeforeFooter =
+        footerTopY -
+        priceCardHeight -
+        currentTopOffset.height -
+        DISTANCE_FROM_BANNER;
+      maxScrollBeforeStop = Math.min(maxScrollBeforeStop, maxBeforeFooter);
+
+      const absoluteBeforeFooter =
+        footerTopY -
+        priceCardHeight -
+        DISTANCE_FROM_BANNER;
+      absoluteStopTop = Math.min(absoluteStopTop, absoluteBeforeFooter);
+    }
 
     // Determine if we should stick the card
     const shouldStick = scrollY >= stickyStartPoint;
@@ -77,8 +107,13 @@ document.addEventListener("DOMContentLoaded", function () {
       priceCard.style.zIndex = "999";
     } else if (shouldStopSticking) {
       // Stop at boundary: position absolute
+      const offsetParentTop =
+        (priceCard.offsetParent
+          ? priceCard.offsetParent.getBoundingClientRect().top + scrollY
+          : 0);
+      const relativeStopTop = absoluteStopTop - offsetParentTop;
       priceCard.style.position = "absolute";
-      priceCard.style.top = `${boundaryY - priceCardHeight - DISTANCE_FROM_BANNER}px`;
+      priceCard.style.top = `${Math.max(relativeStopTop, 0)}px`;
       priceCard.style.left = originalPosition.left;
       priceCard.style.zIndex = originalPosition.zIndex;
     } else {

@@ -1,0 +1,279 @@
+/* --- Holographic Redesign specific classes --- */
+
+.redesigned-section {
+  position: relative;
+  padding: 80px 0;
+  background-color: var(--content-bg, #FAFAFA);
+  z-index: 10;
+}
+
+.redesigned-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.redesigned-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.redesigned-subtitle {
+  font-size: 16px;
+  color: var(--text-secondary, #535862);
+}
+
+.redesigned-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+/* Holographic Card overrides */
+.holo-property-card {
+  background: linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.75) 100%);
+  backdrop-filter: blur(20px) saturate(1.8);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 4px 6px -2px rgba(0,0,0,0.02),
+              0 12px 32px -4px rgba(0,0,0,0.04),
+              inset 0 1px 0 rgba(255,255,255,1),
+              inset 0 -1px 2px rgba(0,0,0,0.01);
+  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.holo-property-card:hover {
+  transform: translateY(-3px) scale(1.003);
+  box-shadow: 0 12px 20px -4px rgba(0,0,0,0.04),
+              0 24px 48px -12px rgba(0,0,0,0.08),
+              inset 0 1px 0 #fff,
+              inset 0 -1px 2px rgba(0,0,0,0.01);
+}
+
+.holo-property-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.holo-card-content-layer {
+  position: relative;
+  z-index: 1;
+}
+
+/* Image Container */
+.holo-image-container {
+  margin: -28px -28px 24px -28px;
+  height: 220px;
+  border-radius: 23px 23px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.holo-property-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: absolute;
+  top: 0; left: 0;
+  opacity: 0;
+}
+.holo-property-image.active {
+  opacity: 1;
+}
+
+.holo-property-card:hover .holo-property-image.active {
+  transform: scale(1.03);
+}
+
+.holo-glass-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Carousel Controls */
+.holo-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+  color: white;
+}
+
+.holo-image-container:hover .holo-nav-btn {
+  opacity: 1;
+}
+.holo-nav-prev { left: 12px; }
+.holo-nav-next { right: 12px; }
+
+/* Carousel Dots */
+.holo-dots {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.holo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.5);
+  transition: all 0.3s ease;
+}
+
+.holo-dot.active {
+  width: 16px;
+  background: #fff;
+}
+
+/* Meta Data row */
+.holo-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: var(--text-secondary, #535862);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.holo-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Title & Price */
+.holo-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  margin-bottom: 16px;
+  letter-spacing: -0.01em;
+}
+
+.holo-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.holo-price {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--primary-color, #0000FF);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.holo-price-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* Progress bar */
+.holo-progress-bar {
+  height: 6px;
+  background: #E9EAEB;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.holo-progress-fill {
+  height: 100%;
+  background: var(--brand-greeny-green, #03FF88);
+  border-radius: 4px;
+}
+
+.holo-progress-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--page-title-color);
+  text-align: right;
+  margin-bottom: 24px;
+}
+
+/* Details Box */
+.holo-details-box {
+  background: #F9FAFB;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.04);
+  padding: 12px 16px;
+}
+
+.holo-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.03);
+}
+
+.holo-detail-row:last-child {
+  border-bottom: none;
+}
+
+.holo-detail-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.holo-detail-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--page-title-color);
+}
+
+.btn-invest {
+  margin-top: 24px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.commodities-section {
+  padding-top: 40px;
+}

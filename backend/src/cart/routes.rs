@@ -1105,7 +1105,7 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
                         </div>
                     </div>
                     <div class="summary-line">
-                        <span class="summary-line-label">Platform Fee ({fee_pct_display}%) <img src="/static/images/help-circle.svg" class="help-icon-small" alt="Help" title="Standard platform transaction fee" /></span>
+                        <span class="summary-line-label">Platform Fee ({fee_pct_display}%) <img src="/static/images/icons/help-circle.svg" class="help-icon-small" alt="Help" title="Standard platform transaction fee" /></span>
                         <div class="summary-line-values">
                             <span class="summary-line-value" id="cart-fee-amount">{fee}</span>
                             <span class="summary-line-idr" id="cart-fee-idr">≈ {fee_idr}</span>

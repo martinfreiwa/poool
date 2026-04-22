@@ -1,7 +1,7 @@
 {% with title="Portfolio", meta_description="View your comprehensive POOOL investment portfolio, tracking asset
 performance, total value, and returns over time.", extra_css=['marketplace', 'wallet', 'portfolio', 'cart',
 'portfolio-assets-table',
-'portfolio-value-card', 'portfolio-chart', 'htmx-fixes', 'mobile-portfolio', 'portfolio-enhancements', 'unified-styles'],
+'portfolio-value-card', 'portfolio-chart', 'htmx-fixes', 'mobile-portfolio', 'portfolio-enhancements', 'unified-styles', 'leaderboard'],
 extra_js=['htmx-init',
 'profile-dropdown', 'marketplace-search'] %}{% include
 "components/head.html" %}{% endwith %}
@@ -52,14 +52,13 @@ extra_js=['htmx-init',
         </div>
 
 
-        <!-- Portfolio Header -->
-        <div id="portfolio-header" class="ds-page-header portfolio-header">
-          <div class="ds-page-header__title-row">
-            <h1 id="portfolio-page-title" class="ds-page-header__title portfolio-page-title">
-              Portfolio
-            </h1>
+        <header class="lb-topbar">
+          <div class="lb-topbar-inner">
+            <div class="lb-topbar-left">
+              <span class="lb-topbar-title">Portfolio</span>
+            </div>
           </div>
-        </div>
+        </header>
         <!-- Portfolio Value Card with Chart -->
         <div id="portfolio-value-section" class="portfolio-value-section hidden">
           <div id="portfolio-value-card" class="portfolio-value-card"
@@ -578,31 +577,31 @@ extra_js=['htmx-init',
             <div id="portfolio-assets-header" class="portfolio-assets-header">
               <div class="portfolio-assets-header-cell property-col">
                 <div class="portfolio-assets-header-content">
-                  <img  src="/static/images/home-05.svg" alt="Property" width="16" height="16" />
+                  <img  src="/static/images/icons/home-05.svg" alt="Property" width="16" height="16" />
                   <span class="portfolio-assets-header-text">Property</span>
                 </div>
               </div>
               <div class="portfolio-assets-header-cell investment-col">
                 <div class="portfolio-assets-header-content">
-                  <img  src="/static/images/line-chart-up-02.svg" alt="Investment" width="16" height="16" />
+                  <img  src="/static/images/icons/line-chart-up-02.svg" alt="Investment" width="16" height="16" />
                   <span class="portfolio-assets-header-text">Value</span>
                 </div>
               </div>
               <div class="portfolio-assets-header-cell appreciation-col">
                 <div class="portfolio-assets-header-content">
-                  <img  src="/static/images/chart-line-up.svg" alt="Growth" width="16" height="16" />
+                  <img  src="/static/images/icons/chart-line-up.svg" alt="Growth" width="16" height="16" />
                   <span class="portfolio-assets-header-text">Growth</span>
                 </div>
               </div>
               <div class="portfolio-assets-header-cell rental-col">
                 <div class="portfolio-assets-header-content">
-                  <img  src="/static/images/coins-stacked-03.svg" alt="Rental" width="16" height="16" />
+                  <img  src="/static/images/icons/coins-stacked-03.svg" alt="Rental" width="16" height="16" />
                   <span class="portfolio-assets-header-text">Rental income</span>
                 </div>
               </div>
               <div class="portfolio-assets-header-cell status-col">
                 <div class="portfolio-assets-header-content">
-                  <img  src="/static/images/check-verified-02.svg" alt="Status" width="16" height="16" />
+                  <img  src="/static/images/icons/check-verified-02.svg" alt="Status" width="16" height="16" />
                   <span class="portfolio-assets-header-text">Status</span>
                 </div>
               </div>
@@ -610,7 +609,7 @@ extra_js=['htmx-init',
               <div class="portfolio-assets-header-cell actions-col">
                 <div class="portfolio-assets-header-content">
                   <span class="portfolio-assets-header-text">Actions</span>
-                  <img  src="/static/images/arrow-down.svg" alt="Sort" width="12" height="12" />
+                  <img  src="/static/images/icons/arrow-down.svg" alt="Sort" width="12" height="12" />
                 </div>
               </div>
             </div>
@@ -630,7 +629,7 @@ extra_js=['htmx-init',
 
         <!-- 3. EMPTY STATE -->
         <div id="portfolio-empty-state" class="portfolio-state-panel hidden" style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(10, 13, 18, 0.04), 0 4px 12px rgba(10, 13, 18, 0.03); max-width: 600px; margin: 40px auto; padding: 48px 24px;">
-          <img src="/static/images/home-smile.svg" alt="No investments">
+          <img src="/static/images/icons/home-smile.svg" alt="No investments">
           <h3 class="state-title" style="color: #111827; font-size: 18px; margin-bottom: 8px;">No investments yet</h3>
           <p class="state-desc" style="color: #6b7280; font-size: 14px; margin-bottom: 24px;">Start building your portfolio by exploring properties and commodities on our
             marketplace.
@@ -643,7 +642,7 @@ extra_js=['htmx-init',
       <div class="mobile-portfolio-wrapper">
         <!-- Mobile Portfolio Title -->
         <div class="mobile-portfolio-title-wrapper">
-          <img  src="/static/images/home-smile.svg" alt="Portfolio" class="mobile-portfolio-icon" />
+          <img  src="/static/images/icons/home-smile.svg" alt="Portfolio" class="mobile-portfolio-icon" />
           <div class="mobile-portfolio-title">Portfolio</div>
         </div>
         <!-- Mobile Portfolio Value Card (Expandable) -->
@@ -1003,7 +1002,7 @@ extra_js=['htmx-init',
         <div class="mobile-investment-limit-card">
           <!-- Logo Section -->
           <div class="mobile-investment-limit-logo">
-            <img src="/static/images/Logo%20premium.svg" alt="POOOL Premium" />
+            <img src="/static/images/logos/Logo%20premium.svg" alt="POOOL Premium" />
           </div>
           <!-- Progress Section -->
           <div class="mobile-investment-progress-section">
@@ -1019,7 +1018,7 @@ extra_js=['htmx-init',
             <!-- Annual Limit -->
             <div class="mobile-investment-detail-row">
               <div class="mobile-investment-detail-label">
-                <img  src="/static/images/coins-stacked-02.svg" alt="" class="mobile-investment-icon" />
+                <img  src="/static/images/icons/coins-stacked-02.svg" alt="" class="mobile-investment-icon" />
                 <span>Annual limit</span>
               </div>
               <span id="mobile-investment-limit-annual-value" class="mobile-investment-detail-value">...</span>

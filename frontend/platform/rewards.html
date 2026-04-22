@@ -1,6 +1,6 @@
 {% with title="Rewards", meta_description="View your POOOL rewards tier, affiliate dashboard, and cashback earnings.",
 extra_css=['marketplace', 'wallet', 'portfolio', 'cart', 'portfolio-assets-table',
-'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'rewards', 'settings', 'poool-dropdown'],
+'portfolio-value-card', 'htmx-fixes', 'mobile-portfolio', 'leaderboard', 'rewards', 'settings', 'poool-dropdown'],
 extra_js=['htmx-init', 'profile-dropdown',
 'marketplace-search', 'tier-page'] %}{%
 include
@@ -26,12 +26,33 @@ include
     {% endif %}
 
     <main class="ds-main rewards-main" {% if affiliate_status == 'pending_approval' %}style="filter: blur(8px); pointer-events: none; user-select: none;"{% endif %}>
-      <div class="rewards-container">
-        <div class="ds-page-header rewards-page-header">
-          <div class="ds-page-header__title-row rewards-title-wrapper">
-            <h1 class="ds-page-header__title rewards-title">Rewards</h1>
+      <!-- Leaderboard-style Top Bar -->
+      <header class="lb-topbar rewards-lb-topbar">
+        <div class="lb-topbar-inner rewards-lb-topbar-inner">
+          <div class="lb-topbar-left">
+            <span class="lb-topbar-title">Rewards</span>
+            <div class="lb-topbar-tabs">
+              <button class="lb-topbar-tab rewards-tab-btn active" data-tab="rewards-tab" onclick="switchRewardsTab(this)">
+                Overview
+              </button>
+              <button class="lb-topbar-tab rewards-tab-btn" data-tab="tier-tab" onclick="switchRewardsTab(this)">
+                Tier
+              </button>
+              <button class="lb-topbar-tab rewards-tab-btn" data-tab="affiliate-tab" onclick="switchRewardsTab(this)">
+                Affiliate Dashboard
+              </button>
+              <button class="lb-topbar-tab rewards-tab-btn" data-tab="marketing-tab" onclick="switchRewardsTab(this)">
+                Marketing Material
+              </button>
+              <button class="lb-topbar-tab rewards-tab-btn" data-tab="commissions-tab" onclick="switchRewardsTab(this)">
+                Commissions
+              </button>
+            </div>
           </div>
         </div>
+      </header>
+
+      <div class="rewards-container">
 
         <!-- 1. LOADING STATE (Skeleton) -->
         <div id="rewards-loading-layer" class="rewards-loading-layer">
@@ -70,25 +91,6 @@ include
         <!-- 4. CONTENT STATE -->
         <div id="rewards-content-layer" class="rewards-content-layer hidden" x-data="tierData()" x-init="initTier()">
 
-          <!-- Tab Navigation -->
-          <div class="rewards-tab-nav">
-            <button class="rewards-tab-btn active" data-tab="rewards-tab" onclick="switchRewardsTab(this)">
-              Rewards
-            </button>
-            <button class="rewards-tab-btn" data-tab="tier-tab" onclick="switchRewardsTab(this)">
-              Tier
-            </button>
-            <button class="rewards-tab-btn" data-tab="affiliate-tab" onclick="switchRewardsTab(this)">
-              Affiliate Dashboard
-            </button>
-            <button class="rewards-tab-btn" data-tab="marketing-tab" onclick="switchRewardsTab(this)">
-              Marketing Material
-            </button>
-            <button class="rewards-tab-btn" data-tab="commissions-tab" onclick="switchRewardsTab(this)">
-              Commissions
-            </button>
-          </div>
-
           <!-- Tab 1: Rewards -->
           <div id="rewards-tab" class="rewards-tab-panel">
 
@@ -98,7 +100,7 @@ include
               <div class="tier-progress-card" :class="getTierCardClass(data.tier_name)">
                 <div class="tier-card-header">
                   <div class="tier-logo-wrap">
-                    <img src="/static/images/Logo%20Pool.svg" alt="POOOL" class="tp-logo"
+                    <img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL" class="tp-logo"
                       :class="data.tier_name === 'Intro' ? '' : 'filter-blue'" />
                     <span class="tp-badge" :class="getTierBadgeClass(data.tier_name)" x-text="data.tier_name"></span>
                   </div>
@@ -845,7 +847,7 @@ include
               <div class="marketing-brand-row">
                 <div class="marketing-asset-card">
                   <div class="marketing-asset-preview">
-                    <img src="/static/images/Logo%20Pool.svg" alt="POOOL Logo" style="height:40px;">
+                    <img src="/static/images/logos/Logo%20Pool.svg" alt="POOOL Logo" style="height:40px;">
                   </div>
                   <div class="marketing-asset-info">
                     <span class="marketing-asset-name">POOOL Logo (SVG)</span>
@@ -863,7 +865,7 @@ include
                 </div>
                 <div class="marketing-asset-card">
                   <div class="marketing-asset-preview">
-                    <img src="/static/images/poool-icon.svg" alt="POOOL Icon" style="height:40px;"
+                    <img src="/static/images/logos/poool-icon.svg" alt="POOOL Icon" style="height:40px;"
                       onerror="this.style.display='none'">
                     <span class="marketing-asset-placeholder" style="font-weight:600;color:#0000FF;">P</span>
                   </div>
@@ -871,7 +873,7 @@ include
                     <span class="marketing-asset-name">POOOL Icon (SVG)</span>
                     <span class="marketing-asset-meta">App icon • Square</span>
                   </div>
-                  <a href="/static/images/poool-icon.svg" download class="marketing-download-btn">
+                  <a href="/static/images/logos/poool-icon.svg" download class="marketing-download-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -1454,32 +1456,32 @@ include
                     <tr>
                       <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB; width: 30%;">
                         <div style="display:flex; align-items:center; gap:8px;">
-                          <img src="/static/images/calendar-check-02.svg" width="16" height="16" alt="Period">
+                          <img src="/static/images/icons/calendar-check-02.svg" width="16" height="16" alt="Period">
                           PAYMENT PERIOD
                         </div>
                       </th>
                       <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB; text-align:right;">
                         <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
-                          <img src="/static/images/coins-stacked-03.svg" width="16" height="16" alt="Amount">
+                          <img src="/static/images/icons/coins-stacked-03.svg" width="16" height="16" alt="Amount">
                           AMOUNT
                         </div>
                       </th>
                       <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB;">
                         <div style="display:flex; align-items:center; gap:8px;">
-                          <img src="/static/images/wallet-02.svg" width="16" height="16" alt="Method">
+                          <img src="/static/images/icons/wallet-02.svg" width="16" height="16" alt="Method">
                           METHOD
                         </div>
                       </th>
                       <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB;">
                         <div style="display:flex; align-items:center; gap:8px;">
-                          <img src="/static/images/check-verified-02.svg" width="16" height="16" alt="Status">
+                          <img src="/static/images/icons/check-verified-02.svg" width="16" height="16" alt="Status">
                           STATUS
                         </div>
                       </th>
                       <th class="data-table__th" style="background:#FFFFFF; border-bottom: 1px solid #E9EAEB; text-align:right;">
                         <div style="display:flex; align-items:center; justify-content:flex-end; gap:8px;">
                           INVOICE
-                          <img src="/static/images/arrow-down.svg" width="12" height="12" alt="Sort">
+                          <img src="/static/images/icons/arrow-down.svg" width="12" height="12" alt="Sort">
                         </div>
                       </th>
                     </tr>
@@ -1489,7 +1491,7 @@ include
                       <td class="data-table__td" colspan="5" style="text-align:center; padding:64px 24px; color:#667085; border-bottom:none;">
                         <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
                           <div style="width:48px; height:48px; background:#f9fafb; border-radius:10px; display:flex; align-items:center; justify-content:center;">
-                            <img src="/static/images/coins-stacked-03.svg" width="24" height="24" style="opacity:0.4">
+                            <img src="/static/images/icons/coins-stacked-03.svg" width="24" height="24" style="opacity:0.4">
                           </div>
                           <div>
                             <div style="font-weight:600; color:#101828; font-size:16px; margin-bottom:4px;">No commissions found</div>

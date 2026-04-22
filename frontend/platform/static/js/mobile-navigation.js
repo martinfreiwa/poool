@@ -415,7 +415,7 @@ function initGlobalSearch() {
     const slug = card.dataset.propertyId;
     const baseUrl = type.toLowerCase() === 'commodity' ? '/commodity/' : '/property/';
 
-    let imgSrc = "/static/images/home-05.svg";
+    let imgSrc = "/static/images/icons/home-05.svg";
     if (imgEl) {
       if (imgEl.tagName === 'IMG' && imgEl.src) imgSrc = imgEl.src;
       else if (imgEl.style.backgroundImage) {
@@ -490,7 +490,7 @@ function initGlobalSearch() {
             <div style="width: 36px; height: 36px; border-radius: 6px; overflow: hidden; background: #F9FAFB; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0; border: 1px solid #F2F4F7;">
               ${item.isDynamic 
                 ? `<img src="${item.image}" style="width: 100%; height: 100%; object-fit: cover;">`
-                : `<img src="/static/images/${item.icon}" onerror="this.src='/static/images/home-05.svg'" style="width: 18px; height: 18px; opacity: 0.7;">`
+                : `<img src="/static/images/${item.icon}" onerror="this.src='/static/images/icons/home-05.svg'" style="width: 18px; height: 18px; opacity: 0.7;">`
               }
             </div>
             <div style="flex:1; min-width:0;">

@@ -60,7 +60,7 @@
 
     // ── Build image gallery HTML ──
     function buildGalleryHTML(asset) {
-        let images = asset.images || ['/static/images/villa1.webp'];
+        let images = asset.images || ['/static/images/seed/villa1.webp'];
         // Limit to 5 images for preview
         images = images.slice(0, 5);
         const hasMultiple = images.length > 1;
@@ -137,7 +137,7 @@
                 <div class="mp-sec__card-meta">
                     ${asset.bedrooms > 0 ? `
                     <div class="mp-sec__card-meta-item">
-                        <img src="/static/images/Bed.svg" alt="Beds" width="16" height="16">
+                        <img src="/static/images/icons/Bed.svg" alt="Beds" width="16" height="16">
                         <span>${asset.bedrooms}</span>
                     </div>
                     <div class="mp-sec__card-meta-divider"></div>

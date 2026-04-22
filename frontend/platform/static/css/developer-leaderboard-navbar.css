@@ -1,0 +1,114 @@
+.developer-lb-topbar.lb-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  width: 100%;
+  background: rgba(250, 250, 250, 0.86);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(197, 196, 219, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.developer-lb-topbar .lb-topbar-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1400px;
+  padding: 0 var(--page-padding-x, 32px);
+  margin: 0;
+}
+
+.developer-lb-topbar .lb-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  min-width: 0;
+}
+
+.developer-lb-topbar .lb-topbar-title {
+  font-family: var(--font-family);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--btn-primary-bg, #0000FF);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.developer-lb-topbar .lb-topbar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.developer-lb-topbar .lb-topbar-tab {
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--label-color, #475467);
+  cursor: pointer;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.developer-lb-topbar .lb-topbar-tab:hover {
+  color: var(--btn-primary-bg, #0000FF);
+}
+
+.developer-lb-topbar .lb-topbar-tab.active {
+  color: var(--btn-primary-bg, #0000FF);
+  font-weight: 700;
+  border-bottom-color: var(--btn-primary-bg, #0000FF);
+}
+
+.developer-lb-topbar .lb-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.developer-lb-topbar-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--btn-primary-bg, #0000FF);
+  background: var(--btn-primary-bg, #0000FF);
+  color: #98FB96;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.developer-lb-topbar-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--input-border-color, #D0D5DD);
+  border-radius: 8px;
+  background: #fff;
+  color: #667085;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .developer-lb-topbar.lb-topbar {
+    display: none;
+  }
+}

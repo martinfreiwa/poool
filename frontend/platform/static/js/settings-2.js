@@ -391,7 +391,7 @@ function populateOAuth(oauth) {
         html = `<div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;">
             <div style="display:flex; gap:12px; align-items:center;">
                 <div style="width:36px; height:36px; background:#fff; border:1px solid #eaecf0; border-radius:8px; display:flex; align-items:center; justify-content:center;">
-                    <img src="/static/images/social-google.svg" alt="Google" style="width:20px; height:20px;">
+                    <img src="/static/images/icons/social-google.svg" alt="Google" style="width:20px; height:20px;">
                 </div>
                 <div>
                     <div style="font-weight:600; font-size:14px; color:#101828;">Google</div>
@@ -408,7 +408,7 @@ function populateOAuth(oauth) {
         html = `<div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:#f9fafb; border:1px solid #eaecf0; border-radius:8px;">
             <div style="display:flex; gap:12px; align-items:center;">
                 <div style="width:36px; height:36px; background:#fff; border:1px solid #eaecf0; border-radius:8px; display:flex; align-items:center; justify-content:center;">
-                    <img src="/static/images/social-google.svg" alt="Google" style="width:20px; height:20px;">
+                    <img src="/static/images/icons/social-google.svg" alt="Google" style="width:20px; height:20px;">
                 </div>
                 <div>
                     <div style="font-weight:600; font-size:14px; color:#101828;">Google</div>

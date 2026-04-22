@@ -1,4 +1,4 @@
-{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['settings-2'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'marketplace-search'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['settings-2', 'developer-leaderboard-navbar'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'marketplace-search'] %}{% include "components/head.html" %}{% endwith %}
 {% import "components/macros.html" as macros %}
 <link rel="stylesheet" href="/static/css/poool-dropdown.css">
 <script src="/static/js/poool-dropdown.js"></script>
@@ -33,6 +33,11 @@
 			<!-- Main Content loaded state -->
 			<div id="settings-content" class="hidden w-full">
 				<!-- Settings Page Content -->
+				{% if is_developer %}
+				{% with dev_nav_title="Developer", dev_nav_active="settings", dev_nav_show_search=true %}
+				{% include "components/developer-topbar.html" %}
+				{% endwith %}
+				{% else %}
 				<div class="settings-topbar">
 					<div class="settings-topbar__title">
 						<h1 class="settings-topbar__title-h1">Settings</h1>
@@ -46,6 +51,7 @@
 						<span class="settings-topbar__search-kbd">⌘K</span>
 					</div>
 				</div>
+				{% endif %}
 
 				<!-- Setting 2 Layout (Tabs + Feed) -->
 				<div class="settings-layout-tabs">
@@ -436,7 +442,7 @@
 											Two-Factor Auth (2FA)
 										</div>
 										<div style="display:flex; align-items:center; gap:6px; padding-left:26px;">
-											<img src="/static/images/social-google.svg" alt="Google" style="width:14px; height:14px;">
+											<img src="/static/images/icons/social-google.svg" alt="Google" style="width:14px; height:14px;">
 											<span style="font-size:13px; color:#475467;">Google Authenticator or compatible TOTP app</span>
 										</div>
 									</div>
@@ -841,7 +847,7 @@
 							<div class="settings-learn-grid" style="grid-template-columns: repeat(3, 1fr); gap:16px;">
 								<!-- Re-using existing blog card HTML structure -->
 								<a href="/blog/real-estate-101" class="settings-learn-card">
-									<img loading="lazy" src="/static/images/Glass1.webp" alt="Real Estate 101" class="settings-learn-img">
+									<img loading="lazy" src="/static/images/ui/Glass1.webp" alt="Real Estate 101" class="settings-learn-img">
 									<div class="settings-learn-tags">
 										<span class="settings-learn-tag"><span class="settings-learn-tag-dot"></span> Investing</span>
 									</div>
@@ -850,7 +856,7 @@
 									</div>
 								</a>
 								<a href="/blog/fractional-ownership" class="settings-learn-card">
-									<img loading="lazy" src="/static/images/Glass2.webp" alt="Fractional" class="settings-learn-img">
+									<img loading="lazy" src="/static/images/ui/Glass2.webp" alt="Fractional" class="settings-learn-img">
 									<div class="settings-learn-tags">
 										<span class="settings-learn-tag"><span class="settings-learn-tag-dot"></span> Guide</span>
 									</div>
@@ -859,7 +865,7 @@
 									</div>
 								</a>
 								<a href="/blog/bali-real-estate" class="settings-learn-card">
-									<img  src="/static/images/Glass3.webp" alt="Bali" class="settings-learn-img">
+									<img  src="/static/images/ui/Glass3.webp" alt="Bali" class="settings-learn-img">
 									<div class="settings-learn-tags">
 										<span class="settings-learn-tag"><span class="settings-learn-tag-dot"></span> Market</span>
 									</div>
