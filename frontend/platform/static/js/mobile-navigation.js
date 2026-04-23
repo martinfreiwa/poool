@@ -392,6 +392,7 @@ let __globalSearchIndex = [];
 function initGlobalSearch() {
   const searchInputs = Array.from(document.querySelectorAll('input[type="search"]'))
     .filter(input => input.id !== 'sidebar-search-input');
+  const isDeveloperPage = window.location.pathname.startsWith('/developer');
 
   // 1. Build the index from static pages and dynamic assets on current page
   const staticPages = [
@@ -401,8 +402,8 @@ function initGlobalSearch() {
     { title: "Wallet", type: "Page", url: "/wallet", icon: "wallet-02.svg" },
     { title: "Portfolio", type: "Page", url: "/portfolio", icon: "line-chart-up-02.svg" },
     { title: "Cart", type: "Page", url: "/cart", icon: "shopping-cart-01.svg" },
-    { title: "Settings", type: "Page", url: "/settings", icon: "settings-01.svg" },
-    { title: "Support", type: "Page", url: "/support", icon: "message-chat-circle-grey.svg" },
+    { title: "Settings", type: "Page", url: isDeveloperPage ? "/developer/settings" : "/settings", icon: "settings-01.svg" },
+    { title: "Support", type: "Page", url: isDeveloperPage ? "/developer/support" : "/support", icon: "message-chat-circle-grey.svg" },
     { title: "Rewards", type: "Page", url: "/rewards", icon: "star-01.svg" },
     { title: "Leaderboard", type: "Page", url: "/leaderboard", icon: "award-05.svg" },
     { title: "Community", type: "Page", url: "/community", icon: "users-01.svg" },

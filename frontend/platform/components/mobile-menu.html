@@ -127,7 +127,7 @@
         <span class="mobile-burger-menu__nav-text">Settings</span>
       </div>
       <!-- Support -->
-      <a href="/support" class="mobile-burger-menu__nav-item">
+      <a href="{% if is_developer %}/developer/support{% else %}/support{% endif %}" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
           <img  src="/static/images/icons/message-chat-circle-grey.svg" alt="Support"
             class="mobile-burger-menu__nav-icon" />
@@ -634,7 +634,7 @@
         <span class="mobile-burger-menu__nav-text">Settings</span>
       </div>
       <!-- Support -->
-      <a href="/support" class="mobile-burger-menu__nav-item">
+      <a href="{% if is_developer %}/developer/support{% else %}/support{% endif %}" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
           <img  src="/static/images/icons/message-chat-circle-grey.svg" alt="Support"
             class="mobile-burger-menu__nav-icon" />

@@ -5,9 +5,9 @@ use crate::auth::routes::AppState;
 use crate::error::AppError;
 /// Developer page & API route handlers.
 use axum::{
+    Json,
     extract::State,
     response::{Html, IntoResponse, Redirect},
-    Json,
 };
 use axum_extra::extract::cookie::CookieJar;
 
@@ -164,7 +164,27 @@ pub async fn page_developer_settings(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    crate::common::routes_helper::serve_protected_with_context(jar, &state, "settings-2.html", serde_json::json!({ "is_developer": true })).await
+    crate::common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "settings-2.html",
+        serde_json::json!({ "is_developer": true }),
+    )
+    .await
+}
+
+/// GET /developer/support — Render support in the developer dashboard shell.
+pub async fn page_developer_support(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    crate::common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "support.html",
+        serde_json::json!({ "is_developer": true }),
+    )
+    .await
 }
 
 /// GET /developer/submissions — Render the submissions management page.
@@ -189,7 +209,7 @@ pub async fn api_developer_dashboard_stats(
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Unauthorized"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -406,7 +426,7 @@ pub async fn api_developer_asset_detail(
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Please log in"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -451,7 +471,7 @@ pub async fn api_developer_asset_detail(
                 axum::http::StatusCode::NOT_FOUND,
                 Json(serde_json::json!({"error": "Not found"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -830,7 +850,7 @@ pub async fn api_developer_get_draft(
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Please log in"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -865,7 +885,7 @@ pub async fn api_developer_get_draft(
                 axum::http::StatusCode::NOT_FOUND,
                 Json(serde_json::json!({"error": "Draft not found"})),
             )
-                .into_response()
+                .into_response();
         }
         Err(e) => {
             tracing::error!("Failed to fetch draft: {e}");
@@ -942,7 +962,7 @@ pub async fn api_developer_list_drafts(
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Please log in"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 

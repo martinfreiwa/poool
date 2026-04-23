@@ -228,6 +228,7 @@
     // Don't show on auth pages (not logged in)
     if (
       window.location.pathname.startsWith("/auth/") ||
+      window.location.pathname.startsWith("/p/") ||
       window.location.pathname === "/signup" ||
       window.location.pathname === "/"
     )

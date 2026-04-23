@@ -4,6 +4,8 @@ use uuid::Uuid;
 
 use crate::storage::service::rewrite_gcs_url;
 
+const DEFAULT_PROPERTY_IMAGE_URL: &str = "/static/images/seed/villa1.webp";
+
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct MarketplaceAsset {
     pub id: Uuid,
@@ -146,6 +148,16 @@ impl PropertyDisplayData {
             }
         });
 
+        let image_urls: Vec<String> = asset
+            .image_urls
+            .as_ref()
+            .map(|urls| urls.iter().map(|u| rewrite_gcs_url(u)).collect())
+            .unwrap_or_default();
+        let cover_image_url = image_urls
+            .first()
+            .cloned()
+            .or_else(|| Some(DEFAULT_PROPERTY_IMAGE_URL.to_string()));
+
         PropertyDisplayData {
             id: asset.id.to_string(),
             title: asset.title.clone(),
@@ -158,17 +170,8 @@ impl PropertyDisplayData {
             bedrooms: asset.bedrooms,
             lease_type: asset.lease_type.clone(),
             term_months: asset.term_months,
-            image_urls: asset
-                .image_urls
-                .clone()
-                .unwrap_or_default()
-                .into_iter()
-                .map(|u| rewrite_gcs_url(&u))
-                .collect(),
-            cover_image_url: asset
-                .image_urls
-                .as_ref()
-                .and_then(|urls| urls.first().map(|u| rewrite_gcs_url(u))),
+            image_urls,
+            cover_image_url,
             funding_status: asset.funding_status.clone(),
             google_maps_url: asset.google_maps_url.clone(),
             video_url: asset.video_url.clone(),
@@ -438,6 +441,16 @@ impl CommodityDisplayData {
             _ => None,
         };
 
+        let image_urls: Vec<String> = asset
+            .image_urls
+            .as_ref()
+            .map(|urls| urls.iter().map(|u| rewrite_gcs_url(u)).collect())
+            .unwrap_or_default();
+        let cover_image_url = image_urls
+            .first()
+            .cloned()
+            .or_else(|| Some(DEFAULT_PROPERTY_IMAGE_URL.to_string()));
+
         CommodityDisplayData {
             id: asset.id.to_string(),
             title: asset.title.clone(),
@@ -447,17 +460,8 @@ impl CommodityDisplayData {
             asset_type: asset.asset_type.clone(),
             location_city: asset.location_city.clone(),
             location_country: asset.location_country.clone(),
-            image_urls: asset
-                .image_urls
-                .clone()
-                .unwrap_or_default()
-                .into_iter()
-                .map(|u| rewrite_gcs_url(&u))
-                .collect(),
-            cover_image_url: asset
-                .image_urls
-                .as_ref()
-                .and_then(|urls| urls.first().map(|u| rewrite_gcs_url(u))),
+            image_urls,
+            cover_image_url,
             funding_status: asset.funding_status.clone(),
             google_maps_url: asset.google_maps_url.clone(),
             video_url: asset.video_url.clone(),

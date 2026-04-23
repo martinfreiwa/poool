@@ -2,8 +2,8 @@
 
 .affiliate-dashboard-container {
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 24px;
+    margin: 0;
+    padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
     font-family: var(--font-primary, system-ui, sans-serif);
 }
 

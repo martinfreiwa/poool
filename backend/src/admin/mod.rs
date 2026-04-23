@@ -151,13 +151,19 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/community/index.html", get(page_admin_generic))
         .route("/admin/community/amas.html", get(page_admin_generic))
         .route("/admin/community/amas", get(page_admin_generic))
-        .route("/admin/community/announcements.html", get(page_admin_generic))
+        .route(
+            "/admin/community/announcements.html",
+            get(page_admin_generic),
+        )
         .route("/admin/community/announcements", get(page_admin_generic))
         .route("/admin/community/badges.html", get(page_admin_generic))
         .route("/admin/community/badges", get(page_admin_generic))
         .route("/admin/community/challenges.html", get(page_admin_generic))
         .route("/admin/community/challenges", get(page_admin_generic))
-        .route("/admin/community/circle-detail.html", get(page_admin_generic))
+        .route(
+            "/admin/community/circle-detail.html",
+            get(page_admin_generic),
+        )
         .route("/admin/community/circle-detail", get(page_admin_generic))
         .route("/admin/community/circles.html", get(page_admin_generic))
         .route("/admin/community/circles", get(page_admin_generic))
@@ -176,7 +182,10 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/community/users.html", get(page_admin_generic))
         .route("/admin/community/users", get(page_admin_generic))
         // ── Admin Affiliate Pages ─────────────────────────────────
-        .route("/admin/affiliate-applications.html", get(page_admin_generic))
+        .route(
+            "/admin/affiliate-applications.html",
+            get(page_admin_generic),
+        )
         .route("/admin/affiliate-applications", get(page_admin_generic))
         .route("/admin/affiliate-finance.html", get(page_admin_generic))
         .route("/admin/affiliate-finance", get(page_admin_generic))

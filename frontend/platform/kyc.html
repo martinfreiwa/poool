@@ -27,14 +27,7 @@ include "components/head.html" %}{% endwith %}
     </div>
 
     <main class="ds-main kyc-main">
-      <header class="lb-topbar">
-        <div class="lb-topbar-inner">
-          <div class="lb-topbar-left kyc-topbar-title-wrap">
-            <span class="lb-topbar-title">Identity Verification</span>
-            <p class="kyc-subtitle" x-text="getStatusMessage()"></p>
-          </div>
-        </div>
-      </header>
+      {% with investor_topbar_title="Identity Verification", investor_topbar_left_class="kyc-topbar-title-wrap", investor_topbar_subtitle_class="kyc-subtitle", investor_topbar_subtitle_x_text="getStatusMessage()" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="kyc-container">
 

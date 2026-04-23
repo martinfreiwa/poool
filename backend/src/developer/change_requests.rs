@@ -76,7 +76,7 @@ pub async fn submit_edit(
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Please log in"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -100,7 +100,7 @@ pub async fn submit_edit(
                 axum::http::StatusCode::NOT_FOUND,
                 Json(serde_json::json!({"error": "Asset not found"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -253,7 +253,7 @@ pub async fn get_pending(
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Please log in"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -427,7 +427,7 @@ pub async fn admin_approve(
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Please log in"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -454,7 +454,7 @@ pub async fn admin_approve(
                 axum::http::StatusCode::NOT_FOUND,
                 Json(serde_json::json!({"error": "Change request not found"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -543,7 +543,7 @@ pub async fn admin_reject(
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({"error": "Please log in"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 

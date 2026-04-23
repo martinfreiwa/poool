@@ -2,15 +2,46 @@
   <div class="lb-topbar-inner">
     <div class="lb-topbar-left">
       <span class="lb-topbar-title">{{ dev_nav_title | default("Developer") }}</span>
+      {% if not dev_nav_flow_step %}
       <nav class="lb-topbar-tabs" aria-label="Developer dashboard navigation">
         <a href="/developer/dashboard" class="lb-topbar-tab {% if dev_nav_active == 'dashboard' %}active{% endif %}">Dashboard</a>
         <a href="/developer/assets" class="lb-topbar-tab {% if dev_nav_active == 'assets' %}active{% endif %}">My Assets</a>
         <a href="/developer/submissions" class="lb-topbar-tab {% if dev_nav_active == 'submissions' %}active{% endif %}">Submissions</a>
         <a href="/developer/settings" class="lb-topbar-tab {% if dev_nav_active == 'settings' %}active{% endif %}">Settings</a>
+        <a href="/developer/support" class="lb-topbar-tab {% if dev_nav_active == 'support' %}active{% endif %}">Support</a>
       </nav>
+      {% endif %}
     </div>
 
     <div class="lb-topbar-right">
+      {% if dev_nav_flow_step %}
+      <div class="checkout-steps developer-flow-steps" aria-label="Asset submission progress">
+        {% if dev_nav_flow_step == 'asset' %}
+        <span class="checkout-steps__step checkout-steps__step--active">Asset Type</span>
+        {% else %}
+        <a href="/developer/add-asset" class="checkout-steps__step checkout-steps__step--done">Asset Type</a>
+        {% endif %}
+        <span class="checkout-steps__divider">→</span>
+        {% if dev_nav_flow_step == 'property' %}
+        <span class="checkout-steps__step checkout-steps__step--active">Property Info</span>
+        {% elif dev_nav_flow_step == 'documents' or dev_nav_flow_step == 'review' %}
+        <a href="/developer/application-form" class="checkout-steps__step checkout-steps__step--done">Property Info</a>
+        {% else %}
+        <span class="checkout-steps__step">Property Info</span>
+        {% endif %}
+        <span class="checkout-steps__divider">→</span>
+        {% if dev_nav_flow_step == 'documents' %}
+        <span class="checkout-steps__step checkout-steps__step--active">Documents</span>
+        {% elif dev_nav_flow_step == 'review' %}
+        <a href="/developer/document-upload-step3" class="checkout-steps__step checkout-steps__step--done">Documents</a>
+        {% else %}
+        <span class="checkout-steps__step">Documents</span>
+        {% endif %}
+        <span class="checkout-steps__divider">→</span>
+        <span class="checkout-steps__step{% if dev_nav_flow_step == 'review' %} checkout-steps__step--active{% endif %}">Review</span>
+      </div>
+      {% endif %}
+
       {% if dev_nav_show_search %}
       <button type="button" class="developer-lb-topbar-search" onclick="openSettingsSearch()" id="settings-search-trigger">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -28,6 +59,29 @@
         </svg>
         <span>Add Asset</span>
       </a>
+      {% endif %}
+
+      {% if dev_nav_show_asset_actions %}
+      <button class="developer-lb-topbar-action developer-lb-topbar-action--secondary" id="btn-refresh" title="Refresh">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+          <path d="M1 1v5h5"></path>
+          <path d="M1 6a7 7 0 0113.2-3.2M15 15v-5h-5"></path>
+          <path d="M15 10A7 7 0 011.8 13.2"></path>
+        </svg>
+        <span>Refresh</span>
+      </button>
+      <div class="edit-toolbar" id="edit-toolbar" style="display:none;">
+        <button class="btn-edit-mode" id="btn-edit-mode" title="Edit asset details">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <span>Edit</span>
+        </button>
+        <button class="btn-save-changes" id="btn-save-changes">Save Changes</button>
+        <button class="btn-cancel-edit" id="btn-cancel-edit">Cancel</button>
+      </div>
       {% endif %}
     </div>
   </div>

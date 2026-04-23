@@ -30,7 +30,7 @@ pub async fn trigger_transactional_email(
         "order_confirmation" => "Order Confirmation",
         "invoice_available" => "Invoice Available for Download",
         "asset_funded" => "An Asset You Follow is 100% Funded",
-        
+
         // Affiliate Partner Syndicate Operations
         "affiliate_application_received" => "Application Received - POOOL Partner Syndicate",
         "affiliate_approved" => "Welcome to the POOOL Partner Syndicate!",

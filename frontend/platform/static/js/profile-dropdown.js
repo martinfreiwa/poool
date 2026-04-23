@@ -174,7 +174,9 @@ function setupProfileEventHandlers() {
         window.location.href = "/profile";
         break;
       case "menu-item-account-settings":
-        window.location.href = "/settings";
+        window.location.href = window.location.pathname.startsWith("/developer")
+          ? "/developer/settings"
+          : "/settings";
         break;
       case "menu-item-documentation":
         window.open("/docs", "_blank");

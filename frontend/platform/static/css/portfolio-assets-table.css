@@ -261,7 +261,7 @@
 
 
 .status-success .portfolio-assets-status-icon {
-  background: url("/static/images/icons/check-circle.svg") no-repeat center;
+  background: url("/static/images/icons/check-verified-02.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
@@ -285,7 +285,7 @@
 }
 
 .status-warning .portfolio-assets-status-icon {
-  background: url("/static/images/icons/coins-swap-02.svg") no-repeat center;
+  background: url("/static/images/icons/coins-swap-01.svg") no-repeat center;
   background-size: 12px 12px;
 }
 
@@ -309,7 +309,7 @@
 }
 
 .status-default .portfolio-assets-status-icon {
-  background: url("/static/images/icons/check-circle.svg") no-repeat center;
+  background: url("/static/images/icons/check-verified-02.svg") no-repeat center;
   background-size: 12px 12px;
 }
 

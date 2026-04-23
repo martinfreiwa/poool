@@ -1,4 +1,4 @@
-{% with title="Submission Success | Developer", meta_description="Your asset has been successfully submitted for review on POOOL.", extra_css=['cart', 'checkout', 'poool-icon-custom', 'developer-application-form', 'developer-submission-success', 'mobile-developer-submission-success'], extra_js=['profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Submission Success | Developer", meta_description="Your asset has been successfully submitted for review on POOOL.", extra_css=['leaderboard', 'cart', 'checkout', 'poool-icon-custom', 'developer-application-form', 'developer-submission-success', 'mobile-developer-submission-success', 'developer-leaderboard-navbar'], extra_js=['profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="developer-submission-success-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -9,6 +9,10 @@
     </div>
     <!-- Main Content Area -->
     <main id="developer-submission-success-main" class="ds-main cart-page-main full-height-main">
+      {% with dev_nav_title="Developer", dev_nav_active="submissions" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
+
       <div class="success-center-container">
         
         <!-- Main Content Card -->
@@ -39,7 +43,7 @@
             <a href="https://t.me/poool_eco" target="_blank" rel="noopener">Telegram</a>, 
             <a href="https://wa.me/message/YOUR_WA_NUMBER" target="_blank" rel="noopener">WhatsApp</a>,
             <a href="mailto:support@poool.eco">Email</a> or via our 
-            <a href="/support">support page</a>.
+            <a href="/developer/support">support page</a>.
           </p>
           
           <!-- Dashboard Button -->

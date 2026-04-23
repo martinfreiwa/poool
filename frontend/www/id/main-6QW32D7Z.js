@@ -6266,7 +6266,7 @@ var Ma = (() => {
         name: "Kontrak Investasi yang diaktakan oleh Notaris",
         description:
           "Anda sepenuhnya dilindungi oleh hukum Indonesia melalui kontrak investasi ini, yang ditandatangani oleh CEO dan notaris resmi kami, Erma Novita.",
-        iconUrl: "/webp/page-block-ownreship/nic.webp",
+        iconUrl: "/webp/page-block-ownreship/bpn.webp",
       },
     ];
     static ɵfac = function (a) {
@@ -6790,7 +6790,7 @@ var ir = (c) => [c, "USD", "symbol", "1.0-0", "en-US"],
               M(
                 "src",
                 r.isIndonesian
-                  ? "/svg/pool-grow-logo-id.svg"
+                  ? "/svg/pool-grow-logo.svg"
                   : "/svg/pool-grow-logo.svg",
                 Ot,
               ),

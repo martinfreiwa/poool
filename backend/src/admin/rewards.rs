@@ -21,7 +21,10 @@ pub async fn api_admin_rewards(
     )
     .fetch_all(&state.db)
     .await
-    .unwrap_or_else(|e| { tracing::error!("Admin rewards: failed to fetch tiers: {}", e); vec![] });
+    .unwrap_or_else(|e| {
+        tracing::error!("Admin rewards: failed to fetch tiers: {}", e);
+        vec![]
+    });
 
     let tiers: Vec<serde_json::Value> = tiers_rows.iter().map(|r| {
         serde_json::json!({
@@ -116,7 +119,10 @@ pub async fn api_admin_rewards(
     )
     .fetch_all(&state.db)
     .await
-    .unwrap_or_else(|e| { tracing::error!("Admin rewards: failed to fetch referral_codes: {}", e); vec![] });
+    .unwrap_or_else(|e| {
+        tracing::error!("Admin rewards: failed to fetch referral_codes: {}", e);
+        vec![]
+    });
 
     let referral_codes: Vec<serde_json::Value> = code_rows
         .iter()
@@ -578,9 +584,16 @@ pub async fn api_admin_affiliate_approve(
     let kyc_res = crate::kyc::service::get_kyc_status(&state.db, uid).await;
     match kyc_res {
         Ok(kyc) if kyc.status != "approved" => {
-            return Err(ApiError::BadRequest(format!("Cannot approve affiliate: User KYC status is '{}' (must be 'approved')", kyc.status)));
+            return Err(ApiError::BadRequest(format!(
+                "Cannot approve affiliate: User KYC status is '{}' (must be 'approved')",
+                kyc.status
+            )));
         }
-        Err(_) => return Err(ApiError::BadRequest("Cannot approve affiliate: Could not verify KYC status".to_string())),
+        Err(_) => {
+            return Err(ApiError::BadRequest(
+                "Cannot approve affiliate: Could not verify KYC status".to_string(),
+            ))
+        }
         _ => {}
     }
 
@@ -588,7 +601,13 @@ pub async fn api_admin_affiliate_approve(
     let max_retries = 3;
     for attempt in 0..max_retries {
         // Generate a unique 8-character alphanumeric referral code
-        let referral_code = uuid::Uuid::new_v4().as_simple().to_string().chars().take(8).collect::<String>().to_uppercase();
+        let referral_code = uuid::Uuid::new_v4()
+            .as_simple()
+            .to_string()
+            .chars()
+            .take(8)
+            .collect::<String>()
+            .to_uppercase();
 
         let mut tx = state.db.begin().await.map_err(|e| {
             tracing::error!("Failed to begin affiliate approval tx: {e}");
@@ -596,30 +615,36 @@ pub async fn api_admin_affiliate_approve(
         })?;
 
         // Lock the affiliate row to prevent concurrent approval
-        let current_status: Option<String> = sqlx::query_scalar(
-            "SELECT status FROM affiliates WHERE user_id = $1 FOR UPDATE"
-        )
-        .bind(uid)
-        .fetch_optional(&mut *tx)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to lock affiliate row: {e}");
-            ApiError::Internal("Database error".to_string())
-        })?;
+        let current_status: Option<String> =
+            sqlx::query_scalar("SELECT status FROM affiliates WHERE user_id = $1 FOR UPDATE")
+                .bind(uid)
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Failed to lock affiliate row: {e}");
+                    ApiError::Internal("Database error".to_string())
+                })?;
 
         match current_status.as_deref() {
             Some("pending_approval") => {} // expected state — proceed
             Some("active") => {
                 let _ = tx.rollback().await;
-                return Err(ApiError::BadRequest("Affiliate is already active".to_string()));
+                return Err(ApiError::BadRequest(
+                    "Affiliate is already active".to_string(),
+                ));
             }
             Some(other) => {
                 let _ = tx.rollback().await;
-                return Err(ApiError::BadRequest(format!("Cannot approve affiliate in '{}' status", other)));
+                return Err(ApiError::BadRequest(format!(
+                    "Cannot approve affiliate in '{}' status",
+                    other
+                )));
             }
             None => {
                 let _ = tx.rollback().await;
-                return Err(ApiError::NotFound("Affiliate application not found".to_string()));
+                return Err(ApiError::NotFound(
+                    "Affiliate application not found".to_string(),
+                ));
             }
         }
 
@@ -658,11 +683,12 @@ pub async fn api_admin_affiliate_approve(
                 );
 
                 // Send email notification
-                let user_email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-                    .bind(uid)
-                    .fetch_optional(&state.db)
-                    .await
-                    .unwrap_or_default();
+                let user_email: Option<String> =
+                    sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+                        .bind(uid)
+                        .fetch_optional(&state.db)
+                        .await
+                        .unwrap_or_default();
 
                 if let Some(email) = user_email {
                     let _ = crate::common::email::send_email(
@@ -675,11 +701,16 @@ pub async fn api_admin_affiliate_approve(
                     ).await;
                 }
 
-                return Ok(Json(serde_json::json!({"status": "approved", "referral_code": referral_code})).into_response());
+                return Ok(Json(
+                    serde_json::json!({"status": "approved", "referral_code": referral_code}),
+                )
+                .into_response());
             }
             Ok(_) => {
                 let _ = tx.rollback().await;
-                return Err(ApiError::BadRequest("Affiliate application not found or already processed".to_string()));
+                return Err(ApiError::BadRequest(
+                    "Affiliate application not found or already processed".to_string(),
+                ));
             }
             Err(e) => {
                 let _ = tx.rollback().await;
@@ -687,7 +718,10 @@ pub async fn api_admin_affiliate_approve(
                 let err_str = e.to_string();
                 if err_str.contains("unique") || err_str.contains("duplicate") {
                     if attempt < max_retries - 1 {
-                        tracing::warn!("Referral code collision on attempt {}, retrying...", attempt + 1);
+                        tracing::warn!(
+                            "Referral code collision on attempt {}, retrying...",
+                            attempt + 1
+                        );
                         continue;
                     }
                 }
@@ -697,9 +731,10 @@ pub async fn api_admin_affiliate_approve(
         }
     }
 
-    Err(ApiError::Internal("Failed to generate unique referral code after retries".to_string()))
+    Err(ApiError::Internal(
+        "Failed to generate unique referral code after retries".to_string(),
+    ))
 }
-
 
 /// Payload for rejecting an affiliate application.
 #[derive(serde::Deserialize)]
@@ -738,11 +773,12 @@ pub async fn api_admin_affiliate_reject(
             ).execute(&state.db).await;
 
             // Send email notification
-            let user_email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-                .bind(uid)
-                .fetch_optional(&state.db)
-                .await
-                .unwrap_or_default();
+            let user_email: Option<String> =
+                sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+                    .bind(uid)
+                    .fetch_optional(&state.db)
+                    .await
+                    .unwrap_or_default();
 
             if let Some(email) = user_email {
                 let _ = crate::common::email::send_email(
@@ -757,7 +793,9 @@ pub async fn api_admin_affiliate_reject(
 
             Ok(Json(serde_json::json!({"status": "rejected"})).into_response())
         }
-        Ok(_) => Err(ApiError::BadRequest("Affiliate application not found or already processed".to_string())),
+        Ok(_) => Err(ApiError::BadRequest(
+            "Affiliate application not found or already processed".to_string(),
+        )),
         Err(e) => {
             tracing::error!("Failed to reject affiliate {}: {}", id, e);
             Err(ApiError::Internal("Database error".to_string()))
@@ -802,11 +840,12 @@ pub async fn api_admin_affiliate_suspend(
             ).execute(&state.db).await;
 
             // Send email notification
-            let user_email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-                .bind(uid)
-                .fetch_optional(&state.db)
-                .await
-                .unwrap_or_default();
+            let user_email: Option<String> =
+                sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+                    .bind(uid)
+                    .fetch_optional(&state.db)
+                    .await
+                    .unwrap_or_default();
 
             if let Some(email) = user_email {
                 let _ = crate::common::email::send_email(
@@ -821,7 +860,9 @@ pub async fn api_admin_affiliate_suspend(
 
             Ok(Json(serde_json::json!({"status": "suspended"})).into_response())
         }
-        Ok(_) => Err(ApiError::BadRequest("Affiliate is not active or could not be found".to_string())),
+        Ok(_) => Err(ApiError::BadRequest(
+            "Affiliate is not active or could not be found".to_string(),
+        )),
         Err(e) => {
             tracing::error!("Failed to suspend affiliate {}: {}", id, e);
             Err(ApiError::Internal("Database error".to_string()))
@@ -857,20 +898,29 @@ pub async fn api_admin_affiliate_payouts_pending(
         ApiError::Internal("Database error".into())
     })?;
 
-    let payouts = rows.into_iter().map(|r| {
-        let mut name = format!("{} {}", r.r#fn.unwrap_or_default(), r.ln.unwrap_or_default()).trim().to_string();
-        if name.is_empty() {
-            name = r.email.clone();
-        }
-        serde_json::json!({
-            "affiliate_id": r.user_id,
-            "email": r.email,
-            "name": name,
-            "referral_code": r.referral_code,
-            "total_payable_cents": r.total_payable_cents,
-            "commission_count": r.commission_count,
+    let payouts = rows
+        .into_iter()
+        .map(|r| {
+            let mut name = format!(
+                "{} {}",
+                r.r#fn.unwrap_or_default(),
+                r.ln.unwrap_or_default()
+            )
+            .trim()
+            .to_string();
+            if name.is_empty() {
+                name = r.email.clone();
+            }
+            serde_json::json!({
+                "affiliate_id": r.user_id,
+                "email": r.email,
+                "name": name,
+                "referral_code": r.referral_code,
+                "total_payable_cents": r.total_payable_cents,
+                "commission_count": r.commission_count,
+            })
         })
-    }).collect::<Vec<_>>();
+        .collect::<Vec<_>>();
 
     Ok(Json(payouts).into_response())
 }
@@ -884,8 +934,8 @@ pub async fn api_admin_affiliate_batch_payout(
 ) -> Result<axum::response::Response, ApiError> {
     // We execute this in an ACID transaction
     let mut tx = state.db.begin().await.map_err(|e| {
-         tracing::error!("Tx start failed: {}", e);
-         ApiError::Internal("Tx start failed".into())
+        tracing::error!("Tx start failed: {}", e);
+        ApiError::Internal("Tx start failed".into())
     })?;
 
     // 1. Lock the payable commissions
@@ -902,7 +952,9 @@ pub async fn api_admin_affiliate_batch_payout(
 
     if commissions.is_empty() {
         let _ = tx.rollback().await;
-        return Err(ApiError::BadRequest("No payable commissions found for this affiliate (or locked).".into()));
+        return Err(ApiError::BadRequest(
+            "No payable commissions found for this affiliate (or locked).".into(),
+        ));
     }
 
     let total_payable_cents: i64 = commissions.iter().map(|c| c.provisional_amount_cents).sum();
@@ -910,13 +962,15 @@ pub async fn api_admin_affiliate_batch_payout(
     // B.3 Minimum Payout Threshold ($50.00)
     if total_payable_cents < 5000 {
         let _ = tx.rollback().await;
-        return Err(ApiError::BadRequest("Total payable balance is below the minimum threshold of $50.00".into()));
+        return Err(ApiError::BadRequest(
+            "Total payable balance is below the minimum threshold of $50.00".into(),
+        ));
     }
 
     // GAP-10: Tax document gate — require W-9/W-8BEN before releasing payout
     // Non-macro: tax_document_gcs_path column added in migration 076
     let has_tax_doc: bool = sqlx::query_scalar::<_, Option<bool>>(
-        "SELECT tax_document_gcs_path IS NOT NULL FROM affiliates WHERE user_id = $1"
+        "SELECT tax_document_gcs_path IS NOT NULL FROM affiliates WHERE user_id = $1",
     )
     .bind(affiliate_id)
     .fetch_optional(&mut *tx)
@@ -946,13 +1000,17 @@ pub async fn api_admin_affiliate_batch_payout(
         Some(w) => w,
         None => {
             let _ = tx.rollback().await;
-            return Err(ApiError::BadRequest("Affiliate Treasury Wallet not configured.".into()));
+            return Err(ApiError::BadRequest(
+                "Affiliate Treasury Wallet not configured.".into(),
+            ));
         }
     };
 
     if treasury_wallet.balance_cents < total_payable_cents {
         let _ = tx.rollback().await;
-        return Err(ApiError::BadRequest("Insufficient funds in Affiliate Treasury Wallet.".into()));
+        return Err(ApiError::BadRequest(
+            "Insufficient funds in Affiliate Treasury Wallet.".into(),
+        ));
     }
 
     // 3. Fetch/Create Affiliate's cash wallet
@@ -1055,10 +1113,19 @@ pub async fn api_admin_affiliate_batch_payout(
 
     // 9. Automated Tax Invoice Generation (Phase 19 Placeholder)
     // Generates a structured PDF Credit Statement for tax/compliance purposes
-    let _invoice_pdf_path = format!("gcs://poool-invoices/affiliates/{}/batch_{}.pdf", affiliate_id, batch_id);
-    tracing::info!("Tax Invoice/Credit Statement generated for payout batch {} at {}", batch_id, _invoice_pdf_path);
+    let _invoice_pdf_path = format!(
+        "gcs://poool-invoices/affiliates/{}/batch_{}.pdf",
+        affiliate_id, batch_id
+    );
+    tracing::info!(
+        "Tax Invoice/Credit Statement generated for payout batch {} at {}",
+        batch_id,
+        _invoice_pdf_path
+    );
 
-    tx.commit().await.map_err(|_| ApiError::Internal("Commit failed".into()))?;
+    tx.commit()
+        .await
+        .map_err(|_| ApiError::Internal("Commit failed".into()))?;
 
     // Send email notification for payout
     let user_email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
@@ -1078,14 +1145,21 @@ pub async fn api_admin_affiliate_batch_payout(
         ).await;
     }
 
-    tracing::info!("Admin {} executed batch payout {} for affiliate {} amount {}", admin.user.id, batch_id, affiliate_id, total_payable_cents);
+    tracing::info!(
+        "Admin {} executed batch payout {} for affiliate {} amount {}",
+        admin.user.id,
+        batch_id,
+        affiliate_id,
+        total_payable_cents
+    );
 
     Ok(Json(serde_json::json!({
         "success": true,
         "batch_id": batch_id,
         "amount_cents": total_payable_cents,
         "commission_count": commissions.len()
-    })).into_response())
+    }))
+    .into_response())
 }
 
 /// Payload for POST /api/admin/rewards/affiliates/:id/clawback
@@ -1115,7 +1189,8 @@ pub async fn api_admin_affiliate_fraud_scan(
         "success": true,
         "flags": flags,
         "count": count
-    })).into_response())
+    }))
+    .into_response())
 }
 
 /// POST /api/admin/rewards/affiliates/:id/clawback
@@ -1127,7 +1202,11 @@ pub async fn api_admin_affiliate_clawback(
     axum::extract::Json(payload): axum::extract::Json<ClawbackPayload>,
 ) -> Result<axum::response::Response, ApiError> {
     let affiliate_id = ApiError::parse_uuid(&id)?;
-    let mut tx = state.db.begin().await.map_err(|_| ApiError::Internal("Transaction start failed".into()))?;
+    let mut tx = state
+        .db
+        .begin()
+        .await
+        .map_err(|_| ApiError::Internal("Transaction start failed".into()))?;
 
     // Lock paid commissions
     let commissions = sqlx::query!(
@@ -1138,7 +1217,9 @@ pub async fn api_admin_affiliate_clawback(
 
     if commissions.is_empty() {
         let _ = tx.rollback().await;
-        return Err(ApiError::BadRequest("No paid commissions to clawback".into()));
+        return Err(ApiError::BadRequest(
+            "No paid commissions to clawback".into(),
+        ));
     }
 
     let total_clawback_cents: i64 = commissions.iter().map(|c| c.provisional_amount_cents).sum();
@@ -1188,7 +1269,9 @@ pub async fn api_admin_affiliate_clawback(
     ).execute(&mut *tx).await
     .map_err(|_| ApiError::Internal("Failed to write audit log".into()))?;
 
-    tx.commit().await.map_err(|_| ApiError::Internal("Commit failed".into()))?;
+    tx.commit()
+        .await
+        .map_err(|_| ApiError::Internal("Commit failed".into()))?;
 
     tracing::info!(
         admin_id = %admin.user.id,
@@ -1203,7 +1286,8 @@ pub async fn api_admin_affiliate_clawback(
         "clawed_back_cents": total_clawback_cents,
         "actual_deducted_cents": actual_deducted,
         "shortfall_cents": total_clawback_cents - actual_deducted
-    })).into_response())
+    }))
+    .into_response())
 }
 
 // ── Admin Materials Review (GAP-11) ─────────────────────────────────────────
@@ -1222,7 +1306,7 @@ pub async fn api_admin_affiliate_materials_list(
            FROM affiliate_materials am
            JOIN affiliates a ON a.user_id = am.affiliate_id
            JOIN users u ON u.id = am.affiliate_id
-           ORDER BY am.created_at DESC"#
+           ORDER BY am.created_at DESC"#,
     )
     .fetch_all(&state.db)
     .await
@@ -1270,7 +1354,12 @@ pub async fn api_admin_affiliate_material_review(
     let new_status = match payload.action.as_str() {
         "approve" => "approved",
         "reject" => "rejected",
-        other => return Err(ApiError::BadRequest(format!("Invalid action '{}'. Use 'approve' or 'reject'.", other))),
+        other => {
+            return Err(ApiError::BadRequest(format!(
+                "Invalid action '{}'. Use 'approve' or 'reject'.",
+                other
+            )))
+        }
     };
 
     // Non-macro: affiliate_materials table added in migration 076
@@ -1291,12 +1380,14 @@ pub async fn api_admin_affiliate_material_review(
     })?;
 
     if result.rows_affected() == 0 {
-        return Err(ApiError::NotFound("Material not found or already reviewed".into()));
+        return Err(ApiError::NotFound(
+            "Material not found or already reviewed".into(),
+        ));
     }
 
     // Notify affiliate (non-macro fetch)
     let mat = sqlx::query(
-        "SELECT am.asset_name, am.affiliate_id FROM affiliate_materials am WHERE am.id = $1"
+        "SELECT am.asset_name, am.affiliate_id FROM affiliate_materials am WHERE am.id = $1",
     )
     .bind(mid)
     .fetch_optional(&state.db)
@@ -1315,9 +1406,15 @@ pub async fn api_admin_affiliate_material_review(
 
         if let Some(e) = email {
             let subject = if new_status == "approved" {
-                format!("Your marketing material '{}' has been approved!", asset_name_val)
+                format!(
+                    "Your marketing material '{}' has been approved!",
+                    asset_name_val
+                )
             } else {
-                format!("Your marketing material '{}' requires changes", asset_name_val)
+                format!(
+                    "Your marketing material '{}' requires changes",
+                    asset_name_val
+                )
             };
             let body = if new_status == "approved" {
                 format!("<p>Your custom marketing material <b>{}</b> has been reviewed and <b>approved</b> for use. You may now use it in your campaigns.</p>", asset_name_val)

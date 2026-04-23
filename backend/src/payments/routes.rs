@@ -340,7 +340,7 @@ pub async fn checkout_page(
 
     // Check if user is a referred investor for affiliate disclosure display
     let is_referral_user: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM affiliate_referrals WHERE referred_user_id = $1 LIMIT 1)"
+        "SELECT EXISTS(SELECT 1 FROM affiliate_referrals WHERE referred_user_id = $1 LIMIT 1)",
     )
     .bind(user.id)
     .fetch_one(&state.db)
@@ -469,7 +469,9 @@ pub async fn handle_checkout(
                         let mut headers = HeaderMap::new();
                         headers.insert(
                             axum::http::header::CONTENT_TYPE,
-                            "application/json".parse().unwrap_or_else(|_| axum::http::HeaderValue::from_static("application/json")),
+                            "application/json".parse().unwrap_or_else(|_| {
+                                axum::http::HeaderValue::from_static("application/json")
+                            }),
                         );
                         if let Some(redirect) = body.get("redirect_url").and_then(|v| v.as_str()) {
                             if let Ok(hx_redir) = redirect.parse() {
@@ -585,7 +587,10 @@ pub async fn handle_checkout(
         if let Ok(axum::extract::Form(map)) = form {
             payment_currency_opt = map.get("payment_currency").cloned();
             payment_method_opt = map.get("payment_method").cloned();
-            disclosure_accepted = map.get("affiliate_disclosure_accepted").map(|s| s == "on" || s == "true").unwrap_or(false);
+            disclosure_accepted = map
+                .get("affiliate_disclosure_accepted")
+                .map(|s| s == "on" || s == "true")
+                .unwrap_or(false);
         }
     }
 
@@ -661,11 +666,15 @@ pub async fn handle_checkout(
             // Return JSON with redirect URL so the frontend fetch() can reliably read it.
             // Also include HX-Redirect for any HTMX-based callers.
             let mut headers = HeaderMap::new();
-            let header_val = redirect_url.parse().unwrap_or_else(|_| axum::http::HeaderValue::from_static("/portfolio"));
+            let header_val = redirect_url
+                .parse()
+                .unwrap_or_else(|_| axum::http::HeaderValue::from_static("/portfolio"));
             headers.insert("HX-Redirect", header_val);
             headers.insert(
                 axum::http::header::CONTENT_TYPE,
-                "application/json".parse().unwrap_or_else(|_| axum::http::HeaderValue::from_static("application/json")),
+                "application/json"
+                    .parse()
+                    .unwrap_or_else(|_| axum::http::HeaderValue::from_static("application/json")),
             );
 
             let json_body = serde_json::json!({
@@ -715,11 +724,15 @@ pub async fn handle_checkout(
                     );
 
                     let mut headers = HeaderMap::new();
-                    let header_val = redirect_url.parse().unwrap_or_else(|_| axum::http::HeaderValue::from_static("/portfolio"));
+                    let header_val = redirect_url
+                        .parse()
+                        .unwrap_or_else(|_| axum::http::HeaderValue::from_static("/portfolio"));
                     headers.insert("HX-Redirect", header_val);
                     headers.insert(
                         axum::http::header::CONTENT_TYPE,
-                        "application/json".parse().unwrap_or_else(|_| axum::http::HeaderValue::from_static("application/json")),
+                        "application/json".parse().unwrap_or_else(|_| {
+                            axum::http::HeaderValue::from_static("application/json")
+                        }),
                     );
 
                     return (

@@ -12,32 +12,9 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
     </div>
 
     <main class="ds-main wallet-main">
+      {% with investor_topbar_title="Wallet", investor_topbar_variant="wallet" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="wallet-container">
-        <header class="lb-topbar">
-          <div class="lb-topbar-inner">
-            <div class="lb-topbar-left">
-              <span class="lb-topbar-title">Wallet</span>
-            </div>
-            <div class="lb-topbar-right" id="wallet-header-actions">
-              <button id="deposit-btn" class="ds-btn ds-btn--primary ">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="currentColor" stroke-width="1.66667"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span>Deposit</span>
-              </button>
-              <button id="withdraw-btn" class="ds-btn ds-btn--secondary ">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="currentColor" stroke-width="1.66667"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span>Withdraw</span>
-              </button>
-            </div>
-          </div>
-        </header>
-
         <!-- Mobile Wallet Header -->
         <div id="mobile-wallet-title" class="mobile-wallet-title">
           <!--  <img class="mobile-wallet-title__icon" src="/static/images/icons/wallet-02.svg" alt="Wallet" width="24" height="24" /> -->

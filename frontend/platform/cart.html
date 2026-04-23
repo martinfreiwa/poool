@@ -34,13 +34,7 @@ extra_css=['leaderboard', 'cart', 'mobile-cart', 'checkout'] %}{% include "compo
       <!-- Main Content -->
       <main id="cart-main" class="ds-main cart-page-main">
         <!-- Leaderboard-style Top Bar -->
-        <header class="lb-topbar cart-lb-topbar">
-          <div class="lb-topbar-inner cart-lb-topbar-inner">
-            <div class="lb-topbar-left">
-              <span class="lb-topbar-title">Cart</span>
-            </div>
-          </div>
-        </header>
+        {% with investor_topbar_title="Cart", investor_topbar_class="cart-lb-topbar", investor_topbar_inner_class="cart-lb-topbar-inner" %}{% include 'components/investor-topbar.html' %}{% endwith %}
         <!-- Cart Content Wrapper for HTMX Updates -->
         <div id="cart-content-wrapper">
           <!-- Cart Content -->

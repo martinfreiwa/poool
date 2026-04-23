@@ -14,16 +14,10 @@ marketplace. High-yield real estate opportunities worldwide.", extra_css=['marke
     </div>
     <!-- Main Content Area -->
     <main id="marketplace-main" class="ds-main marketplace-main">
+      {% with investor_topbar_title="Properties" %}{% include 'components/investor-topbar.html' %}{% endwith %}
       <!-- Get all page data --><!-- KYC Notification Bar -->
       <!-- Marketplace Content with Padding -->
       <div class="marketplace-content-wrapper">
-        <header class="lb-topbar">
-          <div class="lb-topbar-inner">
-            <div class="lb-topbar-left">
-              <span class="lb-topbar-title">Properties</span>
-            </div>
-          </div>
-        </header>
         <!-- Filter Bar --><!-- Status Tabs -->
         <div id="filter-bar-status-tabs" class="status-tabs">
           <button id="filter-bar-tab-available" class="status-tab active" hx-get="/marketplace/tab?tab=available"

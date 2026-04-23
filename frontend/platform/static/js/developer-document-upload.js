@@ -69,7 +69,7 @@ function renderExistingFile(doc, sectionId, assetId) {
     <div id="${fileId}" class="file-upload-item">
       <div class="file-content">
         <div class="file-type-icon">
-          <img src="/static/images/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
+          <img src="/static/images/icons/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
         </div>
         <div class="file-info">
           <div class="file-details">
@@ -179,7 +179,7 @@ function addFileAndUpload(file, sectionId) {
     <div id="${fileId}" class="file-upload-item">
       <div class="file-content">
         <div class="file-type-icon">
-          <img src="/static/images/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
+          <img src="/static/images/icons/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
         </div>
         <div class="file-info">
           <div class="file-details">

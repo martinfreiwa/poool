@@ -1,4 +1,4 @@
-{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['settings-2', 'developer-leaderboard-navbar'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'marketplace-search'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['leaderboard', 'settings-2', 'developer-leaderboard-navbar'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'marketplace-search'] %}{% include "components/head.html" %}{% endwith %}
 {% import "components/macros.html" as macros %}
 <link rel="stylesheet" href="/static/css/poool-dropdown.css">
 <script src="/static/js/poool-dropdown.js"></script>
@@ -10,6 +10,14 @@
 			{% include 'components/sidebar.html' %}
 		</div><!-- Main Content Area -->
 		<main id="settings-main" class="ds-main marketplace-main" style="background:#F9FAFB;">
+			{% if is_developer %}
+			{% with dev_nav_title="Developer", dev_nav_active="settings", dev_nav_show_search=true %}
+			{% include "components/developer-topbar.html" %}
+			{% endwith %}
+			{% else %}
+			{% with investor_topbar_title="Account Settings", investor_topbar_class="settings-topbar", investor_topbar_variant="settings" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+			{% endif %}
+
 			<!-- Empty state container for when API fails -->
 			<div id="settings-empty-state" class="hidden min-h-screen flex items-center justify-center">
 				<div class="text-center">
@@ -33,25 +41,6 @@
 			<!-- Main Content loaded state -->
 			<div id="settings-content" class="hidden w-full">
 				<!-- Settings Page Content -->
-				{% if is_developer %}
-				{% with dev_nav_title="Developer", dev_nav_active="settings", dev_nav_show_search=true %}
-				{% include "components/developer-topbar.html" %}
-				{% endwith %}
-				{% else %}
-				<div class="settings-topbar">
-					<div class="settings-topbar__title">
-						<h1 class="settings-topbar__title-h1">Settings</h1>
-					</div>
-					<div class="settings-topbar__search" onclick="openSettingsSearch()" id="settings-search-trigger">
-						<svg  class="settings-topbar__search-icon" width="18" height="18" viewBox="0 0 16 16" fill="none">
-							<circle cx="7.5" cy="7.5" r="5" stroke="#717680" stroke-width="1.33" />
-							<path d="M10.5 10.5L13.5 13.5" stroke="#717680" stroke-width="1.33" stroke-linecap="round" />
-						</svg>
-						<span class="settings-topbar__search-text">Search settings...</span>
-						<span class="settings-topbar__search-kbd">⌘K</span>
-					</div>
-				</div>
-				{% endif %}
 
 				<!-- Setting 2 Layout (Tabs + Feed) -->
 				<div class="settings-layout-tabs">

@@ -107,32 +107,50 @@ pub async fn page_rewards(jar: CookieJar, State(state): State<AppState>) -> impl
 }
 
 /// GET /affiliate — Render the affiliate promo/landing page (Phase 19).
-pub async fn page_affiliate_promo(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn page_affiliate_promo(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     crate::common::routes_helper::serve_protected(jar, &state, "affiliate-promo.html").await
 }
 
 /// GET /affiliate/onboarding — Render the 5-step compliance wizard (Phase 19).
-pub async fn page_affiliate_onboarding(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn page_affiliate_onboarding(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     crate::common::routes_helper::serve_protected(jar, &state, "affiliate-onboarding.html").await
 }
 
 /// GET /affiliate/dashboard — Render the affiliate dashboard page (Phase 19).
-pub async fn page_affiliate_dashboard(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn page_affiliate_dashboard(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     crate::common::routes_helper::serve_protected(jar, &state, "affiliate-dashboard.html").await
 }
 
 /// GET /affiliate/referrals — Render the affiliate referrals & payouts page (Phase 19).
-pub async fn page_affiliate_referrals(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn page_affiliate_referrals(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     crate::common::routes_helper::serve_protected(jar, &state, "affiliate-referrals.html").await
 }
 
 /// GET /affiliate/materials — Render the affiliate marketing materials page (Phase 19).
-pub async fn page_affiliate_materials(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn page_affiliate_materials(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     crate::common::routes_helper::serve_protected(jar, &state, "affiliate-materials.html").await
 }
 
 /// GET /affiliate/settings — Render the affiliate settings and tax info page (Phase 19).
-pub async fn page_affiliate_settings(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn page_affiliate_settings(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     crate::common::routes_helper::serve_protected(jar, &state, "affiliate-settings.html").await
 }
 
@@ -155,9 +173,14 @@ pub async fn page_referral_landing(
         .or_else(|| headers.get("x-real-ip"))
         .and_then(|v| v.to_str().ok())
         .unwrap_or("0.0.0.0");
-    
+
     // Cloud run / standard LBs append client IP to the end, or it's just the IP if direct.
-    let ip = raw_ip.split(',').last().unwrap_or("0.0.0.0").trim().to_string();
+    let ip = raw_ip
+        .split(',')
+        .last()
+        .unwrap_or("0.0.0.0")
+        .trim()
+        .to_string();
 
     let user_agent = headers
         .get("user-agent")
@@ -170,7 +193,12 @@ pub async fn page_referral_landing(
     // Record the click in the background only if it's uniquely new and IP isn't hammering us
     if !already_clicked {
         // Enforce a strict click rate limit of 10 clicks per IP per 15 minutes globally to stop bot swarms
-        if state.auth_rate_limiter.check(&format!("click_throttle:{}", ip)).await.is_ok() {
+        if state
+            .auth_rate_limiter
+            .check(&format!("click_throttle:{}", ip))
+            .await
+            .is_ok()
+        {
             tokio::spawn(async move {
                 let _ = sqlx::query(
                     r#"
@@ -202,9 +230,10 @@ pub async fn page_referral_landing(
 
     // Store data in the format: code|subid|utm_source
     // This maintains backward compatibility with the legacy code|subid parsing logic.
-    let cookie_val = format!("{}|{}|{}", 
-        code, 
-        subid.unwrap_or_default(), 
+    let cookie_val = format!(
+        "{}|{}|{}",
+        code,
+        subid.unwrap_or_default(),
         utm_source.unwrap_or_default()
     );
 
@@ -316,8 +345,6 @@ const REQUIRED_POLICIES: &[&str] = &[
     "Affiliate Privacy Notice",
 ];
 
-
-
 pub async fn submit_affiliate_onboarding_handler(
     jar: CookieJar,
     State(state): State<AppState>,
@@ -335,7 +362,10 @@ pub async fn submit_affiliate_onboarding_handler(
         .check(&format!("affiliate_onboard:{}", user_id))
         .await
     {
-        tracing::warn!("Rate limit exceeded for affiliate onboarding: user={}", user_id);
+        tracing::warn!(
+            "Rate limit exceeded for affiliate onboarding: user={}",
+            user_id
+        );
         return (
             StatusCode::TOO_MANY_REQUESTS,
             Json(serde_json::json!({
@@ -389,7 +419,9 @@ pub async fn submit_affiliate_onboarding_handler(
     }
 
     let main_url = form.main_url.trim();
-    if main_url.is_empty() || (!main_url.starts_with("http://") && !main_url.starts_with("https://")) {
+    if main_url.is_empty()
+        || (!main_url.starts_with("http://") && !main_url.starts_with("https://"))
+    {
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({"error": "A valid URL starting with http:// or https:// is required."})),
@@ -421,13 +453,12 @@ pub async fn submit_affiliate_onboarding_handler(
 
     // ── Duplicate Application Guard ─────────────────────────────────
     // Block resubmission if already pending_approval or active
-    let existing_status: Option<String> = sqlx::query_scalar(
-        "SELECT status FROM affiliates WHERE user_id = $1"
-    )
-    .bind(user_id)
-    .fetch_optional(&state.db)
-    .await
-    .unwrap_or(None);
+    let existing_status: Option<String> =
+        sqlx::query_scalar("SELECT status FROM affiliates WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_optional(&state.db)
+            .await
+            .unwrap_or(None);
 
     match existing_status.as_deref() {
         Some("pending_approval") => {
@@ -613,7 +644,9 @@ pub async fn api_affiliate_payout_request(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, crate::error::AppError> {
-    let user_id = require_user_id(&jar, &state).await.map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
 
     // Check if active affiliate
     let affiliate = sqlx::query!(
@@ -625,7 +658,11 @@ pub async fn api_affiliate_payout_request(
 
     let affiliate = match affiliate {
         Some(a) => a,
-        None => return Err(crate::error::AppError::Forbidden("Only active affiliates can request payouts".into())),
+        None => {
+            return Err(crate::error::AppError::Forbidden(
+                "Only active affiliates can request payouts".into(),
+            ))
+        }
     };
 
     // Calculate payable amount
@@ -639,7 +676,9 @@ pub async fn api_affiliate_payout_request(
     .unwrap_or(0);
 
     if payable < 5000 {
-        return Err(crate::error::AppError::BadRequest("A minimum of $50 in payable commissions is required to request a payout.".into()));
+        return Err(crate::error::AppError::BadRequest(
+            "A minimum of $50 in payable commissions is required to request a payout.".into(),
+        ));
     }
 
     // Get user email
@@ -660,7 +699,10 @@ pub async fn api_affiliate_payout_request(
         )
     ).await;
 
-    Ok(Json(serde_json::json!({"success": true, "message": "Admin notified for approval"})).into_response())
+    Ok(
+        Json(serde_json::json!({"success": true, "message": "Admin notified for approval"}))
+            .into_response(),
+    )
 }
 
 /// GET /api/affiliate/subid-stats
@@ -669,7 +711,9 @@ pub async fn api_affiliate_subid_stats(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, crate::error::AppError> {
-    let user_id = require_user_id(&jar, &state).await.map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
 
     // Check if active affiliate
     let affiliate = sqlx::query!(
@@ -681,7 +725,11 @@ pub async fn api_affiliate_subid_stats(
 
     let affiliate = match affiliate {
         Some(a) => a,
-        None => return Err(crate::error::AppError::Forbidden("Only active affiliates can view subID stats".into())),
+        None => {
+            return Err(crate::error::AppError::Forbidden(
+                "Only active affiliates can view subID stats".into(),
+            ))
+        }
     };
 
     // Query clicks grouped by subid (non-macro: avoids COALESCE/COUNT type inference issues)
@@ -690,7 +738,7 @@ pub async fn api_affiliate_subid_stats(
         r#"SELECT COALESCE(subid, 'unknown') as sub_id, COUNT(*)::bigint as click_count
            FROM referral_clicks
            WHERE code = $1
-           GROUP BY sub_id"#
+           GROUP BY sub_id"#,
     )
     .bind(&affiliate.referral_code)
     .fetch_all(&state.db)
@@ -702,7 +750,7 @@ pub async fn api_affiliate_subid_stats(
         r#"SELECT COALESCE(sub_id, 'unknown') as sub_id, COUNT(*)::bigint as reg_count
            FROM affiliate_referrals
            WHERE affiliate_id = $1
-           GROUP BY sub_id"#
+           GROUP BY sub_id"#,
     )
     .bind(user_id)
     .fetch_all(&state.db)
@@ -729,35 +777,50 @@ pub async fn api_affiliate_subid_stats(
     let mut stats: HashMap<String, serde_json::Value> = HashMap::new();
 
     for c in &clicks {
-        let subid: String = c.try_get("sub_id").unwrap_or_else(|_| "unknown".to_string());
+        let subid: String = c
+            .try_get("sub_id")
+            .unwrap_or_else(|_| "unknown".to_string());
         let clicks_count: i64 = c.try_get("click_count").unwrap_or(0);
-        stats.insert(subid.clone(), serde_json::json!({
-            "sub_id": subid,
-            "clicks": clicks_count,
-            "registrations": 0,
-            "earned_cents": 0,
-            "pending_cents": 0
-        }));
+        stats.insert(
+            subid.clone(),
+            serde_json::json!({
+                "sub_id": subid,
+                "clicks": clicks_count,
+                "registrations": 0,
+                "earned_cents": 0,
+                "pending_cents": 0
+            }),
+        );
     }
 
     for r in &regs {
-        let subid: String = r.try_get("sub_id").unwrap_or_else(|_| "unknown".to_string());
+        let subid: String = r
+            .try_get("sub_id")
+            .unwrap_or_else(|_| "unknown".to_string());
         let reg_count: i64 = r.try_get("reg_count").unwrap_or(0);
         if let Some(entry) = stats.get_mut(&subid) {
-            entry.as_object_mut().unwrap().insert("registrations".to_string(), serde_json::json!(reg_count));
+            entry
+                .as_object_mut()
+                .unwrap()
+                .insert("registrations".to_string(), serde_json::json!(reg_count));
         } else {
-            stats.insert(subid.clone(), serde_json::json!({
-                "sub_id": subid,
-                "clicks": 0,
-                "registrations": reg_count,
-                "earned_cents": 0,
-                "pending_cents": 0
-            }));
+            stats.insert(
+                subid.clone(),
+                serde_json::json!({
+                    "sub_id": subid,
+                    "clicks": 0,
+                    "registrations": reg_count,
+                    "earned_cents": 0,
+                    "pending_cents": 0
+                }),
+            );
         }
     }
 
     for rev in &revenues {
-        let subid: String = rev.try_get("sub_id").unwrap_or_else(|_| "unknown".to_string());
+        let subid: String = rev
+            .try_get("sub_id")
+            .unwrap_or_else(|_| "unknown".to_string());
         let earned: i64 = rev.try_get("earned_cents").unwrap_or(0);
         let pending: i64 = rev.try_get("pending_cents").unwrap_or(0);
         if let Some(entry) = stats.get_mut(&subid) {
@@ -765,13 +828,16 @@ pub async fn api_affiliate_subid_stats(
             obj.insert("earned_cents".to_string(), serde_json::json!(earned));
             obj.insert("pending_cents".to_string(), serde_json::json!(pending));
         } else {
-            stats.insert(subid.clone(), serde_json::json!({
-                "sub_id": subid,
-                "clicks": 0,
-                "registrations": 0,
-                "earned_cents": earned,
-                "pending_cents": pending
-            }));
+            stats.insert(
+                subid.clone(),
+                serde_json::json!({
+                    "sub_id": subid,
+                    "clicks": 0,
+                    "registrations": 0,
+                    "earned_cents": earned,
+                    "pending_cents": pending
+                }),
+            );
         }
     }
 
@@ -788,7 +854,9 @@ pub async fn api_affiliate_policy_reaccept(
     headers: axum::http::HeaderMap,
     Json(form): Json<super::models::SubmitOnboardingForm>,
 ) -> Result<axum::response::Response, crate::error::AppError> {
-    let user_id = require_user_id(&jar, &state).await.map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
 
     // Verify affiliate is active
     let aff = sqlx::query!(
@@ -799,21 +867,25 @@ pub async fn api_affiliate_policy_reaccept(
     .await?;
 
     if aff.is_none() {
-        return Err(crate::error::AppError::Forbidden("Only active affiliates can re-accept policies".into()));
+        return Err(crate::error::AppError::Forbidden(
+            "Only active affiliates can re-accept policies".into(),
+        ));
     }
 
     // Validate all required policies are present
     if form.accepted_policies.len() != REQUIRED_POLICIES.len() {
-        return Err(crate::error::AppError::BadRequest(
-            format!("All {} policies must be accepted.", REQUIRED_POLICIES.len())
-        ));
+        return Err(crate::error::AppError::BadRequest(format!(
+            "All {} policies must be accepted.",
+            REQUIRED_POLICIES.len()
+        )));
     }
 
     for required in REQUIRED_POLICIES {
         if !form.accepted_policies.iter().any(|p| p == required) {
-            return Err(crate::error::AppError::BadRequest(
-                format!("Missing required policy: {}", required)
-            ));
+            return Err(crate::error::AppError::BadRequest(format!(
+                "Missing required policy: {}",
+                required
+            )));
         }
     }
 
@@ -823,7 +895,11 @@ pub async fn api_affiliate_policy_reaccept(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
-    let mut tx = state.db.begin().await.map_err(|_| crate::error::AppError::Internal("Transaction error".into()))?;
+    let mut tx = state
+        .db
+        .begin()
+        .await
+        .map_err(|_| crate::error::AppError::Internal("Transaction error".into()))?;
 
     // Insert new policy acceptance records with the current version
     for policy in &form.accepted_policies {
@@ -842,7 +918,7 @@ pub async fn api_affiliate_policy_reaccept(
 
     // Update the accepted version on the affiliate record (non-macro: column added in migration 076)
     sqlx::query(
-        "UPDATE affiliates SET accepted_policy_version = $1, updated_at = NOW() WHERE user_id = $2"
+        "UPDATE affiliates SET accepted_policy_version = $1, updated_at = NOW() WHERE user_id = $2",
     )
     .bind(service::CURRENT_POLICY_VERSION)
     .bind(user_id)
@@ -850,11 +926,16 @@ pub async fn api_affiliate_policy_reaccept(
     .await
     .map_err(|_| crate::error::AppError::Internal("Failed to update policy version".into()))?;
 
-    tx.commit().await.map_err(|_| crate::error::AppError::Internal("Commit error".into()))?;
+    tx.commit()
+        .await
+        .map_err(|_| crate::error::AppError::Internal("Commit error".into()))?;
 
     tracing::info!(user_id = %user_id, version = service::CURRENT_POLICY_VERSION, "Affiliate re-accepted policies");
 
-    Ok(Json(serde_json::json!({"success": true, "accepted_version": service::CURRENT_POLICY_VERSION})).into_response())
+    Ok(Json(
+        serde_json::json!({"success": true, "accepted_version": service::CURRENT_POLICY_VERSION}),
+    )
+    .into_response())
 }
 
 /// GET /api/affiliate/commissions/export
@@ -864,7 +945,9 @@ pub async fn api_affiliate_commissions_export(
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<axum::response::Response, crate::error::AppError> {
-    let user_id = require_user_id(&jar, &state).await.map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
 
     let affiliate = sqlx::query!(
         "SELECT user_id FROM affiliates WHERE user_id = $1 AND status = 'active'",
@@ -874,7 +957,9 @@ pub async fn api_affiliate_commissions_export(
     .await?;
 
     if affiliate.is_none() {
-        return Err(crate::error::AppError::Forbidden("Only active affiliates can export commissions".into()));
+        return Err(crate::error::AppError::Forbidden(
+            "Only active affiliates can export commissions".into(),
+        ));
     }
 
     let date_from = params
@@ -883,8 +968,16 @@ pub async fn api_affiliate_commissions_export(
     let date_to = params
         .get("to")
         .and_then(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok());
-    let page: i64 = params.get("page").and_then(|p| p.parse().ok()).unwrap_or(1).max(1);
-    let limit: i64 = params.get("limit").and_then(|l| l.parse().ok()).unwrap_or(50).min(200);
+    let page: i64 = params
+        .get("page")
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(1)
+        .max(1);
+    let limit: i64 = params
+        .get("limit")
+        .and_then(|l| l.parse().ok())
+        .unwrap_or(50)
+        .min(200);
     let offset = (page - 1) * limit;
 
     let fmt = params.get("format").map(|s| s.as_str()).unwrap_or("json");
@@ -902,7 +995,7 @@ pub async fn api_affiliate_commissions_export(
              AND ($2::date IS NULL OR ac.created_at::date >= $2)
              AND ($3::date IS NULL OR ac.created_at::date <= $3)
            ORDER BY ac.created_at DESC
-           LIMIT $4 OFFSET $5"#
+           LIMIT $4 OFFSET $5"#,
     )
     .bind(user_id)
     .bind(date_from)
@@ -917,7 +1010,7 @@ pub async fn api_affiliate_commissions_export(
         r#"SELECT COUNT(*)::bigint FROM affiliate_commissions ac
            WHERE ac.affiliate_id = $1
              AND ($2::date IS NULL OR ac.created_at::date >= $2)
-             AND ($3::date IS NULL OR ac.created_at::date <= $3)"#
+             AND ($3::date IS NULL OR ac.created_at::date <= $3)"#,
     )
     .bind(user_id)
     .bind(date_from)
@@ -934,7 +1027,10 @@ pub async fn api_affiliate_commissions_export(
             let sub_id: String = r.try_get("sub_id").unwrap_or_default();
             let tier: String = r.try_get("tier_at_execution").unwrap_or_default();
             let amount_cents: i64 = r.try_get("provisional_amount_cents").unwrap_or(0);
-            let status: String = r.try_get::<Option<String>, _>("status").unwrap_or_default().unwrap_or_default();
+            let status: String = r
+                .try_get::<Option<String>, _>("status")
+                .unwrap_or_default()
+                .unwrap_or_default();
             csv.push_str(&format!(
                 "{},{},{},{:.2},{}\n",
                 created_at,
@@ -949,27 +1045,33 @@ pub async fn api_affiliate_commissions_export(
             axum::http::StatusCode::OK,
             [
                 ("Content-Type", "text/csv"),
-                ("Content-Disposition", "attachment; filename=\"commissions.csv\""),
+                (
+                    "Content-Disposition",
+                    "attachment; filename=\"commissions.csv\"",
+                ),
             ],
             csv,
         )
             .into_response());
     }
 
-    let commissions: Vec<serde_json::Value> = rows.iter().map(|r| {
-        let created_at: String = r.try_get("created_at").unwrap_or_default();
-        let sub_id: String = r.try_get("sub_id").unwrap_or_default();
-        let tier: String = r.try_get("tier_at_execution").unwrap_or_default();
-        let amount_cents: i64 = r.try_get("provisional_amount_cents").unwrap_or(0);
-        let status: Option<String> = r.try_get("status").unwrap_or_default();
-        serde_json::json!({
-            "created_at": created_at,
-            "sub_id": sub_id,
-            "tier": tier,
-            "amount_cents": amount_cents,
-            "status": status
+    let commissions: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            let created_at: String = r.try_get("created_at").unwrap_or_default();
+            let sub_id: String = r.try_get("sub_id").unwrap_or_default();
+            let tier: String = r.try_get("tier_at_execution").unwrap_or_default();
+            let amount_cents: i64 = r.try_get("provisional_amount_cents").unwrap_or(0);
+            let status: Option<String> = r.try_get("status").unwrap_or_default();
+            serde_json::json!({
+                "created_at": created_at,
+                "sub_id": sub_id,
+                "tier": tier,
+                "amount_cents": amount_cents,
+                "status": status
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(Json(serde_json::json!({
         "commissions": commissions,
@@ -977,7 +1079,8 @@ pub async fn api_affiliate_commissions_export(
         "page": page,
         "limit": limit,
         "pages": (total as f64 / limit as f64).ceil() as i64
-    })).into_response())
+    }))
+    .into_response())
 }
 
 /// POST /api/affiliate/postback
@@ -987,7 +1090,9 @@ pub async fn api_affiliate_postback_save(
     State(state): State<AppState>,
     Json(payload): Json<crate::rewards::models::PostbackPayload>,
 ) -> Result<axum::response::Response, crate::error::AppError> {
-    let user_id = require_user_id(&jar, &state).await.map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
 
     // Check if active affiliate
     let affiliate = sqlx::query!(
@@ -998,7 +1103,9 @@ pub async fn api_affiliate_postback_save(
     .await?;
 
     if affiliate.is_none() {
-        return Err(crate::error::AppError::Forbidden("Only active affiliates can set postback URLs".into()));
+        return Err(crate::error::AppError::Forbidden(
+            "Only active affiliates can set postback URLs".into(),
+        ));
     }
 
     let url = payload.postback_url.unwrap_or_default().trim().to_string();
@@ -1021,7 +1128,9 @@ pub async fn api_affiliate_referrals_list(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, crate::error::AppError> {
-    let user_id = require_user_id(&jar, &state).await.map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
 
     // Check if affiliate is active
     let affiliate = sqlx::query!(
@@ -1032,7 +1141,9 @@ pub async fn api_affiliate_referrals_list(
     .await?;
 
     if affiliate.is_none() {
-        return Err(crate::error::AppError::Forbidden("Only active affiliates can view referral details".into()));
+        return Err(crate::error::AppError::Forbidden(
+            "Only active affiliates can view referral details".into(),
+        ));
     }
 
     // Join referrals with commissions
@@ -1080,7 +1191,9 @@ pub async fn api_affiliate_upload_tax_document(
     State(state): State<AppState>,
     mut multipart: axum::extract::Multipart,
 ) -> Result<axum::response::Response, crate::error::AppError> {
-    let user_id = require_user_id(&jar, &state).await.map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
 
     // Must be an active affiliate
     let aff = sqlx::query!(
@@ -1091,12 +1204,18 @@ pub async fn api_affiliate_upload_tax_document(
     .await?;
 
     if aff.is_none() {
-        return Err(crate::error::AppError::Forbidden("Only active affiliates can upload tax documents".into()));
+        return Err(crate::error::AppError::Forbidden(
+            "Only active affiliates can upload tax documents".into(),
+        ));
     }
 
     let bucket = match &state.config.gcs_bucket {
         Some(b) => b.clone(),
-        None => return Err(crate::error::AppError::Internal("File storage not configured".into())),
+        None => {
+            return Err(crate::error::AppError::Internal(
+                "File storage not configured".into(),
+            ))
+        }
     };
 
     let mut file_bytes: Option<Vec<u8>> = None;
@@ -1105,40 +1224,64 @@ pub async fn api_affiliate_upload_tax_document(
     while let Ok(Some(field)) = multipart.next_field().await {
         if field.name().unwrap_or("") == "file" {
             original_filename = field.file_name().unwrap_or("tax_document").to_string();
-            let bytes = field.bytes().await.map_err(|_| crate::error::AppError::BadRequest("Failed to read file".into()))?;
+            let bytes = field
+                .bytes()
+                .await
+                .map_err(|_| crate::error::AppError::BadRequest("Failed to read file".into()))?;
             if bytes.len() > 10 * 1024 * 1024 {
-                return Err(crate::error::AppError::BadRequest("File must be ≤ 10 MB".into()));
+                return Err(crate::error::AppError::BadRequest(
+                    "File must be ≤ 10 MB".into(),
+                ));
             }
             file_bytes = Some(bytes.to_vec());
         }
     }
 
-    let file_bytes = file_bytes.ok_or_else(|| crate::error::AppError::BadRequest("No file uploaded".into()))?;
+    let file_bytes =
+        file_bytes.ok_or_else(|| crate::error::AppError::BadRequest("No file uploaded".into()))?;
 
     // Sanitise filename and build the GCS object path
     let safe_name = original_filename
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '.' || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '.' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect::<String>();
     let gcs_path = format!("affiliates/{}/tax_docs/{}", user_id, safe_name);
 
     // Upload to GCS (private bucket)
-    crate::storage::service::upload_private(&bucket, &gcs_path, file_bytes, "application/octet-stream")
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to upload tax document for affiliate {}: {}", user_id, e);
-            crate::error::AppError::Internal("Upload failed".into())
-        })?;
+    crate::storage::service::upload_private(
+        &bucket,
+        &gcs_path,
+        file_bytes,
+        "application/octet-stream",
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!(
+            "Failed to upload tax document for affiliate {}: {}",
+            user_id,
+            e
+        );
+        crate::error::AppError::Internal("Upload failed".into())
+    })?;
 
     // Store the path on the affiliate record (non-macro: column added in migration 076)
     sqlx::query(
-        "UPDATE affiliates SET tax_document_gcs_path = $1, updated_at = NOW() WHERE user_id = $2"
+        "UPDATE affiliates SET tax_document_gcs_path = $1, updated_at = NOW() WHERE user_id = $2",
     )
     .bind(&gcs_path)
     .bind(user_id)
     .execute(&state.db)
     .await
-    .map_err(|e| { tracing::error!("Failed to store tax doc path: {}", e); crate::error::AppError::Internal("DB error".into()) })?;
+    .map_err(|e| {
+        tracing::error!("Failed to store tax doc path: {}", e);
+        crate::error::AppError::Internal("DB error".into())
+    })?;
 
     tracing::info!(user_id = %user_id, gcs_path = %gcs_path, "Affiliate tax document uploaded");
 
@@ -1152,7 +1295,9 @@ pub async fn api_affiliate_upload_material(
     State(state): State<AppState>,
     mut multipart: axum::extract::Multipart,
 ) -> Result<axum::response::Response, crate::error::AppError> {
-    let user_id = require_user_id(&jar, &state).await.map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
+    let user_id = require_user_id(&jar, &state)
+        .await
+        .map_err(|_| crate::error::AppError::Unauthorized("Invalid session".into()))?;
 
     let aff = sqlx::query!(
         "SELECT user_id FROM affiliates WHERE user_id = $1 AND status = 'active'",
@@ -1162,12 +1307,18 @@ pub async fn api_affiliate_upload_material(
     .await?;
 
     if aff.is_none() {
-        return Err(crate::error::AppError::Forbidden("Only active affiliates can upload marketing materials".into()));
+        return Err(crate::error::AppError::Forbidden(
+            "Only active affiliates can upload marketing materials".into(),
+        ));
     }
 
     let bucket = match &state.config.gcs_bucket {
         Some(b) => b.clone(),
-        None => return Err(crate::error::AppError::Internal("File storage not configured".into())),
+        None => {
+            return Err(crate::error::AppError::Internal(
+                "File storage not configured".into(),
+            ))
+        }
     };
 
     let mut file_bytes: Option<Vec<u8>> = None;
@@ -1178,9 +1329,13 @@ pub async fn api_affiliate_upload_material(
         match field.name().unwrap_or("") {
             "file" => {
                 original_filename = field.file_name().unwrap_or("material").to_string();
-                let bytes = field.bytes().await.map_err(|_| crate::error::AppError::BadRequest("Failed to read file".into()))?;
+                let bytes = field.bytes().await.map_err(|_| {
+                    crate::error::AppError::BadRequest("Failed to read file".into())
+                })?;
                 if bytes.len() > 20 * 1024 * 1024 {
-                    return Err(crate::error::AppError::BadRequest("File must be ≤ 20 MB".into()));
+                    return Err(crate::error::AppError::BadRequest(
+                        "File must be ≤ 20 MB".into(),
+                    ));
                 }
                 file_bytes = Some(bytes.to_vec());
             }
@@ -1191,7 +1346,8 @@ pub async fn api_affiliate_upload_material(
         }
     }
 
-    let file_bytes = file_bytes.ok_or_else(|| crate::error::AppError::BadRequest("No file uploaded".into()))?;
+    let file_bytes =
+        file_bytes.ok_or_else(|| crate::error::AppError::BadRequest("No file uploaded".into()))?;
 
     if asset_name.is_empty() {
         asset_name = original_filename.clone();
@@ -1199,7 +1355,13 @@ pub async fn api_affiliate_upload_material(
 
     let safe_name = original_filename
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '.' || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '.' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect::<String>();
     let gcs_path = format!(
         "affiliates/{}/materials/{}_{}",
@@ -1208,25 +1370,33 @@ pub async fn api_affiliate_upload_material(
         safe_name
     );
 
-    crate::storage::service::upload_private(&bucket, &gcs_path, file_bytes, "application/octet-stream")
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to upload affiliate material: {}", e);
-            crate::error::AppError::Internal("Upload failed".into())
-        })?;
+    crate::storage::service::upload_private(
+        &bucket,
+        &gcs_path,
+        file_bytes,
+        "application/octet-stream",
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to upload affiliate material: {}", e);
+        crate::error::AppError::Internal("Upload failed".into())
+    })?;
 
     // Insert into affiliate_materials table (non-macro: table added in migration 076)
     let material_id: String = sqlx::query_scalar(
         r#"INSERT INTO affiliate_materials (affiliate_id, asset_name, gcs_path, status)
            VALUES ($1, $2, $3, 'pending_review')
-           RETURNING id::text"#
+           RETURNING id::text"#,
     )
     .bind(user_id)
     .bind(&asset_name)
     .bind(&gcs_path)
     .fetch_one(&state.db)
     .await
-    .map_err(|e| { tracing::error!("Failed to insert material: {}", e); crate::error::AppError::Internal("DB error".into()) })?;
+    .map_err(|e| {
+        tracing::error!("Failed to insert material: {}", e);
+        crate::error::AppError::Internal("DB error".into())
+    })?;
 
     // Notify admin
     let _ = crate::common::email::send_email(
@@ -1241,5 +1411,6 @@ pub async fn api_affiliate_upload_material(
         "success": true,
         "material_id": material_id,
         "status": "pending_review"
-    })).into_response())
+    }))
+    .into_response())
 }

@@ -15,17 +15,11 @@ Diversify your portfolio with fractional ownership of high-value assets.", extra
     </div>
     <!-- Main Content Area -->
     <main id="commodities-main" class="ds-main marketplace-main">
+      {% with investor_topbar_title="Commodities", investor_topbar_id="commodities-page-header", investor_topbar_title_id="commodities-page-title" %}{% include 'components/investor-topbar.html' %}{% endwith %}
       <!-- Get all page data --><!-- KYC Notification Bar -->
       <!-- Marketplace Content with Padding -->
       <div class="marketplace-content-wrapper">
         <!-- Page Title -->
-        <header id="commodities-page-header" class="lb-topbar">
-          <div class="lb-topbar-inner">
-            <div class="lb-topbar-left">
-              <span id="commodities-page-title" class="lb-topbar-title">Commodities</span>
-            </div>
-          </div>
-        </header>
         <!-- Filter Bar --><!-- Status Tabs -->
         <div id="filter-bar-status-tabs" class="status-tabs">
           <button id="filter-bar-tab-available" class="status-tab active"

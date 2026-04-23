@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('sidebar-search-input');
     if (!searchInput) return;
+    const isDeveloperPage = window.location.pathname.startsWith('/developer');
 
     // Create results container
     const resultsContainer = document.createElement('div');
@@ -20,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { title: 'Community Feed', subtitle: 'Insights and signals from the POOOL community', url: '/community/feed', icon: '👥' },
         { title: 'Leaderboard', subtitle: 'Top performers and community rankings', url: '/leaderboard', icon: '🏆' },
         { title: 'Referral Rewards', subtitle: 'Your lifetime earnings and level progression', url: '/rewards', icon: '🎁' },
-        { title: 'Settings', subtitle: 'Security, privacy, and account management', url: '/settings', icon: '⚙️' },
-        { title: 'Support', subtitle: 'Connect with our elite support collective', url: '/support', icon: '🎧' },
+        { title: 'Settings', subtitle: 'Security, privacy, and account management', url: isDeveloperPage ? '/developer/settings' : '/settings', icon: '⚙️' },
+        { title: 'Support', subtitle: 'Connect with our elite support collective', url: isDeveloperPage ? '/developer/support' : '/support', icon: '🎧' },
         { title: 'My Circles', subtitle: 'Private investment groups and DAO-gated chats', url: '/community/circles', icon: '🔘' },
         { title: 'Challenges', subtitle: 'Complete active quests to earn XP & Badges', url: '/community/challenges', icon: '✨' },
     ];

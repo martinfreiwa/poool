@@ -1,4 +1,4 @@
-{% with title="Affiliate Dashboard", extra_css=['cards-template', 'forms-template', 'affiliate-dashboard'], extra_js=['https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js', 'affiliate-dashboard'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Affiliate Dashboard", extra_css=['leaderboard', 'cards-template', 'forms-template', 'affiliate-dashboard'], extra_js=['https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js', 'affiliate-dashboard'] %}{% include "components/head.html" %}{% endwith %}
 <body class="app-body fouc-guard">
   {% include 'components/mobile-menu.html' %}
 
@@ -8,20 +8,11 @@
     </aside>
 
     <main class="app-content">
+      {% with investor_topbar_title="Partner Syndicate", investor_topbar_variant="affiliate-dashboard" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+
       <div class="affiliate-dashboard-container">
         
         <!-- Header -->
-        <header class="affiliate-header">
-          <div>
-            <h1 class="affiliate-title">Partner Syndicate</h1>
-            <p class="affiliate-subtitle">Track your referrals, manage your tier, and view earnings.</p>
-          </div>
-          <div class="tier-badge" id="current-tier-badge">
-            <span class="tier-icon">💎</span>
-            <span class="tier-name" id="tier-name">Loading...</span>
-            <span class="tier-rate" id="tier-rate">— bps</span>
-          </div>
-        </header>
 
         <!-- KPI Cards Grid -->
         <div class="affiliate-kpi-grid">
@@ -42,7 +33,7 @@
           <div class="ds-card kpi-card highlight-card">
             <div class="kpi-header">
               <span class="kpi-label">Available to Payout</span>
-              <img src="/static/images/icons/bank-note-01.svg" class="kpi-icon" alt="" />
+              <img src="/static/images/portfolio_asset_details/bank-note-01.svg" class="kpi-icon" alt="" />
             </div>
             <div class="kpi-value" id="kpi-payable-earnings">$0.00</div>
             <div class="kpi-meta">
@@ -55,7 +46,7 @@
           <div class="ds-card kpi-card">
             <div class="kpi-header">
               <span class="kpi-label">Under 30-Day Holdback</span>
-              <img src="/static/images/icons/clock.svg" class="kpi-icon" alt="" />
+              <img src="/static/images/icons/clock-refresh.svg" class="kpi-icon" alt="" />
             </div>
             <div class="kpi-value" id="kpi-provisional-earnings">$0.00</div>
             <div class="kpi-meta">

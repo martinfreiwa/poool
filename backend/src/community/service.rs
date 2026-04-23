@@ -124,12 +124,24 @@ pub async fn get_announcements(
     use sqlx::Row;
     let rows = if let Some(cat) = category {
         if cat.is_empty() {
-             sqlx::query(query_str).bind("").bind(limit).fetch_all(pool).await?
+            sqlx::query(query_str)
+                .bind("")
+                .bind(limit)
+                .fetch_all(pool)
+                .await?
         } else {
-             sqlx::query(query_str).bind(cat).bind(limit).fetch_all(pool).await?
+            sqlx::query(query_str)
+                .bind(cat)
+                .bind(limit)
+                .fetch_all(pool)
+                .await?
         }
     } else {
-        sqlx::query(query_str).bind("").bind(limit).fetch_all(pool).await?
+        sqlx::query(query_str)
+            .bind("")
+            .bind(limit)
+            .fetch_all(pool)
+            .await?
     };
 
     let mut results = Vec::new();
@@ -141,10 +153,12 @@ pub async fn get_announcements(
             Some(v) => serde_json::from_value(v).unwrap_or_default(),
             None => vec![],
         };
-        
+
         results.push(crate::community::models::AnnouncementDisplay {
             id: row.get("id"),
-            author_name: row.try_get("author_name").unwrap_or_else(|_| "POOOL Official".into()),
+            author_name: row
+                .try_get("author_name")
+                .unwrap_or_else(|_| "POOOL Official".into()),
             author_avatar: row.try_get("author_avatar").ok().flatten(),
             category: row.get("category"),
             content: content_sanitized.unwrap_or(content),

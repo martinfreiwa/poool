@@ -48,11 +48,13 @@ if (typeof window.getCsrfToken === "undefined") {
   // Fetch current user profile from the backend
   const savedProfile = localStorage.getItem("selectedProfile");
 
+  // Public pages (e.g. /p/:slug) don't require auth — skip the login redirect.
+  var isPublicPage = window.location.pathname.startsWith("/p/");
+
   fetch("/api/me", { credentials: "same-origin" })
     .then(function (res) {
       if (!res.ok) {
-        // Not authenticated – redirect to login
-        if (res.status === 401) {
+        if (res.status === 401 && !isPublicPage) {
           window.location.href = "/auth/login";
         }
         return null;

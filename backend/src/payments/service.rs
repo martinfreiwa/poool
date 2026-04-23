@@ -458,9 +458,13 @@ pub async fn execute_checkout(
     .and_then(|v: String| v.parse().ok())
     .unwrap_or(rust_decimal::Decimal::from(0));
 
-    let fee_cents_dec = (rust_decimal::Decimal::from(subtotal_cents) * platform_fee_pct) / rust_decimal::Decimal::from(100);
+    let fee_cents_dec = (rust_decimal::Decimal::from(subtotal_cents) * platform_fee_pct)
+        / rust_decimal::Decimal::from(100);
     use rust_decimal::prelude::ToPrimitive;
-    let fee_cents = fee_cents_dec.ceil().to_i64().ok_or("Fee amount too large to process")?;
+    let fee_cents = fee_cents_dec
+        .ceil()
+        .to_i64()
+        .ok_or("Fee amount too large to process")?;
     let grand_total_cents = subtotal_cents + fee_cents;
 
     // 3. Handle FX if payment currency differs from asset currency (USD)
@@ -472,7 +476,9 @@ pub async fn execute_checkout(
         // Decimal math: (grand_total_cents * rate) / 100 = IDR whole amount
         let total_dec = Decimal::from(grand_total_cents);
         let idr_total_dec = (total_dec * rate) / Decimal::from(100);
-        let idr_total = idr_total_dec.to_i64().ok_or("IDR total amount too large to process")?;
+        let idr_total = idr_total_dec
+            .to_i64()
+            .ok_or("IDR total amount too large to process")?;
         (idr_total, Some(rate))
     } else {
         (grand_total_cents, None)
@@ -743,13 +749,21 @@ pub async fn execute_checkout(
 
     // 11.6 Track Affiliate Commission (Phase 18)
     let postback_result = crate::rewards::service::check_and_track_affiliate_commission(
-        &mut tx, user_id, order_id, grand_total_cents
-    ).await;
-    
+        &mut tx,
+        user_id,
+        order_id,
+        grand_total_cents,
+    )
+    .await;
+
     let postback_data = match postback_result {
         Ok(data) => data,
         Err(e) => {
-            tracing::error!("Failed to track affiliate commission for user {}: {}", user_id, e);
+            tracing::error!(
+                "Failed to track affiliate commission for user {}: {}",
+                user_id,
+                e
+            );
             None
         }
     };
@@ -763,8 +777,9 @@ pub async fn execute_checkout(
             affiliate_id,
             "commission".to_string(),
             sub_id,
-            comm_cents
-        ).await;
+            comm_cents,
+        )
+        .await;
     }
 
     tracing::info!(
@@ -980,7 +995,10 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
     }
 
     if count > 0 {
-        tracing::info!("♻️ Cleanup: {} expired bank orders purged and tokens restored.", count);
+        tracing::info!(
+            "♻️ Cleanup: {} expired bank orders purged and tokens restored.",
+            count
+        );
     }
     tx.commit().await.map_err(|e| e.to_string())?;
     Ok(count)
@@ -991,7 +1009,10 @@ pub async fn cleanup_expired_orders(pool: &PgPool) -> Result<i32, String> {
 /// Calculate the final deduction amount (in cents) and the applied FX rate.
 /// If `payment_currency` is "IDR", it applies the mock rate of 15,500 IDR / USD.
 #[allow(dead_code)]
-pub fn calculate_fx_deduction(total_usd_cents: i64, payment_currency: &str) -> (i64, Option<rust_decimal::Decimal>) {
+pub fn calculate_fx_deduction(
+    total_usd_cents: i64,
+    payment_currency: &str,
+) -> (i64, Option<rust_decimal::Decimal>) {
     use rust_decimal::prelude::FromPrimitive;
     use rust_decimal::prelude::ToPrimitive;
     use rust_decimal::Decimal;
@@ -1110,15 +1131,23 @@ pub async fn approve_order(
         .fetch_one(&mut *tx)
         .await
         .unwrap_or(0);
-        
+
     let postback_result = crate::rewards::service::check_and_track_affiliate_commission(
-        &mut tx, user_id, order_id, order_total
-    ).await;
+        &mut tx,
+        user_id,
+        order_id,
+        order_total,
+    )
+    .await;
 
     let postback_data = match postback_result {
         Ok(data) => data,
         Err(e) => {
-            tracing::error!("Failed to track affiliate commission for user {}: {}", user_id, e);
+            tracing::error!(
+                "Failed to track affiliate commission for user {}: {}",
+                user_id,
+                e
+            );
             None
         }
     };
@@ -1131,8 +1160,9 @@ pub async fn approve_order(
             affiliate_id,
             "commission".to_string(),
             sub_id,
-            comm_cents
-        ).await;
+            comm_cents,
+        )
+        .await;
     }
 
     sentry::add_breadcrumb(sentry::Breadcrumb {

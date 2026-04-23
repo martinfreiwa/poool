@@ -14,28 +14,7 @@ include
 
     <main class="ds-main lb-main">
       <!-- Sticky Top Bar -->
-      <header class="lb-topbar">
-        <div class="lb-topbar-inner">
-          <div class="lb-topbar-left">
-            <span class="lb-topbar-title">Leaderboard</span>
-            <div class="lb-topbar-tabs">
-              <button class="lb-topbar-tab active" data-metric="invested" onclick="switchMetricTab('invested', this)">Investment</button>
-              <button class="lb-topbar-tab" data-metric="assets" onclick="switchMetricTab('assets', this)">Assets</button>
-              <button class="lb-topbar-tab" data-metric="roi" onclick="switchMetricTab('roi', this)">ROI</button>
-              <button class="lb-topbar-tab" data-metric="affiliates" onclick="switchMetricTab('affiliates', this)">Affiliates</button>
-              <button class="lb-topbar-tab" data-metric="revenue" onclick="switchMetricTab('revenue', this)">Revenue</button>
-              <button class="lb-topbar-tab" data-metric="highest_inv" onclick="switchMetricTab('highest_inv', this)">Highest Inv.</button>
-            </div>
-          </div>
-          <div class="lb-topbar-right">
-            <div class="lb-topbar-tabs" style="gap: 16px;">
-              <button class="lb-topbar-tab lb-tf-btn active" data-timeframe="alltime" onclick="switchTimeframe('alltime', this)">All-Time</button>
-              <button class="lb-topbar-tab lb-tf-btn" data-timeframe="weekly" onclick="switchTimeframe('weekly', this)">This Week</button>
-              <button class="lb-topbar-tab lb-tf-btn" data-timeframe="monthly" onclick="switchTimeframe('monthly', this)">This Month</button>
-            </div>
-          </div>
-        </div>
-      </header>
+      {% with investor_topbar_title="Leaderboard", investor_topbar_variant="leaderboard" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="lb-container">
 

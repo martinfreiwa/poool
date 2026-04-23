@@ -1,5 +1,5 @@
 {% with title="Support | POOOL", meta_description="POOOL Support — Submit and track your support requests.",
-extra_css=['leaderboard', 'support'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobile-navigation'] %}{% include
+extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobile-navigation'] %}{% include
 "components/head.html" %}{% endwith %}
 
 <body id="support-body" class="fouc-guard">
@@ -11,19 +11,20 @@ extra_css=['leaderboard', 'support'], extra_js=['profile-dropdown', 'legal-enhan
       {% include 'components/sidebar.html' %}
     </div>
 
-    <main class="ds-main dashboard-main">
+    <main class="ds-main dashboard-main{% if is_developer %} developer-support-main{% endif %}">
+      {% if is_developer %}
+      {% with dev_nav_title="Developer", dev_nav_active="support" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
+      {% else %}
+      {% with investor_topbar_title="Support", investor_topbar_class="support-page-header" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+      {% endif %}
+
       <div class="dashboard-container">
         <div class="support-wrapper">
 
           <!-- Page Header -->
           <div class="support-hero">
-            <header class="lb-topbar support-page-header">
-              <div class="lb-topbar-inner">
-                <div class="lb-topbar-left">
-                  <span class="lb-topbar-title">Support</span>
-                </div>
-              </div>
-            </header>
             <p class="support-page-subtitle">Get help from our team — we typically respond within 24 hours</p>
           </div>
 

@@ -203,10 +203,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(admin::primary_escrow::run_auto_refund_worker(pool.clone()));
 
     // Affiliate holdback worker (runs every 6 hours)
-    tokio::spawn(rewards::service::run_affiliate_holdback_worker(pool.clone()));
+    tokio::spawn(rewards::service::run_affiliate_holdback_worker(
+        pool.clone(),
+    ));
 
     // Affiliate tier progression worker (runs every 24 hours)
-    tokio::spawn(rewards::service::run_affiliate_tier_progression_worker(pool.clone()));
+    tokio::spawn(rewards::service::run_affiliate_tier_progression_worker(
+        pool.clone(),
+    ));
 
     // Rate limiter cleanup (every 10 minutes)
     tokio::spawn(async move {
@@ -713,8 +717,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // ── Community (demo + SSR Post Pages) ─────────────────────────
         .route("/community", get(page_community))
         .route("/community/post/:id", get(page_community_post))
-        .route("/community/partials/feed/list", get(community_feed_list_htmx))
-        .route("/community/partials/announcements/list", get(community_announcements_list_htmx))
+        .route(
+            "/community/partials/feed/list",
+            get(community_feed_list_htmx),
+        )
+        .route(
+            "/community/partials/announcements/list",
+            get(community_announcements_list_htmx),
+        )
         .route("/community/partials/:tab", get(community_htmx_partial))
         // ── Rewards V2 (premium layout) ───────────────────────────────
         .route("/rewards-v2", get(page_rewards_v2))
@@ -1740,10 +1750,7 @@ async fn api_asset_metadata(
 
 /// GET /api/assets/featured — returns published featured assets as JSON.
 /// Used by the leaderboard spotlight card to rotate through featured investments.
-async fn api_assets_featured(
-    jar: CookieJar,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+async fn api_assets_featured(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     use sqlx::Row;
 
     if !crate::auth::middleware::is_authenticated(&jar, &state.db).await {
@@ -1784,7 +1791,8 @@ async fn api_assets_featured(
             } else {
                 0.0
             };
-            let cover = r.get::<Option<String>, _>("cover_image")
+            let cover = r
+                .get::<Option<String>, _>("cover_image")
                 .map(|u| crate::storage::service::rewrite_gcs_url(&u))
                 .unwrap_or_else(|| "/images/villa1.webp".to_string());
 
@@ -2147,9 +2155,17 @@ async fn community_htmx_partial(
         "circle" => "partials/community_circle.html",
         "ama" => "partials/community_ama.html",
         "challenges" => "partials/community_challenges.html",
-        _ => return (axum::http::StatusCode::NOT_FOUND, axum::response::Html("Tab not found".to_string())).into_response(),
+        _ => {
+            return (
+                axum::http::StatusCode::NOT_FOUND,
+                axum::response::Html("Tab not found".to_string()),
+            )
+                .into_response()
+        }
     };
-    common::routes_helper::serve_protected(jar, &state, template_name).await.into_response()
+    common::routes_helper::serve_protected(jar, &state, template_name)
+        .await
+        .into_response()
 }
 
 /// GET /community/partials/feed/list — Serves the populated list of posts natively via MiniJinja
@@ -2176,8 +2192,8 @@ async fn community_feed_list_htmx(
         jar,
         &state,
         "partials/community_post_list.html",
-        Context { 
-            posts, 
+        Context {
+            posts,
             current_feed_mode,
             base_url: state.config.base_url.clone(),
         },
@@ -2295,13 +2311,15 @@ async fn page_marketplace_trading_v2(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
-        .fetch_optional(&state.db)
-        .await
-        .ok()
-        .flatten()
-        .and_then(|v: String| v.parse::<f64>().ok())
-        .unwrap_or(5.0);
+    let platform_fee_pct: f64 = sqlx::query_scalar(
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
+    )
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v: String| v.parse::<f64>().ok())
+    .unwrap_or(5.0);
 
     let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
         format!("{:.0}", platform_fee_pct)
@@ -2314,7 +2332,13 @@ async fn page_marketplace_trading_v2(
         "fee_pct_display": fee_pct_display
     });
 
-    common::routes_helper::serve_protected_with_context(jar, &state, "marketplace-trading-v2.html", context).await
+    common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "marketplace-trading-v2.html",
+        context,
+    )
+    .await
 }
 
 /// GET /marketplace-secondary — Secondary market overview page (protected).
@@ -2322,13 +2346,15 @@ async fn page_marketplace_secondary(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
-        .fetch_optional(&state.db)
-        .await
-        .ok()
-        .flatten()
-        .and_then(|v: String| v.parse::<f64>().ok())
-        .unwrap_or(5.0);
+    let platform_fee_pct: f64 = sqlx::query_scalar(
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
+    )
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v: String| v.parse::<f64>().ok())
+    .unwrap_or(5.0);
 
     let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
         format!("{:.0}", platform_fee_pct)
@@ -2341,7 +2367,13 @@ async fn page_marketplace_secondary(
         "fee_pct_display": fee_pct_display
     });
 
-    common::routes_helper::serve_protected_with_context(jar, &state, "marketplace-secondary.html", context).await
+    common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "marketplace-secondary.html",
+        context,
+    )
+    .await
 }
 
 /// GET /marketplace-trading-v3 — V3 Marketplace trading page with full property content (protected).
@@ -2349,13 +2381,15 @@ async fn page_marketplace_trading_v3(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
-        .fetch_optional(&state.db)
-        .await
-        .ok()
-        .flatten()
-        .and_then(|v: String| v.parse::<f64>().ok())
-        .unwrap_or(5.0);
+    let platform_fee_pct: f64 = sqlx::query_scalar(
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
+    )
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v: String| v.parse::<f64>().ok())
+    .unwrap_or(5.0);
 
     let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
         format!("{:.0}", platform_fee_pct)
@@ -2368,18 +2402,26 @@ async fn page_marketplace_trading_v3(
         "fee_pct_display": fee_pct_display
     });
 
-    common::routes_helper::serve_protected_with_context(jar, &state, "marketplace-trading-v3.html", context).await
+    common::routes_helper::serve_protected_with_context(
+        jar,
+        &state,
+        "marketplace-trading-v3.html",
+        context,
+    )
+    .await
 }
 
 /// GET /my-trading — Investor's personal trading dashboard (orders, trades, buy interests, tax export).
 async fn page_my_trading(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
-    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
-        .fetch_optional(&state.db)
-        .await
-        .ok()
-        .flatten()
-        .and_then(|v: String| v.parse::<f64>().ok())
-        .unwrap_or(5.0);
+    let platform_fee_pct: f64 = sqlx::query_scalar(
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
+    )
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v: String| v.parse::<f64>().ok())
+    .unwrap_or(5.0);
 
     let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
         format!("{:.0}", platform_fee_pct)
@@ -2392,7 +2434,8 @@ async fn page_my_trading(jar: CookieJar, State(state): State<AppState>) -> impl 
         "fee_pct_display": fee_pct_display
     });
 
-    common::routes_helper::serve_protected_with_context(jar, &state, "my-trading.html", context).await
+    common::routes_helper::serve_protected_with_context(jar, &state, "my-trading.html", context)
+        .await
 }
 
 /// GET /trade-success — Confirmation page shown after a successful trade order placement.

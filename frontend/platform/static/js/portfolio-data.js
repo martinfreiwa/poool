@@ -283,7 +283,7 @@
         <td class="mobile-assets-cell-property">
           <div class="mobile-assets-property-content">
             <img loading="lazy" src="${cover}" alt="Property"
-              class="mobile-assets-property-image" onerror="this.src='/static/images/ui/property-placeholder.webp'" />
+              class="mobile-assets-property-image" onerror="this.src='/static/images/portfolio_asset_details/Property%20image.webp'" />
             <div class="mobile-assets-property-text-wrapper">
               <span class="mobile-assets-property-line"
                 style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; display:inline-block;">

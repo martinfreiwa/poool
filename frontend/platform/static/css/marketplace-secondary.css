@@ -104,6 +104,13 @@ body.mp-secondary-body {
     view-transition-name: main-content;
 }
 
+.mp-sec__main > .lb-topbar {
+    margin-left: -24px;
+    margin-right: -24px;
+    margin-bottom: 48px;
+    width: calc(100% + 48px);
+}
+
 /* === Page Header === */
 .mp-sec__header {
     display: flex;

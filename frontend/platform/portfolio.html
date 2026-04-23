@@ -15,6 +15,7 @@ extra_js=['htmx-init',
     </div>
 
     <main id="portfolio-main" class="ds-main portfolio-main">
+      {% with investor_topbar_title="Portfolio" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
 
       <div class="portfolio-container">
@@ -51,14 +52,6 @@ extra_js=['htmx-init',
           <button class="retry-btn" onclick="location.reload()">Retry</button>
         </div>
 
-
-        <header class="lb-topbar">
-          <div class="lb-topbar-inner">
-            <div class="lb-topbar-left">
-              <span class="lb-topbar-title">Portfolio</span>
-            </div>
-          </div>
-        </header>
         <!-- Portfolio Value Card with Chart -->
         <div id="portfolio-value-section" class="portfolio-value-section hidden">
           <div id="portfolio-value-card" class="portfolio-value-card"

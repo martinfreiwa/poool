@@ -23,37 +23,7 @@ include
 
     <main class="ds-main lb-main">
       <!-- Sticky Top Bar -->
-      <header class="lb-topbar">
-        <div class="lb-topbar-left">
-          <span class="lb-topbar-title">Community</span>
-          <div class="lb-topbar-tabs">
-            <button type="button" class="lb-topbar-tab active community-tab-btn" data-tab="community-feed-tab"
-              hx-get="/community/partials/feed" hx-target="#community-content-area" hx-push-url="?tab=feed"
-              onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Feed</button>
-            <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-announcements-tab"
-              hx-get="/community/partials/announcements" hx-target="#community-content-area" hx-push-url="?tab=announcements"
-              onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Announcements</button>
-            <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-circle-tab"
-              hx-get="/community/partials/circle" hx-target="#community-content-area" hx-push-url="?tab=circle"
-              onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">My Circle</button>
-            <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-ama-tab"
-              hx-get="/community/partials/ama" hx-target="#community-content-area" hx-push-url="?tab=ama"
-              onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Expert AMAs</button>
-            <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-challenges-tab"
-              hx-get="/community/partials/challenges" hx-target="#community-content-area" hx-push-url="?tab=challenges"
-              onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Challenges</button>
-          </div>
-        </div>
-        <div class="lb-topbar-right">
-          <div class="lb-topbar-search" style="opacity: 0.5;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" placeholder="Search community..." disabled />
-          </div>
-        </div>
-      </header>
+      {% with investor_topbar_title="Community", investor_topbar_variant="community" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="lb-container" style="padding-top: 16px;">
 

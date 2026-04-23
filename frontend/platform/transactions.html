@@ -15,6 +15,7 @@ withdrawals, and platform investments.", extra_css=['wallet', 'bem/table', 'bem/
 
         <!-- Main Content Area -->
         <main id="transactions-main" class="ds-main wallet-main">
+            {% with investor_topbar_title="Transactions" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
             <div class="wallet-container">
 
@@ -64,14 +65,6 @@ withdrawals, and platform investments.", extra_css=['wallet', 'bem/table', 'bem/
 
                 <!-- Main Content -->
                 <div id="transactions-content" class="hidden">
-
-                    <header class="lb-topbar">
-                        <div class="lb-topbar-inner">
-                            <div class="lb-topbar-left">
-                                <span class="lb-topbar-title">Transactions</span>
-                            </div>
-                        </div>
-                    </header>
 
                     <!-- No Transactions Empty State -->
                     <div id="wallet-transactions-empty" class="hidden">

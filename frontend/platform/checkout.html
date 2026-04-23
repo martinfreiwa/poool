@@ -31,22 +31,7 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
 
     <main class="ds-main checkout-main">
       <!-- Header -->
-      <header class="lb-topbar checkout-header">
-        <div class="lb-topbar-inner">
-          <div class="lb-topbar-left">
-            <span class="lb-topbar-title">Checkout</span>
-          </div>
-          <div class="lb-topbar-right">
-            <div class="checkout-steps">
-              <a href="/cart" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Cart</a>
-              <span class="checkout-steps__divider">→</span>
-              <span class="checkout-steps__step checkout-steps__step--active">Payment</span>
-              <span class="checkout-steps__divider">→</span>
-              <span class="checkout-steps__step">Confirmation</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      {% with investor_topbar_title="Checkout", investor_topbar_class="checkout-header", investor_topbar_variant="checkout" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="checkout-content-wrapper">
         <!-- Content -->

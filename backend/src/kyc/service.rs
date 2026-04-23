@@ -267,7 +267,7 @@ pub async fn process_webhook_update(
         let _ = sqlx::query(
             r#"UPDATE affiliate_referrals 
                SET status = 'kyc_approved', updated_at = NOW() 
-               WHERE referred_user_id = $1 AND status IN ('attributed', 'registered')"#
+               WHERE referred_user_id = $1 AND status IN ('attributed', 'registered')"#,
         )
         .bind(user_id)
         .execute(pool)

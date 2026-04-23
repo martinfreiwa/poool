@@ -1,4 +1,4 @@
-{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['settings-2', 'cards-template', 'ds-cards'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'marketplace-search', 'settings-service', 'settings'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['leaderboard', 'settings-2', 'cards-template', 'ds-cards'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'marketplace-search', 'settings-service', 'settings'] %}{% include "components/head.html" %}{% endwith %}
 {% import "components/macros.html" as macros %}
 <link rel="stylesheet" href="/static/css/poool-dropdown.css">
 <script src="/static/js/poool-dropdown.js"></script>
@@ -13,20 +13,10 @@
 
     <!-- Main Content Area -->
     <main id="settings-main" class="ds-main marketplace-main cards-template-layout"
-        style="background:#F9FAFB; padding: 32px 48px;">
+        style="background:#F9FAFB; padding: 0;">
+        {% with investor_topbar_title="Account Settings", investor_topbar_class="settings-topbar", investor_topbar_variant="settings" %}{% include 'components/investor-topbar.html' %}{% endwith %}
         <style>.holo-card.settings-card { overflow: visible !important; }</style>
-        <div class="settings-content-wrapper" style="max-width: 1096px; width: 100%; margin: 0;">
-        <div class="page-header"
-            style="margin-bottom: 40px; border-bottom: none; display: flex; justify-content: space-between; align-items: center;">
-            <div class="page-header-left" style="display: flex; align-items: center;">
-                <div>
-                    <h1 class="page-title" style="margin: 0; font-size: 24px; font-weight: 700;">Account Settings</h1>
-                    <p style="margin: 4px 0 0 0; color: #717680; font-size: 14px;">Manage your profile, identity, and
-                        security preferences.</p>
-                </div>
-            </div>
-
-        </div>
+        <div class="settings-content-wrapper" style="max-width: 1200px; width: 100%; margin: 0; padding: 24px var(--page-padding-x, 32px) 64px; box-sizing: border-box;">
 
         <section class="settings-cards-section" style="margin-bottom: 64px;">
 

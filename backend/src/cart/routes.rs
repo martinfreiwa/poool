@@ -752,7 +752,6 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
             }
         }
 
-
         let property_details_html = if property_details_parts.is_empty() {
             String::new()
         } else {

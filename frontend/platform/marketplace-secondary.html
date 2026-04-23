@@ -1,5 +1,5 @@
 {% set title="Secondary Market" %}
-{% set extra_css=['marketplace-secondary'] %}
+{% set extra_css=['leaderboard', 'marketplace-secondary'] %}
 {% set extra_js=['marketplace-secondary'] %}
 {% set body_class="mp-secondary-body fouc-guard" %}
 {% set external_scripts=['https://cdn.jsdelivr.net/npm/apexcharts'] %}
@@ -17,13 +17,7 @@
 
         <!-- Main Content -->
         <main class="mp-sec__main">
-            <!-- Page Header -->
-            <div class="mp-sec__header">
-                <div class="mp-sec__header-left">
-                    <h1 class="mp-sec__title">Secondary Market</h1>
-                    <span class="mp-sec__badge">Beta</span>
-                </div>
-            </div>
+            {% with investor_topbar_title="Secondary Market" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
             <!-- Controls Row -->
             <div class="mp-sec__controls">

@@ -15,10 +15,15 @@
   flex-shrink: 0;
 }
 
+.rv2-main {
+  padding: 0;
+  gap: 0;
+}
 
 .rv2-container {
   max-width: var(--page-max-width, 1200px);
   width: 100%;
+  padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
 }
 
 

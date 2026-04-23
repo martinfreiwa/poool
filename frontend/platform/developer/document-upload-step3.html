@@ -1,4 +1,4 @@
-{% with title="Developer Document Upload", meta_description="Upload property documents for listing on POOOL.", extra_css=['leaderboard', 'developer-document-upload-step3', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-document-upload', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Developer Document Upload", meta_description="Upload property documents for listing on POOOL.", extra_css=['leaderboard', 'developer-document-upload-step3', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom', 'developer-leaderboard-navbar'], extra_js=['profile-dropdown', 'mobile-navigation', 'developer-document-upload', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="developer-document-upload-step3-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -9,25 +9,9 @@
     </div>
     <!-- Main Content Area -->
     <main id="developer-document-upload-step3-main" class="ds-main cart-page-main">
-      <!-- Page Header -->
-      <header class="lb-topbar cart-page-header">
-        <div class="lb-topbar-inner">
-          <div class="lb-topbar-left">
-            <span class="lb-topbar-title">Document Upload</span>
-          </div>
-          <div class="lb-topbar-right">
-            <div class="checkout-steps">
-              <a href="/developer/add-asset" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Asset Type</a>
-              <span class="checkout-steps__divider">→</span>
-              <a href="/developer/application-form" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Property Info</a>
-              <span class="checkout-steps__divider">→</span>
-              <span class="checkout-steps__step checkout-steps__step--active">Documents</span>
-              <span class="checkout-steps__divider">→</span>
-              <span class="checkout-steps__step">Review</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      {% with dev_nav_title="Document Upload", dev_nav_flow_step="documents" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
       <!-- Document Section 1: Proof of Title -->
       <div id="documents-section-1" class="document-section">
         <h2 class="document-section-title">1. Proof of title</h2>
@@ -90,7 +74,7 @@
             <div class="file-content">
               <!-- File Icon -->
               <div class="file-type-icon">
-                <img  src="/static/images/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
+                <img  src="/static/images/icons/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
               </div>
               <!-- File Info -->
               <div class="file-info">
@@ -170,7 +154,7 @@
             <div class="file-content">
               <!-- File Icon -->
               <div class="file-type-icon">
-                <img  src="/static/images/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
+                <img  src="/static/images/icons/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
               </div>
               <!-- File Info -->
               <div class="file-info">
@@ -246,7 +230,7 @@
             <div class="file-content">
               <!-- File Icon -->
               <div class="file-type-icon">
-                <img  src="/static/images/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
+                <img  src="/static/images/icons/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
               </div>
               <!-- File Info -->
               <div class="file-info">
@@ -321,7 +305,7 @@
             <div class="file-content">
               <!-- File Icon -->
               <div class="file-type-icon">
-                <img  src="/static/images/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
+                <img  src="/static/images/icons/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
               </div>
               <!-- File Info -->
               <div class="file-info">
@@ -401,7 +385,7 @@
             <div class="file-content">
               <!-- File Icon -->
               <div class="file-type-icon">
-                <img  src="/static/images/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
+                <img  src="/static/images/icons/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
               </div>
               <!-- File Info -->
               <div class="file-info">
@@ -478,7 +462,7 @@
             <div class="file-content">
               <!-- File Icon -->
               <div class="file-type-icon">
-                <img  src="/static/images/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
+                <img  src="/static/images/icons/File%20type%20icon%20(1).svg" alt="File" width="40" height="40" />
               </div>
               <!-- File Info -->
               <div class="file-info">

@@ -11,6 +11,8 @@ preferences, and security options.", extra_css=['leaderboard', 'settings'], extr
 			{% include 'components/sidebar.html' %}
 		</div><!-- Main Content Area -->
 		<main id="settings-main" class="ds-main marketplace-main" style="background:#F9FAFB;">
+			{% with investor_topbar_title="Settings", investor_topbar_class="settings-topbar", investor_topbar_variant="settings" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+
 			<!-- Empty state container for when API fails -->
 			<div id="settings-empty-state" class="hidden min-h-screen flex items-center justify-center">
 				<div class="text-center">
@@ -36,25 +38,6 @@ preferences, and security options.", extra_css=['leaderboard', 'settings'], extr
 			<!-- Main Content loaded state -->
 			<div id="settings-content" class="hidden w-full">
 				<!-- Settings Page Content -->
-				<header class="lb-topbar settings-topbar">
-					<div class="lb-topbar-inner">
-						<div class="lb-topbar-left">
-							<span class="lb-topbar-title">Settings</span>
-						</div>
-						<div class="lb-topbar-right">
-						<div class="settings-topbar__search">
-							<svg  class="settings-topbar__search-icon" width="16" height="16" viewBox="0 0 16 16"
-								fill="none">
-								<circle cx="7.5" cy="7.5" r="5" stroke="#717680" stroke-width="1.33" />
-								<path d="M10.5 10.5L13.5 13.5" stroke="#717680" stroke-width="1.33"
-									stroke-linecap="round" />
-							</svg>
-							<span class="settings-topbar__search-text">Search</span>
-							<span class="settings-topbar__search-kbd">⌘K</span>
-						</div>
-					</div>
-					</div>
-				</header>
 
 				<!-- Tabs -->
 				<div class="settings-tabs-wrapper">

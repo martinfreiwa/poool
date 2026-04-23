@@ -38,41 +38,132 @@
 
   <a href="#main-content" class="skip-link">Skip to content</a>
 
-  <!-- ═══ STICKY NAV ═══ -->
-  <div style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:6px;font-size:12px;font-weight:600;letter-spacing:0.05em;">
-    <a href="/en/" hreflang="en" style="color:#111;text-decoration:none;opacity:0.5;">EN</a>
-    <span style="color:#ccc;">|</span>
-    <a href="/id/" hreflang="id" style="color:#111;text-decoration:none;opacity:0.5;">ID</a>
+  <!-- ═══ ANNOUNCEMENT BAR (sticky, always visible) ═══ -->
+  <div class="lp-announce-bar">
+    <span>Own shares in Asia's next fintech unicorn&nbsp;<strong>POOOL</strong></span>
   </div>
+
+  <!-- ═══ STICKY NAV (white bg) ═══ -->
   <header class="lp-header" id="lp-header">
     <div class="container header-inner">
       <div class="header-top-row">
         <a href="/" class="header-logo" id="nav-logo">
-          <img src="/static/images/logo-pool.svg" alt="POOOL" width="100" height="32">
+          <img src="/static/images/icons/logo-pool.svg" alt="POOOL" width="100" height="32">
         </a>
-        
+
         <nav class="header-nav" aria-label="Main navigation">
-          <a href="#marketplace" class="nav-link">Marketplace</a>
+          <a href="#why-us" class="nav-link">Why us</a>
           <a href="#how" class="nav-link">How it works</a>
+          <a href="#marketplace" class="nav-link">Market</a>
           <a href="#faq" class="nav-link">FAQ</a>
         </nav>
 
         <div class="header-actions">
-          <a href="/login" class="header-action-link">Log in</a>
-          <a href="/signup" class="btn-primary btn-sm btn-nav">Sign up</a>
+          <div class="lang-switch" aria-label="Language">
+            <a href="/id/" hreflang="id" class="lang-opt">ID</a>
+            <span class="lang-sep">|</span>
+            <a href="/en/" hreflang="en" aria-current="page" class="lang-opt lang-opt--active">EN</a>
+          </div>
+          <a href="/auth/login" class="btn-signin">Sign in</a>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Keep nav in its default state on scroll (no search-pill transformation) -->
   <style>
+    /* ── Announcement bar — sticky, always on top, blue ── */
+    .lp-announce-bar {
+      position: sticky;
+      top: 0;
+      z-index: 101;
+      background: #0000FF;
+      color: #fff;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 9px 16px;
+      letter-spacing: 0.01em;
+    }
+    .lp-announce-bar strong { font-weight: 800; }
+
+    /* ── White nav below announcement bar ── */
+    .lp-header {
+      background: #fff !important;
+      border-bottom: 1px solid #E9EAEB !important;
+      box-shadow: none !important;
+      position: sticky !important;
+      top: 38px !important;
+      z-index: 100 !important;
+    }
+    .lp-header.scrolled { box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important; }
+
+    /* ── Nav links — plain text, uppercase ── */
+    .lp-header .header-nav .nav-link {
+      color: #181D27 !important;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 6px 4px;
+      transition: color 0.15s ease;
+    }
+    .lp-header .header-nav .nav-link:hover { color: #0000FF !important; }
+
+    /* ── Language switch ── */
+    .lp-header .lang-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    .lp-header .lang-opt { color: rgba(0,0,0,0.35); text-decoration: none; transition: color 0.15s; }
+    .lp-header .lang-opt:hover { color: #0000FF; }
+    .lp-header .lang-opt--active { color: #0000FF; }
+    .lp-header .lang-sep { color: rgba(0,0,0,0.2); }
+
+    /* ── Sign in button ── */
+    .btn-signin {
+      display: inline-flex;
+      align-items: center;
+      background: #03FF88;
+      color: #001D3D !important;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 24px;
+      border-radius: 100px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    .btn-signin:hover { opacity: 0.85; transform: translateY(-1px); }
+
+    /* ── Suppress legacy overrides ── */
     .lp-header.scrolled .header-search-pill,
     .lp-header .header-search-pill,
     #nav-search-pill { display: none !important; }
     .lp-header.scrolled .header-nav,
     .lp-header.scrolled .header-actions,
     .lp-header.scrolled .header-logo { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; transform: none !important; }
+    @media (min-width: 768px) {
+      .lp-header.scrolled .header-nav {
+        display: flex !important;
+        transform: translateX(-50%) !important;
+      }
+      .lp-header.scrolled .header-actions,
+      .lp-header.scrolled .header-logo {
+        display: flex !important;
+      }
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 767px) {
+      .lp-announce-bar { font-size: 11px; padding: 8px 12px; }
+      .lp-header { top: 35px !important; }
+      .lp-header .header-nav { display: none; }
+      .lp-header .lang-switch { display: none; }
+    }
   </style>
 
   <main id="main-content">
@@ -89,13 +180,49 @@
       .how-steps-v2 { margin-bottom: 40px; }
     }
 
-    /* ── Disable property card hover animation (user request) ── */
-    .lp-grid.card-v19 .property-card { transition: none !important; }
-    .lp-grid.card-v19 .property-card:hover { transform: none !important; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important; }
+    /* Kill the base image zoom — grey container bg shows through the scaled image */
+    .property-card:hover .property-image { transform: none !important; }
+
+    /* ── Property card hover: elegant lift with ground shadow ── */
+    .lp-grid.card-v19 .property-card,
+    .property-card {
+      transition: transform 0.55s cubic-bezier(0.23, 1, 0.32, 1) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+      will-change: transform;
+    }
+    .lp-grid.card-v19 .property-card:hover,
+    .property-card:hover {
+      transform: translateY(-16px) scale(1.012) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+    }
     .lp-grid.card-v19 .property-image { transition: none !important; }
     .lp-grid.card-v19 .property-card:hover .property-image.active { transform: none !important; }
-    .property-card { transition: none !important; }
-    .property-card:hover { transform: none !important; }
+
+    /* Ground shadow via ::after — isolation:isolate keeps z-index:-1 above page bg */
+    .property-card-link {
+      position: relative;
+      isolation: isolate;
+    }
+    .property-card-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 10%;
+      width: 80%;
+      height: 50px;
+      background: rgba(0, 0, 0, 0.22);
+      border-radius: 50%;
+      filter: blur(22px);
+      z-index: -1;
+      opacity: 0;
+      transform: scaleX(0.85) scaleY(0.6) translateY(-8px);
+      transition: opacity 0.55s cubic-bezier(0.23, 1, 0.32, 1),
+                  transform 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    .property-card-link:hover::after {
+      opacity: 1;
+      transform: scaleX(0.85) scaleY(0.6) translateY(18px);
+    }
 
     /* ── FAQ (live-site style: clean hairline list) ── */
     .faq-v2 { padding: 100px 0 140px; background: #ffffff; }
@@ -160,12 +287,28 @@
     .testi-v2-author-info { display: flex; flex-direction: column; }
     .testi-v2-name { color: #181D27; font-weight: 700; font-size: 0.9375rem; }
     .testi-v2-role { color: #667085; font-weight: 500; font-size: 0.8125rem; }
+    .testi-v2-cta { max-width: 1240px; margin: 56px auto 0; padding: 0 24px; display: flex; flex-direction: column; align-items: center; gap: 14px; position: relative; z-index: 1; }
+    .testi-v2-cta-btn { display: inline-flex; align-items: center; gap: 8px; background: #0000FF; color: #98FB96; padding: 16px 32px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 1rem; letter-spacing: 0.01em; border: 1.5px solid #0000FF; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .testi-v2-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0, 0, 255, 0.2); }
+    .testi-v2-cta-btn svg { color: #98FB96; }
+    .testi-v2-cta-micro { color: #667085; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .testi-v2-cta-micro .dot { width: 4px; height: 4px; border-radius: 50%; background: #03FF88; display: inline-block; }
+    .testi-v2-cta-micro svg { color: #03FF88; flex-shrink: 0; }
 
-    /* ── Why Us polish (section 3) ── */
-    .why-us-section { padding: 120px 0 !important; background: #F6F7FB !important; }
-    .why-us-grid { align-items: start !important; gap: 40px !important; }
-    @media (min-width: 1024px) { .why-us-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) !important; gap: 48px !important; } }
-    .why-us-content { padding-left: 0 !important; max-width: 760px; }
+    /* ── Why Us polish (section 3) — single centered column after fan cards removed ── */
+    .why-us-section { padding: 120px 0 !important; background: #ffffff !important; }
+    .why-us-grid { display: block !important; align-items: start !important; gap: 0 !important; }
+    @media (min-width: 1024px) { .why-us-grid { grid-template-columns: 1fr !important; gap: 0 !important; } }
+    .why-us-content { padding-left: 0 !important; max-width: 900px; margin: 0 auto; text-align: center; }
+    .why-us-content .why-us-desc-v2 p { max-width: 720px; margin-left: auto; margin-right: auto; }
+    .why-us-content .why-us-eyebrow { margin: 0 auto 20px; }
+    .why-us-stats { max-width: 820px; margin-left: auto; margin-right: auto; }
+    .why-us-stat { text-align: center; align-items: center; }
+    .why-us-checklist { display: grid !important; grid-template-columns: 1fr !important; gap: 16px !important; text-align: left; max-width: 820px; margin: 32px auto 36px !important; }
+    @media (min-width: 720px) { .why-us-checklist { grid-template-columns: repeat(3, 1fr) !important; gap: 20px !important; } }
+    .why-us-checklist li { flex-direction: column; align-items: flex-start; gap: 12px; padding: 24px; border: 1px solid #E9EAEB; border-radius: 18px; background: #ffffff; }
+    .why-us-checklist li:hover { box-shadow: 0 10px 28px rgba(0,0,120,0.06); }
+    .wu-check { margin-top: 0 !important; }
     .why-us-eyebrow { display: inline-block; color: #0000FF; background: rgba(0,0,255,0.08); border: 1px solid rgba(0,0,255,0.14); font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 14px; border-radius: 100px; margin-bottom: 20px; }
     .why-us-title-v2 { font-size: clamp(2.5rem, 5vw, 3.5rem) !important; font-weight: 800; text-transform: uppercase; letter-spacing: -0.04em; color: #181D27; line-height: 1.02; margin: 0 0 24px 0; }
     .why-us-title-v2 .period { color: #0000FF; }
@@ -181,10 +324,32 @@
     .wu-feat-title-v2 { font-size: 1rem; font-weight: 800; color: #181D27; letter-spacing: -0.01em; margin: 0; }
     .wu-feat-desc-v2 { color: #4b5563; font-size: 0.9375rem; line-height: 1.5; margin: 0; }
 
-    /* ── Why Us trust pills row ── */
-    .why-us-trust-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
-    .why-us-trust-pill { display: inline-flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #E9EAEB; border-radius: 100px; padding: 8px 14px; color: #181D27; font-size: 0.8125rem; font-weight: 600; }
-    .why-us-trust-pill svg { color: #03FF88; flex-shrink: 0; }
+    /* ── Why Us stat strip ── */
+    .why-us-stats { display: grid; grid-template-columns: repeat(2, 1fr); margin: 32px 0 8px; background: #ffffff; border: 1px solid #E9EAEB; border-radius: 18px; overflow: hidden; }
+    @media (min-width: 680px) { .why-us-stats { grid-template-columns: repeat(4, 1fr); } }
+    .why-us-stat { padding: 22px 20px; display: flex; flex-direction: column; gap: 6px; border-right: 1px solid #E9EAEB; border-bottom: 1px solid #E9EAEB; }
+    .why-us-stat:nth-child(2n) { border-right: none; }
+    .why-us-stat:nth-child(n+3) { border-bottom: none; }
+    @media (min-width: 680px) {
+      .why-us-stat { border-bottom: none !important; }
+      .why-us-stat:nth-child(2n) { border-right: 1px solid #E9EAEB; }
+      .why-us-stat:last-child { border-right: none; }
+    }
+    .why-us-stat-num { font-size: clamp(1.625rem, 3vw, 2.125rem); font-weight: 800; color: #0000FF; letter-spacing: -0.03em; line-height: 1; }
+    .why-us-stat-num .accent-g { color: #03FF88; }
+    .why-us-stat-label { font-size: 0.75rem; color: #667085; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── Why Us checklist ── */
+    .why-us-checklist { list-style: none; padding: 0; margin: 28px 0 32px; display: flex; flex-direction: column; gap: 16px; }
+    .why-us-checklist li { display: flex; align-items: flex-start; gap: 14px; color: #344054; font-size: 1rem; line-height: 1.5; }
+    .why-us-checklist strong { color: #181D27; font-weight: 700; }
+    .wu-check { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #0000FF; display: inline-flex; align-items: center; justify-content: center; margin-top: 2px; }
+    .wu-check svg { color: #98FB96; }
+
+    /* ── Why Us CTA ── */
+    .why-us-cta-btn { display: inline-flex; align-items: center; gap: 8px; background: #0000FF; color: #98FB96; padding: 14px 28px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 0.9375rem; border: 1.5px solid #0000FF; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .why-us-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,255,0.2); }
+    .why-us-cta-btn svg { color: #98FB96; }
     .why-us-fan { align-items: stretch !important; }
     .fan-wrapper { position: relative; width: 100%; max-width: 430px; min-height: 0; height: auto; margin: 0 auto 20px; display: grid; gap: 18px; }
     .fan-card { position: relative; width: 100%; max-width: none; transform: none !important; opacity: 1 !important; left: auto !important; right: auto !important; }
@@ -214,12 +379,20 @@
   <section class="hero-section" id="hero" style="min-height: calc(100vh - 80px); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
     <div class="hero-grain" style="position: absolute; inset: 0; pointer-events: none; z-index: 1;"></div>
 
-    <!-- Background video — slowly zooms, stays behind text -->
-    <div style="position: absolute; top: 0; right: 0; width: 60%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 0; pointer-events: none;">
-      <video autoplay loop muted playsinline style="width: 100%; max-width: 900px; opacity: 1; animation: heroVideoZoom 20s ease-out forwards;">
+    <!-- Background video — slowly zooms, stays behind text. Hidden <1100px to avoid bleed behind headline. -->
+    <div class="hero-video-wrap" style="position: absolute; top: 0; right: 0; width: 60%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 0; pointer-events: none;">
+      <video autoplay loop muted playsinline class="hero-video-bg" aria-hidden="true" style="width: 100%; max-width: 900px; opacity: 1; animation: heroVideoZoom 20s ease-out forwards;">
         <source src="/static/webm/webm_villa_no-bg.webm" type="video/webm">
       </video>
     </div>
+    <style>
+      @media (max-width: 1100px) { .hero-video-wrap { display: none !important; } }
+      @media (prefers-reduced-motion: reduce) {
+        .hero-video-bg { animation: none !important; }
+        .myCtaSwiper, .myCtaSwiper .swiper-slide { transition: none !important; }
+        .anim-in, .anim-delay-2 { animation: none !important; opacity: 1 !important; transform: none !important; }
+      }
+    </style>
 
     <div class="container" style="position: relative; z-index: 2; width: 100%;">
       
@@ -230,30 +403,21 @@
           <span style="color: #0000FF; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;">Own a share. Get paid. Repeat.</span>
         </div>
 
-        <h1 class="hero-title-massive" style="text-align: left; margin: 0 0 24px 0; line-height: 1.1;">
-          JOIN <br class="mobile-only">
-          <span class="inline-blue">
-            W
-            <span class="hero-flags">
-              <img src="/static/svg/world-map/usa.svg" alt="USA">
-              <img src="/static/png/flag-estonia-circle.webp" alt="Estonia">
-              <img src="/static/svg/world-map/japan.svg" alt="Japan">
-            </span>
-            RLDWIDE
-          </span>
-          <br> INVESTORS COMMUNITY
+        <h1 class="hero-title-massive" style="text-align: left; margin: 0 0 24px 0; line-height: 1.05;">
+          Own Bali real estate.<br>
+          <span class="inline-blue">From $15 per share.</span>
         </h1>
 
         <!-- Investor count trust line -->
         <div style="display: inline-flex; align-items: center; gap: 10px; margin-bottom: 24px;">
-          <span style="color: #667085; font-size: 0.875rem; font-weight: 500;">850+ investors in 40+ countries</span>
+          <span style="color: #667085; font-size: 0.875rem; font-weight: 500;">Join 850+ investors across 40+ countries</span>
         </div>
 
-        <p class="hero-sub" style="text-align: left; max-width: 540px; font-size: 1.125rem; color: #344054; margin-bottom: 32px;">Own fractions of notarised Bali real estate and sovereign-backed commodities from <strong style="color: #181D27;">$15 per share</strong>. Earn monthly yields — exit anytime on our marketplace.</p>
+        <p class="hero-sub" style="text-align: left; max-width: 540px; font-size: 1.125rem; color: #344054; margin-bottom: 32px;">Buy fractions of notarised villas and sovereign-backed commodities. Earn monthly rental yield — sell on our peer-to-peer marketplace anytime.</p>
 
         <div class="hero-btns-v2" style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-          <a href="#marketplace" class="btn-primary btn-glow" style="display: inline-flex; align-items: center; gap: 8px; background-color: #0000FF !important; color: #98FB96 !important; border: 1.5px solid #0000FF !important;">Browse Properties <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-          <a href="/signup" style="display: inline-flex; align-items: center; justify-content: center; padding: 14px 28px; background: transparent; color: #0000FF; border: 1.5px solid #0000FF; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(0,0,255,0.06)'" onmouseout="this.style.background='transparent'">Sign Up Free</a>
+          <a href="/signup" class="btn-primary btn-glow" style="display: inline-flex; align-items: center; gap: 8px; background-color: #0000FF !important; color: #98FB96 !important; border: 1.5px solid #0000FF !important;">Start Investing <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          <a href="#marketplace" style="display: inline-flex; align-items: center; justify-content: center; padding: 14px 28px; background: transparent; color: #0000FF; border: 1.5px solid #0000FF; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 15px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(0,0,255,0.06)'" onmouseout="this.style.background='transparent'">Browse Properties</a>
           <span style="color: #667085; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Takes 2 minutes · No obligation</span>
         </div>
       </div>
@@ -274,7 +438,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#03FF88"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
           </div>
           <span style="color: #181D27; font-size: 0.875rem; font-weight: 600;">4.8 / 5</span>
-          <span style="color: #667085; font-size: 0.875rem;">from 320+ investors</span>
+          <span style="color: #667085; font-size: 0.875rem;">from 320+ reviews</span>
         </div>
         <div style="display: inline-flex; align-items: center; gap: 8px; color: #344054; font-size: 0.875rem; font-weight: 500;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -312,10 +476,10 @@
         <div class="property-card">
           <div class="property-gallery">
             <div class="property-image-container">
-              <img src="/static/images/villa1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Sunset Luxury Villa exterior with infinity pool in Canggu, Bali" width="344" height="248">
-              <img src="/static/images/villa1_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa living room" width="344" height="248">
-              <img src="/static/images/villa1_3.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa master bedroom" width="344" height="248">
-              <img src="/static/images/villa1_4.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa terrace at sunset" width="344" height="248">
+              <img src="/static/images/seed/villa1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Sunset Luxury Villa exterior with infinity pool in Canggu, Bali" width="344" height="248">
+              <img src="/static/images/seed/villa1_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa living room" width="344" height="248">
+              <img src="/static/images/seed/villa1_3.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa master bedroom" width="344" height="248">
+              <img src="/static/images/seed/villa1_4.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa terrace at sunset" width="344" height="248">
               <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
               <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
               <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div><div class="property-dot"></div></div>
@@ -324,11 +488,11 @@
           </div>
           <div class="property-content">
             <div class="card-meta-row">
-              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
+              <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
               <div class="card-meta-divider"></div>
               <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>4 Bath</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Sunset Luxury Villa</h3></div>
             <div class="property-pricing">
@@ -336,8 +500,8 @@
               <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:68%"></div></div>
             </div>
             <div class="investment-details">
-              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">6.0%</span></div>
-              <div class="investment-row"><span class="investment-label">Projected annualised net return<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">12.4%</span></div>
+              <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">6.0%</span></div>
+              <div class="investment-row"><span class="investment-label">Total return, net (p.a.)<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">12.4%</span></div>
               <div class="investment-row"><span class="investment-label">Exit</span><span class="investment-value">Marketplace anytime</span></div>
             </div>
           </div>
@@ -349,9 +513,9 @@
         <div class="property-card">
           <div class="property-gallery">
             <div class="property-image-container">
-              <img src="/static/images/villa4_1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Ocean Breeze Penthouse in Seminyak" width="344" height="248">
-              <img src="/static/images/villa4_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Penthouse rooftop" width="344" height="248">
-              <img src="/static/images/villa2_1.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Penthouse interior" width="344" height="248">
+              <img src="/static/images/seed/villa4_1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Ocean Breeze Penthouse in Seminyak" width="344" height="248">
+              <img src="/static/images/seed/villa4_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Penthouse rooftop" width="344" height="248">
+              <img src="/static/images/seed/villa2_1.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Penthouse interior" width="344" height="248">
               <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
               <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
               <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div></div>
@@ -360,11 +524,11 @@
           </div>
           <div class="property-content">
             <div class="card-meta-row">
-              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>2</span></div>
+              <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>2</span></div>
               <div class="card-meta-divider"></div>
               <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>2 Bath</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Seminyak, ID</span></div>
+              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Seminyak, ID</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Ocean Breeze Penthouse</h3></div>
             <div class="property-pricing">
@@ -372,8 +536,8 @@
               <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:91%"></div></div>
             </div>
             <div class="investment-details">
-              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">3.8%</span></div>
-              <div class="investment-row"><span class="investment-label">Projected annualised net return<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">11.2%</span></div>
+              <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">3.8%</span></div>
+              <div class="investment-row"><span class="investment-label">Total return, net (p.a.)<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">11.2%</span></div>
               <div class="investment-row"><span class="investment-label">Exit</span><span class="investment-value">Marketplace anytime</span></div>
             </div>
           </div>
@@ -385,9 +549,9 @@
         <div class="property-card">
           <div class="property-gallery">
             <div class="property-image-container">
-              <img src="/static/images/villa3_2.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Echo Beach Loft in Canggu" width="344" height="248">
-              <img src="/static/images/villa3_1.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Loft living space" width="344" height="248">
-              <img src="/static/images/villa2_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Loft bedroom" width="344" height="248">
+              <img src="/static/images/seed/villa3_2.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Echo Beach Loft in Canggu" width="344" height="248">
+              <img src="/static/images/seed/villa3_1.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Loft living space" width="344" height="248">
+              <img src="/static/images/seed/villa2_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Loft bedroom" width="344" height="248">
               <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
               <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
               <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div></div>
@@ -396,11 +560,11 @@
           </div>
           <div class="property-content">
             <div class="card-meta-row">
-              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>2</span></div>
+              <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>2</span></div>
               <div class="card-meta-divider"></div>
               <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>2 Bath</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Echo Beach Loft</h3></div>
             <div class="property-pricing">
@@ -408,8 +572,8 @@
               <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:8%"></div></div>
             </div>
             <div class="investment-details">
-              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">8.0%</span></div>
-              <div class="investment-row"><span class="investment-label">Projected annualised net return<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">16.2%</span></div>
+              <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">8.0%</span></div>
+              <div class="investment-row"><span class="investment-label">Total return, net (p.a.)<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">16.2%</span></div>
               <div class="investment-row"><span class="investment-label">Exit</span><span class="investment-value">Marketplace anytime</span></div>
             </div>
           </div>
@@ -421,9 +585,9 @@
         <div class="property-card">
           <div class="property-gallery">
             <div class="property-image-container">
-              <img src="/static/images/villa5.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Rice Terrace Retreat villa in Ubud" width="344" height="248">
-              <img src="/static/images/villa6.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Retreat pool area" width="344" height="248">
-              <img src="/static/images/villa8.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Retreat garden view" width="344" height="248">
+              <img src="/static/images/seed/villa5.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Rice Terrace Retreat villa in Ubud" width="344" height="248">
+              <img src="/static/images/seed/villa6.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Retreat pool area" width="344" height="248">
+              <img src="/static/images/seed/villa8.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Retreat garden view" width="344" height="248">
               <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
               <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
               <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div></div>
@@ -432,11 +596,11 @@
           </div>
           <div class="property-content">
             <div class="card-meta-row">
-              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>3</span></div>
+              <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>3</span></div>
               <div class="card-meta-divider"></div>
               <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>3 Bath</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Ubud, ID</span></div>
+              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Ubud, ID</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Rice Terrace Retreat</h3></div>
             <div class="property-pricing">
@@ -444,8 +608,8 @@
               <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:45%"></div></div>
             </div>
             <div class="investment-details">
-              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">7.2%</span></div>
-              <div class="investment-row"><span class="investment-label">Projected annualised net return<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">14.8%</span></div>
+              <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">7.2%</span></div>
+              <div class="investment-row"><span class="investment-label">Total return, net (p.a.)<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">14.8%</span></div>
               <div class="investment-row"><span class="investment-label">Exit</span><span class="investment-value">Marketplace anytime</span></div>
             </div>
           </div>
@@ -457,9 +621,9 @@
         <div class="property-card">
           <div class="property-gallery">
             <div class="property-image-container">
-              <img src="/static/images/villa6.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Tropical Garden Villa in Ubud" width="344" height="248">
-              <img src="/static/images/villa5.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa garden" width="344" height="248">
-              <img src="/static/images/villa8.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa pool" width="344" height="248">
+              <img src="/static/images/seed/villa6.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Tropical Garden Villa in Ubud" width="344" height="248">
+              <img src="/static/images/seed/villa5.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa garden" width="344" height="248">
+              <img src="/static/images/seed/villa8.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa pool" width="344" height="248">
               <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
               <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
               <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div></div>
@@ -468,11 +632,11 @@
           </div>
           <div class="property-content">
             <div class="card-meta-row">
-              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>3</span></div>
+              <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>3</span></div>
               <div class="card-meta-divider"></div>
               <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>3 Bath</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Ubud, ID</span></div>
+              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Ubud, ID</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Tropical Garden Villa</h3></div>
             <div class="property-pricing">
@@ -480,8 +644,8 @@
               <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:68%"></div></div>
             </div>
             <div class="investment-details">
-              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">7.0%</span></div>
-              <div class="investment-row"><span class="investment-label">Projected annualised net return<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">14.0%</span></div>
+              <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">7.0%</span></div>
+              <div class="investment-row"><span class="investment-label">Total return, net (p.a.)<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">14.0%</span></div>
               <div class="investment-row"><span class="investment-label">Exit</span><span class="investment-value">Marketplace anytime</span></div>
             </div>
           </div>
@@ -493,9 +657,9 @@
         <div class="property-card">
           <div class="property-gallery">
             <div class="property-image-container">
-              <img src="/static/images/villa1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Cliffside Sunset Estate in Uluwatu" width="344" height="248">
-              <img src="/static/images/villa4_1.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Estate clifftop view" width="344" height="248">
-              <img src="/static/images/villa4_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Estate terrace" width="344" height="248">
+              <img src="/static/images/seed/villa1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Cliffside Sunset Estate in Uluwatu" width="344" height="248">
+              <img src="/static/images/seed/villa4_1.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Estate clifftop view" width="344" height="248">
+              <img src="/static/images/seed/villa4_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Estate terrace" width="344" height="248">
               <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
               <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
               <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div></div>
@@ -504,11 +668,11 @@
           </div>
           <div class="property-content">
             <div class="card-meta-row">
-              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>5</span></div>
+              <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>5</span></div>
               <div class="card-meta-divider"></div>
               <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>5 Bath</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Uluwatu, ID</span></div>
+              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Uluwatu, ID</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Cliffside Sunset Estate</h3></div>
             <div class="property-pricing">
@@ -516,8 +680,8 @@
               <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:42%"></div></div>
             </div>
             <div class="investment-details">
-              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">5.6%</span></div>
-              <div class="investment-row"><span class="investment-label">Projected annualised net return<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">13.8%</span></div>
+              <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">5.6%</span></div>
+              <div class="investment-row"><span class="investment-label">Total return, net (p.a.)<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">13.8%</span></div>
               <div class="investment-row"><span class="investment-label">Exit</span><span class="investment-value">Marketplace anytime</span></div>
             </div>
           </div>
@@ -529,9 +693,9 @@
         <div class="property-card property-card--funded">
           <div class="property-gallery">
             <div class="property-image-container">
-              <img src="/static/images/villa2_1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Beachfront Bungalow in Sanur" width="344" height="248">
-              <img src="/static/images/villa2_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Bungalow beach access" width="344" height="248">
-              <img src="/static/images/villa3_1.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Bungalow terrace" width="344" height="248">
+              <img src="/static/images/seed/villa2_1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Beachfront Bungalow in Sanur" width="344" height="248">
+              <img src="/static/images/seed/villa2_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Bungalow beach access" width="344" height="248">
+              <img src="/static/images/seed/villa3_1.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Bungalow terrace" width="344" height="248">
               <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
               <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
               <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div></div>
@@ -540,11 +704,11 @@
           </div>
           <div class="property-content">
             <div class="card-meta-row">
-              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>1</span></div>
+              <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>1</span></div>
               <div class="card-meta-divider"></div>
               <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>1 Bath</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Sanur, ID</span></div>
+              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Sanur, ID</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Beachfront Bungalow</h3></div>
             <div class="property-pricing">
@@ -552,8 +716,8 @@
               <div class="property-progress ds-progress"><div class="ds-progress__fill ds-progress__fill--complete" style="width:100%"></div></div>
             </div>
             <div class="investment-details">
-              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">6.8%</span></div>
-              <div class="investment-row"><span class="investment-label">Projected annualised net return<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">10.8%</span></div>
+              <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">6.8%</span></div>
+              <div class="investment-row"><span class="investment-label">Total return, net (p.a.)<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">10.8%</span></div>
               <div class="investment-row"><span class="investment-label">Status</span><span class="investment-value">Income active</span></div>
             </div>
           </div>
@@ -565,9 +729,9 @@
         <div class="property-card property-card--funded">
           <div class="property-gallery">
             <div class="property-image-container">
-              <img src="/static/images/villa3_1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Modern Jungle Retreat in Canggu" width="344" height="248">
-              <img src="/static/images/villa3_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Retreat courtyard" width="344" height="248">
-              <img src="/static/images/villa1_3.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Retreat interior" width="344" height="248">
+              <img src="/static/images/seed/villa3_1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Modern Jungle Retreat in Canggu" width="344" height="248">
+              <img src="/static/images/seed/villa3_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Retreat courtyard" width="344" height="248">
+              <img src="/static/images/seed/villa1_3.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Retreat interior" width="344" height="248">
               <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
               <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
               <div class="property-dots"><div class="property-dot active"></div><div class="property-dot"></div><div class="property-dot"></div></div>
@@ -576,11 +740,11 @@
           </div>
           <div class="property-content">
             <div class="card-meta-row">
-              <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
+              <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
               <div class="card-meta-divider"></div>
               <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>4 Bath</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Modern Jungle Retreat</h3></div>
             <div class="property-pricing">
@@ -588,8 +752,8 @@
               <div class="property-progress ds-progress"><div class="ds-progress__fill ds-progress__fill--complete" style="width:100%"></div></div>
             </div>
             <div class="investment-details">
-              <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">7.2%</span></div>
-              <div class="investment-row"><span class="investment-label">Projected annualised net return<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">13.1%</span></div>
+              <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">7.2%</span></div>
+              <div class="investment-row"><span class="investment-label">Total return, net (p.a.)<sup style="color: #667085; font-size: 0.7em; margin-left: 2px;">1</sup></span><span class="investment-value">13.1%</span></div>
               <div class="investment-row"><span class="investment-label">Status</span><span class="investment-value">Income active</span></div>
             </div>
           </div>
@@ -678,10 +842,10 @@
                   <div class="property-card">
                     <div class="property-gallery">
                       <div class="property-image-container">
-                        <img src="/static/images/villa1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Sunset Luxury Villa exterior with infinity pool in Canggu, Bali" width="344" height="248">
-                        <img src="/static/images/villa1_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa living room" width="344" height="248">
-                        <img src="/static/images/villa1_3.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa master bedroom" width="344" height="248">
-                        <img src="/static/images/villa1_4.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa terrace at sunset" width="344" height="248">
+                        <img src="/static/images/seed/villa1.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="Sunset Luxury Villa exterior with infinity pool in Canggu, Bali" width="344" height="248">
+                        <img src="/static/images/seed/villa1_2.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa living room" width="344" height="248">
+                        <img src="/static/images/seed/villa1_3.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa master bedroom" width="344" height="248">
+                        <img src="/static/images/seed/villa1_4.webp" loading="lazy" class="property-image" style="object-fit:cover;object-position:center" alt="Villa terrace at sunset" width="344" height="248">
                         <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
                         <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
                         <div class="property-dots"><div class="property-dot active" tabindex="0" role="button"></div><div class="property-dot" tabindex="0" role="button"></div><div class="property-dot" tabindex="0" role="button"></div><div class="property-dot" tabindex="0" role="button"></div></div>
@@ -690,11 +854,11 @@
                     </div>
                     <div class="property-content">
                       <div class="card-meta-row">
-                        <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
+                        <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
                         <div class="card-meta-divider"></div>
                         <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"></path><path d="M7 17v2"></path><path d="M17 17v2"></path><path d="M21 10V6a2 2 0 0 0-2-2"></path></svg><span>4 Bath</span></div>
                         <div class="card-meta-divider"></div>
-                        <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+                        <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
                       </div>
                       <div class="property-heading"><h3 class="property-title">Sunset Luxury Villa</h3></div>
                       <div class="property-pricing">
@@ -703,7 +867,7 @@
                       </div>
                       <div class="investment-details">
                         <div class="investment-row"><span class="investment-label">Investment duration</span><span class="investment-value">—</span></div>
-                        <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">6.0%</span></div>
+                        <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">6.0%</span></div>
                         <div class="investment-row"><span class="investment-label">Projected annualised net return</span><span class="investment-value">12.4%</span></div>
                       </div>
                     </div>
@@ -715,16 +879,16 @@
                   <div class="property-card">
                     <div class="property-gallery">
                       <div class="property-image-container">
-                        <img src="/static/images/villa1_2.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="" width="344" height="248">
+                        <img src="/static/images/seed/villa1_2.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="" width="344" height="248">
                         <div class="property-dots"><div class="property-dot active" tabindex="0" role="button"></div></div>
                       </div>
                       <div class="property-badge ds-badge ds-badge--overlay ds-badge--leasehold"><span class="badge-text">Standard Leasehold</span></div>
                     </div>
                     <div class="property-content">
                       <div class="card-meta-row">
-                        <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
+                        <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
                         <div class="card-meta-divider"></div>
-                        <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+                        <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
                       </div>
                       <div class="property-heading"><h3 class="property-title">Sunset Luxury Villa</h3></div>
                       <div class="property-pricing">
@@ -732,7 +896,7 @@
                         <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:68%"></div></div>
                       </div>
                       <div class="investment-details">
-                        <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">6.0%</span></div>
+                        <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">6.0%</span></div>
                         <div class="investment-row"><span class="investment-label">Projected annualised net return</span><span class="investment-value">12.4%</span></div>
                       </div>
                     </div>
@@ -744,16 +908,16 @@
                   <div class="property-card">
                     <div class="property-gallery">
                       <div class="property-image-container">
-                        <img src="/static/images/villa1_3.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="" width="344" height="248">
+                        <img src="/static/images/seed/villa1_3.webp" loading="lazy" class="property-image active" style="object-fit:cover;object-position:center" alt="" width="344" height="248">
                         <div class="property-dots"><div class="property-dot active" tabindex="0" role="button"></div></div>
                       </div>
                       <div class="property-badge ds-badge ds-badge--overlay ds-badge--leasehold"><span class="badge-text">Standard Leasehold</span></div>
                     </div>
                     <div class="property-content">
                       <div class="card-meta-row">
-                        <div class="card-meta-item"><img src="/static/images/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
+                        <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
                         <div class="card-meta-divider"></div>
-                        <div class="card-meta-item"><img src="/static/images/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+                        <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
                       </div>
                       <div class="property-heading"><h3 class="property-title">Sunset Luxury Villa</h3></div>
                       <div class="property-pricing">
@@ -761,7 +925,7 @@
                         <div class="property-progress ds-progress"><div class="ds-progress__fill" style="width:68%"></div></div>
                       </div>
                       <div class="investment-details">
-                        <div class="investment-row"><span class="investment-label">Projected return</span><span class="investment-value">6.0%</span></div>
+                        <div class="investment-row"><span class="investment-label">Rental yield (p.a.)</span><span class="investment-value">6.0%</span></div>
                       </div>
                     </div>
                   </div>
@@ -884,89 +1048,50 @@
           <span class="why-us-eyebrow">Why POOOL</span>
           <h2 class="why-us-title why-us-title-v2">PICK IT. LOVE IT.<br>OWN IT<span class="period">.</span></h2>
           <div class="why-us-desc why-us-desc-v2">
-            <p>POOOL lets you own fractions of premium Bali real estate and sovereign-backed commodities from just <strong>$15 per share</strong> — powered by notarised ownership contracts that make every investment secure, transparent, and legally binding.</p>
-            <p>From a single villa in Canggu to a growing portfolio across Bali and Indonesia — our community has grown to <strong style="color:#181D27;">850+ investors in 40+ countries</strong>, all earning monthly yield from real-world assets.</p>
+            <p>Most fractional platforms hand you an LLC membership interest on a balance sheet you can't read. <strong style="color:#181D27;">POOOL hands you a notarised ownership certificate</strong> — registered by an Indonesian Public Notary, backed by the actual property title.</p>
+            <p>From a single villa in Canggu to a growing Bali portfolio — <strong style="color:#181D27;">850+ investors across 40+ countries</strong> earn monthly yield on real-world assets.</p>
           </div>
 
-          <!-- Trust pills row -->
-          <div class="why-us-trust-row">
-            <span class="why-us-trust-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Notarised in Indonesia</span>
-            <span class="why-us-trust-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>From $15 per share</span>
-            <span class="why-us-trust-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Exit anytime</span>
+          <!-- Stat strip -->
+          <div class="why-us-stats">
+            <div class="why-us-stat">
+              <span class="why-us-stat-num">$15</span>
+              <span class="why-us-stat-label">Min. share</span>
+            </div>
+            <div class="why-us-stat">
+              <span class="why-us-stat-num">11.7<span class="accent-g">%</span></span>
+              <span class="why-us-stat-label">Avg net yield</span>
+            </div>
+            <div class="why-us-stat">
+              <span class="why-us-stat-num">850<span class="accent-g">+</span></span>
+              <span class="why-us-stat-label">Investors</span>
+            </div>
+            <div class="why-us-stat">
+              <span class="why-us-stat-num">40<span class="accent-g">+</span></span>
+              <span class="why-us-stat-label">Countries</span>
+            </div>
           </div>
 
-          <div class="why-us-features why-us-features-v2">
-            <!-- Feature 1: Notarised ownership -->
-            <div class="wu-feat-card wu-feat-card-v2">
-              <div class="wu-feat-icon blue">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-              </div>
-              <h4 class="wu-feat-title wu-feat-title-v2">Notarised ownership</h4>
-              <p class="wu-feat-desc wu-feat-desc-v2">Every share is backed by a digital ownership certificate notarised by an Indonesian Public Notary. Legally binding. Directly yours.</p>
-            </div>
-            <!-- Feature 2: Monthly payouts -->
-            <div class="wu-feat-card wu-feat-card-v2">
-              <div class="wu-feat-icon green">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#03FF88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M12 14v4"/><circle cx="12" cy="16" r="1.2" fill="#03FF88"/></svg>
-              </div>
-              <h4 class="wu-feat-title wu-feat-title-v2">Monthly payouts</h4>
-              <p class="wu-feat-desc wu-feat-desc-v2">Rental income lands in your POOOL wallet every month — plus long-term capital appreciation when you exit.</p>
-            </div>
-            <!-- Feature 3: Operator-cost pricing -->
-            <div class="wu-feat-card wu-feat-card-v2">
-              <div class="wu-feat-icon blue">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0000FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              </div>
-              <h4 class="wu-feat-title wu-feat-title-v2">Operator-cost pricing</h4>
-              <p class="wu-feat-desc wu-feat-desc-v2">We run property management at cost. No profit-hungry middlemen taking a cut — more of the yield reaches you.</p>
-            </div>
-          </div>
+          <!-- Checklist -->
+          <ul class="why-us-checklist">
+            <li>
+              <span class="wu-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span><strong>Notarised ownership.</strong> Every share is registered by an Indonesian Public Notary and legally binding — not an LLC unit, not a token wrapper.</span>
+            </li>
+            <li>
+              <span class="wu-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span><strong>Monthly yield, paid direct.</strong> Rent lands in your POOOL wallet every month. Management runs at operator-cost — no middleman fee.</span>
+            </li>
+            <li>
+              <span class="wu-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span><strong>Secondary marketplace.</strong> List your shares for peer-to-peer resale, subject to buyer demand — no lock-in, no approval queue.</span>
+            </li>
+          </ul>
+
+          <!-- CTA -->
+          <a href="#marketplace" class="why-us-cta-btn">Browse properties <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
         </div>
 
-        <!-- Right Column (Fan Cards) -->
-        <div class="why-us-fan anim-in anim-delay-1">
-          <div class="fan-wrapper">
-            <!-- Card 1: Left -->
-            <div class="fan-card fan-left">
-              <img src="/static/png/Nomad Palm Residence.webp" alt="Property">
-              <h3>Nomad Palm Residence</h3>
-              <hr>
-              <div class="fan-meta">
-                <div class="fm-row"><span class="fm-label text-blue">$2,660,000</span><span class="fm-val"><b>306</b> Investors</span></div>
-                <div class="fm-row"><span class="fm-label">Average Appreciation</span><span class="fm-val">10%</span></div>
-                <div class="fm-row"><span class="fm-label">Average ROI</span><span class="fm-val">10%</span></div>
-              </div>
-              <button class="fan-btn"><span>1900 Shares Sold at</span> <span>$1,400</span></button>
-            </div>
-
-            <!-- Card 2: Right -->
-            <div class="fan-card fan-right">
-              <img src="/static/png/Azure Echo House.webp" alt="Property">
-              <h3>Azure Echo House</h3>
-              <hr>
-              <div class="fan-meta">
-                <div class="fm-row"><span class="fm-label text-blue">$185,000</span><span class="fm-val"><b>48</b> Investors</span></div>
-                <div class="fm-row"><span class="fm-label">Average Appreciation</span><span class="fm-val">12%</span></div>
-                <div class="fm-row"><span class="fm-label">Average ROI</span><span class="fm-val">12%</span></div>
-              </div>
-              <button class="fan-btn"><span>185 Shares Sold at</span> <span>$1,000</span></button>
-            </div>
-
-            <!-- Card 3: Center -->
-            <div class="fan-card fan-center">
-              <img src="/static/png/Luna Bay Villa.webp" alt="Property">
-              <h3>Luna Bay Villa</h3>
-              <hr>
-              <div class="fan-meta">
-                <div class="fm-row"><span class="fm-label text-blue">$494,000</span><span class="fm-val"><b>119</b> Investors</span></div>
-                <div class="fm-row"><span class="fm-label">Average Appreciation</span><span class="fm-val">12%</span></div>
-                <div class="fm-row"><span class="fm-label">Average ROI</span><span class="fm-val">13%</span></div>
-              </div>
-              <button class="fan-btn"><span>380 Shares Sold at</span> <span>$1,300</span></button>
-            </div>
-          </div>
-          <p class="fan-disclaimer" style="font-size: 0.75rem; color: #667085;">Figures shown are based on completed funding rounds. See full Risk Disclosure in the footer.</p>
-        </div>
       </div>
     </div>
   </section>
@@ -990,13 +1115,13 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="#03FF88"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="#03FF88"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
         </div>
-        <p class="testi-v2-quote">"I used to think Bali real estate was for people with millions. POOOL let me in for a few hundred dollars, and the legal paperwork was airtight — that's what sold me."</p>
-        <span class="testi-v2-metric">$420 earned · month 1 · 3 properties</span>
+        <p class="testi-v2-quote">Thought Bali property was reserved for millionaires. Put in $600 across two villas as a test — the notarised certificate landed in my inbox the next day. First payout hit month one.</p>
+        <span class="testi-v2-metric">+$47 in month 1 · 2 villas</span>
         <div class="testi-v2-author">
-          <div class="testi-v2-avatar" style="background-image: url('/static/png/Khai.webp');"></div>
+          <div class="testi-v2-avatar" style="background-image: url('/png/Khai.webp');"></div>
           <div class="testi-v2-author-info">
-            <span class="testi-v2-name">Sarah Jenkins</span>
-            <span class="testi-v2-role">Real Estate Analyst · London</span>
+            <span class="testi-v2-name">Khai Nguyen</span>
+            <span class="testi-v2-role">Product Manager · Ho Chi Minh City</span>
           </div>
         </div>
       </div>
@@ -1014,7 +1139,7 @@
         <p class="testi-v2-quote">"Dashboard is clean, payouts hit my wallet like clockwork, and I actually understand what I own. That's rare in this space."</p>
         <span class="testi-v2-metric">14 months · 12.1% avg. net yield</span>
         <div class="testi-v2-author">
-          <div class="testi-v2-avatar" style="background-image: url('/static/png/Team.webp');"></div>
+          <div class="testi-v2-avatar" style="background-image: url('/png/Team.webp');"></div>
           <div class="testi-v2-author-info">
             <span class="testi-v2-name">Mark Donovan</span>
             <span class="testi-v2-role">Retail Investor · Singapore</span>
@@ -1035,13 +1160,26 @@
         <p class="testi-v2-quote">"Started small to test the waters. Sold half my Sunset Villa shares on the marketplace in 48 hours when I needed the cash. That sealed it."</p>
         <span class="testi-v2-metric">Exited 50% of position · 48 hours</span>
         <div class="testi-v2-author">
-          <div class="testi-v2-avatar" style="background-image: url('/static/png/monique-howeth-mobile.webp');"></div>
+          <div class="testi-v2-avatar" style="background-image: url('/png/monique-howeth-mobile.webp');"></div>
           <div class="testi-v2-author-info">
             <span class="testi-v2-name">Elena Rostova</span>
             <span class="testi-v2-role">Digital Nomad · Lisbon</span>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- CTA after testimonials -->
+    <div class="testi-v2-cta anim-in">
+      <a href="/signup" class="testi-v2-cta-btn">Start from $15 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+      <span class="testi-v2-cta-micro">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        No fees to browse
+        <span class="dot"></span>
+        Takes 2 minutes
+        <span class="dot"></span>
+        Notarised ownership
+      </span>
     </div>
   </section>
 
@@ -1108,87 +1246,192 @@
   </section>
 
 
-  <!-- ═══ CTA BANNER ═══ -->
-  <section class="cta-section" id="cta">
+  <!-- ═══ FINAL CTA — brand gradient, split layout ═══ -->
+  <style>
+    .cta-final { padding: 120px 0; background: #ffffff; }
+    .cta-final-box {
+      position: relative;
+      border-radius: 32px;
+      overflow: hidden;
+      background: linear-gradient(145deg, #00044A 0%, #000ABF 35%, #0000FF 65%, #1428E8 100%);
+      box-shadow: 0 32px 64px rgba(0,0,120,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
+      padding: 80px 64px;
+    }
+    .cta-final-box::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 64px 64px;
+      pointer-events: none;
+    }
+    .cta-final-box::after {
+      content: "";
+      position: absolute; top: -20%; right: -8%;
+      width: 520px; height: 520px;
+      background: radial-gradient(circle, rgba(152,251,150,0.14) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .cta-final-grid { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 720px; margin: 0 auto; }
+    .cta-final-eyebrow { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 10px; background: rgba(152,251,150,0.1); border: 1px solid rgba(152,251,150,0.22); border-radius: 100px; color: #98FB96; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 24px; }
+    .cta-final-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: #98FB96; animation: glowPulse 2s ease-in-out infinite; }
+    .cta-final-title { color: #ffffff; font-size: clamp(2.25rem, 4.8vw, 3.5rem); font-weight: 800; line-height: 1.04; letter-spacing: -0.035em; margin: 0 0 18px 0; }
+    .cta-final-title .accent { color: #98FB96; }
+    .cta-final-copy { color: rgba(255,255,255,0.78); font-size: 1.125rem; line-height: 1.5; max-width: 520px; margin: 0 0 32px 0; }
+    .cta-final-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+    .cta-final-primary { display: inline-flex; align-items: center; gap: 10px; background: #98FB96; color: #000ABF; font-weight: 700; padding: 18px 36px; border-radius: 9999px; text-decoration: none; font-size: 1.0625rem; letter-spacing: -0.01em; border: 1.5px solid rgba(255,255,255,0.15); box-shadow: 0 0 0 1px rgba(152,251,150,0.3), 0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.4); transition: transform 0.25s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.25s ease; }
+    .cta-final-primary:hover { transform: translateY(-3px); box-shadow: 0 0 0 1px rgba(152,251,150,0.4), 0 18px 36px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.4), 0 0 28px rgba(152,251,150,0.2); }
+    .cta-final-secondary { color: rgba(255,255,255,0.9); text-decoration: none; font-weight: 600; font-size: 0.9375rem; border-bottom: 1px solid rgba(255,255,255,0.25); padding-bottom: 2px; }
+    .cta-final-secondary:hover { color: #98FB96; border-bottom-color: #98FB96; }
+    .cta-final-trust { display: flex; flex-wrap: wrap; gap: 12px 22px; color: rgba(255,255,255,0.72); font-size: 0.875rem; font-weight: 500; }
+    .cta-final-trust span { display: inline-flex; align-items: center; gap: 6px; }
+    .cta-final-proof { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 28px; backdrop-filter: blur(6px); }
+    .cta-final-proof-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .cta-final-proof-stat .num { display: block; font-size: clamp(1.75rem, 3vw, 2.25rem); font-weight: 800; color: #98FB96; letter-spacing: -0.03em; line-height: 1; margin-bottom: 6px; }
+    .cta-final-proof-stat .lbl { color: rgba(255,255,255,0.7); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .cta-final-proof-divider { height: 1px; background: rgba(255,255,255,0.12); margin: 22px 0; }
+    .cta-final-proof-quote { color: rgba(255,255,255,0.92); font-size: 0.9375rem; line-height: 1.55; font-style: italic; margin: 0 0 14px 0; }
+    .cta-final-proof-author { display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.7); font-size: 0.8125rem; }
+    .cta-final-proof-author-dot { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #98FB96, #03FF88); flex-shrink: 0; }
+    @media (max-width: 899px) { .cta-final-box { padding: 56px 28px; } }
+  </style>
+  <section class="cta-final" id="cta">
     <div class="container">
-      <div class="cta-box anim-in">
-        <div class="cta-grain"></div>
-        <span style="display: inline-block; color: #98FB96; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px;">Own a share. Get paid. Repeat.</span>
-        <h2>Ready to own a piece<br>of paradise?</h2>
-        <p>Join 850+ investors earning monthly yield from premium Bali real estate and sovereign-backed commodities. From $15.</p>
-        <a href="/signup" class="btn-primary btn-glow" id="cta-signup">Create Free Account <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-        <p style="margin-top: 18px; color: rgba(255,255,255,0.75); font-size: 0.875rem; display: inline-flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: center;">
-          <span style="display: inline-flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#98FB96" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>No credit card</span>
-          <span style="display: inline-flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#98FB96" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Notarised contracts</span>
-          <span style="display: inline-flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#98FB96" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Exit anytime</span>
-        </p>
+      <div class="cta-final-box anim-in">
+        <div class="cta-final-grid">
+          <span class="cta-final-eyebrow"><span class="dot"></span>Own a share. Get paid. Repeat.</span>
+          <h2 class="cta-final-title">Ready to own a piece<br>of <span class="accent">paradise?</span></h2>
+          <p class="cta-final-copy">Join 850+ investors earning monthly yield from premium Bali real estate and sovereign-backed commodities. From $15.</p>
+          <div class="cta-final-actions" style="justify-content:center;">
+            <a href="/signup" class="cta-final-primary" id="cta-signup">Create Free Account <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          </div>
+          <div class="cta-final-trust" style="justify-content:center;">
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#98FB96" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>No credit card</span>
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#98FB96" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Notarised contracts</span>
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#98FB96" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Exit anytime</span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   </main>
 
-  <!-- ═══ FOOTER ═══ -->
-  <footer class="footer-brand" id="footer">
+  <!-- ═══ FOOTER — redesigned, 3-col preserving original content ═══ -->
+  <style>
+    .footer-v2 { background: #0000FF; color: #ffffff; padding: 88px 0 56px; position: relative; overflow: hidden; }
+    .footer-v2::before {
+      content: ""; position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 64px 64px;
+      pointer-events: none; opacity: 0.7;
+    }
+    .footer-v2::after {
+      content: ""; position: absolute; top: -20%; right: -10%;
+      width: 480px; height: 480px;
+      background: radial-gradient(circle, rgba(152,251,150,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .footer-v2 .container,
+    .footer-v2 .container-wide { position: relative; z-index: 1; }
+    .footer-v2-top { padding-bottom: 40px; }
+    .footer-v2-cols { display: grid; grid-template-columns: 1fr; gap: 48px; }
+    @media (min-width: 900px) { .footer-v2-cols { grid-template-columns: 1.1fr 1.2fr 1.1fr; gap: 56px; } }
+    .footer-v2-col { position: relative; }
+    @media (min-width: 900px) {
+      .footer-v2-col + .footer-v2-col { padding-left: 40px; border-left: 1px solid rgba(3,255,136,0.22); }
+    }
+    .footer-v2-col p { font-size: 0.9375rem; color: rgba(255,255,255,0.82); line-height: 1.6; margin: 0 0 14px 0; }
+
+    /* Col 1 brand */
+    .footer-v2-brand-logo { width: 56px; height: 56px; border-radius: 14px; background: #98FB96; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 22px; box-shadow: 0 8px 24px rgba(152,251,150,0.25); }
+    .footer-v2-brand-logo img { width: 34px; height: 34px; }
+    .footer-v2-company { color: #98FB96; font-size: clamp(1.25rem, 2vw, 1.5rem); font-weight: 800; text-transform: uppercase; letter-spacing: -0.015em; line-height: 1.15; margin: 0 0 6px 0; }
+    .footer-v2-allrights { color: #98FB96; font-size: 0.875rem; font-weight: 700; display: block; margin-bottom: 22px; letter-spacing: 0.01em; }
+    .footer-v2-lang-inline { display: inline-flex; align-items: center; gap: 8px; font-size: 0.875rem; font-weight: 600; color: rgba(255,255,255,0.85); margin-top: 18px; padding: 8px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 100px; }
+    .footer-v2-lang-inline a { color: rgba(255,255,255,0.6); text-decoration: none; padding: 0 2px; transition: color 0.2s ease; }
+    .footer-v2-lang-inline a.active { color: #98FB96; }
+    .footer-v2-lang-inline a:hover { color: #98FB96; }
+    .footer-v2-lang-inline .sep { color: rgba(255,255,255,0.25); }
+
+    /* Section headings */
+    .footer-v2-heading { color: #ffffff; font-weight: 800; font-size: 1.25rem; margin: 0 0 18px 0; letter-spacing: -0.015em; position: relative; padding-bottom: 12px; }
+    .footer-v2-heading::after { content: ""; position: absolute; left: 0; bottom: 0; width: 36px; height: 2px; background: #98FB96; border-radius: 2px; }
+
+    /* Col 3 contact */
+    .footer-v2-contact { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+    .footer-v2-contact-label { color: rgba(255,255,255,0.72); font-size: 0.8125rem; }
+    .footer-v2-link-green { color: #98FB96; font-weight: 700; text-decoration: none; font-size: 0.9375rem; line-height: 1.5; }
+    .footer-v2-link-green:hover { color: #ffffff; }
+
+    /* Col 3 nav */
+    .footer-v2-nav { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 22px 0 24px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.14); }
+    .footer-v2-nav a { font-size: 0.875rem; font-weight: 600; color: rgba(255,255,255,0.88); text-decoration: none; transition: color 0.2s ease; }
+    .footer-v2-nav a:hover { color: #98FB96; }
+
+    /* Col 3 license */
+    .footer-v2-license { display: flex; align-items: center; gap: 16px; margin-top: 22px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.14); }
+    .footer-v2-license h4 { color: #ffffff; font-weight: 800; font-size: 1rem; margin: 0; }
+    .footer-v2-license-badge { width: 88px; height: 88px; background: #ffffff; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; padding: 10px; flex-shrink: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .footer-v2-license-badge img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  </style>
+  <footer class="footer-v2" id="footer">
     <div class="container container-wide">
-      <div class="footer-brand-grid">
-        <!-- Col 1 -->
-        <div class="footer-brand-col">
-          <div class="footer-brand-logo">
-            <img src="/static/svg/3-circles-logo.svg" alt="POOOL logo" onerror="this.style.display='none'">
+      <div class="footer-v2-top">
+        <div class="footer-v2-cols">
+          <!-- Col 1: Brand & Company -->
+          <div class="footer-v2-col">
+            <div class="footer-v2-brand-logo">
+              <img src="/static/images/logos/3-circles-logo.svg" alt="POOOL logo" onerror="this.style.display='none'">
+            </div>
+            <h3 class="footer-v2-company">© PT. POOOL INTERNATIONAL GROUP</h3>
+            <span class="footer-v2-allrights">All rights reserved.</span>
+            <p>POOOL.app, POOOL.id are websites operated by PT. POOOL INTERNATIONAL GROUP, a foreign-owned company (PMA) based in Indonesia, and a subsidiary of the POOOL holding entity headquartered in Hong Kong.</p>
+            <p>By accessing this website and any of its sub-pages, you agree to be bound by our Terms of Service, Privacy Policy, and Risk Disclosure.</p>
+            <div class="footer-v2-lang-inline">
+              <span>Website language:</span>
+              <a href="/id/" hreflang="id">ID</a>
+              <span class="sep">|</span>
+              <a href="/en/" hreflang="en" class="active">EN</a>
+            </div>
           </div>
-          <h3 class="footer-brand-company">© PT. POOOL INTERNATIONAL GROUP</h3>
-          <span class="footer-brand-allrights">All rights reserved.</span>
-          <p>POOOL.app, POOOL.id are websites operated by PT. POOOL INTERNATIONAL GROUP, a foreign-owned company (PMA) based in Indonesia, and a subsidiary of the POOOL holding entity headquartered in Hong Kong.</p>
-          <p>By accessing this website and any of its sub-pages, you agree to be bound by our Terms of Service, Privacy Policy, and Risk Disclosure.</p>
-          <div class="footer-brand-lang">
-            <span>Website language:</span>
-            <button class="lang-btn">ID</button>
-            <span class="lang-sep">|</span>
-            <button class="lang-btn active">EN</button>
+
+          <!-- Col 2: A Word Of Caution -->
+          <div class="footer-v2-col">
+            <h3 class="footer-v2-heading">A Word Of Caution</h3>
+            <p>POOOL does not offer financial, legal, tax, or investment advice. The information provided on this platform is for general informational purposes only and does not constitute an offer to sell, or a solicitation of an offer to buy, any securities or real estate interests. Nothing on this site should be construed as a recommendation or endorsement of any investment opportunity.</p>
+            <p>All transactions on the platform will be settled in Indonesian Rupiah (IDR), regardless of the original payment currency. Conversion rates are determined at the time of transaction. Prices displayed in USD are provided solely for international investor reference. As required by Indonesian Law (PBI No. 17/2015 and Currency Law No. 7/2011), all transactions are conducted within the territory.</p>
+            <p>Investing in real estate, startups, or any private placement opportunities involves significant risks. Investments are not insured by any government agency and may lose value. POOOL does not guarantee any return on investment. It is the sole responsibility of the investor to conduct their own due diligence and ensure they can bear potential losses.</p>
           </div>
-        </div>
 
-        <!-- Divider 1 -->
-        <div class="footer-brand-divider"></div>
-
-        <!-- Col 2 -->
-        <div class="footer-brand-col">
-          <h3 class="footer-brand-heading-sm">A Word Of Caution</h3>
-          <p>POOOL does not offer financial, legal, tax, or investment advice. The information provided on this platform is for general informational purposes only and does not constitute an offer to sell, or a solicitation of an offer to buy, any securities or real estate interests. Nothing on this site should be construed as a recommendation or endorsement of any investment opportunity.</p>
-          <p>All transactions on the platform will be settled in Indonesian Rupiah (IDR), regardless of the original payment currency. Conversion rates are determined at the time of transaction. Prices displayed in USD are provided solely for international investor reference. As required by Indonesian Law (PBI No. 17/2015 and Currency Law No. 7/2011), all transactions are conducted within the territory.</p>
-          <p>Investing in real estate, startups, or any private placement opportunities involves significant risks. Investments are not insured by any government agency and may lose value. POOOL does not guarantee any return on investment. It is the sole responsibility of the investor to conduct their own due diligence and ensure they can bear potential losses.</p>
-        </div>
-
-        <!-- Divider 2 -->
-        <div class="footer-brand-divider"></div>
-
-        <!-- Col 3 -->
-        <div class="footer-brand-col">
-          <h3 class="footer-brand-heading-sm">Info, Documents and Support</h3>
-          <p>For official documents, investment policies, and support, please refer to our Legal Center. Directorate General of Consumer Protection and Orderly Commerce Ministry of Trade of the Republic of Indonesia.</p>
-          <p>For assistance, contact our team via WhatsApp:<br>
-            <a href="https://wa.me/6281325817676" class="footer-brand-link-green" target="_blank">+62 813-2581-7676</a>
-          </p>
-          <p>Our virtual office address:<br>
-            <span class="footer-brand-link-green">Jl. Raya Kerobokan No.98, Kerobokan Kelod, Kec. Kuta Utara, Kabupaten Badung, Bali 80361, Indonesia</span>
-          </p>
-          <div class="footer-brand-nav">
-            <a href="#why-us">Why Us</a>
-            <a href="#marketplace">Platform</a>
-            <a href="#how">How it works</a>
-            <a href="#marketplace">Market</a>
-            <a href="#faq">FAQ</a>
-            <a href="/terms">Terms &amp; Conditions</a>
-            <a href="https://drive.google.com/drive/folders/1uP5cScXp-6NarP9a7fjHCRjMzujpOuBG" target="_blank">Legal</a>
-            <a href="/cookies">Cookies</a>
-            <a href="/privacy-policy">Privacy Policy</a>
-            <a href="/currency-policy">Currency Policy</a>
-          </div>
-          <div class="footer-brand-license">
-            <h3>Licensed:</h3>
-            <div class="footer-brand-license-box">
-              <img src="/static/png/license.webp" alt="KOMDIGI license" onerror="this.style.display='none'">
+          <!-- Col 3: Info, Documents & Support -->
+          <div class="footer-v2-col">
+            <h3 class="footer-v2-heading">Info, Documents and Support</h3>
+            <p>For official documents, investment policies, and support, please refer to our Legal Center. Directorate General of Consumer Protection and Orderly Commerce Ministry of Trade of the Republic of Indonesia.</p>
+            <div class="footer-v2-contact">
+              <span class="footer-v2-contact-label">For assistance, contact our team via WhatsApp:</span>
+              <a href="https://wa.me/6281325817676" class="footer-v2-link-green" target="_blank">+62 813-2581-7676</a>
+            </div>
+            <div class="footer-v2-contact">
+              <span class="footer-v2-contact-label">Our virtual office address:</span>
+              <span class="footer-v2-link-green">Jl. Raya Kerobokan No.98, Kerobokan Kelod, Kec. Kuta Utara, Kabupaten Badung, Bali 80361, Indonesia</span>
+            </div>
+            <div class="footer-v2-nav">
+              <a href="#why-us">Why Us</a>
+              <a href="#marketplace">Platform</a>
+              <a href="#how">How it works</a>
+              <a href="#marketplace">Market</a>
+              <a href="#faq">FAQ</a>
+              <a href="/terms">Terms &amp; Conditions</a>
+              <a href="https://drive.google.com/drive/folders/1uP5cScXp-6NarP9a7fjHCRjMzujpOuBG" target="_blank">Legal</a>
+              <a href="/cookies">Cookies</a>
+              <a href="/privacy-policy">Privacy Policy</a>
+              <a href="/currency-policy">Currency Policy</a>
+            </div>
+            <div class="footer-v2-license">
+              <h4>Licensed:</h4>
+              <div class="footer-v2-license-badge">
+                <img src="/png/license.webp" alt="KOMDIGI license" onerror="this.parentElement.style.display='none'">
+              </div>
             </div>
           </div>
         </div>

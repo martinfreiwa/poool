@@ -155,7 +155,7 @@ pub async fn api_admin_kyc_approve(
                    WHERE referred_user_id = (
                        SELECT user_id FROM kyc_records WHERE id = $1 LIMIT 1
                    )
-                   AND status = 'registered'"#
+                   AND status = 'registered'"#,
             )
             .bind(uid)
             .execute(&state.db)

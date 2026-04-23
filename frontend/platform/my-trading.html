@@ -18,16 +18,7 @@
         <main class="myt__main">
             <div class="myt__content-wrapper">
                 <!-- Page Header -->
-                <header class="lb-topbar">
-                    <div class="lb-topbar-inner">
-                        <div class="lb-topbar-left">
-                            <span id="my-trading-page-title" class="lb-topbar-title">My Trading</span>
-                            <span class="myt__badge">Marketplace</span>
-                        </div>
-                        <div class="lb-topbar-right">
-                        </div>
-                    </div>
-                </header>
+                {% with investor_topbar_title="My Trading", investor_topbar_title_id="my-trading-page-title", investor_topbar_badge="Marketplace", investor_topbar_variant="empty-right" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
                 <!-- Summary Stat Cards — matches submissions .sub-stats layout, original holographic icons -->
                 <div class="sub-stats myt-stats-row">

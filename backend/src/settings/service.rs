@@ -939,7 +939,7 @@ pub async fn delete_account_selective(
             email_verified = FALSE,
             status = 'deleted',
             updated_at = NOW()
-           WHERE id = $1"#
+           WHERE id = $1"#,
     )
     .bind(user_id)
     .bind(&anon_email)
@@ -962,7 +962,7 @@ pub async fn delete_account_selective(
             date_of_birth = NULL,
             annual_income_cents = NULL,
             updated_at = NOW()
-           WHERE user_id = $1"#
+           WHERE user_id = $1"#,
     )
     .bind(user_id)
     .execute(&mut *tx)

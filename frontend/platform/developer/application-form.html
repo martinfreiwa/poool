@@ -1,4 +1,4 @@
-{% with title="Developer Application Form", meta_description="Submit your property for listing on POOOL.", extra_css=['leaderboard', 'developer-application-form', 'mobile-developer-application-form', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init', 'developer-application-form'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Developer Application Form", meta_description="Submit your property for listing on POOOL.", extra_css=['leaderboard', 'developer-application-form', 'mobile-developer-application-form', 'cart', 'checkout', 'poool-icon-custom', 'developer-leaderboard-navbar'], extra_js=['profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init', 'developer-application-form'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="developer-application-form-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -10,25 +10,9 @@
     </div>
     <!-- Main Content Area -->
     <main id="developer-application-form-main" class="ds-main cart-page-main application-form-main">
-      <!-- Page Header -->
-      <header id="developer-app-form-page-header" class="lb-topbar cart-page-header">
-        <div class="lb-topbar-inner">
-          <div class="lb-topbar-left">
-            <span id="developer-app-form-page-title" class="lb-topbar-title">Application Form</span>
-          </div>
-          <div class="lb-topbar-right">
-            <div class="checkout-steps">
-              <a href="/developer/add-asset" class="checkout-steps__step checkout-steps__step--done">Asset Type</a>
-              <span class="checkout-steps__divider">→</span>
-              <span class="checkout-steps__step checkout-steps__step--active">Property Info</span>
-              <span class="checkout-steps__divider">→</span>
-              <span class="checkout-steps__step">Documents</span>
-              <span class="checkout-steps__divider">→</span>
-              <span class="checkout-steps__step">Review</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      {% with dev_nav_title="Application Form", dev_nav_flow_step="property" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
       <!-- Property Details Form Section -->
       <div id="property-details-section" class="form-section">
         <h2 class="form-section-title">Property details</h2>

@@ -253,7 +253,7 @@ const PortfolioDataService = (function () {
             return {
                 assetTitle: inv.asset_title,
                 assetSlug: inv.asset_slug,
-                coverImage: inv.cover_image || "/static/images/ui/property-placeholder.webp",
+                coverImage: inv.cover_image || "/static/images/portfolio_asset_details/Property%20image.webp",
                 currentValueDisplay: formatCurrency(inv.current_value_cents ?? 0),
                 appreciationDisplay: `${isPositive ? "+" : ""}${(appBps / 100).toFixed(1)}%`,
                 appreciationClass: isPositive ? "positive" : "negative",

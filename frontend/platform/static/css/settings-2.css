@@ -7,13 +7,13 @@
 #settings-main {
   margin-left: 256px !important;
   width: calc(100% - 256px) !important;
-  padding: 48px 24px 120px 24px !important;
+  padding: 0 !important;
   background: #fafafa !important;
   min-height: 100vh;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 0;
 }
 
 #settings-content:not(.hidden) {
@@ -21,7 +21,9 @@
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  max-width: 1096px !important;
+  max-width: 1200px !important;
+  padding: 24px var(--page-padding-x, 32px) 120px;
+  box-sizing: border-box;
 }
 
 /* ─── Top Bar ─── */
@@ -33,6 +35,43 @@
   max-width: 1096px;
   width: 100%;
   margin-bottom: 0;
+}
+
+.settings-topbar.lb-topbar {
+  display: block;
+  max-width: none;
+  padding: 16px 0;
+  margin-bottom: 0;
+}
+
+.cards-template-layout .settings-content-wrapper {
+  max-width: 1200px !important;
+  padding: 24px var(--page-padding-x, 32px) 64px !important;
+  box-sizing: border-box !important;
+}
+
+.cards-template-layout .settings-content-wrapper > .page-header {
+  width: calc(100% + (2 * var(--page-padding-x, 32px))) !important;
+  min-height: 64px !important;
+  margin: -24px calc(-1 * var(--page-padding-x, 32px)) 24px !important;
+  padding: 16px var(--page-padding-x, 32px) !important;
+  background: rgba(250, 250, 250, 0.8) !important;
+  border-bottom: 1px solid rgba(197, 196, 219, 0.15) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-sizing: border-box !important;
+}
+
+.cards-template-layout .settings-content-wrapper > .page-header .page-title {
+  color: var(--btn-primary-bg, #0000FF) !important;
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+}
+
+.cards-template-layout .settings-content-wrapper > .page-header p {
+  display: none !important;
 }
 
 .settings-topbar__title {

@@ -1,4 +1,4 @@
-{% with title="Affiliate Marketing Materials", extra_css=['cards-template', 'forms-template', 'affiliate-dashboard'], extra_js=['affiliate-materials'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Affiliate Marketing Materials", extra_css=['leaderboard', 'cards-template', 'forms-template', 'affiliate-dashboard'], extra_js=['affiliate-materials'] %}{% include "components/head.html" %}{% endwith %}
 <body class="app-body fouc-guard">
   {% include 'components/mobile-menu.html' %}
 
@@ -8,18 +8,11 @@
     </aside>
 
     <main class="app-content">
+      {% with investor_topbar_title="Marketing Materials", investor_topbar_variant="affiliate-materials" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+
       <div class="affiliate-dashboard-container">
         
         <!-- Header -->
-        <header class="affiliate-header" style="margin-bottom: 32px">
-          <div>
-            <h1 class="affiliate-title">Marketing Materials</h1>
-            <p class="affiliate-subtitle" style="max-width: 600px;">Download official POOOL banners, social media assets, and brand guidelines to promote your syndicate link.</p>
-          </div>
-          <div>
-             <a href="/affiliate/settings" class="ds-btn ds-btn-secondary">⚙️ Payout Settings</a>
-          </div>
-        </header>
 
         <!-- Brand Guidelines -->
         <div class="ds-card" style="margin-bottom: 24px; background: rgba(0,0,255,0.03); border: 1px solid rgba(0,0,255,0.1);">

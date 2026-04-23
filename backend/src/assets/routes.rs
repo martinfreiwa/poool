@@ -269,13 +269,15 @@ pub async fn page_property(
     // Convert to display-friendly data with pre-computed values
     let mut display_data = asset.as_ref().map(PropertyDisplayData::from_asset);
 
-    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
-        .fetch_optional(&state.db)
-        .await
-        .ok()
-        .flatten()
-        .and_then(|v: String| v.parse::<f64>().ok())
-        .unwrap_or(5.0);
+    let platform_fee_pct: f64 = sqlx::query_scalar(
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
+    )
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
+    .and_then(|v: String| v.parse::<f64>().ok())
+    .unwrap_or(5.0);
 
     let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
         format!("{:.0}", platform_fee_pct)
@@ -286,7 +288,7 @@ pub async fn page_property(
     if let Some(ref mut d) = display_data {
         d.update_fee(platform_fee_pct);
     }
-    
+
     let similar_display: Vec<PropertyDisplayData> = similar_assets
         .iter()
         .map(|a| {
@@ -551,12 +553,14 @@ pub async fn page_commodity(
     };
 
     // Fetch platform fee for display
-    let platform_fee_pct: f64 = sqlx::query_scalar("SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'")
-        .fetch_optional(&state.db)
-        .await
-        .unwrap_or(None)
-        .map(|v: String| v.parse::<f64>().unwrap_or(5.0))
-        .unwrap_or(5.0);
+    let platform_fee_pct: f64 = sqlx::query_scalar(
+        "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
+    )
+    .fetch_optional(&state.db)
+    .await
+    .unwrap_or(None)
+    .map(|v: String| v.parse::<f64>().unwrap_or(5.0))
+    .unwrap_or(5.0);
 
     let fee_pct_display = if platform_fee_pct == platform_fee_pct.floor() {
         format!("{:.0}", platform_fee_pct)

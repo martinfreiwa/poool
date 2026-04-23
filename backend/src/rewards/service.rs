@@ -256,8 +256,8 @@ pub async fn get_rewards_overview(
         progress_pct,
         referral_code,
         referral_url,
-        friend_reward_cents: 3000,      // $30 — TODO: move to platform_settings table
-        user_reward_cents: 3000,         // $30
+        friend_reward_cents: 3000, // $30 — TODO: move to platform_settings table
+        user_reward_cents: 3000,   // $30
         investment_required_cents: 100_000, // $1,000
         total_clicks,
         total_signups,
@@ -701,7 +701,8 @@ pub async fn check_and_track_affiliate_commission(
     }
 
     // 3. Calculate commission (basis points: 50 bps = 0.50%)
-    let commission_cents = (order_total_cents * referral.commission_rate_bps.unwrap_or(50) as i64) / 10_000;
+    let commission_cents =
+        (order_total_cents * referral.commission_rate_bps.unwrap_or(50) as i64) / 10_000;
 
     if commission_cents <= 0 {
         return Ok(None);
@@ -751,12 +752,14 @@ pub async fn check_and_track_affiliate_commission(
         .execute(&mut **tx)
         .await?;
     } else {
-        // If they were already qualified, the new commission will be evaluated by a discrete commission-level worker later, 
+        // If they were already qualified, the new commission will be evaluated by a discrete commission-level worker later,
         // or just stay provisionally tracked. But don't regress the referral status to under_holdback if it's already paid/qualified!
         let _ = sqlx::query!(
             r#"UPDATE affiliate_referrals SET updated_at = NOW() WHERE id = $1"#,
             referral.id
-        ).execute(&mut **tx).await;
+        )
+        .execute(&mut **tx)
+        .await;
     }
 
     tracing::info!(
@@ -766,7 +769,11 @@ pub async fn check_and_track_affiliate_commission(
         "Affiliate commission tracked (provisionally)"
     );
 
-    Ok(Some((referral.affiliate_id.unwrap_or_default(), referral.sub_id, commission_cents)))
+    Ok(Some((
+        referral.affiliate_id.unwrap_or_default(),
+        referral.sub_id,
+        commission_cents,
+    )))
 }
 
 /// Attributes a newly registered user to an affiliate via cookie referral code.
@@ -854,7 +861,8 @@ pub async fn attribute_affiliate_referral(
         "registration".to_string(),
         subid.clone(),
         0,
-    ).await;
+    )
+    .await;
 
     Ok(true)
 }
@@ -896,14 +904,18 @@ pub async fn trigger_s2s_postback(
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(10))
             .build();
-            
+
         if let Ok(client) = client {
             match client.get(&final_url).send().await {
                 Ok(resp) => {
                     if resp.status().is_success() {
                         tracing::info!("S2S Postback fired successfully to [{}]", final_url);
                     } else {
-                        tracing::warn!("S2S Postback failed (Status {}): [{}]", resp.status(), final_url);
+                        tracing::warn!(
+                            "S2S Postback failed (Status {}): [{}]",
+                            resp.status(),
+                            final_url
+                        );
                     }
                 }
                 Err(e) => {
@@ -951,7 +963,7 @@ pub async fn get_affiliate_dashboard(
 
     // GAP-08: Fetch accepted policy version (column added in migration 076 — non-macro for compat)
     let accepted_policy_version_str: String = sqlx::query_scalar(
-        "SELECT COALESCE(accepted_policy_version, '1.0') FROM affiliates WHERE user_id = $1"
+        "SELECT COALESCE(accepted_policy_version, '1.0') FROM affiliates WHERE user_id = $1",
     )
     .bind(user_id)
     .fetch_optional(pool)
@@ -1104,7 +1116,10 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
             continue;
         }
 
-        tracing::info!("Holdback worker: processing {} expired holdbacks", expired.len());
+        tracing::info!(
+            "Holdback worker: processing {} expired holdbacks",
+            expired.len()
+        );
 
         let mut qualified_count = 0u32;
         let mut disqualified_count = 0u32;
@@ -1135,14 +1150,26 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
                 count > 0
             };
 
-            let new_referral_status = if investment_active { "qualified" } else { "disqualified" };
-            let new_commission_status = if investment_active { "payable" } else { "disqualified" };
+            let new_referral_status = if investment_active {
+                "qualified"
+            } else {
+                "disqualified"
+            };
+            let new_commission_status = if investment_active {
+                "payable"
+            } else {
+                "disqualified"
+            };
 
             // Execute within an ACID transaction
             let mut tx = match pool.begin().await {
                 Ok(t) => t,
                 Err(e) => {
-                    tracing::error!("Holdback worker: failed to begin tx for referral {}: {}", referral.id, e);
+                    tracing::error!(
+                        "Holdback worker: failed to begin tx for referral {}: {}",
+                        referral.id,
+                        e
+                    );
                     continue;
                 }
             };
@@ -1159,7 +1186,11 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
             .await;
 
             if let Err(e) = referral_res {
-                tracing::error!("Holdback worker: failed to update referral {}: {}", referral.id, e);
+                tracing::error!(
+                    "Holdback worker: failed to update referral {}: {}",
+                    referral.id,
+                    e
+                );
                 let _ = tx.rollback().await;
                 continue;
             }
@@ -1177,7 +1208,11 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
             .await;
 
             if let Err(e) = commission_res {
-                tracing::error!("Holdback worker: failed to update commissions for referral {}: {}", referral.id, e);
+                tracing::error!(
+                    "Holdback worker: failed to update commissions for referral {}: {}",
+                    referral.id,
+                    e
+                );
                 let _ = tx.rollback().await;
                 continue;
             }
@@ -1200,11 +1235,19 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
 
             if let Err(e) = audit_res {
                 // Non-fatal — log but don't rollback for an audit failure
-                tracing::warn!("Holdback worker: failed to write audit log for referral {}: {}", referral.id, e);
+                tracing::warn!(
+                    "Holdback worker: failed to write audit log for referral {}: {}",
+                    referral.id,
+                    e
+                );
             }
 
             if let Err(e) = tx.commit().await {
-                tracing::error!("Holdback worker: failed to commit tx for referral {}: {}", referral.id, e);
+                tracing::error!(
+                    "Holdback worker: failed to commit tx for referral {}: {}",
+                    referral.id,
+                    e
+                );
             } else if investment_active {
                 qualified_count += 1;
                 tracing::info!(
@@ -1215,11 +1258,12 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
 
                 // Send email notification for commission earned
                 if let Some(aff_id) = referral.affiliate_id {
-                    let user_email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-                        .bind(aff_id)
-                        .fetch_optional(&pool)
-                        .await
-                        .unwrap_or_default();
+                    let user_email: Option<String> =
+                        sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+                            .bind(aff_id)
+                            .fetch_optional(&pool)
+                            .await
+                            .unwrap_or_default();
 
                     if let Some(email) = user_email {
                         let _ = crate::common::email::send_email(
@@ -1314,22 +1358,34 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
             .flatten()
             .unwrap_or(false);
 
-            let new_commission_status = if order_active { "payable" } else { "disqualified" };
+            let new_commission_status = if order_active {
+                "payable"
+            } else {
+                "disqualified"
+            };
 
             let update_res = sqlx::query!(
                 "UPDATE affiliate_commissions SET status = $1, updated_at = NOW() WHERE id = $2",
-                new_commission_status, commission.id
-            ).execute(&pool).await;
+                new_commission_status,
+                commission.id
+            )
+            .execute(&pool)
+            .await;
 
             if update_res.is_ok() {
-                if order_active { lifetime_matured += 1; } else { lifetime_failed += 1; }
+                if order_active {
+                    lifetime_matured += 1;
+                } else {
+                    lifetime_failed += 1;
+                }
             }
         }
 
         if lifetime_matured > 0 || lifetime_failed > 0 {
             tracing::info!(
                 "🔄 Holdback worker cycle 2 (Lifetime) complete: {} matured, {} disqualified",
-                lifetime_matured, lifetime_failed
+                lifetime_matured,
+                lifetime_failed
             );
         }
     }
@@ -1338,13 +1394,13 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
 // ─── Affiliate Tier Thresholds ────────────────────────────────────────────────
 // (qualified_referrals_required, tier_name, commission_rate_bps)
 const AFFILIATE_TIERS: &[(i64, &str, i32)] = &[
-    (0,   "Access",      50),
-    (3,   "Bronze",      60),
-    (10,  "Silver",      75),
-    (25,  "Gold",        90),
-    (50,  "Platinum",   110),
-    (100, "Diamond",    130),
-    (200, "Elite",      150),
+    (0, "Access", 50),
+    (3, "Bronze", 60),
+    (10, "Silver", 75),
+    (25, "Gold", 90),
+    (50, "Platinum", 110),
+    (100, "Diamond", 130),
+    (200, "Elite", 150),
     (500, "Ambassador", 175),
 ];
 
@@ -1418,7 +1474,11 @@ pub async fn run_affiliate_tier_progression_worker(pool: PgPool) {
             .await;
 
             if let Err(e) = update_res {
-                tracing::error!("Tier progression worker: failed to update tier for {}: {}", aff.user_id, e);
+                tracing::error!(
+                    "Tier progression worker: failed to update tier for {}: {}",
+                    aff.user_id,
+                    e
+                );
                 continue;
             }
 
@@ -1447,11 +1507,12 @@ pub async fn run_affiliate_tier_progression_worker(pool: PgPool) {
             );
 
             // Send notification email
-            let user_email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-                .bind(aff.user_id)
-                .fetch_optional(&pool)
-                .await
-                .unwrap_or_default();
+            let user_email: Option<String> =
+                sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+                    .bind(aff.user_id)
+                    .fetch_optional(&pool)
+                    .await
+                    .unwrap_or_default();
 
             if let Some(email) = user_email {
                 let _ = crate::common::email::send_email(
@@ -1465,7 +1526,10 @@ pub async fn run_affiliate_tier_progression_worker(pool: PgPool) {
             }
         }
 
-        tracing::info!("🏆 Tier progression worker complete: {} affiliate(s) upgraded", upgraded);
+        tracing::info!(
+            "🏆 Tier progression worker complete: {} affiliate(s) upgraded",
+            upgraded
+        );
     }
 }
 
@@ -1507,16 +1571,19 @@ pub async fn scan_affiliate_fraud_rings(pool: &PgPool) -> Result<Vec<serde_json:
     .fetch_all(pool)
     .await?;
 
-    let flags: Vec<serde_json::Value> = rings.iter().map(|r| {
-        serde_json::json!({
-            "type": "circular_ring",
-            "affiliate_a_id": r.affiliate_a,
-            "affiliate_a_email": r.email_a,
-            "affiliate_b_id": r.affiliate_b,
-            "affiliate_b_email": r.email_b,
-            "description": "Circular referral ring detected: each affiliate referred the other"
+    let flags: Vec<serde_json::Value> = rings
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "type": "circular_ring",
+                "affiliate_a_id": r.affiliate_a,
+                "affiliate_a_email": r.email_a,
+                "affiliate_b_id": r.affiliate_b,
+                "affiliate_b_email": r.email_b,
+                "description": "Circular referral ring detected: each affiliate referred the other"
+            })
         })
-    }).collect();
+        .collect();
 
     Ok(flags)
 }

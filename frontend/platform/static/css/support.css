@@ -21,6 +21,18 @@
     width: 100%;
 }
 
+.dashboard-main {
+    padding: 0;
+    gap: 0;
+}
+
+.dashboard-container {
+    width: 100%;
+    max-width: 1200px;
+    padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
+    margin: 0;
+}
+
 /* ─── Hero / Page Header ───────────────────────── */
 .support-hero {
     display: flex;

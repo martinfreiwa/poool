@@ -1,4 +1,4 @@
-{% with title="Affiliate Settings", extra_css=['forms-template', 'affiliate-dashboard'], extra_js=['affiliate-settings'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Affiliate Settings", extra_css=['leaderboard', 'forms-template', 'affiliate-dashboard'], extra_js=['affiliate-settings'] %}{% include "components/head.html" %}{% endwith %}
 <body class="app-body fouc-guard">
   {% include 'components/mobile-menu.html' %}
 
@@ -8,20 +8,10 @@
     </aside>
 
     <main class="app-content">
+      {% with investor_topbar_title="Payout & Tax Settings", investor_topbar_variant="affiliate-settings" %}{% include 'components/investor-topbar.html' %}{% endwith %}
+
       <div class="affiliate-dashboard-container">
         <!-- Header -->
-        <header class="affiliate-header" style="margin-bottom: 32px">
-          <div>
-            <h1 class="affiliate-title">Payout & Tax Settings</h1>
-            <p class="affiliate-subtitle" style="max-width: 600px;">Manage your withdrawal method and tax classification to ensure seamless commission releases.</p>
-          </div>
-          <div>
-              <button id="save-settings-btn" class="ds-btn ds-btn-primary" disabled>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                  Save Changes
-              </button>
-          </div>
-        </header>
 
         <div class="dash-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
             <!-- Main Settings Form -->

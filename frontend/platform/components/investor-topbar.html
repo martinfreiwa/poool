@@ -1,0 +1,122 @@
+<header{% if investor_topbar_id %} id="{{ investor_topbar_id }}"{% endif %} class="lb-topbar{% if investor_topbar_class %} {{ investor_topbar_class }}{% endif %}">
+  <div class="lb-topbar-inner{% if investor_topbar_inner_class %} {{ investor_topbar_inner_class }}{% endif %}">
+    <div class="lb-topbar-left{% if investor_topbar_left_class %} {{ investor_topbar_left_class }}{% endif %}">
+      <span{% if investor_topbar_title_id %} id="{{ investor_topbar_title_id }}"{% endif %} class="lb-topbar-title">{{ investor_topbar_title | default("Dashboard") }}</span>
+      {% if investor_topbar_badge %}<span class="myt__badge">{{ investor_topbar_badge }}</span>{% endif %}
+      {% if investor_topbar_subtitle_x_text %}<p class="{{ investor_topbar_subtitle_class | default("lb-topbar-subtitle") }}" x-text="{{ investor_topbar_subtitle_x_text }}"></p>{% endif %}
+      {% if investor_topbar_subtitle %}<p class="{{ investor_topbar_subtitle_class | default("lb-topbar-subtitle") }}">{{ investor_topbar_subtitle }}</p>{% endif %}
+
+      {% if investor_topbar_variant == 'leaderboard' %}
+      <div class="lb-topbar-tabs">
+        <button class="lb-topbar-tab active" data-metric="invested" onclick="switchMetricTab('invested', this)">Investment</button>
+        <button class="lb-topbar-tab" data-metric="assets" onclick="switchMetricTab('assets', this)">Assets</button>
+        <button class="lb-topbar-tab" data-metric="roi" onclick="switchMetricTab('roi', this)">ROI</button>
+        <button class="lb-topbar-tab" data-metric="affiliates" onclick="switchMetricTab('affiliates', this)">Affiliates</button>
+        <button class="lb-topbar-tab" data-metric="revenue" onclick="switchMetricTab('revenue', this)">Revenue</button>
+        <button class="lb-topbar-tab" data-metric="highest_inv" onclick="switchMetricTab('highest_inv', this)">Highest Inv.</button>
+      </div>
+      {% elif investor_topbar_variant == 'rewards' %}
+      <div class="lb-topbar-tabs">
+        <button class="lb-topbar-tab rewards-tab-btn active" data-tab="rewards-tab" onclick="switchRewardsTab(this)">Overview</button>
+        <button class="lb-topbar-tab rewards-tab-btn" data-tab="tier-tab" onclick="switchRewardsTab(this)">Tier</button>
+        <button class="lb-topbar-tab rewards-tab-btn" data-tab="affiliate-tab" onclick="switchRewardsTab(this)">Affiliate Dashboard</button>
+        <button class="lb-topbar-tab rewards-tab-btn" data-tab="marketing-tab" onclick="switchRewardsTab(this)">Marketing Material</button>
+        <button class="lb-topbar-tab rewards-tab-btn" data-tab="commissions-tab" onclick="switchRewardsTab(this)">Commissions</button>
+      </div>
+      {% elif investor_topbar_variant == 'community' %}
+      <div class="lb-topbar-tabs">
+        <button type="button" class="lb-topbar-tab active community-tab-btn" data-tab="community-feed-tab" hx-get="/community/partials/feed" hx-target="#community-content-area" hx-push-url="?tab=feed" onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Feed</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-announcements-tab" hx-get="/community/partials/announcements" hx-target="#community-content-area" hx-push-url="?tab=announcements" onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Announcements</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-circle-tab" hx-get="/community/partials/circle" hx-target="#community-content-area" hx-push-url="?tab=circle" onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">My Circle</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-ama-tab" hx-get="/community/partials/ama" hx-target="#community-content-area" hx-push-url="?tab=ama" onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Expert AMAs</button>
+        <button type="button" class="lb-topbar-tab community-tab-btn" data-tab="community-challenges-tab" hx-get="/community/partials/challenges" hx-target="#community-content-area" hx-push-url="?tab=challenges" onclick="document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active')); this.classList.add('active');">Challenges</button>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if investor_topbar_variant == 'leaderboard' %}
+    <div class="lb-topbar-right">
+      <div class="lb-topbar-tabs" style="gap: 16px;">
+        <button class="lb-topbar-tab lb-tf-btn active" data-timeframe="alltime" onclick="switchTimeframe('alltime', this)">All-Time</button>
+        <button class="lb-topbar-tab lb-tf-btn" data-timeframe="weekly" onclick="switchTimeframe('weekly', this)">This Week</button>
+        <button class="lb-topbar-tab lb-tf-btn" data-timeframe="monthly" onclick="switchTimeframe('monthly', this)">This Month</button>
+      </div>
+    </div>
+    {% elif investor_topbar_variant == 'wallet' %}
+    <div class="lb-topbar-right" id="wallet-header-actions">
+      <button id="deposit-btn" class="ds-btn ds-btn--primary investor-topbar-action">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 15V5M10 5L5 10M10 5L15 10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span>Deposit</span>
+      </button>
+      <button id="withdraw-btn" class="ds-btn ds-btn--secondary investor-topbar-action">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 5V15M10 15L5 10M10 15L15 10" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span>Withdraw</span>
+      </button>
+    </div>
+    {% elif investor_topbar_variant == 'checkout' %}
+    <div class="lb-topbar-right">
+      <div class="checkout-steps">
+        <a href="/cart" class="checkout-steps__step checkout-steps__step--done" style="text-decoration:none;">Cart</a>
+        <span class="checkout-steps__divider">&rarr;</span>
+        <span class="checkout-steps__step checkout-steps__step--active">Payment</span>
+        <span class="checkout-steps__divider">&rarr;</span>
+        <span class="checkout-steps__step">Confirmation</span>
+      </div>
+    </div>
+    {% elif investor_topbar_variant == 'community' %}
+    <div class="lb-topbar-right">
+      <div class="lb-topbar-search" style="opacity: 0.5;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" placeholder="Search community..." disabled />
+      </div>
+    </div>
+    {% elif investor_topbar_variant == 'settings' %}
+    <div class="lb-topbar-right">
+      <div class="settings-topbar__search">
+        <svg class="settings-topbar__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="7.5" cy="7.5" r="5" stroke="#717680" stroke-width="1.33" />
+          <path d="M10.5 10.5L13.5 13.5" stroke="#717680" stroke-width="1.33" stroke-linecap="round" />
+        </svg>
+        <span class="settings-topbar__search-text">Search</span>
+        <span class="settings-topbar__search-kbd">&#8984;K</span>
+      </div>
+    </div>
+    {% elif investor_topbar_variant == 'affiliate-dashboard' %}
+    <div class="lb-topbar-right">
+      <div class="tier-badge" id="current-tier-badge">
+        <span class="tier-icon">&#128142;</span>
+        <span class="tier-name" id="tier-name">Loading...</span>
+        <span class="tier-rate" id="tier-rate">&mdash; bps</span>
+      </div>
+    </div>
+    {% elif investor_topbar_variant == 'affiliate-materials' %}
+    <div class="lb-topbar-right">
+      <a href="/affiliate/settings" class="ds-btn ds-btn-secondary">Payout Settings</a>
+    </div>
+    {% elif investor_topbar_variant == 'affiliate-settings' %}
+    <div class="lb-topbar-right">
+      <button id="save-settings-btn" class="ds-btn ds-btn-primary" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+        Save Changes
+      </button>
+    </div>
+    {% elif investor_topbar_variant == 'affiliate-referrals' %}
+    <div class="lb-topbar-right">
+      <button class="ds-btn ds-btn--secondary" onclick="exportReferralCSV()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+      <a href="/affiliate/dashboard" class="ds-btn ds-btn--ghost">Back to Dashboard</a>
+    </div>
+    {% elif investor_topbar_variant == 'empty-right' %}
+    <div class="lb-topbar-right"></div>
+    {% endif %}
+  </div>
+</header>

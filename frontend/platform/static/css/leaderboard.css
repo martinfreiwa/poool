@@ -124,6 +124,21 @@
   gap: 16px;
 }
 
+.lb-topbar .investor-topbar-action {
+  min-height: 0;
+  height: 32px;
+  padding: 0 12px;
+  gap: 6px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.lb-topbar .investor-topbar-action svg {
+  width: 16px;
+  height: 16px;
+}
+
 .lb-topbar-search {
   position: relative;
   display: flex;

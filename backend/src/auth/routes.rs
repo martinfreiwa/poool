@@ -514,7 +514,7 @@ pub async fn signup_submit(
         let just_code = parts.next().unwrap_or("").to_string();
         let subid = parts.next().filter(|s| !s.is_empty()).map(String::from);
         let utm_source = parts.next().filter(|s| !s.is_empty()).map(String::from);
-        
+
         code_str = just_code;
 
         // 1. Resolve code to referrer user_id and their tier
@@ -550,11 +550,19 @@ pub async fn signup_submit(
         // Also track in the new affiliate system (Phase 18)
         // If code matches an active affiliate, create affiliate_referrals record
         if let Err(e) = crate::rewards::service::attribute_affiliate_referral(
-            &state.db, &code_str, user.id, subid, utm_source, ip.clone()
-        ).await {
+            &state.db,
+            &code_str,
+            user.id,
+            subid,
+            utm_source,
+            ip.clone(),
+        )
+        .await
+        {
             tracing::error!(
                 "Failed to attribute affiliate referral for code {}: {}",
-                code_str, e
+                code_str,
+                e
             );
         }
     }
@@ -894,7 +902,7 @@ fn render_signup(state: &AppState, jar: &CookieJar, error: Option<String>) -> Re
             return Html("<h1>Internal Server Error</h1>".to_string()).into_response();
         }
     };
-    
+
     let referral_code = jar
         .get(crate::auth::middleware::REFERRAL_COOKIE)
         .map(|c| c.value().split('|').next().unwrap_or("").to_string());

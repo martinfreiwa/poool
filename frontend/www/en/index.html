@@ -18,7 +18,7 @@
   <link rel="canonical" href="https://poool.finance/" />
   <base href="" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <style>
     *,
     :before,
@@ -226,6 +226,38 @@
   <link rel="modulepreload" href="chunk-ZBVOF6Q3.js" />
   <script src="polyfills-YEJWEMLH.js" type="module"></script>
   <script src="main-6QW32D7Z.js" type="module"></script>
+  <script>
+    (function () {
+      function linkIdButton() {
+        var sel = document.querySelector('pool-land-language-selector');
+        if (!sel) return false;
+        var btns = sel.querySelectorAll('button');
+        for (var i = 0; i < btns.length; i++) {
+          var btn = btns[i];
+          if (btn.textContent.trim() === 'ID' && !btn.dataset.linked) {
+            btn.dataset.linked = '1';
+            var a = document.createElement('a');
+            a.href = '/id/';
+            a.style.cssText = 'display:contents';
+            btn.parentNode.insertBefore(a, btn);
+            a.appendChild(btn);
+            return true;
+          }
+        }
+        return false;
+      }
+      var attempts = 0;
+      function poll() {
+        if (linkIdButton() || attempts++ > 50) return;
+        setTimeout(poll, 100);
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', poll);
+      } else {
+        poll();
+      }
+    })();
+  </script>
 </body>
 
 </html>

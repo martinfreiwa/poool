@@ -27,30 +27,7 @@ include
 
     <main class="ds-main rewards-main" {% if affiliate_status == 'pending_approval' %}style="filter: blur(8px); pointer-events: none; user-select: none;"{% endif %}>
       <!-- Leaderboard-style Top Bar -->
-      <header class="lb-topbar rewards-lb-topbar">
-        <div class="lb-topbar-inner rewards-lb-topbar-inner">
-          <div class="lb-topbar-left">
-            <span class="lb-topbar-title">Rewards</span>
-            <div class="lb-topbar-tabs">
-              <button class="lb-topbar-tab rewards-tab-btn active" data-tab="rewards-tab" onclick="switchRewardsTab(this)">
-                Overview
-              </button>
-              <button class="lb-topbar-tab rewards-tab-btn" data-tab="tier-tab" onclick="switchRewardsTab(this)">
-                Tier
-              </button>
-              <button class="lb-topbar-tab rewards-tab-btn" data-tab="affiliate-tab" onclick="switchRewardsTab(this)">
-                Affiliate Dashboard
-              </button>
-              <button class="lb-topbar-tab rewards-tab-btn" data-tab="marketing-tab" onclick="switchRewardsTab(this)">
-                Marketing Material
-              </button>
-              <button class="lb-topbar-tab rewards-tab-btn" data-tab="commissions-tab" onclick="switchRewardsTab(this)">
-                Commissions
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      {% with investor_topbar_title="Rewards", investor_topbar_class="rewards-lb-topbar", investor_topbar_inner_class="rewards-lb-topbar-inner", investor_topbar_variant="rewards" %}{% include 'components/investor-topbar.html' %}{% endwith %}
 
       <div class="rewards-container">
 
@@ -853,7 +830,7 @@ include
                     <span class="marketing-asset-name">POOOL Logo (SVG)</span>
                     <span class="marketing-asset-meta">Vector • Scalable</span>
                   </div>
-                  <a href="/static/images/Logo Pool.svg" download class="marketing-download-btn">
+                  <a href="/static/images/logos/Logo%20Pool.svg" download class="marketing-download-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

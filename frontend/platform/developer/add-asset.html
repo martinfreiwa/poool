@@ -1,4 +1,4 @@
-{% with title="Developer Add Asset", meta_description="Add a new property or asset to POOOL.", extra_css=['leaderboard', 'developer-add-asset', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom'], extra_js=['htmx-init', 'developer-add-asset', 'profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Developer Add Asset", meta_description="Add a new property or asset to POOOL.", extra_css=['leaderboard', 'developer-add-asset', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom', 'developer-leaderboard-navbar'], extra_js=['htmx-init', 'developer-add-asset', 'profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="developer-add-asset-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -8,25 +8,9 @@
     </div>
 
     <main id="developer-add-asset-main" class="ds-main cart-page-main">
-      <!-- Page Header -->
-      <header id="developer-add-asset-page-header" class="lb-topbar cart-page-header">
-        <div class="lb-topbar-inner">
-          <div class="lb-topbar-left">
-            <span class="lb-topbar-title">Add Asset</span>
-          </div>
-          <div class="lb-topbar-right">
-            <div class="checkout-steps">
-              <span class="checkout-steps__step checkout-steps__step--active">Asset Type</span>
-              <span class="checkout-steps__divider">→</span>
-              <span class="checkout-steps__step">Property Info</span>
-              <span class="checkout-steps__divider">→</span>
-              <span class="checkout-steps__step">Documents</span>
-              <span class="checkout-steps__divider">→</span>
-              <span class="checkout-steps__step">Review</span>
-            </div>
-          </div>
-        </div>
-      </header>
+      {% with dev_nav_title="Add Asset", dev_nav_flow_step="asset" %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
       <!-- Asset Type Header -->
       <div class="asset-type-header">
         <h2 class="asset-type-header__title">Choose asset type</h2>

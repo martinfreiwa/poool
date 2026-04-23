@@ -2587,70 +2587,70 @@ video {
 }
 @font-face {
   font-family: TT Norms Pro;
-  src: url(/fonts/TTNormPro/TT Norms Pro-Regular.eot);
+  src: url(/fonts/TTNormPro/TTNormsPro-Regular.eot);
   src:
     local("TT Norms Pro Regular"),
-    local("TT Norms Pro-Regular"),
-    url(/fonts/TTNormPro/TT Norms Pro-Regular.eot?#iefix)
+    local("TTNormsPro-Regular"),
+    url(/fonts/TTNormPro/TTNormsPro-Regular.eot?#iefix)
       format("embedded-opentype"),
-    url(/fonts/TTNormPro/TT Norms Pro-Regular.woff2) format("woff2"),
-    url(/fonts/TTNormPro/TT Norms Pro-Regular.woff) format("woff"),
-    url(/fonts/TTNormPro/TT Norms Pro-Regular.ttf) format("truetype");
+    url(/fonts/TTNormPro/TTNormsPro-Regular.woff2) format("woff2"),
+    url(/fonts/TTNormPro/TTNormsPro-Regular.woff) format("woff"),
+    url(/fonts/TTNormPro/TTNormsPro-Regular.ttf) format("truetype");
   font-weight: 500;
   font-style: normal;
 }
 @font-face {
   font-family: TT Norms Pro;
-  src: url(/fonts/TTNormPro/TT Norms Pro-Medium.eot);
+  src: url(/fonts/TTNormPro/TTNormsPro-Medium.eot);
   src:
     local("TT Norms Pro Medium"),
-    local("TT Norms Pro-Medium"),
-    url(/fonts/TTNormPro/TT Norms Pro-Medium.eot?#iefix)
+    local("TTNormsPro-Medium"),
+    url(/fonts/TTNormPro/TTNormsPro-Medium.eot?#iefix)
       format("embedded-opentype"),
-    url(/fonts/TTNormPro/TT Norms Pro-Medium.woff2) format("woff2"),
-    url(/fonts/TTNormPro/TT Norms Pro-Medium.woff) format("woff"),
-    url(/fonts/TTNormPro/TT Norms Pro-Medium.ttf) format("truetype");
+    url(/fonts/TTNormPro/TTNormsPro-Medium.woff2) format("woff2"),
+    url(/fonts/TTNormPro/TTNormsPro-Medium.woff) format("woff"),
+    url(/fonts/TTNormPro/TTNormsPro-Medium.ttf) format("truetype");
   font-weight: 600;
   font-style: normal;
 }
 @font-face {
   font-family: TT Norms Pro;
-  src: url(/fonts/TTNormPro/TT Norms Pro-Bold.eot);
+  src: url(/fonts/TTNormPro/TTNormsPro-Bold.eot);
   src:
     local("TT Norms Pro Bold"),
-    local("TT Norms Pro-Bold"),
-    url(/fonts/TTNormPro/TT Norms Pro-Bold.eot?#iefix) format("embedded-opentype"),
-    url(/fonts/TTNormPro/TT Norms Pro-Bold.woff2) format("woff2"),
-    url(/fonts/TTNormPro/TT Norms Pro-Bold.woff) format("woff"),
-    url(/fonts/TTNormPro/TT Norms Pro-Bold.ttf) format("truetype");
+    local("TTNormsPro-Bold"),
+    url(/fonts/TTNormPro/TTNormsPro-Bold.eot?#iefix) format("embedded-opentype"),
+    url(/fonts/TTNormPro/TTNormsPro-Bold.woff2) format("woff2"),
+    url(/fonts/TTNormPro/TTNormsPro-Bold.woff) format("woff"),
+    url(/fonts/TTNormPro/TTNormsPro-Bold.ttf) format("truetype");
   font-weight: 700;
   font-style: normal;
 }
 @font-face {
   font-family: TT Norms Pro;
-  src: url(/fonts/TTNormPro/TT Norms Pro-ExtraBold.eot);
+  src: url(/fonts/TTNormPro/TTNormsPro-ExtraBold.eot);
   src:
     local("TT Norms Pro Extra Bold"),
-    local("TT Norms Pro-ExtraBold"),
-    url(/fonts/TTNormPro/TT Norms Pro-ExtraBold.eot?#iefix)
+    local("TTNormsPro-ExtraBold"),
+    url(/fonts/TTNormPro/TTNormsPro-ExtraBold.eot?#iefix)
       format("embedded-opentype"),
-    url(/fonts/TTNormPro/TT Norms Pro-ExtraBold.woff2) format("woff2"),
-    url(/fonts/TTNormPro/TT Norms Pro-ExtraBold.woff) format("woff"),
-    url(/fonts/TTNormPro/TT Norms Pro-ExtraBold.ttf) format("truetype");
+    url(/fonts/TTNormPro/TTNormsPro-ExtraBold.woff2) format("woff2"),
+    url(/fonts/TTNormPro/TTNormsPro-ExtraBold.woff) format("woff"),
+    url(/fonts/TTNormPro/TTNormsPro-ExtraBold.ttf) format("truetype");
   font-weight: 800;
   font-style: normal;
 }
 @font-face {
   font-family: TT Norms Pro;
-  src: url(/fonts/TTNormPro/TT Norms Pro-Italic.eot);
+  src: url(/fonts/TTNormPro/TTNormsPro-Italic.eot);
   src:
     local("TT Norms Pro Italic"),
-    local("TT Norms Pro-Italic"),
-    url(/fonts/TTNormPro/TT Norms Pro-Italic.eot?#iefix)
+    local("TTNormsPro-Italic"),
+    url(/fonts/TTNormPro/TTNormsPro-Italic.eot?#iefix)
       format("embedded-opentype"),
-    url(/fonts/TTNormPro/TT Norms Pro-Italic.woff2) format("woff2"),
-    url(/fonts/TTNormPro/TT Norms Pro-Italic.woff) format("woff"),
-    url(/fonts/TTNormPro/TT Norms Pro-Italic.ttf) format("truetype");
+    url(/fonts/TTNormPro/TTNormsPro-Italic.woff2) format("woff2"),
+    url(/fonts/TTNormPro/TTNormsPro-Italic.woff) format("woff"),
+    url(/fonts/TTNormPro/TTNormsPro-Italic.ttf) format("truetype");
   font-weight: 400;
   font-style: italic;
 }

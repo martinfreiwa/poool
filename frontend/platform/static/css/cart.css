@@ -31,7 +31,7 @@
 }
 
 #cart-content-wrapper {
-  padding: var(--page-padding-top, 48px) var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
+  padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
   width: 100%;
   max-width: 1200px;
   display: flex;

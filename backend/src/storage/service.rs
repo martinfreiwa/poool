@@ -285,16 +285,48 @@ pub fn validate_asset_doc_mime(mime: &str) -> Result<(), AppError> {
 }
 
 // ─── URL rewriting ─────────────────────────────────────────────
-/// Rewrite a stored image/asset URL so that old direct GCS links
-/// (`https://storage.googleapis.com/bucket/path`) become proxy
-/// paths (`/api/proxy/gcs/bucket/path`). URLs that are already
-/// proxy paths or relative paths are returned unchanged.
+/// Rewrite a stored image/asset URL into a path the app can serve.
+///
+/// - Old direct GCS links (`https://storage.googleapis.com/bucket/path`) become
+///   proxy paths (`/api/proxy/gcs/bucket/path`).
+/// - Legacy seed rows stored flat `/images/<file>` paths, while the checked-in
+///   property assets live under `/static/images/properties/<folder>/<file>`.
 pub fn rewrite_gcs_url(url: &str) -> String {
     if url.starts_with("https://storage.googleapis.com/") {
         url.replacen("https://storage.googleapis.com/", "/api/proxy/gcs/", 1)
+    } else if let Some(file_name) = url.strip_prefix("/images/") {
+        legacy_property_image_url(file_name).unwrap_or_else(|| url.to_string())
     } else {
         url.to_string()
     }
+}
+
+fn legacy_property_image_url(file_name: &str) -> Option<String> {
+    const FOLDERS: &[&str] = &[
+        "bali_agri",
+        "bukit_villa",
+        "cacao_bali",
+        "canggu_flip",
+        "canggu_pool",
+        "canggu_surf",
+        "canopy",
+        "coffee_kintamani",
+        "denpasar_cliff",
+        "denpasar_plaza",
+        "grand_resort",
+        "green_field",
+        "jimbaran_sunset",
+        "sanur_beach",
+        "seminyak_complex",
+        "ubud_resort",
+        "uluwatu_retreat",
+        "uluwatu_temple",
+    ];
+
+    FOLDERS
+        .iter()
+        .find(|folder| file_name.starts_with(**folder))
+        .map(|folder| format!("/static/images/properties/{}/{}", folder, file_name))
 }
 
 /// Same as [`rewrite_gcs_url`] but works on `Option<String>`.
@@ -352,5 +384,33 @@ mod tests {
         assert!(validate_kyc_mime("image/jpeg").is_ok());
         assert!(validate_kyc_mime("application/pdf").is_ok());
         assert!(validate_kyc_mime("text/plain").is_err());
+    }
+
+    #[test]
+    fn test_rewrite_gcs_url_maps_legacy_property_images() {
+        assert_eq!(
+            rewrite_gcs_url("/images/ubud_resort_hero.webp"),
+            "/static/images/properties/ubud_resort/ubud_resort_hero.webp"
+        );
+        assert_eq!(
+            rewrite_gcs_url("/images/bukit_villa_pool.webp"),
+            "/static/images/properties/bukit_villa/bukit_villa_pool.webp"
+        );
+    }
+
+    #[test]
+    fn test_rewrite_gcs_url_keeps_unknown_legacy_images() {
+        assert_eq!(
+            rewrite_gcs_url("/images/custom-upload.webp"),
+            "/images/custom-upload.webp"
+        );
+    }
+
+    #[test]
+    fn test_rewrite_gcs_url_maps_storage_googleapis_urls() {
+        assert_eq!(
+            rewrite_gcs_url("https://storage.googleapis.com/poool/assets/one.webp"),
+            "/api/proxy/gcs/poool/assets/one.webp"
+        );
     }
 }

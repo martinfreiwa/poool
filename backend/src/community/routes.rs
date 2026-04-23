@@ -217,7 +217,10 @@ pub fn map_to_post_display(
         })
     });
 
-    let raw_content = p.content_sanitized.clone().unwrap_or_else(|| p.content.clone());
+    let raw_content = p
+        .content_sanitized
+        .clone()
+        .unwrap_or_else(|| p.content.clone());
     let re = regex::Regex::new(r"(#[\w\u00C0-\u024F]+|@[\w\u00C0-\u024F_-]+)").unwrap();
     let rendered_content = if p.post_type == "announcement" {
         raw_content.clone()
@@ -233,7 +236,7 @@ pub fn map_to_post_display(
             }
         }).into_owned()
     };
-    
+
     let image_urls = p
         .image_urls
         .clone()
@@ -265,7 +268,6 @@ pub fn map_to_post_display(
         created_at: p.created_at,
     }
 }
-
 
 pub async fn get_feed_data(
     state: &AppState,
@@ -305,8 +307,7 @@ pub async fn get_feed_data(
     let badges = service::get_badges_batch(&c_pool, &user_ids).await?;
 
     let mut feed = Vec::with_capacity(posts.len());
-    
-    
+
     for p in posts {
         let author = authors.get(&p.user_id);
         let author_badges = badges.get(&p.user_id).cloned().unwrap_or_default();

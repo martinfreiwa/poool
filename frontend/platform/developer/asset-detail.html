@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/static/css/dashboard-tokens.css" />
   <link rel="stylesheet" href="/static/css/main.css" />
   <link rel="stylesheet" href="/static/css/leaderboard.css" />
+  <link rel="stylesheet" href="/static/css/developer-leaderboard-navbar.css" />
   <link rel="stylesheet" href="/static/css/marketplace.css" />
   <link rel="stylesheet" href="/static/css/developer-assets.css" />
   <link rel="stylesheet" href="/static/css/developer-asset-detail.css" />
@@ -203,7 +204,7 @@
           <span class="mobile-burger-menu__nav-text">Settings</span>
         </div>
         <!-- Support -->
-        <a href="/support" class="mobile-burger-menu__nav-item">
+        <a href="/developer/support" class="mobile-burger-menu__nav-item">
           <div class="mobile-burger-menu__nav-icon-wrapper">
             <img  src="/static/images/icons/message-chat-circle-grey.svg" alt="Support"
               class="mobile-burger-menu__nav-icon" />
@@ -728,7 +729,7 @@
           <span class="mobile-burger-menu__nav-text">Settings</span>
         </div>
         <!-- Support -->
-        <a href="/support" class="mobile-burger-menu__nav-item">
+        <a href="/developer/support" class="mobile-burger-menu__nav-item">
           <div class="mobile-burger-menu__nav-icon-wrapper">
             <img  src="/static/images/icons/message-chat-circle-grey.svg" alt="Support"
               class="mobile-burger-menu__nav-icon" />
@@ -1229,7 +1230,7 @@
         </a>
 
         <!-- Support -->
-        <a href="/support" class="mobile-burger-menu__nav-item">
+        <a href="/developer/support" class="mobile-burger-menu__nav-item">
           <div class="mobile-burger-menu__nav-icon-wrapper">
             <img  src="/static/images/Menu%20developer/Support.svg" alt="Support"
               class="mobile-burger-menu__nav-icon" />
@@ -1868,7 +1869,7 @@
               <!-- Footer Navigation -->
               <nav id="footer-nav" class="sidebar__footer-nav">
                 <div id="nav-item-settings" class="sidebar__nav-item">
-                  <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
+                  <a id="nav-item-settings-content" href="/developer/settings" class="sidebar__nav-item-content">
                     <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
                       <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
                         <img  src="/static/images/icons/settings-01.svg" alt="Settings" class="nav-icon" width="20"
@@ -1879,7 +1880,7 @@
                   </a>
                 </div>
                 <div id="nav-item-support" class="sidebar__nav-item">
-                  <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
+                  <a id="nav-item-support-content" href="/developer/support" class="sidebar__nav-item-content">
                     <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
                       <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
                         <img  src="/static/images/icons/message-chat-circle-grey.svg" alt="Support"
@@ -2244,7 +2245,7 @@
               <!-- Footer Navigation -->
               <nav id="footer-nav" class="sidebar__footer-nav">
                 <div id="nav-item-settings" class="sidebar__nav-item">
-                  <a id="nav-item-settings-content" href="/settings" class="sidebar__nav-item-content">
+                  <a id="nav-item-settings-content" href="/developer/settings" class="sidebar__nav-item-content">
                     <div id="nav-text-icon-settings" class="sidebar__nav-text-icon">
                       <div id="nav-icon-wrapper-settings" class="sidebar__nav-icon-wrapper">
                         <img  src="/static/images/icons/settings-01.svg" alt="Settings" class="nav-icon" width="20"
@@ -2255,7 +2256,7 @@
                   </a>
                 </div>
                 <div id="nav-item-support" class="sidebar__nav-item">
-                  <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
+                  <a id="nav-item-support-content" href="/developer/support" class="sidebar__nav-item-content">
                     <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
                       <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
                         <img  src="/static/images/icons/message-chat-circle-grey.svg" alt="Support"
@@ -2587,7 +2588,7 @@
 
                 <!-- Support -->
                 <div id="nav-item-support" class="sidebar__nav-item">
-                  <a id="nav-item-support-content" href="/support" class="sidebar__nav-item-content">
+                  <a id="nav-item-support-content" href="/developer/support" class="sidebar__nav-item-content">
                     <div id="nav-text-icon-support" class="sidebar__nav-text-icon">
                       <div id="nav-icon-wrapper-support" class="sidebar__nav-icon-wrapper">
                         <img  src="/static/images/Menu%20developer/Support.svg" alt="Support"
@@ -3191,50 +3192,20 @@
       </script>
     </div>
     <!-- Main Content Area -->
-    <main class="ds-main marketplace-main">
-      <header class="admin-topbar">
-        <div class="admin-topbar-left">
-          <nav class="admin-breadcrumbs">
-            <a href="/developer/dashboard">Developer</a>
-            <span class="separator">›</span>
-            <a href="/developer/assets">Assets</a>
-            <span class="separator">›</span>
-            <span class="current" id="breadcrumb-asset-title">Asset Details</span>
-          </nav>
-        </div>
-        <div class="admin-topbar-right">
-          <button class="admin-btn admin-btn--secondary" id="btn-refresh" title="Refresh">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M1 1v5h5" />
-              <path d="M1 6a7 7 0 0113.2-3.2M15 15v-5h-5" />
-              <path d="M15 10A7 7 0 011.8 13.2" />
-            </svg>
-            Refresh
-          </button>
-          <div class="edit-toolbar" id="edit-toolbar" style="display:none;">
-            <button class="btn-edit-mode" id="btn-edit-mode" title="Edit asset details">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round">
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              Edit
-            </button>
-            <button class="btn-save-changes" id="btn-save-changes">Save Changes</button>
-            <button class="btn-cancel-edit" id="btn-cancel-edit">Cancel</button>
-          </div>
-        </div>
-      </header>
+    <main class="ds-main marketplace-main developer-lb-shell-main">
+      {% with dev_nav_title="Asset Details", dev_nav_active="assets", dev_nav_show_asset_actions=true %}
+      {% include "components/developer-topbar.html" %}
+      {% endwith %}
 
       <div class="admin-content">
+        <nav class="admin-breadcrumbs">
+          <a href="/developer/dashboard">Developer</a>
+          <span class="separator">›</span>
+          <a href="/developer/assets">Assets</a>
+          <span class="separator">›</span>
+          <span class="current" id="breadcrumb-asset-title">Asset Details</span>
+        </nav>
         <!-- Page Heading -->
-        <header class="lb-topbar dashboard-page-header">
-          <div class="lb-topbar-inner">
-            <div class="lb-topbar-left">
-              <span id="page-heading-title" class="lb-topbar-title">Asset Details</span>
-            </div>
-          </div>
-        </header>
         <!-- Loading State -->
         <div id="loading-overlay" style="padding: 60px; text-align: center">
           <div style="
@@ -3271,7 +3242,7 @@
           <!-- ─── HERO HEADER ─── -->
           <div class="ad-hero">
             <div class="ad-hero__image-wrap">
-              <img loading="lazy" id="asset-image" src="/static/images/ui/placeholder-property.webp" alt=""
+              <img loading="lazy" id="asset-image" src="/static/images/portfolio_asset_details/Property%20image.webp" alt=""
                 class="ad-hero__image" />
               <div class="ad-hero__image-overlay"></div>
             </div>

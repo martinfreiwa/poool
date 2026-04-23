@@ -47,7 +47,7 @@ pub fn lookup(slug: &str) -> Option<PropertyDisplayData> {
                 "/static/images/seed/villa1_4.webp",
             ],
             video_url: None,
-            google_maps_url: Some("https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d63247.44!2d115.12!3d-8.64!3m2!1i1024!2i768!4f13.1!2sCanggu%2C%20Bali!5e0!3m2!1sen!2sid!4v1711234567890"),
+            google_maps_url: None,
         },
 
         "ocean-breeze-penthouse" => PublicPropertySpec {
@@ -381,7 +381,9 @@ impl PublicPropertySpec {
             annualised_net_return_percent: format!("{:.2}", annualised_net),
             land_size_sqm: Some(format!("{}", self.land_size_sqm as i64)),
             platform_fee_usd: super::models::format_number(total_value_dollars * 5 / 100),
-            total_investment_cost_usd: super::models::format_number(total_value_dollars * 105 / 100),
+            total_investment_cost_usd: super::models::format_number(
+                total_value_dollars * 105 / 100,
+            ),
         }
     }
 }
