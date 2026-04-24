@@ -300,10 +300,7 @@ pub async fn verify_session_2fa(pool: &PgPool, session_token: &str) -> Result<()
 /// user completes the step-up.
 ///
 /// Returns the new session token that must be written back to the cookie.
-pub async fn rotate_session_token(
-    pool: &PgPool,
-    old_token: &str,
-) -> Result<String, AppError> {
+pub async fn rotate_session_token(pool: &PgPool, old_token: &str) -> Result<String, AppError> {
     let new_token = generate_session_token();
     let affected = sqlx::query(
         "UPDATE user_sessions

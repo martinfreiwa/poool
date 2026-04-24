@@ -52,6 +52,8 @@ pub async fn page_marketplace(jar: CookieJar, State(state): State<AppState>) -> 
                 ORDER BY is_cover DESC, created_at ASC
             ) AS "image_urls?",
             a.bedrooms,
+            a.bathrooms,
+            a.building_size_sqm,
             a.lease_type,
             a.term_months,
             a.area,
@@ -147,7 +149,9 @@ pub async fn page_property(
                 ORDER BY is_cover DESC, created_at ASC
             ) AS "image_urls?",
                 a.bedrooms,
-                a.lease_type,
+            a.bathrooms,
+            a.building_size_sqm,
+            a.lease_type,
                 a.term_months,
                 a.area,
                 a.land_size_sqm,
@@ -234,7 +238,9 @@ pub async fn page_property(
                 ORDER BY is_cover DESC, created_at ASC
             ) AS "image_urls?",
                 a.bedrooms,
-                a.lease_type,
+            a.bathrooms,
+            a.building_size_sqm,
+            a.lease_type,
                 a.term_months,
                 a.area,
                 a.land_size_sqm,
@@ -517,7 +523,9 @@ pub async fn page_commodity(
                     ORDER BY is_cover DESC, created_at ASC
                 ) AS "image_urls?",
                 a.bedrooms,
-                a.lease_type,
+            a.bathrooms,
+            a.building_size_sqm,
+            a.lease_type,
                 a.term_months,
                 a.area,
                 a.land_size_sqm,
@@ -640,12 +648,12 @@ pub async fn api_marketplace_tab(
     for asset in assets {
         let slug = html_escape(&asset.get::<String, _>("slug"));
         let title = html_escape(&asset.get::<String, _>("title"));
-        let location_city = html_escape(
+        let _location_city = html_escape(
             &asset
                 .get::<Option<String>, _>("location_city")
                 .unwrap_or_else(|| "Bali".to_string()),
         );
-        let location_country = html_escape(
+        let _location_country = html_escape(
             &asset
                 .get::<Option<String>, _>("location_country")
                 .unwrap_or_else(|| "ID".to_string()),
@@ -676,30 +684,33 @@ pub async fn api_marketplace_tab(
         );
 
         let bedrooms = asset.get::<Option<i32>, _>("bedrooms");
+        let bathrooms = asset.get::<Option<i32>, _>("bathrooms");
+        let building_sqm = asset.get::<Option<rust_decimal::Decimal>, _>("building_size_sqm");
+        let land_sqm = asset.get::<Option<rust_decimal::Decimal>, _>("land_size_sqm");
         let lease_type = asset
             .get::<Option<String>, _>("lease_type")
             .unwrap_or_else(|| "Leasehold".to_string());
         let lease_label = lease_type_label(&lease_type);
         let badge_class = lease_badge_class(&lease_type);
 
-        let status = asset.get::<String, _>("funding_status");
-        let funding_status_label = match status.as_str() {
-            "funding_open" | "funding_in_progress" => "Available",
-            "funded" => "Funded",
-            "rented" => "Rented",
-            "exited" => "Exited",
-            _ => "Upcoming",
-        };
-
-        let bedrooms_html = match bedrooms {
-            Some(b) => {
-                format!(
-                    "<div class=\"card-meta-item\"><img src=\"/static/images/icons/Bed.svg\" alt=\"Beds\" width=\"16\" height=\"16\"><span>{b}</span></div><div class=\"card-meta-divider\"></div>",
-                    b = b,
-                )
-            }
-            None => String::new(),
-        };
+        let sqm_label = building_sqm
+            .or(land_sqm)
+            .map(|sqm| format!("{:.0} m²", sqm))
+            .unwrap_or_else(|| "— m²".to_string());
+        let card_metrics_html = format!(
+            r##"<div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>{beds}</span></div>
+                        <div class="card-meta-divider"></div>
+                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v8"/><path d="M17 4v8"/><path d="M4 12h16"/><path d="M5 12v3a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3"/></svg><span>{baths}</span></div>
+                        <div class="card-meta-divider"></div>
+                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>{sqm}</span></div>"##,
+            beds = bedrooms
+                .map(|b| b.to_string())
+                .unwrap_or_else(|| "—".to_string()),
+            baths = bathrooms
+                .map(|b| b.to_string())
+                .unwrap_or_else(|| "—".to_string()),
+            sqm = html_escape(&sqm_label),
+        );
 
         let duration_label = match term_months {
             Some(m) if m > 0 => format!("{} months", m),
@@ -749,16 +760,7 @@ pub async fn api_marketplace_tab(
                 </div>
                 <div class="property-content">
                     <div class="card-meta-row">
-                        {bedrooms_html}
-                        <div class="card-meta-item">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                            <span>{funding_status_label}</span>
-                        </div>
-                        <div class="card-meta-divider"></div>
-                        <div class="card-meta-item">
-                            <img src="/static/images/profiles/{location_country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="{location_country}">
-                            <span>{location_city}, {location_country}</span>
-                        </div>
+                        {card_metrics_html}
                     </div>
                     <div class="property-heading">
                         <h3 class="property-title">{title}</h3>
@@ -792,13 +794,10 @@ pub async fn api_marketplace_tab(
             images_html = images_html, dots_html = dots_html,
             badge_class = badge_class,
             lease_label = lease_label,
-            bedrooms_html = bedrooms_html,
-            location_city = location_city,
-            location_country = location_country,
+            card_metrics_html = card_metrics_html,
             title = title,
             price_usd = price_usd,
             funded_pct = funded_pct,
-            funding_status_label = funding_status_label,
             duration_label = duration_label,
             appreciation_pct = appreciation_pct,
             yield_pct = yield_pct,
@@ -1139,6 +1138,7 @@ pub struct SearchResult {
     pub subtitle: String,
     pub url: String,
     pub icon: String,
+    pub image_url: Option<String>,
 }
 
 pub async fn api_asset_search(
@@ -1158,11 +1158,23 @@ pub async fn api_asset_search(
     let search_query = format!("%{}%", q);
     let assets = sqlx::query!(
         r#"
-        SELECT title, slug, asset_type, location_city, location_country
-        FROM assets
-        WHERE published = true
-          AND (LOWER(title) LIKE $1 OR LOWER(location_city) LIKE $1 OR LOWER(location_country) LIKE $1 OR LOWER(slug) LIKE $1)
-        ORDER BY featured DESC, created_at DESC
+        SELECT
+            a.title,
+            a.slug,
+            a.asset_type,
+            a.location_city,
+            a.location_country,
+            (
+                SELECT ai.image_url
+                FROM asset_images ai
+                WHERE ai.asset_id = a.id
+                ORDER BY ai.is_cover DESC, ai.sort_order ASC, ai.created_at ASC
+                LIMIT 1
+            ) AS image_url
+        FROM assets a
+        WHERE a.published = true
+          AND (LOWER(a.title) LIKE $1 OR LOWER(a.location_city) LIKE $1 OR LOWER(a.location_country) LIKE $1 OR LOWER(a.slug) LIKE $1)
+        ORDER BY a.featured DESC, a.created_at DESC
         LIMIT 8
         "#,
         search_query
@@ -1195,6 +1207,7 @@ pub async fn api_asset_search(
                 ),
                 url,
                 icon: icon.to_string(),
+                image_url: crate::storage::service::rewrite_gcs_url_opt(a.image_url.as_deref()),
             }
         })
         .collect();

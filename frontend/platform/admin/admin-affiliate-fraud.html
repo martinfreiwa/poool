@@ -51,14 +51,12 @@
         }
     </style>
 </head>
-<body class="ds-admin-layout dark-theme">
+<body class="admin-body dom-ready dark-theme">
+    <div class="admin-wrapper">
+        {% include 'admin/components/sidebar.html' %}
 
-    {% include 'admin/components/sidebar.html' %}
-
-    {% include 'admin/components/header.html' %}
-
-    <main class="ds-admin-main">
-        <div class="ds-admin-content-wrapper">
+        <main class="admin-main">
+            <div class="admin-content">
             <div class="fraud-header">
                 <h1 class="ds-h3">Syndicate Fraud Visualizer</h1>
                 <p>Detect Circular Referral Rings (A &rarr; B &rarr; A) and registration IP overlaps visually.</p>
@@ -72,8 +70,9 @@
                 </div>
                 <div id="cy"></div>
             </div>
-        </div>
-    </main>
+            </div>
+        </main>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

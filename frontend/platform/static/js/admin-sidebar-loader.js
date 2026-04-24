@@ -41,6 +41,23 @@
                         </a>
                     </div>
 
+                    <!-- Blog -->
+                    <div class="admin-nav-section">
+                        <span class="admin-nav-section-label">Blog</span>
+                        <a href="/admin/blog.html" class="admin-nav-item ${isPathActive(["/admin/blog.html", "/admin/blog-editor.html"]) ? "active" : ""}" id="nav-blog">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/></svg>
+                            <span>Blog</span>
+                        </a>
+                        <a href="/admin/blog-persona.html" class="admin-nav-item ${isPathActive(["/admin/blog-persona.html"]) ? "active" : ""}" id="nav-blog-persona">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/><path d="M15 11l2 2 4-4"/></svg>
+                            <span>Persona</span>
+                        </a>
+                        <a href="/admin/blog-strategy.html" class="admin-nav-item ${isPathActive(["/admin/blog-strategy.html"]) ? "active" : ""}" id="nav-blog-strategy">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/><path d="M17 7h2v2"/></svg>
+                            <span>Strategy</span>
+                        </a>
+                    </div>
+
                     <!-- People -->
                     <div class="admin-nav-section">
                         <span class="admin-nav-section-label">People</span>
@@ -69,7 +86,7 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             <span>Announcements</span>
                         </a>
-                        <a href="/admin/community/posts.html" class="admin-nav-item ${isPathActive(["/admin/community/posts.html"]) ? "active" : ""}" id="nav-com-posts">
+                        <a href="/admin/community/posts.html" class="admin-nav-item ${isPathActive(["/admin/community/posts.html", "/admin/community/post-detail.html"]) ? "active" : ""}" id="nav-com-posts">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                             <span>Posts</span>
                         </a>
@@ -98,7 +115,7 @@
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                             <span>Challenges</span>
                         </a>
-                        <a href="/admin/community/circles.html" class="admin-nav-item ${isPathActive(["/admin/community/circles.html"]) ? "active" : ""}" id="nav-com-circles">
+                        <a href="/admin/community/circles.html" class="admin-nav-item ${isPathActive(["/admin/community/circles.html", "/admin/community/circle-detail.html"]) ? "active" : ""}" id="nav-com-circles">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
                             <span>Circles</span>
                         </a>
@@ -123,6 +140,10 @@
                         <a href="/admin/assets.html" class="admin-nav-item ${isPathActive(["/admin/assets.html", "/admin/asset-details.html"]) ? "active" : ""}" id="nav-assets">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
                             <span>Live Assets</span>
+                        </a>
+                        <a href="/admin/asset-tokenize.html" class="admin-nav-item ${isPathActive(["/admin/asset-tokenize.html"]) ? "active" : ""}" id="nav-asset-tokenize">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M7.5 4.21l4.5 2.6 4.5-2.6M7.5 19.79V14.6L3 12M21 12l-4.5 2.6v5.19M12 6.81v5.2"/></svg>
+                            <span>Asset Tokenize</span>
                         </a>
                     </div>
 
@@ -202,6 +223,10 @@
                         <a href="/admin/marketplace/approvals.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/approvals.html"]) ? "active" : ""}" id="nav-mp-approvals">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
                             <span>MP Approvals</span>
+                        </a>
+                        <a href="/admin/marketplace/primary-escrow.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/primary-escrow.html"]) ? "active" : ""}" id="nav-mp-primary-escrow">
+                            <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 10a4 4 0 01-8 0"/><path d="M9 6V4a3 3 0 016 0v2"/></svg>
+                            <span>Primary Escrow</span>
                         </a>
                         <a href="/admin/marketplace/fees.html" class="admin-nav-item ${isPathActive(["/admin/marketplace/fees.html"]) ? "active" : ""}" id="nav-mp-fees">
                             <svg class="admin-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
@@ -316,7 +341,7 @@
 
                 <!-- Footer -->
                 <div class="admin-sidebar-footer">
-                    <button class="admin-theme-toggle" id="admin-theme-toggle" title="Toggle dark/light mode">
+                    <button type="button" class="admin-theme-toggle" id="admin-theme-toggle" title="Toggle dark/light mode">
                         <div class="admin-theme-toggle-track">
                             <div class="admin-theme-toggle-thumb"></div>
                         </div>

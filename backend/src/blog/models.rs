@@ -28,6 +28,7 @@ pub struct ArticleResponse {
     pub cover_image_url: Option<String>,
     pub reading_time_minutes: i32,
     pub featured: bool,
+    pub share_links: ArticleShareLinks,
 
     // Schema
     pub schema_type: String,
@@ -39,11 +40,23 @@ pub struct ArticleResponse {
     pub updated_at: String,
 }
 
+/// Optional per-article social share destinations.
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ArticleShareLinks {
+    pub whatsapp_url: Option<String>,
+    pub facebook_url: Option<String>,
+    pub x_url: Option<String>,
+    pub instagram_url: Option<String>,
+    pub linkedin_url: Option<String>,
+}
+
 /// Minimal author info embedded in article responses.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AuthorSummary {
     pub id: String,
     pub name: String,
+    pub initials: String,
     pub slug: String,
     pub avatar_url: Option<String>,
     pub bio: Option<String>,
@@ -105,6 +118,20 @@ pub struct PaginatedArticles {
     pub page: i64,
     pub per_page: i64,
     pub total_pages: i64,
+}
+
+pub fn author_initials(name: &str) -> String {
+    let initials: String = name
+        .split_whitespace()
+        .filter_map(|part| part.chars().next())
+        .take(2)
+        .collect();
+
+    if initials.is_empty() {
+        "P".to_string()
+    } else {
+        initials.to_uppercase()
+    }
 }
 
 // ── Request models ────────────────────────────────────────────────

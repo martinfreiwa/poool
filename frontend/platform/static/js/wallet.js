@@ -53,6 +53,26 @@
                 el.classList.add("hidden");
             }
         });
+        if (name === "empty") markEmptyStateSteps();
+    }
+
+    /** Mark onboarding steps complete based on user profile + payment methods. */
+    function markEmptyStateSteps() {
+        const user = window.__POOOL_USER;
+        if (!user) return;
+        const kycDone = ["verified", "approved", "completed"].includes(
+            String(user.kyc_status || user.kycStatus || "").toLowerCase()
+        );
+        const hasMethod =
+            (Array.isArray(user.payment_methods) && user.payment_methods.length > 0) ||
+            (Array.isArray(user.paymentMethods) && user.paymentMethods.length > 0);
+        const funded = Number(user.wallet_balance ?? user.walletBalance ?? 0) > 0;
+        const completed = { verify: kycDone, method: hasMethod, fund: funded };
+        document.querySelectorAll(".wallet-empty__step").forEach((el) => {
+            const id = el.getAttribute("data-step-id");
+            if (completed[id]) el.setAttribute("data-complete", "true");
+            else el.removeAttribute("data-complete");
+        });
     }
 
     /**

@@ -38,6 +38,9 @@
   // ── Page → Required Permission Mapping ──
   const PAGE_PERMISSION_MAP = {
     "nav-dashboard": null, // Always visible
+    "nav-blog": ["blog.view", "blog.manage"],
+    "nav-blog-persona": ["blog.view", "blog.manage"],
+    "nav-blog-strategy": ["blog.view", "blog.manage"],
     "nav-users": "users.view",
     "nav-kyc": "kyc.read",
     "nav-support": "support.read",
@@ -138,7 +141,7 @@
 
       // Fetch permissions for the user's admin roles
       let allPerms = [];
-      if (roles.includes("super_admin")) {
+      if (roles.includes("super_admin") || roles.includes("admin")) {
         allPerms = ["all"];
       } else {
         // Fetch from the roles API
@@ -216,8 +219,12 @@
         continue;
       }
 
+      const allowed = Array.isArray(requiredPerm)
+        ? perms.hasAny(...requiredPerm)
+        : perms.has(requiredPerm);
+
       // Show or hide based on permission
-      if (perms.has(requiredPerm)) {
+      if (allowed) {
         el.style.display = "";
         el.removeAttribute("data-perm-hidden");
       } else {

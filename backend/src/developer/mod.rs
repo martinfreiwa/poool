@@ -6,8 +6,8 @@ pub mod service;
 
 use crate::auth::routes::AppState;
 use axum::{
-    Router,
     routing::{get, post},
+    Router,
 };
 
 /// Compose all developer-flow page routes into a single mountable [`Router`].

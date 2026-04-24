@@ -47,7 +47,9 @@ pub async fn initiate_deposit(
     let amount_cents: i64 = {
         use rust_decimal::prelude::*;
         let raw = form.amount.trim().replace(',', "");
-        let parsed = Decimal::from_str(&raw).ok().filter(|d| d.is_sign_positive());
+        let parsed = Decimal::from_str(&raw)
+            .ok()
+            .filter(|d| d.is_sign_positive());
         let cents = match (currency.as_str(), parsed) {
             ("USD", Some(d)) => {
                 // Reject >2 decimal places (fractions of a cent).

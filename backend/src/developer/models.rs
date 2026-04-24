@@ -72,6 +72,9 @@ pub struct DeveloperTopAsset {
     pub sales_change_pct: f64,
     pub sales_trend: String,
     pub views: i64,
+    pub add_to_cart_count: i64,
+    pub checkout_starts: i64,
+    pub saved_count: i64,
     pub conversion_rate: f64,
     pub conversion_display: String,
     pub funding_pct: f64,
@@ -81,6 +84,8 @@ pub struct DeveloperTopAsset {
     pub bedrooms: Option<i32>,
     pub total_value_display: String,
     pub total_value_cents: i64,
+    pub amount_remaining_display: String,
+    pub amount_remaining_cents: i64,
     pub is_rented: bool,
     pub country: Option<String>,
     pub lease_type: Option<String>,
@@ -93,10 +98,17 @@ pub struct DeveloperTopAsset {
 #[derive(Debug, Serialize)]
 pub struct DeveloperDashboardStats {
     pub total_assets: i64,
+    pub total_funding_target_cents: i64,
+    pub total_funding_target_display: String,
     pub total_sales_cents: i64,
     pub total_sales_display: String,
+    pub amount_remaining_cents: i64,
+    pub amount_remaining_display: String,
     pub total_investors: i64,
     pub total_views: i64,
+    pub checkout_starts: i64,
+    pub add_to_cart_count: i64,
+    pub saved_properties: i64,
     pub new_investors: i64,
     pub avg_conversion_rate: f64,
     pub sold_out_ratio: f64,
@@ -104,6 +116,7 @@ pub struct DeveloperDashboardStats {
     pub avg_investment_display: String,
     pub metrics: Vec<DeveloperMetric>,
     pub top_assets: Vec<DeveloperTopAsset>,
+    pub attention_assets: Vec<DeveloperTopAsset>,
     pub chart_percentage_display: String, // e.g. "+17.6%" or "0%"
     pub chart_trend: String,              // "up", "down", or "neutral"
 }

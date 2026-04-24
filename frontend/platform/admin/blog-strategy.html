@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog Strategy | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin - Blog strategy planning." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .blog-plan-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+    .blog-plan-form { display: grid; gap: 14px; }
+    .blog-plan-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .blog-plan-field { display: grid; gap: 6px; }
+    .blog-plan-label { font-size: 12px; font-weight: 700; color: var(--admin-text-secondary); }
+    .blog-plan-help { font-size: 12px; line-height: 1.45; color: var(--admin-text-muted); }
+    .blog-plan-panel { position: sticky; top: 20px; display: grid; gap: 16px; }
+    .blog-plan-list { margin: 0; padding-left: 18px; color: var(--admin-text-secondary); font-size: 13px; line-height: 1.6; }
+    .blog-plan-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .blog-plan-output { min-height: 280px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5; }
+    .blog-plan-pill-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .blog-plan-pill { border: 1px solid var(--admin-border); border-radius: 8px; padding: 12px; background: #fbfcff; }
+    .blog-plan-pill strong { display: block; margin-bottom: 4px; color: var(--admin-text-primary); font-size: 13px; }
+    .blog-plan-pill span { color: var(--admin-text-secondary); font-size: 12px; line-height: 1.45; }
+    @media (max-width: 1100px) {
+      .blog-plan-layout, .blog-plan-row, .blog-plan-pill-grid { grid-template-columns: 1fr; }
+      .blog-plan-panel { position: static; }
+    }
+  </style>
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+</head>
+
+<body class="admin-body dom-ready" data-blog-planning-page="strategy">
+  <div class="admin-wrapper">
+    {% include 'admin/components/sidebar.html' %}
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/blog.html">Blog CMS</a>
+            <span class="separator">›</span>
+            <span class="current">Strategy</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header" style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;">
+          <div>
+            <h1 class="admin-page-title">Blog Strategy</h1>
+            <p class="admin-page-subtitle">Plan the content pillars and 90-day publishing focus for POOOL's Bali investment blog.</p>
+          </div>
+          <div class="blog-plan-actions">
+            <a class="admin-btn admin-btn--secondary" href="/admin/blog.html">Back to Blog</a>
+            <a class="admin-btn admin-btn--secondary" href="/admin/blog-persona.html">Persona</a>
+            <a class="admin-btn admin-btn--primary" href="/admin/blog-editor.html">Create Article</a>
+          </div>
+        </div>
+
+        <div id="blog-plan-alert" class="admin-card" style="display:none;margin-bottom:20px;padding:16px;"></div>
+
+        <div class="blog-plan-pill-grid" style="margin-bottom:20px;">
+          <div class="blog-plan-pill">
+            <strong>Positioning</strong>
+            <span>Trust-first guide to Bali fractional property investing.</span>
+          </div>
+          <div class="blog-plan-pill">
+            <strong>Primary gap</strong>
+            <span>Legal clarity, risk transparency, and conservative ROI education.</span>
+          </div>
+          <div class="blog-plan-pill">
+            <strong>Next topic</strong>
+            <span>Bali property due diligence checklist.</span>
+          </div>
+        </div>
+
+        <div class="blog-plan-layout">
+          <section class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">Strategy Workspace</h3>
+            </div>
+            <div class="admin-card-body">
+              <form class="blog-plan-form" id="blog-strategy-form">
+                <div class="blog-plan-field">
+                  <label class="blog-plan-label" for="strategy-positioning">Positioning</label>
+                  <textarea class="admin-input" id="strategy-positioning" rows="3">POOOL makes Bali property investing understandable, legally structured, and accessible without pretending it is risk-free.</textarea>
+                </div>
+
+                <div class="blog-plan-row">
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="strategy-audiences">Audience segments</label>
+                    <textarea class="admin-input" id="strategy-audiences" rows="8">First-time property investors who want passive income and simple explanations
+Foreign Bali buyers, tourists, and retirees confused by ownership rules
+Developers and property sellers who need compliant capital raising</textarea>
+                  </div>
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="strategy-pillars">Content pillars</label>
+                    <textarea class="admin-input" id="strategy-pillars" rows="8">Fractional property education
+Bali legal and risk clarity
+ROI, yield, and location intelligence
+Developer fundraising
+Platform trust and transparency</textarea>
+                  </div>
+                </div>
+
+                <div class="blog-plan-row">
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="strategy-month-one">Month 1</label>
+                    <textarea class="admin-input" id="strategy-month-one" rows="7">Bali Property Due Diligence Checklist
+Leasehold vs Freehold vs Hak Pakai vs PT PMA
+How to Calculate Real Bali Villa ROI
+Update existing broad posts with clearer risk sections
+Add schema to existing posts</textarea>
+                  </div>
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="strategy-month-two">Month 2</label>
+                    <textarea class="admin-input" id="strategy-month-two" rows="7">Fractional Ownership vs REITs vs Timeshare
+What Happens If a Fractional Property Underperforms?
+How Property Income Gets Distributed
+Create one visual ROI calculator article
+Link investor articles back to the fractional property guide</textarea>
+                  </div>
+                </div>
+
+                <div class="blog-plan-row">
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="strategy-month-three">Month 3</label>
+                    <textarea class="admin-input" id="strategy-month-three" rows="7">How Developers Can Raise Capital Through Fractional Property Investment
+What Makes a Property Suitable for Tokenization?
+Developer Checklist Before Listing a Project
+Add developer page links to developer education content
+Run a blog audit and improve articles below 80/100</textarea>
+                  </div>
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="strategy-quality">Quality rules</label>
+                    <textarea class="admin-input" id="strategy-quality" rows="7">Never say returns are guaranteed
+Use projected, targeted, or historical only when backed by data
+Add a risk section to every investment article
+Add FAQ schema to every post
+Use one clear CTA per article</textarea>
+                  </div>
+                </div>
+
+                <div class="blog-plan-actions">
+                  <button class="admin-btn admin-btn--primary" type="submit">Save Draft</button>
+                  <button class="admin-btn admin-btn--secondary" id="blog-plan-reset-btn" type="button">Reset</button>
+                  <button class="admin-btn admin-btn--secondary" id="blog-plan-copy-btn" type="button">Copy Markdown</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <aside class="blog-plan-panel">
+            <section class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Best Next Workflow</h3>
+              </div>
+              <div class="admin-card-body">
+                <ol class="blog-plan-list">
+                  <li>Brief the due diligence checklist.</li>
+                  <li>Outline it before writing.</li>
+                  <li>Write with the POOOL persona active.</li>
+                  <li>Run SEO check and schema before publishing.</li>
+                </ol>
+              </div>
+            </section>
+
+            <section class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Strategy Markdown</h3>
+              </div>
+              <div class="admin-card-body">
+                <textarea class="admin-input blog-plan-output" id="blog-plan-output" readonly></textarea>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/admin-blog-planning.js"></script>
+</body>
+
+</html>

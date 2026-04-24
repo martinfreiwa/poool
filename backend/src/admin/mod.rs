@@ -96,6 +96,14 @@ pub fn router() -> axum::Router<AppState> {
         // ── HTML Pages ──────────────────────────────────────────
         .route("/admin/", get(page_admin_dashboard))
         .route("/admin/index.html", get(page_admin_dashboard))
+        .route("/admin/blog.html", get(page_admin_blog))
+        .route("/admin/blog", get(page_admin_blog))
+        .route("/admin/blog-persona.html", get(page_admin_blog_persona))
+        .route("/admin/blog-persona", get(page_admin_blog_persona))
+        .route("/admin/blog-strategy.html", get(page_admin_blog_strategy))
+        .route("/admin/blog-strategy", get(page_admin_blog_strategy))
+        .route("/admin/blog-editor.html", get(page_admin_blog_editor))
+        .route("/admin/blog-editor", get(page_admin_blog_editor))
         .route("/admin/users.html", get(page_admin_generic))
         .route("/admin/user-details.html", get(page_admin_generic))
         .route("/admin/user-details", get(page_admin_generic))
@@ -105,6 +113,8 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/support", get(page_admin_generic))
         .route("/admin/developer-submissions.html", get(page_admin_generic))
         .route("/admin/developer-submissions", get(page_admin_generic))
+        .route("/admin/asset-change-requests.html", get(page_admin_generic))
+        .route("/admin/asset-change-requests", get(page_admin_generic))
         .route("/admin/assets.html", get(page_admin_generic))
         .route("/admin/assets", get(page_admin_generic))
         .route("/admin/orders.html", get(page_admin_generic))
@@ -125,6 +135,10 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/settings", get(page_admin_generic))
         .route("/admin/system.html", get(page_admin_generic))
         .route("/admin/system", get(page_admin_generic))
+        .route("/admin/storage.html", get(page_admin_generic))
+        .route("/admin/storage", get(page_admin_generic))
+        .route("/admin/templates/icons.html", get(page_admin_generic))
+        .route("/admin/templates/icons", get(page_admin_generic))
         .route(
             "/admin/developer-submission-review.html",
             get(page_admin_generic),
@@ -190,6 +204,8 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/affiliate-applications", get(page_admin_generic))
         .route("/admin/affiliate-finance.html", get(page_admin_generic))
         .route("/admin/affiliate-finance", get(page_admin_generic))
+        .route("/admin/admin-affiliate-fraud.html", get(page_admin_generic))
+        .route("/admin/admin-affiliate-fraud", get(page_admin_generic))
         .route("/admin/affiliate-fraud.html", get(page_admin_generic))
         .route("/admin/affiliate-fraud", get(page_admin_generic))
         .route("/admin/affiliate-compliance.html", get(page_admin_generic))
@@ -199,6 +215,8 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/asset-tokenize", get(page_admin_generic))
         .route("/admin/blockchain-treasury.html", get(page_admin_generic))
         .route("/admin/blockchain-treasury", get(page_admin_generic))
+        .route("/admin/pending-settlements.html", get(page_admin_generic))
+        .route("/admin/pending-settlements", get(page_admin_generic))
         .route("/admin/blockchain-contracts.html", get(page_admin_generic))
         .route("/admin/blockchain-contracts", get(page_admin_generic))
         .route(
@@ -257,6 +275,58 @@ pub fn router() -> axum::Router<AppState> {
             post(access::api_roles_update_permissions),
         )
         .route("/api/admin/permissions", get(access::api_permissions_list))
+        .route(
+            "/api/admin/blog/overview",
+            get(crate::blog::routes::admin_blog_overview),
+        )
+        .route(
+            "/api/admin/blog/articles",
+            get(crate::blog::routes::admin_blog_articles)
+                .post(crate::blog::routes::admin_blog_create_article),
+        )
+        .route(
+            "/api/admin/blog/articles/:id",
+            get(crate::blog::routes::admin_blog_get_article)
+                .put(crate::blog::routes::admin_blog_update_article),
+        )
+        .route(
+            "/api/admin/blog/articles/:id/publish",
+            post(crate::blog::routes::admin_blog_publish_article),
+        )
+        .route(
+            "/api/admin/blog/articles/:id/unpublish",
+            post(crate::blog::routes::admin_blog_unpublish_article),
+        )
+        .route(
+            "/api/admin/blog/articles/:id/archive",
+            post(crate::blog::routes::admin_blog_archive_article),
+        )
+        .route(
+            "/api/admin/blog/articles/:id/restore",
+            post(crate::blog::routes::admin_blog_restore_article),
+        )
+        .route(
+            "/api/admin/blog/assets",
+            post(crate::blog::routes::admin_blog_upload_asset),
+        )
+        .route(
+            "/api/admin/blog/authors",
+            get(crate::blog::routes::admin_blog_list_authors)
+                .post(crate::blog::routes::admin_blog_save_author),
+        )
+        .route(
+            "/api/admin/blog/categories",
+            get(crate::blog::routes::admin_blog_list_categories)
+                .post(crate::blog::routes::admin_blog_save_category),
+        )
+        .route(
+            "/api/admin/blog/import/db-to-sanity/dry-run",
+            post(crate::blog::routes::admin_blog_import_dry_run),
+        )
+        .route(
+            "/api/admin/blog/import/db-to-sanity",
+            post(crate::blog::routes::admin_blog_import_run),
+        )
         .route("/api/admin/admins/invite", post(access::api_admin_invite))
         .route(
             "/api/admin/admins/invitations",

@@ -189,8 +189,7 @@ impl KycProvider for DiditProvider {
             let status = body["status"].as_str().unwrap_or("");
             let webhook_type = body["webhook_type"].as_str().unwrap_or("");
 
-            let sign_payload =
-                format!("{}:{}:{}:{}", timestamp, session_id, status, webhook_type);
+            let sign_payload = format!("{}:{}:{}:{}", timestamp, session_id, status, webhook_type);
 
             let mut mac = HmacSha256::new_from_slice(self.config.webhook_secret.as_bytes())
                 .map_err(|e| AppError::Internal(format!("HMAC init failed: {e}")))?;

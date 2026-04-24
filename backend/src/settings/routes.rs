@@ -8,15 +8,16 @@
 ///
 /// All endpoints require a valid session cookie (return 401 if missing/invalid).
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Json},
 };
 use axum_extra::extract::cookie::CookieJar;
 
 use super::models::{
-    ApiResponse, ChangeEmailForm, ChangePasswordForm, ChangePhoneForm, UpdateLeaderboardForm,
-    UpdateNotificationsForm, UpdatePreferencesForm, UpdateProfileForm,
+    ApiResponse, ChangeEmailForm, ChangePasswordForm, ChangePhoneForm, UpdateDeveloperLinksForm,
+    UpdateDeveloperProfileForm, UpdateLeaderboardForm, UpdateNotificationsForm,
+    UpdatePreferencesForm, UpdateProfileForm, UpdateSocialLinksForm,
 };
 use super::service;
 use crate::auth::middleware;
@@ -164,6 +165,162 @@ pub async fn update_leaderboard_handler(
         Err(e) => {
             tracing::warn!("Leaderboard update failed for user {}: {}", user_id, e);
             Json(ApiResponse::err("Failed to update leaderboard settings.")).into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/social ─────────────────────────────────
+
+pub async fn update_social_links_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<UpdateSocialLinksForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::update_social_links(&state.db, user_id, form).await {
+        Ok(()) => Json(ApiResponse::ok("Social links saved.")).into_response(),
+        Err(e) => {
+            tracing::warn!("Social links update failed for user {}: {}", user_id, e);
+            Json(ApiResponse::err("Failed to update social links.")).into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/developer/profile ──────────────────────
+
+pub async fn update_developer_profile_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<UpdateDeveloperProfileForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::update_developer_profile(&state.db, user_id, form).await {
+        Ok(()) => Json(ApiResponse::ok("Developer profile saved.")).into_response(),
+        Err(e) => {
+            tracing::warn!(
+                "Developer profile update failed for user {}: {}",
+                user_id,
+                e
+            );
+            let msg = match &e {
+                crate::error::AppError::BadRequest(m) => m.clone(),
+                crate::error::AppError::Unauthorized(m) => m.clone(),
+                _ => "Failed to update developer profile.".to_string(),
+            };
+            Json(ApiResponse::err(&msg)).into_response()
+        }
+    }
+}
+
+// ─── POST /api/settings/developer/links ────────────────────────
+
+pub async fn update_developer_links_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Json(form): Json<UpdateDeveloperLinksForm>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::update_developer_links(&state.db, user_id, form).await {
+        Ok(()) => Json(ApiResponse::ok("Developer links saved.")).into_response(),
+        Err(e) => {
+            tracing::warn!("Developer links update failed for user {}: {}", user_id, e);
+            let msg = match &e {
+                crate::error::AppError::Unauthorized(m) => m.clone(),
+                _ => "Failed to update developer links.".to_string(),
+            };
+            Json(ApiResponse::err(&msg)).into_response()
+        }
+    }
+}
+
+// ─── OAuth connection helpers ──────────────────────────────────
+
+pub async fn list_oauth_connections_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    let session_token = jar
+        .get(crate::auth::middleware::SESSION_COOKIE)
+        .map(|c| c.value().to_string())
+        .unwrap_or_default();
+
+    match service::get_settings(&state.db, user_id, &session_token).await {
+        Ok(settings) => {
+            Json(serde_json::json!({ "connections": settings.oauth_accounts })).into_response()
+        }
+        Err(e) => {
+            tracing::warn!("OAuth list failed for user {}: {}", user_id, e);
+            Json(serde_json::json!({"error": "Failed to load OAuth connections."})).into_response()
+        }
+    }
+}
+
+pub async fn link_oauth_provider_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(provider): Path<String>,
+) -> axum::response::Response {
+    if require_user_id(&jar, &state).await.is_err() {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({"error": "Not authenticated"})),
+        )
+            .into_response();
+    }
+    if provider != "google" {
+        return Json(ApiResponse::err(
+            "Only Google sign-in linking is supported.",
+        ))
+        .into_response();
+    }
+    if !state.config.google_oauth_enabled() {
+        return Json(ApiResponse::err("Google sign-in is not configured.")).into_response();
+    }
+
+    Json(serde_json::json!({
+        "success": true,
+        "redirect_url": "/auth/google?link=1"
+    }))
+    .into_response()
+}
+
+pub async fn unlink_oauth_connection_handler(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    Path(connection_id): Path<uuid::Uuid>,
+) -> axum::response::Response {
+    let user_id = match require_user_id(&jar, &state).await {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
+    match service::unlink_oauth_account(&state.db, user_id, connection_id).await {
+        Ok(()) => Json(ApiResponse::ok("OAuth connection removed.")).into_response(),
+        Err(e) => {
+            tracing::warn!("OAuth unlink failed for user {}: {}", user_id, e);
+            let msg = match &e {
+                crate::error::AppError::BadRequest(m) => m.clone(),
+                crate::error::AppError::NotFound(m) => m.clone(),
+                _ => "Failed to disconnect OAuth account.".to_string(),
+            };
+            Json(ApiResponse::err(&msg)).into_response()
         }
     }
 }

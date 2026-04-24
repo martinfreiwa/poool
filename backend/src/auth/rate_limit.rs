@@ -109,10 +109,7 @@ impl RateLimitBackend for RedisBackend {
                 // unavailable we cannot distinguish "first attempt" from
                 // "thousandth attempt", so allowing the request would hand
                 // attackers a free brute-force window whenever Redis flaps.
-                tracing::error!(
-                    "Redis rate limiter unavailable, rejecting request: {}",
-                    e
-                );
+                tracing::error!("Redis rate limiter unavailable, rejecting request: {}", e);
                 return Err(30);
             }
         };

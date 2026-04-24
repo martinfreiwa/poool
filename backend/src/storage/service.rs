@@ -295,9 +295,24 @@ pub fn rewrite_gcs_url(url: &str) -> String {
     if url.starts_with("https://storage.googleapis.com/") {
         url.replacen("https://storage.googleapis.com/", "/api/proxy/gcs/", 1)
     } else if let Some(file_name) = url.strip_prefix("/images/") {
-        legacy_property_image_url(file_name).unwrap_or_else(|| url.to_string())
+        legacy_static_image_url(file_name)
+            .or_else(|| legacy_property_image_url(file_name))
+            .unwrap_or_else(|| url.to_string())
     } else {
         url.to_string()
+    }
+}
+
+fn legacy_static_image_url(file_name: &str) -> Option<String> {
+    match file_name {
+        "martin_pfp.png" => Some("/static/images/profiles/martin_pfp.png".to_string()),
+        "villa1.webp" => Some("/static/images/seed/villa1.webp".to_string()),
+        "tokenization_cover.png" => Some("/static/images/ui/tokenization_cover.png".to_string()),
+        "bali_property.png" => Some("/static/images/seed/bali_property.png".to_string()),
+        "diversify_cover.png" => Some("/static/images/ui/diversify_cover.png".to_string()),
+        "platform_update.png" => Some("/static/images/ui/platform_update.png".to_string()),
+        "passive_income.png" => Some("/static/images/ui/passive_income.png".to_string()),
+        _ => None,
     }
 }
 
@@ -395,6 +410,26 @@ mod tests {
         assert_eq!(
             rewrite_gcs_url("/images/bukit_villa_pool.webp"),
             "/static/images/properties/bukit_villa/bukit_villa_pool.webp"
+        );
+    }
+
+    #[test]
+    fn test_rewrite_gcs_url_maps_legacy_seed_and_blog_images() {
+        assert_eq!(
+            rewrite_gcs_url("/images/villa1.webp"),
+            "/static/images/seed/villa1.webp"
+        );
+        assert_eq!(
+            rewrite_gcs_url("/images/tokenization_cover.png"),
+            "/static/images/ui/tokenization_cover.png"
+        );
+        assert_eq!(
+            rewrite_gcs_url("/images/bali_property.png"),
+            "/static/images/seed/bali_property.png"
+        );
+        assert_eq!(
+            rewrite_gcs_url("/images/martin_pfp.png"),
+            "/static/images/profiles/martin_pfp.png"
         );
     }
 

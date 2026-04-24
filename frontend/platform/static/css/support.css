@@ -11,6 +11,7 @@
     --support-muted: var(--text-secondary);
     --support-accent: var(--primary-color);
     --support-accent-light: #f4f4ff;
+    --support-divider: rgba(16, 24, 40, 0.08);
 }
 
 /* ─── Support Wrapper ──────────────────────────── */
@@ -132,9 +133,19 @@
 /* ─── Cards ────────────────────────────────────── */
 .support-form-card {
     background: #ffffff;
-    border: 1px solid var(--table-border-color);
+    border: 1px solid var(--support-border);
     border-radius: 12px;
     padding: 24px;
+}
+
+#submit-ticket,
+#your-tickets,
+#faq {
+    scroll-margin-top: 96px;
+}
+
+.support-form-card > :last-child {
+    margin-bottom: 0;
 }
 
 .support-form-card h2 {
@@ -160,6 +171,10 @@
     flex-direction: column;
     gap: 6px;
     margin-bottom: 16px;
+}
+
+.support-form-card form > .support-form-group:last-of-type {
+    margin-bottom: 0;
 }
 
 .support-form-group--no-margin {
@@ -343,7 +358,7 @@
     display: none;
     padding: 12px;
     background: #f9fafb;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--support-divider);
     border-radius: 8px;
     margin-bottom: 16px;
 }
@@ -423,11 +438,23 @@
 }
 
 /* ─── FAQ Items ────────────────────────────────── */
-.faq-item {
-    border: 1px solid var(--table-border-color);
+#faq-list {
+    background: #ffffff;
+    border: 1px solid var(--support-border);
     border-radius: 8px;
-    margin-bottom: 8px;
     overflow: hidden;
+}
+
+.faq-item {
+    border: 0;
+    border-bottom: 1px solid var(--support-divider);
+    border-radius: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+}
+
+.faq-item:last-child {
+    border-bottom: 0;
 }
 
 .faq-question {
@@ -472,7 +499,7 @@
     font-size: 13px;
     color: var(--text-secondary);
     line-height: 1.7;
-    padding-bottom: 14px;
+    padding-bottom: 0;
     margin: 0;
 }
 
@@ -520,12 +547,16 @@
 /* ─── Ticket Cards ─────────────────────────────── */
 .support-ticket-card {
     background: #ffffff;
-    border: 1px solid var(--table-border-color);
+    border: 1px solid var(--support-border);
     border-radius: 8px;
     margin-bottom: 12px;
     padding: 16px;
     padding-left: 20px;
     transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.support-ticket-card:last-child {
+    margin-bottom: 0;
 }
 
 .support-ticket-card:hover {
@@ -676,7 +707,7 @@
 .ticket-card-detail.open {
     max-height: 2000px;
     margin-top: 16px;
-    border-top: 1px solid var(--table-border-color);
+    border-top: 1px solid var(--support-divider);
     padding-top: 16px;
 }
 

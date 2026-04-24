@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog Persona | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin - Blog persona planning." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .blog-plan-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+    .blog-plan-form { display: grid; gap: 14px; }
+    .blog-plan-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .blog-plan-field { display: grid; gap: 6px; }
+    .blog-plan-label { font-size: 12px; font-weight: 700; color: var(--admin-text-secondary); }
+    .blog-plan-help { font-size: 12px; line-height: 1.45; color: var(--admin-text-muted); }
+    .blog-plan-panel { position: sticky; top: 20px; display: grid; gap: 16px; }
+    .blog-plan-list { margin: 0; padding-left: 18px; color: var(--admin-text-secondary); font-size: 13px; line-height: 1.6; }
+    .blog-plan-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .blog-plan-output { min-height: 240px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5; }
+    @media (max-width: 1100px) {
+      .blog-plan-layout, .blog-plan-row { grid-template-columns: 1fr; }
+      .blog-plan-panel { position: static; }
+    }
+  </style>
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+</head>
+
+<body class="admin-body dom-ready" data-blog-planning-page="persona">
+  <div class="admin-wrapper">
+    {% include 'admin/components/sidebar.html' %}
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/blog.html">Blog CMS</a>
+            <span class="separator">›</span>
+            <span class="current">Persona</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header" style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;">
+          <div>
+            <h1 class="admin-page-title">Blog Persona</h1>
+            <p class="admin-page-subtitle">Set the voice and claim guardrails used before drafting POOOL investment content.</p>
+          </div>
+          <div class="blog-plan-actions">
+            <a class="admin-btn admin-btn--secondary" href="/admin/blog.html">Back to Blog</a>
+            <a class="admin-btn admin-btn--secondary" href="/admin/blog-strategy.html">Blog Strategy</a>
+          </div>
+        </div>
+
+        <div id="blog-plan-alert" class="admin-card" style="display:none;margin-bottom:20px;padding:16px;"></div>
+
+        <div class="blog-plan-layout">
+          <section class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">POOOL Persona Profile</h3>
+            </div>
+            <div class="admin-card-body">
+              <form class="blog-plan-form" id="blog-persona-form">
+                <div class="blog-plan-row">
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="persona-brand">Brand</label>
+                    <input class="admin-input" id="persona-brand" value="POOOL" />
+                  </div>
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="persona-industry">Industry</label>
+                    <input class="admin-input" id="persona-industry" value="Fractional property investment in Bali" />
+                  </div>
+                </div>
+
+                <div class="blog-plan-field">
+                  <label class="blog-plan-label" for="persona-audience">Audience</label>
+                  <textarea class="admin-input" id="persona-audience" rows="3">Tourists, retirees, passive-income investors, property sellers, business sellers, and real estate developers seeking project funding.</textarea>
+                </div>
+
+                <div class="blog-plan-field">
+                  <label class="blog-plan-label" for="persona-mission">Mission</label>
+                  <textarea class="admin-input" id="persona-mission" rows="2">Give more people access to large property investment opportunities and returns that are usually only available to wealthy investors.</textarea>
+                </div>
+
+                <div class="blog-plan-row">
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="persona-tone-serious">Funny to serious</label>
+                    <input class="admin-input" id="persona-tone-serious" type="number" min="0" max="1" step="0.05" value="0.85" />
+                    <p class="blog-plan-help">Higher means more serious and trust-led.</p>
+                  </div>
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="persona-tone-casual">Formal to casual</label>
+                    <input class="admin-input" id="persona-tone-casual" type="number" min="0" max="1" step="0.05" value="0.35" />
+                    <p class="blog-plan-help">Lower keeps investment content more formal.</p>
+                  </div>
+                </div>
+
+                <div class="blog-plan-row">
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="persona-tone-irreverent">Respectful to irreverent</label>
+                    <input class="admin-input" id="persona-tone-irreverent" type="number" min="0" max="1" step="0.05" value="0.10" />
+                  </div>
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="persona-tone-matter">Enthusiastic to matter-of-fact</label>
+                    <input class="admin-input" id="persona-tone-matter" type="number" min="0" max="1" step="0.05" value="0.60" />
+                  </div>
+                </div>
+
+                <div class="blog-plan-row">
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="persona-vocabulary">Vocabulary tier</label>
+                    <select class="admin-input" id="persona-vocabulary">
+                      <option value="consumer">Consumer</option>
+                      <option value="professional" selected>Professional</option>
+                      <option value="technical">Technical</option>
+                    </select>
+                  </div>
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="persona-summary-label">Summary label</label>
+                    <input class="admin-input" id="persona-summary-label" value="Key Takeaways" />
+                  </div>
+                </div>
+
+                <div class="blog-plan-row">
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="persona-do">Do rules</label>
+                    <textarea class="admin-input" id="persona-do" rows="7">Lead with clear investor value while avoiding guaranteed-return language
+Use simple explanations for fractional ownership, risk, ROI, and project funding
+Support financial and property claims with named sources or platform data
+Address the reader directly as you when explaining investment choices
+Be transparent about risks, timelines, fees, liquidity, and eligibility</textarea>
+                  </div>
+                  <div class="blog-plan-field">
+                    <label class="blog-plan-label" for="persona-dont">Do not rules</label>
+                    <textarea class="admin-input" id="persona-dont" rows="7">Do not imply returns are guaranteed or risk-free
+Do not use hype phrases like life-changing returns, guaranteed passive income, or once-in-a-lifetime deal
+Do not overuse jargon without a plain-English explanation
+Do not speak only to wealthy investors or exclude first-time investors
+Do not make legal, tax, or financial advice claims without qualification</textarea>
+                  </div>
+                </div>
+
+                <div class="blog-plan-actions">
+                  <button class="admin-btn admin-btn--primary" type="submit">Save Draft</button>
+                  <button class="admin-btn admin-btn--secondary" id="blog-plan-reset-btn" type="button">Reset</button>
+                  <button class="admin-btn admin-btn--secondary" id="blog-plan-copy-btn" type="button">Copy JSON</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <aside class="blog-plan-panel">
+            <section class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Publishing Guardrails</h3>
+              </div>
+              <div class="admin-card-body">
+                <ul class="blog-plan-list">
+                  <li>No guaranteed returns or risk-free claims.</li>
+                  <li>Every ROI number needs a source or platform basis.</li>
+                  <li>Every article needs a risk or limitation section.</li>
+                  <li>Use clear explanations before legal or finance terms.</li>
+                </ul>
+              </div>
+            </section>
+
+            <section class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Persona JSON</h3>
+              </div>
+              <div class="admin-card-body">
+                <textarea class="admin-input blog-plan-output" id="blog-plan-output" readonly></textarea>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/admin-blog-planning.js"></script>
+</body>
+
+</html>

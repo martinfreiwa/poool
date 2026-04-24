@@ -51,12 +51,14 @@ function toggleProfileDropdown() {
 function closeProfileDropdown() {
   const dropdown = document.getElementById("profile-dropdown-menu");
   const button = document.getElementById("account-menu-button-inner");
+  const accountCard = document.getElementById("nav-account-card");
 
   if (dropdown) {
     dropdown.style.display = "none";
   }
 
   if (button) button.classList.remove("active");
+  if (accountCard) accountCard.classList.remove("active");
 
   // Remove click outside listener
   document.removeEventListener("click", closeDropdownOnClickOutside);
@@ -125,6 +127,25 @@ function setupProfileEventHandlers() {
   // Guard: if sidebar.html already registered a handler, skip ours
   if (window.__SIDEBAR_ACCOUNT_HANDLER_REGISTERED) return;
   window.__SIDEBAR_ACCOUNT_HANDLER_REGISTERED = true;
+
+  // Account card activation. This file is loaded before sidebar.html on many
+  // pages, so it must register the toggle before setting the shared guard.
+  document.body.addEventListener("click", function (e) {
+    const card = e.target.closest("#nav-account-card");
+    if (card && !e.target.closest("#profile-dropdown-menu")) {
+      toggleProfileDropdown();
+    }
+  });
+
+  document.body.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+
+    const card = e.target.closest("#nav-account-card");
+    if (card && !e.target.closest("#profile-dropdown-menu")) {
+      e.preventDefault();
+      toggleProfileDropdown();
+    }
+  });
 
   // Account item clicks
   document.body.addEventListener("click", function (e) {

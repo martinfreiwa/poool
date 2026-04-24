@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog CMS | Admin | POOOL</title>
+  <meta name="description" content="POOOL Admin - Sanity-powered Blog CMS." />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .blog-cms-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .blog-cms-tabs { margin: 20px 0; }
+    .blog-cms-tab-panel[hidden] { display: none; }
+    .blog-cms-article-header { align-items: center; gap: 16px; min-height: 62px; }
+    .blog-cms-filter-bar { display: grid; grid-template-columns: minmax(260px, 1fr) auto auto auto auto auto; gap: 8px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--admin-border); background: #fbfcff; }
+    .blog-cms-filter-bar .admin-search { width: 100%; min-width: 220px; }
+    .blog-cms-filter-bar .poool-dropdown { width: 154px; }
+    .blog-cms-filter-bar .poool-dropdown__trigger { height: 36px; border-radius: 8px; }
+    .blog-cms-filter-bar .admin-btn[hidden] { display: none; }
+    .blog-cms-filter-meta { margin-left: auto; color: var(--admin-text-muted); font-size: 12px; white-space: nowrap; }
+    .blog-cms-status { display: inline-flex; align-items: center; justify-content: center; min-width: 92px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #f2f4f7; color: #344054; }
+    .blog-cms-status--published { background: #ecfdf3; color: #027a48; }
+    .blog-cms-status--draft { background: #eff8ff; color: #175cd3; }
+    .blog-cms-status--changes_pending { background: #fffaeb; color: #b54708; }
+    .blog-cms-status--scheduled { background: #f4f3ff; color: #5925dc; }
+    .blog-cms-status--taken_down, .blog-cms-status--archived { background: #fef3f2; color: #b42318; }
+    .blog-cms-translations { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; min-width: 116px; }
+    .blog-cms-translation-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 24px; padding: 0 8px; border-radius: 999px; border: 1px solid #eaecf0; background: #f9fafb; color: #667085; font-size: 11px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; }
+    .blog-cms-translation-badge--present { border-color: #abefc6; background: #ecfdf3; color: #027a48; }
+    .blog-cms-translation-badge--missing { border-color: #fedf89; background: #fffaeb; color: #b54708; }
+    .blog-cms-title-cell { display: grid; gap: 4px; max-width: 280px; }
+    .blog-cms-title-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; color: var(--admin-text-muted); font-size: 12px; font-weight: 500; }
+    .blog-cms-featured-pill { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 999px; background: var(--admin-accent-bg); color: var(--admin-accent); font-size: 11px; font-weight: 700; }
+    .blog-cms-actions-cell { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
+    .blog-cms-planning-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0 0 20px; }
+    .blog-cms-planning-card { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px; text-decoration: none; color: inherit; }
+    .blog-cms-planning-card:hover { border-color: var(--admin-accent); }
+    .blog-cms-planning-card h3 { margin: 0 0 4px; font-size: 15px; color: var(--admin-text-primary); }
+    .blog-cms-planning-card p { margin: 0; font-size: 13px; line-height: 1.45; color: var(--admin-text-secondary); }
+    .blog-cms-taxonomy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .blog-cms-form { display: grid; gap: 12px; }
+    .blog-cms-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .blog-cms-import-result { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.45; color: var(--admin-text-secondary); }
+    @media (max-width: 1200px) {
+      .blog-cms-taxonomy-grid, .blog-cms-row { grid-template-columns: 1fr; }
+      .blog-cms-planning-grid { grid-template-columns: 1fr; }
+      .blog-cms-filter-bar { grid-template-columns: 1fr 1fr; }
+      .blog-cms-filter-bar .admin-search, .blog-cms-filter-bar .poool-dropdown { width: 100%; }
+    }
+  </style>
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+</head>
+
+<body class="admin-body dom-ready">
+  <div class="admin-wrapper">
+    {% include 'admin/components/sidebar.html' %}
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <span class="current">Blog CMS</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header" style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;">
+          <div>
+            <h1 class="admin-page-title">Blog CMS</h1>
+            <p class="admin-page-subtitle">Manage Sanity blog content, publishing, taxonomy, translations, and DB imports.</p>
+          </div>
+          <div class="blog-cms-toolbar">
+            <button class="admin-btn admin-btn--secondary" id="blog-refresh-btn" type="button">Refresh</button>
+            <a class="admin-btn admin-btn--secondary" id="blog-studio-link" href="#" target="_blank" rel="noopener">Open Sanity</a>
+            <a class="admin-btn admin-btn--primary" id="blog-new-link" href="/admin/blog-editor.html">Create Article</a>
+          </div>
+        </div>
+
+        <div id="blog-alert" class="admin-card" style="display:none;margin-bottom:20px;padding:16px;"></div>
+
+        <div class="blog-cms-planning-grid" aria-label="Blog planning subpages">
+          <a class="admin-card blog-cms-planning-card" href="/admin/blog-persona.html">
+            <div>
+              <h3>Persona</h3>
+              <p>Define the POOOL voice, tone guardrails, audience, and investment-claim rules used before drafting articles.</p>
+            </div>
+            <span class="admin-btn admin-btn--secondary admin-btn--sm">Open</span>
+          </a>
+          <a class="admin-card blog-cms-planning-card" href="/admin/blog-strategy.html">
+            <div>
+              <h3>Blog Strategy</h3>
+              <p>Plan content pillars, first 90-day topics, risk education, legal clarity, and developer acquisition content.</p>
+            </div>
+            <span class="admin-btn admin-btn--secondary admin-btn--sm">Open</span>
+          </a>
+        </div>
+
+        <div class="admin-kpi-grid">
+          <div class="admin-kpi-card">
+            <span class="admin-kpi-label">Published</span>
+            <div class="admin-kpi-value" id="blog-kpi-published">--</div>
+          </div>
+          <div class="admin-kpi-card">
+            <span class="admin-kpi-label">Drafts / Pending</span>
+            <div class="admin-kpi-value" id="blog-kpi-drafts">--</div>
+          </div>
+          <div class="admin-kpi-card">
+            <span class="admin-kpi-label">Categories</span>
+            <div class="admin-kpi-value" id="blog-kpi-categories">--</div>
+            <span class="admin-kpi-subtext" id="blog-kpi-translations">Translations --</span>
+          </div>
+          <div class="admin-kpi-card">
+            <span class="admin-kpi-label">Sanity Writes</span>
+            <div class="admin-kpi-value" id="blog-kpi-writes" style="font-size:24px;">--</div>
+            <span class="admin-kpi-subtext" id="blog-kpi-project">Project --</span>
+          </div>
+        </div>
+
+        <div class="admin-tabs blog-cms-tabs">
+          <button class="admin-tab active" type="button" data-blog-tab="articles">Articles</button>
+          <button class="admin-tab" type="button" data-blog-tab="taxonomy">Authors & Categories</button>
+          <button class="admin-tab" type="button" data-blog-tab="import">DB Import</button>
+        </div>
+
+        <section class="blog-cms-tab-panel" id="blog-tab-articles">
+          <div class="admin-card">
+            <div class="admin-card-header blog-cms-article-header">
+              <h3 class="admin-card-title">Articles</h3>
+              <span class="blog-cms-filter-meta" id="blog-count-label">0 articles</span>
+            </div>
+            <div class="blog-cms-filter-bar">
+              <div class="admin-search">
+                <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input id="blog-search" type="search" placeholder="Search articles..." />
+              </div>
+              <select id="blog-category-filter" class="admin-select" aria-label="Filter by category">
+                <option value="">All categories</option>
+              </select>
+              <select id="blog-author-filter" class="admin-select" aria-label="Filter by author" data-searchable>
+                <option value="">All authors</option>
+              </select>
+              <select id="blog-status-filter" class="admin-select" aria-label="Filter by status">
+                <option value="">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="changes_pending">Changes pending</option>
+                <option value="published">Published</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="taken_down">Taken down</option>
+                <option value="archived">Archived</option>
+              </select>
+              <select id="blog-translation-filter" class="admin-select" aria-label="Filter by translation readiness">
+                <option value="">All translations</option>
+                <option value="missing">Missing any</option>
+                <option value="complete">Complete</option>
+              </select>
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="blog-clear-filters-btn" type="button" hidden>Clear</button>
+            </div>
+            <div class="admin-card-body admin-card-body--flush">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Category</th>
+                    <th>Author</th>
+                    <th>Translations</th>
+                    <th>Published</th>
+                    <th>Slug</th>
+                    <th style="width:130px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="blog-article-table">
+                  <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--admin-text-muted);">Loading articles...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="blog-cms-tab-panel" id="blog-tab-taxonomy" hidden>
+          <div class="blog-cms-taxonomy-grid">
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Authors</h3>
+              </div>
+              <div class="admin-card-body">
+                <form class="blog-cms-form" id="blog-author-form">
+                  <input type="hidden" id="taxonomy-author-id" />
+                  <input class="admin-input" id="taxonomy-author-name" placeholder="Author name" required />
+                  <input class="admin-input" id="taxonomy-author-slug" placeholder="author-slug" required />
+                  <textarea class="admin-input" id="taxonomy-author-bio" rows="3" placeholder="Bio"></textarea>
+                  <input class="admin-input" id="taxonomy-author-avatar" placeholder="Avatar URL" />
+                  <div class="blog-cms-row">
+                    <input class="admin-input" id="taxonomy-author-website" type="url" placeholder="Website URL" />
+                    <input class="admin-input" id="taxonomy-author-twitter" placeholder="X / Twitter handle" />
+                  </div>
+                  <div class="blog-cms-row">
+                    <input class="admin-input" id="taxonomy-author-linkedin" type="url" placeholder="LinkedIn URL" />
+                    <input class="admin-input" id="taxonomy-author-facebook" type="url" placeholder="Facebook URL" />
+                  </div>
+                  <div class="blog-cms-row">
+                    <input class="admin-input" id="taxonomy-author-instagram" type="url" placeholder="Instagram URL" />
+                    <input class="admin-input" id="taxonomy-author-whatsapp" placeholder="WhatsApp number" />
+                  </div>
+                  <input class="admin-input" id="taxonomy-author-expertise" placeholder="Expertise tags, comma separated" />
+                  <button class="admin-btn admin-btn--primary" type="submit">Save Author</button>
+                </form>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead><tr><th>Name</th><th>Slug</th><th>Articles</th></tr></thead>
+                  <tbody id="blog-author-table"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Categories</h3>
+              </div>
+              <div class="admin-card-body">
+                <form class="blog-cms-form" id="blog-category-form">
+                  <input type="hidden" id="taxonomy-category-id" />
+                  <input class="admin-input" id="taxonomy-category-name" placeholder="Category name" required />
+                  <input class="admin-input" id="taxonomy-category-slug" placeholder="category-slug" required />
+                  <textarea class="admin-input" id="taxonomy-category-description" rows="3" placeholder="Description"></textarea>
+                  <div class="blog-cms-row">
+                    <input class="admin-input" id="taxonomy-category-color" placeholder="#1A3CFF" />
+                    <input class="admin-input" id="taxonomy-category-order" type="number" placeholder="Sort order" />
+                  </div>
+                  <button class="admin-btn admin-btn--primary" type="submit">Save Category</button>
+                </form>
+              </div>
+              <div class="admin-card-body admin-card-body--flush">
+                <table class="admin-table">
+                  <thead><tr><th>Name</th><th>Slug</th><th>Articles</th></tr></thead>
+                  <tbody id="blog-category-table"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="blog-cms-tab-panel" id="blog-tab-import" hidden>
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h3 class="admin-card-title">DB Import</h3>
+            </div>
+            <div class="admin-card-body">
+              <div class="blog-cms-toolbar">
+                <button class="admin-btn admin-btn--secondary" id="blog-import-dry-run-btn" type="button">Dry Run</button>
+                <button class="admin-btn admin-btn--primary" id="blog-import-run-btn" type="button">Import to Sanity</button>
+              </div>
+              <pre class="blog-cms-import-result" id="blog-import-result">No import run yet.</pre>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/admin-blog.js"></script>
+</body>
+
+</html>

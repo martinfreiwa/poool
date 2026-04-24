@@ -7,7 +7,7 @@
 ///
 /// NO business logic lives here.
 use axum::{
-    extract::State,
+    extract::{Query, State},
     http::HeaderMap,
     response::{Html, IntoResponse, Redirect, Response},
     routing::{get, post},
@@ -755,12 +755,17 @@ pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoR
 ///
 /// Generates random `state` (CSRF) and PKCE `code_verifier`; stores both in
 /// short-lived HttpOnly cookies for verification on callback.
-pub async fn google_redirect(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
+pub async fn google_redirect(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> impl IntoResponse {
     use base64::Engine;
     use rand::RngCore;
     use sha2::Digest;
 
-    if middleware::is_authenticated(&jar, &state.db).await {
+    let is_link_flow = params.get("link").is_some_and(|v| v == "1" || v == "true");
+    if middleware::is_authenticated(&jar, &state.db).await && !is_link_flow {
         return Redirect::to("/marketplace").into_response();
     }
 
@@ -785,8 +790,7 @@ pub async fn google_redirect(State(state): State<AppState>, jar: CookieJar) -> i
     let code_verifier = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(verifier_bytes);
     let mut hasher = sha2::Sha256::new();
     hasher.update(code_verifier.as_bytes());
-    let code_challenge =
-        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hasher.finalize());
+    let code_challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hasher.finalize());
 
     let auth_url = format!(
         "https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri={}&response_type=code&scope=email%20profile&access_type=offline&state={}&code_challenge={}&code_challenge_method=S256",
@@ -810,6 +814,18 @@ pub async fn google_redirect(State(state): State<AppState>, jar: CookieJar) -> i
         .max_age(time::Duration::minutes(10));
 
     let jar = jar.add(state_cookie).add(verifier_cookie);
+    let jar = if is_link_flow {
+        jar.add(
+            Cookie::build(("oauth_link", "1"))
+                .path("/auth")
+                .http_only(true)
+                .secure(cookie_is_secure())
+                .same_site(axum_extra::extract::cookie::SameSite::Lax)
+                .max_age(time::Duration::minutes(10)),
+        )
+    } else {
+        jar
+    };
     (jar, Redirect::to(&auth_url)).into_response()
 }
 
@@ -934,6 +950,45 @@ async fn google_callback_inner(
     let first_name = user_info["given_name"].as_str().map(|s| s.to_string());
     let last_name = user_info["family_name"].as_str().map(|s| s.to_string());
     let avatar_url = user_info["picture"].as_str().map(|s| s.to_string());
+
+    if jar.get("oauth_link").is_some() {
+        let current_user = middleware::get_current_user(&jar, &state.db)
+            .await
+            .ok_or_else(|| AppError::Unauthorized("Not authenticated".to_string()))?;
+
+        let existing_user_id = sqlx::query_scalar::<_, uuid::Uuid>(
+            "SELECT user_id FROM oauth_accounts WHERE provider = 'google' AND provider_id = $1",
+        )
+        .bind(google_id)
+        .fetch_optional(&state.db)
+        .await?;
+        if let Some(existing_user_id) = existing_user_id {
+            if existing_user_id != current_user.id {
+                return Err(AppError::Conflict(
+                    "This Google account is already linked to another POOOL account.".to_string(),
+                ));
+            }
+        }
+
+        sqlx::query(
+            r#"INSERT INTO oauth_accounts (user_id, provider, provider_id, provider_email)
+               VALUES ($1, 'google', $2, $3)
+               ON CONFLICT (provider, provider_id) DO UPDATE
+               SET provider_email = EXCLUDED.provider_email"#,
+        )
+        .bind(current_user.id)
+        .bind(google_id)
+        .bind(email)
+        .execute(&state.db)
+        .await?;
+
+        let jar = jar
+            .remove(Cookie::from("oauth_state"))
+            .remove(Cookie::from("oauth_pkce"))
+            .remove(Cookie::from("oauth_link"));
+
+        return Ok((jar, Redirect::to("/settings#sec-security")).into_response());
+    }
 
     // Find or create user — email_verified=true enforced above
     let user = service::oauth_find_or_create_user(

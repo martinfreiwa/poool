@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/static/images/icons/logo-pool.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Article Editor | Blog CMS | POOOL</title>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
+  <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
+  <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .blog-editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+    .blog-cms-form { display: grid; gap: 14px; }
+    .blog-cms-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .blog-cms-field { display: grid; gap: 6px; }
+    .blog-cms-label { font-size: 12px; font-weight: 700; color: var(--admin-text-secondary); }
+    .blog-cms-help { font-size: 12px; color: var(--admin-text-muted); line-height: 1.4; }
+    .blog-cms-body { min-height: 420px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1.55; border-top-left-radius: 0; border-top-right-radius: 0; }
+    .blog-cms-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .blog-cms-format-toolbar { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; padding: 8px; border: 1px solid var(--admin-border); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--admin-bg-secondary); }
+    .blog-cms-format-button { width: 32px; height: 32px; padding: 0; border-radius: 7px; font-size: 12px; font-weight: 800; }
+    .blog-cms-format-separator { width: 1px; height: 20px; background: var(--admin-border); margin: 0 4px; }
+    .blog-cms-counter-row { display: flex; justify-content: space-between; gap: 10px; color: var(--admin-text-muted); font-size: 12px; }
+    .blog-cms-meter { display: grid; gap: 5px; }
+    .blog-cms-meter-track { height: 5px; border-radius: 999px; background: #eef2f6; overflow: hidden; }
+    .blog-cms-meter-fill { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--admin-accent); transition: width .18s ease, background .18s ease; }
+    .blog-cms-meter-fill.is-warn { background: #f79009; }
+    .blog-cms-meter-fill.is-danger { background: #d92d20; }
+    .blog-editor-insight-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .blog-editor-insight { display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 13px; color: var(--admin-text-secondary); }
+    .blog-editor-insight strong { color: var(--admin-text-primary); font-size: 14px; }
+    .blog-editor-health-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .blog-editor-health-item { display: flex; align-items: center; gap: 8px; color: var(--admin-text-secondary); font-size: 13px; }
+    .blog-editor-health-dot { width: 8px; height: 8px; border-radius: 999px; background: #d0d5dd; flex: 0 0 auto; }
+    .blog-editor-health-item.is-ok .blog-editor-health-dot { background: #12b76a; }
+    .blog-editor-health-item.is-warn .blog-editor-health-dot { background: #f79009; }
+    .blog-editor-health-item.is-danger .blog-editor-health-dot { background: #f04438; }
+    .blog-editor-translation-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--admin-border); font-size: 13px; color: var(--admin-text-secondary); }
+    .blog-editor-translation-row:last-child { border-bottom: 0; }
+    .blog-cms-preview { border: 1px solid var(--admin-border); border-radius: 8px; padding: 14px; background: var(--admin-bg-secondary); max-height: 420px; overflow: auto; }
+    .blog-cms-preview h2, .blog-cms-preview h3 { margin: 14px 0 8px; }
+    .blog-cms-preview p { margin: 0 0 10px; line-height: 1.6; }
+    .blog-editor-panel { position: sticky; top: 20px; display: grid; gap: 16px; }
+    .blog-editor-doc-list { margin: 0; padding-left: 18px; color: var(--admin-text-secondary); font-size: 13px; line-height: 1.55; }
+    @media (max-width: 1100px) {
+      .blog-editor-layout, .blog-cms-row { grid-template-columns: 1fr; }
+      .blog-editor-panel { position: static; }
+    }
+  </style>
+  <script src="/static/js/user-data.js"></script>
+  <script src="/static/js/poool-dropdown.js"></script>
+  <script src="/static/js/poool-dropdown-init.js"></script>
+  <script src="/static/js/admin-theme.js"></script>
+  <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/admin-global-search.js"></script>
+</head>
+
+<body class="admin-body dom-ready" data-blog-editor-page="true">
+  <div class="admin-wrapper">
+    {% include 'admin/components/sidebar.html' %}
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <nav class="admin-breadcrumbs">
+            <a href="/admin/">Admin</a>
+            <span class="separator">›</span>
+            <a href="/admin/blog.html">Blog CMS</a>
+            <span class="separator">›</span>
+            <span class="current">Article Editor</span>
+          </nav>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <div class="admin-page-header" style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;">
+          <div>
+            <h1 class="admin-page-title" id="blog-editor-title">Create Article</h1>
+            <p class="admin-page-subtitle" id="blog-editor-subtitle">Use POOOL for structured publishing. Use Sanity Studio for advanced rich-text authoring and visual editing.</p>
+          </div>
+          <div class="blog-cms-actions">
+            <a class="admin-btn admin-btn--secondary" href="/admin/blog.html">Back to Articles</a>
+            <a class="admin-btn admin-btn--secondary" id="blog-studio-link" href="#" target="_blank" rel="noopener">Open Sanity Studio</a>
+          </div>
+        </div>
+
+        <div id="blog-alert" class="admin-card" style="display:none;margin-bottom:20px;padding:16px;"></div>
+
+        <div class="blog-editor-layout">
+          <div class="admin-card">
+            <div class="admin-card-body">
+              <form class="blog-cms-form" id="blog-editor-form">
+                <input type="hidden" id="blog-article-id" />
+                <input type="hidden" id="blog-article-revision" />
+                <div class="blog-cms-row">
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-title">Title</label>
+                    <input class="admin-input" id="blog-title" required />
+                  </div>
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-slug">Slug</label>
+                    <input class="admin-input" id="blog-slug" required />
+                  </div>
+                </div>
+                <div class="blog-cms-row">
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-author">Author</label>
+                    <select class="admin-select" id="blog-author" style="width:100%;" data-searchable></select>
+                  </div>
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-category">Category</label>
+                    <select class="admin-select" id="blog-category" style="width:100%;" data-searchable></select>
+                  </div>
+                </div>
+                <div class="blog-cms-field">
+                  <label class="blog-cms-label" for="blog-excerpt">Excerpt</label>
+                  <textarea class="admin-input" id="blog-excerpt" rows="3" required></textarea>
+                  <div class="blog-cms-counter-row">
+                    <span id="blog-excerpt-counter">0 characters</span>
+                    <span id="blog-excerpt-guidance">Aim for 120-180.</span>
+                  </div>
+                </div>
+                <div class="blog-cms-field">
+                  <label class="blog-cms-label" for="blog-body">Body</label>
+                  <div class="blog-cms-format-toolbar" aria-label="Body formatting">
+                    <button class="admin-btn admin-btn--secondary blog-cms-format-button" type="button" data-format="h2" title="Heading 2">H2</button>
+                    <button class="admin-btn admin-btn--secondary blog-cms-format-button" type="button" data-format="h3" title="Heading 3">H3</button>
+                    <button class="admin-btn admin-btn--secondary blog-cms-format-button" type="button" data-format="quote" title="Quote">"</button>
+                    <span class="blog-cms-format-separator"></span>
+                    <button class="admin-btn admin-btn--secondary blog-cms-format-button" type="button" data-format="bold" title="Bold">B</button>
+                    <button class="admin-btn admin-btn--secondary blog-cms-format-button" type="button" data-format="italic" title="Italic">I</button>
+                    <button class="admin-btn admin-btn--secondary blog-cms-format-button" type="button" data-format="code" title="Code">`</button>
+                    <button class="admin-btn admin-btn--secondary blog-cms-format-button" type="button" data-format="link" title="Link">@</button>
+                    <span class="blog-cms-format-separator"></span>
+                    <button class="admin-btn admin-btn--secondary blog-cms-format-button" type="button" data-format="bullet" title="Bullet list">UL</button>
+                    <button class="admin-btn admin-btn--secondary blog-cms-format-button" type="button" data-format="number" title="Numbered list">OL</button>
+                  </div>
+                  <textarea class="admin-input blog-cms-body" id="blog-body" placeholder="Use ## Heading, ### Subheading, > Quote, and blank lines for paragraphs."></textarea>
+                  <div class="blog-cms-counter-row">
+                    <span id="blog-body-counter">0 words</span>
+                    <span id="blog-reading-time">0 min read</span>
+                  </div>
+                </div>
+                <div class="blog-cms-row">
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-cover-file">Cover image</label>
+                    <input class="admin-input" id="blog-cover-file" type="file" accept="image/*" />
+                    <input class="admin-input" id="blog-cover-url" placeholder="Image URL or uploaded Sanity image URL" />
+                    <input type="hidden" id="blog-cover-asset-ref" />
+                  </div>
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-tags">Tags</label>
+                    <input class="admin-input" id="blog-tags" placeholder="bali, real estate" />
+                  </div>
+                </div>
+                <div class="blog-cms-row">
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-status">Status</label>
+                    <select class="admin-select" id="blog-status" style="width:100%;">
+                      <option value="draft">Draft</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="taken_down">Taken down</option>
+                      <option value="archived">Archived</option>
+                    </select>
+                  </div>
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-published-at">Published at</label>
+                    <input class="admin-input" id="blog-published-at" type="datetime-local" />
+                    <p class="blog-cms-help">Set a future time before publishing to schedule when the article appears publicly.</p>
+                  </div>
+                </div>
+                <div class="blog-cms-field">
+                  <label class="blog-cms-label">Article social share links</label>
+                  <div class="blog-cms-row">
+                    <input class="admin-input" id="blog-share-whatsapp" type="url" placeholder="WhatsApp share URL override" />
+                    <input class="admin-input" id="blog-share-facebook" type="url" placeholder="Facebook share URL override" />
+                  </div>
+                  <div class="blog-cms-row">
+                    <input class="admin-input" id="blog-share-x" type="url" placeholder="X share URL override" />
+                    <input class="admin-input" id="blog-share-linkedin" type="url" placeholder="LinkedIn share URL override" />
+                  </div>
+                  <input class="admin-input" id="blog-share-instagram" type="url" placeholder="Instagram profile or campaign URL override" />
+                </div>
+                <div class="blog-cms-row">
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-schema-type">Schema type</label>
+                    <select class="admin-input" id="blog-schema-type">
+                      <option>BlogPosting</option>
+                      <option>Article</option>
+                      <option>HowTo</option>
+                      <option>FAQPage</option>
+                      <option>NewsArticle</option>
+                    </select>
+                  </div>
+                  <label class="blog-cms-label" style="display:flex;gap:8px;align-items:center;margin-top:24px;">
+                    <input id="blog-featured" type="checkbox" />
+                    Featured article
+                  </label>
+                </div>
+                <div class="blog-cms-row">
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-meta-title">SEO title</label>
+                    <input class="admin-input" id="blog-meta-title" maxlength="70" />
+                    <div class="blog-cms-meter">
+                      <div class="blog-cms-counter-row"><span id="blog-meta-title-counter">0 / 70</span><span id="blog-meta-title-guidance">Ideal: 45-60.</span></div>
+                      <div class="blog-cms-meter-track"><span class="blog-cms-meter-fill" id="blog-meta-title-meter"></span></div>
+                    </div>
+                  </div>
+                  <div class="blog-cms-field">
+                    <label class="blog-cms-label" for="blog-meta-description">SEO description</label>
+                    <textarea class="admin-input" id="blog-meta-description" rows="2" maxlength="160"></textarea>
+                    <div class="blog-cms-meter">
+                      <div class="blog-cms-counter-row"><span id="blog-meta-description-counter">0 / 160</span><span id="blog-meta-description-guidance">Ideal: 120-155.</span></div>
+                      <div class="blog-cms-meter-track"><span class="blog-cms-meter-fill" id="blog-meta-description-meter"></span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="blog-cms-actions">
+                  <button class="admin-btn admin-btn--secondary" id="blog-save-draft-btn" type="submit">Save Draft</button>
+                  <button class="admin-btn admin-btn--primary" id="blog-publish-btn" type="button">Publish</button>
+                  <button class="admin-btn admin-btn--secondary" id="blog-unpublish-btn" type="button">Take Down</button>
+                  <button class="admin-btn admin-btn--secondary" id="blog-archive-btn" type="button">Archive</button>
+                  <button class="admin-btn admin-btn--secondary" id="blog-restore-btn" type="button">Restore</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <aside class="blog-editor-panel">
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Article Quality</h3>
+              </div>
+              <div class="admin-card-body">
+                <ul class="blog-editor-insight-list">
+                  <li class="blog-editor-insight"><span>Status</span><strong id="blog-editor-status-summary">Draft</strong></li>
+                  <li class="blog-editor-insight"><span>SEO readiness</span><strong id="blog-editor-seo-summary">Needs fields</strong></li>
+                  <li class="blog-editor-insight"><span>Content length</span><strong id="blog-editor-length-summary">0 words</strong></li>
+                </ul>
+                <ul class="blog-editor-health-list" id="blog-editor-health-list" style="margin-top:14px;"></ul>
+              </div>
+            </div>
+
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <h3 class="admin-card-title">Translations</h3>
+              </div>
+              <div class="admin-card-body" id="blog-editor-translation-list">
+                <div class="blog-editor-translation-row"><span>Indonesian</span><span class="admin-badge admin-badge--neutral">Unknown</span></div>
+                <div class="blog-editor-translation-row"><span>German</span><span class="admin-badge admin-badge--neutral">Unknown</span></div>
+                <div class="blog-editor-translation-row"><span>Russian</span><span class="admin-badge admin-badge--neutral">Unknown</span></div>
+              </div>
+            </div>
+
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <div>
+                  <h3 class="admin-card-title">Advanced Authoring</h3>
+                  <p class="admin-card-subtitle">Best option for bloggers who need richer editorial tools.</p>
+                </div>
+              </div>
+              <div class="admin-card-body">
+                <ul class="blog-editor-doc-list">
+                  <li>Portable Text rich editor with decorators, links, annotations, and custom blocks.</li>
+                  <li>Document actions for publish/unpublish workflows.</li>
+                  <li>Presentation Tool for live preview and click-to-edit when configured in Studio.</li>
+                </ul>
+                <div class="blog-cms-actions" style="margin-top:14px;">
+                  <a class="admin-btn admin-btn--primary admin-btn--sm" id="blog-open-sanity-link" href="#" target="_blank" rel="noopener">Open This Article in Studio</a>
+                  <a class="admin-btn admin-btn--secondary admin-btn--sm" href="https://www.sanity.io/docs/studio/portable-text-editor-configuration" target="_blank" rel="noopener">Portable Text Docs</a>
+                  <a class="admin-btn admin-btn--secondary admin-btn--sm" href="https://www.sanity.io/docs/visual-editing/configuring-the-presentation-tool" target="_blank" rel="noopener">Visual Editing Docs</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-card">
+              <div class="admin-card-header">
+                <div>
+                  <h3 class="admin-card-title">Preview</h3>
+                  <p class="admin-card-subtitle">Approximate text preview for the current draft.</p>
+                </div>
+              </div>
+              <div class="admin-card-body">
+                <div class="blog-cms-preview" id="blog-preview"></div>
+                <div class="blog-cms-actions" style="margin-top:14px;">
+                  <a class="admin-btn admin-btn--secondary admin-btn--sm" id="blog-view-live-link" href="#" target="_blank" rel="noopener">View Live</a>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/admin-blog.js"></script>
+</body>
+
+</html>

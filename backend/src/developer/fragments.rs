@@ -25,9 +25,13 @@ pub async fn fragment_chart(
         None => return Html("Unauthorized".to_string()).into_response(),
     };
     let is_developer = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name = 'developer')",
+        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin') AND COALESCE(ur.is_active, TRUE) = TRUE)",
         user.id
-    ).fetch_one(&state.db).await.unwrap_or(Some(false)).unwrap_or(false);
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(Some(false))
+    .unwrap_or(false);
 
     if !is_developer {
         return Redirect::to("/marketplace").into_response();
@@ -61,7 +65,7 @@ pub async fn fragment_chart(
     }
 }
 
-/// GET /developer/dashboard/fragments/assets  
+/// GET /developer/dashboard/fragments/assets
 pub async fn fragment_assets(
     jar: CookieJar,
     Query(query): Query<PeriodQuery>,
@@ -72,9 +76,13 @@ pub async fn fragment_assets(
         None => return Html("Unauthorized".to_string()).into_response(),
     };
     let is_developer = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name = 'developer')",
+        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin') AND COALESCE(ur.is_active, TRUE) = TRUE)",
         user.id
-    ).fetch_one(&state.db).await.unwrap_or(Some(false)).unwrap_or(false);
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(Some(false))
+    .unwrap_or(false);
 
     if !is_developer {
         return Redirect::to("/marketplace").into_response();

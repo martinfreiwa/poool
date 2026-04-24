@@ -36,7 +36,7 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
 
     <!-- Main Content Area -->
     <main id="developer-dashboard-main" class="ds-main developer-dashboard-main">
-      {% with dev_nav_title="Developer", dev_nav_active="dashboard" %}
+      {% with dev_nav_title="Dashboard", dev_nav_active="dashboard" %}
       {% include "components/developer-topbar.html" %}
       {% endwith %}
 
@@ -52,18 +52,18 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
           {% for chunk in stats.metrics | batch(4) %}
           <div class="metrics-row">
             {% for metric in chunk %}
-            <div id="metric-card-{{ metric.label }}" class="ds-card holo-card metric-card">
-              <div id="metric-heading-{{ metric.label }}" class="metric-heading">
+            <div id="metric-card-{{ metric.label }}" class="ds-card ds-stat-card metric-card">
+              <div id="metric-heading-{{ metric.label }}" class="ds-stat-card__label metric-heading">
                 {{ metric.label }}
               </div>
               <div id="metric-content-{{ metric.label }}" class="metric-content">
                 <div id="metric-number-badge-{{ metric.label }}" class="metric-number-badge">
-                  <div id="metric-number-{{ metric.label }}" class="metric-number"
+                  <div id="metric-number-{{ metric.label }}" class="ds-stat-card__value metric-number"
                     data-final-value="{{ metric.value }}">
                     {% if metric.format_override %}{{ metric.value }}{% else %}{{ metric.value }}{% endif %}
                   </div>
                   <div id="metric-change-{{ metric.label }}" class="metric-change-wrapper">
-                    <div id="metric-change-badge-{{ metric.label }}" class="metric-change {{ metric.trend }}">
+                    <div id="metric-change-badge-{{ metric.label }}" class="ds-stat-card__trend metric-change {{ metric.trend }}">
                       {% if metric.trend == 'up' %}
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M8 12V4M8 4L4 8M8 4L12 8" stroke="#17B26A" stroke-width="2" stroke-linecap="round"
@@ -117,6 +117,77 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
         <!-- Sales Chart -->
         <div id="sales-chart-section" class="sales-chart-section" style="margin-top: 24px;">
           {% include 'components/developer-chart.html' %}
+        </div>
+
+        <div class="developer-performance-grid" aria-label="Property performance">
+          <section class="ds-card developer-performance-card">
+            <div class="developer-performance-card__header">
+              <div>
+                <h2 class="developer-performance-card__title">Top properties</h2>
+                <p class="developer-performance-card__subtitle">By capital raised</p>
+              </div>
+              <a class="developer-performance-card__link" href="/developer/assets">View assets</a>
+            </div>
+
+            {% if stats.top_assets | length > 0 %}
+            <div class="developer-performance-list">
+              {% for asset in stats.top_assets %}
+              <a class="developer-performance-row" href="/developer/asset-detail?id={{ asset.id }}">
+                <img class="developer-performance-row__image" src="{{ asset.cover_image_url }}" alt="{{ asset.title }}">
+                <div class="developer-performance-row__main">
+                  <div class="developer-performance-row__title">{{ asset.title }}</div>
+                  <div class="developer-performance-row__meta">
+                    {{ asset.views }} views · {{ asset.checkout_starts }} checkout starts · {{ asset.add_to_cart_count }} carts
+                  </div>
+                  <div class="developer-performance-progress" aria-label="{{ asset.funding_display }} funded">
+                    <span style="width: {{ asset.funding_pct }}%;"></span>
+                  </div>
+                </div>
+                <div class="developer-performance-row__stats">
+                  <strong>{{ asset.total_sales_display }}</strong>
+                  <span>{{ asset.funding_display }} funded</span>
+                </div>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="developer-performance-empty">No live property performance yet.</div>
+            {% endif %}
+          </section>
+
+          <section class="ds-card developer-performance-card">
+            <div class="developer-performance-card__header">
+              <div>
+                <h2 class="developer-performance-card__title">Needs attention</h2>
+                <p class="developer-performance-card__subtitle">Low funding progress with demand signals</p>
+              </div>
+            </div>
+
+            {% if stats.attention_assets | length > 0 %}
+            <div class="developer-performance-list">
+              {% for asset in stats.attention_assets %}
+              <a class="developer-performance-row" href="/developer/asset-detail?id={{ asset.id }}">
+                <img class="developer-performance-row__image" src="{{ asset.cover_image_url }}" alt="{{ asset.title }}">
+                <div class="developer-performance-row__main">
+                  <div class="developer-performance-row__title">{{ asset.title }}</div>
+                  <div class="developer-performance-row__meta">
+                    {{ asset.views }} views · {{ asset.conversion_display }} conversion · {{ asset.amount_remaining_display }} left
+                  </div>
+                  <div class="developer-performance-progress developer-performance-progress--attention" aria-label="{{ asset.funding_display }} funded">
+                    <span style="width: {{ asset.funding_pct }}%;"></span>
+                  </div>
+                </div>
+                <div class="developer-performance-row__stats">
+                  <strong>{{ asset.total_sales_display }}</strong>
+                  <span>{{ asset.funding_display }} funded</span>
+                </div>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="developer-performance-empty">No underperforming live properties yet.</div>
+            {% endif %}
+          </section>
         </div>
       </div>
 

@@ -33,19 +33,16 @@
 
 /* Metrics Section */
 .metrics-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 0px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: stretch;
+  padding: 0;
   gap: 16px;
   margin-bottom: 16px;
 }
 
 .metrics-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  width: 100%;
-  gap: 16px;
+  display: contents;
 }
 
 /* Metric Card */
@@ -58,6 +55,7 @@
   gap: 20px;
   position: relative;
   width: 100%;
+  min-width: 0;
 }
 
 .metric-heading {
@@ -233,7 +231,7 @@
   align-items: flex-start;
   padding: 0px;
   width: 100%;
-  height: 36px;
+  min-height: 36px;
 }
 
 .chart-title-section {
@@ -242,6 +240,7 @@
   align-items: center;
   padding: 0px;
   gap: 16px;
+  flex-shrink: 0;
 }
 
 .chart-title {
@@ -252,6 +251,7 @@
   line-height: 28px;
   color: var(--page-title-color);
   margin: 0;
+  white-space: nowrap;
 }
 
 .chart-percentage {
@@ -269,12 +269,12 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0px;
+  padding: 2px;
   gap: 2px;
-  height: 36px;
-  background: #ffffff;
+  min-height: 36px;
+  background: #F9FAFB;
   border: 1px solid var(--table-border-color);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .chart-tab {
@@ -282,9 +282,9 @@
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 12px;
   gap: 8px;
-  height: 36px;
+  min-height: 32px;
   border-radius: 8px;
   background: transparent;
   border: none;
@@ -299,7 +299,7 @@
 
 .chart-tab.active {
   background: #ffffff;
-  border: 1px solid #d5d7da;
+  border: none;
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
   color: #414651;
 }
@@ -741,4 +741,207 @@
 
 .assets-show-all-btn:hover {
   text-decoration: underline;
+}
+
+/* Property Performance */
+.developer-performance-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.developer-performance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  min-width: 0;
+}
+
+.developer-performance-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.developer-performance-card__title {
+  margin: 0;
+  color: var(--page-title-color);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+}
+
+.developer-performance-card__subtitle {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.developer-performance-card__link {
+  color: var(--primary-color);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.developer-performance-card__link:hover {
+  text-decoration: underline;
+}
+
+.developer-performance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.developer-performance-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--table-border-color, #eaecf0);
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.developer-performance-row:hover {
+  background: var(--table-row-hover-bg, #f8f9fc);
+}
+
+.developer-performance-row__image {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f5f5f5;
+}
+
+.developer-performance-row__main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.developer-performance-row__title {
+  overflow: hidden;
+  color: var(--page-title-color);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.developer-performance-row__meta {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.developer-performance-row__stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 82px;
+  text-align: right;
+}
+
+.developer-performance-row__stats strong {
+  color: var(--page-title-color);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.developer-performance-row__stats span {
+  color: var(--text-secondary);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.developer-performance-progress {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eaecf0;
+}
+
+.developer-performance-progress span {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  border-radius: inherit;
+  background: var(--accent-color);
+}
+
+.developer-performance-progress--attention span {
+  background: #f79009;
+}
+
+.developer-performance-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 108px;
+  border: 1px dashed var(--table-border-color, #d0d5dd);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .developer-performance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .developer-performance-card {
+    padding: 18px;
+  }
+
+  .developer-performance-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .developer-performance-row__image {
+    width: 44px;
+    height: 44px;
+  }
+
+  .developer-performance-row__stats {
+    grid-column: 2;
+    align-items: flex-start;
+    text-align: left;
+  }
 }

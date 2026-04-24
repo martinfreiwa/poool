@@ -11,7 +11,6 @@
         content="POOOL Admin — Google Cloud Storage analytics: usage, cost estimates, document breakdown, and activity timeline." />
     <!-- Scripts -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
     <script src="/static/js/user-data.js"></script>
     <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
@@ -174,7 +173,7 @@
 </head>
 
 <body class="admin-body dom-ready">
-    <div class="admin-wrapper" x-data="storageAnalytics">
+    <div class="admin-wrapper" id="storage-analytics">
         {% include 'admin/components/sidebar.html' %}
 
         <!-- MAIN CONTENT -->
@@ -207,7 +206,7 @@
                         <span class="admin-notification-badge">3</span>
                     </button>
                     <!-- Refresh Button -->
-                    <button class="admin-btn admin-btn--secondary" @click="reload()" title="Refresh data">
+                    <button id="storage-refresh" class="admin-btn admin-btn--secondary" @click="reload()" title="Refresh data">
                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
                             stroke-width="1.7">
                             <path d="M1 1v5h5" />
@@ -225,11 +224,13 @@
                     <h1 class="admin-page-title">Storage Analytics</h1>
                     <p class="admin-page-subtitle">
                         Google Cloud Storage usage, cost projections, and document activity for the
-                        <code
+                        <code id="storage-bucket"
                             style="font-size:12px;background:var(--admin-code-bg);padding:2px 6px;border-radius:4px;"
                             x-text="bucket">—</code> bucket
                     </p>
                 </div>
+
+                <div id="storage-view"></div>
 
                 <!-- Loading skeleton -->
                 <template x-if="loading">
@@ -499,6 +500,6 @@
         </main>
     </div>
 
-    <script src="/static/js/admin-storage.js"></script>
+    <script src="/static/js/admin-storage.js?v=20260424"></script>
 </body>
 </html>

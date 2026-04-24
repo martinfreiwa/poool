@@ -163,7 +163,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let cfg = Config::from_url(url);
         match cfg.create_pool(Some(Runtime::Tokio1)) {
             Ok(p) => {
-                tracing::info!("Redis pool initialized (host={}, tls={})", safe_host, is_tls);
+                tracing::info!(
+                    "Redis pool initialized (host={}, tls={})",
+                    safe_host,
+                    is_tls
+                );
                 Some(p)
             }
             Err(e) => {
@@ -768,6 +772,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/my-trading", get(page_my_trading))
         .route("/trade-success", get(page_trade_success))
         .route("/tax-report", get(marketplace::routes::page_tax_report_pdf))
+        // ── Design system templates (protected, MiniJinja-rendered) ────
+        .route("/statistics-template.html", get(page_statistics_template))
+        .route("/forms-template.html", get(page_forms_template))
+        .route("/table-template.html", get(page_table_template))
+        .route("/overlays-template.html", get(page_overlays_template))
+        .route("/fonts-template.html", get(page_fonts_template))
         // ── Static file serving & fallbacks ───────────────────────────
         .route("/", get(handle_root))
         .nest_service("/en", ServeDir::new("../frontend/www/en"))
@@ -897,9 +907,7 @@ async fn apply_security_headers(
         // accidentally served over HTTP is caught by browsers that have
         // the preload entry (plus our existing upgrade-insecure-requests
         // CSP directive catches requests from TLS pages).
-        axum::http::HeaderValue::from_static(
-            "max-age=63072000; includeSubDomains; preload",
-        ),
+        axum::http::HeaderValue::from_static("max-age=63072000; includeSubDomains; preload"),
     );
     headers.insert(
         axum::http::header::CONTENT_SECURITY_POLICY,
@@ -2156,7 +2164,8 @@ impl tower::Service<axum::http::Request<axum::body::Body>> for HostDispatch {
                 || path.starts_with("/png")
                 || path.starts_with("/svg")
                 || path.starts_with("/webm")
-                || path.starts_with("/fonts")
+                || path == "/fonts"
+                || path.starts_with("/fonts/")
                 || path == "/robots.txt"
                 || path == "/sitemap.xml";
             if is_www_path {
@@ -2194,6 +2203,37 @@ impl tower::Service<axum::http::Request<axum::body::Body>> for HostDispatch {
 /// GET /payment-success  Payment success page (protected).
 async fn page_payment_success(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     common::routes_helper::serve_protected(jar, &state, "payment-success.html").await
+}
+
+/// GET /statistics-template.html  Design-system statistics template (protected).
+async fn page_statistics_template(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "_archive/statistics-template.html").await
+}
+
+/// GET /forms-template.html  Design-system forms template (protected).
+async fn page_forms_template(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "_archive/forms-template.html").await
+}
+
+/// GET /table-template.html  Design-system table template (protected).
+async fn page_table_template(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "_archive/table-template.html").await
+}
+
+/// GET /overlays-template.html  Design-system overlays template (protected).
+async fn page_overlays_template(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "_archive/overlays-template.html").await
+}
+
+/// GET /fonts-template.html  Design-system fonts template (protected).
+async fn page_fonts_template(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
+    common::routes_helper::serve_protected(jar, &state, "_archive/fonts-template.html").await
 }
 
 /// GET /community/partials/:tab — Serves HTMX partial views for the community tabs.

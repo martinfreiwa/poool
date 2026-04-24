@@ -25,7 +25,7 @@
 
                     <!-- Article Header -->
                     <header class="blog-article__header">
-                        <span class="blog-tag blog-tag--lg" style="--tag-color: {{ article.category.color | default('#0000FF') }}">{{ article.category.name }}</span>
+                        <span class="blog-tag blog-tag--lg" style="--tag-color: {{ article.category.color | default('#4F46E5') }}">{{ article.category.name }}</span>
                         <h1 class="blog-article__title" itemprop="headline">{{ article.title }}</h1>
                         {% if article.subtitle %}
                         <p class="blog-article__subtitle">{{ article.subtitle }}</p>
@@ -40,7 +40,7 @@
                                 <div class="blog-article__author-info">
                                     <span class="blog-article__author-name" itemprop="name">{{ article.author.name }}</span>
                                     <div class="blog-article__date-row">
-                                        <time datetime="{{ article.published_at }}" itemprop="datePublished" data-format-date>{{ article.published_at }}</time>
+                                        <time datetime="{{ article.published_at }}" itemprop="datePublished">{{ article.published_at }}</time>
                                         <span class="blog-meta__sep">&middot;</span>
                                         <span>{{ article.reading_time_minutes }} min read</span>
                                     </div>
@@ -53,19 +53,19 @@
                                 <button class="blog-share-btn blog-share-btn--copy" onclick="blogCopyLink(this)" aria-label="Copy link" title="Copy link">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                                 </button>
-                                <a class="blog-share-btn blog-share-btn--whatsapp" href="https://wa.me/?text={{ article.title }}%20{{ base_url }}/blog/{{ article.slug }}" target="_blank" rel="noopener" aria-label="Share on WhatsApp" title="Share on WhatsApp">
+                                <a class="blog-share-btn blog-share-btn--whatsapp" href="{% if article.share_links.whatsapp_url %}{{ article.share_links.whatsapp_url }}{% else %}https://wa.me/?text={{ article.title }}%20{{ base_url }}/blog/{{ article.slug }}{% endif %}" target="_blank" rel="noopener" aria-label="Share on WhatsApp" title="Share on WhatsApp">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
                                 </a>
-                                <a class="blog-share-btn blog-share-btn--facebook" href="https://www.facebook.com/sharer/sharer.php?u={{ base_url }}/blog/{{ article.slug }}" target="_blank" rel="noopener" aria-label="Share on Facebook" title="Share on Facebook">
+                                <a class="blog-share-btn blog-share-btn--facebook" href="{% if article.share_links.facebook_url %}{{ article.share_links.facebook_url }}{% else %}https://www.facebook.com/sharer/sharer.php?u={{ base_url }}/blog/{{ article.slug }}{% endif %}" target="_blank" rel="noopener" aria-label="Share on Facebook" title="Share on Facebook">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                                 </a>
-                                <a class="blog-share-btn blog-share-btn--x" href="https://twitter.com/intent/tweet?url={{ base_url }}/blog/{{ article.slug }}&text={{ article.title }}" target="_blank" rel="noopener" aria-label="Share on X" title="Share on X">
+                                <a class="blog-share-btn blog-share-btn--x" href="{% if article.share_links.x_url %}{{ article.share_links.x_url }}{% else %}https://twitter.com/intent/tweet?url={{ base_url }}/blog/{{ article.slug }}&text={{ article.title }}{% endif %}" target="_blank" rel="noopener" aria-label="Share on X" title="Share on X">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                                 </a>
-                                <a class="blog-share-btn blog-share-btn--instagram" href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Share on Instagram" title="Instagram">
+                                <a class="blog-share-btn blog-share-btn--instagram" href="{% if article.share_links.instagram_url %}{{ article.share_links.instagram_url }}{% else %}https://www.instagram.com/{% endif %}" target="_blank" rel="noopener" aria-label="Share on Instagram" title="Instagram">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
                                 </a>
-                                <a class="blog-share-btn blog-share-btn--linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url={{ base_url }}/blog/{{ article.slug }}" target="_blank" rel="noopener" aria-label="Share on LinkedIn" title="Share on LinkedIn">
+                                <a class="blog-share-btn blog-share-btn--linkedin" href="{% if article.share_links.linkedin_url %}{{ article.share_links.linkedin_url }}{% else %}https://www.linkedin.com/sharing/share-offsite/?url={{ base_url }}/blog/{{ article.slug }}{% endif %}" target="_blank" rel="noopener" aria-label="Share on LinkedIn" title="Share on LinkedIn">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
                                 </a>
                             </div>
@@ -75,202 +75,13 @@
                     <!-- Cover Image -->
                     {% if article.cover_image_url %}
                     <div class="blog-article__cover">
-                        <img src="{{ article.cover_image_url }}" alt="{{ article.title }}" width="1200" height="630" itemprop="image" loading="eager" onerror="this.parentElement.classList.add('blog-article__cover--fallback'); this.remove();" />
+                        <img src="{{ article.cover_image_url }}" alt="{{ article.title }}" width="1200" height="630" itemprop="image" loading="eager" />
                     </div>
                     {% endif %}
 
                     <!-- Article Content -->
                     <div class="blog-article__content" itemprop="articleBody">
                         {{ article.content_html | default(article.content) | safe }}
-
-                        <!-- ─── SAMPLE DEMO ELEMENTS (design showcase) ─── -->
-                        <hr>
-
-                        <h2>Table of Contents</h2>
-                        <nav class="toc-box" aria-label="Table of contents">
-                            <ol class="toc-list">
-                                <li><a href="#understanding-fractional">Understanding Fractional Ownership</a></li>
-                                <li><a href="#investment-types">Types of Real Estate Investments</a></li>
-                                <li><a href="#financial-comparison">Financial Comparison: Traditional vs. Fractional</a></li>
-                                <li><a href="#getting-started">Getting Started on POOOL</a></li>
-                                <li><a href="#risk-management">Risk Management & Diversification</a></li>
-                                <li><a href="#faq">Frequently Asked Questions</a></li>
-                            </ol>
-                        </nav>
-
-                        <h2 id="understanding-fractional">Understanding Fractional Ownership</h2>
-                        <p>Fractional real estate investing allows multiple investors to collectively own a property through digital shares or tokens. Unlike traditional real estate, which requires hundreds of thousands of dollars and full ownership commitment, fractional platforms like POOOL let you invest from as little as <strong>$50</strong>.</p>
-
-                        <blockquote>
-                            "Real estate is the safest investment in the world — and with tokenization, it's finally accessible to everyone." — Martin Fischer, Co-founder of POOOL
-                        </blockquote>
-
-                        <p>Here's what makes fractional ownership so compelling for modern investors:</p>
-                        <ul>
-                            <li><strong>Lower capital requirements</strong> — Start with as little as $50 instead of $500,000+</li>
-                            <li><strong>Instant diversification</strong> — Spread risk across multiple properties, cities, and asset classes</li>
-                            <li><strong>Professional management</strong> — Expert property managers handle all operations</li>
-                            <li><strong>Regular income</strong> — Receive proportional rental income directly to your wallet</li>
-                            <li><strong>Transparency</strong> — All ownership records verified on the blockchain</li>
-                        </ul>
-
-                        <h3>How Tokenization Works</h3>
-                        <p>When a property is listed on POOOL, it is valued by independent certified appraisers. The total value is then divided into <em>digital tokens</em>, each representing a fixed ownership percentage. Investors can buy, hold, and eventually sell these tokens as easy as trading stocks.</p>
-
-                        <ol>
-                            <li>Property is professionally appraised and legally structured</li>
-                            <li>Tokens are minted on the blockchain representing ownership shares</li>
-                            <li>Investors purchase tokens through the POOOL marketplace</li>
-                            <li>Rental income is distributed monthly proportional to token holdings</li>
-                            <li>Token holders can vote on major property decisions</li>
-                        </ol>
-
-                        <h4>Legal Framework</h4>
-                        <p>All properties on POOOL are structured through legally registered special purpose vehicles (SPVs), ensuring your investment is backed by real legal ownership rights — not just a promise.</p>
-
-                        <h2 id="investment-types">Types of Real Estate Investments</h2>
-                        <p>Not all real estate is created equal. Different property types offer different risk/reward profiles. Here's a breakdown of what's available on POOOL:</p>
-
-                        <!-- Simple data table -->
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Property Type</th>
-                                    <th>Typical Yield</th>
-                                    <th>Risk Level</th>
-                                    <th>Liquidity</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Luxury Villas (Bali)</td>
-                                    <td>10–14% gross</td>
-                                    <td>Medium</td>
-                                    <td>High (tourist demand)</td>
-                                </tr>
-                                <tr>
-                                    <td>Urban Apartments</td>
-                                    <td>5–8% gross</td>
-                                    <td>Low–Medium</td>
-                                    <td>Very High</td>
-                                </tr>
-                                <tr>
-                                    <td>Commercial Office</td>
-                                    <td>7–10% gross</td>
-                                    <td>Medium–High</td>
-                                    <td>Medium</td>
-                                </tr>
-                                <tr>
-                                    <td>Industrial / Logistics</td>
-                                    <td>6–9% gross</td>
-                                    <td>Low</td>
-                                    <td>Low–Medium</td>
-                                </tr>
-                                <tr>
-                                    <td>Holiday Rentals</td>
-                                    <td>12–18% gross</td>
-                                    <td>High</td>
-                                    <td>High (seasonal)</td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        <h2 id="financial-comparison">Financial Comparison: Traditional vs. Fractional</h2>
-                        <p>To illustrate the dramatic difference in accessibility, here's a head-to-head comparison between traditional real estate investing and POOOL's fractional model:</p>
-
-                        <!-- Comparison table -->
-                        <table class="comparison-table">
-                            <thead>
-                                <tr>
-                                    <th>Factor</th>
-                                    <th class="col-traditional">Traditional</th>
-                                    <th class="col-fractional">POOOL Fractional</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><strong>Minimum Investment</strong></td>
-                                    <td class="col-traditional">$200,000+</td>
-                                    <td class="col-fractional highlight-cell">$50</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Time to Invest</strong></td>
-                                    <td class="col-traditional">3–6 months</td>
-                                    <td class="col-fractional highlight-cell">5 minutes</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Geographic Access</strong></td>
-                                    <td class="col-traditional">Local market only</td>
-                                    <td class="col-fractional highlight-cell">Global</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Management Required</strong></td>
-                                    <td class="col-traditional">Yes (you're the landlord)</td>
-                                    <td class="col-fractional highlight-cell">No (fully managed)</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Rental Income</strong></td>
-                                    <td class="col-traditional">100% (minus costs)</td>
-                                    <td class="col-fractional highlight-cell">Proportional (automated)</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Diversification</strong></td>
-                                    <td class="col-traditional">Hard (high capital needed)</td>
-                                    <td class="col-fractional highlight-cell">Easy (multiple $50 buys)</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Liquidity</strong></td>
-                                    <td class="col-traditional">Very Low (months to sell)</td>
-                                    <td class="col-fractional highlight-cell">High (secondary market)</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Transparency</strong></td>
-                                    <td class="col-traditional">Limited</td>
-                                    <td class="col-fractional highlight-cell">Full (blockchain-verified)</td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        <h2 id="getting-started">Getting Started on POOOL</h2>
-                        <p>Starting your fractional real estate journey takes less than 10 minutes. Here's the step-by-step process:</p>
-
-                        <h3>Step 1: Create Your Account</h3>
-                        <p>Visit <a href="/auth/signup">poool.finance</a> and sign up with your email. We support Google and Facebook login for convenience. The signup process is completely free.</p>
-
-                        <h3>Step 2: Complete KYC Verification</h3>
-                        <p>To comply with local financial regulations, we require basic identity verification (KYC). Have your government-issued ID ready — verification typically takes under 2 minutes with our automated system powered by AI.</p>
-
-                        <h3>Step 3: Fund Your Wallet</h3>
-                        <p>Add funds to your POOOL wallet using bank transfer, credit card, or cryptocurrency. Minimum deposit is just <strong>$50</strong>. Funds are held in a regulated escrow account until invested.</p>
-
-                        <h3>Step 4: Browse & Invest</h3>
-                        <p>Browse the POOOL marketplace to find properties that match your investment criteria. Filter by location, yield, risk level, and property type. Each listing shows a detailed breakdown of projected returns.</p>
-
-                        <h2 id="risk-management">Risk Management &amp; Diversification</h2>
-                        <p>Even the most promising investments carry risk. Here's how to manage yours effectively:</p>
-
-                        <blockquote>
-                            Never put more than 20% of your investment portfolio into a single asset class. Real estate, even fractional, should be one piece of a diversified strategy.
-                        </blockquote>
-
-                        <p>Our recommended approach for new investors:</p>
-                        <ul>
-                            <li>Start small — invest $50–200 across 3–5 different properties to learn the platform</li>
-                            <li>Reinvest rental income — let compounding do the heavy lifting over time</li>
-                            <li>Diversify geographically — mix Bali villas with urban apartments in different cities</li>
-                            <li>Read all property documentation before investing — due diligence is still your responsibility</li>
-                        </ul>
-
-                        <h2 id="faq">Frequently Asked Questions</h2>
-
-                        <h3>Is my investment protected if POOOL goes out of business?</h3>
-                        <p>Yes. Each property is held in an independent SPV (Special Purpose Vehicle) that is separate from POOOL's operational company. If POOOL ceased operations, a trustee would take over management and your ownership would remain intact.</p>
-
-                        <h3>When do I receive rental income?</h3>
-                        <p>Rental income is distributed monthly, directly to your POOOL wallet balance. You can reinvest it immediately or withdraw to your bank account. Distributions typically occur on the 1st–5th of each month for the prior month's rent.</p>
-
-                        <h3>Can I sell my tokens before the holding period ends?</h3>
-                        <p>Yes. POOOL's secondary market allows token-to-token trading between investors. Liquidity depends on market demand, but prime properties typically see active trading within 24–48 hours of listing.</p>
                     </div>
 
                     <!-- Tags -->
@@ -291,7 +102,7 @@
                         <img src="{{ article.author.avatar_url }}" alt="{{ article.author.name }}" class="blog-avatar blog-avatar--xl" width="80" height="80" />
                         {% else %}
                         <div class="blog-author-card__avatar-placeholder">
-                            <span>{{ article.author.name | truncate(1, true, "") }}</span>
+                            <span>{{ article.author.initials }}</span>
                         </div>
                         {% endif %}
                         <div class="blog-author-card__info">
@@ -371,12 +182,6 @@
                 <!-- Sticky wrapper -->
                 <div class="bla-sidebar__sticky">
 
-                    <!-- Auto-generated TOC (populated by JS from H2s in article) -->
-                    <nav class="bla-sidebar__toc" id="sidebar-toc" aria-label="On this page" hidden>
-                        <h3 class="bla-sidebar__heading">On this page</h3>
-                        <ol class="bla-sidebar__toc-list"></ol>
-                    </nav>
-
                     <!-- Other Articles -->
                     <div class="bla-sidebar__section">
                         <h3 class="bla-sidebar__heading">More Articles</h3>
@@ -385,12 +190,12 @@
                             {% for art in other_articles %}
                             <a href="/blog/{{ art.slug }}" class="bla-sidebar-card">
                                 {% if art.cover_image_url %}
-                                <div class="bla-sidebar-card__img" data-img="{{ art.cover_image_url }}" style="background-image: url('{{ art.cover_image_url }}')"></div>
+                                <div class="bla-sidebar-card__img" style="background-image: url('{{ art.cover_image_url }}')"></div>
                                 {% else %}
                                 <div class="bla-sidebar-card__img bla-sidebar-card__img--placeholder"></div>
                                 {% endif %}
                                 <div class="bla-sidebar-card__body">
-                                    <span class="blog-tag" style="--tag-color: {{ art.category.color | default('#0000FF') }}">{{ art.category.name }}</span>
+                                    <span class="blog-tag" style="--tag-color: {{ art.category.color | default('#4F46E5') }}">{{ art.category.name }}</span>
                                     <h4 class="bla-sidebar-card__title">{{ art.title }}</h4>
                                     <div class="bla-sidebar-card__meta">
                                         <span>{{ art.reading_time_minutes }} min read</span>
@@ -431,12 +236,12 @@
                     {% for rel in related %}
                     <a href="/blog/{{ rel.slug }}" class="blog-card">
                         {% if rel.cover_image_url %}
-                        <div class="blog-card__image" data-img="{{ rel.cover_image_url }}" style="background-image: url('{{ rel.cover_image_url }}')"></div>
+                        <div class="blog-card__image" style="background-image: url('{{ rel.cover_image_url }}')"></div>
                         {% else %}
                         <div class="blog-card__image blog-card__image--placeholder"></div>
                         {% endif %}
                         <div class="blog-card__body">
-                            <span class="blog-tag" style="--tag-color: {{ rel.category.color | default('#0000FF') }}">{{ rel.category.name }}</span>
+                            <span class="blog-tag" style="--tag-color: {{ rel.category.color | default('#4F46E5') }}">{{ rel.category.name }}</span>
                             <h3 class="blog-card__title">{{ rel.title }}</h3>
                             <p class="blog-card__excerpt">{{ rel.excerpt }}</p>
                             <div class="blog-card__meta">
@@ -524,98 +329,6 @@
 
     <script>
     document.body.classList.add('dom-ready');
-
-    // Sidebar / related card image fallback — swap to placeholder on 404
-    document.querySelectorAll('[data-img]').forEach(el => {
-        const url = el.getAttribute('data-img');
-        if (!url) return;
-        const probe = new Image();
-        probe.onerror = () => {
-            el.style.backgroundImage = '';
-            if (el.classList.contains('bla-sidebar-card__img')) el.classList.add('bla-sidebar-card__img--placeholder');
-            if (el.classList.contains('blog-card__image')) el.classList.add('blog-card__image--placeholder');
-        };
-        probe.src = url;
-    });
-
-    // Human-readable date format
-    document.querySelectorAll('time[data-format-date]').forEach(el => {
-        const raw = el.getAttribute('datetime') || el.textContent;
-        const d = new Date(raw);
-        if (!isNaN(d)) {
-            el.textContent = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-        }
-    });
-
-    // Client-side markdown fallback: if content_html missing, article content is raw markdown.
-    (function renderMarkdownFallback() {
-        const root = document.querySelector('.blog-article__content');
-        if (!root) return;
-        const html = root.innerHTML;
-        // Heuristic: raw markdown present if we see `**bold**`, `## heading`, or `- item` outside tags.
-        const looksRaw = /^\s*#{1,6}\s|\n#{1,6}\s|\*\*[^*]+\*\*/m.test(root.textContent);
-        if (!looksRaw) return;
-        const md = root.textContent;
-        const lines = md.split('\n');
-        let out = '';
-        let inList = null;
-        const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const inline = (s) => esc(s)
-            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-            .replace(/`([^`]+)`/g, '<code>$1</code>')
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-        const closeList = () => { if (inList) { out += `</${inList}>`; inList = null; } };
-        for (const line of lines) {
-            const h = line.match(/^(#{1,6})\s+(.+)$/);
-            const ul = line.match(/^[-*]\s+(.+)$/);
-            const ol = line.match(/^\d+\.\s+(.+)$/);
-            const bq = line.match(/^>\s?(.*)$/);
-            if (h) { closeList(); const lv = h[1].length; const id = h[2].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); out += `<h${lv} id="${id}">${inline(h[2])}</h${lv}>`; }
-            else if (ul) { if (inList !== 'ul') { closeList(); out += '<ul>'; inList = 'ul'; } out += `<li>${inline(ul[1])}</li>`; }
-            else if (ol) { if (inList !== 'ol') { closeList(); out += '<ol>'; inList = 'ol'; } out += `<li>${inline(ol[1])}</li>`; }
-            else if (bq) { closeList(); out += `<blockquote>${inline(bq[1])}</blockquote>`; }
-            else if (line.trim() === '') { closeList(); }
-            else { closeList(); out += `<p>${inline(line)}</p>`; }
-        }
-        closeList();
-        root.innerHTML = out;
-    })();
-
-    // Build sticky TOC from rendered H2s
-    (function buildTOC() {
-        const content = document.querySelector('.blog-article__content');
-        const toc = document.getElementById('sidebar-toc');
-        if (!content || !toc) return;
-        const list = toc.querySelector('.bla-sidebar__toc-list');
-        const h2s = content.querySelectorAll('h2');
-        if (h2s.length < 2) return;
-        h2s.forEach(h => {
-            if (!h.id) h.id = h.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-            const li = document.createElement('li');
-            const a = document.createElement('a');
-            a.href = '#' + h.id;
-            a.textContent = h.textContent;
-            a.className = 'bla-sidebar__toc-link';
-            li.appendChild(a);
-            list.appendChild(li);
-        });
-        toc.hidden = false;
-        // Active-section highlight via IntersectionObserver
-        const links = new Map();
-        toc.querySelectorAll('a').forEach(a => links.set(a.getAttribute('href').slice(1), a));
-        const io = new IntersectionObserver((entries) => {
-            entries.forEach(e => {
-                const a = links.get(e.target.id);
-                if (!a) return;
-                if (e.isIntersecting) {
-                    toc.querySelectorAll('.is-active').forEach(x => x.classList.remove('is-active'));
-                    a.classList.add('is-active');
-                }
-            });
-        }, { rootMargin: '-80px 0px -70% 0px' });
-        h2s.forEach(h => io.observe(h));
-    })();
 
     function blogCopyLink(btn) {
         navigator.clipboard.writeText(window.location.href).then(() => {

@@ -14,6 +14,59 @@ pub async fn page_admin_dashboard(
     render_admin_template(&state, "admin/index.html")
 }
 
+/// GET /admin/blog  Blog dashboard (protected, requires blog.manage).
+pub async fn page_admin_blog(admin: AdminUser, State(state): State<AppState>) -> impl IntoResponse {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "blog.view").await
+        || crate::auth::middleware::has_permission(&state.db, admin.user.id, "blog.manage").await
+    {
+        render_admin_template(&state, "admin/blog.html")
+    } else {
+        Redirect::to("/admin/").into_response()
+    }
+}
+
+/// GET /admin/blog-persona  Blog persona planner (protected, requires blog.view or blog.manage).
+pub async fn page_admin_blog_persona(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "blog.view").await
+        || crate::auth::middleware::has_permission(&state.db, admin.user.id, "blog.manage").await
+    {
+        render_admin_template(&state, "admin/blog-persona.html")
+    } else {
+        Redirect::to("/admin/").into_response()
+    }
+}
+
+/// GET /admin/blog-strategy  Blog strategy planner (protected, requires blog.view or blog.manage).
+pub async fn page_admin_blog_strategy(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "blog.view").await
+        || crate::auth::middleware::has_permission(&state.db, admin.user.id, "blog.manage").await
+    {
+        render_admin_template(&state, "admin/blog-strategy.html")
+    } else {
+        Redirect::to("/admin/").into_response()
+    }
+}
+
+/// GET /admin/blog-editor  Blog article editor (protected, requires blog.edit or blog.manage).
+pub async fn page_admin_blog_editor(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "blog.edit").await
+        || crate::auth::middleware::has_permission(&state.db, admin.user.id, "blog.manage").await
+    {
+        render_admin_template(&state, "admin/blog-editor.html")
+    } else {
+        Redirect::to("/admin/blog.html").into_response()
+    }
+}
+
 /// GET /admin/{any}.html  Serve admin sub-pages (protected).
 pub async fn page_admin_generic(
     _admin: AdminUser,

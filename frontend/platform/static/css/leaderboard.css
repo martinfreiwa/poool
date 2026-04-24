@@ -87,6 +87,8 @@
   font-weight: 800;
   color: var(--btn-primary-bg, #0000FF);
   letter-spacing: -0.02em;
+  margin: 0;
+  line-height: inherit;
 }
 
 .lb-topbar-tabs {

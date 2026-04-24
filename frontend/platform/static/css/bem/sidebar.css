@@ -282,13 +282,17 @@
   order: 0;
   flex-grow: 1;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0s ease, background-color 0s ease, filter 0s ease;
   text-decoration: none;
 }
 
 /* From: .nav-item-content:hover (sidebar-navigation.css:235-237) */
 .sidebar__nav-item-content:hover {
   background: rgba(3, 255, 136, 0.08);
+}
+
+.sidebar__nav-item-content:active {
+  background: rgba(3, 255, 136, 0.15);
 }
 
 /* Icon turns blue on hover (matching active state) */
@@ -1386,11 +1390,15 @@
   border-radius: 6px;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background-color 0s ease, color 0s ease;
 }
 
 .sidebar__nav-child:hover {
   background: rgba(3, 255, 136, 0.08);
+}
+
+.sidebar__nav-child:active {
+  background: rgba(3, 255, 136, 0.15);
 }
 
 /* Active child item */

@@ -150,7 +150,9 @@ pub async fn create_order(
     // total is wildly smaller than the real amount owed.
     let order_total_cents = price_cents
         .checked_mul(req.quantity as i64)
-        .ok_or_else(|| AppError::BadRequest("Order total exceeds maximum supported value".into()))?;
+        .ok_or_else(|| {
+            AppError::BadRequest("Order total exceeds maximum supported value".into())
+        })?;
 
     // ── Concentration limit check (buy side only) ────────────
     if side == OrderSide::Buy {
@@ -690,7 +692,9 @@ pub async fn get_secondary_assets(
             a.description,
             a.total_value_cents,
             a.land_size_sqm,
+            a.building_size_sqm,
             a.bedrooms,
+            a.bathrooms,
             a.funding_status,
             a.location_description,
             a.occupancy_rate_bps,
@@ -780,8 +784,10 @@ pub async fn get_secondary_assets(
             sparkline,
             description: row.description,
             property_value: row.total_value_cents,
-            land_size: row.land_size_sqm.map(|s| format!("{} m²", s)),
+            land_size: row.land_size_sqm.map(|s| format!("{:.0} m²", s)),
+            building_size_sqm: row.building_size_sqm.map(|s| format!("{:.0} m²", s)),
             bedrooms: row.bedrooms,
+            bathrooms: row.bathrooms,
             rent_status: Some(row.funding_status.clone()),
             location_desc: row.location_description,
             lease_type: row.lease_type,

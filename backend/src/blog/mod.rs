@@ -2,6 +2,8 @@
 pub mod models;
 /// HTTP route handlers for the blog API.
 pub mod routes;
+/// Sanity Content Lake integration for public blog content.
+pub mod sanity;
 /// Business logic: database queries for articles, authors, categories.
 pub mod service;
 

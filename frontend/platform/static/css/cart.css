@@ -855,30 +855,338 @@
   text-decoration: underline;
 }
 
-/* Cart Empty State */
-/* When cart is empty, main should be full width and center content */
+/* Cart Empty State — match wallet layout: anchor top-left, wrapper owns padding */
 .cart-page.cart-empty .cart-page-main,
 .cart-page-main.cart-empty-state {
   width: calc(100% - 256px) !important;
   background: #fafafa;
-  align-items: center !important;
+  align-items: flex-start !important;
 }
 
 .cart-page-main.cart-empty-state .cart-page-content {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  max-width: none;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  max-width: 1200px;
   flex: 1;
 }
 
 .cart-empty-wrapper {
   width: 100%;
+  max-width: 1200px;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 0;
+}
+
+/* ─── Premium Empty State — POOOL brand (#0000FF / mint #98FB96) ─ */
+/* Backend removes inline style="display:none" when cart is empty.
+   Once visible, override old centered flex layout to a stacked stack. */
+.cart-empty-wrapper:not([style*="display: none"]):not([style*="display:none"]) {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 20px;
+  padding: 0;
+  min-height: 0;
   max-width: 1096px;
+}
+
+.cart-empty__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+  padding: 36px 40px;
+  border-radius: 12px;
+  background:
+    radial-gradient(900px 280px at 100% 0%, rgba(152, 251, 150, 0.12), transparent 60%),
+    radial-gradient(1100px 320px at 0% 100%, rgba(0, 0, 255, 0.05), transparent 55%),
+    #FFFFFF;
+  border: 1px solid #E5E7EB;
+  box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+}
+
+.cart-empty__hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.cart-empty__eyebrow {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--btn-primary-bg, #0000FF);
+}
+
+.cart-empty__title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--page-title-color, #181D27);
+  margin: 0;
+}
+
+.cart-empty__lede {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--page-subtitle-color, #475467);
+  margin: 0;
+  max-width: 52ch;
+}
+
+.cart-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.cart-empty__cta-primary {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding-inline: 22px !important;
+  font-weight: 600 !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.cart-empty__cta-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 255, 0.45);
+}
+
+.cart-empty__cta-secondary {
+  display: inline-flex !important;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 20px !important;
+  background: #FFFFFF !important;
+  color: var(--page-title-color, #181D27) !important;
+  border: 1px solid #E5E7EB !important;
+  font-weight: 600 !important;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.cart-empty__cta-secondary:hover {
+  background: #F9FAFB !important;
+  border-color: var(--btn-primary-bg, #0000FF) !important;
+  color: var(--btn-primary-bg, #0000FF) !important;
+}
+
+.cart-empty__hero-art {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  justify-self: end;
+}
+.cart-empty__hero-art svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Metrics */
+.cart-empty__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cart-empty__metric {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+  overflow: hidden;
+}
+.cart-empty__metric::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--btn-primary-bg, #0000FF), var(--brand-greeny-green, #03FF88));
+}
+
+.cart-empty__metric-label {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--label-color, #475467);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cart-empty__metric-value {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #D0D5DD;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.cart-empty__metric-hint {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
+  color: #667085;
+  margin-top: 2px;
+}
+
+/* Steps */
+.cart-empty__steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cart-empty__step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border-color, #E5E7EB);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.cart-empty__step:hover {
+  border-color: var(--btn-primary-bg, #0000FF);
+  box-shadow: 0 6px 18px -10px rgba(0, 0, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.cart-empty__step-num {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--btn-primary-bg, #0000FF);
+  background: var(--badge-info-bg, #EEF4FF);
+  border-radius: 8px;
+  padding: 6px 10px;
+  line-height: 1;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.cart-empty__step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cart-empty__step-title {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+  margin: 0;
+}
+
+.cart-empty__step-desc {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--page-subtitle-color, #475467);
+  margin: 0;
+}
+
+.cart-empty__step-link {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--btn-primary-bg, #0000FF);
+  text-decoration: none;
+  margin-top: 4px;
+  align-self: flex-start;
+}
+.cart-empty__step-link:hover {
+  text-decoration: underline;
+}
+
+/* Trust strip */
+.cart-empty__trust {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: var(--badge-info-bg, #EEF4FF);
+  border: 1px solid #D7E3FF;
+}
+
+.cart-empty__trust-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 280px);
+  gap: 12px;
+  color: var(--btn-primary-bg, #0000FF);
+}
+.cart-empty__trust-item > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cart-empty__trust-item svg {
+  flex-shrink: 0;
+}
+
+.cart-empty__trust-label {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--page-title-color, #181D27);
+  line-height: 1.2;
+}
+
+.cart-empty__trust-sub {
+  font-family: 'TT Norms Pro', sans-serif;
+  font-size: 12px;
+  color: var(--page-subtitle-color, #475467);
+  line-height: 1.3;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .cart-empty__hero {
+    grid-template-columns: 1fr;
+    padding: 28px 24px;
+  }
+  .cart-empty__hero-art {
+    max-width: 280px;
+    justify-self: start;
+    order: -1;
+  }
+  .cart-empty__title {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 720px) {
+  .cart-empty__metrics,
+  .cart-empty__steps,
+  .cart-empty__trust {
+    grid-template-columns: 1fr;
+  }
+  .cart-empty__title {
+    font-size: 22px;
+  }
 }
 
 .cart-empty-container {

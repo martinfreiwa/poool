@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="/static/css/bundle.css">
   <link rel="stylesheet" href="/static/css/marketplace.css">
   <link rel="stylesheet" href="/static/css/landing.css">
-  <link rel="stylesheet" href="/static/css/landing-property-cards.css">
+  <link rel="stylesheet" href="/static/css/property-card.css">
 
   <script type="application/ld+json">
   {
@@ -55,6 +55,7 @@
           <a href="#why-us" class="nav-link">Why us</a>
           <a href="#how" class="nav-link">How it works</a>
           <a href="#marketplace" class="nav-link">Market</a>
+          <a href="/blog" class="nav-link">Blog</a>
           <a href="#faq" class="nav-link">FAQ</a>
         </nav>
 
@@ -178,50 +179,6 @@
       .commodities-grid-v2 { grid-template-columns: 1fr !important; }
       .commodities-left-v2 { grid-template-columns: 1fr !important; }
       .how-steps-v2 { margin-bottom: 40px; }
-    }
-
-    /* Kill the base image zoom — grey container bg shows through the scaled image */
-    .property-card:hover .property-image { transform: none !important; }
-
-    /* ── Property card hover: elegant lift with ground shadow ── */
-    .lp-grid.card-v19 .property-card,
-    .property-card {
-      transition: transform 0.55s cubic-bezier(0.23, 1, 0.32, 1) !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
-      will-change: transform;
-    }
-    .lp-grid.card-v19 .property-card:hover,
-    .property-card:hover {
-      transform: translateY(-16px) scale(1.012) !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
-    }
-    .lp-grid.card-v19 .property-image { transition: none !important; }
-    .lp-grid.card-v19 .property-card:hover .property-image.active { transform: none !important; }
-
-    /* Ground shadow via ::after — isolation:isolate keeps z-index:-1 above page bg */
-    .property-card-link {
-      position: relative;
-      isolation: isolate;
-    }
-    .property-card-link::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 10%;
-      width: 80%;
-      height: 50px;
-      background: rgba(0, 0, 0, 0.22);
-      border-radius: 50%;
-      filter: blur(22px);
-      z-index: -1;
-      opacity: 0;
-      transform: scaleX(0.85) scaleY(0.6) translateY(-8px);
-      transition: opacity 0.55s cubic-bezier(0.23, 1, 0.32, 1),
-                  transform 0.55s cubic-bezier(0.23, 1, 0.32, 1);
-    }
-    .property-card-link:hover::after {
-      opacity: 1;
-      transform: scaleX(0.85) scaleY(0.6) translateY(18px);
     }
 
     /* ── FAQ (live-site style: clean hairline list) ── */
@@ -490,9 +447,9 @@
             <div class="card-meta-row">
               <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>4 Bath</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>4</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>128 m²</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Sunset Luxury Villa</h3></div>
             <div class="property-pricing">
@@ -526,9 +483,9 @@
             <div class="card-meta-row">
               <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>2</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>2 Bath</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>2</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Seminyak, ID</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>95 m²</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Ocean Breeze Penthouse</h3></div>
             <div class="property-pricing">
@@ -562,9 +519,9 @@
             <div class="card-meta-row">
               <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>2</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>2 Bath</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>2</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>80 m²</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Echo Beach Loft</h3></div>
             <div class="property-pricing">
@@ -598,9 +555,9 @@
             <div class="card-meta-row">
               <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>3</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>3 Bath</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>3</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Ubud, ID</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>180 m²</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Rice Terrace Retreat</h3></div>
             <div class="property-pricing">
@@ -634,9 +591,9 @@
             <div class="card-meta-row">
               <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>3</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>3 Bath</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>3</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Ubud, ID</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>150 m²</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Tropical Garden Villa</h3></div>
             <div class="property-pricing">
@@ -670,9 +627,9 @@
             <div class="card-meta-row">
               <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>5</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>5 Bath</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>5</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Uluwatu, ID</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>340 m²</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Cliffside Sunset Estate</h3></div>
             <div class="property-pricing">
@@ -706,9 +663,9 @@
             <div class="card-meta-row">
               <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>1</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>1 Bath</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>1</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Sanur, ID</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>65 m²</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Beachfront Bungalow</h3></div>
             <div class="property-pricing">
@@ -742,9 +699,9 @@
             <div class="card-meta-row">
               <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>4 Bath</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>4</span></div>
               <div class="card-meta-divider"></div>
-              <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+              <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>210 m²</span></div>
             </div>
             <div class="property-heading"><h3 class="property-title">Modern Jungle Retreat</h3></div>
             <div class="property-pricing">
@@ -827,11 +784,6 @@
               .myCtaSwiper.anim-pending .swiper-slide:not(.swiper-slide-active) {
                 transform: translateX(-40px) translateZ(-80px) rotate(0deg) !important;
               }
-              .myCtaSwiper .property-card {
-                box-shadow: none !important; /* Let swiper slide handle shadow */
-                transform: none !important; /* Let swiper handle 3D transform */
-                margin: 0 !important;
-              }
             </style>
 
             <div class="swiper myCtaSwiper anim-pending">
@@ -856,9 +808,9 @@
                       <div class="card-meta-row">
                         <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
                         <div class="card-meta-divider"></div>
-                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"></path><path d="M7 17v2"></path><path d="M17 17v2"></path><path d="M21 10V6a2 2 0 0 0-2-2"></path></svg><span>4 Bath</span></div>
+                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"></path><path d="M7 17v2"></path><path d="M17 17v2"></path><path d="M21 10V6a2 2 0 0 0-2-2"></path></svg><span>4</span></div>
                         <div class="card-meta-divider"></div>
-                        <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>128 m²</span></div>
                       </div>
                       <div class="property-heading"><h3 class="property-title">Sunset Luxury Villa</h3></div>
                       <div class="property-pricing">
@@ -888,7 +840,9 @@
                       <div class="card-meta-row">
                         <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
                         <div class="card-meta-divider"></div>
-                        <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v8"/><path d="M17 4v8"/><path d="M4 12h16"/><path d="M5 12v3a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3"/></svg><span>4</span></div>
+                        <div class="card-meta-divider"></div>
+                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>128 m²</span></div>
                       </div>
                       <div class="property-heading"><h3 class="property-title">Sunset Luxury Villa</h3></div>
                       <div class="property-pricing">
@@ -917,7 +871,9 @@
                       <div class="card-meta-row">
                         <div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>4</span></div>
                         <div class="card-meta-divider"></div>
-                        <div class="card-meta-item"><img src="/static/images/ui/ID.webp" width="16" height="16" style="border-radius:50%;object-fit:cover" alt="Indonesia"><span>Canggu, ID</span></div>
+                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v8"/><path d="M17 4v8"/><path d="M4 12h16"/><path d="M5 12v3a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3"/></svg><span>4</span></div>
+                        <div class="card-meta-divider"></div>
+                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>128 m²</span></div>
                       </div>
                       <div class="property-heading"><h3 class="property-title">Sunset Luxury Villa</h3></div>
                       <div class="property-pricing">
@@ -1420,6 +1376,7 @@
               <a href="#marketplace">Platform</a>
               <a href="#how">How it works</a>
               <a href="#marketplace">Market</a>
+              <a href="/blog">Blog</a>
               <a href="#faq">FAQ</a>
               <a href="/terms">Terms &amp; Conditions</a>
               <a href="https://drive.google.com/drive/folders/1uP5cScXp-6NarP9a7fjHCRjMzujpOuBG" target="_blank">Legal</a>
@@ -1439,7 +1396,7 @@
     </div>
   </footer>
 
-  <script src="/static/js/marketplace.js"></script>
+  <script src="/static/js/property-card.js"></script>
   <script>
     /* ── Header scroll shadow ── */
     const header = document.getElementById('lp-header');

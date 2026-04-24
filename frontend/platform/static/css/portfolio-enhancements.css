@@ -131,6 +131,22 @@
     color: #047857;
 }
 
+/* Neutral: zero growth — avoids implying gain when value has not moved */
+.portfolio-value-badge.is-neutral {
+    background: #f2f4f7;
+    border-color: #e4e7ec;
+}
+.portfolio-value-badge.is-neutral span { color: #475467; }
+.portfolio-value-badge.is-neutral svg path { stroke: #475467; }
+
+/* Negative: loss */
+.portfolio-value-badge.is-negative {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border-color: #fecaca;
+}
+.portfolio-value-badge.is-negative span { color: #b91c1c; }
+.portfolio-value-badge.is-negative svg path { stroke: #b91c1c; }
+
 /* Show more button refinement */
 .portfolio-show-more-btn {
     border-radius: 10px !important;
@@ -197,6 +213,19 @@
 .chart-tab:hover:not(.active) {
     color: #374151 !important;
     background: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Touch targets: ensure chart time-range tabs and empty-state CTA meet 44px.
+   Scoped to portfolio so dashboard tabs stay unchanged. */
+.portfolio-chart-tabs .chart-tab {
+    min-height: 44px !important;
+}
+.portfolio-state-panel .ds-btn {
+    min-height: 44px;
+    padding-inline: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Filter button refinement */
@@ -647,6 +676,333 @@
 /* ─── State Panels ───────────────────────────────────────────── */
 .portfolio-state-panel {
     border-radius: 16px !important;
+}
+
+/* ─── Premium Empty State — POOOL brand (#0000FF / mint #98FB96) ─ */
+.portfolio-empty {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+}
+
+/* Hero */
+.portfolio-empty__hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 32px;
+    align-items: center;
+    padding: 36px 40px;
+    border-radius: 12px;
+    background:
+        radial-gradient(900px 280px at 100% 0%, rgba(152, 251, 150, 0.12), transparent 60%),
+        radial-gradient(1100px 320px at 0% 100%, rgba(0, 0, 255, 0.05), transparent 55%),
+        #FFFFFF;
+    border: 1px solid #E5E7EB;
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+}
+
+.portfolio-empty__hero-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+}
+
+.portfolio-empty__eyebrow {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--btn-primary-bg, #0000FF);
+}
+
+.portfolio-empty__title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 30px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    color: var(--page-title-color, #181D27);
+    margin: 0;
+}
+
+.portfolio-empty__lede {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--page-subtitle-color, #475467);
+    margin: 0;
+    max-width: 52ch;
+}
+
+.portfolio-empty__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+/* Primary CTA inherits --btn-primary-bg (blue) + --btn-primary-color (mint) from ds-btn.
+   We only tweak sizing + icon alignment. */
+.portfolio-empty__cta-primary {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding-inline: 22px !important;
+    font-weight: 600 !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.portfolio-empty__cta-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px -8px rgba(0, 0, 255, 0.45);
+}
+
+.portfolio-empty__cta-secondary {
+    display: inline-flex !important;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 20px !important;
+    background: #FFFFFF !important;
+    color: var(--page-title-color, #181D27) !important;
+    border: 1px solid #E5E7EB !important;
+    font-weight: 600 !important;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.portfolio-empty__cta-secondary:hover {
+    background: #F9FAFB !important;
+    border-color: var(--btn-primary-bg, #0000FF) !important;
+    color: var(--btn-primary-bg, #0000FF) !important;
+}
+
+.portfolio-empty__hero-art {
+    display: block;
+    width: 100%;
+    max-width: 360px;
+    justify-self: end;
+}
+.portfolio-empty__hero-art svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Metric placeholders */
+.portfolio-empty__metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.portfolio-empty__metric {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 20px;
+    border-radius: 12px;
+    background: var(--card-bg, #FFFFFF);
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+    overflow: hidden;
+}
+.portfolio-empty__metric::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--btn-primary-bg, #0000FF), var(--brand-greeny-green, #03FF88));
+}
+
+.portfolio-empty__metric-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--label-color, #475467);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.portfolio-empty__metric-value {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #D0D5DD;
+    line-height: 1;
+    letter-spacing: -0.01em;
+}
+
+.portfolio-empty__metric-hint {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 12px;
+    color: #667085;
+    margin-top: 2px;
+}
+
+/* Onboarding steps */
+.portfolio-empty__steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.portfolio-empty__step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 20px;
+    border-radius: 12px;
+    background: var(--card-bg, #FFFFFF);
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.portfolio-empty__step:hover {
+    border-color: var(--btn-primary-bg, #0000FF);
+    box-shadow: 0 6px 18px -10px rgba(0, 0, 255, 0.35);
+    transform: translateY(-1px);
+}
+
+.portfolio-empty__step-num {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--btn-primary-bg, #0000FF);
+    background: var(--badge-info-bg, #EEF4FF);
+    border-radius: 8px;
+    padding: 6px 10px;
+    line-height: 1;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+}
+
+.portfolio-empty__step-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.portfolio-empty__step-title {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--page-title-color, #181D27);
+    margin: 0;
+}
+
+.portfolio-empty__step-desc {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--page-subtitle-color, #475467);
+    margin: 0;
+}
+
+.portfolio-empty__step-link {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--btn-primary-bg, #0000FF);
+    text-decoration: none;
+    margin-top: 4px;
+    align-self: flex-start;
+}
+.portfolio-empty__step-link:hover {
+    text-decoration: underline;
+}
+
+/* Completed: mint-tinted card with success color set */
+.portfolio-empty__step[data-complete="true"] {
+    background: #F0FDF4;
+    border-color: #BBF7D0;
+}
+.portfolio-empty__step[data-complete="true"] .portfolio-empty__step-num {
+    color: var(--badge-success-color, #027A48);
+    background: var(--badge-success-bg, #ECFDF3);
+}
+.portfolio-empty__step[data-complete="true"] .portfolio-empty__step-link {
+    color: var(--badge-success-color, #027A48);
+}
+
+/* Trust strip */
+.portfolio-empty__trust {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    padding: 18px 20px;
+    border-radius: 12px;
+    background: var(--badge-info-bg, #EEF4FF);
+    border: 1px solid #D7E3FF;
+}
+
+.portfolio-empty__trust-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--btn-primary-bg, #0000FF);
+}
+.portfolio-empty__trust-item > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.portfolio-empty__trust-item svg {
+    flex-shrink: 0;
+}
+
+.portfolio-empty__trust-label {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--page-title-color, #181D27);
+    line-height: 1.2;
+}
+
+.portfolio-empty__trust-sub {
+    font-family: 'TT Norms Pro', sans-serif;
+    font-size: 12px;
+    color: var(--page-subtitle-color, #475467);
+    line-height: 1.3;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .portfolio-empty__hero {
+        grid-template-columns: 1fr;
+        padding: 28px 24px;
+    }
+    .portfolio-empty__hero-art {
+        max-width: 280px;
+        justify-self: start;
+        order: -1;
+    }
+    .portfolio-empty__title {
+        font-size: 26px;
+    }
+}
+
+@media (max-width: 720px) {
+    .portfolio-empty__metrics,
+    .portfolio-empty__steps,
+    .portfolio-empty__trust {
+        grid-template-columns: 1fr;
+    }
+    .portfolio-empty__title {
+        font-size: 22px;
+    }
 }
 
 .state-title {

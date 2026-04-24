@@ -10,7 +10,6 @@
   <meta name="description"
     content="POOOL Admin — Enterprise access management, admin lifecycle, and security posture." />
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
@@ -126,9 +125,25 @@
       z-index: 1000;
       background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(6px);
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
+    }
+
+    .admin-modal-overlay.is-open {
+      display: flex;
+    }
+
+    .admin-directory-toast {
+      display: none;
+    }
+
+    .admin-directory-toast.is-visible {
+      display: block;
+    }
+
+    [hidden] {
+      display: none !important;
     }
 
     .admin-modal {
@@ -268,7 +283,7 @@
 </head>
 
 <body class="admin-body dom-ready">
-  <div class="admin-wrapper" x-data="adminDirectory">
+  <div class="admin-wrapper" id="admin-directory">
     {% include 'admin/components/sidebar.html' %}
 
     <!-- ===== MAIN ===== -->
@@ -293,7 +308,7 @@
         </div>
 
         <!-- Toast -->
-        <div x-show="toast.show" x-transition style="
+        <div id="admin-directory-toast" class="admin-directory-toast" style="
               position: fixed;
               bottom: 24px;
               right: 24px;
@@ -395,7 +410,7 @@
         </div>
 
         <!-- TAB: ACTIVE ADMINS -->
-        <div x-show="activeTab === 'admins'">
+        <div id="admin-directory-admins-panel">
           <div style="
                 display: flex;
                 justify-content: space-between;
@@ -411,16 +426,16 @@
                   <circle cx="11" cy="11" r="6" />
                   <path d="M21 21l-4.35-4.35" />
                 </svg>
-                <input type="text" placeholder="Search by email or role..." x-model="searchQuery"
+                <input id="admin-directory-search" type="text" placeholder="Search by email or role..." x-model="searchQuery"
                   @input="applyFilters()" />
               </div>
-              <select class="admin-select" x-model="filterRole" @change="applyFilters()">
+              <select id="admin-directory-role-filter" class="admin-select" x-model="filterRole" @change="applyFilters()">
                 <option value="">All Roles</option>
                 <template x-for="role in roles" :key="role.name">
                   <option :value="role.name" x-text="role.name"></option>
                 </template>
               </select>
-              <select class="admin-select" x-model="filterStatus" @change="applyFilters()">
+              <select id="admin-directory-status-filter" class="admin-select" x-model="filterStatus" @change="applyFilters()">
                 <option value="">All Statuses</option>
                 <option value="active">Active</option>
                 <option value="suspended">Suspended</option>
@@ -528,8 +543,8 @@
         </div>
 
         <!-- TAB: PENDING INVITATIONS -->
-        <div x-show="activeTab === 'invites'">
-          <div class="admin-card" style="overflow: hidden">
+        <div id="admin-directory-invites-panel" hidden>
+          <div id="admin-directory-invites-card" class="admin-card" style="overflow: hidden">
             <div style="
                   padding: 16px 20px;
                   border-bottom: 1px solid var(--admin-border);
@@ -583,7 +598,7 @@
       </div>
 
       <!-- INVITE MODAL -->
-      <div class="admin-modal-overlay" x-show="showInviteModal" x-cloak x-transition.opacity>
+      <div id="admin-directory-invite-modal" class="admin-modal-overlay">
         <div class="admin-modal" @click.away="showInviteModal = false">
           <div class="admin-modal-header">
             <h3>Invite New Admin</h3>
@@ -594,12 +609,12 @@
           <div class="admin-modal-body">
             <div class="admin-form-group">
               <label class="admin-form-label">Email Address</label>
-              <input type="email" class="admin-input" placeholder="e.g. recruit@poool.finance"
+              <input id="admin-directory-invite-email" type="email" class="admin-input" placeholder="e.g. recruit@poool.finance"
                 x-model="inviteForm.email" />
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label">Initial Role</label>
-              <select class="admin-select" x-model="inviteForm.role" style="width: 100%">
+              <select id="admin-directory-invite-role" class="admin-select" x-model="inviteForm.role" style="width: 100%">
                 <template x-for="role in roles" :key="role.name">
                   <option :value="role.name" x-text="role.name"></option>
                 </template>
@@ -624,7 +639,7 @@
       </div>
 
       <!-- EDIT ADMIN MODAL -->
-      <div class="admin-modal-overlay" x-show="showEditModal" x-cloak x-transition.opacity>
+      <div id="admin-directory-edit-modal" class="admin-modal-overlay">
         <div class="admin-modal" @click.away="showEditModal = false">
           <div class="admin-modal-header">
             <h3>Edit Admin</h3>
@@ -708,7 +723,8 @@
       </div>
     </main>
   </div>
-  <script src="/static/js/admin-directory.js"></script>
+  <script src="/static/js/poool-confirm.js"></script>
+  <script src="/static/js/admin-directory.js?v=20260424b"></script>
 </body>
 
 </html>

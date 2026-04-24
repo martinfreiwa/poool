@@ -25,9 +25,11 @@ pub struct MarketplaceAsset {
     pub funding_status: String,
     pub image_urls: Option<Vec<String>>,
     pub bedrooms: Option<i32>,
+    pub bathrooms: Option<i32>,
     pub lease_type: Option<String>,
     pub term_months: Option<i32>,
     pub area: Option<String>,
+    pub building_size_sqm: Option<rust_decimal::Decimal>,
     pub land_size_sqm: Option<rust_decimal::Decimal>,
     /// Number of unique investors who completed orders for this asset
     pub investor_count: Option<i64>,
@@ -50,6 +52,7 @@ pub struct PropertyDisplayData {
     pub location_city: Option<String>,
     pub location_country: Option<String>,
     pub bedrooms: Option<i32>,
+    pub bathrooms: Option<i32>,
     pub lease_type: Option<String>,
     pub term_months: Option<i32>,
     pub image_urls: Vec<String>,
@@ -80,6 +83,7 @@ pub struct PropertyDisplayData {
     pub projected_return_percent: String,       // capital_appreciation + annual_yield
     pub five_year_total_return_percent: String, // approx
     pub annualised_net_return_percent: String,
+    pub building_size_sqm: Option<String>,
     pub land_size_sqm: Option<String>,
     pub platform_fee_usd: String,          // 5% of total_value
     pub total_investment_cost_usd: String, // total_value + 5% fee
@@ -168,6 +172,7 @@ impl PropertyDisplayData {
             location_city: asset.location_city.clone(),
             location_country: asset.location_country.clone(),
             bedrooms: asset.bedrooms,
+            bathrooms: asset.bathrooms,
             lease_type: asset.lease_type.clone(),
             term_months: asset.term_months,
             image_urls,
@@ -193,6 +198,7 @@ impl PropertyDisplayData {
             projected_return_percent: format!("{:.2}", projected_return),
             five_year_total_return_percent: format!("{:.2}", five_year_return),
             annualised_net_return_percent: format!("{:.2}", annualised_net),
+            building_size_sqm: asset.building_size_sqm.map(|d| format!("{:.0}", d)),
             land_size_sqm: asset.land_size_sqm.map(|d| format!("{}", d)),
             platform_fee_usd: format_number(total_value_dollars * 5 / 100),
             total_investment_cost_usd: format_number(total_value_dollars * 105 / 100),

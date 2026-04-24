@@ -133,7 +133,9 @@ pub async fn create_offer(
     let total_cents = req
         .price_cents
         .checked_mul(req.quantity as i64)
-        .ok_or_else(|| AppError::BadRequest("Offer total exceeds maximum supported value".into()))?;
+        .ok_or_else(|| {
+            AppError::BadRequest("Offer total exceeds maximum supported value".into())
+        })?;
 
     if side == "buy" {
         // Maker is buying — check they have sufficient cash
@@ -376,13 +378,12 @@ async fn accept_offer(
     // Re-load the offer with a row lock so two concurrent accepts cannot
     // both succeed. If another acceptor already consummated it, status is
     // no longer 'pending' and we bail out.
-    let locked_status: Option<String> = sqlx::query_scalar(
-        "SELECT status FROM p2p_offers WHERE id = $1 FOR UPDATE",
-    )
-    .bind(offer.id)
-    .fetch_optional(&mut *tx)
-    .await
-    .map_err(AppError::Database)?;
+    let locked_status: Option<String> =
+        sqlx::query_scalar("SELECT status FROM p2p_offers WHERE id = $1 FOR UPDATE")
+            .bind(offer.id)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(AppError::Database)?;
     match locked_status.as_deref() {
         Some("pending") => {}
         Some(other) => {

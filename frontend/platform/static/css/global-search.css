@@ -10,14 +10,21 @@
     left: 0;
     right: 0;
     background: var(--card-bg, #FFFFFF);
-    border: 1px solid var(--card-border-color, #E5E7EB);
-    border-radius: 12px;
-    box-shadow: var(--ds-shadow-lg, 0px 12px 16px -4px rgba(16, 24, 40, 0.08));
+    border: 1px solid var(--card-border-color, #EAECF0);
+    border-radius: 8px;
+    box-shadow: 0 14px 28px -18px rgba(10, 13, 18, 0.28), 0 6px 12px -8px rgba(10, 13, 18, 0.18);
     z-index: 1000;
-    max-height: 480px;
+    max-height: 360px;
     overflow-y: auto;
     display: none;
-    padding: 8px 0;
+    padding: 4px 0;
+}
+
+.settings-topbar__search .global-search-results {
+    width: 320px;
+    left: auto;
+    right: 0;
+    top: calc(100% + 10px);
 }
 
 .global-search-results.active {
@@ -25,26 +32,29 @@
 }
 
 .search-section-header {
-    padding: 12px 16px 8px;
-    font-size: 11px;
+    padding: 8px 12px 4px;
+    font-size: 10px;
     font-weight: 600;
-    color: var(--table-header-color, #717680);
+    color: var(--table-header-color, #85888E);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
 }
 
 .search-result-item {
     display: flex;
     align-items: center;
-    padding: 10px 16px;
+    gap: 10px;
+    min-height: 48px;
+    padding: 6px 10px;
     cursor: pointer;
     transition: background 0.15s ease;
     text-decoration: none;
     color: inherit;
+    border-top: 1px solid #F4F4F5;
 }
 
 .search-result-item:hover {
-    background: var(--table-row-hover-bg, #F8F9FC);
+    background: #FAFAFA;
 }
 
 .search-result-icon {
@@ -53,34 +63,117 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--btn-ghost-hover-bg, #F2F4F7);
-    border-radius: 8px;
-    margin-right: 12px;
-    font-size: 16px;
+    flex: 0 0 32px;
+    background: #FAFAFA;
+    border: 1px solid #F1F2F4;
+    border-radius: 6px;
+    color: #8A8F98;
+}
+
+.search-result-icon svg {
+    width: 17px;
+    height: 17px;
+}
+
+.search-result-icon--image {
+    overflow: hidden;
+    background: #F5F5F5;
+}
+
+.search-result-icon--image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .search-result-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .search-result-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--page-title-color, #181D27);
-    line-height: 1.4;
+    color: #252B37;
+    line-height: 17px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .search-result-subtitle {
-    font-size: 12px;
-    color: var(--text-secondary, #535862);
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 12px;
+    color: #85888E;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-result-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    color: #C6C9CE;
+}
+
+.search-result-arrow svg {
+    width: 16px;
+    height: 16px;
 }
 
 .search-no-results {
-    padding: 24px;
+    padding: 18px 12px;
     text-align: center;
     color: var(--text-secondary, #535862);
-    font-size: 14px;
+    font-size: 13px;
+}
+
+.global-search-clear {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    border: 0;
+    border-radius: 999px;
+    padding: 0;
+    margin-left: auto;
+    background: transparent;
+    color: #717680;
+    cursor: pointer;
+}
+
+.global-search-clear:hover {
+    color: #414651;
+    background: #F5F5F5;
+}
+
+.global-search-clear.is-visible {
+    display: flex;
+}
+
+.sidebar__search-input,
+.sidebar-search-input,
+.settings-topbar__search-input {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.sidebar__search-input::-webkit-search-cancel-button,
+.sidebar-search-input::-webkit-search-cancel-button,
+.settings-topbar__search-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 /* Scrollbar styling for a premium feel */

@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 pub struct SettingsResponse {
     pub email: String,
     pub first_name: Option<String>,
+    pub middle_name: Option<String>,
     pub last_name: Option<String>,
+    pub gender: Option<String>,
     pub phone_number: Option<String>,
     pub country: Option<String>,
     pub timezone: String,
@@ -48,6 +50,9 @@ pub struct SettingsResponse {
     pub lb_visible: bool,
     pub lb_avatar: bool,
     pub lb_display_name: Option<String>,
+    pub lb_bio: Option<String>,
+    pub social_links: SocialLinks,
+    pub developer_profile: Option<DeveloperProfileSettings>,
 }
 
 #[derive(Debug, Serialize)]
@@ -61,9 +66,37 @@ pub struct UserSessionInfo {
 
 #[derive(Debug, Serialize)]
 pub struct OauthAccountInfo {
+    pub id: String,
     pub provider: String,
-    pub provider_email: Option<String>,
+    pub email: Option<String>,
     pub created_at: String,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub struct SocialLinks {
+    pub twitter: Option<String>,
+    pub linkedin: Option<String>,
+    pub instagram: Option<String>,
+    pub telegram: Option<String>,
+    pub discord: Option<String>,
+    pub website: Option<String>,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub struct DeveloperLinks {
+    pub website: Option<String>,
+    pub github: Option<String>,
+    pub twitter: Option<String>,
+    pub linkedin: Option<String>,
+    pub youtube: Option<String>,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub struct DeveloperProfileSettings {
+    pub company_name: Option<String>,
+    pub logo_url: Option<String>,
+    pub description: Option<String>,
+    pub links: DeveloperLinks,
 }
 
 /// Standard API response for all settings mutation endpoints.
@@ -95,7 +128,9 @@ impl ApiResponse {
 #[derive(Debug, Deserialize)]
 pub struct UpdateProfileForm {
     pub first_name: Option<String>,
+    pub middle_name: Option<String>,
     pub last_name: Option<String>,
+    pub gender: Option<String>,
     pub phone_number: Option<String>,
     pub country: Option<String>,
     pub timezone: Option<String>,
@@ -129,6 +164,7 @@ pub struct UpdateLeaderboardForm {
     pub visible: bool,
     pub show_avatar: bool,
     pub display_name: Option<String>,
+    pub bio: Option<String>,
 }
 
 // ─── Request: Preferences tab ─────────────────────────────────
@@ -138,6 +174,32 @@ pub struct UpdateLeaderboardForm {
 pub struct UpdatePreferencesForm {
     pub language: String,
     pub currency: String,
+    pub timezone: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateSocialLinksForm {
+    pub twitter: Option<String>,
+    pub linkedin: Option<String>,
+    pub instagram: Option<String>,
+    pub telegram: Option<String>,
+    pub discord: Option<String>,
+    pub website: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateDeveloperProfileForm {
+    pub company_name: Option<String>,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateDeveloperLinksForm {
+    pub website: Option<String>,
+    pub github: Option<String>,
+    pub twitter: Option<String>,
+    pub linkedin: Option<String>,
+    pub youtube: Option<String>,
 }
 
 // ─── Request: Security tab ────────────────────────────────────

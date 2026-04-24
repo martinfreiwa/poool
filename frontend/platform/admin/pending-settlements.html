@@ -103,6 +103,95 @@
       flex-shrink: 0;
       color: var(--admin-accent);
     }
+
+    .settlements-page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .settlements-kpi-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 20px;
+    }
+
+    .settlements-filter-bar {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .settlements-filter-count {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--admin-text-muted);
+    }
+
+    .settlements-table-card .admin-card-body--flush {
+      overflow-x: auto;
+    }
+
+    #settlements-table {
+      min-width: 1120px;
+    }
+
+    .settlements-pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .settlements-pagination-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    @media (max-width: 1400px) {
+      .settlements-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .settlements-page-header,
+      .settlements-pagination {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .settlements-page-header .admin-btn,
+      .settlements-pagination-actions .admin-btn {
+        width: 100%;
+      }
+
+      .settlements-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .settlements-filter-bar {
+        align-items: stretch;
+      }
+
+      .settlements-filter-bar .admin-search,
+      .settlements-filter-bar .admin-select,
+      .settlements-filter-count {
+        width: 100%;
+        max-width: none;
+      }
+
+      .settlements-filter-count {
+        margin-left: 0;
+      }
+
+      .four-eyes-info {
+        align-items: flex-start;
+      }
+    }
   </style>
 </head>
 
@@ -135,7 +224,7 @@
 
       <div class="admin-content">
         <!-- Page Header -->
-        <div class="admin-page-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="admin-page-header settlements-page-header">
           <div>
             <h1 class="admin-page-title">Pending Settlements</h1>
             <p class="admin-page-subtitle">
@@ -168,7 +257,7 @@
         </div>
 
         <!-- KPI Cards -->
-        <div class="admin-kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
+        <div class="admin-kpi-grid settlements-kpi-grid">
           <div class="admin-kpi-card" style="padding: 16px;">
             <div class="admin-kpi-header" style="margin-bottom: 8px;">
               <span class="admin-kpi-label">Awaiting Settlement</span>
@@ -230,7 +319,7 @@
 
         <!-- Filters -->
         <div class="admin-card" style="margin-bottom: 16px;">
-          <div style="padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div class="settlements-filter-bar">
             <div class="admin-search" style="width: 220px;">
               <svg class="admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
@@ -252,12 +341,12 @@
               <option value="apartment-berlin">Apartment Berlin Mitte</option>
               <option value="haus-dubai">Haus Dubai Marina</option>
             </select>
-            <span style="margin-left: auto; font-size: 12px; color: var(--admin-text-muted);">Showing 7 settlements</span>
+            <span class="settlements-filter-count">Showing 7 settlements</span>
           </div>
         </div>
 
         <!-- Settlements Table -->
-        <div class="admin-card">
+        <div class="admin-card settlements-table-card">
           <div class="admin-card-body admin-card-body--flush">
             <table class="admin-table" id="settlements-table">
               <thead>
@@ -486,9 +575,9 @@
         </div>
 
         <!-- Pagination -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <div class="settlements-pagination">
           <span style="font-size: 13px; color: var(--admin-text-muted);">Page 1 of 1</span>
-          <div style="display: flex; gap: 6px;">
+          <div class="settlements-pagination-actions">
             <button class="admin-btn admin-btn--secondary admin-btn--sm" disabled>← Previous</button>
             <button class="admin-btn admin-btn--secondary admin-btn--sm" disabled>Next →</button>
           </div>

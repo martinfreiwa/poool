@@ -182,7 +182,8 @@ body.my-trading-body {
     font-weight: 500;
     color: #475467;
     cursor: pointer;
-    padding: 4px 0;
+    padding: 10px 4px;
+    min-height: 44px;
     border: none;
     background: none;
     border-bottom: 2px solid transparent;
@@ -247,6 +248,32 @@ body.my-trading-body {
 .myt-table-card .submissions-table tbody tr:has(.ds-table-empty):hover {
     background: transparent !important;
     cursor: default;
+}
+
+/* Empty-state CTA inside table */
+.myt__empty-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 20px;
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--myt-font);
+    color: #fff;
+    background: var(--myt-blue);
+    border: 1px solid var(--myt-blue);
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.myt__empty-cta:hover {
+    background: #0000cc;
+    border-color: #0000cc;
 }
 
 

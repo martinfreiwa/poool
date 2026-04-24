@@ -229,7 +229,7 @@ pub async fn get_chart_summary(pool: &PgPool, asset_id: Uuid) -> Result<ChartSum
              WHERE asset_id = $1 AND executed_at >= NOW() - INTERVAL '24 hours') AS high_24h,
             (SELECT MIN(price_cents) FROM trade_history
              WHERE asset_id = $1 AND executed_at >= NOW() - INTERVAL '24 hours') AS low_24h,
-            (SELECT COALESCE(SUM(quantity::BIGINT), 0) FROM trade_history
+            (SELECT COALESCE(SUM(quantity::BIGINT), 0)::BIGINT FROM trade_history
              WHERE asset_id = $1 AND executed_at >= NOW() - INTERVAL '24 hours') AS volume_24h,
             (SELECT price_cents FROM trade_history
              WHERE asset_id = $1 AND executed_at >= NOW() - INTERVAL '24 hours'

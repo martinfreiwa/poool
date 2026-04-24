@@ -16,16 +16,17 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::models::{
-    SettingsResponse, UpdateLeaderboardForm, UpdateNotificationsForm, UpdatePreferencesForm,
-    UpdateProfileForm,
+    DeveloperLinks, DeveloperProfileSettings, SettingsResponse, SocialLinks,
+    UpdateDeveloperLinksForm, UpdateDeveloperProfileForm, UpdateLeaderboardForm,
+    UpdateNotificationsForm, UpdatePreferencesForm, UpdateProfileForm, UpdateSocialLinksForm,
 };
 use crate::common::sanitize;
 use crate::error::AppError;
 
 // ─── Allowed values ────────────────────────────────────────────
 
-const ALLOWED_LANGUAGES: &[&str] = &["en", "de", "fr", "es", "id"];
-const ALLOWED_CURRENCIES: &[&str] = &["USD", "EUR", "GBP", "SGD", "IDR"];
+const ALLOWED_LANGUAGES: &[&str] = &["en", "de", "fr", "es", "id", "zh"];
+const ALLOWED_CURRENCIES: &[&str] = &["USD", "EUR", "GBP", "AUD", "SGD", "IDR", "JPY", "CHF"];
 
 // ─── GET: Full settings ────────────────────────────────────────
 
@@ -40,7 +41,9 @@ pub async fn get_settings(
         r#"
         SELECT u.email,
                p.first_name,
+               p.middle_name,
                p.last_name,
+               p.gender,
                p.phone_number,
                p.country,
                COALESCE(s.timezone, 'UTC') as timezone,
@@ -64,13 +67,29 @@ pub async fn get_settings(
                COALESCE(s.totp_enabled, FALSE) as totp_enabled,
                COALESCE(lb_p.visible, FALSE) as lb_visible,
                COALESCE(lb_p.show_avatar, FALSE) as lb_avatar,
-               lb_p.display_name as lb_display_name
+               lb_p.display_name as lb_display_name,
+               lb_p.bio as lb_bio,
+               p.social_twitter_url,
+               p.social_linkedin_url,
+               p.social_instagram_url,
+               p.social_telegram_url,
+               p.social_discord,
+               p.social_website_url,
+               dp.company_name as dev_company_name,
+               dp.logo_url as dev_logo_url,
+               dp.description as dev_description,
+               dp.website_url as dev_website_url,
+               dp.github_url as dev_github_url,
+               dp.x_url as dev_twitter_url,
+               dp.linkedin_url as dev_linkedin_url,
+               dp.youtube_url as dev_youtube_url
         FROM users u
         LEFT JOIN user_profiles p ON u.id = p.user_id
         LEFT JOIN user_settings s ON u.id = s.user_id
         LEFT JOIN user_roles ur ON u.id = ur.user_id
         LEFT JOIN roles r ON ur.role_id = r.id
         LEFT JOIN leaderboard_preferences lb_p ON u.id = lb_p.user_id
+        LEFT JOIN developer_profiles dp ON u.id = dp.user_id
         LEFT JOIN LATERAL (
             SELECT status FROM kyc_records
             WHERE user_id = u.id
@@ -91,7 +110,9 @@ pub async fn get_settings(
     let mut response = SettingsResponse {
         email: row.try_get("email").unwrap_or_default(),
         first_name: row.try_get("first_name").unwrap_or_default(),
+        middle_name: row.try_get("middle_name").unwrap_or_default(),
         last_name: row.try_get("last_name").unwrap_or_default(),
+        gender: row.try_get("gender").unwrap_or_default(),
         phone_number: row.try_get("phone_number").unwrap_or_default(),
         country: row.try_get("country").unwrap_or_default(),
         timezone: row
@@ -131,7 +152,44 @@ pub async fn get_settings(
         lb_visible: row.try_get("lb_visible").unwrap_or(false),
         lb_avatar: row.try_get("lb_avatar").unwrap_or(false),
         lb_display_name: row.try_get("lb_display_name").ok(),
+        lb_bio: row.try_get("lb_bio").ok(),
+        social_links: SocialLinks {
+            twitter: row.try_get("social_twitter_url").ok(),
+            linkedin: row.try_get("social_linkedin_url").ok(),
+            instagram: row.try_get("social_instagram_url").ok(),
+            telegram: row.try_get("social_telegram_url").ok(),
+            discord: row.try_get("social_discord").ok(),
+            website: row.try_get("social_website_url").ok(),
+        },
+        developer_profile: None,
     };
+
+    let dev_company_name: Option<String> = row.try_get("dev_company_name").ok();
+    let dev_logo_url: Option<String> = row.try_get("dev_logo_url").ok();
+    let dev_description: Option<String> = row.try_get("dev_description").ok();
+    let dev_links = DeveloperLinks {
+        website: row.try_get("dev_website_url").ok(),
+        github: row.try_get("dev_github_url").ok(),
+        twitter: row.try_get("dev_twitter_url").ok(),
+        linkedin: row.try_get("dev_linkedin_url").ok(),
+        youtube: row.try_get("dev_youtube_url").ok(),
+    };
+    if dev_company_name.is_some()
+        || dev_logo_url.is_some()
+        || dev_description.is_some()
+        || dev_links.website.is_some()
+        || dev_links.github.is_some()
+        || dev_links.twitter.is_some()
+        || dev_links.linkedin.is_some()
+        || dev_links.youtube.is_some()
+    {
+        response.developer_profile = Some(DeveloperProfileSettings {
+            company_name: dev_company_name,
+            logo_url: dev_logo_url,
+            description: dev_description,
+            links: dev_links,
+        });
+    }
 
     // ─── Fetch Referrals & Tiers ──────────────────────────────
 
@@ -196,7 +254,7 @@ pub async fn get_settings(
     // ─── Fetch OAuth Accounts ─────────────────────────────────
 
     let oauths = sqlx::query(
-        r#"SELECT provider, provider_email, TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI') as created_at
+        r#"SELECT id::text as id, provider, provider_email, TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI') as created_at
            FROM oauth_accounts WHERE user_id = $1 ORDER BY created_at DESC"#,
     )
     .bind(user_id)
@@ -207,8 +265,9 @@ pub async fn get_settings(
         response
             .oauth_accounts
             .push(super::models::OauthAccountInfo {
+                id: o.try_get("id").unwrap_or_default(),
                 provider: o.try_get("provider").unwrap_or_default(),
-                provider_email: o.try_get("provider_email").ok(),
+                email: o.try_get("provider_email").ok(),
                 created_at: o.try_get("created_at").unwrap_or_default(),
             });
     }
@@ -251,10 +310,24 @@ pub async fn update_profile(
             ));
         }
     }
+    if let Some(ref name) = form.middle_name {
+        if name.len() > 100 {
+            return Err(AppError::BadRequest(
+                "Middle name must be 100 characters or less.".to_string(),
+            ));
+        }
+    }
     if let Some(ref name) = form.last_name {
         if name.len() > 100 {
             return Err(AppError::BadRequest(
                 "Last name must be 100 characters or less.".to_string(),
+            ));
+        }
+    }
+    if let Some(ref gender) = form.gender {
+        if !gender.is_empty() && !["male", "female", "other"].contains(&gender.as_str()) {
+            return Err(AppError::BadRequest(
+                "Gender must be male, female, or other.".to_string(),
             ));
         }
     }
@@ -295,15 +368,17 @@ pub async fn update_profile(
     // Upsert user_profiles with all fields
     sqlx::query(
         r#"
-        INSERT INTO user_profiles (user_id, first_name, last_name, phone_number, country,
+        INSERT INTO user_profiles (user_id, first_name, middle_name, last_name, gender, phone_number, country,
             date_of_birth, nationality, address_line_1, address_line_2, city,
             state_province, postal_code, tax_id, annual_income_cents)
-        VALUES ($1, $2, $3, $4, $5,
-            $6::DATE, $7, $8, $9, $10,
-            $11, $12, $13, $14)
+        VALUES ($1, $2, $3, $4, $5, $6, $7,
+            $8::DATE, $9, $10, $11, $12,
+            $13, $14, $15, $16)
         ON CONFLICT (user_id) DO UPDATE SET
             first_name     = COALESCE(EXCLUDED.first_name, user_profiles.first_name),
+            middle_name    = COALESCE(EXCLUDED.middle_name, user_profiles.middle_name),
             last_name      = COALESCE(EXCLUDED.last_name, user_profiles.last_name),
+            gender         = COALESCE(EXCLUDED.gender, user_profiles.gender),
             phone_number   = COALESCE(EXCLUDED.phone_number, user_profiles.phone_number),
             country        = COALESCE(EXCLUDED.country, user_profiles.country),
             date_of_birth  = COALESCE(EXCLUDED.date_of_birth, user_profiles.date_of_birth),
@@ -320,7 +395,9 @@ pub async fn update_profile(
     )
     .bind(user_id)
     .bind(sanitize_opt(&form.first_name))
+    .bind(sanitize_opt(&form.middle_name))
     .bind(sanitize_opt(&form.last_name))
+    .bind(sanitize_opt(&form.gender).filter(|s| !s.is_empty()))
     .bind(&form.phone_number) // phone is already validated above
     .bind(&form.country) // country is validated as ISO code above
     .bind(form.date_of_birth.as_deref().filter(|s| !s.is_empty()))
@@ -410,15 +487,16 @@ pub async fn update_leaderboard(
     form: UpdateLeaderboardForm,
 ) -> Result<(), AppError> {
     sqlx::query(
-        r#"INSERT INTO leaderboard_preferences (user_id, visible, show_avatar, display_name)
-           VALUES ($1, $2, $3, $4)
+        r#"INSERT INTO leaderboard_preferences (user_id, visible, show_avatar, display_name, bio)
+           VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (user_id) DO UPDATE
-           SET visible = $2, show_avatar = $3, display_name = $4, updated_at = NOW()"#,
+           SET visible = $2, show_avatar = $3, display_name = $4, bio = $5, updated_at = NOW()"#,
     )
     .bind(user_id)
     .bind(form.visible)
     .bind(form.show_avatar)
     .bind(sanitize_opt(&form.display_name).filter(|s| !s.is_empty()))
+    .bind(sanitize_opt(&form.bio).filter(|s| !s.is_empty()))
     .execute(pool)
     .await?;
 
@@ -427,7 +505,7 @@ pub async fn update_leaderboard(
 
 // ─── UPDATE: Preferences ───────────────────────────────────────
 
-/// Update user preferences (language, currency).
+/// Update user preferences (language, currency, timezone).
 pub async fn update_preferences(
     pool: &PgPool,
     user_id: Uuid,
@@ -449,12 +527,214 @@ pub async fn update_preferences(
         )));
     }
 
-    sqlx::query("UPDATE user_settings SET language = $1, currency = $2 WHERE user_id = $3")
-        .bind(&form.language)
-        .bind(&form.currency)
+    sqlx::query(
+        r#"INSERT INTO user_settings (user_id, language, currency, timezone)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (user_id) DO UPDATE
+           SET language = $2, currency = $3, timezone = $4, updated_at = NOW()"#,
+    )
+    .bind(user_id)
+    .bind(&form.language)
+    .bind(&form.currency)
+    .bind(sanitize::sanitize_text(&form.timezone))
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+// ─── UPDATE: Social Links ──────────────────────────────────────
+
+fn clean_url(opt: &Option<String>) -> Option<String> {
+    opt.as_ref()
+        .and_then(|s| sanitize::sanitize_url(s))
+        .filter(|s| !s.is_empty())
+}
+
+pub async fn update_social_links(
+    pool: &PgPool,
+    user_id: Uuid,
+    form: UpdateSocialLinksForm,
+) -> Result<(), AppError> {
+    sqlx::query(
+        r#"
+        INSERT INTO user_profiles (
+            user_id, social_twitter_url, social_linkedin_url, social_instagram_url,
+            social_telegram_url, social_discord, social_website_url
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (user_id) DO UPDATE SET
+            social_twitter_url = $2,
+            social_linkedin_url = $3,
+            social_instagram_url = $4,
+            social_telegram_url = $5,
+            social_discord = $6,
+            social_website_url = $7,
+            updated_at = NOW()
+        "#,
+    )
+    .bind(user_id)
+    .bind(clean_url(&form.twitter))
+    .bind(clean_url(&form.linkedin))
+    .bind(clean_url(&form.instagram))
+    .bind(clean_url(&form.telegram))
+    .bind(sanitize_opt(&form.discord).filter(|s| !s.is_empty()))
+    .bind(clean_url(&form.website))
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+// ─── UPDATE: Developer Profile ─────────────────────────────────
+
+async fn ensure_developer(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> {
+    let is_dev = sqlx::query_scalar::<_, bool>(
+        r#"SELECT EXISTS (
+            SELECT 1 FROM user_roles ur
+            JOIN roles r ON r.id = ur.role_id
+            WHERE ur.user_id = $1 AND r.name = 'developer'
+        )"#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    if is_dev {
+        Ok(())
+    } else {
+        Err(AppError::Unauthorized(
+            "Developer settings are only available to developer accounts.".to_string(),
+        ))
+    }
+}
+
+pub async fn update_developer_profile(
+    pool: &PgPool,
+    user_id: Uuid,
+    form: UpdateDeveloperProfileForm,
+) -> Result<(), AppError> {
+    ensure_developer(pool, user_id).await?;
+
+    let company_name = sanitize_opt(&form.company_name)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| AppError::BadRequest("Company name is required.".to_string()))?;
+    if company_name.len() > 255 {
+        return Err(AppError::BadRequest(
+            "Company name must be 255 characters or less.".to_string(),
+        ));
+    }
+    let description = form
+        .description
+        .as_ref()
+        .map(|s| sanitize::sanitize_multiline(s))
+        .filter(|s| !s.is_empty());
+    if description.as_ref().is_some_and(|s| s.len() > 1000) {
+        return Err(AppError::BadRequest(
+            "Developer description must be 1000 characters or less.".to_string(),
+        ));
+    }
+
+    sqlx::query(
+        r#"INSERT INTO developer_profiles (user_id, company_name, description)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (user_id) DO UPDATE
+           SET company_name = $2, description = $3, updated_at = NOW()"#,
+    )
+    .bind(user_id)
+    .bind(company_name)
+    .bind(description)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn update_developer_links(
+    pool: &PgPool,
+    user_id: Uuid,
+    form: UpdateDeveloperLinksForm,
+) -> Result<(), AppError> {
+    ensure_developer(pool, user_id).await?;
+
+    sqlx::query(
+        r#"INSERT INTO developer_profiles (
+              user_id, company_name, website_url, github_url, x_url, linkedin_url, youtube_url
+           )
+           VALUES ($1, 'Developer', $2, $3, $4, $5, $6)
+           ON CONFLICT (user_id) DO UPDATE
+           SET website_url = $2, github_url = $3, x_url = $4,
+               linkedin_url = $5, youtube_url = $6, updated_at = NOW()"#,
+    )
+    .bind(user_id)
+    .bind(clean_url(&form.website))
+    .bind(clean_url(&form.github))
+    .bind(clean_url(&form.twitter))
+    .bind(clean_url(&form.linkedin))
+    .bind(clean_url(&form.youtube))
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn update_developer_logo(
+    pool: &PgPool,
+    user_id: Uuid,
+    logo_url: &str,
+) -> Result<(), AppError> {
+    ensure_developer(pool, user_id).await?;
+
+    sqlx::query(
+        r#"INSERT INTO developer_profiles (user_id, company_name, logo_url)
+           VALUES ($1, 'Developer', $2)
+           ON CONFLICT (user_id) DO UPDATE SET logo_url = $2, updated_at = NOW()"#,
+    )
+    .bind(user_id)
+    .bind(logo_url)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn unlink_oauth_account(
+    pool: &PgPool,
+    user_id: Uuid,
+    connection_id: Uuid,
+) -> Result<(), AppError> {
+    let mut tx = pool.begin().await?;
+    let password_hash: Option<String> =
+        sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1 FOR UPDATE")
+            .bind(user_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .flatten();
+    let remaining_oauth_count =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM oauth_accounts WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(&mut *tx)
+            .await?;
+    if password_hash.is_none() && remaining_oauth_count <= 1 {
+        return Err(AppError::BadRequest(
+            "Add a password before disconnecting your last social sign-in.".to_string(),
+        ));
+    }
+
+    let deleted = sqlx::query("DELETE FROM oauth_accounts WHERE id = $1 AND user_id = $2")
+        .bind(connection_id)
         .bind(user_id)
-        .execute(pool)
-        .await?;
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+
+    if deleted == 0 {
+        return Err(AppError::NotFound(
+            "OAuth connection not found.".to_string(),
+        ));
+    }
+
+    tx.commit().await?;
 
     Ok(())
 }

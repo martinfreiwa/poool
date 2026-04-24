@@ -4,17 +4,134 @@
  * Loads /api/settings, populates the card-based layout in settings.html,
  * and wires per-form save handlers, toggle switches, modals, and GDPR actions.
  *
- * All server I/O flows through SettingsDataService (settings-service.js).
- * CSRF + 401 handling is inherited from that layer.
+ * Server I/O, CSRF handling, and 401 redirects are kept in this file so the
+ * settings page has one page script.
  */
 (function () {
   "use strict";
+
+  function ensureCanonicalSettingsStylesheet() {
+    const href = "/static/css/settings.css?v=1.0.16";
+    const hasCanonical = Array.from(document.styleSheets).some((sheet) => {
+      try {
+        return sheet.href && sheet.href.includes("/static/css/settings.css");
+      } catch (_) {
+        return false;
+      }
+    });
+    if (hasCanonical) return;
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
+  }
+
+  ensureCanonicalSettingsStylesheet();
+
+  const SettingsDataService = (function () {
+    function csrfToken() {
+      return typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "";
+    }
+
+    async function apiFetch(url, method, body) {
+      const opts = {
+        method,
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken() },
+      };
+      if (body) opts.body = JSON.stringify(body);
+
+      try {
+        const res = await fetch(url, opts);
+        if (res.status === 401) {
+          window.location.href = "/auth/login";
+          return null;
+        }
+
+        const contentType = res.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) return await res.json();
+
+        const text = await res.text();
+        console.warn(`Settings API non-JSON response [${method}] ${url}: ${res.status} ${text.substring(0, 200)}`);
+        return { success: false, message: `Server error (${res.status}). Please refresh and try again.` };
+      } catch (err) {
+        console.error(`Settings API error [${method}] ${url}:`, err);
+        if (typeof Sentry !== "undefined") Sentry.captureException(err);
+        return { success: false, message: "Network error. Please try again later." };
+      }
+    }
+
+    async function apiUpload(url, file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "X-CSRF-Token": csrfToken() },
+          body: formData,
+        });
+        if (res.status === 401) {
+          window.location.href = "/auth/login";
+          return null;
+        }
+        return await res.json();
+      } catch (err) {
+        console.error(`Upload error ${url}:`, err);
+        return { error: "Network error during upload." };
+      }
+    }
+
+    function validatePasswordChange(current, next, confirm) {
+      if (!current || !next || !confirm) return "Please fill in all fields.";
+      if (next !== confirm) return "New passwords do not match.";
+      if (next.length < 8) return "Password must be at least 8 characters.";
+      return "";
+    }
+
+    return {
+      getSettings: () => apiFetch("/api/settings", "GET"),
+      saveProfile: (data) => apiFetch("/api/settings/profile", "POST", data),
+      savePreferences: (data) => apiFetch("/api/settings/preferences", "POST", data),
+      saveNotifications: (data) => apiFetch("/api/settings/notifications", "POST", data),
+      uploadAvatar: (file) => apiUpload("/api/upload/avatar", file),
+      disable2FA: () => apiFetch("/api/settings/2fa/disable", "POST"),
+      saveLeaderboard: (data) => apiFetch("/api/settings/leaderboard", "POST", data),
+      saveSocialLinks: (data) => apiFetch("/api/settings/social", "POST", data),
+      saveDeveloperProfile: (data) => apiFetch("/api/settings/developer/profile", "POST", data),
+      saveDeveloperLinks: (data) => apiFetch("/api/settings/developer/links", "POST", data),
+      uploadDeveloperLogo: (file) => apiUpload("/api/upload/developer-logo", file),
+      listOAuthConnections: () => apiFetch("/api/settings/oauth", "GET"),
+      linkOAuth: (provider) => apiFetch(`/api/settings/oauth/${encodeURIComponent(provider)}/link`, "POST"),
+      unlinkOAuth: (id) => apiFetch(`/api/settings/oauth/${encodeURIComponent(id)}`, "DELETE"),
+      changePhone: (newPhone) => apiFetch("/api/settings/phone", "POST", { new_phone: newPhone || "" }),
+      requestDataExport: () => {
+        window.location.href = "/api/settings/export-data";
+        return Promise.resolve({ success: true });
+      },
+      deleteAccount: (password, confirmPhrase) => {
+        if (!password) return Promise.resolve({ success: false, message: "Password required." });
+        if (confirmPhrase !== "DELETE") return Promise.resolve({ success: false, message: "Type DELETE to confirm." });
+        return apiFetch("/api/settings/delete-account", "POST", { current_password: password, confirm: confirmPhrase });
+      },
+      changePassword: (current, next, confirm) => {
+        const message = validatePasswordChange(current, next, confirm);
+        if (message) return Promise.resolve({ success: false, message });
+        return apiFetch("/api/settings/password", "POST", {
+          current_password: current,
+          new_password: next,
+          confirm_password: confirm,
+        });
+      },
+    };
+  })();
 
   // ─── State ────────────────────────────────────────────────────
   let savedSettings = null;
   let pendingAvatarFile = null;
   let pendingDevLogoFile = null;
-  let pendingRevokeSessionId = null;
 
   // ─── Small helpers ────────────────────────────────────────────
 
@@ -31,6 +148,40 @@
     return String(s).replace(/[&<>"']/g, (c) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
     })[c]);
+  }
+
+  const LOGO_PLACEHOLDER_SVG = `
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#B0B8C9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
+  `;
+
+  function setLogoPreview(id, url) {
+    const target = $(id);
+    if (!target) return;
+    target.replaceChildren();
+    if (url) {
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = "";
+      target.appendChild(img);
+      return;
+    }
+    target.innerHTML = LOGO_PLACEHOLDER_SVG;
+  }
+
+  function setDeveloperLogos(url) {
+    setLogoPreview("settings-dev-logo-preview", url);
+    setLogoPreview("settings-dev-preview-logo", url);
+  }
+
+  function updateDeveloperPreview() {
+    const company = $("settings-dev-preview-company");
+    const description = $("settings-dev-preview-description");
+    if (company) company.textContent = getVal("settings-dev-company") || "Company preview";
+    if (description) description.textContent = getVal("settings-dev-description") || "Your developer description will appear here.";
   }
 
   // ─── State Layer Switcher ─────────────────────────────────────
@@ -58,7 +209,6 @@
       populateCore(data);
       populateAddress(data);
       populateIdentity(data);
-      populateFinancial(data);
       populateSecurity(data);
       populatePreferences(data);
       populateLeaderboard(data);
@@ -145,35 +295,6 @@
     }
   }
 
-  // ─── Populate: Financial Overview ─────────────────────────────
-
-  function populateFinancial(d) {
-    const refCode = $("settings-referral-code");
-    if (refCode) refCode.textContent = d.referral_code || "—";
-
-    const tier = $("settings-tier-name");
-    if (tier) tier.textContent = d.membership_tier || "Standard";
-
-    renderPaymentMethods(d.payment_methods || []);
-  }
-
-  function renderPaymentMethods(methods) {
-    const list = $("settings-payment-methods-list");
-    if (!list) return;
-    if (!methods.length) {
-      list.innerHTML = `<div class="settings-empty-row">No payment methods saved yet.</div>`;
-      return;
-    }
-    list.innerHTML = methods.map((m) => `
-      <div class="settings-payment-row" data-method-id="${escapeHtml(m.id)}">
-        <div class="settings-payment-row__brand">${escapeHtml(m.brand || "Card")}</div>
-        <div class="settings-payment-row__last4">•••• ${escapeHtml(m.last4 || "----")}</div>
-        <div class="settings-payment-row__expiry">${escapeHtml(m.exp_month || "")}/${escapeHtml(m.exp_year || "")}</div>
-        <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" data-action="delete-payment" data-method-id="${escapeHtml(m.id)}">Remove</button>
-      </div>
-    `).join("");
-  }
-
   // ─── Populate: Security ───────────────────────────────────────
 
   function populateSecurity(d) {
@@ -186,56 +307,30 @@
       totpStatus.className = "settings-badge " + (d.totp_enabled ? "settings-badge--success" : "settings-badge--muted");
     }
 
-    renderOAuthList(d.oauth_connections || []);
-    loadSessionsAsync();
+    renderOAuthList(d.oauth_connections || d.oauth_accounts || []);
   }
 
   function renderOAuthList(connections) {
     const list = $("settings-oauth-list");
     if (!list) return;
-    const providers = ["google", "facebook", "apple", "github"];
+    const providers = ["google"];
     const byProvider = {};
     connections.forEach((c) => (byProvider[c.provider] = c));
     list.innerHTML = providers.map((p) => {
       const conn = byProvider[p];
       const label = p.charAt(0).toUpperCase() + p.slice(1);
+      const email = conn && (conn.email || conn.provider_email);
+      const connectionId = conn && conn.id;
       return `
         <div class="settings-oauth-row" data-provider="${p}">
           <div class="settings-oauth-row__provider">${label}</div>
-          <div class="settings-oauth-row__status">${conn ? escapeHtml(conn.email || "Connected") : "Not connected"}</div>
-          <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" data-action="${conn ? "unlink-oauth" : "link-oauth"}" data-provider="${p}" ${conn ? `data-connection-id="${escapeHtml(conn.id)}"` : ""}>
+          <div class="settings-oauth-row__status">${conn ? escapeHtml(email || "Connected") : "Not connected"}</div>
+          <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" data-action="${conn ? "unlink-oauth" : "link-oauth"}" data-provider="${p}" ${conn && connectionId ? `data-connection-id="${escapeHtml(connectionId)}"` : ""}>
             ${conn ? "Disconnect" : "Connect"}
           </button>
         </div>
       `;
     }).join("");
-  }
-
-  async function loadSessionsAsync() {
-    try {
-      const res = await SettingsDataService.listSessions();
-      renderSessions(res?.sessions || []);
-    } catch (_) { /* non-fatal */ }
-  }
-
-  function renderSessions(sessions) {
-    const list = $("settings-sessions-list");
-    if (!list) return;
-    if (!sessions.length) {
-      list.innerHTML = `<div class="settings-empty-row">No active sessions.</div>`;
-      return;
-    }
-    list.innerHTML = sessions.map((s) => `
-      <div class="settings-session-row" data-session-id="${escapeHtml(s.id)}">
-        <div class="settings-session-row__device">
-          <strong>${escapeHtml(s.device || "Unknown device")}</strong>${s.current ? ' <span class="settings-badge settings-badge--info">This device</span>' : ""}
-        </div>
-        <div class="settings-session-row__meta">
-          ${escapeHtml(s.browser || "")} · ${escapeHtml(s.location || "")} · ${escapeHtml(s.last_seen || "")}
-        </div>
-        ${s.current ? "" : `<button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" data-action="revoke-session" data-session-id="${escapeHtml(s.id)}">Revoke</button>`}
-      </div>
-    `).join("");
   }
 
   // ─── Populate: Preferences ────────────────────────────────────
@@ -252,7 +347,12 @@
   // ─── Populate: Leaderboard ────────────────────────────────────
 
   function populateLeaderboard(d) {
-    const lb = d.leaderboard || {};
+    const lb = d.leaderboard || {
+      visible: d.lb_visible,
+      show_avatar: d.lb_avatar,
+      display_name: d.lb_display_name,
+      bio: d.lb_bio,
+    };
     setToggle("settings-lb-visible", lb.visible);
     setToggle("settings-lb-avatar", lb.show_avatar);
     setVal("settings-lb-display-name", lb.display_name);
@@ -280,6 +380,7 @@
     setVal("settings-dev-company", dev.company_name);
     setVal("settings-dev-description", dev.description);
     updateDevDescriptionCounter();
+    updateDeveloperPreview();
 
     const links = dev.links || {};
     setVal("settings-dev-website", links.website);
@@ -288,10 +389,7 @@
     setVal("settings-dev-linkedin", links.linkedin);
     setVal("settings-dev-youtube", links.youtube);
 
-    const logoPreview = $("settings-dev-logo-preview");
-    if (logoPreview && dev.logo_url) {
-      logoPreview.innerHTML = `<img src="${escapeHtml(dev.logo_url)}" alt="">`;
-    }
+    setDeveloperLogos(dev.logo_url || "");
   }
 
   function applyRoleGate(role) {
@@ -538,20 +636,6 @@
     });
   }
 
-  async function onSubmitChangeEmail(e) {
-    e.preventDefault();
-    const res = await SettingsDataService.changeEmail(
-      getVal("modal-email-new"),
-      getVal("modal-email-password"),
-    );
-    if (res?.success) {
-      toast(res.message || "Verification email sent.", "success");
-      closeModal($("modal-change-email"));
-    } else {
-      showModalError("modal-email-error", res?.message || "Failed.");
-    }
-  }
-
   async function onSubmitChangePassword(e) {
     e.preventDefault();
     const res = await SettingsDataService.changePassword(
@@ -593,15 +677,6 @@
     }
   }
 
-  async function onConfirmRevokeSession() {
-    if (!pendingRevokeSessionId) return;
-    const res = await SettingsDataService.revokeSession(pendingRevokeSessionId);
-    pendingRevokeSessionId = null;
-    closeModal($("modal-revoke-session"));
-    if (res?.success) { toast("Session revoked.", "success"); loadSessionsAsync(); }
-    else toast(res?.message || "Failed to revoke session.", "error");
-  }
-
   // ─── Action Delegation ────────────────────────────────────────
 
   function bindActions() {
@@ -611,14 +686,6 @@
       const action = act.getAttribute("data-action");
 
       switch (action) {
-        case "copy-referral": {
-          e.preventDefault();
-          const code = $("settings-referral-code")?.textContent?.trim() || "";
-          if (!code || code === "—") return toast("No referral code yet.", "error");
-          try { await navigator.clipboard.writeText(code); toast("Referral code copied.", "success"); }
-          catch (_) { toast("Copy failed — please copy manually.", "error"); }
-          break;
-        }
         case "disable-2fa": {
           e.preventDefault();
           if (!confirm("Disable two-factor authentication?")) return;
@@ -632,15 +699,7 @@
           act.disabled = true;
           const res = await SettingsDataService.requestDataExport();
           act.disabled = false;
-          handleSaveResult(res, "Export requested — check your email.");
-          break;
-        }
-        case "revoke-session": {
-          e.preventDefault();
-          pendingRevokeSessionId = act.getAttribute("data-session-id");
-          const detail = $("modal-revoke-session-detail");
-          if (detail) detail.textContent = "This device will be signed out immediately.";
-          openModal("modal-revoke-session");
+          handleSaveResult(res, "Data export download started.");
           break;
         }
         case "link-oauth": {
@@ -657,15 +716,6 @@
           if (!confirm("Disconnect this account?")) return;
           const res = await SettingsDataService.unlinkOAuth(id);
           if (res?.success) { toast("Disconnected.", "success"); loadSettings(); }
-          else toast(res?.message || "Failed.", "error");
-          break;
-        }
-        case "delete-payment": {
-          e.preventDefault();
-          const id = act.getAttribute("data-method-id");
-          if (!confirm("Remove this payment method?")) return;
-          const res = await SettingsDataService.deletePaymentMethod(id);
-          if (res?.success) { toast("Payment method removed.", "success"); loadSettings(); }
           else toast(res?.message || "Failed.", "error");
           break;
         }
@@ -693,7 +743,8 @@
         const preview = $("settings-avatar-img");
         if (preview) preview.src = URL.createObjectURL(file);
         const res = await SettingsDataService.uploadAvatar(file);
-        if (res?.url) { toast("Avatar updated.", "success"); if (preview) preview.src = res.url; }
+        const url = res && (res.url || res.avatar_url);
+        if (url) { toast("Avatar updated.", "success"); if (preview) preview.src = url; }
         else toast(res?.error || res?.message || "Upload failed.", "error");
       });
     }
@@ -710,8 +761,7 @@
         const res = await SettingsDataService.uploadDeveloperLogo(file);
         if (res?.url) {
           toast("Logo updated.", "success");
-          const preview = $("settings-dev-logo-preview");
-          if (preview) preview.innerHTML = `<img src="${escapeHtml(res.url)}" alt="">`;
+          setDeveloperLogos(res.url);
         } else toast(res?.error || res?.message || "Upload failed.", "error");
       });
     }
@@ -733,13 +783,16 @@
 
   function bindCounters() {
     $("settings-lb-bio")?.addEventListener("input", updateBioCounter);
-    $("settings-dev-description")?.addEventListener("input", updateDevDescriptionCounter);
+    $("settings-dev-description")?.addEventListener("input", () => {
+      updateDevDescriptionCounter();
+      updateDeveloperPreview();
+    });
+    $("settings-dev-company")?.addEventListener("input", updateDeveloperPreview);
   }
 
   // ─── Direct modal triggers (buttons with explicit IDs) ────────
 
   function bindDirectModalButtons() {
-    $("btn-change-email")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-change-email"); });
     $("btn-change-password")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-change-password"); });
     $("btn-change-phone")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-change-phone"); });
     $("btn-delete-account")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-delete-account"); });
@@ -760,11 +813,9 @@
     $("form-developer-links")?.addEventListener("submit", onSubmitDevLinks);
 
     // Modal form submits
-    $("form-change-email")?.addEventListener("submit", onSubmitChangeEmail);
     $("form-change-password")?.addEventListener("submit", onSubmitChangePassword);
     $("form-change-phone")?.addEventListener("submit", onSubmitChangePhone);
     $("form-delete-account")?.addEventListener("submit", onSubmitDeleteAccount);
-    $("btn-confirm-revoke-session")?.addEventListener("click", onConfirmRevokeSession);
 
     // Reset handlers — repopulate from savedSettings
     document.querySelectorAll("form[id^=form-]").forEach((f) => {

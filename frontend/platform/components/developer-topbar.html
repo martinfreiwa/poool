@@ -1,14 +1,12 @@
 <header class="lb-topbar developer-lb-topbar">
   <div class="lb-topbar-inner">
     <div class="lb-topbar-left">
-      <span class="lb-topbar-title">{{ dev_nav_title | default("Developer") }}</span>
-      {% if not dev_nav_flow_step %}
-      <nav class="lb-topbar-tabs" aria-label="Developer dashboard navigation">
-        <a href="/developer/dashboard" class="lb-topbar-tab {% if dev_nav_active == 'dashboard' %}active{% endif %}">Dashboard</a>
-        <a href="/developer/assets" class="lb-topbar-tab {% if dev_nav_active == 'assets' %}active{% endif %}">My Assets</a>
-        <a href="/developer/submissions" class="lb-topbar-tab {% if dev_nav_active == 'submissions' %}active{% endif %}">Submissions</a>
-        <a href="/developer/settings" class="lb-topbar-tab {% if dev_nav_active == 'settings' %}active{% endif %}">Settings</a>
-        <a href="/developer/support" class="lb-topbar-tab {% if dev_nav_active == 'support' %}active{% endif %}">Support</a>
+      <h1 class="lb-topbar-title">{{ dev_nav_title | default("Developer") }}</h1>
+      {% if dev_nav_variant == 'support' %}
+      <nav class="lb-topbar-tabs" aria-label="Support page sections">
+        <a href="#submit-ticket" class="lb-topbar-tab active">Submit Ticket</a>
+        <a href="#your-tickets" class="lb-topbar-tab">Your Tickets</a>
+        <a href="#faq" class="lb-topbar-tab">FAQ</a>
       </nav>
       {% endif %}
     </div>
@@ -53,7 +51,7 @@
       {% endif %}
 
       {% if dev_nav_show_add_asset %}
-      <a href="/developer/add-asset" class="developer-lb-topbar-action{% if dev_add_asset_btn_class %} {{ dev_add_asset_btn_class }}{% endif %}"{% if dev_add_asset_btn_id %} id="{{ dev_add_asset_btn_id }}"{% endif %}>
+      <a href="/developer/add-asset" class="developer-lb-topbar-action investor-topbar-action{% if dev_add_asset_btn_class %} {{ dev_add_asset_btn_class }}{% endif %}"{% if dev_add_asset_btn_id %} id="{{ dev_add_asset_btn_id }}"{% endif %}>
         <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <path d="M10 4v12M4 10h12"></path>
         </svg>
@@ -62,7 +60,7 @@
       {% endif %}
 
       {% if dev_nav_show_asset_actions %}
-      <button class="developer-lb-topbar-action developer-lb-topbar-action--secondary" id="btn-refresh" title="Refresh">
+      <button class="developer-lb-topbar-action developer-lb-topbar-action--secondary investor-topbar-action" id="btn-refresh" title="Refresh">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
           <path d="M1 1v5h5"></path>
           <path d="M1 6a7 7 0 0113.2-3.2M15 15v-5h-5"></path>

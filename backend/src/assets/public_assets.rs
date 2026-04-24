@@ -349,6 +349,7 @@ impl PublicPropertySpec {
             location_city: Some(self.location_city.to_string()),
             location_country: Some(self.location_country.to_string()),
             bedrooms: Some(self.bedrooms),
+            bathrooms: Some(self.bedrooms),
             lease_type: Some(self.lease_type.to_string()),
             term_months: Some(self.term_months),
             image_urls,
@@ -379,6 +380,7 @@ impl PublicPropertySpec {
             projected_return_percent: format!("{:.2}", projected_return),
             five_year_total_return_percent: format!("{:.2}", five_year_return),
             annualised_net_return_percent: format!("{:.2}", annualised_net),
+            building_size_sqm: Some(format!("{}", self.land_size_sqm as i64)),
             land_size_sqm: Some(format!("{}", self.land_size_sqm as i64)),
             platform_fee_usd: super::models::format_number(total_value_dollars * 5 / 100),
             total_investment_cost_usd: super::models::format_number(

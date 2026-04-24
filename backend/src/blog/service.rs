@@ -100,6 +100,7 @@ pub async fn list_articles(
             author: AuthorSummary {
                 id: r.get("author_id"),
                 name: r.get("author_name"),
+                initials: author_initials(&r.get::<String, _>("author_name")),
                 slug: r.get("author_slug"),
                 avatar_url: r
                     .get::<Option<String>, _>("author_avatar")
@@ -125,6 +126,7 @@ pub async fn list_articles(
                 .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
             reading_time_minutes: r.get::<Option<i32>, _>("reading_time_minutes").unwrap_or(5),
             featured: r.get::<Option<bool>, _>("featured").unwrap_or(false),
+            share_links: ArticleShareLinks::default(),
             schema_type: r
                 .get::<Option<String>, _>("schema_type")
                 .unwrap_or_else(|| "BlogPosting".to_string()),
@@ -204,6 +206,7 @@ pub async fn get_article_by_slug(
         author: AuthorSummary {
             id: r.get("author_id"),
             name: r.get("author_name"),
+            initials: author_initials(&r.get::<String, _>("author_name")),
             slug: r.get("author_slug"),
             avatar_url: r
                 .get::<Option<String>, _>("author_avatar")
@@ -229,6 +232,7 @@ pub async fn get_article_by_slug(
             .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
         reading_time_minutes: r.get::<Option<i32>, _>("reading_time_minutes").unwrap_or(5),
         featured: r.get::<Option<bool>, _>("featured").unwrap_or(false),
+        share_links: ArticleShareLinks::default(),
         schema_type: r
             .get::<Option<String>, _>("schema_type")
             .unwrap_or_else(|| "BlogPosting".to_string()),
@@ -470,6 +474,7 @@ pub async fn get_recent_articles(
             author: AuthorSummary {
                 id: r.get("author_id"),
                 name: r.get("author_name"),
+                initials: author_initials(&r.get::<String, _>("author_name")),
                 slug: r.get("author_slug"),
                 avatar_url: r
                     .get::<Option<String>, _>("author_avatar")
@@ -495,6 +500,7 @@ pub async fn get_recent_articles(
                 .map(|u| crate::storage::service::rewrite_gcs_url(&u)),
             reading_time_minutes: r.get::<Option<i32>, _>("reading_time_minutes").unwrap_or(5),
             featured: r.get::<Option<bool>, _>("featured").unwrap_or(false),
+            share_links: ArticleShareLinks::default(),
             schema_type: r
                 .get::<Option<String>, _>("schema_type")
                 .unwrap_or_else(|| "BlogPosting".to_string()),

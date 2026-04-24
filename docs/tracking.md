@@ -36,9 +36,9 @@ For each page, we go through 4 phases:
 
 ### 4. Settings Page (`frontend/platform/settings.html`)
 - [x] Phase 1: Datenmodell & Typisierung — JSDoc types + existing `settings.d.ts` extended; covers `SettingsResponse`, `ApiResponse`, all form types (`UpdateProfileForm`, `ChangeEmailForm`, `ChangePasswordForm`, `ChangePhoneForm`)
-- [x] Phase 2: Backend-Logik & Data Fetching — `settings-service.js` with all 5 endpoints; client-side pre-flight validation in `changeEmail()` / `changePassword()` to avoid redundant round-trips
-- [x] Phase 3: Frontend UI & State-Binding — `settings.js` rewritten as clean UI controller consuming service; `setButtonState()` helper for consistent loading UX; all modal close/open logic consolidated
-- [x] Phase 4: QA, Edge Cases & UX — Skeleton replaced (Tailwind → native shimmer CSS); default active tab fixed (`tab-more` → `tab-mydetails` in HTML + `switchTab('mydetails')` called after load); `settings-service.js` wired before `settings.js`
+- [x] Phase 2: Backend-Logik & Data Fetching — `settings.js` owns settings API calls and client-side pre-flight validation in `changeEmail()` / `changePassword()` to avoid redundant round-trips
+- [x] Phase 3: Frontend UI & State-Binding — `settings.js` rewritten as clean UI controller with integrated service helpers; `setButtonState()` helper for consistent loading UX; all modal close/open logic consolidated
+- [x] Phase 4: QA, Edge Cases & UX — Skeleton replaced (Tailwind → native shimmer CSS); default active tab fixed (`tab-more` → `tab-mydetails` in HTML + `switchTab('mydetails')` called after load); settings page uses one JS file
 - **Notes:** Uses existing `marketplace-page` layout wrapper (sidebar included); error state reuses existing `settings-empty-state` panel
 
 *(Weitere Seiten werden hier hinzugefügt)*

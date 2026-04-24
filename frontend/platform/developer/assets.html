@@ -1,6 +1,6 @@
 {% with title="Developer Assets", meta_description="Manage your properties and assets on POOOL.",
-extra_css=['developer-assets', 'mobile-developer-assets', 'marketplace', 'cart', 'checkout', 'poool-icon-custom', 'developer-leaderboard-navbar'],
-extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigation', 'marketplace'] %}{% include
+extra_css=['marketplace', 'property-card', 'cart', 'checkout', 'poool-icon-custom', 'developer-assets', 'mobile-developer-assets', 'developer-leaderboard-navbar'],
+extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 'mobile-navigation', 'marketplace'] %}{% include
 "components/head.html" %}{% endwith %}
 
 <body id="developer-assets-body" class="fouc-guard">
@@ -12,18 +12,18 @@ extra_js=['htmx-init', 'developer-assets', 'profile-dropdown', 'mobile-navigatio
     </div>
     <!-- Main Content Area -->
     <main id="developer-assets-main" class="ds-main">
-      {% with dev_nav_title="Developer", dev_nav_active="assets", dev_nav_show_add_asset=true %}
+      {% with dev_nav_title="My Assets", dev_nav_active="assets", dev_nav_show_add_asset=true %}
       {% include "components/developer-topbar.html" %}
       {% endwith %}
 
 
       <!-- Status Tabs: Available / Funded -->
       {% if developer_assets %}
-      <div id="dev-assets-status-tabs" class="status-tabs">
-        <button id="dev-tab-available" class="status-tab active" onclick="showDevTab('available')">
+      <div id="dev-assets-status-tabs" class="status-tabs" style="width: 280px; max-width: 100%; height: auto; padding: 4px; gap: 0;">
+        <button id="dev-tab-available" class="status-tab active" style="flex: 0 0 auto; width: auto; min-width: 136px; height: auto; min-height: 44px; padding: 10px 32px;" onclick="showDevTab('available')">
           Available
         </button>
-        <button id="dev-tab-funded" class="status-tab" onclick="showDevTab('funded')">
+        <button id="dev-tab-funded" class="status-tab" style="flex: 0 0 auto; width: auto; min-width: 136px; height: auto; min-height: 44px; padding: 10px 32px;" onclick="showDevTab('funded')">
           Funded
         </button>
       </div>

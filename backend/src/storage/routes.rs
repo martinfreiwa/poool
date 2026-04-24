@@ -23,6 +23,7 @@ use crate::auth::routes::AppState;
 
 const MAX_AVATAR_BYTES: usize = 5 * 1024 * 1024; // 5 MB
 const MAX_KYC_BYTES: usize = 10 * 1024 * 1024; // 10 MB
+const MAX_DEVELOPER_LOGO_BYTES: usize = 2 * 1024 * 1024; // 2 MB
 
 // ─── Avatar ────────────────────────────────────────────────────
 
@@ -112,6 +113,89 @@ pub async fn upload_avatar(
     Json(serde_json::json!({
         "status": "success",
         "avatar_url": avatar_url,
+    }))
+    .into_response()
+}
+
+// ─── Developer Logo ────────────────────────────────────────────
+
+/// POST /api/upload/developer-logo
+///
+/// Uploads/replaces the authenticated developer's public logo.
+pub async fn upload_developer_logo(
+    jar: CookieJar,
+    State(state): State<AppState>,
+    mut multipart: Multipart,
+) -> axum::response::Response {
+    let user = match middleware::get_current_user(&jar, &state.db).await {
+        Some(u) => u,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Not authenticated"})),
+            )
+                .into_response()
+        }
+    };
+
+    let bucket = match &state.config.gcs_bucket {
+        Some(b) => b.clone(),
+        None => {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(serde_json::json!({"error": "File storage is not configured"})),
+            )
+                .into_response()
+        }
+    };
+
+    let (file_bytes, mime_type) =
+        match read_multipart_file(&mut multipart, MAX_DEVELOPER_LOGO_BYTES).await {
+            Ok(v) => v,
+            Err(e) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({"error": e})),
+                )
+                    .into_response()
+            }
+        };
+
+    if let Err(e) = service::validate_image_mime(&mime_type) {
+        return e.into_response();
+    }
+
+    let ext = service::extension_for_mime(&mime_type);
+    let object_path = format!("developer-logos/{}/{}.{}", user.id, Uuid::new_v4(), ext);
+
+    let logo_url = match service::upload_public(&bucket, &object_path, file_bytes, &mime_type).await
+    {
+        Ok(url) => url,
+        Err(e) => {
+            tracing::error!("Developer logo upload failed for {}: {}", user.id, e);
+            return e.into_response();
+        }
+    };
+
+    if let Err(e) =
+        crate::settings::service::update_developer_logo(&state.db, user.id, &logo_url).await
+    {
+        tracing::warn!("Failed to save developer logo for {}: {}", user.id, e);
+        let message = match e {
+            crate::error::AppError::Unauthorized(msg) => msg,
+            _ => "Upload succeeded but failed to save logo URL.".to_string(),
+        };
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": message})),
+        )
+            .into_response();
+    }
+
+    Json(serde_json::json!({
+        "status": "success",
+        "url": logo_url,
+        "logo_url": logo_url,
     }))
     .into_response()
 }
@@ -510,7 +594,12 @@ fn sniff_mime(bytes: &[u8]) -> Option<&'static str> {
 /// type. We allow a loose match (e.g. "image/jpg" aliasing "image/jpeg") but
 /// require the major category to agree so JSON-bodied "image/jpeg" uploads fail.
 fn mime_matches(client_mime: &str, sniffed: &str) -> bool {
-    let c = client_mime.split(';').next().unwrap_or("").trim().to_ascii_lowercase();
+    let c = client_mime
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
     if c == sniffed {
         return true;
     }

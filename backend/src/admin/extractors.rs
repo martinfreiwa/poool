@@ -212,9 +212,4 @@ pub const ELEVATED_ROLES: &[&str] = &["admin", "super_admin"];
 
 /// Roles any admin (not just super_admin) may request. Elevated roles
 /// (`ELEVATED_ROLES`) are excluded — they require a separate super_admin gate.
-pub const ASSIGNABLE_ROLES: &[&str] = &[
-    "compliance",
-    "support",
-    "finance",
-    "kyc_reviewer",
-];
+pub const ASSIGNABLE_ROLES: &[&str] = &["compliance", "support", "finance", "kyc_reviewer"];

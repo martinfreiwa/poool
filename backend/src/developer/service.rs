@@ -81,6 +81,25 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     .await
     .unwrap_or(0);
 
+    // ── 2.5 Total Funding Target / Remaining (approved/live assets) ──
+    let total_funding_target_cents: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COALESCE(SUM(a.total_value_cents), 0)::bigint
+        FROM assets a
+        INNER JOIN developer_projects dp ON dp.asset_id = a.id
+        WHERE a.developer_user_id = $1
+          AND dp.status IN ('approved', 'live')
+          AND a.deleted_at IS NULL
+        "#,
+    )
+    .bind(developer_id)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(0);
+
+    let amount_remaining_cents =
+        total_funding_target_cents.saturating_sub(total_sales_cents);
+
     // ── 3. Total Investors (distinct users who invested in developer's approved/live assets) ──
     let total_investors: i64 = sqlx::query_scalar(
         r#"
@@ -143,6 +162,44 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     } else {
         0.0
     };
+
+    // ── 6.5 Intent metrics (current cart and started order records) ──
+    let add_to_cart_count: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COUNT(*)::bigint
+        FROM cart_items ci
+        JOIN assets a ON a.id = ci.asset_id
+        INNER JOIN developer_projects dp ON dp.asset_id = a.id
+        WHERE a.developer_user_id = $1
+          AND dp.status IN ('approved', 'live')
+          AND a.deleted_at IS NULL
+        "#,
+    )
+    .bind(developer_id)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(0);
+
+    let checkout_starts: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COUNT(DISTINCT o.id)::bigint
+        FROM orders o
+        JOIN order_items oi ON oi.order_id = o.id
+        JOIN assets a ON a.id = oi.asset_id
+        INNER JOIN developer_projects dp ON dp.asset_id = a.id
+        WHERE a.developer_user_id = $1
+          AND dp.status IN ('approved', 'live')
+          AND a.deleted_at IS NULL
+        "#,
+    )
+    .bind(developer_id)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(0);
+
+    // There is currently no investor saved-property table. Keep this explicit
+    // so the API contract is ready when saved properties are implemented.
+    let saved_properties: i64 = 0;
 
     // ── 7. Sold Out Ratio (approved/live assets only) ───────────────
     let funded_assets: i64 = sqlx::query_scalar(
@@ -263,13 +320,26 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     let metrics = vec![
         make_metric("Total Assets", total_assets.to_string(), 0.0),
         make_metric(
-            "Total Sales",
+            "Funding Target",
+            format_usd_compact(total_funding_target_cents),
+            0.0,
+        ),
+        make_metric(
+            "Amount Raised",
             format_usd_compact(total_sales_cents),
             sales_pct,
         ),
+        make_metric(
+            "Amount Remaining",
+            format_usd_compact(amount_remaining_cents),
+            0.0,
+        ),
         make_metric("Total Investors", total_investors.to_string(), inv_pct),
-        make_metric("New Investors", new_investors.to_string(), inv_pct),
         make_metric("Total Views", format!("{}", total_views), 0.0),
+        make_metric("Checkout Starts", checkout_starts.to_string(), 0.0),
+        make_metric("Add to Cart", add_to_cart_count.to_string(), 0.0),
+        make_metric("Saved Properties", saved_properties.to_string(), 0.0),
+        make_metric("New Investors", new_investors.to_string(), inv_pct),
         make_metric("Avg. Conversion Rate", format_pct(avg_conversion_rate), 0.0),
         make_metric("Sold Out Ratio", format_pct(sold_out_ratio), 0.0),
         make_metric(
@@ -281,6 +351,7 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
 
     // ── Top Assets table ──────────────────────────────────────────────
     let top_assets = fetch_top_assets(pool, developer_id).await;
+    let attention_assets = fetch_attention_assets(pool, developer_id).await;
 
     // ── Chart percentage (all-time sales change vs prior period) ────────
     let chart_percentage_display = if sales_pct > 0.01 {
@@ -294,10 +365,17 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
 
     DeveloperDashboardStats {
         total_assets,
+        total_funding_target_cents,
+        total_funding_target_display: format_usd_compact(total_funding_target_cents),
         total_sales_cents,
         total_sales_display: format_usd_compact(total_sales_cents),
+        amount_remaining_cents,
+        amount_remaining_display: format_usd_compact(amount_remaining_cents),
         total_investors,
         total_views,
+        checkout_starts,
+        add_to_cart_count,
+        saved_properties,
         new_investors,
         avg_conversion_rate,
         sold_out_ratio,
@@ -305,6 +383,7 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
         avg_investment_display: format_usd_compact(avg_investment_cents),
         metrics,
         top_assets,
+        attention_assets,
         chart_percentage_display,
         chart_trend,
     }
@@ -317,6 +396,9 @@ struct AssetRow {
     cover_image_url: Option<String>,
     total_sales_cents: i64,
     investor_count: i64,
+    views: i64,
+    add_to_cart_count: i64,
+    checkout_starts: i64,
     tokens_total: i32,
     tokens_available: i32,
     funding_status: String,
@@ -333,15 +415,63 @@ struct AssetRow {
 
 /// Fetch top assets for the developer, with sales/views/conversion data.
 async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTopAsset> {
+    fetch_assets_for_dashboard(
+        pool,
+        developer_id,
+        "ORDER BY total_sales_cents DESC, views DESC, a.created_at DESC LIMIT 5",
+    )
+    .await
+}
+
+/// Fetch assets with weak funding momentum or low capital raised.
+async fn fetch_attention_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTopAsset> {
+    fetch_assets_for_dashboard(
+        pool,
+        developer_id,
+        "ORDER BY CASE WHEN a.tokens_total > 0 THEN ((a.tokens_total - a.tokens_available)::double precision / a.tokens_total::double precision) ELSE 0 END ASC, views DESC, add_to_cart_count DESC, a.created_at DESC LIMIT 5",
+    )
+    .await
+}
+
+/// Shared asset aggregation for dashboard tables.
+async fn fetch_assets_for_dashboard(
+    pool: &PgPool,
+    developer_id: Uuid,
+    order_clause: &str,
+) -> Vec<DeveloperTopAsset> {
     // Fetch the developer's assets with their aggregated investment data
-    let rows = sqlx::query_as::<_, AssetRow>(
+    let query = format!(
         r#"
         SELECT
             a.id,
             a.title,
             (SELECT image_url FROM asset_images WHERE asset_id = a.id ORDER BY sort_order LIMIT 1) AS cover_image_url,
-            COALESCE(SUM(i.purchase_value_cents), 0)::bigint AS total_sales_cents,
-            COUNT(DISTINCT i.user_id)::bigint AS investor_count,
+            COALESCE((
+                SELECT SUM(i.purchase_value_cents)
+                FROM investments i
+                WHERE i.asset_id = a.id AND i.status != 'exited'
+            ), 0)::bigint AS total_sales_cents,
+            COALESCE((
+                SELECT COUNT(DISTINCT i.user_id)
+                FROM investments i
+                WHERE i.asset_id = a.id AND i.status != 'exited'
+            ), 0)::bigint AS investor_count,
+            COALESCE((
+                SELECT COUNT(*)
+                FROM asset_views av
+                WHERE av.asset_id = a.id
+            ), 0)::bigint AS views,
+            COALESCE((
+                SELECT COUNT(*)
+                FROM cart_items ci
+                WHERE ci.asset_id = a.id
+            ), 0)::bigint AS add_to_cart_count,
+            COALESCE((
+                SELECT COUNT(DISTINCT oi.order_id)
+                FROM order_items oi
+                JOIN orders o ON o.id = oi.order_id
+                WHERE oi.asset_id = a.id
+            ), 0)::bigint AS checkout_starts,
             a.tokens_total,
             a.tokens_available,
             a.funding_status,
@@ -356,19 +486,18 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
             a.annual_yield_bps
         FROM assets a
         INNER JOIN developer_projects dp ON dp.asset_id = a.id
-        LEFT JOIN investments i ON i.asset_id = a.id AND i.status != 'exited'
         WHERE a.developer_user_id = $1
           AND dp.status IN ('approved', 'live')
           AND a.deleted_at IS NULL
-        GROUP BY a.id
-        ORDER BY COALESCE(SUM(i.purchase_value_cents), 0) DESC
-        LIMIT 10
+        {order_clause}
         "#,
-    )
-    .bind(developer_id)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
+    );
+
+    let rows = sqlx::query_as::<_, AssetRow>(&query)
+        .bind(developer_id)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
 
     rows.into_iter()
         .enumerate()
@@ -379,16 +508,14 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
                 0.0
             };
 
-            // Views per asset — try asset_views table, fallback to 0
-            // We don't do per-asset view query here to keep it efficient;
-            // the JS can lazy-load this via API if needed.
-            let views: i64 = 0; // Will be populated by API endpoint
-
-            let conversion_rate = if views > 0 {
-                (row.investor_count as f64 / views as f64) * 100.0
+            let conversion_rate = if row.views > 0 {
+                (row.investor_count as f64 / row.views as f64) * 100.0
             } else {
                 0.0
             };
+            let amount_remaining_cents = row
+                .total_value_cents
+                .saturating_sub(row.total_sales_cents);
 
             DeveloperTopAsset {
                 index: idx + 1,
@@ -402,7 +529,10 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
                 total_sales_cents: row.total_sales_cents,
                 sales_change_pct: 0.0,
                 sales_trend: "neutral".to_string(),
-                views,
+                views: row.views,
+                add_to_cart_count: row.add_to_cart_count,
+                checkout_starts: row.checkout_starts,
+                saved_count: 0,
                 conversion_rate,
                 conversion_display: format_pct(conversion_rate),
                 funding_pct,
@@ -412,6 +542,8 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
                 bedrooms: row.bedrooms,
                 total_value_display: format_usd_compact(row.total_value_cents),
                 total_value_cents: row.total_value_cents,
+                amount_remaining_display: format_usd_compact(amount_remaining_cents),
+                amount_remaining_cents,
                 is_rented: row.occupancy_rate_bps.unwrap_or(0) > 0,
                 country: row.country,
                 lease_type: row.lease_type,
@@ -425,88 +557,5 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
 
 /// Fetch all assets for the developer, with sales/views/conversion data.
 pub async fn fetch_all_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTopAsset> {
-    // Fetch the developer's assets with their aggregated investment data
-    let rows = sqlx::query_as::<_, AssetRow>(
-        r#"
-        SELECT
-            a.id,
-            a.title,
-            (SELECT image_url FROM asset_images WHERE asset_id = a.id ORDER BY sort_order LIMIT 1) AS cover_image_url,
-            COALESCE(SUM(i.purchase_value_cents), 0)::bigint AS total_sales_cents,
-            COUNT(DISTINCT i.user_id)::bigint AS investor_count,
-            a.tokens_total,
-            a.tokens_available,
-            a.funding_status,
-            a.location_city as city,
-            a.bedrooms,
-            COALESCE(a.total_value_cents, 0) as total_value_cents,
-            a.occupancy_rate_bps,
-            a.location_country as country,
-            a.lease_type,
-            a.lease_term_years,
-            a.capital_appreciation_bps,
-            a.annual_yield_bps
-        FROM assets a
-        INNER JOIN developer_projects dp ON dp.asset_id = a.id
-        LEFT JOIN investments i ON i.asset_id = a.id AND i.status != 'exited'
-        WHERE a.developer_user_id = $1
-          AND dp.status IN ('approved', 'live')
-          AND a.deleted_at IS NULL
-        GROUP BY a.id
-        ORDER BY a.created_at DESC
-        "#,
-    )
-    .bind(developer_id)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
-
-    rows.into_iter()
-        .enumerate()
-        .map(|(idx, row)| {
-            let funding_pct = if row.tokens_total > 0 {
-                ((row.tokens_total - row.tokens_available) as f64 / row.tokens_total as f64) * 100.0
-            } else {
-                0.0
-            };
-
-            let views: i64 = 0;
-
-            let conversion_rate = if views > 0 {
-                (row.investor_count as f64 / views as f64) * 100.0
-            } else {
-                0.0
-            };
-
-            DeveloperTopAsset {
-                index: idx + 1,
-                id: row.id.to_string(),
-                title: row.title,
-                cover_image_url: rewrite_gcs_url(
-                    &row.cover_image_url
-                        .unwrap_or_else(|| "/static/images/seed/villa1.webp".to_string()),
-                ),
-                total_sales_display: format_usd_compact(row.total_sales_cents),
-                total_sales_cents: row.total_sales_cents,
-                sales_change_pct: 0.0,
-                sales_trend: "neutral".to_string(),
-                views,
-                conversion_rate,
-                conversion_display: format_pct(conversion_rate),
-                funding_pct,
-                funding_display: format_pct(funding_pct),
-                status: row.funding_status,
-                city: row.city,
-                bedrooms: row.bedrooms,
-                total_value_display: format_usd_compact(row.total_value_cents),
-                total_value_cents: row.total_value_cents,
-                is_rented: row.occupancy_rate_bps.unwrap_or(0) > 0,
-                country: row.country,
-                lease_type: row.lease_type,
-                lease_term_years: row.lease_term_years,
-                capital_appreciation_bps: row.capital_appreciation_bps,
-                annual_yield_bps: row.annual_yield_bps,
-            }
-        })
-        .collect()
+    fetch_assets_for_dashboard(pool, developer_id, "ORDER BY a.created_at DESC").await
 }

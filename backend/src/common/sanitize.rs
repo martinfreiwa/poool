@@ -113,7 +113,7 @@ pub fn sanitize_html(input: &str) -> String {
 
     // Allowed attributes - only on specific tags
     cleaner.tag_attributes(maplit::hashmap![
-        "a" => maplit::hashset!["href", "target", "rel"],
+        "a" => maplit::hashset!["href", "target"],
         "span" => maplit::hashset!["style"],
         "div" => maplit::hashset!["style"]
     ]);

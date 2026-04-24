@@ -1,15 +1,19 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Multipart, Path, State},
     http::StatusCode,
     response::{Html, IntoResponse, Json},
 };
 use axum_extra::extract::cookie::CookieJar;
 use minijinja::context;
 
+use crate::admin::extractors::{AdminUser, ApiError};
 use crate::auth::middleware;
 use crate::auth::routes::AppState;
 
-use super::service;
+use super::{
+    sanity::{AdminArticleInput, AdminTaxonomyInput, SanityClient},
+    service,
+};
 
 // ── SSR Page Handlers (public, no auth) ──────────────────────────
 
@@ -25,8 +29,8 @@ pub async fn page_blog_index(
         .max(1);
     let tag = params.get("tag").map(|s| s.as_str());
 
-    // Fetch articles (gracefully degrade to empty if tables don't exist yet)
-    let result = match service::list_articles(&state.db, page, 12, None, tag, false).await {
+    // Fetch articles (gracefully degrade to empty if the content source is unavailable)
+    let result = match list_articles_for_source(&state, page, 12, None, tag, false).await {
         Ok(r) => r,
         Err(e) => {
             tracing::error!("Blog index: failed to load articles: {}", e);
@@ -41,15 +45,13 @@ pub async fn page_blog_index(
     };
 
     // Fetch featured article
-    let featured = service::list_articles(&state.db, 1, 1, None, None, true)
+    let featured = list_articles_for_source(&state, 1, 1, None, None, true)
         .await
         .ok()
         .and_then(|f| f.articles.into_iter().next());
 
     // Fetch categories
-    let categories = service::list_categories(&state.db)
-        .await
-        .unwrap_or_default();
+    let categories = list_categories_for_source(&state).await.unwrap_or_default();
 
     let base_url = state.config.base_url.clone();
 
@@ -88,7 +90,7 @@ pub async fn page_blog_article(
     State(state): State<AppState>,
     Path(slug): Path<String>,
 ) -> axum::response::Response {
-    let article = match service::get_article_by_slug(&state.db, &slug).await {
+    let article = match get_article_for_source(&state, &slug).await {
         Ok(Some(a)) => a,
         Ok(None) => {
             return (
@@ -111,12 +113,12 @@ pub async fn page_blog_article(
     let current_slug = article.slug.clone();
 
     // Fetch recent articles for right sidebar (up to 5, excluding current)
-    let other_articles = service::get_recent_articles(&state.db, &current_slug, 5)
+    let other_articles = get_recent_articles_for_source(&state, &current_slug, 5)
         .await
         .unwrap_or_default();
 
     // Fetch "also interested in" articles for the bottom (up to 3, excluding current)
-    let related = service::get_recent_articles(&state.db, &current_slug, 3)
+    let related = get_recent_articles_for_source(&state, &current_slug, 3)
         .await
         .unwrap_or_default();
 
@@ -160,32 +162,22 @@ pub async fn page_blog_category(
         .unwrap_or(1)
         .max(1);
 
-    let result = match service::list_articles(
-        &state.db,
-        page,
-        12,
-        Some(&category_slug),
-        None,
-        false,
-    )
-    .await
-    {
-        Ok(r) => r,
-        Err(e) => {
-            tracing::error!("Blog category '{}': {}", category_slug, e);
-            super::models::PaginatedArticles {
-                articles: vec![],
-                total: 0,
-                page: 1,
-                per_page: 12,
-                total_pages: 0,
+    let result =
+        match list_articles_for_source(&state, page, 12, Some(&category_slug), None, false).await {
+            Ok(r) => r,
+            Err(e) => {
+                tracing::error!("Blog category '{}': {}", category_slug, e);
+                super::models::PaginatedArticles {
+                    articles: vec![],
+                    total: 0,
+                    page: 1,
+                    per_page: 12,
+                    total_pages: 0,
+                }
             }
-        }
-    };
+        };
 
-    let categories = service::list_categories(&state.db)
-        .await
-        .unwrap_or_default();
+    let categories = list_categories_for_source(&state).await.unwrap_or_default();
     let base_url = state.config.base_url.clone();
 
     match state.templates.get_template("blog/index.html") {
@@ -241,7 +233,7 @@ pub async fn list_articles(
         .map(|s| s == "true" || s == "1")
         .unwrap_or(false);
 
-    match service::list_articles(&state.db, page, per_page, category, tag, featured).await {
+    match list_articles_for_source(&state, page, per_page, category, tag, featured).await {
         Ok(result) => Json(result).into_response(),
         Err(e) => {
             tracing::error!("Failed to list blog articles: {}", e);
@@ -259,7 +251,7 @@ pub async fn get_article(
     State(state): State<AppState>,
     Path(slug): Path<String>,
 ) -> axum::response::Response {
-    match service::get_article_by_slug(&state.db, &slug).await {
+    match get_article_for_source(&state, &slug).await {
         Ok(Some(article)) => Json(article).into_response(),
         Ok(None) => (
             StatusCode::NOT_FOUND,
@@ -279,7 +271,7 @@ pub async fn get_article(
 
 /// GET /api/blog/categories — List all categories.
 pub async fn list_categories(State(state): State<AppState>) -> axum::response::Response {
-    match service::list_categories(&state.db).await {
+    match list_categories_for_source(&state).await {
         Ok(cats) => Json(serde_json::json!({"categories": cats})).into_response(),
         Err(e) => {
             tracing::error!("Failed to list blog categories: {}", e);
@@ -294,7 +286,7 @@ pub async fn list_categories(State(state): State<AppState>) -> axum::response::R
 
 /// GET /api/blog/authors — List all authors.
 pub async fn list_authors(State(state): State<AppState>) -> axum::response::Response {
-    match service::list_authors(&state.db).await {
+    match list_authors_for_source(&state).await {
         Ok(authors) => Json(serde_json::json!({"authors": authors})).into_response(),
         Err(e) => {
             tracing::error!("Failed to list blog authors: {}", e);
@@ -304,6 +296,515 @@ pub async fn list_authors(State(state): State<AppState>) -> axum::response::Resp
             )
                 .into_response()
         }
+    }
+}
+
+/// GET /api/admin/blog/overview — Admin blog dashboard metrics.
+pub async fn admin_blog_overview(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.view").await?;
+
+    let client = SanityClient::from_config(&state.config);
+    let mut overview = client.admin_overview().await.map_err(|e| {
+        tracing::error!("Failed to load Sanity blog overview: {:?}", e);
+        ApiError::Internal("Failed to load blog overview".to_string())
+    })?;
+    if overview.private_reads_enabled {
+        if let Ok(list) = client.admin_list_articles(1, 100, None, None, None).await {
+            overview.published_count = list
+                .articles
+                .iter()
+                .filter(|article| article.status == "published")
+                .count() as i64;
+            overview.draft_count = Some(
+                list.articles
+                    .iter()
+                    .filter(|article| {
+                        article.status == "draft" || article.status == "changes_pending"
+                    })
+                    .count() as i64,
+            );
+        }
+    }
+
+    Ok(Json(serde_json::json!({ "overview": overview })))
+}
+
+/// GET /api/admin/blog/articles — Admin list of published Sanity articles.
+pub async fn admin_blog_articles(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.view").await?;
+
+    let page: i64 = params
+        .get("page")
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(1)
+        .max(1);
+    let per_page: i64 = params
+        .get("per_page")
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(50)
+        .clamp(1, 100);
+    let category = params.get("category").map(|s| s.as_str());
+    let status = params.get("status").map(|s| s.as_str());
+    let search = params.get("q").map(|s| s.as_str());
+
+    let client = SanityClient::from_config(&state.config);
+    let articles = client
+        .admin_list_articles(page, per_page, status, category, search)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to load Sanity admin articles: {:?}", e);
+            ApiError::Internal("Failed to load blog articles".to_string())
+        })?;
+    let categories = client.admin_list_categories().await.unwrap_or_default();
+    let authors = client.admin_list_authors().await.unwrap_or_default();
+
+    Ok(Json(serde_json::json!({
+        "articles": articles.articles,
+        "total": articles.total,
+        "page": articles.page,
+        "per_page": articles.per_page,
+        "total_pages": articles.total_pages,
+        "categories": categories,
+        "authors": authors,
+        "studio_url": state.config.sanity_studio_url,
+    })))
+}
+
+/// GET /api/admin/blog/articles/:id — Load one article for the admin editor.
+pub async fn admin_blog_get_article(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.view").await?;
+    let client = SanityClient::from_config(&state.config);
+    let article = client
+        .admin_get_article(&id)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to load article: {e:?}")))?
+        .ok_or_else(|| ApiError::NotFound("Article not found".to_string()))?;
+    Ok(Json(serde_json::json!({ "article": article })))
+}
+
+/// POST /api/admin/blog/articles — Create a draft article in Sanity.
+pub async fn admin_blog_create_article(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(input): Json<AdminArticleInput>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.edit").await?;
+    let client = SanityClient::from_config(&state.config);
+    let article = client
+        .admin_create_article(input)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    audit_blog_action(
+        &state,
+        &admin,
+        "blog.article.create",
+        &article.id,
+        &article.status,
+    )
+    .await;
+    Ok(Json(serde_json::json!({ "article": article })))
+}
+
+/// PUT /api/admin/blog/articles/:id — Save article edits as a Sanity draft.
+pub async fn admin_blog_update_article(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Json(input): Json<AdminArticleInput>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.edit").await?;
+    let client = SanityClient::from_config(&state.config);
+    let article = client
+        .admin_update_article(&id, input)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    audit_blog_action(
+        &state,
+        &admin,
+        "blog.article.update",
+        &article.id,
+        &article.status,
+    )
+    .await;
+    Ok(Json(serde_json::json!({ "article": article })))
+}
+
+/// POST /api/admin/blog/articles/:id/publish — Publish a Sanity article.
+pub async fn admin_blog_publish_article(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.publish").await?;
+    let client = SanityClient::from_config(&state.config);
+    let article = client
+        .admin_publish_article(&id)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    audit_blog_action(
+        &state,
+        &admin,
+        "blog.article.publish",
+        &article.id,
+        &article.status,
+    )
+    .await;
+    Ok(Json(serde_json::json!({ "article": article })))
+}
+
+/// POST /api/admin/blog/articles/:id/unpublish — Take down a Sanity article.
+pub async fn admin_blog_unpublish_article(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.publish").await?;
+    let client = SanityClient::from_config(&state.config);
+    let article = client
+        .admin_unpublish_article(&id)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    audit_blog_action(
+        &state,
+        &admin,
+        "blog.article.unpublish",
+        &article.id,
+        &article.status,
+    )
+    .await;
+    Ok(Json(serde_json::json!({ "article": article })))
+}
+
+/// POST /api/admin/blog/articles/:id/archive — Archive a Sanity article.
+pub async fn admin_blog_archive_article(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.archive").await?;
+    let client = SanityClient::from_config(&state.config);
+    let article = client
+        .admin_archive_article(&id)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    audit_blog_action(
+        &state,
+        &admin,
+        "blog.article.archive",
+        &article.id,
+        &article.status,
+    )
+    .await;
+    Ok(Json(serde_json::json!({ "article": article })))
+}
+
+/// POST /api/admin/blog/articles/:id/restore — Restore an archived article to draft.
+pub async fn admin_blog_restore_article(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.edit").await?;
+    let client = SanityClient::from_config(&state.config);
+    let article = client
+        .admin_restore_article(&id)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    audit_blog_action(
+        &state,
+        &admin,
+        "blog.article.restore",
+        &article.id,
+        &article.status,
+    )
+    .await;
+    Ok(Json(serde_json::json!({ "article": article })))
+}
+
+/// POST /api/admin/blog/assets — Upload a cover image to Sanity.
+pub async fn admin_blog_upload_asset(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    mut multipart: Multipart,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.edit").await?;
+
+    let mut bytes = None;
+    let mut filename = None;
+    let mut content_type = None;
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|_| ApiError::BadRequest("Invalid multipart upload".to_string()))?
+    {
+        if field.name() == Some("file") {
+            filename = field.file_name().map(ToString::to_string);
+            content_type = field.content_type().map(ToString::to_string);
+            bytes = Some(
+                field
+                    .bytes()
+                    .await
+                    .map_err(|_| ApiError::BadRequest("Invalid upload body".to_string()))?
+                    .to_vec(),
+            );
+            break;
+        }
+    }
+
+    let bytes = bytes.ok_or_else(|| ApiError::BadRequest("Missing file field".to_string()))?;
+    if bytes.len() > 8 * 1024 * 1024 {
+        return Err(ApiError::BadRequest(
+            "Image must be 8 MB or smaller".to_string(),
+        ));
+    }
+
+    let client = SanityClient::from_config(&state.config);
+    let asset = client
+        .admin_upload_image(bytes, filename, content_type)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    audit_blog_action(
+        &state,
+        &admin,
+        "blog.asset.upload",
+        "sanity.imageAsset",
+        "uploaded",
+    )
+    .await;
+    Ok(Json(serde_json::json!({ "asset": asset })))
+}
+
+/// GET /api/admin/blog/authors — List Sanity authors for admin.
+pub async fn admin_blog_list_authors(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.view").await?;
+    let authors = SanityClient::from_config(&state.config)
+        .admin_list_authors()
+        .await
+        .map_err(map_sanity_admin_error)?;
+    Ok(Json(serde_json::json!({ "authors": authors })))
+}
+
+/// POST /api/admin/blog/authors — Create a Sanity author.
+pub async fn admin_blog_save_author(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(input): Json<AdminTaxonomyInput>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.edit").await?;
+    let author = SanityClient::from_config(&state.config)
+        .admin_save_author(input)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    audit_blog_action(&state, &admin, "blog.author.save", &author.id, "saved").await;
+    Ok(Json(serde_json::json!({ "author": author })))
+}
+
+/// GET /api/admin/blog/categories — List Sanity categories for admin.
+pub async fn admin_blog_list_categories(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.view").await?;
+    let categories = SanityClient::from_config(&state.config)
+        .admin_list_categories()
+        .await
+        .map_err(map_sanity_admin_error)?;
+    Ok(Json(serde_json::json!({ "categories": categories })))
+}
+
+/// POST /api/admin/blog/categories — Create a Sanity category.
+pub async fn admin_blog_save_category(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    Json(input): Json<AdminTaxonomyInput>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.edit").await?;
+    let category = SanityClient::from_config(&state.config)
+        .admin_save_category(input)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    audit_blog_action(&state, &admin, "blog.category.save", &category.id, "saved").await;
+    Ok(Json(serde_json::json!({ "category": category })))
+}
+
+/// POST /api/admin/blog/import/db-to-sanity/dry-run — Preview DB blog import.
+pub async fn admin_blog_import_dry_run(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.import").await?;
+    let result = SanityClient::from_config(&state.config)
+        .import_database_blog(&state.db, true)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    Ok(Json(serde_json::json!({ "import": result })))
+}
+
+/// POST /api/admin/blog/import/db-to-sanity — Import DB blog records into Sanity.
+pub async fn admin_blog_import_run(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    require_blog_permission(&admin, &state, "blog.import").await?;
+    let result = SanityClient::from_config(&state.config)
+        .import_database_blog(&state.db, false)
+        .await
+        .map_err(map_sanity_admin_error)?;
+    audit_blog_action(
+        &state,
+        &admin,
+        "blog.import.db_to_sanity",
+        "blog_articles",
+        "imported",
+    )
+    .await;
+    Ok(Json(serde_json::json!({ "import": result })))
+}
+
+async fn require_blog_permission(
+    admin: &AdminUser,
+    state: &AppState,
+    permission: &str,
+) -> Result<(), ApiError> {
+    if middleware::has_permission(&state.db, admin.user.id, permission).await
+        || middleware::has_permission(&state.db, admin.user.id, "blog.manage").await
+    {
+        Ok(())
+    } else {
+        Err(ApiError::Forbidden(format!(
+            "Missing permission: {permission}"
+        )))
+    }
+}
+
+fn map_sanity_admin_error(err: anyhow::Error) -> ApiError {
+    let message = err.to_string();
+    if message.contains("not configured") {
+        ApiError::BadRequest(message)
+    } else if message.contains("modified by another editor") {
+        ApiError::Conflict(message)
+    } else if message.contains("not found") || message.contains("Article not found") {
+        ApiError::NotFound(message)
+    } else {
+        tracing::error!("Sanity admin operation failed: {:?}", err);
+        ApiError::Internal("Sanity operation failed".to_string())
+    }
+}
+
+async fn audit_blog_action(
+    state: &AppState,
+    admin: &AdminUser,
+    action: &str,
+    entity_id: &str,
+    status: &str,
+) {
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+           VALUES ($1, $2, 'blog', $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(action)
+    .bind(serde_json::json!({ "entity_id": entity_id, "status": status }))
+    .execute(&state.db)
+    .await;
+}
+
+fn use_sanity_content(state: &AppState) -> bool {
+    state
+        .config
+        .blog_content_source
+        .eq_ignore_ascii_case("sanity")
+}
+
+async fn list_articles_for_source(
+    state: &AppState,
+    page: i64,
+    per_page: i64,
+    category_slug: Option<&str>,
+    tag: Option<&str>,
+    featured_only: bool,
+) -> anyhow::Result<super::models::PaginatedArticles> {
+    if use_sanity_content(state) {
+        SanityClient::from_config(&state.config)
+            .list_articles(page, per_page, category_slug, tag, featured_only)
+            .await
+    } else {
+        service::list_articles(&state.db, page, per_page, category_slug, tag, featured_only)
+            .await
+            .map_err(anyhow::Error::from)
+    }
+}
+
+async fn get_article_for_source(
+    state: &AppState,
+    slug: &str,
+) -> anyhow::Result<Option<super::models::ArticleResponse>> {
+    if use_sanity_content(state) {
+        SanityClient::from_config(&state.config)
+            .get_article_by_slug(slug)
+            .await
+    } else {
+        service::get_article_by_slug(&state.db, slug)
+            .await
+            .map_err(anyhow::Error::from)
+    }
+}
+
+async fn get_recent_articles_for_source(
+    state: &AppState,
+    exclude_slug: &str,
+    limit: i64,
+) -> anyhow::Result<Vec<super::models::ArticleResponse>> {
+    if use_sanity_content(state) {
+        SanityClient::from_config(&state.config)
+            .get_recent_articles(exclude_slug, limit)
+            .await
+    } else {
+        service::get_recent_articles(&state.db, exclude_slug, limit)
+            .await
+            .map_err(anyhow::Error::from)
+    }
+}
+
+async fn list_categories_for_source(
+    state: &AppState,
+) -> anyhow::Result<Vec<super::models::CategoryResponse>> {
+    if use_sanity_content(state) {
+        SanityClient::from_config(&state.config)
+            .list_categories()
+            .await
+    } else {
+        service::list_categories(&state.db)
+            .await
+            .map_err(anyhow::Error::from)
+    }
+}
+
+async fn list_authors_for_source(
+    state: &AppState,
+) -> anyhow::Result<Vec<super::models::AuthorResponse>> {
+    if use_sanity_content(state) {
+        SanityClient::from_config(&state.config)
+            .list_authors()
+            .await
+    } else {
+        service::list_authors(&state.db)
+            .await
+            .map_err(anyhow::Error::from)
     }
 }
 

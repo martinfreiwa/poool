@@ -1,35 +1,69 @@
 use super::models::{CreateDraftAsset, UpdateDraftAsset};
 use super::service;
 use crate::auth::middleware;
+use crate::auth::models::User;
 use crate::auth::routes::AppState;
 use crate::error::AppError;
 /// Developer page & API route handlers.
 use axum::{
-    Json,
     extract::State,
     response::{Html, IntoResponse, Redirect},
+    Json,
 };
 use axum_extra::extract::cookie::CookieJar;
 
 // ─── Page Handlers ──────────────────────────────────────────
+
+async fn user_has_developer_access(state: &AppState, user_id: uuid::Uuid) -> bool {
+    sqlx::query_scalar!(
+        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin') AND COALESCE(ur.is_active, TRUE) = TRUE)",
+        user_id
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(Some(false))
+    .unwrap_or(false)
+}
+
+async fn require_developer_page(
+    jar: &CookieJar,
+    state: &AppState,
+) -> Result<User, axum::response::Response> {
+    let user = match middleware::get_current_user(jar, &state.db).await {
+        Some(u) => u,
+        None => return Err(Redirect::to("/auth/login").into_response()),
+    };
+
+    if !user_has_developer_access(state, user.id).await {
+        return Err(Redirect::to("/developer/application-form").into_response());
+    }
+
+    Ok(user)
+}
+
+async fn require_developer_api(jar: &CookieJar, state: &AppState) -> Result<User, AppError> {
+    let user = middleware::get_current_user(jar, &state.db)
+        .await
+        .ok_or_else(|| AppError::Unauthorized("Please log in".to_string()))?;
+
+    if !user_has_developer_access(state, user.id).await {
+        return Err(AppError::Forbidden(
+            "Only developers can access this resource".to_string(),
+        ));
+    }
+
+    Ok(user)
+}
 
 /// GET /developer/dashboard — Render the developer dashboard with real DB data.
 pub async fn page_developer_dashboard(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> axum::response::Response {
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => return Redirect::to("/auth/login").into_response(),
+    let user = match require_developer_page(&jar, &state).await {
+        Ok(u) => u,
+        Err(response) => return response,
     };
-    let is_developer = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin'))",
-        user.id
-    ).fetch_one(&state.db).await.unwrap_or(Some(false)).unwrap_or(false);
-
-    if !is_developer {
-        return Redirect::to("/developer/application-form").into_response();
-    }
 
     // Fetch all dashboard statistics for this developer
     let stats = service::fetch_dashboard_stats(&state.db, user.id).await;
@@ -63,18 +97,10 @@ pub async fn page_developer_assets(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> axum::response::Response {
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => return Redirect::to("/auth/login").into_response(),
+    let user = match require_developer_page(&jar, &state).await {
+        Ok(u) => u,
+        Err(response) => return response,
     };
-    let is_developer = sqlx::query_scalar!(
-        "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin'))",
-        user.id
-    ).fetch_one(&state.db).await.unwrap_or(Some(false)).unwrap_or(false);
-
-    if !is_developer {
-        return Redirect::to("/developer/application-form").into_response();
-    }
 
     let assets = service::fetch_all_assets(&state.db, user.id).await;
     let stats = service::fetch_dashboard_stats(&state.db, user.id).await;
@@ -109,6 +135,9 @@ pub async fn page_developer_add_asset(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
     crate::common::routes_helper::serve_protected(jar, &state, "developer/add-asset.html").await
 }
 
@@ -117,6 +146,9 @@ pub async fn page_developer_property_content(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
     crate::common::routes_helper::serve_protected(jar, &state, "developer/property-content.html")
         .await
 }
@@ -126,6 +158,9 @@ pub async fn page_developer_document_upload(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
     crate::common::routes_helper::serve_protected(
         jar,
         &state,
@@ -148,6 +183,9 @@ pub async fn page_developer_submission_success(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
     crate::common::routes_helper::serve_protected(jar, &state, "developer/submission-success.html")
         .await
 }
@@ -157,6 +195,9 @@ pub async fn page_developer_asset_detail(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
     crate::common::routes_helper::serve_protected(jar, &state, "developer/asset-detail.html").await
 }
 
@@ -164,6 +205,9 @@ pub async fn page_developer_settings(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
     crate::common::routes_helper::serve_protected_with_context(
         jar,
         &state,
@@ -178,6 +222,9 @@ pub async fn page_developer_support(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
     crate::common::routes_helper::serve_protected_with_context(
         jar,
         &state,
@@ -192,6 +239,9 @@ pub async fn page_developer_submissions(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    if let Err(response) = require_developer_page(&jar, &state).await {
+        return response;
+    }
     crate::common::routes_helper::serve_protected(jar, &state, "developer/submissions.html").await
 }
 
@@ -202,15 +252,9 @@ pub async fn api_developer_dashboard_stats(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Unauthorized"})),
-            )
-                .into_response();
-        }
+    let user = match require_developer_api(&jar, &state).await {
+        Ok(u) => u,
+        Err(e) => return e.into_response(),
     };
 
     let stats = service::fetch_dashboard_stats(&state.db, user.id).await;
@@ -955,15 +999,9 @@ pub async fn api_developer_list_drafts(
     jar: CookieJar,
     State(state): State<AppState>,
 ) -> axum::response::Response {
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Please log in"})),
-            )
-                .into_response();
-        }
+    let user = match require_developer_api(&jar, &state).await {
+        Ok(u) => u,
+        Err(e) => return e.into_response(),
     };
 
     let rows = sqlx::query(

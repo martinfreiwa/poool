@@ -66,6 +66,27 @@
     });
   }
 
+  /** Mark onboarding steps complete based on the current user profile. */
+  function markEmptyStateSteps() {
+    const user = window.__POOOL_USER;
+    if (!user) return;
+    const kycDone = ["verified", "approved", "completed"].includes(
+      String(user.kyc_status || user.kycStatus || "").toLowerCase()
+    );
+    const walletFunded =
+      Number(user.wallet_balance ?? user.walletBalance ?? 0) > 0;
+    const completed = {
+      verify: kycDone,
+      fund: walletFunded,
+      pick: false,
+    };
+    document.querySelectorAll(".portfolio-empty__step").forEach((el) => {
+      const id = el.getAttribute("data-step-id");
+      if (completed[id]) el.setAttribute("data-complete", "true");
+      else el.removeAttribute("data-complete");
+    });
+  }
+
   // ─── DOM Updaters ────────────────────────────────────────────
 
   function updateValueCard(data) {
@@ -89,6 +110,14 @@
 
     const mobileApp = document.querySelector(".mobile-portfolio-value-change");
     if (mobileApp) mobileApp.textContent = data.appreciation.display;
+
+    // Tone badge to match actual direction: zero = neutral grey, negative = red.
+    const v = data.appreciation.value;
+    const tone = v === 0 ? "is-neutral" : v < 0 ? "is-negative" : "";
+    document.querySelectorAll(".portfolio-value-badge, .mobile-portfolio-value-badge").forEach((b) => {
+      b.classList.remove("is-neutral", "is-negative");
+      if (tone) b.classList.add(tone);
+    });
   }
 
   function updateKeyFinancials(data) {
@@ -366,11 +395,10 @@
       if (!data) return; // Redirected to login
 
       if (!data.hasInvestments) {
-        // Empty state: show value card (with zeros) + empty state panel + insights
-        updateValueCard(data);
-        updateKeyFinancials(data);
-        updateInsights(data);
-        switchState(["portfolio-empty-state", "portfolio-value-section", "key-financials-section"]);
+        // Empty state: single CTA panel. Hide chart + zero-filled KPI grid to avoid
+        // telling the user their empty portfolio "grew".
+        switchState(["portfolio-empty-state"]);
+        markEmptyStateSteps();
         return;
       }
 

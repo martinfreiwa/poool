@@ -10,7 +10,6 @@
   <meta name="description"
     content="POOOL Admin — RBAC matrix and granular permission management for Zero Trust Architecture." />
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
@@ -177,9 +176,21 @@
       z-index: 1000;
       background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(6px);
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
+    }
+
+    .admin-modal-overlay.is-open {
+      display: flex;
+    }
+
+    .rbac-toast {
+      display: none;
+    }
+
+    .rbac-toast.is-visible {
+      display: block;
     }
 
     .admin-modal {
@@ -231,7 +242,7 @@
 </head>
 
 <body class="admin-body dom-ready">
-  <div class="admin-wrapper" x-data="rbacMatrix">
+  <div class="admin-wrapper" id="rbac-matrix">
     <!-- SIDEBAR -->
     {% include 'admin/components/sidebar.html' %}
 
@@ -259,7 +270,7 @@
         </div>
 
         <!-- Toast -->
-        <div x-show="toast.show" x-transition style="
+        <div id="rbac-toast" class="rbac-toast" style="
               position: fixed;
               bottom: 24px;
               right: 24px;
@@ -274,7 +285,7 @@
           x-text="toast.message"></div>
 
         <!-- Role Summary Cards -->
-        <div class="role-cards">
+        <div class="role-cards" id="rbac-role-cards">
           <template x-for="role in roles" :key="role.id">
             <div class="role-card">
               <div class="role-card-name" x-text="role.name"></div>
@@ -297,6 +308,7 @@
         </div>
 
         <!-- SoD Warnings -->
+        <div id="rbac-sod-warnings"></div>
         <template x-for="conflict in sodConflicts" :key="conflict.role + conflict.message">
           <div class="sod-warn">
             <strong x-text="conflict.role"></strong>:
@@ -317,10 +329,10 @@
               Permission Matrix
             </h3>
             <div style="display: flex; gap: 10px">
-              <button class="admin-btn admin-btn--secondary admin-btn--sm" @click="resetMatrix()">
+              <button id="rbac-reset" class="admin-btn admin-btn--secondary admin-btn--sm" @click="resetMatrix()">
                 Reset
               </button>
-              <button class="admin-btn admin-btn--primary admin-btn--sm" @click="saveMatrix()" :disabled="saving"
+              <button id="rbac-save" class="admin-btn admin-btn--primary admin-btn--sm" @click="saveMatrix()" :disabled="saving"
                 x-text="saving ? 'Saving...' : 'Save Permissions'"></button>
             </div>
           </div>
@@ -368,7 +380,7 @@
       </div>
 
       <!-- CREATE ROLE MODAL -->
-      <div class="admin-modal-overlay" x-show="showCreateRoleModal" x-cloak x-transition.opacity>
+      <div id="rbac-create-modal" class="admin-modal-overlay">
         <div class="admin-modal" @click.away="showCreateRoleModal = false">
           <div class="admin-modal-header">
             <h3>Create New Role</h3>
@@ -379,7 +391,7 @@
           <div class="admin-modal-body">
             <div class="admin-form-group">
               <label class="admin-form-label">Role Name</label>
-              <input type="text" class="admin-input" x-model="newRoleForm.name" placeholder="e.g. regional_manager" />
+              <input id="rbac-role-name" type="text" class="admin-input" x-model="newRoleForm.name" placeholder="e.g. regional_manager" />
               <p style="
                     font-size: 11px;
                     color: var(--admin-text-muted);
@@ -390,12 +402,12 @@
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label">Description</label>
-              <input type="text" class="admin-input" x-model="newRoleForm.description"
+              <input id="rbac-role-description" type="text" class="admin-input" x-model="newRoleForm.description"
                 placeholder="e.g. Manages regional operations" />
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label">Clone Permissions From (optional)</label>
-              <select class="admin-select" x-model="newRoleForm.cloneFrom" style="width: 100%">
+              <select id="rbac-role-clone" class="admin-select" x-model="newRoleForm.cloneFrom" style="width: 100%">
                 <option value="">Start with no permissions</option>
                 <template x-for="role in roles" :key="role.id">
                   <option :value="role.id" x-text="role.name"></option>
@@ -415,7 +427,8 @@
       </div>
     </main>
   </div>
-  <script src="/static/js/admin-rbac.js"></script>
+  <script src="/static/js/poool-confirm.js"></script>
+  <script src="/static/js/admin-rbac.js?v=20260424"></script>
 </body>
 
 </html>

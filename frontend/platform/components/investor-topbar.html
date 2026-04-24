@@ -1,7 +1,7 @@
 <header{% if investor_topbar_id %} id="{{ investor_topbar_id }}"{% endif %} class="lb-topbar{% if investor_topbar_class %} {{ investor_topbar_class }}{% endif %}">
   <div class="lb-topbar-inner{% if investor_topbar_inner_class %} {{ investor_topbar_inner_class }}{% endif %}">
     <div class="lb-topbar-left{% if investor_topbar_left_class %} {{ investor_topbar_left_class }}{% endif %}">
-      <span{% if investor_topbar_title_id %} id="{{ investor_topbar_title_id }}"{% endif %} class="lb-topbar-title">{{ investor_topbar_title | default("Dashboard") }}</span>
+      <h1{% if investor_topbar_title_id %} id="{{ investor_topbar_title_id }}"{% endif %} class="lb-topbar-title">{{ investor_topbar_title | default("Dashboard") }}</h1>
       {% if investor_topbar_badge %}<span class="myt__badge">{{ investor_topbar_badge }}</span>{% endif %}
       {% if investor_topbar_subtitle_x_text %}<p class="{{ investor_topbar_subtitle_class | default("lb-topbar-subtitle") }}" x-text="{{ investor_topbar_subtitle_x_text }}"></p>{% endif %}
       {% if investor_topbar_subtitle %}<p class="{{ investor_topbar_subtitle_class | default("lb-topbar-subtitle") }}">{{ investor_topbar_subtitle }}</p>{% endif %}
@@ -84,7 +84,7 @@
           <circle cx="7.5" cy="7.5" r="5" stroke="#717680" stroke-width="1.33" />
           <path d="M10.5 10.5L13.5 13.5" stroke="#717680" stroke-width="1.33" stroke-linecap="round" />
         </svg>
-        <span class="settings-topbar__search-text">Search</span>
+        <input id="topbar-search-input" class="settings-topbar__search-input" type="search" placeholder="Search" autocomplete="off" data-global-search-input />
         <span class="settings-topbar__search-kbd">&#8984;K</span>
       </div>
     </div>

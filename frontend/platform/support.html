@@ -1,5 +1,5 @@
 {% with title="Support | POOOL", meta_description="POOOL Support — Submit and track your support requests.",
-extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobile-navigation'] %}{% include
+extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'support'] %}{% include
 "components/head.html" %}{% endwith %}
 
 <body id="support-body" class="fouc-guard">
@@ -13,7 +13,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
 
     <main class="ds-main dashboard-main{% if is_developer %} developer-support-main{% endif %}">
       {% if is_developer %}
-      {% with dev_nav_title="Developer", dev_nav_active="support" %}
+      {% with dev_nav_title="Support", dev_nav_active="support", dev_nav_variant="support" %}
       {% include "components/developer-topbar.html" %}
       {% endwith %}
       {% else %}
@@ -23,15 +23,8 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
       <div class="dashboard-container">
         <div class="support-wrapper">
 
-          <!-- Page Header -->
-          <div class="support-hero">
-            <p class="support-page-subtitle">Get help from our team — we typically respond within 24 hours</p>
-          </div>
-
-
-
           <!-- Submit a New Ticket -->
-          <div class="support-form-card">
+          <div class="support-form-card" id="submit-ticket">
             <h2>
               <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -107,7 +100,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
           </div>
 
           <!-- Your Tickets -->
-          <div class="support-form-card">
+          <div class="support-form-card" id="your-tickets">
             <h2>
               <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -129,7 +122,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
           </div>
 
           <!-- FAQ / Knowledge Base -->
-          <div class="support-form-card support-faq-card">
+          <div class="support-form-card support-faq-card" id="faq">
             <h2>
               <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
                 stroke-linecap="round" stroke-linejoin="round">

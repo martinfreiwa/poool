@@ -4,8 +4,8 @@ pub mod service;
 
 use crate::auth::routes::AppState;
 use axum::{
+    routing::{delete, get, post},
     Router,
-    routing::{get, post},
 };
 
 /// Compose all settings-domain routes into a single mountable [`Router`].
@@ -31,6 +31,24 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/settings/leaderboard",
             post(update_leaderboard_handler),
+        )
+        .route("/api/settings/social", post(update_social_links_handler))
+        .route(
+            "/api/settings/developer/profile",
+            post(update_developer_profile_handler),
+        )
+        .route(
+            "/api/settings/developer/links",
+            post(update_developer_links_handler),
+        )
+        .route("/api/settings/oauth", get(list_oauth_connections_handler))
+        .route(
+            "/api/settings/oauth/:provider/link",
+            post(link_oauth_provider_handler),
+        )
+        .route(
+            "/api/settings/oauth/:connection_id",
+            delete(unlink_oauth_connection_handler),
         )
         .route("/api/settings/2fa/disable", post(disable_totp_handler))
         .route("/api/settings/email", post(change_email_handler))

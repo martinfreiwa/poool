@@ -280,6 +280,10 @@ img { max-width: 100%; height: auto; display: block; }
 
 .blog-tag--lg { font-size: 12px; padding: 6px 16px; }
 
+.blog-article__header .blog-tag--lg {
+    color: var(--brand-blue);
+}
+
 /* ================================================================
    FEATURED ARTICLE — big hero card, dark style
    ================================================================ */
@@ -826,17 +830,17 @@ img { max-width: 100%; height: auto; display: block; }
 .blog-article__tag {
     font-size: 11px;
     font-weight: 700;
-    color: var(--brand-dark);
+    color: var(--brand-blue);
     padding: 4px 12px;
-    background: transparent;
-    border: 1.5px solid var(--brand-dark);
+    background: var(--brand-mint);
+    border: 1px solid rgba(8, 35, 47, 0.1);
     border-radius: var(--radius-pill);
     transition: background 0.2s, color 0.2s;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
-.blog-article__tag:hover { background: var(--brand-dark); color: #fff; }
+.blog-article__tag:hover { background: var(--brand-blue); color: var(--brand-white); }
 
 /* ── Author Card ─────────────────────────────────────────────────── */
 .blog-author-card {
@@ -1116,7 +1120,7 @@ img { max-width: 100%; height: auto; display: block; }
    ================================================================ */
 .bla-layout {
     display: grid;
-    grid-template-columns: minmax(0, 780px) 320px;
+    grid-template-columns: 1fr 320px;
     gap: 48px;
     align-items: start;
     padding-top: 48px;
@@ -1180,58 +1184,6 @@ img { max-width: 100%; height: auto; display: block; }
 .blog-share-btn--instagram:hover { box-shadow: 0 4px 16px rgba(220,39,67,0.4); }
 .blog-share-btn--linkedin { background: #0A66C2; }
 .blog-share-btn--linkedin:hover { background: #094fa3; box-shadow: 0 4px 16px rgba(10,102,194,0.4); }
-
-/* ── Bottom Share Strip ─────────────────────────────── */
-.blog-share-strip {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding: 32px;
-    background: #fff;
-    border-radius: 16px;
-    margin-bottom: 40px;
-    border: 1.5px solid var(--border-light);
-}
-
-.blog-share-strip__label {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin: 0;
-}
-
-.blog-share-strip__buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.blog-share-big {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border-radius: 50px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-    transition: transform 0.2s, box-shadow 0.2s;
-    text-decoration: none;
-    flex-shrink: 0;
-}
-.blog-share-big:hover { transform: translateY(-2px); }
-.blog-share-big svg { width: 22px; height: 22px; }
-
-.blog-share-big--whatsapp { background: #25D366; }
-.blog-share-big--whatsapp:hover { background: #1da854; box-shadow: 0 6px 20px rgba(37,211,102,0.35); }
-.blog-share-big--facebook { background: #1877F2; }
-.blog-share-big--facebook:hover { background: #0d65d9; box-shadow: 0 6px 20px rgba(24,119,242,0.35); }
-.blog-share-big--x { background: #000; }
-.blog-share-big--x:hover { background: #222; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
-.blog-share-big--linkedin { background: #0A66C2; }
-.blog-share-big--linkedin:hover { background: #094fa3; box-shadow: 0 6px 20px rgba(10,102,194,0.35); }
-.blog-share-big--instagram { background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
-.blog-share-big--instagram:hover { box-shadow: 0 6px 20px rgba(188,24,136,0.4); }
 
 /* ================================================================
    AUTHOR CARD — Social Icons
@@ -1816,8 +1768,6 @@ img { max-width: 100%; height: auto; display: block; }
 
     .blog-newsletter__icon { display: none; }
 
-    .blog-share-strip__buttons { gap: 8px; }
-    .blog-share-big { padding: 9px 16px; font-size: 13px; }
 }
 
 @media (max-width: 640px) {
@@ -1828,10 +1778,248 @@ img { max-width: 100%; height: auto; display: block; }
 
     .blog-newsletter__inner { padding: 24px 20px; }
 
-    .blog-share-strip { padding: 24px 20px; }
-    .blog-share-big { padding: 8px 14px; font-size: 12px; }
-    .blog-share-big svg { width: 16px; height: 16px; }
-
     .blog-also-interested__header { flex-direction: column; align-items: flex-start; }
 }
 
+/* ================================================================
+   BRAND CONSISTENCY PASS
+   Keep the blog aligned with the core POOOL palette:
+   blue, navy, mint, slate, white.
+   ================================================================ */
+body {
+    background:
+        linear-gradient(180deg, rgba(219, 226, 233, 0.48) 0%, var(--brand-white) 360px);
+}
+
+.blog-header {
+    background: var(--brand-blue);
+    box-shadow: 0 1px 0 rgba(3, 255, 136, 0.18);
+}
+
+.blog-header__nav {
+    border-color: rgba(3, 255, 136, 0.8);
+    box-shadow: 0 10px 30px rgba(8, 35, 47, 0.16);
+}
+
+.blog-header__link:hover {
+    color: var(--brand-blue);
+    opacity: 1;
+}
+
+.blog-header__btn--primary {
+    color: var(--brand-dark);
+    background: var(--brand-mint);
+}
+
+.blog-hero {
+    background: var(--brand-blue);
+    min-height: 342px;
+    display: grid;
+    place-items: center;
+    border-bottom: 1px solid rgba(8, 35, 47, 0.08);
+}
+
+.blog-hero::before {
+    background:
+        linear-gradient(180deg, rgba(8, 35, 47, 0.12), rgba(8, 35, 47, 0.28));
+}
+
+.blog-hero__eyebrow {
+    color: var(--brand-dark);
+    background: var(--brand-mint);
+    letter-spacing: 0.06em;
+    box-shadow: 0 10px 26px rgba(8, 35, 47, 0.16);
+}
+
+.blog-hero__title {
+    letter-spacing: 0;
+}
+
+.blog-hero__title span {
+    color: var(--brand-mint);
+}
+
+.blog-hero__subtitle {
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.blog-categories-bar {
+    margin: 34px 0 30px;
+}
+
+.blog-category-pill {
+    background: var(--brand-white);
+    border-color: rgba(155, 171, 184, 0.5);
+    color: var(--brand-dark);
+    box-shadow: 0 8px 18px rgba(8, 35, 47, 0.04);
+}
+
+.blog-category-pill:hover {
+    border-color: var(--brand-blue);
+    color: var(--brand-blue);
+    background: rgba(0, 0, 255, 0.04);
+}
+
+.blog-category-pill--active {
+    background: var(--brand-blue);
+    border-color: var(--brand-blue) !important;
+    color: var(--brand-white) !important;
+}
+
+.blog-tag,
+.blog-featured .blog-tag,
+.blog-card .blog-tag,
+.bla-sidebar-card .blog-tag {
+    background: var(--brand-mint) !important;
+    color: var(--brand-dark);
+    border: 1px solid rgba(8, 35, 47, 0.1);
+}
+
+.bla-sidebar-card .blog-tag {
+    padding: 2px 9px;
+    font-size: 9px;
+    line-height: 1.2;
+    color: var(--brand-blue);
+}
+
+.blog-grid {
+    gap: 28px;
+}
+
+.blog-card {
+    border-color: rgba(155, 171, 184, 0.38);
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(8, 35, 47, 0.08);
+}
+
+.blog-card:hover {
+    border-color: rgba(0, 0, 255, 0.28);
+    box-shadow: 0 18px 40px rgba(8, 35, 47, 0.12);
+}
+
+.blog-card__image,
+.blog-featured__image {
+    position: relative;
+}
+
+.blog-card__image::after,
+.blog-featured__image::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 55%, rgba(8, 35, 47, 0.12));
+    pointer-events: none;
+}
+
+.blog-card__body {
+    gap: 12px;
+}
+
+.blog-card__title {
+    color: var(--brand-dark);
+    letter-spacing: 0;
+}
+
+.blog-card__meta {
+    color: var(--text-muted);
+}
+
+.blog-featured__card {
+    background: var(--brand-dark);
+    border-color: rgba(3, 255, 136, 0.18);
+    border-radius: 16px;
+    box-shadow: 0 18px 48px rgba(8, 35, 47, 0.18);
+}
+
+.blog-featured__cta {
+    color: var(--brand-mint);
+}
+
+.blog-cta__inner,
+.blog-footer {
+    background: var(--brand-blue);
+}
+
+.blog-cta__inner {
+    border: 1px solid rgba(3, 255, 136, 0.2);
+}
+
+.blog-cta__inner::before {
+    display: none;
+}
+
+.blog-cta__eyebrow {
+    background: var(--brand-mint);
+    color: var(--brand-dark);
+}
+
+.blog-cta__btn {
+    border-radius: var(--radius-pill);
+}
+
+.blog-footer__social-icon:hover {
+    background: var(--brand-mint);
+    border-color: var(--brand-mint);
+    color: var(--brand-dark);
+}
+
+.blog-share-btn--whatsapp,
+.blog-share-btn--facebook,
+.blog-share-btn--x,
+.blog-share-btn--instagram,
+.blog-share-btn--linkedin,
+.blog-author-social--x,
+.blog-author-social--linkedin,
+.blog-author-social--facebook,
+.blog-author-social--instagram,
+.blog-author-social--whatsapp,
+.blog-author-social--web {
+    background: var(--brand-blue);
+    color: var(--brand-white);
+}
+
+.blog-share-btn--copy {
+    background: var(--brand-white);
+    color: var(--brand-dark);
+    border: 1.5px solid var(--border-light);
+}
+
+.blog-share-btn--copy:hover,
+.blog-share-btn--whatsapp:hover,
+.blog-share-btn--facebook:hover,
+.blog-share-btn--x:hover,
+.blog-share-btn--instagram:hover,
+.blog-share-btn--linkedin:hover,
+.blog-author-social:hover {
+    background: var(--brand-mint);
+    color: var(--brand-dark);
+    box-shadow: 0 8px 22px rgba(3, 255, 136, 0.28);
+}
+
+.blog-article__content blockquote,
+.toc-box,
+.bla-sidebar__newsletter {
+    background: rgba(219, 226, 233, 0.42);
+    border-color: rgba(0, 0, 255, 0.12);
+}
+
+.bla-sidebar__cta,
+.blog-newsletter__inner {
+    background: var(--brand-blue);
+    border-color: rgba(3, 255, 136, 0.34);
+}
+
+.blog-newsletter__inner::before,
+.bla-sidebar__cta::before {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .blog-hero {
+        min-height: 300px;
+    }
+
+    .blog-category-pill {
+        padding: 9px 18px;
+    }
+}

@@ -35,6 +35,37 @@
         return '$' + dollars.toFixed(0);
     }
 
+    function metricDivider() {
+        return '<div class="mp-sec__card-meta-divider"></div>';
+    }
+
+    function metricItem(iconHTML, value, extraClass = '') {
+        if (value === null || value === undefined || value === '' || Number(value) <= 0) return '';
+        return `<div class="mp-sec__card-meta-item ${extraClass}">${iconHTML}<span>${value}</span></div>`;
+    }
+
+    function buildingSizeLabel(asset) {
+        return asset.buildingSizeSqm || asset.landSize || '';
+    }
+
+    function buildPropertyMetaHTML(asset) {
+        const bedIcon = '<img src="/static/images/icons/Bed.svg" alt="Beds" width="16" height="16">';
+        const bathIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h16v3a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M6 12V6.5A2.5 2.5 0 0 1 8.5 4H10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9.5 6h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+        const sizeIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20V4h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 20h12V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 16h8V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        const metrics = [
+            metricItem(bedIcon, asset.bedrooms),
+            metricItem(bathIcon, asset.bathrooms),
+            metricItem(sizeIcon, buildingSizeLabel(asset))
+        ].filter(Boolean);
+        const location = `
+            <div class="mp-sec__card-meta-item mp-sec__card-meta-item--location">
+                <img src="/static/images/${asset.country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="${asset.country}">
+                <span>${asset.location}</span>
+            </div>`;
+
+        return [...metrics, location].join(metricDivider());
+    }
+
     // ── Status badge overlay HTML ──
     function getStatusOverlay(asset) {
         if (asset.sellOrders > 0 && asset.buyInterest > 0) {
@@ -60,13 +91,16 @@
 
     // ── Build image gallery HTML ──
     function buildGalleryHTML(asset) {
-        let images = asset.images || ['/static/images/seed/villa1.webp'];
+        let images = (asset.images || []).filter((img) => typeof img === 'string' && img.trim() !== '');
+        if (images.length === 0) {
+            images = ['/static/images/seed/villa1.webp'];
+        }
         // Limit to 5 images for preview
         images = images.slice(0, 5);
         const hasMultiple = images.length > 1;
 
         const imagesHTML = images.map((img, i) =>
-            `<img src="${img}" class="mp-sec__card-image ${i === 0 ? 'active' : ''}" style="object-fit: cover; object-position: center;" alt="${asset.name}" loading="lazy">`
+            `<img src="${img}" class="mp-sec__card-image ${i === 0 ? 'active' : ''}" style="object-fit: cover; object-position: center;" alt="${asset.name}" loading="lazy" onerror="this.onerror=null;this.src='/static/images/seed/villa1.webp';">`
         ).join('');
 
         let navHTML = '';
@@ -135,17 +169,7 @@
             ${buildGalleryHTML(asset)}
             <div class="mp-sec__card-content">
                 <div class="mp-sec__card-meta">
-                    ${asset.bedrooms > 0 ? `
-                    <div class="mp-sec__card-meta-item">
-                        <img src="/static/images/icons/Bed.svg" alt="Beds" width="16" height="16">
-                        <span>${asset.bedrooms}</span>
-                    </div>
-                    <div class="mp-sec__card-meta-divider"></div>
-                    ` : ''}
-                    <div class="mp-sec__card-meta-item">
-                        <img src="/static/images/${asset.country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="${asset.country}">
-                        <span>${asset.location}</span>
-                    </div>
+                    ${buildPropertyMetaHTML(asset)}
                 </div>
                 <h3 class="mp-sec__card-title">${asset.name}</h3>
                 <div class="mp-sec__price-row">

@@ -13,10 +13,7 @@ pub fn create_engine() -> Templates {
     // HTML autoescape for all .html/.htm/.xml templates — prevents XSS when
     // user-controlled strings are interpolated without an explicit `|safe`.
     env.set_auto_escape_callback(|name| {
-        if name.ends_with(".html")
-            || name.ends_with(".htm")
-            || name.ends_with(".xml")
-        {
+        if name.ends_with(".html") || name.ends_with(".htm") || name.ends_with(".xml") {
             minijinja::AutoEscape::Html
         } else {
             minijinja::AutoEscape::None
@@ -45,7 +42,7 @@ pub fn create_engine() -> Templates {
             .to_string()
     } else {
         // Use static version in production
-        "1.0.15".to_string()
+        "1.0.21".to_string()
     };
 
     env.add_global("asset_version", version.clone());

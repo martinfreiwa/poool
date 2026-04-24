@@ -157,6 +157,12 @@ pub async fn api_permissions_list(
         "support.manage",
         "settings.view",
         "settings.edit",
+        "blog.view",
+        "blog.edit",
+        "blog.publish",
+        "blog.archive",
+        "blog.import",
+        "blog.manage",
         "admins.manage",
         "roles.edit",
         "pii.view",
@@ -252,8 +258,10 @@ pub async fn api_admin_invite(
         payload.email,
         token
     );
-    Ok(Json(serde_json::json!({"status": "success", "message": "Invitation created"}))
-        .into_response())
+    Ok(
+        Json(serde_json::json!({"status": "success", "message": "Invitation created"}))
+            .into_response(),
+    )
 }
 
 /// Represents a role and its new list of permissions.
@@ -546,6 +554,8 @@ pub async fn api_admin_invitation_resend(
     let _ = crate::common::email::send_email(&record.email, subject, &body).await;
 
     tracing::info!("Resent invitation to {}", record.email);
-    Ok(Json(serde_json::json!({"status": "success", "message": "Invitation resent"}))
-        .into_response())
+    Ok(
+        Json(serde_json::json!({"status": "success", "message": "Invitation resent"}))
+            .into_response(),
+    )
 }

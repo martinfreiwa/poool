@@ -45,11 +45,28 @@ pub struct Config {
     /// GCS bucket name for user file uploads (avatars, KYC docs, property images).
     /// Set GCS_BUCKET_NAME in the environment.  If absent, upload endpoints return 503.
     pub gcs_bucket: Option<String>,
+    /// Blog content source. Use "sanity" for Sanity CDN-backed public blog reads.
+    pub blog_content_source: String,
+    /// Sanity project ID for public blog content.
+    pub sanity_project_id: String,
+    /// Sanity dataset for public blog content.
+    pub sanity_dataset: String,
+    /// Sanity API version used for CDN queries.
+    pub sanity_api_version: String,
+    /// Optional Sanity Studio/Manage URL opened by the admin blog dashboard.
+    pub sanity_studio_url: String,
+    /// Server-side Sanity token for private admin reads, including drafts.
+    pub sanity_read_token: Option<String>,
+    /// Server-side Sanity token for Content Lake mutations and asset uploads.
+    pub sanity_write_token: Option<String>,
 }
 
 impl Config {
     pub fn from_env() -> Self {
         dotenvy::dotenv().ok();
+        let sanity_project_id = env_or("SANITY_PROJECT_ID", "3y7eud93");
+        let sanity_studio_url = env_optional("SANITY_STUDIO_URL")
+            .unwrap_or_else(|| format!("https://www.sanity.io/manage/project/{sanity_project_id}"));
 
         Self {
             database_url: env_required("DATABASE_URL"),
@@ -73,6 +90,13 @@ impl Config {
             sentry_dsn: env_optional("SENTRY_DSN"),
             app_env: env_or("APP_ENV", "development"),
             gcs_bucket: env_optional("GCS_BUCKET_NAME"),
+            blog_content_source: env_or("BLOG_CONTENT_SOURCE", "sanity"),
+            sanity_project_id,
+            sanity_dataset: env_or("SANITY_DATASET", "production"),
+            sanity_api_version: env_or("SANITY_API_VERSION", "2026-04-24"),
+            sanity_studio_url,
+            sanity_read_token: env_optional("SANITY_READ_TOKEN"),
+            sanity_write_token: env_optional("SANITY_WRITE_TOKEN"),
         }
     }
 

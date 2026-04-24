@@ -12,6 +12,31 @@
     let PORTFOLIO_ASSETS = [];
     let currentUserEmail = null;
 
+    // Trade History filters
+    let TRADE_FILTER_ASSET = '';
+    let TRADE_FILTER_PERIOD = '30d';
+
+    function getFilteredTrades() {
+        const periods = { '30d': 30, '90d': 90, '1y': 365 };
+        const days = periods[TRADE_FILTER_PERIOD];
+        const cutoff = days ? Date.now() - days * 86400000 : null;
+        return MOCK_TRADES.filter(t => {
+            if (TRADE_FILTER_ASSET && t.asset !== TRADE_FILTER_ASSET) return false;
+            if (cutoff !== null && new Date(t.date).getTime() < cutoff) return false;
+            return true;
+        });
+    }
+
+    function populateAssetFilter() {
+        const sel = document.getElementById('trade-filter-asset');
+        if (!sel) return;
+        const current = sel.value;
+        const assets = [...new Set(MOCK_TRADES.map(t => t.asset))].sort();
+        sel.innerHTML = '<option value="">All Assets</option>' +
+            assets.map(a => `<option value="${a}">${a}</option>`).join('');
+        if (assets.includes(current)) sel.value = current;
+    }
+
     // ── Formatters ─────────────────────────────────────────────
     function formatUSD(cents) {
         return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -44,7 +69,8 @@
                         </svg>
                     </div>
                     <h3 class="ds-table-empty__title">No open orders</h3>
-                    <p class="ds-table-empty__description">You don't have any active open orders.</p>
+                    <p class="ds-table-empty__description">Place a buy or sell order in the resale market.</p>
+                    <a href="/marketplace-secondary" class="myt__empty-cta">Go to Resale Market</a>
                 </div>
             </td></tr>`;
             return;
@@ -83,7 +109,8 @@
                         </svg>
                     </div>
                     <h3 class="ds-table-empty__title">No buy interests</h3>
-                    <p class="ds-table-empty__description">You haven't expressed interest in any unlisted assets.</p>
+                    <p class="ds-table-empty__description">Tell holders you want to buy their asset.</p>
+                    <a href="/marketplace-secondary" class="myt__empty-cta">Go to Resale Market</a>
                 </div>
             </td></tr>`;
             return;
@@ -110,17 +137,30 @@
     function renderTradeHistory() {
         const tbody = document.getElementById('trade-history-body');
         const summary = document.getElementById('trade-summary');
-        
+        const countBadge = document.getElementById('tab-count-history');
+        const filterHeader = document.querySelector('#tab-trade-history .myt__table-header');
+
         if (!tbody) return;
 
+        // Tab badge = total trades across all time (not filter-specific)
+        if (countBadge) countBadge.innerText = MOCK_TRADES.length;
+
+        // Hide the filter/summary row when nothing to filter
+        if (filterHeader) filterHeader.style.display = MOCK_TRADES.length === 0 ? 'none' : '';
+
+        const trades = getFilteredTrades();
+
         if (summary) {
-            const netPl = MOCK_TRADES.reduce((sum, t) => sum + (t.pl || 0), 0);
+            const netPl = trades.reduce((sum, t) => sum + (t.pl || 0), 0);
             const cls = netPl >= 0 ? 'myt__pnl--positive' : 'myt__pnl--negative';
             const prefix = netPl >= 0 ? '+' : '';
             summary.innerHTML = `Net P/L: <strong class="myt__pnl ${cls}">${prefix}${formatUSD(Math.abs(netPl))}</strong>`;
         }
 
-        if (MOCK_TRADES.length === 0) {
+        if (trades.length === 0) {
+            const isFiltered = MOCK_TRADES.length > 0;
+            const title = isFiltered ? 'No matching trades' : 'No trade history';
+            const desc = isFiltered ? 'Adjust the filters to see more results.' : 'Completed trades appear here.';
             tbody.innerHTML = `<tr><td colspan="9" style="padding: 0;">
                 <div class="ds-table-empty">
                     <div class="ds-table-empty__icon" style="color: #667085;">
@@ -128,14 +168,14 @@
                             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
                         </svg>
                     </div>
-                    <h3 class="ds-table-empty__title">No trade history</h3>
-                    <p class="ds-table-empty__description">Your completed trades will appear here.</p>
+                    <h3 class="ds-table-empty__title">${title}</h3>
+                    <p class="ds-table-empty__description">${desc}</p>
                 </div>
             </td></tr>`;
             return;
         }
 
-        tbody.innerHTML = MOCK_TRADES.map(t => {
+        tbody.innerHTML = trades.map(t => {
             let plHtml = '—';
             if (t.pl !== null) {
                 const cls = t.pl >= 0 ? 'myt__pnl--positive' : 'myt__pnl--negative';
@@ -178,7 +218,8 @@
                         </svg>
                     </div>
                     <h3 class="ds-table-empty__title">No assets</h3>
-                    <p class="ds-table-empty__description">You don't own any assets yet.</p>
+                    <p class="ds-table-empty__description">Invest in a property to start your portfolio.</p>
+                    <a href="/marketplace" class="myt__empty-cta">Browse Marketplace</a>
                 </div>
             </td></tr>`;
             return;
@@ -240,6 +281,22 @@
             });
         });
 
+        // Trade History filter change handlers — re-render with new filter
+        const assetSel = document.getElementById('trade-filter-asset');
+        const periodSel = document.getElementById('trade-filter-period');
+        if (assetSel) {
+            assetSel.addEventListener('change', (e) => {
+                TRADE_FILTER_ASSET = e.target.value;
+                renderTradeHistory();
+            });
+        }
+        if (periodSel) {
+            periodSel.addEventListener('change', (e) => {
+                TRADE_FILTER_PERIOD = e.target.value;
+                renderTradeHistory();
+            });
+        }
+
         // Make the summary cards clickable (acting as tabs)
         document.querySelectorAll('.sub-stat').forEach(statCard => {
             statCard.addEventListener('click', () => {
@@ -266,15 +323,24 @@
         const closeBtn = document.getElementById('tax-modal-close');
         const downloadBtn = document.getElementById('tax-download-btn');
 
+        const openModal = () => {
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+        };
+        const closeModal = () => {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        };
+
         if (btn && modal) {
-            btn.addEventListener('click', () => { modal.style.display = 'flex'; });
+            btn.addEventListener('click', openModal);
         }
         if (closeBtn && modal) {
-            closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+            closeBtn.addEventListener('click', closeModal);
         }
         if (modal) {
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.style.display = 'none';
+                if (e.target === modal) closeModal();
             });
         }
         if (downloadBtn) {
@@ -292,7 +358,7 @@
                         downloadBtn.innerHTML = '✓ Report Opened';
                         downloadBtn.style.background = '#16a34a';
                         setTimeout(() => {
-                            if (modal) modal.style.display = 'none';
+                            if (modal) closeModal();
                             downloadBtn.innerHTML = `
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                 Download Report
@@ -351,18 +417,17 @@
         const spanAssets = document.getElementById('summary-assets');
         const spanInterests = document.getElementById('summary-interests');
 
-        if (spanOpen) {
-            spanOpen.innerText = MOCK_ORDERS.filter(o => ['open', 'partially_filled', 'pending_review'].includes(o.status)).length;
-        }
-        if (spanTrades) {
-            spanTrades.innerText = MOCK_TRADES.length;
-        }
-        if (spanAssets) {
-            spanAssets.innerText = PORTFOLIO_ASSETS.length;
-        }
-        if (spanInterests) {
-            spanInterests.innerText = MOCK_INTERESTS.length;
-        }
+        const openCount = MOCK_ORDERS.filter(o => ['open', 'partially_filled', 'pending_review'].includes(o.status)).length;
+
+        if (spanOpen) spanOpen.innerText = openCount;
+        if (spanTrades) spanTrades.innerText = MOCK_TRADES.length;
+        if (spanAssets) spanAssets.innerText = PORTFOLIO_ASSETS.length;
+        if (spanInterests) spanInterests.innerText = MOCK_INTERESTS.length;
+
+        // Hide stat row when user has zero activity — promotes empty-state CTA below
+        const total = openCount + MOCK_TRADES.length + PORTFOLIO_ASSETS.length + MOCK_INTERESTS.length;
+        const row = document.querySelector('.myt-stats-row');
+        if (row) row.style.display = total === 0 ? 'none' : '';
     }
 
     // ── Fetching Data ──────────────────────────────────────────
@@ -390,6 +455,7 @@
 
             renderOpenOrders();
             renderBuyInterests();
+            populateAssetFilter();
             renderTradeHistory();
 
             renderMyAssets();

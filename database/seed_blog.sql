@@ -2,8 +2,8 @@
 INSERT INTO blog_authors (id, name, slug, bio, avatar_url, twitter_handle, linkedin_url, expertise)
 VALUES (
     '11111111-1111-1111-1111-111111111111',
-    'Martin Fischer',
-    'martin-fischer',
+    'Martin Freiwald',
+    'martin-freiwald',
     'Co-founder of POOOL. Passionate about real estate tokenization and fractional investing.',
     '/images/martin_pfp.png',
     'poool_finance',
