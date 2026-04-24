@@ -678,7 +678,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         // Shared assets for landing-v2
         .nest_service("/static", ServeDir::new("../frontend/platform/static"))
-        .nest_service("/images", ServeDir::new("../frontend/platform/images"))
+        .nest_service(
+            "/images",
+            ServeDir::new("../frontend/platform/static/images/seed")
+                .fallback(ServeDir::new("../frontend/platform/static/images/ui")),
+        )
         .route(
             "/platform",
             get(|| async { Redirect::to("https://platform.poool.app/") }),
@@ -770,7 +774,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest_service("/id", ServeDir::new("../frontend/www/id"))
         .nest_service("/fonts", ServeDir::new("../frontend/www/fonts"))
         .nest_service("/static", ServeDir::new("../frontend/platform/static"))
-        .nest_service("/images", ServeDir::new("../frontend/platform/images"))
+        .nest_service(
+            "/images",
+            ServeDir::new("../frontend/platform/static/images/seed")
+                .fallback(ServeDir::new("../frontend/platform/static/images/ui")),
+        )
         .nest_service("/uploads", ServeDir::new("../uploads"))
         .route("/health", get(handle_health))
         .fallback_service(
