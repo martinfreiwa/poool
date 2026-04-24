@@ -88,33 +88,33 @@ This document is the human-readable view of `docs/page-review-tracker.yml`. It t
 - [ ] no obvious visual regressions
 
 ## Audit Snapshot
-Generated: 2026-04-24
+Generated: 2026-04-25
 
 | Metric | Count |
 | --- | --- |
-| Discovered page routes | 203 |
-| Discovered page templates | 130 |
+| Discovered page routes | 226 |
+| Discovered page templates | 134 |
 | Discovered supporting templates | 48 |
-| Missing tracker routes | 0 |
-| Missing page template entries | 0 |
+| Missing tracker routes | 19 |
+| Missing page template entries | 4 |
 | Missing supporting template entries | 0 |
 | Tracker references to missing files | 0 |
 | Pages with stale reviews | 0 |
-| Pages with not-reviewed categories | 136 |
-| Pages with last_tested_date set | 16 |
+| Pages with not-reviewed categories | 134 |
+| Pages with last_tested_date set | 18 |
 
 ## Coverage Summary
 | Dimension | Counts |
 | --- | --- |
 | Business risk | critical: 16, high: 76, low: 36, medium: 25 |
 | Access level | admin: 65, authenticated user: 49, developer: 13, public: 23, unknown or needs verification: 2, verified investor: 1 |
-| Open issues | 3 |
+| Open issues | 18 |
 
 ## Page Inventory
 | ID | Name | URL | Last Tested | Access | Sensitivity | Risk | Review Statuses | Stale | Issues |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| admin.admins | Admins | /admin/admins | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.affiliate-applications | Affiliate Applications | /admin/affiliate-applications | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| admin.admins | Admins | /admin/admins | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 7 |
+| admin.affiliate-applications | Affiliate Applications | /admin/affiliate-applications | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: issues found, e2e: needs recheck, functional: issues found | - | 8 |
 | admin.affiliate-compliance-route | Affiliate compliance route | /admin/affiliate-compliance | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | admin.affiliate-finance | Affiliate Finance | /admin/affiliate-finance | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | admin.affiliate-fraud-route | Affiliate fraud route | /admin/affiliate-fraud | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
@@ -184,7 +184,7 @@ Generated: 2026-04-24
 | assets.commodity | Commodity detail | /commodity | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | assets.marketplace | Marketplace | /marketplace | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | assets.marketplace-tab | Marketplace tab fragment | /marketplace/tab | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| assets.property | Property detail | /property | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| assets.property | Property detail | /property | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: needs recheck | - | 1 |
 | assets.property-public | Public property detail | /p/:slug | - | public | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | auth.auth-2fa | 2FA verify | /auth/2fa | - | authenticated user | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | auth.auth-2fa-setup | 2FA setup | /auth/2fa/setup | - | authenticated user | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
@@ -199,8 +199,8 @@ Generated: 2026-04-24
 | blog.article | Blog article | /blog/:slug | - | public | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | blog.category | Blog category | /blog/category/:slug | - | public | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | blog.index | Blog index | /blog | - | public | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| cart.cart | Cart | /cart | - | authenticated user | financial data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| community.community | Community | /community | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| cart.cart | Cart | /cart | - | authenticated user | financial data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: fixed | - | 1 |
+| community.community | Community | /community | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: needs recheck | - | 1 |
 | community.partial-announcements | Community announcements partial | /community/partials/announcements/list | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | community.partial-feed | Community feed partial | /community/partials/feed/list | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | community.partial-tab | Community tab partial | /community/partials/:tab | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
@@ -220,27 +220,27 @@ Generated: 2026-04-24
 | developer.submissions | Developer submissions | /developer/submissions | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | developer.support | Developer support | /developer/support | - | developer | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | kyc.identity-verification | Identity verification | /kyc | - | authenticated user | KYC/identity data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| leaderboard.leaderboard | Leaderboard | /leaderboard | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| leaderboard.leaderboard | Leaderboard | /leaderboard | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: fixed | - | 1 |
 | legal.cookies | Cookies policy | /cookies | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | legal.currency | Currency policy | /currency-policy | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | legal.privacy | Privacy policy | /privacy-policy | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | legal.terms | Terms | /terms | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | marketplace.my-trading | My trading | /my-trading | 2026-04-24 | authenticated user | financial data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
-| marketplace.secondary | Secondary marketplace | /marketplace-secondary | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| marketplace.secondary | Secondary marketplace | /marketplace-secondary | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: issues found | - | 1 |
 | marketplace.tax-report | Tax report | /tax-report | 2026-04-24 | authenticated user | financial data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
 | marketplace.trade-success | Trade success | /trade-success | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | marketplace.trading-v2 | Marketplace trading V2 | /marketplace-trading-v2 | 2026-04-24 | authenticated user | financial data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
-| marketplace.trading-v3 | Marketplace trading V3 | /marketplace-trading-v3 | 2026-04-24 | authenticated user | financial data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
+| marketplace.trading-v3 | Marketplace trading V3 | /marketplace-trading-v3 | 2026-04-24 | authenticated user | financial data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 2 |
 | payments.checkout | Checkout | /checkout | 2026-04-24 | verified investor | financial data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
-| payments.in-progress | Payment in progress | /payment-in-progress | - | authenticated user | financial data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| payments.success | Payment success | /payment-success | - | authenticated user | financial data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| payments.in-progress | Payment in progress | /payment-in-progress | - | authenticated user | financial data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: fixed | - | 1 |
+| payments.success | Payment success | /payment-success | - | authenticated user | financial data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: fixed | - | 1 |
 | platform.profile | Profile | /profile | - | authenticated user | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | platform.root | Platform root redirect | / | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | platform.welcome | Welcome | /welcome | - | authenticated user | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | portfolio.portfolio | Portfolio | /portfolio | - | authenticated user | financial data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | portfolio.transactions | Transactions | /transactions | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | rewards.referral | Referral landing | /rewards/:code | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| rewards.rewards | Rewards | /rewards | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| rewards.rewards | Rewards | /rewards | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: needs recheck | - | 2 |
 | rewards.tier | Tier redirect | /tier | - | authenticated user | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | rewards.v2 | Rewards V2 | /rewards-v2 | - | authenticated user | public | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | settings.account-deletion | Account deletion | /account-deletion | - | authenticated user | personal data | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
@@ -262,14 +262,29 @@ Generated: 2026-04-24
 | static.maintenance | Maintenance | /maintenance.html | - | public | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | static.poool-app-home | Poool App Home | /poool_app_home.html | - | public | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | static.poool-app-ssr | Poool App Ssr | /poool_app_ssr.html | - | public | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| support.support | Support | /support | - | authenticated user | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| wallet.wallet | Wallet | /wallet | 2026-04-24 | authenticated user | financial data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
+| support.support | Support | /support | - | authenticated user | personal data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: issues found | - | 1 |
+| wallet.wallet | Wallet | /wallet | 2026-04-24 | authenticated user | financial data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
 | www.home | WWW landing page | / | - | public | public | low | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | www.platform-redirect | WWW platform redirect | /platform | - | public | public | low | security: not applicable, accessibility: not applicable, e2e: not applicable, functional: not applicable | - | 0 |
 
 ## Open Issues
 | Page | Issue ID | Category | Severity | Status | Title | Owner |
 | --- | --- | --- | --- | --- | --- | --- |
+| admin.admins | PAGE-ISSUE-0017 | functional_review | high | open | Admin invitations cannot be accepted end-to-end | unassigned |
+| admin.admins | PAGE-ISSUE-0018 | functional_review | high | open | Invite role dropdown can send roles rejected by backend | unassigned |
+| admin.admins | PAGE-ISSUE-0019 | security_review | high | open | Admin status update lacks fine-grained authorization and session revocation | unassigned |
+| admin.admins | PAGE-ISSUE-0020 | security_review | high | open | Session revocation lacks fine-grained authorization and protected-target guards | unassigned |
+| admin.admins | PAGE-ISSUE-0021 | security_review | high | open | Force password reset can report success after ignored DB failures | unassigned |
+| admin.admins | PAGE-ISSUE-0022 | security_review | medium | open | Invitation revoke/resend lack durable audit and state-transition handling | unassigned |
+| admin.admins | PAGE-ISSUE-0023 | security_review | medium | open | Admin directory staff PII and security posture reads are not audit logged | unassigned |
+| admin.affiliate-applications | PAGE-ISSUE-0024 | functional_review | high | open | Approve modal inputs are ignored by backend approval handler | unassigned |
+| admin.affiliate-applications | PAGE-ISSUE-0025 | functional_review | high | open | Pending applications API can silently return empty on DB error | unassigned |
+| admin.affiliate-applications | PAGE-ISSUE-0026 | functional_review | medium | open | Details modal and KPI cards show incomplete/placeholder data | unassigned |
+| admin.affiliate-applications | PAGE-ISSUE-0027 | security_review | medium | open | Inline onclick and HTML string rendering increase XSS/injection surface | unassigned |
+| admin.affiliate-applications | PAGE-ISSUE-0028 | accessibility_review | medium | open | Modals lack baseline dialog accessibility and keyboard handling | unassigned |
+| admin.affiliate-applications | PAGE-ISSUE-0029 | functional_review | low | open | Unauthenticated admin page GET returns JSON 401 instead of redirecting to login | unassigned |
+| admin.affiliate-applications | PAGE-ISSUE-0030 | security_review | high | open | Affiliate approval/rejection APIs lack fine-grained permission checks | unassigned |
+| admin.affiliate-applications | PAGE-ISSUE-0031 | security_review | medium | open | Reject flow is not transactional with audit logging | unassigned |
 | admin.blockchain-treasury | PAGE-ISSUE-0001 | security_review | critical | open | Emergency pause/unpause sends an empty CSRF header |  |
 | admin.marketplace.reconciliation | PAGE-ISSUE-0002 | functional_review | high | open | Reconciliation page displays mock mismatch data when the API fails |  |
 | marketplace.tax-report | PAGE-ISSUE-0003 | functional_review | low | open | Tax report route requires format despite route comment and path contract |  |

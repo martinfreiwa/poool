@@ -1536,6 +1536,7 @@ body.kyc-hidden .wallet-main {
 
 /* Hero */
 .wallet-empty__hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   gap: 32px;
@@ -1548,6 +1549,19 @@ body.kyc-hidden .wallet-main {
     #FFFFFF;
   border: 1px solid #E5E7EB;
   box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+  overflow: hidden;
+}
+
+.wallet-empty__hero::after {
+  content: "";
+  position: absolute;
+  right: 26px;
+  bottom: 20px;
+  width: min(340px, 28vw);
+  height: 112px;
+  background: url("/static/images/logos/poool-text-logo.svg") center / contain no-repeat;
+  opacity: 0.032;
+  pointer-events: none;
 }
 
 .wallet-empty__hero-copy {
@@ -1555,6 +1569,8 @@ body.kyc-hidden .wallet-main {
   flex-direction: column;
   gap: 14px;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .wallet-empty__eyebrow {
@@ -1629,6 +1645,17 @@ body.kyc-hidden .wallet-main {
   width: 100%;
   max-width: 360px;
   justify-self: end;
+  position: relative;
+  z-index: 1;
+}
+.wallet-empty__art-logo {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 82px;
+  height: auto;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.75));
+  opacity: 0.94;
 }
 .wallet-empty__hero-art svg {
   width: 100%;
@@ -1863,4 +1890,3 @@ body.kyc-hidden .wallet-main {
   max-width: 320px;
   margin: 0;
 }
-

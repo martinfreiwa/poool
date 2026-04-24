@@ -509,16 +509,18 @@
             </svg>
             <span>{{ (asset.image_urls | default([])) | length }} photos</span>
           </button>
-          <div class="mobile-btn-divider"></div>
-          <button class="mobile-gallery-btn" onclick="openVirtualTour()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L3 7v10l9 5l9-5V7l-9-5Z" stroke="#2563eb" stroke-width="1.8" stroke-linejoin="round"/>
-              <path d="M12 22V12" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
-              <path d="M21 7l-9 5l-9-5" stroke="#2563eb" stroke-width="1.8" stroke-linejoin="round"/>
-              <path d="M3 17l9-5l9 5" stroke="#2563eb" stroke-width="1.5" stroke-linejoin="round" opacity="0.35"/>
-            </svg>
-            <span>Virtual tour</span>
-          </button>
+          {% if asset.youtube_video_id %}
+            <div class="mobile-btn-divider"></div>
+            <button class="mobile-gallery-btn" onclick="openVirtualTour()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L3 7v10l9 5l9-5V7l-9-5Z" stroke="#2563eb" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M12 22V12" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M21 7l-9 5l-9-5" stroke="#2563eb" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M3 17l9-5l9 5" stroke="#2563eb" stroke-width="1.5" stroke-linejoin="round" opacity="0.35"/>
+              </svg>
+              <span>Virtual tour</span>
+            </button>
+          {% endif %}
         </div>
         <div class="mobile-card-content">
           <div class="mobile-card-heading">
@@ -608,11 +610,8 @@
     window.POOOL_FEE_DISPLAY = "{{ fee_pct_display | default('5') }}";
     
     function openVirtualTour() {
-      var toast = document.createElement('div');
-      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--page-title-color);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
-      toast.textContent = 'Virtual tour coming soon!';
-      document.body.appendChild(toast);
-      setTimeout(function() { toast.remove(); }, 3000);
+      var videoButton = document.getElementById('video-play-button');
+      if (videoButton) videoButton.click();
     }
 
     /* Dynamically position Similar Properties below the main card */

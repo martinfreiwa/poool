@@ -218,6 +218,16 @@ pub async fn add_to_cart(
         }
     };
 
+    if _tokens_available <= 0 {
+        tracing::warn!(
+            user_id = %user.id,
+            asset_id = %asset_id,
+            "Blocked add-to-cart: asset is sold out"
+        );
+        let _ = tx.rollback().await;
+        return Redirect::to("/cart?error=sold_out").into_response();
+    }
+
     // 4. Calculate tokens to buy (capped at available)
     let tokens_to_buy = if token_price_cents > 0 {
         let desired = std::cmp::max(1, (amount_cents / token_price_cents) as i32);
@@ -225,6 +235,17 @@ pub async fn add_to_cart(
     } else {
         1
     };
+
+    if tokens_to_buy <= 0 {
+        tracing::warn!(
+            user_id = %user.id,
+            asset_id = %asset_id,
+            tokens_available = _tokens_available,
+            "Blocked add-to-cart: calculated non-positive token quantity"
+        );
+        let _ = tx.rollback().await;
+        return Redirect::to("/cart?error=sold_out").into_response();
+    }
 
     // 5. Upsert into cart_items (UNIQUE on user_id + asset_id)
     let result = sqlx::query(

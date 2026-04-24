@@ -443,3 +443,14 @@ BASE_URL=https://platform.poool.app pytest tests/e2e/ -m smoke
 # View Playwright traces (after failure)
 npx playwright show-trace tests/e2e/traces/FAIL_*.zip
 ```
+
+## 7. Audit-Driven Coverage Gaps (Investor Dashboard, 2026-04-24)
+
+| Flow | Missing Coverage | Related Finding |
+|---|---|---|
+| `/payment-in-progress` + `/api/deposits/:deposit_id/status` | Paid deposit with `order_id` should redirect to `/payment-success?order_id=...` without console/network errors. | PAGE-ISSUE-0011 |
+| `/payment-success?order_id=...` | Non-USD order-id deep link should render the same currency fields as `/api/orders/latest`. | PAGE-ISSUE-0012 |
+| `/marketplace-secondary` buy-interest modal | Submit path should assert a persisted order/offer/notification or a visible API failure state. | PAGE-ISSUE-0006 |
+| `/property/:slug` → `/cart` | Sold-out asset add-to-cart should show a deterministic sold-out error and must not insert zero-quantity cart rows. | PAGE-ISSUE-0014 |
+| `/support` ticket form | Attachment upload failure, GCS-disabled, invalid MIME, and successful attachment visibility should be covered. | PAGE-ISSUE-0015 |
+| `/rewards` commissions table | Export button should either download a real PDF/CSV or be absent/disabled until implemented. | PAGE-ISSUE-0016 |

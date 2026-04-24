@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", function () {
             window.location.href = finalUrl.pathname + finalUrl.search;
           } else {
             // Successfully added to cart, go to cart page
-            window.location.href = "/cart";
+            window.location.href = finalUrl.pathname + finalUrl.search;
           }
         })
         .catch((error) => {

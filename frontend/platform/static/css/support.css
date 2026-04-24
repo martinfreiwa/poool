@@ -18,8 +18,43 @@
 .support-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
     width: 100%;
+}
+
+.support-overview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.support-overview-card {
+    background: #ffffff;
+    border: 1px solid var(--support-border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.support-overview-card__label {
+    color: var(--support-muted);
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.support-overview-card strong {
+    color: var(--page-title-color);
+    font-size: 22px;
+    line-height: 28px;
+}
+
+.support-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    align-items: start;
+    gap: 20px;
 }
 
 .dashboard-main {
@@ -138,6 +173,32 @@
     padding: 24px;
 }
 
+.support-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.support-card-header h2 {
+    margin-bottom: 4px;
+}
+
+.support-card-header p {
+    color: var(--support-muted);
+    font-size: 13px;
+    line-height: 18px;
+    margin: 0;
+}
+
+.support-draft-status {
+    color: var(--support-muted);
+    font-size: 12px;
+    line-height: 18px;
+    white-space: nowrap;
+}
+
 #submit-ticket,
 #your-tickets,
 #faq {
@@ -160,9 +221,16 @@
     margin: 0 0 20px 0;
 }
 
-/* FAQ section gets subtle background */
+.developer-support-main .support-form-card {
+    padding: 24px;
+}
+
+.support-card-header h2 {
+    margin: 0 0 4px 0;
+}
+
 .support-faq-card {
-    background: #fafbfc;
+    background: #ffffff;
 }
 
 /* ─── Form Elements ────────────────────────────── */
@@ -171,6 +239,25 @@
     flex-direction: column;
     gap: 6px;
     margin-bottom: 16px;
+}
+
+.support-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+}
+
+.support-form-grid .support-form-group {
+    margin-bottom: 16px;
+}
+
+.support-field-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--support-muted);
+    font-size: 12px;
+    line-height: 18px;
 }
 
 .support-form-card form > .support-form-group:last-of-type {
@@ -230,8 +317,72 @@
 /* ─── Form Footer (submit button row) ─────────── */
 .support-form-footer {
     display: flex;
+    align-items: center;
+    gap: 12px;
     justify-content: flex-end;
     margin-top: 8px;
+}
+
+.support-clear-draft-btn {
+    min-height: 40px;
+}
+
+.support-help-panel {
+    position: sticky;
+    top: 96px;
+    background: transparent;
+    border: 0;
+    border-radius: 12px;
+    padding: 4px 0 0;
+}
+
+body#support-body {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.support-help-panel h3 {
+    color: var(--page-title-color);
+    font-size: 13px;
+    line-height: 20px;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.support-help-panel__note {
+    color: var(--support-muted);
+    font-size: 13px;
+    line-height: 20px;
+    margin: 0 0 12px;
+}
+
+.support-sla-list {
+    border: 1px solid var(--support-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.support-sla-list div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--support-divider);
+    font-size: 13px;
+}
+
+.support-sla-list div:last-child {
+    border-bottom: 0;
+}
+
+.support-sla-list span {
+    color: var(--support-muted);
+}
+
+.support-sla-list strong {
+    color: var(--page-title-color);
 }
 
 /* ─── Priority Label ──────────────────────────── */
@@ -387,33 +538,36 @@
 /* ─── FAQ Category Tabs ────────────────────────── */
 .faq-category-tabs {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
     margin-bottom: 16px;
 }
 
 .faq-cat-tab {
-    padding: 5px 14px;
+    padding: 7px 16px;
     font-size: 12px;
     font-weight: 600;
-    border-radius: 20px;
-    border: 1px solid var(--table-border-color);
-    background: transparent;
-    color: #717680;
+    line-height: 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 255, 0.18);
+    background: #ffffff;
+    color: var(--primary-color);
     cursor: pointer;
     font-family: var(--font-family, "TT Norms Pro", sans-serif);
-    transition: all 0.15s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .faq-cat-tab:hover {
     border-color: var(--primary-color);
+    background: rgba(3, 255, 136, 0.12);
     color: var(--primary-color);
 }
 
 .faq-cat-tab.active {
     background: var(--primary-color);
     border-color: var(--primary-color);
-    color: #ffffff;
+    color: var(--secondary-color);
+    box-shadow: inset 0 0 0 1px rgba(10, 13, 18, 0.16);
 }
 
 /* ─── FAQ Search ───────────────────────────────── */
@@ -520,6 +674,9 @@
 }
 
 .support-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     padding: 6px 16px;
     font-size: 13px;
     font-weight: 500;
@@ -530,6 +687,21 @@
     cursor: pointer;
     font-family: var(--font-family, "TT Norms Pro", sans-serif);
     transition: all 0.15s;
+}
+
+.support-tab span {
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #f2f4f7;
+    color: #667085;
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.support-tab.active span {
+    background: #ffffff;
+    color: var(--primary-color);
 }
 
 .support-tab:hover {
@@ -863,7 +1035,49 @@
 }
 
 /* ─── Responsive ──────────────────────────────── */
+@media (max-width: 1180px) {
+    .developer-support-main .support-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .developer-support-main .support-help-panel {
+        position: static;
+        padding-top: 0;
+    }
+}
+
 @media (max-width: 768px) {
+    .support-overview {
+        grid-template-columns: 1fr;
+    }
+
+    .support-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .support-help-panel {
+        position: static;
+    }
+
+    .support-form-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .support-card-header {
+        flex-direction: column;
+    }
+
+    .support-form-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .support-clear-draft-btn,
+    .support-submit-btn {
+        width: 100%;
+    }
+
     .support-stats {
         flex-direction: column;
     }
@@ -911,4 +1125,53 @@
     .drop-zone {
         padding: 16px;
     }
+}
+
+.support-faq-disclosure {
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.support-faq-disclosure[open] {
+    padding-bottom: 20px !important;
+}
+
+.support-faq-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 24px;
+    color: var(--page-title-color);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    list-style: none;
+}
+
+.support-faq-summary::-webkit-details-marker {
+    display: none;
+}
+
+.support-faq-summary::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    margin-left: auto;
+    opacity: 0.7;
+    transition: transform 0.16s ease;
+}
+
+.support-faq-disclosure[open] .support-faq-summary::after {
+    transform: rotate(225deg);
+}
+
+.support-faq-disclosure #faq-search,
+.support-faq-disclosure #faq-list {
+    margin-left: 24px;
+    margin-right: 24px;
+    width: calc(100% - 48px);
 }

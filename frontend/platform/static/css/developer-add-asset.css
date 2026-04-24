@@ -7,21 +7,21 @@
    1. Asset Type Header
    =========================== */
 .asset-type-header {
-  text-align: center;
+  text-align: left;
   margin-bottom: 24px;
   width: 100%;
-  max-width: 1096px;
+  max-width: 760px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .asset-type-header__title {
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
   font-weight: 700;
-  font-size: 32px;
-  line-height: 40px;
-  letter-spacing: -0.02em;
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: 0;
   color: var(--page-title-color, #181D27);
   margin: 0 0 8px 0;
 }
@@ -40,10 +40,10 @@
    =========================== */
 .asset-type-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 14px;
   width: 100%;
-  max-width: 1096px;
+  max-width: 760px;
 }
 
 /* ===========================
@@ -52,7 +52,7 @@
 .asset-type-card {
   box-sizing: border-box;
   width: 100%;
-  min-height: 190px;
+  min-height: 0;
   background: #ffffff;
   border: 1px solid var(--table-border-color);
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
@@ -64,18 +64,23 @@
 }
 
 .asset-type-card:hover {
-  box-shadow:
-    0px 4px 6px -1px rgba(10, 13, 18, 0.1),
-    0px 2px 4px -2px rgba(10, 13, 18, 0.06);
-  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(10, 13, 18, 0.06);
+  transform: none;
 }
 
 .asset-type-card.selected,
 .asset-type-card.js-selected {
   border: 1px solid var(--primary-color);
-  box-shadow:
-    0px 4px 6px -1px rgba(10, 13, 18, 0.1),
-    0px 2px 4px -2px rgba(10, 13, 18, 0.06);
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08), 0px 1px 2px rgba(10, 13, 18, 0.05);
+}
+
+.asset-type-card--primary {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  min-height: 116px;
+  padding: 20px;
 }
 
 /* ===========================
@@ -83,11 +88,14 @@
    =========================== */
 .asset-type-image {
   position: relative;
-  width: 100%;
-  height: 100px;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: rgba(0, 0, 255, 0.04) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .asset-type-glass {
@@ -96,8 +104,8 @@
   height: 100%;
   left: 0;
   top: 0;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(2px);
+  background: transparent;
+  backdrop-filter: none;
 }
 
 /* ===========================
@@ -105,8 +113,8 @@
    =========================== */
 .asset-type-icon-wrapper {
   position: absolute;
-  width: 35px;
-  height: 35px;
+  width: 28px;
+  height: 28px;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
@@ -116,19 +124,32 @@
 }
 
 .asset-type-icon {
-  width: 35px;
-  height: 35px;
+  width: 28px;
+  height: 28px;
+}
+
+.asset-type-icon path,
+.asset-type-icon circle {
+  stroke: currentColor;
 }
 
 /* ===========================
    5. Card Content
    =========================== */
 .asset-type-content {
-  padding: 12px 12px 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
+  min-width: 0;
+}
+
+.asset-type-eyebrow {
+  color: var(--text-secondary, #535862);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
 }
 
 .asset-type-title {
@@ -136,9 +157,9 @@
   margin: 0;
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
   font-weight: 700;
-  font-size: 20px;
-  line-height: 1.2;
-  text-align: center;
+  font-size: 18px;
+  line-height: 26px;
+  text-align: left;
   color: var(--primary-color);
 }
 
@@ -148,18 +169,39 @@
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
   font-weight: 400;
   font-size: 14px;
-  line-height: 1.35;
-  text-align: center;
-  color: #000000;
+  line-height: 20px;
+  text-align: left;
+  color: var(--text-secondary, #535862);
+}
+
+.asset-type-selected-indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(0, 0, 255, 0.08);
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asset-type-coming-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 2px;
 }
 
 /* ===========================
    6. Coming Soon State
    =========================== */
 .asset-type-card.coming-soon {
-  opacity: 0.45;
+  opacity: 1;
   pointer-events: none;
   cursor: default;
+  padding: 16px;
+  min-height: 132px;
+  background: #ffffff;
 }
 
 .asset-type-card.coming-soon:hover {
@@ -167,18 +209,69 @@
   box-shadow: 0px 1px 2px rgba(10, 13, 18, 0.05);
 }
 
+.asset-type-card.coming-soon .asset-type-image {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  color: #8b8fa3;
+}
+
+.asset-type-card.coming-soon .asset-type-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.asset-type-card.coming-soon .asset-type-title {
+  color: #717680;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.asset-type-card.coming-soon .asset-type-description {
+  font-size: 12px;
+  line-height: 18px;
+}
+
 .coming-soon-badge {
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 10;
-  padding: 2px 10px;
-  background: #414651;
+  padding: 2px 8px;
+  background: #f5f5f7;
   border-radius: 100px;
   font-family: var(--font-family, 'TT Norms Pro', sans-serif);
   font-weight: 600;
   font-size: 11px;
   line-height: 18px;
-  color: #ffffff;
-  letter-spacing: 0.02em;
+  color: #717680;
+  letter-spacing: 0;
+}
+
+.form-actions {
+  max-width: 760px !important;
+}
+
+@media (max-width: 1100px) {
+  .asset-type-coming-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .asset-type-card--primary {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .asset-type-selected-indicator {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+  }
+
+  .asset-type-coming-row {
+    grid-template-columns: 1fr;
+  }
 }

@@ -161,42 +161,149 @@ pages:
   data_sensitivity: admin-only data
   business_risk: high
   owner: unassigned
-  notes: ''
+  notes: '2026-04-25 page audit report: docs/page-audits/2026-04-25-admins.md. Read-only authenticated browser smoke passed;
+    admin invite and account-security mutations need backend fixes.'
   reviews:
     security_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: issues found
+      last_review_date: '2026-04-25'
+      reviewer: ChatGPT/Codex
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
+      evidence: Static review of frontend/platform/admin/admins.html, frontend/platform/static/js/admin-directory.js, backend/src/admin/access.rs,
+        backend/src/admin/users.rs, backend/src/admin/extractors.rs; runtime curl/browser smoke; DB table verification with
+        psql.
+      findings_summary: Invite acceptance route missing; invite role dropdown and backend allowlist mismatch; status/session/force-reset
+        endpoints need stricter authorization, self/protected-target guards, and stronger error handling/audit logging.
     accessibility_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: needs recheck
+      last_review_date: '2026-04-25'
+      reviewer: ChatGPT/Codex
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
+      evidence: Authenticated browser smoke for tabs, search, invite modal, and edit modal; no full mobile viewport pass.
+      findings_summary: Basic controls were visible and clickable in desktop browser smoke. Mobile viewport and full keyboard/modal
+        focus trap verification still need recheck.
     e2e_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: needs recheck
+      last_review_date: '2026-04-25'
+      reviewer: ChatGPT/Codex
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
+      evidence: Local cargo run server, authenticated browser smoke, unauthenticated curl checks, node --check. Mutating admin
+        actions intentionally not submitted.
+      findings_summary: Read-only UI path works, but invite acceptance and sensitive mutations are not verified end-to-end
+        and have backend blockers.
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: issues found
+      last_review_date: '2026-04-25'
+      reviewer: ChatGPT/Codex
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
-  last_tested_date: null
+      evidence: Browser DOM showed 163 admins loaded; search empty state, pending invitations tab, invite modal, and edit
+        modal worked without console errors. Backend/static review found incomplete invite lifecycle and mutation mismatches.
+      findings_summary: Admin Directory read workflow works; admin invitation and security-action workflows need fixes and
+        recheck.
+  issues:
+  - issue_id: PAGE-ISSUE-0017
+    review_category: functional_review
+    severity: high
+    title: Admin invitations cannot be accepted end-to-end
+    description: Invite and resend emails link to /auth/admin/accept-invite?token=..., but no backend route or handler is
+      registered for accepting admin invitations.
+    affected_page_route: /admin/admins
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admins.md.
+  - issue_id: PAGE-ISSUE-0018
+    review_category: functional_review
+    severity: high
+    title: Invite role dropdown can send roles rejected by backend
+    description: The frontend uses /api/admin/roles for invite role options, including admin/super_admin, while POST /api/admin/admins/invite
+      rejects roles outside ASSIGNABLE_ROLES before the elevated-role branch.
+    affected_page_route: /admin/admins
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admins.md.
+  - issue_id: PAGE-ISSUE-0019
+    review_category: security_review
+    severity: high
+    title: Admin status update lacks fine-grained authorization and session revocation
+    description: POST /api/admin/users/:user_id/status only requires AdminUser, allows broad targets, and does not revoke
+      sessions despite the UI confirmation text.
+    affected_page_route: /admin/admins
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admins.md.
+  - issue_id: PAGE-ISSUE-0020
+    review_category: security_review
+    severity: high
+    title: Session revocation lacks fine-grained authorization and protected-target guards
+    description: DELETE /api/admin/users/:user_id/sessions deletes target sessions with only AdminUser extraction and no admins.manage,
+      self, or protected-super-admin checks.
+    affected_page_route: /admin/admins
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admins.md.
+  - issue_id: PAGE-ISSUE-0021
+    review_category: security_review
+    severity: high
+    title: Force password reset can report success after ignored DB failures
+    description: POST /api/admin/users/:user_id/force-password-reset ignores the user_settings upsert, session deletion, and
+      audit insert results before committing, and lacks fine-grained authorization.
+    affected_page_route: /admin/admins
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admins.md.
+  - issue_id: PAGE-ISSUE-0022
+    review_category: security_review
+    severity: medium
+    title: Invitation revoke/resend lack durable audit and state-transition handling
+    description: Invitation revoke deletes the row rather than marking it revoked, resend ignores update/email failures, and
+      neither path writes complete audit records.
+    affected_page_route: /admin/admins
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admins.md.
+  - issue_id: PAGE-ISSUE-0023
+    review_category: security_review
+    severity: medium
+    title: Admin directory staff PII and security posture reads are not audit logged
+    description: GET /api/admin/admins returns emails, names, last IPs, session counts, and 2FA status without writing an
+      audit log.
+    affected_page_route: /admin/admins
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admins.md.
+  last_tested_date: '2026-04-25'
 - id: admin.affiliate-applications
   page_type: page
   name: Affiliate Applications
@@ -224,42 +331,160 @@ pages:
   data_sensitivity: admin-only data
   business_risk: high
   owner: unassigned
-  notes: ''
+  notes: '2026-04-25 page audit report: docs/page-audits/2026-04-25-admin-affiliate-applications.md. Approve modal payload
+    mismatches backend behavior; pending list API can silently return empty on DB error; details/KPIs incomplete.'
   reviews:
     security_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
-      reviewed_git_commit_sha: ''
+      status: issues found
+      last_review_date: '2026-04-25'
+      reviewer: ChatGPT/Codex
+      reviewed_git_commit_sha: 6165b1c8d8734648e5a6c07a7f1f7979f690acd9
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
+      evidence: Static review of frontend/platform/admin/affiliate-applications.html, frontend/platform/admin/js/admin-affiliate-applications.js,
+        backend/src/admin/rewards.rs, backend/src/admin/pages.rs, backend/src/admin/extractors.rs; runtime unauthenticated curl checks for auth/CSRF.
+      findings_summary: Approve endpoint ignores admin-supplied referral_code/commission_rate_bps; pending API swallows DB errors; inline handler
+        string rendering increases injection surface; missing fine-grained permission checks for affiliate management.
     accessibility_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
-      reviewed_git_commit_sha: ''
+      status: issues found
+      last_review_date: '2026-04-25'
+      reviewer: ChatGPT/Codex
+      reviewed_git_commit_sha: 6165b1c8d8734648e5a6c07a7f1f7979f690acd9
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
+      evidence: Static template review of details/approve/reject modals (no aria roles, no focus management, no ESC close).
+      findings_summary: Modals lack baseline dialog accessibility (role/aria, focus trap, keyboard close) and rely on click-only dismiss.
     e2e_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
-      reviewed_git_commit_sha: ''
+      status: needs recheck
+      last_review_date: '2026-04-25'
+      reviewer: ChatGPT/Codex
+      reviewed_git_commit_sha: 6165b1c8d8734648e5a6c07a7f1f7979f690acd9
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
+      evidence: Local cargo run server start; unauthenticated curl checks for page/API auth + CSRF behavior. No authenticated admin session available.
+      findings_summary: Auth and CSRF protections responded as expected in unauthenticated smoke, but approve/reject flows were not executed with an
+        admin session and must be rechecked after contract fixes.
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
-      reviewed_git_commit_sha: ''
+      status: issues found
+      last_review_date: '2026-04-25'
+      reviewer: ChatGPT/Codex
+      reviewed_git_commit_sha: 6165b1c8d8734648e5a6c07a7f1f7979f690acd9
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
-  last_tested_date: null
+      evidence: Static review of template + JS wiring; backend review of pending/approve/reject endpoints; runtime unauthenticated curl returned 401 for
+        pending API and 403 for CSRF-missing POSTs.
+      findings_summary: Page is wired, but approve modal contract is inconsistent with backend; KPIs and details modal fields are incomplete and require
+        backend payload alignment.
+  issues:
+  - issue_id: PAGE-ISSUE-0024
+    review_category: functional_review
+    severity: high
+    title: Approve modal inputs are ignored by backend approval handler
+    description: Frontend POSTs referral_code + commission_rate_bps from the approve modal, but backend api_admin_affiliate_approve does not accept a JSON
+      payload and instead hardcodes 50 bps and generates a random referral code, overriding operator intent.
+    affected_page_route: /admin/affiliate-applications
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admin-affiliate-applications.md.
+  - issue_id: PAGE-ISSUE-0025
+    review_category: functional_review
+    severity: high
+    title: Pending applications API can silently return empty on DB error
+    description: GET /api/admin/rewards/affiliates/pending uses unwrap_or_default on the DB query, returning 200 with an empty pending list when the query
+      fails; this can hide real pending applications from admins.
+    affected_page_route: /admin/affiliate-applications
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admin-affiliate-applications.md.
+  - issue_id: PAGE-ISSUE-0026
+    review_category: functional_review
+    severity: medium
+    title: Details modal and KPI cards show incomplete/placeholder data
+    description: The details modal expects user_name and tax_id, but /pending does not return them. KPI cards for active affiliates and rejected apps are
+      never updated by page JS and remain as '—'.
+    affected_page_route: /admin/affiliate-applications
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admin-affiliate-applications.md.
+  - issue_id: PAGE-ISSUE-0027
+    review_category: security_review
+    severity: medium
+    title: Inline onclick and HTML string rendering increase XSS/injection surface
+    description: The page renders pending rows with inline onclick handlers using app.id interpolation and uses innerHTML to render details URLs. While URLs
+      are escaped, the pattern is brittle and avoidable in an admin-only surface handling user-provided fields.
+    affected_page_route: /admin/affiliate-applications
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admin-affiliate-applications.md.
+  - issue_id: PAGE-ISSUE-0028
+    review_category: accessibility_review
+    severity: medium
+    title: Modals lack baseline dialog accessibility and keyboard handling
+    description: Details/approve/reject modals have no role/aria wiring, no focus management, and no ESC-to-close behavior, making keyboard-only navigation
+      unreliable.
+    affected_page_route: /admin/affiliate-applications
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admin-affiliate-applications.md.
+  - issue_id: PAGE-ISSUE-0029
+    review_category: functional_review
+    severity: low
+    title: Unauthenticated admin page GET returns JSON 401 instead of redirecting to login
+    description: Because AdminUser rejection is ApiError (JSON), GET /admin/affiliate-applications returns a JSON 401 response rather than redirecting to a
+      login page, which is confusing for normal browser navigation.
+    affected_page_route: /admin/affiliate-applications
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admin-affiliate-applications.md.
+  - issue_id: PAGE-ISSUE-0030
+    review_category: security_review
+    severity: high
+    title: Affiliate approval/rejection APIs lack fine-grained permission checks
+    description: Affiliate management endpoints (pending/approve/reject/suspend/payout/clawback) require only AdminUser (admin or super_admin role) and do
+      not enforce a dedicated permission like affiliates.manage, increasing blast radius if an admin account is compromised or roles are overly broad.
+    affected_page_route: /admin/affiliate-applications
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admin-affiliate-applications.md.
+  - issue_id: PAGE-ISSUE-0031
+    review_category: security_review
+    severity: medium
+    title: Reject flow is not transactional with audit logging
+    description: POST /api/admin/rewards/affiliates/:id/reject updates affiliates.status before writing to audit_logs and sending email; if audit insert fails,
+      the rejection has no durable compliance record. The status update and audit insert should be in one DB transaction.
+    affected_page_route: /admin/affiliate-applications
+    status: open
+    owner: unassigned
+    date_found: '2026-04-25'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: See docs/page-audits/2026-04-25-admin-affiliate-applications.md.
+  last_tested_date: '2026-04-25'
 - id: admin.affiliate-compliance-route
   page_type: page
   name: Affiliate compliance route
@@ -4584,14 +4809,34 @@ pages:
       evidence: ''
       findings_summary: ''
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: needs recheck
+      last_review_date: '2026-04-24'
+      reviewer: Codex low-risk-fixes
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
+      evidence: Static source review found property virtual-tour and document-tab controls that do not call an API or switch
+        real content.
+      findings_summary: Property detail has visible due-diligence controls that are placeholder/static only. Low-risk fix
+        applied; browser recheck still required.
+  issues:
+  - issue_id: PAGE-ISSUE-0013
+    review_category: functional_review
+    severity: low
+    title: Property virtual tour and document tabs are UI-only placeholders
+    description: The authenticated property detail page exposes a Virtual tour button and document tabs, but the virtual-tour
+      action only shows “Virtual tour coming soon!” and the document-tab handler only toggles active styling without switching
+      content or fetching documents. Users see controls that imply available diligence content, but no backend-backed behavior
+      exists.
+    affected_page_route: /property
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: 'Evidence: frontend/platform/property.html:610-615 creates a toast only; frontend/platform/static/js/property-detail.js:480-494
+      explicitly notes visual tab switching only. Fix: Virtual tour controls now render only when a real YouTube video exists
+      and trigger the existing video modal; inert document tabs were removed and unavailable document downloads are disabled.'
   last_tested_date: null
 - id: assets.property-public
   page_type: page
@@ -5354,14 +5599,35 @@ pages:
       evidence: ''
       findings_summary: ''
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: fixed
+      last_review_date: '2026-04-24'
+      reviewer: Codex low-risk-fixes
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
+      evidence: Static source review found add_to_cart could attempt a zero-token insert for sold-out assets. Fixed by adding
+        a server-side tokens_available/tokens_to_buy guard, preserving /cart?error=sold_out redirects, and rendering a cart
+        page alert.
+      findings_summary: Fixed. Sold-out assets are blocked before cart_items insert and produce a visible cart-page error.
+  issues:
+  - issue_id: PAGE-ISSUE-0014
+    review_category: functional_review
+    severity: medium
+    title: Sold-out asset add-to-cart redirects silently instead of returning a user error
+    description: When tokens_available is zero, add_to_cart computes tokens_to_buy as 0 and attempts to insert the cart item.
+      The cart_items table requires tokens_quantity > 0, so the insert fails and the handler redirects to /cart without a
+      specific sold-out response. The user receives no clear explanation that the asset is unavailable.
+    affected_page_route: /cart
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: local working tree
+    recheck_required: true
+    notes: 'Evidence: backend/src/cart/routes.rs:221-245 allows tokens_to_buy=0 when _tokens_available=0, while database/001_initial_schema.sql:331
+      has CHECK (tokens_quantity > 0); error path at routes.rs:247-250 redirects to /cart. Fix: backend/src/cart/routes.rs
+      now redirects sold-out/non-positive token adds to /cart?error=sold_out; cart.js renders a visible alert and property
+      detail add-to-cart scripts preserve the query string. Fix: Add-to-cart now blocks sold-out/non-positive token quantities
+      before insert and redirects with error=sold_out; the cart page already surfaces that error.'
   last_tested_date: null
 - id: community.community
   page_type: page
@@ -5408,14 +5674,33 @@ pages:
       evidence: ''
       findings_summary: ''
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: needs recheck
+      last_review_date: '2026-04-24'
+      reviewer: Codex low-risk-fixes
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
+      evidence: Static source review found community trending asset cards route to /assets/${asset.id}, but registered investor
+        asset detail routes are /property/:slug and /commodity/:slug.
+      findings_summary: Trending asset sidebar links can send authenticated users to an unregistered route. Low-risk fix applied;
+        browser recheck still required.
+  issues:
+  - issue_id: PAGE-ISSUE-0004
+    review_category: functional_review
+    severity: medium
+    title: Community trending asset cards link to unregistered asset route
+    description: The community trending-assets renderer builds onclick links to /assets/${asset.id}. The Axum route map does
+      not register /assets/:id for investor pages; asset detail routes are /property/:slug and /commodity/:slug. Clicking
+      a trending asset can therefore lead to a 404 or wrong destination.
+    affected_page_route: /community
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: 'Evidence: frontend/platform/static/js/community-feed.js builds /assets/${asset.id}; backend/src/assets/mod.rs
+      registers /property, /property/:slug, /commodity, and /commodity/:slug only. Fix: Community trending assets now return
+      detail_url/slug/type from the backend and the frontend routes to registered /property/:slug or /commodity/:slug paths.'
   last_tested_date: null
 - id: community.partial-announcements
   page_type: fragment
@@ -6436,14 +6721,33 @@ pages:
       evidence: ''
       findings_summary: ''
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: fixed
+      last_review_date: '2026-04-24'
+      reviewer: Codex investor-dashboard-audit
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
+      evidence: Static source review found leaderboard.js previously switched to generated demo rankings unless ?live was
+        present whenever /api/leaderboard reported fewer than 20 total participants. Fixed by making demo data opt-in via
+        ?demo only.
+      findings_summary: Fixed. Low-participation leaderboard datasets now render live API data by default.
+  issues:
+  - issue_id: PAGE-ISSUE-0005
+    review_category: functional_review
+    severity: medium
+    title: Leaderboard replaces small real datasets with demo rankings
+    description: The leaderboard fetches /api/leaderboard, but if total_participants is below 20 it renders getDemoData()
+      unless the URL includes ?live. This makes the default authenticated view static/mock-heavy in realistic early-stage
+      environments and can show users investors who do not exist.
+    affected_page_route: /leaderboard
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: local working tree
+    recheck_required: false
+    notes: 'Evidence: frontend/platform/static/js/leaderboard.js uses getDemoData(data) when !forceLive and total_participants
+      < 20; backend/src/leaderboard/routes.rs already returns paginated live rankings. Fix: demo rendering now requires explicit
+      ?demo.'
   last_tested_date: null
 - id: legal.cookies
   page_type: page
@@ -6764,14 +7068,34 @@ pages:
       evidence: ''
       findings_summary: ''
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: issues found
+      last_review_date: '2026-04-24'
+      reviewer: Codex investor-dashboard-audit
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
+      evidence: Static source review found the buy-interest modal submit handler only changes button text and closes the modal;
+        it never calls /api/marketplace/orders, /api/marketplace/p2p, or another persistence endpoint.
+      findings_summary: The secondary-market buy-interest CTA reports success without creating a backend order, offer, or
+        notification.
+  issues:
+  - issue_id: PAGE-ISSUE-0006
+    review_category: functional_review
+    severity: high
+    title: Secondary market buy-interest flow is fake success only
+    description: The Place Buy Interest modal displays "Interest Placed — Holders Notified" and closes after a timeout, but
+      the handler does not submit to any backend API. Users can believe holders were notified when no buy interest, P2P offer,
+      or notification was persisted.
+    affected_page_route: /marketplace-secondary
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: 'Evidence: frontend/platform/static/js/marketplace-secondary.js interest-submit-btn listener mutates UI only; backend
+      marketplace APIs expose /api/marketplace/orders and P2P routes, but this flow calls neither. Fix: The secondary buy-interest
+      modal now places a real buy limit order through /api/marketplace/orders and no longer shows a fake holders-notified
+      success state.'
   last_tested_date: null
 - id: marketplace.tax-report
   page_type: page
@@ -7011,17 +7335,50 @@ pages:
         errors. Static route smoke only; authenticated trading flow needs user-data browser recheck. Authenticated happy-path
         and failure-state E2E still require seeded credentials/test data.
     functional_review:
-      status: needs recheck
+      status: issues found
       last_review_date: '2026-04-24'
-      reviewer: Codex automation poool-page-reviews
+      reviewer: Codex investor-dashboard-audit
       reviewed_git_commit_sha: 3c10b5af0a24b4b817cf0c54bbb1bf28e4a27406
       next_review_due_date: '2026-05-24'
-      evidence: 'Heartbeat 2026-04-24: tracker audit, localhost Playwright unauthenticated route smoke, curl header checks,
-        and static source review. Browser Use plugin guidance used, but in-app browser backend was unavailable in this session.'
-      findings_summary: Unauthenticated Playwright smoke redirected /marketplace-trading-v3 to /auth/login with no console
-        errors. Static route smoke only; authenticated trading flow needs user-data browser recheck. Full authenticated primary-action
-        verification still requires seeded credentials/test data.
-  issues: []
+      evidence: 'Static source review found marketplace-trading.js and marketplace-trading-v3.js both bind #tv3-order-form
+        / #tv3-submit-btn behavior, and marketplace-trading-v3.js maps backend camelCase buyInterest as rawAsset.buy_interest.'
+      findings_summary: The V3 trading page has overlapping order-form controllers and a camelCase/snake_case mapping bug
+        that hides live buy-side interest from the UI.
+  issues:
+  - issue_id: PAGE-ISSUE-0007
+    review_category: functional_review
+    severity: high
+    title: Trading V3 binds two independent order form controllers
+    description: The V3 template loads both marketplace-trading.js and marketplace-trading-v3.js. The generic trading module
+      attaches submit handlers and orderbook/order controls, while the V3 module also attaches its own submit handler, confirmation
+      modal, and redirect behavior. This creates a high-risk double-submit/conflicting-state path on a financial order form.
+    affected_page_route: /marketplace-trading-v3
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: 'Evidence: frontend/platform/marketplace-trading-v3.html loads marketplace-trading and marketplace-trading-v3;
+      frontend/platform/static/js/marketplace-trading.js registers #tv3-order-form submit; frontend/platform/static/js/marketplace-trading-v3.js
+      also registers #tv3-order-form submit. Fix: marketplace-trading-v3.html no longer loads the generic marketplace-trading.js
+      controller or calls MarketTrading.init, leaving the V3 controller as the single owner of #tv3-order-form.'
+  - issue_id: PAGE-ISSUE-0008
+    review_category: functional_review
+    severity: medium
+    title: Trading V3 buy-interest mapping uses snake_case for camelCase API payload
+    description: The secondary-assets API serializes SecondaryAsset with serde rename_all = camelCase, so buy_interest becomes
+      buyInterest. marketplace-trading-v3.js reads rawAsset.buy_interest, leaving buyBids empty even when backend buy interest
+      exists.
+    affected_page_route: /marketplace-trading-v3
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: local working tree
+    recheck_required: false
+    notes: 'Evidence: backend/src/marketplace/models.rs SecondaryAsset uses #[serde(rename_all = "camelCase")]; frontend/platform/static/js/marketplace-trading-v3.js
+      checks rawAsset.buy_interest. Fix: V3 now reads rawAsset.buyInterest with a snake_case fallback.'
   last_tested_date: '2026-04-24'
 - id: payments.checkout
   page_type: page
@@ -7133,14 +7490,37 @@ pages:
       evidence: ''
       findings_summary: ''
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: fixed
+      last_review_date: '2026-04-24'
+      reviewer: Codex low-risk-fixes
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
+      evidence: Static source review found /payment-in-progress polling expects deposit.order_id, while backend/src/main.rs
+        selected a non-schema/incorrectly typed order_id field from deposit_requests. Fixed by returning an explicit nullable
+        text order_id field and casting created_at to text.
+      findings_summary: Fixed. Deposit status polling no longer fails while constructing the status payload when no order
+        link exists for wallet deposits.
+  issues:
+  - issue_id: PAGE-ISSUE-0011
+    review_category: functional_review
+    severity: high
+    title: Deposit status polling can break when a paid deposit has an order_id
+    description: The /payment-in-progress page polls /api/deposits/:deposit_id/status and redirects to /payment-success when
+      order_id is present. The registered handler in backend/src/main.rs reads deposit_requests.order_id as Option<String>,
+      but order_id is a UUID column. A paid deposit with an order_id can therefore fail during response construction or omit
+      the usable redirect target, leaving users stuck on the pending page after funds are credited.
+    affected_page_route: /payment-in-progress
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: local working tree
+    recheck_required: true
+    notes: 'Evidence: frontend/platform/static/js/payment-in-progress.js:554-562 expects deposit.order_id; backend/src/main.rs:1986-2003
+      selected order_id from deposit_requests even though the current schema does not define that column. Fix: the status
+      query now returns NULL::text AS order_id and created_at::text, preserving the frontend payload shape without selecting
+      a missing/incorrectly typed column. Fix: Deposit status now returns order_id::text instead of a null/incorrectly decoded
+      order_id field, preserving paid-deposit redirect data.'
   last_tested_date: null
 - id: payments.success
   page_type: page
@@ -7184,14 +7564,33 @@ pages:
       evidence: ''
       findings_summary: ''
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: fixed
+      last_review_date: '2026-04-24'
+      reviewer: Codex investor-dashboard-audit
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
+      evidence: Static source review found inconsistent order JSON fields between /api/orders/:order_id and /api/orders/latest.
+        Fixed by accepting order.currency as a fallback for order.payment_currency and formatting totals with Intl currency.
+      findings_summary: Fixed. Order-id success links can now render currency from either order payload shape.
+  issues:
+  - issue_id: PAGE-ISSUE-0012
+    review_category: functional_review
+    severity: medium
+    title: Payment success renders order details with mismatched currency fields
+    description: payment-success.js supports order_id deep links by calling /api/orders/:order_id, but renderOrderDetails
+      reads order.payment_currency and falls back to USD. The /api/orders/:order_id handler returns currency, while /api/orders/latest
+      returns payment_currency. IDR or non-USD orders opened by id can display the wrong currency/method label and totals.
+    affected_page_route: /payment-success
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: local working tree
+    recheck_required: false
+    notes: 'Evidence: frontend/platform/static/js/payment-success.js:16-24 calls /api/orders/:id, then line 78 reads order.payment_currency;
+      backend/src/main.rs:1939-1948 returns currency, not payment_currency. backend/src/payments/routes.rs:959-967 returns
+      payment_currency for latest-order only. Fix: payment-success.js now accepts both fields and formats totals with the
+      resolved currency.'
   last_tested_date: null
 - id: platform.profile
   page_type: page
@@ -7556,14 +7955,50 @@ pages:
       evidence: ''
       findings_summary: ''
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: needs recheck
+      last_review_date: '2026-04-24'
+      reviewer: Codex low-risk-fixes
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
+      evidence: Static source review found visible commission PDF export buttons without a backend export route or frontend
+        implementation. Existing issue also found marketing material download CTAs that only show coming-soon toasts.
+      findings_summary: Rewards commission export is visible but mock-only. Marketing downloads are also partially placeholder-only.
+        Low-risk fix applied; browser recheck still required.
+  issues:
+  - issue_id: PAGE-ISSUE-0009
+    review_category: functional_review
+    severity: low
+    title: Rewards marketing material downloads are visible but not implemented
+    description: The Rewards page exposes download buttons for social templates, banners, and video content, but many links
+      are href="#" and only show "will be available soon" toast messages. Users can reach a visible feature surface that cannot
+      complete its expected action.
+    affected_page_route: /rewards
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: local working tree
+    recheck_required: false
+    notes: 'Evidence: frontend/platform/rewards.html marketing-download-btn entries around social templates, banners, and
+      video content call showMarketingToast("... will be available soon") instead of downloading assets. Fix: unavailable
+      assets now render as disabled Coming soon controls, while real downloadable logo assets remain active.'
+  - issue_id: PAGE-ISSUE-0016
+    review_category: functional_review
+    severity: low
+    title: Rewards commission PDF export is a toast-only placeholder
+    description: The commissions table renders an export button for each commission, but exportCommissionPdf only shows “PDF
+      export will be available soon.” There is no route for commission PDF export and no file is generated, so the visible
+      action is mock-only.
+    affected_page_route: /rewards
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: 'Evidence: frontend/platform/static/js/rewards.js:883 renders the export button and lines 901-903 only show a toast;
+      backend/src/rewards/mod.rs exposes rewards/commission list routes but no PDF export route. Fix: The commission export
+      control is now disabled and labelled unavailable instead of showing a fake-success toast.'
   last_tested_date: null
 - id: rewards.tier
   page_type: redirect
@@ -8736,14 +9171,32 @@ pages:
       evidence: ''
       findings_summary: ''
     functional_review:
-      status: not reviewed
-      last_review_date: null
-      reviewer: ''
+      status: issues found
+      last_review_date: '2026-04-24'
+      reviewer: Codex investor-dashboard-audit
       reviewed_git_commit_sha: ''
       next_review_due_date: null
-      evidence: ''
-      findings_summary: ''
-  issues: []
+      evidence: Static source review found support attachment upload failures are logged but do not fail the ticket submission
+        response.
+      findings_summary: Investors can submit a ticket with an attachment and receive success even if the attachment is missing.
+  issues:
+  - issue_id: PAGE-ISSUE-0015
+    review_category: functional_review
+    severity: medium
+    title: Support ticket attachments can be silently dropped when storage upload fails
+    description: The support form accepts attachments and submits multipart data. The backend validates and uploads the file,
+      but upload failures are logged and the ticket still returns success. In local or misconfigured environments, the user
+      sees “Ticket submitted” even though the attachment was not saved or visible to support staff.
+    affected_page_route: /support
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: 'Evidence: frontend/platform/static/js/support.js:523-540 appends attachment; backend/src/support/service.rs:141-163
+      logs upload/DB failures but still returns Ok(()). Fix: Support ticket submission now fails the request if attachment
+      upload or attachment record persistence fails, instead of returning success after dropping the attachment.'
   last_tested_date: null
 - id: wallet.wallet
   page_type: page
@@ -8796,17 +9249,33 @@ pages:
         review: authenticated wallet route protected; payment-method mutating requests rely on global fetch CSRF injection.
         Authenticated happy-path and failure-state E2E still require seeded credentials/test data.'
     functional_review:
-      status: needs recheck
+      status: issues found
       last_review_date: '2026-04-24'
-      reviewer: Codex automation poool-page-reviews
+      reviewer: Codex investor-dashboard-audit
       reviewed_git_commit_sha: 3c10b5af0a24b4b817cf0c54bbb1bf28e4a27406
       next_review_due_date: '2026-05-24'
-      evidence: 'Heartbeat 2026-04-24: tracker audit, localhost Playwright unauthenticated route smoke, curl header checks,
-        and static source review. Browser Use plugin guidance used, but in-app browser backend was unavailable in this session.'
-      findings_summary: 'Unauthenticated Playwright smoke redirected /wallet to /auth/login with no console errors. Static
-        review: authenticated wallet route protected; payment-method mutating requests rely on global fetch CSRF injection.
-        Full authenticated primary-action verification still requires seeded credentials/test data.'
-  issues: []
+      evidence: Static source review found wallet.html falls back from Stripe Elements to a manual card flow that generates
+        a manual_* mock token and submits it to /api/payment-methods/card.
+      findings_summary: Card saving can persist mock/manual payment method identifiers when Stripe is unavailable or unconfigured.
+  issues:
+  - issue_id: PAGE-ISSUE-0010
+    review_category: functional_review
+    severity: high
+    title: Wallet card save can persist mock manual payment tokens
+    description: When Stripe Elements is not available, the wallet card modal accepts manually typed card details, generates
+      a manual_* token client-side, and posts it to the real /api/payment-methods/card endpoint. This records a card-like
+      payment method that is not a real processor token and can mislead users/admins about whether card payments are usable.
+    affected_page_route: /wallet
+    status: fixed
+    owner: ''
+    date_found: '2026-04-24'
+    date_fixed: '2026-04-24'
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: 'Evidence: frontend/platform/wallet.html manual fallback generates stripeId = "manual_" + brand + last4 + Date.now();
+      backend/src/payment_methods/routes.rs handle_add_card persists submitted stripe_payment_method_id via service::attach_card.
+      Fix: Wallet card saving now requires Stripe configuration/client PaymentMethod IDs, disables the fallback form when
+      Stripe is unavailable, and rejects non-pm_ tokens server-side.'
   last_tested_date: '2026-04-24'
 - id: www.home
   page_type: page

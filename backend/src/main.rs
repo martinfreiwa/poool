@@ -1984,7 +1984,7 @@ async fn api_deposit_status(
     };
 
     let deposit = sqlx::query(
-        "SELECT id, amount_cents, currency, status, provider, provider_reference, order_id, created_at FROM deposit_requests WHERE id::text = $1 AND user_id = $2"
+        "SELECT id::text, amount_cents, currency, status, provider, provider_reference, order_id::text AS order_id, created_at::text AS created_at FROM deposit_requests WHERE id::text = $1 AND user_id = $2"
     )
         .bind(&deposit_id)
         .bind(user.id)

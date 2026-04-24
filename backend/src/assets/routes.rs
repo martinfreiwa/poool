@@ -1,7 +1,7 @@
 use axum::{
+    Json,
     extract::{Path, Query, State},
     response::{Html, IntoResponse, Redirect},
-    Json,
 };
 use axum_extra::extract::CookieJar;
 use minijinja::context;
@@ -700,7 +700,7 @@ pub async fn api_marketplace_tab(
         let card_metrics_html = format!(
             r##"<div class="card-meta-item"><img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16"><span>{beds}</span></div>
                         <div class="card-meta-divider"></div>
-                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v8"/><path d="M17 4v8"/><path d="M4 12h16"/><path d="M5 12v3a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3"/></svg><span>{baths}</span></div>
+                        <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg><span>{baths}</span></div>
                         <div class="card-meta-divider"></div>
                         <div class="card-meta-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg><span>{sqm}</span></div>"##,
             beds = bedrooms

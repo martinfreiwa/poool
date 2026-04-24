@@ -58,6 +58,21 @@ pub async fn handle_add_card(
         }
     };
 
+    if !form.stripe_payment_method_id.starts_with("pm_") {
+        tracing::warn!(
+            user_id = %user_id,
+            "Rejected card save without a Stripe PaymentMethod token"
+        );
+        return (
+            StatusCode::BAD_REQUEST,
+            Html(
+                "<div class='error'>Card saving requires a verified Stripe payment method.</div>"
+                    .to_string(),
+            ),
+        )
+            .into_response();
+    }
+
     match service::attach_card(&state.db, &user_id, form).await {
         Ok(_) => Html("".to_string()).into_response(),
         Err(e) => {

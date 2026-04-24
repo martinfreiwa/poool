@@ -80,18 +80,17 @@
       });
     }
 
+    var currency = order.payment_currency || order.currency || 'USD';
+
     var methodEl = document.getElementById('display-payment-method');
     if (methodEl) {
-      var currency = order.payment_currency || 'USD';
       var method = isBank ? 'Bank Transfer' : 'Wallet';
       methodEl.textContent = currency + ' ' + method;
     }
 
     var totalEl = document.getElementById('display-total-amount');
     if (totalEl && typeof order.total_cents === 'number') {
-      totalEl.textContent = '$' + (order.total_cents / 100).toLocaleString('en-US', {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-      });
+      totalEl.textContent = formatMoney(order.total_cents, currency);
     }
 
     // Render order items
@@ -106,7 +105,7 @@
           '    ' + esc(item.tokens_quantity) + '× ' + esc(item.asset_title || 'Asset'),
           '  </span>',
           '  <span class="payment-success-order__item-price">',
-          '    $' + (subtotal / 100).toFixed(2),
+          '    ' + esc(formatMoney(subtotal, currency)),
           '  </span>',
           '</div>'
         ].join('');
@@ -135,5 +134,21 @@
     var d = document.createElement('div');
     d.textContent = String(s);
     return d.innerHTML;
+  }
+
+  function formatMoney(cents, currency) {
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency || 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(cents / 100);
+    } catch (_) {
+      return (currency || 'USD') + ' ' + (cents / 100).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
   }
 })();

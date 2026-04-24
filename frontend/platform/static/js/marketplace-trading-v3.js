@@ -520,6 +520,8 @@
                 return;
             }
 
+            const buyInterest = rawAsset.buyInterest ?? rawAsset.buy_interest ?? 0;
+
             // Map backend structure to UI standard
             asset = {
                 slug: rawAsset.slug,
@@ -543,7 +545,7 @@
                 platformFee: rawAsset.propertyValue ? (rawAsset.propertyValue / 100) * ((window.POOOL_FEE_PCT || 5) / 100) : 0,
                 images: rawAsset.images && rawAsset.images.length > 0 ? rawAsset.images : ['/static/images/seed/villa1.webp'],
                 sellOrders: rawAsset.sellOrders > 0 ? [{ tokens: rawAsset.sellOrders, price: rawAsset.price / 100 }] : [],
-                buyBids: rawAsset.buy_interest > 0 ? [{ tokens: rawAsset.buy_interest, price: rawAsset.price / 100 }] : [],
+                buyBids: buyInterest > 0 ? [{ tokens: buyInterest, price: rawAsset.price / 100 }] : [],
                 locationDesc: rawAsset.locationDesc || '',
                 fundingStatus: rawAsset.fundingStatus
             };

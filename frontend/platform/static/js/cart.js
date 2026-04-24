@@ -11,6 +11,29 @@ const debounce = (func, delay) => {
   };
 };
 
+function showCartPageAlert() {
+  const params = new URLSearchParams(window.location.search);
+  const error = params.get("error");
+  if (!error || !document.getElementById("cart-page-content")) return;
+
+  const messages = {
+    sold_out: "That asset is sold out, so it was not added to your cart.",
+    invalid_amount: "Enter a valid investment amount before adding an asset to your cart.",
+  };
+
+  const message = messages[error];
+  if (!message) return;
+
+  const wrapper = document.getElementById("cart-content-wrapper") || document.getElementById("cart-page-content");
+  if (!wrapper || document.querySelector(".cart-page-alert")) return;
+
+  const alert = document.createElement("div");
+  alert.className = "cart-page-alert";
+  alert.setAttribute("role", "alert");
+  alert.textContent = message;
+  wrapper.prepend(alert);
+}
+
 // Persist quantity change to DB
 const persistQuantityUpdate = debounce(async (cartId, newQuantity) => {
   try {
@@ -407,6 +430,7 @@ function updateCheckoutTotal() {
 
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
+  showCartPageAlert();
   // Check if we're on cart or checkout page
   if (document.getElementById("cart-page-content")) {
     updateCartTotal();

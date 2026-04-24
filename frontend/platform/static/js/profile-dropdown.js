@@ -80,10 +80,30 @@ function closeDropdownOnClickOutside(event) {
 
 // Determine profile type from an account item's id
 function getProfileTypeFromItem(item) {
+  const explicitProfile = item.getAttribute("data-profile");
+  if (explicitProfile) return explicitProfile;
+
+  const profileId = item.getAttribute("data-profile-id") || "";
+  if (profileId.includes("admin")) return "admin";
+  if (profileId.includes("developer")) return "developer";
+
   const itemId = item.id || "";
   if (itemId.includes("admin")) return "admin";
   if (itemId.includes("developer")) return "developer";
   return "investor";
+}
+
+function getProfileForCurrentPath() {
+  const currentPath = window.location.pathname;
+  if (currentPath.startsWith("/developer")) return "developer";
+  if (currentPath.startsWith("/admin")) return "admin";
+  return "investor";
+}
+
+function getDefaultAccountId(profileType) {
+  if (profileType === "developer") return "olivia-developer";
+  if (profileType === "admin") return "admin";
+  return "olivia-investor";
 }
 
 // Check if user needs to be redirected (on wrong section for profile)
@@ -172,6 +192,7 @@ function setupProfileEventHandlers() {
 
       // Save and redirect
       localStorage.setItem("selectedProfile", profileType);
+      localStorage.setItem("selectedAccountId", getDefaultAccountId(profileType));
       closeProfileDropdown();
 
       setTimeout(() => {
@@ -213,27 +234,21 @@ function setupProfileEventHandlers() {
 
 // Load saved profile on page load
 function loadSavedProfile() {
-  const derivedProfile = window.location.pathname.startsWith("/developer")
-    ? "developer"
-    : window.location.pathname.startsWith("/admin")
-      ? "admin"
-      : "investor";
-  const savedProfile = localStorage.getItem("selectedProfile") || derivedProfile;
+  const routeProfile = getProfileForCurrentPath();
+  const storedProfile = localStorage.getItem("selectedProfile");
+  const savedProfile = storedProfile === routeProfile ? storedProfile : routeProfile;
   let savedAccountId = localStorage.getItem("selectedAccountId");
 
-  if (!localStorage.getItem("selectedProfile")) {
-    localStorage.setItem("selectedProfile", savedProfile);
+  if (storedProfile !== routeProfile) {
+    savedAccountId = getDefaultAccountId(routeProfile);
   }
 
+  localStorage.setItem("selectedProfile", savedProfile);
+
   if (!savedAccountId && savedProfile) {
-    savedAccountId =
-      savedProfile === "developer"
-        ? "olivia-developer"
-        : savedProfile === "admin"
-          ? "admin"
-          : "olivia-investor";
-    localStorage.setItem("selectedAccountId", savedAccountId);
+    savedAccountId = getDefaultAccountId(savedProfile);
   }
+  localStorage.setItem("selectedAccountId", savedAccountId);
 
   if (savedProfile && savedAccountId) {
     const allAccountItems = document.querySelectorAll(
@@ -241,11 +256,7 @@ function loadSavedProfile() {
     );
     allAccountItems.forEach((item) => {
       const checkbox = item.querySelector(".profile-checkbox");
-      if (
-        item.id.includes(savedAccountId) ||
-        (savedAccountId === "olivia-investor" &&
-          item.id === "menu-item-current-account")
-      ) {
+      if (getProfileTypeFromItem(item) === savedProfile) {
         item.classList.add("selected");
         if (checkbox) checkbox.classList.add("selected");
       } else {
@@ -254,10 +265,8 @@ function loadSavedProfile() {
       }
     });
 
-    const selectedItem = document.getElementById(
-      savedAccountId === "olivia-investor"
-        ? "menu-item-current-account"
-        : `menu-item-account-${savedAccountId}`
+    const selectedItem = Array.from(allAccountItems).find(
+      (item) => getProfileTypeFromItem(item) === savedProfile,
     );
 
     if (selectedItem) {

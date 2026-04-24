@@ -43,15 +43,20 @@ body.my-trading-body {
 }
 
 .myt__sidebar {
+    width: 0;
+    min-width: 0;
     flex-shrink: 0;
+    overflow: visible;
+    padding: 0;
     z-index: 100;
 }
 
 .myt__main {
-    flex: 1;
-    margin-left: 256px;
+    width: calc(100% - var(--sidebar-width, 256px));
+    margin-left: var(--sidebar-width, 256px);
     padding: 0;
     min-height: 100vh;
+    background: var(--myt-bg);
 }
 
 .myt__content-wrapper {
@@ -62,6 +67,7 @@ body.my-trading-body {
     flex-direction: column;
     gap: 24px;
     padding: var(--page-padding-top, 48px) var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
+    box-sizing: border-box;
 }
 
 /* === Header === */
@@ -248,6 +254,32 @@ body.my-trading-body {
 .myt-table-card .submissions-table tbody tr:has(.ds-table-empty):hover {
     background: transparent !important;
     cursor: default;
+}
+
+.myt-branded-empty {
+    position: relative;
+    overflow: visible;
+}
+
+.myt-branded-empty__eyebrow {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    margin-bottom: 14px;
+    font-family: var(--myt-font);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--myt-blue);
+}
+
+.myt-branded-empty .ds-table-empty__icon,
+.myt-branded-empty .ds-table-empty__title,
+.myt-branded-empty .ds-table-empty__description,
+.myt-branded-empty .myt__empty-cta {
+    position: relative;
+    z-index: 1;
 }
 
 /* Empty-state CTA inside table */
@@ -509,11 +541,24 @@ body.my-trading-body {
 
 /* === Responsive === */
 @media (max-width: 1200px) {
-    .myt__main { margin-left: 0; padding: 24px; }
     .myt-stats-row.sub-stats { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 768px) {
+    .myt__main {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .myt__content-wrapper {
+        padding: 80px 16px 32px;
+    }
+
+    .myt__content-wrapper .lb-topbar {
+        margin: -80px -16px 0;
+        width: calc(100% + 32px);
+    }
+
     .myt-stats-row.sub-stats { grid-template-columns: 1fr; }
     .myt-card-header { flex-direction: column; align-items: flex-start; }
     .myt-card-tabs { overflow-x: auto; width: 100%; }

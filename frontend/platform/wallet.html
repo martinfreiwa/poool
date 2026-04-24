@@ -52,7 +52,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
           <!-- Hero -->
           <div class="wallet-empty__hero">
             <div class="wallet-empty__hero-copy">
-              <span class="wallet-empty__eyebrow">Fund your wallet</span>
+              <span class="wallet-empty__eyebrow">POOOL Wallet</span>
               <h3 id="wallet-empty-title" class="wallet-empty__title">Unlock access to every asset.</h3>
               <p class="wallet-empty__lede">
                 Deposit once, then invest instantly in properties, commodities, and secondary-market listings.
@@ -69,6 +69,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
               </div>
             </div>
             <div class="wallet-empty__hero-art" aria-hidden="true">
+              <img src="/static/images/logos/poool-text-logo.svg" alt="" class="wallet-empty__art-logo" />
               <svg viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="we-bg" x1="0" y1="0" x2="1" y2="1">
@@ -690,8 +691,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
         {% if not stripe_publishable_key or stripe_publishable_key == "" %}
         <div
           style="background: #FFF4ED; border: 1px solid #F9DBAF; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #B54708;">
-          <strong>Developer mode:</strong> Stripe publishable key is missing. Using manual card form instead of Stripe
-          Elements.
+          <strong>Card saving unavailable:</strong> Stripe publishable key is missing. Add a verified Stripe payment
+          method before saving cards.
         </div>
         {% endif %}
 
@@ -765,6 +766,7 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
             var manualCardNum = document.getElementById("card-number");
             var manualCardExp = document.getElementById("card-expiry");
             var manualCardCvv = document.getElementById("card-cvv");
+            var submitCardBtn = document.getElementById("submit-card-btn");
 
             var stripe, elements, cardElement;
             var detectedBrand = "";
@@ -820,21 +822,25 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                 });
               } catch (e) {
                 console.error("Stripe initialization failed", e);
-                // Fallback if Stripe script was blocked or failed
                 useStripe = false;
                 stripeElementContainer.style.display = "none";
-                manualCardContainer.style.display = "block";
-                makeManualFieldsRequired();
+                disableCardSaving("Card saving is unavailable because Stripe could not be initialized.");
               }
             } else {
-              manualCardContainer.style.display = "block";
-              makeManualFieldsRequired();
+              disableCardSaving("Card saving is unavailable because Stripe is not configured.");
             }
 
-            function makeManualFieldsRequired() {
-              if (manualCardNum) manualCardNum.required = true;
-              if (manualCardExp) manualCardExp.required = true;
-              if (manualCardCvv) manualCardCvv.required = true;
+            function disableCardSaving(message) {
+              manualCardContainer.style.display = "none";
+              if (manualCardNum) manualCardNum.required = false;
+              if (manualCardExp) manualCardExp.required = false;
+              if (manualCardCvv) manualCardCvv.required = false;
+              if (submitCardBtn) {
+                submitCardBtn.disabled = true;
+                submitCardBtn.textContent = "Card Saving Unavailable";
+              }
+              var errEl = document.getElementById("card-errors");
+              if (errEl) errEl.textContent = message;
             }
 
             // ----------------------------------------------------
@@ -925,20 +931,8 @@ external_scripts=['https://js.stripe.com/v3/'] %}{% include "components/head.htm
                     btn.disabled = false; btn.textContent = "Save Card";
                   }
                 } else {
-                  // === MANUAL FALLBACK FLOW ===
-                  var cardNumber = manualCardNum.value.replace(/\s/g, "");
-                  if (cardNumber.length < 13) {
-                    errEl.textContent = "Please enter a valid card number.";
-                    btn.disabled = false; btn.textContent = "Save Card";
-                    return;
-                  }
-
-                  var brand = detectedBrand || "Card";
-                  var last4 = cardNumber.slice(-4);
-                  // Generate an obvious mock token
-                  var stripeId = "manual_" + brand.toLowerCase() + "_" + last4 + "_" + Date.now();
-
-                  submitCardToBackend(stripeId, holderName, brand, last4, btn, errEl);
+                  errEl.textContent = "Card saving requires Stripe to be configured.";
+                  btn.disabled = true;
                 }
               });
             }

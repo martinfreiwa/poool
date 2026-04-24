@@ -9,9 +9,13 @@
   let allTickets = [];
   let currentFilter = "";
   let faqDebounceTimeout;
+  const draftKey = "poool:support-ticket-draft";
 
   document.addEventListener("DOMContentLoaded", () => {
     loadMyTickets();
+    initSupportNav();
+    initDraft();
+    updateCharacterCounts();
 
     // New ticket form
     document
@@ -40,6 +44,18 @@
     const ticketSubject = document.getElementById("ticket-subject");
     if (ticketSubject) {
       ticketSubject.addEventListener("input", suggestFAQ);
+      ticketSubject.addEventListener("input", () => {
+        updateCharacterCounts();
+        saveDraft();
+      });
+    }
+
+    const ticketMessage = document.getElementById("ticket-message");
+    if (ticketMessage) {
+      ticketMessage.addEventListener("input", () => {
+        updateCharacterCounts();
+        saveDraft();
+      });
     }
 
     // FAQ accordion toggle
@@ -66,26 +82,133 @@
     if (prioritySelect) {
       prioritySelect.addEventListener("change", (e) => {
         const val = e.target.value;
-        const timeEl = document.getElementById("expected-response-time");
-        if(!timeEl) return;
-        
-        if(val === 'urgent') {
-          timeEl.innerHTML = `Response: <span style="font-weight: 500; color: #f43f5e;">&lt; 1 hour</span>`;
-        } else if (val === 'high') {
-          timeEl.innerHTML = `Response: <span style="font-weight: 500; color: #f59e0b;">~2 hours</span>`;
-        } else if (val === 'normal') {
-          timeEl.innerHTML = `Response: <span style="font-weight: 500; color: #10b981;">~4 hours</span>`;
-        } else {
-          timeEl.innerHTML = `Response: <span style="font-weight: 500; color: #6b7280;">~24 hours</span>`;
-        }
+        updateResponseTime(val);
+        saveDraft();
       });
       // Initial trigger
-      prioritySelect.dispatchEvent(new Event("change"));
+      updateResponseTime(prioritySelect.value);
     }
+
+    document.getElementById("ticket-category")?.addEventListener("change", saveDraft);
+    document.getElementById("clear-ticket-draft-btn")?.addEventListener("click", clearDraft);
 
     // Drag-and-drop file upload
     initDragDropUpload();
   });
+
+  function initSupportNav() {
+    const links = Array.from(document.querySelectorAll('.developer-lb-topbar a[href^="#"]'));
+    if (!links.length) return;
+    const sections = links
+      .map((link) => document.querySelector(link.getAttribute("href")))
+      .filter(Boolean);
+
+    links.forEach((link) => {
+      link.addEventListener("click", () => {
+        links.forEach((item) => item.classList.remove("active"));
+        link.classList.add("active");
+      });
+    });
+
+    window.addEventListener("scroll", () => {
+      let activeId = sections[0]?.id;
+      sections.forEach((section) => {
+        if (section.getBoundingClientRect().top <= 140) {
+          activeId = section.id;
+        }
+      });
+      links.forEach((link) => {
+        link.classList.toggle("active", link.getAttribute("href") === `#${activeId}`);
+      });
+    }, { passive: true });
+  }
+
+  function updateResponseTime(val) {
+        const timeEl = document.getElementById("expected-response-time");
+        const overviewEl = document.getElementById("support-overview-response");
+        if(!timeEl) return;
+        let html = `Response: <span style="font-weight: 500; color: #10b981;">~4 hours</span>`;
+        let plain = "~4 hours";
+        if(val === 'urgent') {
+          html = `Response: <span style="font-weight: 500; color: #f43f5e;">&lt; 1 hour</span>`;
+          plain = "< 1 hour";
+        } else if (val === 'high') {
+          html = `Response: <span style="font-weight: 500; color: #f59e0b;">~2 hours</span>`;
+          plain = "~2 hours";
+        } else if (val === 'normal') {
+          html = `Response: <span style="font-weight: 500; color: #10b981;">~4 hours</span>`;
+          plain = "~4 hours";
+        } else {
+          html = `Response: <span style="font-weight: 500; color: #6b7280;">~24 hours</span>`;
+          plain = "~24 hours";
+        }
+        timeEl.innerHTML = html;
+        if (overviewEl) overviewEl.textContent = plain;
+  }
+
+  function updateCharacterCounts() {
+    const subject = document.getElementById("ticket-subject");
+    const message = document.getElementById("ticket-message");
+    setEl("ticket-subject-count", String(subject?.value.length || 0));
+    setEl("ticket-message-count", String(message?.value.length || 0));
+    const hint = document.getElementById("ticket-message-hint");
+    if (hint && message) {
+      const remaining = Math.max(0, 20 - message.value.trim().length);
+      hint.textContent = remaining > 0 ? `${remaining} more characters needed.` : "Ready to submit.";
+    }
+  }
+
+  function initDraft() {
+    const raw = window.localStorage?.getItem(draftKey);
+    if (raw) {
+      try {
+        const draft = JSON.parse(raw);
+        if (draft.subject) document.getElementById("ticket-subject").value = draft.subject;
+        if (draft.message) document.getElementById("ticket-message").value = draft.message;
+        if (draft.category) document.getElementById("ticket-category").value = draft.category;
+        if (draft.priority) {
+          const priority = document.getElementById("ticket-priority");
+          priority.value = draft.priority;
+          updateResponseTime(draft.priority);
+        }
+        setDraftStatus("Draft restored");
+      } catch (_) {
+        window.localStorage?.removeItem(draftKey);
+      }
+    }
+  }
+
+  function saveDraft() {
+    const draft = {
+      subject: document.getElementById("ticket-subject")?.value || "",
+      message: document.getElementById("ticket-message")?.value || "",
+      category: document.getElementById("ticket-category")?.value || "general",
+      priority: document.getElementById("ticket-priority")?.value || "normal",
+      updatedAt: Date.now()
+    };
+    if (!draft.subject && !draft.message) {
+      window.localStorage?.removeItem(draftKey);
+      setDraftStatus("");
+      return;
+    }
+    window.localStorage?.setItem(draftKey, JSON.stringify(draft));
+    setDraftStatus("Draft saved");
+  }
+
+  function clearDraft() {
+    window.localStorage?.removeItem(draftKey);
+    const form = document.getElementById("support-form");
+    form?.reset();
+    resetFileInfo(document.getElementById("drop-zone-file-info"), document.getElementById("drop-zone"));
+    updateCharacterCounts();
+    updateResponseTime(document.getElementById("ticket-priority")?.value || "normal");
+    setDraftStatus("");
+  }
+
+  function setDraftStatus(text) {
+    const status = document.getElementById("support-draft-status");
+    if (status) status.textContent = text;
+  }
 
   function initDragDropUpload() {
     const dropZone = document.getElementById("drop-zone");
@@ -108,18 +231,40 @@
       e.preventDefault();
       dropZone.classList.remove("drag-over");
       if (e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        if (!validateAttachment(file)) return;
         fileInput.files = e.dataTransfer.files;
-        updateFileInfo(fileInput.files[0], fileInfo, dropZone);
+        updateFileInfo(file, fileInfo, dropZone);
       }
     });
 
     fileInput.addEventListener("change", () => {
       if (fileInput.files.length > 0) {
-        updateFileInfo(fileInput.files[0], fileInfo, dropZone);
+        const file = fileInput.files[0];
+        if (!validateAttachment(file)) {
+          fileInput.value = "";
+          resetFileInfo(fileInfo, dropZone);
+          return;
+        }
+        updateFileInfo(file, fileInfo, dropZone);
       } else {
         resetFileInfo(fileInfo, dropZone);
       }
     });
+  }
+
+  function validateAttachment(file) {
+    const maxSize = 5 * 1024 * 1024;
+    const allowedTypes = ["image/png", "image/jpeg", "application/pdf"];
+    if (file.size > maxSize) {
+      showToast("Attachment must be 5MB or smaller.", "error");
+      return false;
+    }
+    if (!allowedTypes.includes(file.type)) {
+      showToast("Attachment must be a JPG, PNG, or PDF.", "error");
+      return false;
+    }
+    return true;
   }
 
   function updateFileInfo(file, infoEl, dropZone) {
@@ -152,6 +297,7 @@
       if (resp.ok) {
         const data = await resp.json();
         allTickets = data.tickets || data || [];
+        updateTicketSummary();
         renderTickets();
       } else if (resp.status === 401) {
         window.location.href = "/auth/login";
@@ -257,6 +403,16 @@
         `,
       )
       .join("");
+  }
+
+  function updateTicketSummary() {
+    const openCount = allTickets.filter((t) => isOpenStatus(t.status)).length;
+    const resolvedCount = allTickets.filter((t) => isClosedStatus(t.status)).length;
+    setEl("support-open-count", String(openCount));
+    setEl("support-resolved-count", String(resolvedCount));
+    setEl("support-tab-count-all", String(allTickets.length));
+    setEl("support-tab-count-open", String(openCount));
+    setEl("support-tab-count-resolved", String(resolvedCount));
   }
 
   function renderAttachments(attachmentsJson) {
@@ -385,6 +541,9 @@
       if (resp.ok) {
         document.getElementById("ticket-subject").value = "";
         document.getElementById("ticket-message").value = "";
+        window.localStorage?.removeItem(draftKey);
+        setDraftStatus("");
+        updateCharacterCounts();
         const fileInput = document.getElementById("ticket-attachment");
         if (fileInput) fileInput.value = "";
         const dropZone = document.getElementById("drop-zone");
@@ -460,11 +619,11 @@
 
       if (matches.length > 0) {
         matches = matches.slice(0, 2); // Show top 2
-        let html = `<div class="faq-suggestion-header">💡 Suggested Answers:</div>`;
+        let html = `<div class="faq-suggestion-header">Suggested answers</div>`;
         matches.forEach(m => {
-          html += `<div class="faq-suggestion-item" onclick="document.getElementById('faq-search').focus(); window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});">
+          html += `<div class="faq-suggestion-item" onclick="document.getElementById('faq')?.setAttribute('open', ''); document.getElementById('faq-search')?.focus(); document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth', block: 'start' });">
             <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v16M2 10h16"></path></svg>
-            <span>Did you mean: ${esc(m.title)}</span>
+            <span>${esc(m.title)}</span>
           </div>`;
         });
         container.innerHTML = html;

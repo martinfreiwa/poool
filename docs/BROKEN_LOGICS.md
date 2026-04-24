@@ -50,6 +50,39 @@
 
 ## 🟡 HIGH (Fix Before Launch)
 
+### [P1-FINANCIAL-UI] — Secondary Market Buy Interest Shows Fake Success Without Backend Persistence
+- **File:** `frontend/platform/static/js/marketplace-secondary.js`, `frontend/platform/marketplace-secondary.html`, `backend/src/marketplace/routes.rs`
+- **What is wrong:** The "Place Buy Interest" modal changes the submit button to "Interest Placed — Holders Notified" and closes after a timeout, but never calls a backend endpoint. No order, P2P offer, notification, or audit record is created.
+- **Expected behavior:** Submitting buy interest should call a real API, persist a buy-side order or P2P intent, notify eligible holders, and render an error if persistence or notification fails.
+- **Reproduction steps:** Open `/marketplace-secondary`, choose an asset with no offers, open the buy-interest modal, enter price/quantity, click "Notify Holders & Place Interest", and observe the success UI despite no network request.
+- **Evidence:** Static review: `interest-submit-btn` handler in `marketplace-secondary.js` only mutates button text/styles and closes the modal.
+- **Recommended task:** Add a persisted buy-interest API or wire this modal to the existing marketplace order/P2P flow, including validation, idempotency, and notification status.
+- **Status:** ✅ Fixed in local working tree — modal now submits a real buy limit order through `/api/marketplace/orders` and surfaces backend errors instead of fake holder notifications.
+- **Page Tracker:** PAGE-ISSUE-0006
+- **Date:** 2026-04-24
+
+### [P1-FINANCIAL-UI] — Trading V3 Has Two Independent Order Form Controllers
+- **File:** `frontend/platform/marketplace-trading-v3.html`, `frontend/platform/static/js/marketplace-trading.js`, `frontend/platform/static/js/marketplace-trading-v3.js`
+- **What is wrong:** The V3 trading page loads both the generic `marketplace-trading.js` controller and the V3-specific `marketplace-trading-v3.js` controller. Both bind order-form behavior around `#tv3-order-form` / `#tv3-submit-btn`, creating a high-risk conflicting-state path for financial order submission.
+- **Expected behavior:** Only one controller should own the trading form, confirmation modal, idempotency key generation, submit lifecycle, and redirect behavior.
+- **Reproduction steps:** Open `/marketplace-trading-v3?asset=<slug>` with an authenticated trading-capable account and inspect event binding / submit behavior for `#tv3-order-form`.
+- **Evidence:** Static review: `marketplace-trading-v3.html` includes both scripts; `marketplace-trading.js` registers `form.addEventListener('submit', handleSubmit)` and `marketplace-trading-v3.js` also registers a submit listener for `#tv3-order-form`.
+- **Recommended task:** Consolidate V3 order submission into a single controller and keep the orderbook/WebSocket helpers as passive modules.
+- **Status:** ✅ Fixed in local working tree — V3 no longer loads `marketplace-trading.js` or calls `MarketTrading.init`, leaving one form controller.
+- **Page Tracker:** PAGE-ISSUE-0007
+- **Date:** 2026-04-24
+
+### [P1-PAYMENTS] — Wallet Card Save Can Persist Mock Manual Payment Tokens
+- **File:** `frontend/platform/wallet.html`, `backend/src/payment_methods/routes.rs`
+- **What is wrong:** If Stripe Elements is unavailable, the wallet card modal falls back to manually typed card fields, generates a client-side `manual_*` token, and posts it to the real `/api/payment-methods/card` endpoint. This can create a card-like payment method that is not backed by a real payment processor token.
+- **Expected behavior:** If Stripe is unavailable or unconfigured, card saving should be disabled or should clearly use a non-production sandbox route that cannot create a usable payment method.
+- **Reproduction steps:** Load `/wallet` in an environment without a configured Stripe publishable key, open Add Card, enter a card number, and submit. The frontend generates `manual_<brand>_<last4>_<timestamp>` and posts it.
+- **Evidence:** Static review: `wallet.html` manual fallback builds `stripeId = "manual_" + brand.toLowerCase() + "_" + last4 + "_" + Date.now()` before calling `submitCardToBackend()`.
+- **Recommended task:** Remove the manual card-token fallback from production paths and require a real Stripe PaymentMethod ID, or gate the fallback behind an explicit local-dev flag.
+- **Status:** ✅ Fixed in local working tree — manual fallback is disabled when Stripe is unavailable and the backend rejects non-`pm_` card tokens.
+- **Page Tracker:** PAGE-ISSUE-0010
+- **Date:** 2026-04-24
+
 ### [P1-UI] — Community Composer Buttons Unresponsive
 - **File:** `frontend/platform/static/js/community-feed.js`
 - **What was wrong:** `initCommunityFeed` had an early return `if (!feedContainer) return;` at the very beginning of the closure. Because the file was loaded in `<head>`, the feed container didn't exist yet, causing the script to exit before defining global functions like `openCreatePostModal` and `uploadPostImage`. The UI buttons silently failed.
@@ -181,6 +214,50 @@
 
 ## 🟠 MEDIUM (Degraded UX / Data Sync Issues)
 
+### [P2-UX] — Community Trending Asset Cards Link to Unregistered `/assets/:id` Route
+- **File:** `frontend/platform/static/js/community-feed.js`, `backend/src/assets/mod.rs`
+- **What is wrong:** Trending asset cards route to `/assets/${asset.id}`, but investor asset detail routes are `/property/:slug` and `/commodity/:slug`; no `/assets/:id` page route is registered.
+- **Expected behavior:** Trending asset cards should route to the correct property or commodity detail page using slug and asset type.
+- **Reproduction steps:** Open `/community`, wait for trending assets, then click a trending asset card.
+- **Evidence:** Static review: `community-feed.js` builds `onclick="window.location.href='/assets/${asset.id}'"`; `assets::router()` registers `/property/:slug` and `/commodity/:slug`.
+- **Recommended task:** Return slug/type from `/api/community/trending-assets` if missing and render `/property/{slug}` or `/commodity/{slug}` links.
+- **Status:** ✅ Fixed — backend now returns route-safe `detail_url`/slug/type data and the frontend routes to `/property/:slug` or `/commodity/:slug`.
+- **Page Tracker:** PAGE-ISSUE-0004
+- **Date:** 2026-04-24
+
+### [P2-UX] — Leaderboard Replaces Small Real Datasets With Demo Rankings
+- **File:** `frontend/platform/static/js/leaderboard.js`, `backend/src/leaderboard/routes.rs`
+- **What is wrong:** The leaderboard renders generated demo rankings whenever real `/api/leaderboard` data has fewer than 20 participants unless the URL includes `?live`.
+- **Expected behavior:** Default authenticated views should show real data, with explicit demo mode only when requested.
+- **Reproduction steps:** Use a database with fewer than 20 leaderboard participants and open `/leaderboard` without `?live`.
+- **Evidence:** Static review: `leaderboard.js` uses `getDemoData(data)` when `!forceLive && data.total_participants < 20`.
+- **Recommended task:** Remove automatic demo substitution; render real small datasets with richer empty/low-participation states.
+- **Status:** ✅ Fixed in local working tree — demo rendering now requires explicit `?demo`.
+- **Page Tracker:** PAGE-ISSUE-0005
+- **Date:** 2026-04-24
+
+### [P2-UX] — Trading V3 Hides Buy Interest Due to camelCase/snake_case Mismatch
+- **File:** `frontend/platform/static/js/marketplace-trading-v3.js`, `backend/src/marketplace/models.rs`
+- **What is wrong:** The secondary-assets API serializes `buy_interest` as `buyInterest`, but `marketplace-trading-v3.js` reads `rawAsset.buy_interest`, so buy-side interest can be missing from the V3 detail UI.
+- **Expected behavior:** V3 should display live buy-interest counts/bids from the secondary-assets API.
+- **Reproduction steps:** Create an asset with open buy orders, open `/marketplace-trading-v3?asset=<slug>`, and inspect the buy-interest/bid UI.
+- **Evidence:** Static review: `SecondaryAsset` uses `#[serde(rename_all = "camelCase")]`; frontend checks `rawAsset.buy_interest`.
+- **Recommended task:** Normalize secondary asset DTO mapping in one adapter and add a regression test for sellOrders/buyInterest fields.
+- **Status:** ✅ Fixed in local working tree — V3 now reads `rawAsset.buyInterest` with a snake_case fallback.
+- **Page Tracker:** PAGE-ISSUE-0008
+- **Date:** 2026-04-24
+
+### [P3-UX] — Rewards Marketing Material Downloads Are Visible But Not Implemented
+- **File:** `frontend/platform/rewards.html`
+- **What is wrong:** Several Rewards marketing-material download buttons are visible but use `href="#"` and only show "will be available soon" toast messages.
+- **Expected behavior:** Visible download controls should download real assets, or unavailable assets should be hidden/disabled with a clear non-action state.
+- **Reproduction steps:** Open `/rewards`, navigate to marketing materials, and click social template, banner, or video download buttons.
+- **Evidence:** Static review: multiple `.marketing-download-btn` links call `showMarketingToast("... will be available soon")`.
+- **Recommended task:** Add real marketing assets or hide incomplete marketing-material categories until available.
+- **Status:** ✅ Fixed in local working tree — unavailable assets now render as disabled Coming soon controls instead of fake download links.
+- **Page Tracker:** PAGE-ISSUE-0009
+- **Date:** 2026-04-24
+
 ### [P1] — Backend Compilation Errors (Reconciliation Worker)
 - **File:** `backend/src/main.rs`
 - **What was wrong:** Compilation failed due to `unwrap_or(0)` being called on `i32` fields (`tokens_total`, `tokens_available`) and `as_deref().unwrap_or()` on a `String` field (`title`). This was a regression from a previous attempt to fix nullability issues.
@@ -211,16 +288,18 @@
 | Page | Route | Logic Status | Known Issues |
 |:---|:---|:---|:---|
 | **Marketplace** | `/marketplace` | ✅ OK | — |
+| **Secondary Marketplace** | `/marketplace-secondary` | ✅ OK | — |
+| **Trading V3** | `/marketplace-trading-v3` | ✅ OK | — |
 | **Property Detail** | `/property/:id` | ✅ OK | — |
 | **Wallet** | `/wallet` | ✅ OK | — |
 | **Portfolio** | `/portfolio` | ✅ OK | — |
-| **Cart** | `/cart` | ✅ OK | — |
+| **Cart** | `/cart` | ✅ OK | Sold-out asset add-to-cart now blocks before insert and shows a cart error |
 | **Checkout** | `/checkout` | ✅ OK | — |
-| **Payment Progress** | `/payment-in-progress` | ✅ OK | — |
+| **Payment Progress** | `/payment-in-progress` | ✅ OK | Deposit status endpoint now preserves payload shape without selecting missing order_id |
 | **Payment Success** | `/payment-success` | ✅ OK | — |
 | **Rewards** | `/rewards` | ✅ OK | — |
 | **Leaderboard** | `/leaderboard` | ✅ OK | — |
-| **Community** | `/community` | ✅ Hardened | XSS fixed, HTMX migration complete, all handlers verified |
+| **Community** | `/community` | ✅ OK | — |
 | **Settings** | `/settings` | ✅ OK | — |
 | **Transactions** | `/transactions` | ✅ OK | — |
 | **Support** | `/support` | ✅ OK | — |
@@ -280,6 +359,18 @@
 ---
 
 ## 🚀 Active Development & Ongoing Fixes
+
+### Investor Dashboard Audit Findings (2026-04-24)
+
+| Priority | Area | Issue | Evidence | Status |
+|:---|:---|:---|:---|:---|
+| 🔴 P1 | Payment status | `/api/deposits/:deposit_id/status` selected a missing/incorrectly typed `order_id` field while `/payment-in-progress` expects `deposit.order_id` in the payload. | `backend/src/main.rs:1986-2003`, `frontend/platform/static/js/payment-in-progress.js:554-562` | ✅ Fixed in local working tree |
+| 🟠 P2 | Payment success | `/api/orders/:order_id` returns `currency`, but `payment-success.js` read only `payment_currency`; non-USD order-id success pages could render the wrong currency. | `backend/src/main.rs:1939-1948`, `frontend/platform/static/js/payment-success.js:16-24` | ✅ Fixed in local working tree |
+| 🟠 P2 | Secondary marketplace | Buy-interest modal shows success and “holders notified” without calling a backend endpoint or persisting an order/offer/notification. | `frontend/platform/static/js/marketplace-secondary.js:420-436` | ✅ Fixed in local working tree |
+| 🟡 P2 | Cart | Sold-out asset add-to-cart could compute `tokens_to_buy = 0`, hit the `tokens_quantity > 0` DB check, then redirect generically to `/cart` with no user-facing sold-out error. | `backend/src/cart/routes.rs:221-250`, `database/001_initial_schema.sql:331` | ✅ Fixed in local working tree |
+| 🟡 P2 | Support | Support attachments can be silently dropped when GCS upload or attachment DB insert fails; ticket submission still returns success. | `backend/src/support/service.rs:141-163`, `frontend/platform/static/js/support.js:523-540` | ✅ Fixed in local working tree |
+| 🟢 P3 | Property detail | Virtual tour and document tabs are visible but placeholder/UI-only. | `frontend/platform/property.html:610-615`, `frontend/platform/static/js/property-detail.js:480-494` | ✅ Fixed — controls now only appear with real media/content and unavailable downloads are disabled |
+| 🟢 P3 | Rewards | Commission PDF export is a toast-only placeholder with no backend route. | `frontend/platform/static/js/rewards.js:883`, `frontend/platform/static/js/rewards.js:901-903` | ✅ Fixed — export control is disabled/labeled unavailable instead of fake success |
 
 ### Pending from Gap Analysis (2026-03-28)
 

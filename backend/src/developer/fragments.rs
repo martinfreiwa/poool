@@ -90,7 +90,7 @@ pub async fn fragment_assets(
 
     let period = query.period.unwrap_or_else(|| "all".to_string());
 
-    let assets = service::fetch_all_assets(&state.db, user.id).await;
+    let assets = service::fetch_assets_for_period(&state.db, user.id, &period).await;
     let stats = service::fetch_dashboard_stats(&state.db, user.id).await;
 
     match state

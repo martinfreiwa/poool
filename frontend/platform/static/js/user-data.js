@@ -45,8 +45,38 @@ if (typeof window.getCsrfToken === "undefined") {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
   }
 
+  function getRouteProfile() {
+    const path = window.location.pathname;
+    if (path.startsWith("/developer")) return "developer";
+    if (path.startsWith("/admin")) return "admin";
+    return "investor";
+  }
+
+  function getDefaultAccountId(profile) {
+    if (profile === "developer") return "olivia-developer";
+    if (profile === "admin") return "admin";
+    return "olivia-investor";
+  }
+
+  function normalizeProfileStateForRoute() {
+    const routeProfile = getRouteProfile();
+    const savedProfile = localStorage.getItem("selectedProfile");
+
+    if (savedProfile !== routeProfile) {
+      localStorage.setItem("selectedProfile", routeProfile);
+      localStorage.setItem("selectedAccountId", getDefaultAccountId(routeProfile));
+      return routeProfile;
+    }
+
+    if (!localStorage.getItem("selectedAccountId")) {
+      localStorage.setItem("selectedAccountId", getDefaultAccountId(routeProfile));
+    }
+
+    return routeProfile;
+  }
+
   // Fetch current user profile from the backend
-  const savedProfile = localStorage.getItem("selectedProfile");
+  const savedProfile = normalizeProfileStateForRoute();
 
   // Public pages (e.g. /p/:slug) don't require auth — skip the login redirect.
   var isPublicPage = window.location.pathname.startsWith("/p/");

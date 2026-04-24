@@ -428,11 +428,16 @@
     }
     if (text) text.textContent = pct + "%";
     if (hint) {
+      const isDeveloperSettings = !!document.querySelector(".developer-settings-main");
       hint.textContent = pct === 100
         ? "All done. Your profile is fully complete."
         : pct >= 80 ? "Almost there — add a few more details to finish."
-        : pct >= 50 ? "You're halfway there. Complete more to unlock features."
-        : "Complete your profile to unlock trading and KYC features.";
+        : pct >= 50 ? (isDeveloperSettings
+          ? "You're halfway there. Complete more developer review details."
+          : "You're halfway there. Complete more to unlock features.")
+        : (isDeveloperSettings
+          ? "Complete developer identity, links, and account details for review readiness."
+          : "Complete your profile to unlock trading and KYC features.");
     }
   }
 

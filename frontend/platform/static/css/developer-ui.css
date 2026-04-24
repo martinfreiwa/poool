@@ -1,0 +1,137 @@
+/* Developer console primitives
+   Shared operational UI layer for developer pages. */
+
+:root {
+  --dev-page-max: 1096px;
+  --dev-surface-bg: var(--card-bg, #ffffff);
+  --dev-surface-border: var(--card-border-color, #e5e7eb);
+  --dev-surface-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+  --dev-surface-shadow-hover: 0 4px 12px rgba(10, 13, 18, 0.06);
+  --dev-radius-sm: 8px;
+  --dev-radius-md: 12px;
+  --dev-radius-pill: 999px;
+  --dev-muted-bg: #f9fafb;
+  --dev-selected-ring: 0 0 0 3px rgba(0, 0, 255, 0.08);
+}
+
+body[id^="developer-"] .developer-lb-topbar .lb-topbar-inner,
+.developer-settings-main .developer-lb-topbar .lb-topbar-inner,
+.developer-support-main .developer-lb-topbar .lb-topbar-inner {
+  max-width: var(--dev-page-max) !important;
+}
+
+body[id^="developer-"] #dashboard-content-wrapper,
+body[id^="developer-"] #developer-assets-main > :not(.developer-lb-topbar),
+body[id^="developer-"] #developer-submissions-main > :not(.developer-lb-topbar),
+body[id^="developer-"] .developer-lb-shell-main > :not(.developer-lb-topbar),
+body[id^="developer-"] .cart-page-main > :not(.developer-lb-topbar),
+body#property-content-body .cart-page-main > :not(.developer-lb-topbar),
+.developer-support-main .dashboard-container,
+.developer-settings-main .settings-content-wrapper {
+  max-width: var(--dev-page-max) !important;
+}
+
+body[id^="developer-"] .dev-panel,
+body[id^="developer-"] .dev-stat,
+body[id^="developer-"] .dev-choice,
+body[id^="developer-"] .sub-stat,
+body[id^="developer-"] .submissions-table-container,
+body[id^="developer-"] .asset-type-card,
+.developer-support-main .support-overview-card,
+.developer-support-main .support-form-card,
+.developer-support-main .support-ticket-card,
+.developer-settings-main .settings-card,
+.developer-settings-main .profile-completion-banner {
+  background: var(--dev-surface-bg) !important;
+  border: 1px solid var(--dev-surface-border) !important;
+  border-radius: var(--dev-radius-md) !important;
+  box-shadow: var(--dev-surface-shadow) !important;
+}
+
+body[id^="developer-"] .dev-panel,
+.developer-support-main .support-form-card,
+.developer-settings-main .settings-card {
+  padding: 24px;
+}
+
+body[id^="developer-"] .dev-stat,
+body[id^="developer-"] .sub-stat,
+.developer-support-main .support-overview-card {
+  padding: 20px;
+  min-height: 104px;
+}
+
+body[id^="developer-"] .dev-choice,
+body[id^="developer-"] .asset-type-card {
+  border-radius: var(--dev-radius-md) !important;
+}
+
+body[id^="developer-"] .dev-panel:hover,
+body[id^="developer-"] .dev-stat:hover,
+body[id^="developer-"] .dev-choice:hover,
+body[id^="developer-"] .sub-stat:hover,
+.developer-support-main .support-overview-card:hover,
+.developer-support-main .support-form-card:hover,
+body[id^="developer-"] .submissions-table-container:hover {
+  box-shadow: var(--dev-surface-shadow-hover) !important;
+}
+
+body[id^="developer-"] .sub-stat.active,
+body[id^="developer-"] .asset-type-card.selected,
+body[id^="developer-"] .asset-type-card.js-selected {
+  border-color: var(--primary-color, #0000ff) !important;
+  box-shadow: var(--dev-selected-ring), var(--dev-surface-shadow) !important;
+}
+
+.developer-settings-main .settings-card.holo-card,
+.developer-settings-main .profile-completion-banner.holo-card {
+  background: var(--dev-surface-bg) !important;
+}
+
+.developer-settings-main .settings-card.holo-card::before,
+.developer-settings-main .profile-completion-banner.holo-card::before {
+  display: none !important;
+}
+
+.developer-settings-main .settings-nav nav,
+.developer-support-main .support-sla-list,
+.developer-support-main #faq-list,
+.developer-support-main .support-tab,
+body[id^="developer-"] .sub-search,
+body[id^="developer-"] .sub-sort-btn,
+body[id^="developer-"] .sub-result-count,
+body[id^="developer-"] .submission-cover-thumb,
+body[id^="developer-"] .submission-cover-placeholder,
+body[id^="developer-"] .submission-type-badge,
+body[id^="developer-"] .submission-app-number,
+body[id^="developer-"] .submission-status,
+.developer-support-main .drop-zone,
+.developer-support-main #faq-search,
+.developer-support-main .faq-cat-tab {
+  border-radius: var(--dev-radius-sm) !important;
+}
+
+body[id^="developer-"] .status-tabs,
+.developer-support-main .faq-cat-tab.active,
+.developer-support-main .support-tab span,
+body[id^="developer-"] .coming-soon-badge {
+  border-radius: var(--dev-radius-pill) !important;
+}
+
+.developer-support-main .support-overview-card strong,
+body[id^="developer-"] .sub-stat__count {
+  color: var(--page-title-color, #181d27);
+}
+
+@media (max-width: 768px) {
+  body[id^="developer-"] #dashboard-content-wrapper,
+  body[id^="developer-"] #developer-assets-main > :not(.developer-lb-topbar),
+  body[id^="developer-"] #developer-submissions-main > :not(.developer-lb-topbar),
+  body[id^="developer-"] .developer-lb-shell-main > :not(.developer-lb-topbar),
+  body[id^="developer-"] .cart-page-main > :not(.developer-lb-topbar),
+  body#property-content-body .cart-page-main > :not(.developer-lb-topbar),
+  .developer-support-main .dashboard-container,
+  .developer-settings-main .settings-content-wrapper {
+    max-width: none !important;
+  }
+}

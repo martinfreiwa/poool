@@ -154,8 +154,12 @@ window.initCommunityFeed = function() {
     }
 
     function escapeAttr(str) {
+        return escapeHtml(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function escapeHtml(str) {
         if (!str) return '';
-        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     // Deprecated Client-Side Functions have been removed in favor of HTMX server-side rendering.
@@ -568,9 +572,16 @@ window.initCommunityFeed = function() {
                 return;
             }
 
+            const buildAssetUrl = (asset) => {
+                if (asset.detail_url) return asset.detail_url;
+                const slug = asset.slug || asset.id;
+                return asset.asset_type === 'commodity' ? `/commodity/${slug}` : `/property/${slug}`;
+            };
+
             let html = '';
             // Define some emojis or standard icons based on symbol 
             const getIcon = (sym) => {
+                sym = String(sym || '').toUpperCase();
                 if (sym.includes('CACAO') || sym.includes('COCOA')) return '🍫';
                 if (sym.includes('TIMBER') || sym.includes('ALBAC')) return '🌲';
                 if (sym.includes('VANIL')) return '🌿';
@@ -579,12 +590,16 @@ window.initCommunityFeed = function() {
             };
 
             for (const asset of assets) {
+                const detailUrl = escapeAttr(buildAssetUrl(asset));
+                const name = escapeHtml(asset.name || 'Asset');
+                const symbol = escapeHtml(getIcon(asset.symbol));
+                const postCount = Number(asset.post_count || 0).toLocaleString();
                 html += `
-                <div class="trending-item" style="cursor:pointer;" onclick="window.location.href='/assets/${asset.id}'">
-                  <div class="trending-item-icon" style="background:#F2F4F7; color:#344054;">${getIcon(asset.symbol)}</div>
+                <div class="trending-item" style="cursor:pointer;" onclick="window.location.href='${detailUrl}'">
+                  <div class="trending-item-icon" style="background:#F2F4F7; color:#344054;">${symbol}</div>
                   <div class="trending-item-info">
-                    <div class="trending-item-name">${asset.name}</div>
-                    <div class="trending-item-investors">${asset.post_count} discussions</div>
+                    <div class="trending-item-name">${name}</div>
+                    <div class="trending-item-investors">${postCount} discussions</div>
                   </div><span class="trending-item-change" style="color:#027A48;">🔥</span>
                 </div>
                 `;

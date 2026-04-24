@@ -62,14 +62,15 @@
 
         if (MOCK_ORDERS.length === 0) {
             tbody.innerHTML = `<tr><td colspan="10" style="padding: 0;">
-                <div class="ds-table-empty">
+                <div class="ds-table-empty myt-branded-empty">
+                    <span class="myt-branded-empty__eyebrow">POOOL Marketplace</span>
                     <div class="ds-table-empty__icon" style="color: #667085;">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                             <rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
                         </svg>
                     </div>
                     <h3 class="ds-table-empty__title">No open orders</h3>
-                    <p class="ds-table-empty__description">Place a buy or sell order in the resale market.</p>
+                    <p class="ds-table-empty__description">Place buy or sell orders once you own assets, then track fills, fees, and activity here.</p>
                     <a href="/marketplace-secondary" class="myt__empty-cta">Go to Resale Market</a>
                 </div>
             </td></tr>`;
@@ -102,14 +103,15 @@
 
         if (MOCK_INTERESTS.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8" style="padding: 0;">
-                <div class="ds-table-empty">
+                <div class="ds-table-empty myt-branded-empty">
+                    <span class="myt-branded-empty__eyebrow">POOOL Marketplace</span>
                     <div class="ds-table-empty__icon" style="color: #667085;">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><polyline points="8 12 12 16 16 12"/>
                         </svg>
                     </div>
                     <h3 class="ds-table-empty__title">No buy interests</h3>
-                    <p class="ds-table-empty__description">Tell holders you want to buy their asset.</p>
+                    <p class="ds-table-empty__description">Tell holders you want to buy their asset and track responses in one place.</p>
                     <a href="/marketplace-secondary" class="myt__empty-cta">Go to Resale Market</a>
                 </div>
             </td></tr>`;
@@ -162,7 +164,8 @@
             const title = isFiltered ? 'No matching trades' : 'No trade history';
             const desc = isFiltered ? 'Adjust the filters to see more results.' : 'Completed trades appear here.';
             tbody.innerHTML = `<tr><td colspan="9" style="padding: 0;">
-                <div class="ds-table-empty">
+                <div class="ds-table-empty myt-branded-empty">
+                    <span class="myt-branded-empty__eyebrow">POOOL Marketplace</span>
                     <div class="ds-table-empty__icon" style="color: #667085;">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -211,14 +214,15 @@
 
         if (PORTFOLIO_ASSETS.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8" style="padding: 0;">
-                <div class="ds-table-empty">
+                <div class="ds-table-empty myt-branded-empty">
+                    <span class="myt-branded-empty__eyebrow">POOOL Portfolio</span>
                     <div class="ds-table-empty__icon" style="color: #667085;">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>
                         </svg>
                     </div>
                     <h3 class="ds-table-empty__title">No assets</h3>
-                    <p class="ds-table-empty__description">Invest in a property to start your portfolio.</p>
+                    <p class="ds-table-empty__description">Invest in your first asset to unlock resale-market trading from this page.</p>
                     <a href="/marketplace" class="myt__empty-cta">Browse Marketplace</a>
                 </div>
             </td></tr>`;

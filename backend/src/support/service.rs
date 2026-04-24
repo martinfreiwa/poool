@@ -145,21 +145,29 @@ pub async fn submit_ticket(
             let fname = file_name.as_deref().unwrap_or("attachment");
             let object_path = format!("support/{}/{}_{}.{}", ticket_id, Uuid::new_v4(), fname, ext);
 
-            let bucket = state.config.gcs_bucket.as_deref().unwrap_or("poool-bucket");
+            let bucket = state
+                .config
+                .gcs_bucket
+                .as_deref()
+                .ok_or_else(|| anyhow::anyhow!("Attachment upload is not configured."))?;
             match crate::storage::service::upload_private(bucket, &object_path, bytes, &mime).await
             {
                 Ok(file_url) => {
-                    if let Err(e) =
-                        db::add_ticket_attachment(&state.db, &reply_id, &file_url, &mime).await
-                    {
-                        tracing::error!(
-                            "Failed to save attachment record for ticket {}: {}",
-                            ticket_id,
-                            e
-                        );
-                    }
+                    db::add_ticket_attachment(&state.db, &reply_id, &file_url, &mime)
+                        .await
+                        .map_err(|e| {
+                            tracing::error!(
+                                "Failed to save attachment record for ticket {}: {}",
+                                ticket_id,
+                                e
+                            );
+                            anyhow::anyhow!("Failed to save support attachment.")
+                        })?;
                 }
-                Err(e) => tracing::error!("Failed to upload support attachment: {}", e),
+                Err(e) => {
+                    tracing::error!("Failed to upload support attachment: {}", e);
+                    return Err(anyhow::anyhow!("Failed to upload support attachment."));
+                }
             }
         }
     }

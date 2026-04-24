@@ -97,8 +97,7 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     .await
     .unwrap_or(0);
 
-    let amount_remaining_cents =
-        total_funding_target_cents.saturating_sub(total_sales_cents);
+    let amount_remaining_cents = total_funding_target_cents.saturating_sub(total_sales_cents);
 
     // ── 3. Total Investors (distinct users who invested in developer's approved/live assets) ──
     let total_investors: i64 = sqlx::query_scalar(
@@ -316,7 +315,7 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
         None => (0.0, 0.0, 0.0),
     };
 
-    // ── Build 8 metric cards ─────────────────────────────────────────
+    // ── Build metric cards ───────────────────────────────────────────
     let metrics = vec![
         make_metric("Total Assets", total_assets.to_string(), 0.0),
         make_metric(
@@ -404,6 +403,8 @@ struct AssetRow {
     funding_status: String,
     city: Option<String>,
     bedrooms: Option<i32>,
+    bathrooms: Option<i32>,
+    size_sqm: Option<String>,
     total_value_cents: i64,
     occupancy_rate_bps: Option<i32>,
     country: Option<String>,
@@ -418,6 +419,7 @@ async fn fetch_top_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTop
     fetch_assets_for_dashboard(
         pool,
         developer_id,
+        None,
         "ORDER BY total_sales_cents DESC, views DESC, a.created_at DESC LIMIT 5",
     )
     .await
@@ -428,6 +430,7 @@ async fn fetch_attention_assets(pool: &PgPool, developer_id: Uuid) -> Vec<Develo
     fetch_assets_for_dashboard(
         pool,
         developer_id,
+        None,
         "ORDER BY CASE WHEN a.tokens_total > 0 THEN ((a.tokens_total - a.tokens_available)::double precision / a.tokens_total::double precision) ELSE 0 END ASC, views DESC, add_to_cart_count DESC, a.created_at DESC LIMIT 5",
     )
     .await
@@ -437,8 +440,14 @@ async fn fetch_attention_assets(pool: &PgPool, developer_id: Uuid) -> Vec<Develo
 async fn fetch_assets_for_dashboard(
     pool: &PgPool,
     developer_id: Uuid,
+    period: Option<&str>,
     order_clause: &str,
 ) -> Vec<DeveloperTopAsset> {
+    let investment_period_filter = period_filter("i.purchased_at", period);
+    let view_period_filter = period_filter("av.viewed_at", period);
+    let cart_period_filter = period_filter("ci.created_at", period);
+    let checkout_period_filter = period_filter("COALESCE(o.completed_at, o.created_at)", period);
+
     // Fetch the developer's assets with their aggregated investment data
     let query = format!(
         r#"
@@ -450,33 +459,44 @@ async fn fetch_assets_for_dashboard(
                 SELECT SUM(i.purchase_value_cents)
                 FROM investments i
                 WHERE i.asset_id = a.id AND i.status != 'exited'
+                {investment_period_filter}
             ), 0)::bigint AS total_sales_cents,
             COALESCE((
                 SELECT COUNT(DISTINCT i.user_id)
                 FROM investments i
                 WHERE i.asset_id = a.id AND i.status != 'exited'
+                {investment_period_filter}
             ), 0)::bigint AS investor_count,
             COALESCE((
                 SELECT COUNT(*)
                 FROM asset_views av
                 WHERE av.asset_id = a.id
+                {view_period_filter}
             ), 0)::bigint AS views,
             COALESCE((
                 SELECT COUNT(*)
                 FROM cart_items ci
                 WHERE ci.asset_id = a.id
+                {cart_period_filter}
             ), 0)::bigint AS add_to_cart_count,
             COALESCE((
                 SELECT COUNT(DISTINCT oi.order_id)
                 FROM order_items oi
                 JOIN orders o ON o.id = oi.order_id
                 WHERE oi.asset_id = a.id
+                {checkout_period_filter}
             ), 0)::bigint AS checkout_starts,
             a.tokens_total,
             a.tokens_available,
             a.funding_status,
             a.location_city as city,
             a.bedrooms,
+            a.bathrooms,
+            CASE
+                WHEN a.building_size_sqm IS NOT NULL THEN CONCAT(ROUND(a.building_size_sqm)::int, ' m²')
+                WHEN a.land_size_sqm IS NOT NULL THEN CONCAT(ROUND(a.land_size_sqm)::int, ' m²')
+                ELSE NULL
+            END AS size_sqm,
             COALESCE(a.total_value_cents, 0) as total_value_cents,
             a.occupancy_rate_bps,
             a.location_country as country,
@@ -513,9 +533,8 @@ async fn fetch_assets_for_dashboard(
             } else {
                 0.0
             };
-            let amount_remaining_cents = row
-                .total_value_cents
-                .saturating_sub(row.total_sales_cents);
+            let amount_remaining_cents =
+                row.total_value_cents.saturating_sub(row.total_sales_cents);
 
             DeveloperTopAsset {
                 index: idx + 1,
@@ -540,6 +559,8 @@ async fn fetch_assets_for_dashboard(
                 status: row.funding_status,
                 city: row.city,
                 bedrooms: row.bedrooms,
+                bathrooms: row.bathrooms,
+                size_sqm: row.size_sqm,
                 total_value_display: format_usd_compact(row.total_value_cents),
                 total_value_cents: row.total_value_cents,
                 amount_remaining_display: format_usd_compact(amount_remaining_cents),
@@ -557,5 +578,35 @@ async fn fetch_assets_for_dashboard(
 
 /// Fetch all assets for the developer, with sales/views/conversion data.
 pub async fn fetch_all_assets(pool: &PgPool, developer_id: Uuid) -> Vec<DeveloperTopAsset> {
-    fetch_assets_for_dashboard(pool, developer_id, "ORDER BY a.created_at DESC").await
+    fetch_assets_for_dashboard(
+        pool,
+        developer_id,
+        None,
+        "ORDER BY total_sales_cents DESC, views DESC, a.created_at DESC",
+    )
+    .await
+}
+
+/// Fetch all dashboard-table assets for a specific period.
+pub async fn fetch_assets_for_period(
+    pool: &PgPool,
+    developer_id: Uuid,
+    period: &str,
+) -> Vec<DeveloperTopAsset> {
+    fetch_assets_for_dashboard(
+        pool,
+        developer_id,
+        Some(period),
+        "ORDER BY total_sales_cents DESC, views DESC, a.created_at DESC",
+    )
+    .await
+}
+
+fn period_filter(column: &str, period: Option<&str>) -> String {
+    match period {
+        Some("30d") => format!("AND {column} >= NOW() - INTERVAL '30 days'"),
+        Some("7d") => format!("AND {column} >= NOW() - INTERVAL '7 days'"),
+        Some("24h") => format!("AND {column} >= NOW() - INTERVAL '24 hours'"),
+        _ => String::new(),
+    }
 }

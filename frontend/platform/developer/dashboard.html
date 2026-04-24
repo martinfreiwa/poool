@@ -47,77 +47,82 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
 
         <!-- Developer Dashboard Content -->
         <div id="dashboard-main-content" class="dashboard-main-content">
-          <!-- Metrics Section -->
-          <div id="metrics-section" class="metrics-section">
-          {% for chunk in stats.metrics | batch(4) %}
-          <div class="metrics-row">
-            {% for metric in chunk %}
-            <div id="metric-card-{{ metric.label }}" class="ds-card ds-stat-card metric-card">
+          <!-- Priority Metrics -->
+          <div id="metrics-section" class="metrics-section" aria-label="Priority developer metrics">
+            {% for metric in stats.metrics %}
+            {% if metric.label == 'Amount Raised' or metric.label == 'Amount Remaining' or metric.label == 'Funding Target' or metric.label == 'Total Assets' %}
+            <div id="metric-card-{{ metric.label }}" class="ds-card ds-stat-card metric-card{% if metric.label == 'Amount Raised' %} metric-card--featured{% endif %}">
               <div id="metric-heading-{{ metric.label }}" class="ds-stat-card__label metric-heading">
                 {{ metric.label }}
               </div>
               <div id="metric-content-{{ metric.label }}" class="metric-content">
-                <div id="metric-number-badge-{{ metric.label }}" class="metric-number-badge">
-                  <div id="metric-number-{{ metric.label }}" class="ds-stat-card__value metric-number"
-                    data-final-value="{{ metric.value }}">
-                    {% if metric.format_override %}{{ metric.value }}{% else %}{{ metric.value }}{% endif %}
-                  </div>
-                  <div id="metric-change-{{ metric.label }}" class="metric-change-wrapper">
-                    <div id="metric-change-badge-{{ metric.label }}" class="ds-stat-card__trend metric-change {{ metric.trend }}">
-                      {% if metric.trend == 'up' %}
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 12V4M8 4L4 8M8 4L12 8" stroke="#17B26A" stroke-width="2" stroke-linecap="round"
-                          stroke-linejoin="round"></path>
-                      </svg>
-                      {% elif metric.trend == 'down' %}
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 4V12M8 12L4 8M8 12L12 8" stroke="#F04438" stroke-width="2" stroke-linecap="round"
-                          stroke-linejoin="round"></path>
-                      </svg>
-                      {% else %}
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 8h8" stroke="#FDB022" stroke-width="2" stroke-linecap="round"
-                          stroke-linejoin="round">
-                        </path>
-                      </svg>
-                      {% endif %}
-                      <span>{{ metric.change_display }}</span>
-                    </div>
-                    <span id="metric-timeframe-{{ metric.label }}" class="metric-timeframe">{{ metric.timeframe
-                      }}</span>
-                  </div>
+                <div id="metric-number-{{ metric.label }}" class="ds-stat-card__value metric-number"
+                  data-final-value="{{ metric.value }}">
+                  {{ metric.value }}
                 </div>
-                <!-- Mini chart placeholder -->
-                <div id="metric-chart-{{ metric.label }}" class="metric-chart-mini">
-                  <svg width="112" height="56" viewBox="0 0 115 58" fill="none">
-                    <defs>
-                      <linearGradient id="gradient-{{ loop.index }}" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%"
-                          style="stop-color: {{ '#f04438' if metric.trend == 'down' else '#17b26a' }}; stop-opacity: 0.2">
-                        </stop>
-                        <stop offset="100%"
-                          style="stop-color: {{ '#f04438' if metric.trend == 'down' else '#17b26a' }}; stop-opacity: 0">
-                        </stop>
-                      </linearGradient>
-                    </defs>
-                    <!-- generic smooth path for placeholder -->
-                    <path d="M 1 57 C 20 40, 40 60, 60 40 C 80 20, 100 40, 114 10 L 114 57 Z"
-                      fill="url(#gradient-{{ loop.index }})"></path>
-                    <path d="M 1 57 C 20 40, 40 60, 60 40 C 80 20, 100 40, 114 10"
-                      stroke="{{ '#FCA5A5' if metric.trend == 'down' else '#98FB96' }}" stroke-width="2" fill="none"
-                      stroke-linecap="round" stroke-linejoin="round"></path>
-                  </svg>
+                <div id="metric-change-{{ metric.label }}" class="metric-change-wrapper">
+                  {% if metric.trend == 'up' or metric.trend == 'down' %}
+                  <div id="metric-change-badge-{{ metric.label }}" class="ds-stat-card__trend metric-change {{ metric.trend }}">
+                    {% if metric.trend == 'up' %}
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M8 12V4M8 4L4 8M8 4L12 8" stroke="#17B26A" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                    </svg>
+                    {% else %}
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M8 4V12M8 12L4 8M8 12L12 8" stroke="#F04438" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                    </svg>
+                    {% endif %}
+                    <span>{{ metric.change_display }}</span>
+                  </div>
+                  <span id="metric-timeframe-{{ metric.label }}" class="metric-timeframe">{{ metric.timeframe }}</span>
+                  {% else %}
+                  <span id="metric-timeframe-{{ metric.label }}" class="metric-timeframe metric-timeframe--empty">No change yet</span>
+                  {% endif %}
                 </div>
               </div>
             </div>
+            {% endif %}
             {% endfor %}
-          </div>
-          {% endfor %}
         </div>
         <!-- Sales Chart -->
-        <div id="sales-chart-section" class="sales-chart-section" style="margin-top: 24px;">
+        <div id="sales-chart-section" class="sales-chart-section">
           {% include 'components/developer-chart.html' %}
         </div>
+
+        <section class="ds-card developer-secondary-metrics" aria-label="Secondary developer metrics">
+          <div class="developer-secondary-metrics__header">
+            <h2>Activity snapshot</h2>
+            <span>Operational signals</span>
+          </div>
+          <div class="developer-secondary-metrics__grid">
+            {% for metric in stats.metrics %}
+            {% if metric.label != 'Amount Raised' and metric.label != 'Amount Remaining' and metric.label != 'Funding Target' and metric.label != 'Total Assets' %}
+            <div class="developer-secondary-metric">
+              <span class="developer-secondary-metric__label">{{ metric.label }}</span>
+              <strong class="metric-number" data-final-value="{{ metric.value }}">{{ metric.value }}</strong>
+              {% if metric.trend == 'up' or metric.trend == 'down' %}
+              <span class="developer-secondary-metric__trend {{ metric.trend }}">{{ metric.change_display }} {{ metric.timeframe }}</span>
+              {% else %}
+              <span class="developer-secondary-metric__trend">No change yet</span>
+              {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="developer-assets-performance-section" aria-labelledby="developer-assets-performance-title">
+          <div class="developer-assets-performance-section__header">
+            <div>
+              <h2 id="developer-assets-performance-title">Top Performing Assets</h2>
+              <p>Sales, views, saved demand, conversion and funding progress.</p>
+            </div>
+            <a href="/developer/assets">Manage assets</a>
+          </div>
+          {% include 'components/developer-assets.html' %}
+        </section>
 
         <div class="developer-performance-grid" aria-label="Property performance">
           <section class="ds-card developer-performance-card">

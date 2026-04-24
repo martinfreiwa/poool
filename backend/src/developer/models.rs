@@ -82,6 +82,8 @@ pub struct DeveloperTopAsset {
     pub status: String,
     pub city: Option<String>,
     pub bedrooms: Option<i32>,
+    pub bathrooms: Option<i32>,
+    pub size_sqm: Option<String>,
     pub total_value_display: String,
     pub total_value_cents: i64,
     pub amount_remaining_display: String,

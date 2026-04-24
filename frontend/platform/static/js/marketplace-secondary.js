@@ -24,8 +24,9 @@
         return data;
     }
 
-    function formatUSD(cents) {
-        return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    function formatSharePrice(cents) {
+        const dollars = Math.round((Number(cents) || 0) / 100).toLocaleString('en-US');
+        return `USD ${dollars}<small style="font-size: 0.5em; font-weight: 500; color: #667085; margin-left: 4px;">/ share</small>`;
     }
 
     function formatVolume(cents) {
@@ -35,61 +36,91 @@
         return '$' + dollars.toFixed(0);
     }
 
-    function metricDivider() {
-        return '<div class="mp-sec__card-meta-divider"></div>';
+    function formatPct(value) {
+        const num = Number(value || 0);
+        return `${num >= 10 ? num.toFixed(0) : num.toFixed(1)}%`;
     }
 
-    function metricItem(iconHTML, value, extraClass = '') {
-        if (value === null || value === undefined || value === '' || Number(value) <= 0) return '';
-        return `<div class="mp-sec__card-meta-item ${extraClass}">${iconHTML}<span>${value}</span></div>`;
+    function formatCardPct(value) {
+        const num = Number(value || 0);
+        return `${Number.isInteger(num) ? num.toFixed(0) : num.toFixed(1)}%`;
     }
 
-    function buildingSizeLabel(asset) {
-        return asset.buildingSizeSqm || asset.landSize || '';
+    function formatBps(value) {
+        if (value === null || value === undefined || value === '') return '—';
+        const pct = Number(value) / 100;
+        return `${Number.isInteger(pct) ? pct.toFixed(0) : pct.toFixed(1)}%`;
+    }
+
+    function escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
+    }
+
+    function escapeAttr(value) {
+        return escapeHTML(value);
+    }
+
+    function metricValue(value) {
+        return value === null || value === undefined || value === '' ? '—' : escapeHTML(value);
+    }
+
+    function sizeMetric(asset) {
+        return asset.buildingSizeSqm || asset.landSize || '—';
     }
 
     function buildPropertyMetaHTML(asset) {
-        const bedIcon = '<img src="/static/images/icons/Bed.svg" alt="Beds" width="16" height="16">';
-        const bathIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h16v3a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M6 12V6.5A2.5 2.5 0 0 1 8.5 4H10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9.5 6h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-        const sizeIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20V4h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 20h12V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 16h8V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        const metrics = [
-            metricItem(bedIcon, asset.bedrooms),
-            metricItem(bathIcon, asset.bathrooms),
-            metricItem(sizeIcon, buildingSizeLabel(asset))
-        ].filter(Boolean);
-        const location = `
-            <div class="mp-sec__card-meta-item mp-sec__card-meta-item--location">
-                <img src="/static/images/${asset.country}.webp" onerror="this.style.display='none'" width="16" height="16" style="border-radius:50%;object-fit:cover;flex-shrink:0;" alt="${asset.country}">
-                <span>${asset.location}</span>
+        return `
+            <div class="card-meta-item">
+                <img src="/static/images/icons/Bed.svg" alt="Bedrooms" width="16" height="16">
+                <span>${metricValue(asset.bedrooms)}</span>
+            </div>
+            <div class="card-meta-divider"></div>
+            <div class="card-meta-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 13a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2Z"/><path d="M7 17v2"/><path d="M17 17v2"/><path d="M21 10V6a2 2 0 0 0-2-2"/></svg>
+                <span>${metricValue(asset.bathrooms)}</span>
+            </div>
+            <div class="card-meta-divider"></div>
+            <div class="card-meta-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M4 9h16"/></svg>
+                <span>${metricValue(sizeMetric(asset))}</span>
             </div>`;
-
-        return [...metrics, location].join(metricDivider());
     }
 
-    // ── Status badge overlay HTML ──
-    function getStatusOverlay(asset) {
-        if (asset.sellOrders > 0 && asset.buyInterest > 0) {
-            return `<span class="mp-sec__card-status-overlay mp-sec__card-status-overlay--active">
-                <span class="mp-sec__pulse-dot"></span>
-                ${asset.sellOrders} offer${asset.sellOrders > 1 ? 's' : ''} · ${asset.buyInterest} interest
-            </span>`;
+    function leaseBadge(asset) {
+        let typeText = 'Standard Leasehold';
+        let badgeColorClass = 'ds-badge--leasehold';
+
+        if (asset.type && asset.type.toLowerCase() === 'commodity') {
+            typeText = 'Agricultural';
+            badgeColorClass = 'ds-badge--commodity';
+        } else if (asset.leaseType) {
+            typeText = asset.leaseType.charAt(0).toUpperCase() + asset.leaseType.slice(1).toLowerCase();
+            if (asset.leaseType.toLowerCase() === 'freehold') {
+                badgeColorClass = 'ds-badge--freehold';
+            }
         }
-        if (asset.sellOrders > 0) {
-            return `<span class="mp-sec__card-status-overlay mp-sec__card-status-overlay--offers">
-                <span class="mp-sec__pulse-dot"></span>
-                ${asset.sellOrders} offer${asset.sellOrders > 1 ? 's' : ''}
-            </span>`;
-        }
-        if (asset.buyInterest > 0) {
-            return `<span class="mp-sec__card-status-overlay mp-sec__card-status-overlay--interest">
-                <span class="mp-sec__pulse-dot"></span>
-                ${asset.buyInterest} buy interest
-            </span>`;
-        }
-        return `<span class="mp-sec__card-status-overlay mp-sec__card-status-overlay--none">No offers</span>`;
+
+        return `<div class="property-badge ds-badge ds-badge--overlay ${badgeColorClass}">
+            <span class="badge-text">${escapeHTML(typeText)}</span>
+        </div>`;
     }
 
-    // ── Build image gallery HTML ──
+    function getFundingProgress(asset) {
+        if (typeof asset.fundingProgressPct === 'number') {
+            return Math.min(100, Math.max(0, asset.fundingProgressPct));
+        }
+        return asset.totalSupply > 0
+            ? Math.min(100, Math.max(0, ((asset.totalSupply - (asset.tokensAvailable || 0)) / asset.totalSupply) * 100))
+            : 0;
+    }
+
+    // ── Build shared property-card gallery HTML ──
     function buildGalleryHTML(asset) {
         let images = (asset.images || []).filter((img) => typeof img === 'string' && img.trim() !== '');
         if (images.length === 0) {
@@ -100,63 +131,49 @@
         const hasMultiple = images.length > 1;
 
         const imagesHTML = images.map((img, i) =>
-            `<img src="${img}" class="mp-sec__card-image ${i === 0 ? 'active' : ''}" style="object-fit: cover; object-position: center;" alt="${asset.name}" loading="lazy" onerror="this.onerror=null;this.src='/static/images/seed/villa1.webp';">`
+            `<img src="${escapeAttr(img)}" class="property-image ${i === 0 ? 'active' : ''}" style="object-fit: cover; object-position: center;" alt="${escapeAttr(asset.name)}" loading="lazy" onerror="this.onerror=null;this.src='/static/images/seed/villa1.webp';">`
         ).join('');
 
         let navHTML = '';
         if (hasMultiple) {
             navHTML = `
-                <button class="mp-sec__card-nav mp-sec__card-nav--prev" onclick="event.stopPropagation(); mpSecPrevImage(this)" aria-label="Previous image">
+                <button class="property-nav-arrow property-nav-prev" onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                 </button>
-                <button class="mp-sec__card-nav mp-sec__card-nav--next" onclick="event.stopPropagation(); mpSecNextImage(this)" aria-label="Next image">
+                <button class="property-nav-arrow property-nav-next" onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>`;
         }
 
         const dotsHTML = images.map((_, i) =>
-            `<div class="mp-sec__card-dot ${i === 0 ? 'active' : ''}" data-image-index="${i}"></div>`
+            `<div class="property-dot ${i === 0 ? 'active' : ''}" data-property-id="${escapeAttr(asset.slug)}" data-image-index="${i}"></div>`
         ).join('');
 
-        let typeText = 'Standard Leasehold';
-        let badgeColorClass = 'ds-badge--leasehold';
-        
-        if (asset.type && asset.type.toLowerCase() === 'commodity') {
-            typeText = 'Agricultural';
-            badgeColorClass = 'ds-badge--commodity';
-        } else if (asset.leaseType) {
-            typeText = asset.leaseType.charAt(0).toUpperCase() + asset.leaseType.slice(1).toLowerCase();
-            if (asset.leaseType.toLowerCase() === 'freehold') {
-                badgeColorClass = 'ds-badge--freehold';
-            }
-        }    
-        
-        const typeBadge = `<div class="property-badge ds-badge ds-badge--overlay ${badgeColorClass}">
-            <span class="badge-text">${typeText}</span>
-        </div>`;
-
         return `
-            <div class="mp-sec__card-gallery">
-                <div class="mp-sec__card-image-container">
+            <div class="property-gallery">
+                <div class="property-image-container">
                     ${imagesHTML}
                     ${navHTML}
-                    <div class="mp-sec__card-dots">${dotsHTML}</div>
+                    <div class="property-dots">${dotsHTML}</div>
                 </div>
-                ${typeBadge}
+                ${leaseBadge(asset)}
             </div>`;
     }
 
     // ── Render Card ──
-    function renderCard(asset, index) {
-        const isPositive = asset.change24h >= 0;
-        const changeClass = isPositive ? 'mp-sec__change--up' : 'mp-sec__change--down';
-        const changePrefix = isPositive ? '+' : '';
-        const sparkId = `sparkline-${asset.slug}`;
-        const hasOffers = asset.sellOrders > 0;
+    function renderCard(asset) {
+        const fundingPct = getFundingProgress(asset);
+        const isFullyFunded = fundingPct >= 100;
+        const investmentDuration = asset.termMonths ? `${asset.termMonths} months` : '—';
+        const annualizedReturn = asset.roi === null || asset.roi === undefined ? '—' : `${formatCardPct(asset.roi)}`;
 
         const card = document.createElement('div');
-        card.className = 'mp-sec__card';
+        card.className = 'property-card';
+        card.dataset.propertyId = asset.slug;
         card.dataset.name = asset.name.toLowerCase();
+        card.dataset.location = asset.location;
+        card.dataset.assetType = asset.type;
+        card.dataset.fundingStatus = asset.fundingStatus || asset.rentStatus || '';
         card.dataset.price = asset.price;
         card.dataset.volume = asset.volume24h;
         card.dataset.change = asset.change24h;
@@ -164,207 +181,54 @@
         card.dataset.sellOrders = asset.sellOrders;
         card.dataset.buyInterest = asset.buyInterest;
 
-        // No footer button to match normal marketplace style
         card.innerHTML = `
             ${buildGalleryHTML(asset)}
-            <div class="mp-sec__card-content">
-                <div class="mp-sec__card-meta">
+            <div class="property-content">
+                <div class="card-meta-row">
                     ${buildPropertyMetaHTML(asset)}
                 </div>
-                <h3 class="mp-sec__card-title">${asset.name}</h3>
-                <div class="mp-sec__price-row">
-                    <span class="mp-sec__price">${formatUSD(asset.price)}</span>
-                    ${asset.change24h !== 0
-                        ? `<span class="mp-sec__change ${changeClass}">${changePrefix}${asset.change24h.toFixed(1)}%</span>`
-                        : `<span class="mp-sec__change mp-sec__change--neutral">0.0%</span>`
-                    }
+
+                <div class="property-heading">
+                    <h3 class="property-title">${escapeHTML(asset.name)}</h3>
                 </div>
-                <div class="mp-sec__details-box">
-                    <div class="mp-sec__detail-row">
-                        <span class="mp-sec__detail-label">Annual ROI</span>
-                        <span class="mp-sec__detail-value ${asset.roi >= 10 ? 'mp-sec__detail-value--green' : ''}">${asset.roi}%</span>
+
+                <div class="property-pricing">
+                    <div class="price-wrapper">
+                        <span class="property-price">${formatSharePrice(asset.price)}</span>
+                        <span class="funded-percentage${isFullyFunded ? ' funded-percentage--complete' : ''}">${formatCardPct(fundingPct)} funded</span>
                     </div>
-                    <div class="mp-sec__detail-row">
-                        <span class="mp-sec__detail-label">Occupancy</span>
-                        <span class="mp-sec__detail-value">${asset.occupancy}%</span>
+                    <div class="property-progress ds-progress">
+                        <div class="ds-progress__fill${isFullyFunded ? ' ds-progress__fill--complete' : ''}" style="width: ${fundingPct}%"></div>
                     </div>
-                    <div class="mp-sec__detail-row">
-                        <span class="mp-sec__detail-label">Total supply</span>
-                        <span class="mp-sec__detail-value">${asset.totalSupply.toLocaleString()} tokens</span>
+                </div>
+
+                <div class="investment-details">
+                    <div class="investment-row">
+                        <span class="investment-label">Investment duration</span>
+                        <span class="investment-value">${escapeHTML(investmentDuration)}</span>
+                    </div>
+                    <div class="investment-row">
+                        <span class="investment-label">Projected return</span>
+                        <span class="investment-value">${formatBps(asset.capitalAppreciationBps)}</span>
+                    </div>
+                    <div class="investment-row">
+                        <span class="investment-label">Projected annualised net return</span>
+                        <span class="investment-value">${escapeHTML(annualizedReturn)}</span>
                     </div>
                 </div>
             </div>
-            <div class="mp-sec__chart-section" id="chart-section-${asset.slug}">
-                <div class="mp-sec__sparkline" id="${sparkId}"></div>
-            </div>
-            <button class="mp-sec__chart-toggle" data-slug="${asset.slug}" onclick="event.stopPropagation(); mpSecToggleChart('${asset.slug}')">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                <span>12m Chart</span>
-            </button>
         `;
 
         card.addEventListener('click', () => {
             const url = `/marketplace-trading-v3?asset=${asset.slug}`;
-            // Tag elements for View Transitions API morph
-            const gallery = card.querySelector('.mp-sec__card-gallery');
+            const gallery = card.querySelector('.property-gallery');
             if (gallery) gallery.style.viewTransitionName = 'tv3-hero-img';
-            const title = card.querySelector('.mp-sec__card-title');
+            const title = card.querySelector('.property-title');
             if (title) title.style.viewTransitionName = 'tv3-title';
             window.location.href = url;
         });
 
-        return { card, sparkId, sparkData: asset.sparkline, isPositive };
-    }
-
-    // ── Image Gallery Navigation ──
-    window.mpSecPrevImage = function (btn) {
-        const container = btn.closest('.mp-sec__card-gallery');
-        const images = container.querySelectorAll('.mp-sec__card-image');
-        const dots = container.querySelectorAll('.mp-sec__card-dot');
-        let activeIdx = 0;
-        images.forEach((img, i) => { if (img.classList.contains('active')) activeIdx = i; });
-        const newIdx = (activeIdx - 1 + images.length) % images.length;
-        images.forEach(img => img.classList.remove('active'));
-        dots.forEach(dot => dot.classList.remove('active'));
-        images[newIdx].classList.add('active');
-        if (dots[newIdx]) dots[newIdx].classList.add('active');
-    };
-
-    window.mpSecNextImage = function (btn) {
-        const container = btn.closest('.mp-sec__card-gallery');
-        const images = container.querySelectorAll('.mp-sec__card-image');
-        const dots = container.querySelectorAll('.mp-sec__card-dot');
-        let activeIdx = 0;
-        images.forEach((img, i) => { if (img.classList.contains('active')) activeIdx = i; });
-        const newIdx = (activeIdx + 1) % images.length;
-        images.forEach(img => img.classList.remove('active'));
-        dots.forEach(dot => dot.classList.remove('active'));
-        images[newIdx].classList.add('active');
-        if (dots[newIdx]) dots[newIdx].classList.add('active');
-    };
-
-    // ── Chart Toggle (Per Card) ──
-    window.mpSecToggleChart = function (slug) {
-        const clickedSection = document.getElementById(`chart-section-${slug}`);
-        if (!clickedSection) return;
-
-        // Determine new state from clicked card
-        const isCurrentlyHidden = clickedSection.style.display === 'none' || !clickedSection.classList.contains('expanded');
-
-        // Find the specific toggle button for this card
-        const toggleBtn = document.querySelector(`.mp-sec__chart-toggle[data-slug="${slug}"]`);
-
-        if (isCurrentlyHidden) {
-            // Show this chart
-            clickedSection.style.display = 'block';
-            clickedSection.classList.add('expanded');
-
-            // Lazy-render chart only on first expand
-            if (!clickedSection.dataset.rendered) {
-                clickedSection.dataset.rendered = 'true';
-                const asset = MOCK_ASSETS.find(a => a.slug === slug);
-                if (asset) {
-                    const sparkId = `sparkline-${slug}`;
-                    const isPositive = asset.change24h >= 0;
-                    setTimeout(() => {
-                        buildSparkline(sparkId, asset.sparkline, isPositive, asset.price);
-                    }, 50);
-                }
-            }
-            if (toggleBtn) {
-                toggleBtn.classList.add('expanded');
-                toggleBtn.querySelector('span').textContent = 'Hide Chart';
-            }
-        } else {
-            // Hide this chart
-            clickedSection.style.display = 'none';
-            clickedSection.classList.remove('expanded');
-            if (toggleBtn) {
-                toggleBtn.classList.remove('expanded');
-                toggleBtn.querySelector('span').textContent = '12m Chart';
-            }
-        }
-    };
-
-    // ── Build Chart with Axes ──
-    function buildSparkline(elId, data, isPositive, lastPrice) {
-        const color = isPositive ? '#16a34a' : '#dc2626';
-        // Generate date labels for 12 months (daily data = 365 points)
-        const now = new Date();
-        const categories = data.map((_, i) => {
-            const d = new Date(now.getTime() - (data.length - 1 - i) * 86400000);
-            return d;
-        });
-
-        const options = {
-            chart: {
-                type: 'area',
-                height: 140,
-                sparkline: { enabled: false },
-                toolbar: { show: false },
-                zoom: { enabled: false },
-                animations: { enabled: true, easing: 'easeinout', speed: 600 },
-                background: 'transparent',
-                fontFamily: "'TT Norms Pro', sans-serif",
-                parentHeightOffset: 0,
-            },
-            series: [{ name: 'Price', data: data }],
-            stroke: { width: 2, curve: 'smooth', colors: [color] },
-            colors: [color],
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.3,
-                    opacityTo: 0.05,
-                    stops: [0, 100],
-                },
-            },
-            xaxis: {
-                type: 'datetime',
-                categories: categories.map(d => d.toISOString()),
-                labels: {
-                    show: true,
-                    style: { fontSize: '10px', colors: '#9ca3af', fontFamily: "'TT Norms Pro', sans-serif" },
-                    datetimeFormatter: { month: 'MMM', year: 'yyyy' },
-                    rotate: 0,
-                    maxHeight: 30,
-                },
-                axisBorder: { show: false },
-                axisTicks: { show: false },
-                tickAmount: 6,
-            },
-            yaxis: {
-                labels: {
-                    show: true,
-                    style: { fontSize: '10px', colors: '#9ca3af', fontFamily: "'TT Norms Pro', sans-serif" },
-                    formatter: (val) => '$' + val.toFixed(0),
-                },
-                tickAmount: 3,
-            },
-            grid: {
-                show: true,
-                borderColor: '#f0f0f0',
-                strokeDashArray: 3,
-                xaxis: { lines: { show: false } },
-                yaxis: { lines: { show: true } },
-                padding: { top: -10, right: 0, bottom: 0, left: 6 },
-            },
-            tooltip: {
-                enabled: true,
-                x: { format: 'dd MMM HH:mm' },
-                y: { formatter: (val) => '$' + val.toFixed(2) },
-                theme: 'light',
-            },
-            dataLabels: { enabled: false },
-        };
-
-        const el = document.getElementById(elId);
-        if (el && typeof ApexCharts !== 'undefined') {
-            el.innerHTML = ''; // clear any previous
-            const chart = new ApexCharts(el, options);
-            chart.render();
-        }
+        return { card };
     }
 
     // ── Update Filter Counts ──
@@ -426,7 +290,7 @@
             assets = assets.filter(a => a.sellOrders === 0);
         }
 
-        // Sort
+        // Sort cards
         assets.sort((a, b) => {
             if (sortBy === 'price') return b.price - a.price;
             if (sortBy === 'change') return b.change24h - a.change24h;
@@ -445,6 +309,9 @@
                 const { card } = renderCard(asset, i);
                 grid.appendChild(card);
             });
+            if (window.initializePropertyCards) {
+                window.initializePropertyCards(grid);
+            }
         }
     }
 
@@ -453,7 +320,10 @@
         const modal = document.getElementById('buy-interest-modal');
         const assetLabel = document.getElementById('interest-modal-asset');
         if (assetLabel) {
-            assetLabel.innerHTML = `for <strong>${asset.name}</strong>`;
+            const prefix = document.createTextNode('for ');
+            const strong = document.createElement('strong');
+            strong.textContent = asset.name || 'this asset';
+            assetLabel.replaceChildren(prefix, strong);
         }
         const priceInput = document.getElementById('interest-price');
         if (priceInput) priceInput.value = (asset.price / 100).toFixed(2);
@@ -466,6 +336,24 @@
         modal.style.display = 'none';
     }
 
+    function setInterestFeedback(message, type = 'info') {
+        const totalEl = document.getElementById('interest-total');
+        if (!totalEl) return;
+        totalEl.textContent = message;
+        totalEl.style.color = type === 'error' ? '#d92d20' : type === 'success' ? '#027a48' : '';
+    }
+
+    function newIdempotencyKey() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
     function updateInterestTotal() {
         const priceInput = document.getElementById('interest-price');
         const qtyInput = document.getElementById('interest-qty');
@@ -476,21 +364,11 @@
         const fee = subtotal * ((window.POOOL_FEE_PCT || 5) / 100);
         const total = subtotal + fee;
         if (totalEl) totalEl.textContent = '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (totalEl) totalEl.style.color = '';
     }
 
     // ── Init ──
     document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const res = await fetch('/api/marketplace/secondary/assets');
-            if (res.ok) {
-                MOCK_ASSETS = await res.json();
-            }
-        } catch (err) {
-            console.error('Failed to fetch secondary assets', err);
-        }
-        
-        filterAndSort();
-
         // Search + Sort (if elements exist)
         const searchInput = document.getElementById('mp-search');
         const sortSelect = document.getElementById('mp-sort');
@@ -516,6 +394,17 @@
                 filterAndSort();
             });
         });
+
+        try {
+            const res = await fetch('/api/marketplace/secondary/assets');
+            if (res.ok) {
+                MOCK_ASSETS = await res.json();
+            }
+        } catch (err) {
+            console.error('Failed to fetch secondary assets', err);
+        }
+
+        filterAndSort();
 
         // Buy Interest modal — delegate
         document.addEventListener('click', (e) => {
@@ -550,19 +439,51 @@
         // Submit interest
         const submitBtn = document.getElementById('interest-submit-btn');
         if (submitBtn) {
-            submitBtn.addEventListener('click', () => {
-                submitBtn.textContent = '✓ Interest Placed — Holders Notified';
+            submitBtn.addEventListener('click', async () => {
+                const modal = document.getElementById('buy-interest-modal');
+                const priceInput = document.getElementById('interest-price');
+                const qtyInput = document.getElementById('interest-qty');
+                const assetSlug = modal?.dataset.assetSlug;
+                const price = parseFloat(priceInput?.value);
+                const quantity = parseInt(qtyInput?.value, 10);
+
+                if (!assetSlug || !price || price <= 0 || !quantity || quantity <= 0) {
+                    setInterestFeedback('Enter a valid price and quantity.', 'error');
+                    return;
+                }
+
+                const original = submitBtn.innerHTML;
+                submitBtn.textContent = 'Placing order...';
                 submitBtn.disabled = true;
-                submitBtn.style.background = '#16a34a';
-                setTimeout(() => {
-                    closeBuyInterestModal();
-                    submitBtn.innerHTML = `
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
-                        Notify Holders & Place Interest
-                    `;
+
+                try {
+                    const res = await fetch('/api/marketplace/orders', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            asset_id: assetSlug,
+                            side: 'buy',
+                            order_type: 'limit',
+                            price_cents: Math.round(price * 100),
+                            quantity,
+                            idempotency_key: newIdempotencyKey()
+                        })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        throw new Error(data.error || data.message || 'Failed to place buy order.');
+                    }
+                    setInterestFeedback('Buy order placed.', 'success');
+                    setTimeout(() => {
+                        closeBuyInterestModal();
+                        window.location.href = `/trade-success?side=buy&qty=${quantity}&price=${price.toFixed(2)}&order_id=${encodeURIComponent(data.order_id || '')}&slug=${encodeURIComponent(assetSlug)}`;
+                    }, 600);
+                } catch (err) {
+                    setInterestFeedback(err.message || 'Failed to place buy order.', 'error');
+                    submitBtn.innerHTML = original;
                     submitBtn.disabled = false;
-                    submitBtn.style.background = '';
-                }, 2000);
+                }
             });
         }
     });
@@ -600,16 +521,16 @@
             if (!summary || summary.last_price_cents == null) continue;
 
             // Find the card
-            const card = document.querySelector(`.mp-sec__card[data-name="${asset.name.toLowerCase()}"]`);
+            const card = document.querySelector(`.property-card[data-name="${CSS.escape(asset.name.toLowerCase())}"]`);
             if (!card) continue;
 
             // Update price
-            const priceEl = card.querySelector('.mp-sec__price');
+            const priceEl = card.querySelector('.property-price');
             if (priceEl) {
                 const oldPrice = parseInt(card.dataset.price);
                 const newPrice = summary.last_price_cents;
                 if (oldPrice !== newPrice) {
-                    priceEl.textContent = formatUSD(newPrice);
+                    priceEl.innerHTML = formatSharePrice(newPrice);
                     card.dataset.price = newPrice;
                     // Flash animation
                     priceEl.style.transition = 'color 0.3s';
@@ -618,19 +539,9 @@
                 }
             }
 
-            // Update 24h change
+            // Keep the shared card funded badge stable; live 24h movement remains sortable via dataset.
             if (summary.change_24h_pct != null) {
-                const changeEl = card.querySelector('.mp-sec__change');
-                if (changeEl) {
-                    const pct = summary.change_24h_pct;
-                    const isPositive = pct >= 0;
-                    changeEl.textContent = (pct === 0 ? '' : (isPositive ? '+' : '')) + pct.toFixed(1) + '%';
-                    changeEl.className = 'mp-sec__change ' + (
-                        pct === 0 ? 'mp-sec__change--neutral' :
-                        isPositive ? 'mp-sec__change--up' : 'mp-sec__change--down'
-                    );
-                    card.dataset.change = pct;
-                }
+                card.dataset.change = summary.change_24h_pct;
             }
 
             // Update volume

@@ -2198,6 +2198,13 @@
   background: #f8f9fc;
 }
 
+.marketing-download-btn--disabled,
+.marketing-download-btn--disabled:hover {
+  color: #98a2b3;
+  cursor: not-allowed;
+  background: #f8f9fc;
+}
+
 .marketing-copy-btn {
   display: inline-flex;
   align-items: center;
@@ -2569,6 +2576,20 @@
 .commission-export-btn:hover {
   background: #f9fafb;
   border-color: #98a2b3;
+}
+
+.commission-export-btn:disabled,
+.commission-export-btn--disabled {
+  color: #98a2b3;
+  background: #f9fafb;
+  border-color: #eaecf0;
+  cursor: not-allowed;
+}
+
+.commission-export-btn:disabled:hover,
+.commission-export-btn--disabled:hover {
+  background: #f9fafb;
+  border-color: #eaecf0;
 }
 
 /* --- Responsive --- */

@@ -124,7 +124,7 @@ pub async fn create_order(
                             } else {
                                 "buy"
                             }
-                        )))
+                        )));
                     }
                     Err(e) => {
                         tracing::warn!(
@@ -691,6 +691,7 @@ pub async fn get_secondary_assets(
             a.annual_yield_bps,
             a.description,
             a.total_value_cents,
+            a.tokens_available,
             a.land_size_sqm,
             a.building_size_sqm,
             a.bedrooms,
@@ -700,6 +701,8 @@ pub async fn get_secondary_assets(
             a.occupancy_rate_bps,
             a.lease_type,
             a.property_type,
+            a.term_months,
+            a.capital_appreciation_bps,
             ARRAY(
                 SELECT image_url 
                 FROM asset_images 
@@ -765,8 +768,15 @@ pub async fn get_secondary_assets(
             .into_iter()
             .map(|url| crate::storage::service::rewrite_gcs_url(&url))
             .collect();
+        let funding_progress_pct = if row.tokens_total > 0 {
+            (((row.tokens_total - row.tokens_available) as f64 / row.tokens_total as f64) * 100.0)
+                .clamp(0.0, 100.0)
+        } else {
+            0.0
+        };
 
         results.push(super::models::SecondaryAsset {
+            id: row.id.to_string(),
             slug: row.slug,
             name: row.title,
             r#type: row.asset_type,
@@ -793,6 +803,10 @@ pub async fn get_secondary_assets(
             lease_type: row.lease_type,
             property_type: row.property_type,
             funding_status: row.funding_status,
+            tokens_available: row.tokens_available,
+            funding_progress_pct,
+            term_months: row.term_months,
+            capital_appreciation_bps: row.capital_appreciation_bps,
         });
     }
 

@@ -1,7 +1,7 @@
 {% set title="Asset Trading V3" %}
 {% set extra_css=['property-detail', 'marketplace-trading-v3', 'marketplace-orderbook'] %}
 {% set extra_js=['poool-confirm', 'marketplace-event-bus', 'marketplace-websocket', 'marketplace-orderbook',
-'marketplace-chart', 'marketplace-p2p', 'marketplace-trading', 'marketplace-trading-v3'] %}
+'marketplace-chart', 'marketplace-p2p', 'marketplace-trading-v3'] %}
 {% set body_class="tv3-body fouc-guard" %}
 {% set external_scripts=['https://cdn.jsdelivr.net/npm/apexcharts'] %}
 
@@ -886,13 +886,9 @@
             var params = new URLSearchParams(window.location.search);
             var assetId = params.get('asset_id') || params.get('id') || params.get('asset');
 
-            // If we have an asset ID or slug, initialize live trading
+            // If we have an asset ID or slug, initialize P2P offers.
             if (assetId) {
                 console.log('[Trading] Live mode — asset:', assetId);
-                if (window.MarketTrading) {
-                    window.MarketTrading.init(assetId);
-                }
-                // Initialize P2P offers panel
                 if (window.MarketP2P) {
                     window.MarketP2P.init('tv3-p2p-container', assetId);
                 }

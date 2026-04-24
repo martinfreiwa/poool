@@ -67,6 +67,7 @@ pub async fn page_developer_dashboard(
 
     // Fetch all dashboard statistics for this developer
     let stats = service::fetch_dashboard_stats(&state.db, user.id).await;
+    let developer_assets = service::fetch_all_assets(&state.db, user.id).await;
 
     // Render using MiniJinja with full data context
     let template = match state.templates.get_template("developer/dashboard.html") {
@@ -80,6 +81,8 @@ pub async fn page_developer_dashboard(
     let html = match template.render(minijinja::context! {
         user => user,
         stats => stats,
+        developer_assets => developer_assets,
+        active_period => "all",
         is_developer => true,
     }) {
         Ok(c) => c,

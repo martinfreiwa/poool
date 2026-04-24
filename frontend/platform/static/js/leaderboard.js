@@ -150,11 +150,10 @@
 
       cachedPrefs = prefs;
 
-      var forceLive = new URLSearchParams(window.location.search).has('live');
       var forceDemo = new URLSearchParams(window.location.search).has('demo');
 
-      // Use demo data if forced or if real data has fewer than 20 participants
-      if (forceDemo || (!forceLive && (!data || data.total_participants < 20))) {
+      // Demo data is opt-in only. Low-participation live datasets should still render as real data.
+      if (forceDemo) {
         usingDemoData = true;
         var demo = getDemoData(data);
         
@@ -770,10 +769,9 @@
     try {
       var data = await fetchRankings(currentMetric, currentTimeframe, currentPage, currentSearch, currentTier, currentPerPage);
 
-      var forceLive = new URLSearchParams(window.location.search).has('live');
       var forceDemo = new URLSearchParams(window.location.search).has('demo');
 
-      if (forceDemo || (!forceLive && (!data || data.total_participants < 20))) {
+      if (forceDemo) {
         usingDemoData = true;
         var demo = getDemoData(data);
         

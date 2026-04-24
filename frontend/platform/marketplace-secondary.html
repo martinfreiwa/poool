@@ -1,8 +1,7 @@
 {% set title="Secondary Market" %}
-{% set extra_css=['leaderboard', 'marketplace-secondary'] %}
-{% set extra_js=['marketplace-secondary'] %}
+{% set extra_css=['leaderboard', 'property-card', 'marketplace-secondary'] %}
+{% set extra_js=['property-card', 'marketplace-secondary'] %}
 {% set body_class="mp-secondary-body fouc-guard" %}
-{% set external_scripts=['https://cdn.jsdelivr.net/npm/apexcharts'] %}
 
 {% include "components/head.html" %}
 
@@ -49,7 +48,7 @@
             </div>
 
             <!-- Asset Grid -->
-            <div id="mp-asset-grid" class="mp-sec__grid">
+            <div id="mp-asset-grid" class="mp-sec__grid property-grid">
                 <!-- JS will inject cards here -->
             </div>
 
@@ -74,7 +73,7 @@
             </div>
             <h2 class="mp-sec__modal-title">Place Buy Interest</h2>
             <p class="mp-sec__modal-sub" id="interest-modal-asset">for <strong>Bali Villa Canggu #12</strong></p>
-            <p class="mp-sec__modal-desc">No one is currently selling this asset. Place a buy interest and all current holders will be notified.</p>
+            <p class="mp-sec__modal-desc">No one is currently selling this asset. Place a real buy limit order so sellers can match against your bid.</p>
 
             <div class="mkt-field">
                 <label for="interest-price">Your Offer Price (USD per share)</label>
@@ -102,7 +101,7 @@
             <div class="mp-sec__modal-actions">
                 <button id="interest-submit-btn" class="mkt-btn mkt-btn--primary mkt-btn--wide">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
-                    Notify Holders &amp; Place Interest
+                    Place Buy Order
                 </button>
                 <button id="interest-cancel-btn" class="mkt-btn mkt-btn--ghost" type="button">Cancel</button>
             </div>

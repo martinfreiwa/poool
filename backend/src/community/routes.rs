@@ -1005,6 +1005,9 @@ pub struct TrendingAssetDisplay {
     pub id: Uuid,
     pub name: String,
     pub symbol: String,
+    pub slug: String,
+    pub asset_type: String,
+    pub detail_url: String,
     pub post_count: i64,
 }
 
@@ -1024,24 +1027,32 @@ async fn get_trending_assets(
 
     let asset_ids: Vec<Uuid> = trending.iter().map(|(id, _)| *id).collect();
 
-    let assets: Vec<(Uuid, String, String)> =
-        sqlx::query_as("SELECT id, name, symbol FROM assets WHERE id = ANY($1)")
+    let assets: Vec<(Uuid, String, String, String, String)> =
+        sqlx::query_as("SELECT id, name, symbol, slug, asset_type FROM assets WHERE id = ANY($1)")
             .bind(&asset_ids)
             .fetch_all(&state.db)
             .await?;
 
     let mut asset_map = std::collections::HashMap::new();
     for a in assets {
-        asset_map.insert(a.0, (a.1, a.2));
+        asset_map.insert(a.0, (a.1, a.2, a.3, a.4));
     }
 
     let mut result = Vec::new();
     for (id, count) in trending {
-        if let Some((name, symbol)) = asset_map.get(&id) {
+        if let Some((name, symbol, slug, asset_type)) = asset_map.get(&id) {
+            let detail_url = if asset_type == "commodity" {
+                format!("/commodity/{}", slug)
+            } else {
+                format!("/property/{}", slug)
+            };
             result.push(TrendingAssetDisplay {
                 id,
                 name: name.clone(),
                 symbol: symbol.clone(),
+                slug: slug.clone(),
+                asset_type: asset_type.clone(),
+                detail_url,
                 post_count: count,
             });
         }

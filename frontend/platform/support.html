@@ -1,8 +1,8 @@
 {% with title="Support | POOOL", meta_description="POOOL Support — Submit and track your support requests.",
-extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'support'] %}{% include
+extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar', 'developer-ui'], extra_js=['profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'support'] %}{% include
 "components/head.html" %}{% endwith %}
 
-<body id="support-body" class="fouc-guard">
+<body id="support-body">
   {% include 'components/mobile-menu.html' %}
 
   <div id="portfolio-page" class="portfolio-page">
@@ -13,7 +13,7 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
 
     <main class="ds-main dashboard-main{% if is_developer %} developer-support-main{% endif %}">
       {% if is_developer %}
-      {% with dev_nav_title="Support", dev_nav_active="support", dev_nav_variant="support" %}
+      {% with dev_nav_title="Support", dev_nav_active="support" %}
       {% include "components/developer-topbar.html" %}
       {% endwith %}
       {% else %}
@@ -23,17 +23,24 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
       <div class="dashboard-container">
         <div class="support-wrapper">
 
+          <div class="support-workspace">
           <!-- Submit a New Ticket -->
-          <div class="support-form-card" id="submit-ticket">
-            <h2>
-              <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10 2v16M2 10h16" />
-              </svg>
-              Submit a New Ticket
-            </h2>
+          <div class="ds-card support-form-card" id="submit-ticket">
+            <div class="support-card-header">
+              <div>
+                <h2>
+                  <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 2v16M2 10h16" />
+                  </svg>
+                  New ticket
+                </h2>
+              </div>
+              <span id="support-draft-status" class="support-draft-status" aria-live="polite"></span>
+            </div>
             <form id="support-form" enctype="multipart/form-data">
-              <div class="support-form-group">
+              <div class="support-form-grid">
+              <div class="support-form-group support-form-group--compact">
                 <label for="ticket-category">Category</label>
                 <select id="ticket-category" class="ds-select">
                   <option value="general">General</option>
@@ -46,15 +53,33 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
                   <option value="other">Other</option>
                 </select>
               </div>
+              <div class="support-form-group support-form-group--compact">
+                <label for="ticket-priority" class="priority-label">Priority <span id="expected-response-time" class="response-time-badge">Response: ~4 hours</span></label>
+                <select id="ticket-priority" class="ds-select">
+                  <option value="low">Low — General question</option>
+                  <option value="normal" selected>Normal — Standard issue</option>
+                  <option value="high">High — Affecting my account</option>
+                  <option value="urgent">Urgent — Funds at risk</option>
+                </select>
+              </div>
+              </div>
               <div class="support-form-group">
                 <label for="ticket-subject">Subject</label>
                 <input type="text" id="ticket-subject" class="ds-input" placeholder="Brief summary of your issue" required minlength="5"
                   maxlength="255" />
+                <div class="support-field-meta">
+                  <span>Use a short, specific title.</span>
+                  <span><span id="ticket-subject-count">0</span>/255</span>
+                </div>
               </div>
               <div class="support-form-group">
                 <label for="ticket-message">Message</label>
                 <textarea id="ticket-message" class="ds-textarea" placeholder="Describe your issue in detail… (min 20 characters)" rows="4"
                   required minlength="20" maxlength="5000"></textarea>
+                <div class="support-field-meta">
+                  <span id="ticket-message-hint">Minimum 20 characters.</span>
+                  <span><span id="ticket-message-count">0</span>/5000</span>
+                </div>
               </div>
 
               <!-- Drag & Drop File Upload -->
@@ -69,9 +94,9 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
                       <polyline points="17 8 12 3 7 8"/>
                       <line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
-                    <span class="drop-zone-text">Drag & drop or <strong>click to browse</strong></span>
-                    <span class="drop-zone-hint">Max 5MB — JPG, PNG, or PDF</span>
-                  </div>
+                  <span class="drop-zone-text">Drag & drop or <strong>click to browse</strong></span>
+                  <span class="drop-zone-hint">Max 5MB. JPG, PNG, or PDF.</span>
+                </div>
                   <div class="drop-zone-file-info" id="drop-zone-file-info" style="display: none;"></div>
                 </div>
               </div>
@@ -79,16 +104,10 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
               <!-- FAQ Suggestion Container -->
               <div id="faq-suggestion-container" class="faq-suggestion-container"></div>
 
-              <div class="support-form-group">
-                <label for="ticket-priority" class="priority-label">Priority <span id="expected-response-time" class="response-time-badge">Response: ~4 hours</span></label>
-                <select id="ticket-priority" class="ds-select">
-                  <option value="low">Low — General question</option>
-                  <option value="normal" selected>Normal — Standard issue</option>
-                  <option value="high">High — Affecting my account</option>
-                  <option value="urgent">Urgent — Funds at risk</option>
-                </select>
-              </div>
               <div class="support-form-footer">
+                <button type="button" class="ds-btn ds-btn--secondary support-clear-draft-btn" id="clear-ticket-draft-btn">
+                  Clear Draft
+                </button>
                 <button type="submit" class="ds-btn ds-btn--primary support-submit-btn" id="submit-ticket-btn">
                   <svg  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -99,8 +118,20 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
             </form>
           </div>
 
+          <aside class="support-help-panel" aria-label="Response targets">
+            <h3>Response targets</h3>
+            <p class="support-help-panel__note">Use Urgent only for account access or funds-at-risk issues.</p>
+            <div class="support-sla-list" aria-label="Response targets">
+              <div><span>Urgent</span><strong>&lt; 1 hour</strong></div>
+              <div><span>High</span><strong>~2 hours</strong></div>
+              <div><span>Normal</span><strong>~4 hours</strong></div>
+              <div><span>Low</span><strong>~24 hours</strong></div>
+            </div>
+          </aside>
+          </div>
+
           <!-- Your Tickets -->
-          <div class="support-form-card" id="your-tickets">
+          <div class="ds-card support-form-card" id="your-tickets">
             <h2>
               <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -110,9 +141,9 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
               Your Tickets
             </h2>
             <div class="support-tabs">
-              <button class="support-tab active" data-filter="">All</button>
-              <button class="support-tab" data-filter="open">Open</button>
-              <button class="support-tab" data-filter="resolved">Resolved</button>
+              <button class="support-tab active" data-filter="">All <span id="support-tab-count-all">0</span></button>
+              <button class="support-tab" data-filter="open">Open <span id="support-tab-count-open">0</span></button>
+              <button class="support-tab" data-filter="resolved">Resolved <span id="support-tab-count-resolved">0</span></button>
             </div>
             <div id="tickets-list">
               <div class="support-empty">
@@ -122,28 +153,18 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
           </div>
 
           <!-- FAQ / Knowledge Base -->
-          <div class="support-form-card support-faq-card" id="faq">
-            <h2>
+          <details class="ds-card support-form-card support-faq-card support-faq-disclosure" id="faq">
+            <summary class="support-faq-summary">
               <svg  width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
                 stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="10" cy="10" r="8" />
                 <path d="M7.5 7.5a2.5 2.5 0 015 0c0 1.5-2.5 2-2.5 3.5" />
                 <circle cx="10" cy="14.5" r="0.5" fill="currentColor" />
               </svg>
-              Frequently Asked Questions
-            </h2>
+              Knowledge base
+            </summary>
 
             <input type="text" id="faq-search" placeholder="Search the knowledge base…" />
-
-            <div class="faq-category-tabs">
-              <button class="faq-cat-tab active" data-category="">All</button>
-              <button class="faq-cat-tab" data-category="account">Account</button>
-              <button class="faq-cat-tab" data-category="investments">Investments</button>
-              <button class="faq-cat-tab" data-category="deposits">Payments</button>
-              <button class="faq-cat-tab" data-category="security">Security</button>
-              <button class="faq-cat-tab" data-category="kyc">KYC</button>
-              <button class="faq-cat-tab" data-category="rewards">Rewards</button>
-            </div>
 
             <div id="faq-list">
               <!-- Getting Started -->
@@ -327,14 +348,13 @@ extra_css=['leaderboard', 'support', 'developer-leaderboard-navbar'], extra_js=[
                 </div>
               </div>
             </div>
-          </div>
+          </details>
 
         </div>
       </div>
     </main>
   </div>
 
-  <script src="/static/js/support.js"></script>
 </body>
 
 </html>

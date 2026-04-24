@@ -73,6 +73,12 @@
 
         // Global error handlers
         window.addEventListener('unhandledrejection', function (event) {
+            const reason = event.reason;
+            const message = reason && reason.message ? reason.message : String(reason || '');
+            if (reason && reason.name === 'InvalidStateError' && message.includes('Transition was aborted')) {
+                event.preventDefault();
+                return;
+            }
             console.error('Unhandled Promise Rejection:', event.reason);
             Sentry.captureException(event.reason || new Error('Unhandled Promise rejection'));
         });

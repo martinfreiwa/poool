@@ -1,4 +1,4 @@
-{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['leaderboard', 'cards-template', 'ds-cards', 'developer-leaderboard-navbar', 'settings'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'poool-confirm', 'settings'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['leaderboard', 'cards-template', 'ds-cards', 'developer-leaderboard-navbar', 'settings', 'developer-ui'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'poool-confirm', 'settings'] %}{% include "components/head.html" %}{% endwith %}
 {% import "components/macros.html" as macros %}
 
 <div id="marketplace-page" class="marketplace-page">
@@ -9,7 +9,7 @@
     </div>
 
     <!-- Main Content Area -->
-    <main id="settings-main" class="ds-main marketplace-main cards-template-layout settings-main-layout">
+    <main id="settings-main" class="ds-main marketplace-main cards-template-layout settings-main-layout{% if is_developer %} developer-settings-main{% endif %}">
         {% if is_developer %}
         {% with dev_nav_title="Settings", dev_nav_active="settings", dev_nav_show_search=true %}
         {% include "components/developer-topbar.html" %}
@@ -45,7 +45,7 @@
 {% endcall %}
                     <div class="completion-text">
                         <h3>Complete your profile</h3>
-                        <p id="profile-completeness-hint">Fill in all your details to complete your profile.</p>
+                    <p id="profile-completeness-hint">{% if is_developer %}Complete developer identity, links, and account details for review readiness.{% else %}Fill in all your details to complete your profile.{% endif %}</p>
                     </div>
                     <div id="profile-completeness-text" class="completion-percentage" aria-live="polite">0%</div>
                 </div>

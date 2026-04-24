@@ -1,4 +1,4 @@
-{% with title="Developer Add Asset", meta_description="Add a new property or asset to POOOL.", extra_css=['leaderboard', 'developer-add-asset', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom', 'developer-leaderboard-navbar'], extra_js=['htmx-init', 'developer-add-asset', 'profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Developer Add Asset", meta_description="Add a new property or asset to POOOL.", extra_css=['leaderboard', 'developer-add-asset', 'developer-application-form', 'cart', 'checkout', 'poool-icon-custom', 'developer-leaderboard-navbar', 'developer-ui'], extra_js=['htmx-init', 'developer-add-asset', 'profile-dropdown', 'mobile-navigation', 'poool-dropdown', 'poool-dropdown-init'] %}{% include "components/head.html" %}{% endwith %}
 
 <body id="developer-add-asset-body" class="fouc-guard">
   {% include 'components/mobile-menu.html' %}
@@ -13,8 +13,8 @@
       {% endwith %}
       <!-- Asset Type Header -->
       <div class="asset-type-header">
-        <h2 class="asset-type-header__title">Choose asset type</h2>
-        <p class="asset-type-header__subtitle">Please select the type of asset you want to tokenize</p>
+        <h2 class="asset-type-header__title">Choose a supported asset type</h2>
+        <p class="asset-type-header__subtitle">Start with the asset category currently available for developer submissions.</p>
       </div>
       
       <!-- Asset Type Grid -->
@@ -24,7 +24,7 @@
             selectAssetType(id);
           }
         </script>
-        <div id="asset-type-card-real-estate" class="asset-type-card selected"
+        <div id="asset-type-card-real-estate" class="asset-type-card asset-type-card--primary selected"
           onclick="__templ_selectAssetTypeScript_6b97(&#34;real-estate&#34;)">
           <div class="asset-type-image" data-image-url="/static/images/ui/Glass1.webp">
             <div class="asset-type-glass"></div>
@@ -37,10 +37,17 @@
             </div>
           </div>
           <div class="asset-type-content">
+            <span class="asset-type-eyebrow">Currently supported</span>
             <h3 class="asset-type-title">Real Estate</h3>
             <p class="asset-type-description">Villas, apartments, houses</p>
           </div>
+          <div class="asset-type-selected-indicator" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <path d="M16.5 5.5L8 14l-4.5-4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
         </div>
+        <div class="asset-type-coming-row" aria-label="Asset types coming later">
         <div id="asset-type-card-commercial-property" class="asset-type-card coming-soon">
           <span class="coming-soon-badge">Coming Soon</span>
           <div class="asset-type-image" data-image-url="/static/images/ui/Glass2.webp">
@@ -129,6 +136,7 @@
             <h3 class="asset-type-title">Land / Plots</h3>
             <p class="asset-type-description">Land plots, farmland, etc</p>
           </div>
+        </div>
         </div>
       </div>
       <!-- Next Step Button -->

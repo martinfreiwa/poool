@@ -1,4 +1,69 @@
 document.addEventListener("DOMContentLoaded", function () {
+  const tableSortState = {
+    key: "sales",
+    direction: "desc",
+  };
+
+  function getSortValue(row, key) {
+    if (key === "asset") {
+      return (row.dataset.asset || "").toLowerCase();
+    }
+    return Number(row.dataset[key] || 0);
+  }
+
+  function sortDeveloperAssetsTable(key) {
+    const wrapper = document.getElementById("developer-assets-wrapper");
+    const body = document.getElementById("developer-assets-body");
+    if (!wrapper || !body) return;
+
+    if (tableSortState.key === key) {
+      tableSortState.direction = tableSortState.direction === "asc" ? "desc" : "asc";
+    } else {
+      tableSortState.key = key;
+      tableSortState.direction = key === "asset" ? "asc" : "desc";
+    }
+
+    const rows = Array.from(body.querySelectorAll(".developer-assets-table__row[data-asset]"));
+    rows.sort((a, b) => {
+      const aValue = getSortValue(a, tableSortState.key);
+      const bValue = getSortValue(b, tableSortState.key);
+
+      if (typeof aValue === "string") {
+        return tableSortState.direction === "asc"
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      return tableSortState.direction === "asc" ? aValue - bValue : bValue - aValue;
+    });
+
+    rows.forEach((row) => body.appendChild(row));
+
+    wrapper.querySelectorAll(".developer-assets-table__sort").forEach((button) => {
+      const isActive = button.dataset.devSort === tableSortState.key;
+      button.classList.toggle("developer-assets-table__sort--active", isActive);
+      button.dataset.direction = isActive ? tableSortState.direction : "";
+      button.setAttribute("aria-sort", isActive ? tableSortState.direction : "none");
+    });
+  }
+
+  document.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element)) return;
+    const sortButton = event.target.closest(".developer-assets-table__sort");
+    if (!sortButton) return;
+
+    const key = sortButton.dataset.devSort;
+    if (!key) return;
+
+    sortDeveloperAssetsTable(key);
+  });
+
+  document.addEventListener("htmx:afterSwap", (event) => {
+    if (event.target && event.target.id === "developer-assets-wrapper") {
+      tableSortState.key = "sales";
+      tableSortState.direction = "desc";
+    }
+  });
 
   // Animate metric numbers with easing
   function animateCounter(element, target, duration = 2000) {

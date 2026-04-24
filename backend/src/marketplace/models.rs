@@ -843,6 +843,7 @@ mod tests {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SecondaryAsset {
+    pub id: String,
     pub slug: String,
     pub name: String,
     pub r#type: String,
@@ -869,4 +870,8 @@ pub struct SecondaryAsset {
     pub lease_type: Option<String>,
     pub property_type: Option<String>,
     pub funding_status: String,
+    pub tokens_available: i32,
+    pub funding_progress_pct: f64,
+    pub term_months: Option<i32>,
+    pub capital_appreciation_bps: Option<i32>,
 }

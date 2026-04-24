@@ -198,7 +198,7 @@ function initializeAddToCart() {
             // Server redirected somewhere else (e.g. /kyc, /auth/login)
             window.location.href = finalUrl.pathname + finalUrl.search;
           } else {
-            window.location.href = "/cart";
+            window.location.href = finalUrl.pathname + finalUrl.search;
           }
         })
         .catch((error) => {
