@@ -56,6 +56,7 @@ totp-rs = { version = "5.6.0", features = ["gen_secret", "otpauth", "qr"] }
 google-cloud-storage = { version = "0.22", default-features = false, features = ["default-tls", "auth"] }
 google-cloud-auth = { version = "0.17", default-features = false, features = ["default-tls"] }
 mime_guess = "2.0"
+pulldown-cmark = { version = "0.12", default-features = false, features = ["html"] }
 
 # Error monitoring & performance tracking
 sentry = { version = "0.34", default-features = false, features = [

@@ -2,6 +2,20 @@ use sqlx::PgPool;
 
 use super::models::*;
 
+/// Render markdown source to HTML. Used as fallback when content_html is missing.
+fn render_markdown(md: &str) -> String {
+    use pulldown_cmark::{html, Options, Parser};
+    let mut opts = Options::empty();
+    opts.insert(Options::ENABLE_TABLES);
+    opts.insert(Options::ENABLE_STRIKETHROUGH);
+    opts.insert(Options::ENABLE_TASKLISTS);
+    opts.insert(Options::ENABLE_SMART_PUNCTUATION);
+    let parser = Parser::new_ext(md, opts);
+    let mut out = String::new();
+    html::push_html(&mut out, parser);
+    out
+}
+
 // ── Article Queries ───────────────────────────────────────────────
 
 /// List published articles with pagination and optional filters.
@@ -175,7 +189,14 @@ pub async fn get_article_by_slug(
         subtitle: r.get("subtitle"),
         excerpt: r.get("excerpt"),
         content: r.get("content"),
-        content_html: r.get("content_html"),
+        content_html: {
+            let existing: Option<String> = r.get("content_html");
+            existing.filter(|s| !s.trim().is_empty()).or_else(|| {
+                r.get::<Option<String>, _>("content")
+                    .filter(|s| !s.trim().is_empty())
+                    .map(|md| render_markdown(&md))
+            })
+        },
         meta_title: r.get("meta_title"),
         meta_description: r.get("meta_description"),
         canonical_url: r.get("canonical_url"),
