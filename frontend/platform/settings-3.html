@@ -1,8 +1,5 @@
-{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['leaderboard', 'settings-2', 'cards-template', 'ds-cards'], extra_js=['htmx-init', 'marketplace', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'marketplace-search', 'settings-service', 'settings'] %}{% include "components/head.html" %}{% endwith %}
+{% with title="Settings – POOOL", meta_description="Manage your POOOL account settings, profile details, notification preferences, and security options.", extra_css=['leaderboard', 'settings-2', 'settings-3', 'cards-template', 'ds-cards'], extra_js=['htmx-init', 'profile-dropdown', 'legal-enhancements', 'mobile-navigation', 'poool-confirm', 'settings-service', 'settings'] %}{% include "components/head.html" %}{% endwith %}
 {% import "components/macros.html" as macros %}
-<link rel="stylesheet" href="/static/css/poool-dropdown.css">
-<script src="/static/js/poool-dropdown.js"></script>
-<script src="/static/js/poool-dropdown-init.js"></script>
 
 <div id="marketplace-page" class="marketplace-page">
     <!-- Sidebar Navigation -->
@@ -12,16 +9,28 @@
     </div>
 
     <!-- Main Content Area -->
-    <main id="settings-main" class="ds-main marketplace-main cards-template-layout"
-        style="background:#F9FAFB; padding: 0;">
+    <main id="settings-main" class="ds-main marketplace-main cards-template-layout settings-main-layout">
         {% with investor_topbar_title="Account Settings", investor_topbar_class="settings-topbar", investor_topbar_variant="settings" %}{% include 'components/investor-topbar.html' %}{% endwith %}
-        <style>.holo-card.settings-card { overflow: visible !important; }</style>
-        <div class="settings-content-wrapper" style="max-width: 1200px; width: 100%; margin: 0; padding: 24px var(--page-padding-x, 32px) 64px; box-sizing: border-box;">
+        <div class="settings-content-wrapper">
 
-        <section class="settings-cards-section" style="margin-bottom: 64px;">
+        <!-- Loading skeleton -->
+        <div id="settings-loading-skeleton" class="settings-skeleton" aria-hidden="true">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+        </div>
+
+        <!-- Error / empty state -->
+        <div id="settings-empty-state" class="settings-empty-state hidden" role="alert">
+            <h3>We couldn't load your settings</h3>
+            <p>Please refresh the page or try again later.</p>
+            <button id="btn-retry-load" class="ds-btn ds-btn--primary" type="button">Retry</button>
+        </div>
+
+        <section id="settings-content" class="settings-cards-section hidden" aria-label="Account settings">
 
             <!-- Profile Completion Banner -->
-            <div id="completeness-banner" class="ds-card holo-card profile-completion-banner" style="margin-bottom: 48px; width:100%; box-sizing:border-box;">
+            <div id="completeness-banner" class="ds-card holo-card profile-completion-banner">
                 <div class="completion-header">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
 	<svg viewBox="0 0 24 24">
@@ -30,37 +39,20 @@
 {% endcall %}
                     <div class="completion-text">
                         <h3>Complete your profile</h3>
-                        <p id="completeness-subtitle">4 fields remaining to complete your profile.</p>
+                        <p id="profile-completeness-hint">Fill in all your details to complete your profile.</p>
                     </div>
-                    <div id="completeness-pct" class="completion-percentage">64%</div>
+                    <div id="profile-completeness-text" class="completion-percentage" aria-live="polite">0%</div>
                 </div>
 
-                <div class="completion-track">
-                    <div id="completeness-bar-fill" class="completion-fill" style="width: 64%;"></div>
+                <div class="completion-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-labelledby="profile-completeness-text">
+                    <div id="profile-completeness-bar" class="completion-fill"></div>
                 </div>
 
-                <div id="completeness-missing" class="completion-badges">
-                    <span class="completion-badge completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg> Avatar</span>
-                    <span class="completion-badge completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg> Address</span>
-                    <span class="completion-badge completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg> Nationality</span>
-                    <span class="completion-badge completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg> KYC Verified</span>
-                </div>
+                <div id="completeness-missing" class="completion-badges" aria-label="Missing profile fields"></div>
             </div>
 
             <!-- Core Profile -->
-            <div class="ds-card holo-card settings-card" style="margin-bottom:32px; width:100%; box-sizing:border-box;">
+            <form class="ds-card holo-card settings-card" id="form-core-profile" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Core Profile', 'Manage your personal details and avatar.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
 		<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
@@ -71,48 +63,43 @@
 					{% endcall %}
 
                 <div>
-                    <!-- Avatar identity hero block (mirrors Account Details card design) -->
-                    <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
-                        <div class="settings-photo-current"
-                            style="width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#F0F2FF 0%,#E8ECFF 100%); border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,255,0.08); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:#0000EE; flex-shrink:0; overflow:hidden;">
-                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150"
-                                alt="Avatar" style="width:100%; height:100%; object-fit:cover;">
+                    <!-- Avatar identity hero block -->
+                    <div class="settings-avatar-row">
+                        <div class="settings-photo-current" aria-hidden="true">
+                            <img id="settings-avatar-img" src="/static/images/avatar-placeholder.svg" alt="">
                         </div>
-                        <div>
-                            <div id="settings-display-name"
-                                style="font-size:17px; font-weight:700; color:var(--page-title-color); margin-bottom:2px;">
-                                UpdatedTest User Two</div>
-                            <div id="settings-display-email" style="font-size:14px; color:#717680;">martin@poool.app</div>
+                        <div class="settings-identity-text">
+                            <div id="settings-display-name" class="settings-identity-name"></div>
+                            <div id="settings-display-email" class="settings-identity-email"></div>
                         </div>
-                        <button id="btn-photo-upload" class="ds-btn ds-btn--ghost ds-btn--sm"
-                            style="margin-left:auto; border:1px solid #E5E7EB; border-radius:8px; display:flex; align-items:center; gap:6px;"><svg
-                                viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-                                stroke-width="2">
+                        <button id="btn-photo-upload" type="button" class="ds-btn ds-btn--ghost ds-btn--sm settings-change-photo-btn" aria-label="Change profile photo">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                 <polyline points="17 8 12 3 7 8" />
                                 <line x1="12" y1="3" x2="12" y2="15" />
-                            </svg> Change Photo</button>
-                        <input type="file" id="profile-photo-upload" accept="image/jpeg, image/png, image/webp" style="display: none;">
+                            </svg>
+                            Change Photo
+                        </button>
+                        <input type="file" id="profile-photo-upload" accept="image/jpeg,image/png,image/webp" class="sr-only">
                     </div>
 
-                    <hr class="settings-divider" style="margin:0 -32px 24px -32px;">
+                    <hr class="settings-divider settings-divider--edge-32">
 
-                    <!-- Name fields: First / Middle / Last -->
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
-                        <span class="settings-label">First Name</span>
-                        <input type="text" class="settings-input" id="settings-first-name" style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-first-name">First Name</label>
+                        <input type="text" class="settings-input" id="settings-first-name" name="first_name" autocomplete="given-name" required>
                     </div>
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
-                        <span class="settings-label">Middle Name</span>
-                        <input type="text" class="settings-input" id="settings-middle-name" placeholder="Middle name" style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-middle-name">Middle Name</label>
+                        <input type="text" class="settings-input" id="settings-middle-name" name="middle_name" autocomplete="additional-name" placeholder="Optional">
                     </div>
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
-                        <span class="settings-label">Last Name</span>
-                        <input type="text" class="settings-input" id="settings-last-name" style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-last-name">Last Name</label>
+                        <input type="text" class="settings-input" id="settings-last-name" name="last_name" autocomplete="family-name" required>
                     </div>
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
-                        <span class="settings-label">Gender</span>
-                        <select class="settings-input settings-select" id="settings-gender" style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-gender">Gender</label>
+                        <select class="settings-input settings-select" id="settings-gender" name="gender" autocomplete="sex">
                             <option value="">Select gender...</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
@@ -120,39 +107,30 @@
                         </select>
                     </div>
 
-                    <hr class="settings-divider" style="margin:8px -32px 24px -32px;">
+                    <hr class="settings-divider settings-divider--edge-32">
 
-                    <!-- Email (read-only, change via Security section) -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label">Email
-                            <span
-                                style="display:block; font-size:12px; font-weight:400; color:#98A2B3; margin-top:2px;">Change
-                                in Security &amp; Access</span>
-                        </span>
-                        <input type="email" class="settings-input" id="settings-email" disabled
-                            style="background:#F9FAFB; color:#717680; cursor:not-allowed; border-radius:8px;">
+                    <!-- Email (read-only, change via Security) -->
+                    <div class="settings-form-row align-start settings-form-row--list">
+                        <label class="settings-label" for="settings-email">Email
+                            <span class="settings-label-hint">Change in Security &amp; Access</span>
+                        </label>
+                        <input type="email" class="settings-input settings-input--readonly" id="settings-email" name="email" autocomplete="email" readonly aria-readonly="true">
                     </div>
-                    <!-- Phone -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:0;">
-                        <span class="settings-label">Phone Number</span>
-                        <input type="tel" class="settings-input" id="settings-phone" placeholder="+1 555 000 0000"
-                            style="border-radius:8px;">
+                    <div class="settings-form-row align-start settings-form-row--list">
+                        <label class="settings-label" for="settings-phone">Phone Number</label>
+                        <input type="tel" class="settings-input" id="settings-phone" name="phone_number" autocomplete="tel" placeholder="+1 555 000 0000">
                     </div>
 
-                    <hr class="settings-divider" style="margin:24px -32px 0 -32px;">
-                    <div class="settings-edit-footer" style="padding:24px 0 0 0; border:none;">
-                        <button class="ds-btn ds-btn--ghost" style="color:#475467; font-weight:600;">Cancel</button>
-                        <button class="ds-btn ds-btn--primary btn-save-profile" type="button" onclick="saveProfile()"
-                            style="background:var(--primary-color, #0000FF); color:#FFFFFF; border-radius:8px;">Save
-                            Profile</button>
+                    <hr class="settings-divider settings-divider--edge-32">
+                    <div class="settings-edit-footer">
+                        <button class="ds-btn ds-btn--ghost btn-cancel-profile" type="reset">Cancel</button>
+                        <button class="ds-btn ds-btn--primary btn-save-profile" type="submit" data-section="core">Save Profile</button>
                     </div>
                 </div>
-            </div>
+            </form>
 
             <!-- Residential Address -->
-            <div class="ds-card holo-card settings-card" style="margin-bottom:32px; width:100%; box-sizing:border-box;">
+            <form class="ds-card holo-card settings-card" id="form-address" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Residential Address', 'Where you currently reside for legal and tax
                             purposes.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
@@ -162,36 +140,29 @@
 					{% endcall %}
 
                 <div>
-                    <!-- All address fields always shown — no hidden-behind-button -->
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
-                        <span class="settings-label">Address Line 1</span>
-                        <input type="text" class="settings-input" id="settings-address-1" placeholder="Street address"
-                            style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-address-1">Address Line 1</label>
+                        <input type="text" class="settings-input" id="settings-address-1" name="address_line_1" autocomplete="address-line1" placeholder="Street address">
                     </div>
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
-                        <span class="settings-label">Address Line 2</span>
-                        <input type="text" class="settings-input" id="settings-address-2" placeholder="Apt, suite, unit, floor"
-                            style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-address-2">Address Line 2</label>
+                        <input type="text" class="settings-input" id="settings-address-2" name="address_line_2" autocomplete="address-line2" placeholder="Apt, suite, unit, floor">
                     </div>
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
-                        <span class="settings-label">City</span>
-                        <input type="text" class="settings-input" id="settings-city" placeholder="City"
-                            style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-city">City</label>
+                        <input type="text" class="settings-input" id="settings-city" name="city" autocomplete="address-level2" placeholder="City">
                     </div>
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
-                        <span class="settings-label">State / Region</span>
-                        <input type="text" class="settings-input" id="settings-state" placeholder="State, province or region"
-                            style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-state">State / Region</label>
+                        <input type="text" class="settings-input" id="settings-state" name="state_province" autocomplete="address-level1" placeholder="State, province or region">
                     </div>
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 160px 1fr;">
-                        <span class="settings-label">Postal / ZIP Code</span>
-                        <input type="text" class="settings-input" id="settings-postal" placeholder="Postal or ZIP code"
-                            style="border-radius:8px; max-width:160px;">
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-postal">Postal / ZIP Code</label>
+                        <input type="text" class="settings-input settings-input--narrow" id="settings-postal" name="postal_code" autocomplete="postal-code" placeholder="Postal or ZIP code">
                     </div>
-                    <div class="settings-form-row settings-form-row--list"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:0;">
-                        <span class="settings-label">Country</span>
-                        <select class="settings-input settings-select" id="settings-country" data-searchable="true" style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list settings-form-row--last">
+                        <label class="settings-label" for="settings-country">Country</label>
+                        <select class="settings-input settings-select" id="settings-country" name="country" autocomplete="country" data-searchable="true">
 <option value="" disabled>Select a country</option>
 									<option value="AF">Afghanistan</option>
 									<option value="AL">Albania</option>
@@ -201,7 +172,7 @@
 									<option value="AG">Antigua and Barbuda</option>
 									<option value="AR">Argentina</option>
 									<option value="AM">Armenia</option>
-									<option value="AU" selected>Australia</option>
+									<option value="AU">Australia</option>
 									<option value="AT">Austria</option>
 									<option value="AZ">Azerbaijan</option>
 									<option value="BS">Bahamas</option>
@@ -392,18 +363,16 @@
 </select>
                     </div>
 
-                    <hr class="settings-divider" style="margin:24px -32px 0 -32px;">
-                    <div class="settings-edit-footer"
-                        style="padding:24px 0 0 0; border:none; justify-content:flex-end;">
-                        <button class="ds-btn ds-btn--primary btn-save-profile" type="button" onclick="saveProfile()"
-                            style="background:var(--primary-color, #0000FF); color:#FFFFFF; border-radius:8px;">Save
-                            Address</button>
+                    <hr class="settings-divider settings-divider--edge-32">
+                    <div class="settings-edit-footer">
+                        <button class="ds-btn ds-btn--ghost btn-cancel-profile" type="reset">Cancel</button>
+                        <button class="ds-btn ds-btn--primary btn-save-profile" type="submit" data-section="address">Save Address</button>
                     </div>
                 </div>
-            </div>
+            </form>
 
             <!-- Identity Vault -->
-            <div class="ds-card holo-card settings-card" style="margin-bottom:48px; width:100%; box-sizing:border-box;">
+            <form class="ds-card holo-card settings-card" id="form-identity" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Identity Vault', 'Your core verification details and
                             nationality data.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
@@ -412,31 +381,28 @@
 					{% endcall %}
 
                 <div>
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 200px 1fr;">
-                        <span class="settings-label">Date of Birth</span>
-                        <input type="date" class="settings-input" id="settings-dob" style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list settings-form-row--wide-label">
+                        <label class="settings-label" for="settings-dob">Date of Birth</label>
+                        <input type="date" class="settings-input" id="settings-dob" name="date_of_birth" autocomplete="bday" max="2012-12-31">
                     </div>
-                    <hr class="settings-divider" style="margin:16px -32px;">
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 200px 1fr;">
-                        <span class="settings-label">Nationality</span>
-                        <input type="text" class="settings-input" id="settings-nationality" style="border-radius:8px;">
+                    <hr class="settings-divider settings-divider--edge-32">
+                    <div class="settings-form-row settings-form-row--list settings-form-row--wide-label">
+                        <label class="settings-label" for="settings-nationality">Nationality</label>
+                        <input type="text" class="settings-input" id="settings-nationality" name="nationality" autocomplete="off">
                     </div>
-                    <hr class="settings-divider" style="margin:16px -32px;">
-                    <div class="settings-form-row settings-form-row--list" style="grid-template-columns: 200px 1fr;">
-                        <span class="settings-label">Tax ID</span>
-                        <input type="text" class="settings-input" id="settings-tax-id" style="border-radius:8px;">
+                    <hr class="settings-divider settings-divider--edge-32">
+                    <div class="settings-form-row settings-form-row--list settings-form-row--wide-label">
+                        <label class="settings-label" for="settings-tax-id">Tax ID</label>
+                        <input type="text" class="settings-input" id="settings-tax-id" name="tax_id" autocomplete="off" inputmode="text" spellcheck="false">
                     </div>
 
-
-                    <hr class="settings-divider" style="margin:24px -32px 0 -32px;">
-                    <div class="settings-edit-footer"
-                        style="padding:24px 0 0 0; border:none; justify-content:flex-end;">
-                        <button class="ds-btn ds-btn--primary btn-save-profile" type="button" onclick="saveProfile()"
-                            style="background:var(--primary-color, #0000FF); color:#FFFFFF; border-radius:8px;">Save
-                            Identity Details</button>
+                    <hr class="settings-divider settings-divider--edge-32">
+                    <div class="settings-edit-footer">
+                        <button class="ds-btn ds-btn--ghost btn-cancel-profile" type="reset">Cancel</button>
+                        <button class="ds-btn ds-btn--primary btn-save-profile" type="submit" data-section="identity">Save Identity Details</button>
                     </div>
                 </div>
-            </div>
+            </form>
             <div class="ds-card holo-card settings-card" style="margin-bottom:32px; width:100%; box-sizing:border-box;">
                 {% call macros.holo_card_header('Financial Overview', 'Your investment limits, KYC status, and
                             payment methods.', 'blue', 'p-icon--md') %}
@@ -447,89 +413,75 @@
 					{% endcall %}
 
                 <div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <div class="settings-inline-row">
                         <div>
-                            <div style="font-size:15px; font-weight:700; color:var(--page-title-color);">Identity
-                                Verification</div>
-                            <div style="font-size:13px; color:#475467; margin-top:2px;">Complete KYC to unlock full
-                                limits.</div>
+                            <div class="settings-row-title">Identity Verification</div>
+                            <div class="settings-row-subtitle">Complete KYC to unlock full limits.</div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:16px;"><span id="settings-kyc-status" class="settings-badge"
-                                style="color:#D92D20; font-weight:600; font-size:13px;">Action Required</span><button
-                                class="ds-btn ds-btn--primary ds-btn--sm"
-                                style="background:var(--primary-color,#0000FF); color:#FFF; border-radius:8px;">View
-                                Status</button></div>
+                        <div class="settings-row-actions">
+                            <span id="settings-kyc-status" class="settings-badge settings-badge--loading" aria-live="polite">Loading…</span>
+                            <button id="btn-kyc-action" type="button" class="ds-btn ds-btn--primary ds-btn--sm">View Status</button>
+                        </div>
                     </div>
-                    <div class="settings-metrics-grid" style="margin-bottom:0;">
+                    <div class="settings-metrics-grid">
                         <div class="metric-box">
                             <div class="metric-label">Current Tier</div>
-                            <div class="metric-value" id="settings-tier-name">Premium</div>
+                            <div class="metric-value" id="settings-tier-name">—</div>
                         </div>
                         <div class="metric-box">
                             <div class="metric-label">Annual Investment Limit</div>
-                            <div class="metric-value"><span id="settings-investment-limit">$0.00</span></div>
+                            <div class="metric-value"><span id="settings-investment-limit">—</span></div>
                         </div>
                         <div class="metric-box">
                             <div class="metric-label">Invested last 12 months</div>
-                            <div class="metric-value"><span id="settings-invested-12m">$0.00</span></div>
+                            <div class="metric-value"><span id="settings-invested-12m">—</span></div>
                         </div>
                         <div class="metric-box">
                             <div class="metric-label">Limit Available</div>
-                            <div class="metric-value"><span id="settings-limit-available">$0.00</span></div>
+                            <div class="metric-value"><span id="settings-limit-available">—</span></div>
                         </div>
                     </div>
-                        <hr class="settings-divider" style="margin:24px -28px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <div style="font-size:14px; font-weight:600; color:var(--page-title-color);">My Referral
-                                    Code</div>
-                                <div style="font-size:13px; color:#475467;">Share to earn rewards.</div>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:16px;"><span id="settings-referral-code"
-                                    style="padding:8px 16px; background:#FAFBFC; border:1px solid #EAECF0; border-radius:8px; font-family:monospace; font-weight:600;">d8e07596</span><button
-                                    class="ds-btn ds-btn--ghost ds-btn--sm" style="display:flex; gap:8px;"><svg
-                                        viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                    </svg> Copy</button></div>
+                    <hr class="settings-divider settings-divider--edge-28">
+                    <div class="settings-inline-row">
+                        <div>
+                            <div class="settings-row-title">My Referral Code</div>
+                            <div class="settings-row-subtitle">Share to earn rewards.</div>
                         </div>
-                        <hr class="settings-divider" style="margin:24px -28px;">
-                        <div
-                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                            <div style="font-size:14px; font-weight:600; color:var(--page-title-color);">Payment Methods
-                            </div>
-                            <div style="display:flex; gap:12px;"><button class="ds-btn ds-btn--primary ds-btn--sm"
-                                    style="display:flex; gap:8px; background:var(--primary-color,#0000FF); color:#FFF; border-radius:8px;"><svg
-                                        viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                                        <line x1="1" y1="10" x2="23" y2="10" />
-                                    </svg> Add Credit Card</button><button class="ds-btn ds-btn--primary ds-btn--sm"
-                                    style="display:flex; gap:8px; background:var(--primary-color,#0000FF); color:#FFF; border-radius:8px;"><svg
-                                        viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                        <line x1="3" y1="9" x2="21" y2="9" />
-                                        <line x1="9" y1="21" x2="9" y2="9" />
-                                    </svg> Add Bank</button></div>
+                        <div class="settings-row-actions">
+                            <span id="settings-referral-code" class="settings-referral-code">—</span>
+                            <button id="btn-copy-referral" type="button" class="ds-btn ds-btn--ghost ds-btn--sm" aria-label="Copy referral code">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                                Copy
+                            </button>
                         </div>
-                        <div class="payment-card-box">
-                            <div class="payment-card-info">
-                                <div class="payment-logo">VISA</div>
-                                <div class="payment-details"><span class="payment-number">Visa &bull;&bull;&bull;&bull;
-                                        &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 4242</span>
-                                    <div class="payment-meta"><span>martin freiwald</span><span>Expires 12/28</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="payment-action"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"
-                                    stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path
-                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                </svg></div>
+                    </div>
+                    <hr class="settings-divider settings-divider--edge-28">
+                    <div class="settings-inline-row">
+                        <div class="settings-row-title">Payment Methods</div>
+                        <div class="settings-row-actions">
+                            <button id="btn-add-card" type="button" class="ds-btn ds-btn--primary ds-btn--sm">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                                    <line x1="1" y1="10" x2="23" y2="10" />
+                                </svg>
+                                Add Credit Card
+                            </button>
+                            <button id="btn-add-bank" type="button" class="ds-btn ds-btn--ghost ds-btn--sm">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="3" y1="9" x2="21" y2="9" />
+                                    <line x1="9" y1="21" x2="9" y2="9" />
+                                </svg>
+                                Add Bank
+                            </button>
                         </div>
+                    </div>
+                    <div id="settings-payment-methods-list" class="settings-payment-list" aria-live="polite">
+                        <div class="settings-empty-inline">No payment methods on file.</div>
+                    </div>
                 </div>
             </div>
 
@@ -544,89 +496,51 @@
 					{% endcall %}
 
                 <div>
-                    <div class="settings-form-row"
-                        style="grid-template-columns: 160px 1fr auto; margin-bottom:16px; align-items:center;">
+                    <div class="settings-form-row settings-form-row--3col">
                         <span class="settings-label">Email</span>
-                        <div
-                            style="font-size:14px; font-weight:600; color:var(--page-title-color); display:flex; align-items:center; gap:12px;">
-                            admin@poool.app <span id="settings-email-verified" class="settings-label-badge"
-                                style="display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" width="12"
-                                    height="12" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>Verified</span></div>
-                        <button class="ds-btn ds-btn--ghost ds-btn--sm"
-                            style="border:1px solid #E5E7EB; border-radius:8px;">Change Email</button>
+                        <div class="settings-value-with-badge">
+                            <span id="settings-security-email-display">—</span>
+                            <span id="settings-email-verified" class="settings-label-badge"></span>
+                        </div>
+                        <button id="btn-change-email" type="button" class="ds-btn ds-btn--ghost ds-btn--sm">Change Email</button>
                     </div>
-                    <hr class="settings-divider" style="margin:0 -28px 16px -28px;">
-                    <div class="settings-form-row"
-                        style="grid-template-columns: 160px 1fr auto; margin-bottom:16px; align-items:center;">
+                    <hr class="settings-divider settings-divider--edge-28">
+                    <div class="settings-form-row settings-form-row--3col">
                         <span class="settings-label">Password</span>
-                        <div style="color:#98A2B3; letter-spacing:4px; font-size:14px;">
-                            &bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div>
-                        <button class="ds-btn ds-btn--ghost ds-btn--sm"
-                            style="border:1px solid #E5E7EB; border-radius:8px;">Change Password</button>
+                        <div class="settings-password-mask" aria-label="Password hidden">••••••••••</div>
+                        <button id="btn-change-password" type="button" class="ds-btn ds-btn--ghost ds-btn--sm">Change Password</button>
                     </div>
-                    <hr class="settings-divider" style="margin:0 -28px 16px -28px;">
-                    <div class="settings-form-row"
-                        style="grid-template-columns: 160px 1fr auto; margin-bottom:16px; align-items:center;">
+                    <hr class="settings-divider settings-divider--edge-28">
+                    <div class="settings-form-row settings-form-row--3col">
                         <span class="settings-label">Two-Factor Auth</span>
-                        <div style="font-size:13px; color:#475467;">Google Authenticator or compatible TOTP app</div>
-                        <div id="settings-2fa-actions"><span id="settings-2fa-badge"
-                                style="padding:6px 12px; border:1px solid #EAECF0; border-radius:8px; font-size:13px; color:#98A2B3; display:inline-block;">Not
-                                enabled</span></div>
+                        <div class="settings-row-subtitle">Google Authenticator or compatible TOTP app</div>
+                        <div id="settings-2fa-actions"><span id="settings-2fa-badge" class="settings-badge settings-badge--loading">Loading…</span></div>
                     </div>
-                    <hr class="settings-divider" style="margin:0 -28px 16px -28px;">
-                    <div style="margin-bottom:16px;">
+                    <hr class="settings-divider settings-divider--edge-28">
 
-                            <div
-                                style="font-size:14px; font-weight:700; color:var(--page-title-color); margin-bottom:4px;">
-                                Linked Accounts</div>
-                            <div style="font-size:13px; color:#475467; margin-bottom:16px;">Connect for quick sign-in
-                            </div>
-                            <div id="settings-oauth-list">
-                                <div class="session-box" style="margin-bottom:12px;">
-                                    <div class="session-icon" style="width:36px; height:36px; border-radius:8px; background:#FFFFFF; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 1px 3px rgba(0,0,0,0.05); border: 1px solid #F2F4F7;">
-                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-                                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                                        </svg>
-                                    </div>
-                                    <div style="display:flex; flex-direction:column; gap:4px; flex:1; margin-left:12px;">
-                                        <span style="font-size:14px; font-weight:600; color:var(--page-title-color);">Google</span>
-                                        <span style="font-size:13px; color:#475467;">Not connected</span>
-                                    </div>
-                                    <button class="ds-btn ds-btn--ghost ds-btn--sm"
-                                        style="border:1px solid #E5E7EB; border-radius:8px; font-weight:600;">Link Account</button>
-                                </div>
-                            </div>
-                            <div class="session-box">
-                                <div class="session-icon" style="width:36px; height:36px; border-radius:8px; background:#FFFFFF; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 1px 3px rgba(0,0,0,0.05); border: 1px solid #F2F4F7;">
-                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="#000000">
-                                        <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12c0-5.523-4.477-10-10-10z"/>
-                                    </svg>
-                                </div>
-                                <div style="display:flex; flex-direction:column; gap:4px; flex:1; margin-left:12px;">
-                                    <span style="font-size:14px; font-weight:600; color:var(--page-title-color);">Facebook</span>
-                                    <span style="font-size:13px; color:#475467;">Not connected</span>
-                                </div>
-                                <button class="ds-btn ds-btn--ghost ds-btn--sm"
-                                    style="border:1px solid #E5E7EB; border-radius:8px; font-weight:600;">Link Account</button>
-                            </div>
+                    <!-- Active Sessions -->
+                    <div class="settings-section-block">
+                        <div class="settings-block-title">Active Sessions</div>
+                        <div class="settings-block-subtitle">Devices currently signed in to your account</div>
+                        <div id="settings-sessions-list" class="settings-sessions" aria-live="polite">
+                            <div class="settings-empty-inline">Loading sessions…</div>
                         </div>
                     </div>
 
-                    <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
-                    <div class="settings-edit-footer" style="padding:24px 0 0 0; border:none; justify-content:flex-end;">
-                        <button class="ds-btn ds-btn--primary"
-                            style="background:var(--primary-color, #0000FF); color:#FFFFFF; border-radius:8px;">Save
-                            Changes</button>
+                    <hr class="settings-divider settings-divider--edge-28">
+
+                    <!-- Linked OAuth Accounts -->
+                    <div class="settings-section-block">
+                        <div class="settings-block-title">Linked Accounts</div>
+                        <div class="settings-block-subtitle">Connect for quick sign-in</div>
+                        <div id="settings-oauth-list" class="settings-oauth-list" aria-live="polite">
+                            <div class="settings-empty-inline">Loading…</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="ds-card holo-card settings-card" style="margin-bottom: 32px; width:100%; box-sizing:border-box;">
+            <form class="ds-card holo-card settings-card" id="form-preferences" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Preferences', 'Timezone, currency, and notification
                             preferences.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
@@ -637,14 +551,24 @@
 					{% endcall %}
 
                 <div>
-                    <div class="settings-form-row settings-form-row--list"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px;">
-                        <span class="settings-label">Timezone</span>
-                        <select class="settings-input settings-select" id="settings-timezone" style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-language">Language</label>
+                        <select class="settings-input settings-select" id="settings-language" name="language">
+                            <option value="en">English</option>
+                            <option value="id">Bahasa Indonesia</option>
+                            <option value="de">Deutsch</option>
+                            <option value="es">Español</option>
+                            <option value="fr">Français</option>
+                            <option value="zh">中文</option>
+                        </select>
+                    </div>
+                    <div class="settings-form-row settings-form-row--list">
+                        <label class="settings-label" for="settings-timezone">Timezone</label>
+                        <select class="settings-input settings-select" id="settings-timezone" name="timezone">
 <optgroup label="Americas">
 										<option value="Pacific/Honolulu">(UTC-10:00) Hawaii</option>
 										<option value="America/Anchorage">(UTC-09:00) Alaska</option>
-										<option value="America/Los_Angeles" selected>(UTC-08:00) Pacific Time (US
+										<option value="America/Los_Angeles">(UTC-08:00) Pacific Time (US
 											&amp;
 											Canada)</option>
 										<option value="America/Denver">(UTC-07:00) Mountain Time (US &amp; Canada)
@@ -729,56 +653,53 @@
 									</optgroup>
 </select>
                     </div>
-                    <div class="settings-form-row settings-form-row--list"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:0;">
-                        <span class="settings-label">Currency</span>
-                        <select class="settings-input settings-select" id="settings-currency" style="border-radius:8px;">
-                            <option value="USD">USD 🇺🇸</option>
-                            <option value="EUR">EUR 🇪🇺</option>
+                    <div class="settings-form-row settings-form-row--list settings-form-row--last">
+                        <label class="settings-label" for="settings-currency">Currency</label>
+                        <select class="settings-input settings-select" id="settings-currency" name="currency">
+                            <option value="USD">USD — US Dollar</option>
+                            <option value="EUR">EUR — Euro</option>
+                            <option value="GBP">GBP — British Pound</option>
+                            <option value="AUD">AUD — Australian Dollar</option>
+                            <option value="SGD">SGD — Singapore Dollar</option>
+                            <option value="IDR">IDR — Indonesian Rupiah</option>
+                            <option value="JPY">JPY — Japanese Yen</option>
+                            <option value="CHF">CHF — Swiss Franc</option>
                         </select>
                     </div>
 
-                    <hr class="settings-divider" style="margin:24px -28px;">
+                    <hr class="settings-divider settings-divider--edge-28">
 
-                    <div style="font-size:14px; font-weight:700; color:var(--page-title-color); margin-bottom:4px;">
-                        Notifications</div>
-                    <div style="font-size:13px; color:#475467; margin-bottom:16px;">Choose how you want to be notified
-                    </div>
+                    <div class="settings-block-title">Notifications</div>
+                    <div class="settings-block-subtitle">Choose how you want to be notified</div>
 
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <div class="settings-toggle-row">
                         <div>
-                            <div style="font-size:14px; font-weight:600; color:var(--page-title-color);">Email Alerts
-                            </div>
-                            <div style="font-size:13px; color:#475467;">Receive newsletters &amp; tips</div>
+                            <div class="settings-toggle-label" id="label-notify-email">Email Alerts</div>
+                            <div class="settings-toggle-subtitle">Receive newsletters &amp; tips</div>
                         </div>
-                        <button class="ds-switch" data-state="inactive"
-                            onclick="this.dataset.state = this.dataset.state === 'active' ? 'inactive' : 'active'">
+                        <button id="settings-notify-email" type="button" class="ds-switch" role="switch" aria-checked="false" aria-labelledby="label-notify-email" data-state="inactive" data-toggle-save="notifications">
                             <div class="ds-switch-thumb"></div>
                         </button>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="settings-toggle-row">
                         <div>
-                            <div style="font-size:14px; font-weight:600; color:var(--page-title-color);">Push
-                                Notifications</div>
-                            <div style="font-size:13px; color:#475467;">Browser push notifications</div>
+                            <div class="settings-toggle-label" id="label-notify-push">Push Notifications</div>
+                            <div class="settings-toggle-subtitle">Browser push notifications</div>
                         </div>
-                        <button class="ds-switch" data-state="active"
-                            onclick="this.dataset.state = this.dataset.state === 'active' ? 'inactive' : 'active'">
+                        <button id="settings-notify-push" type="button" class="ds-switch" role="switch" aria-checked="false" aria-labelledby="label-notify-push" data-state="inactive" data-toggle-save="notifications">
                             <div class="ds-switch-thumb"></div>
                         </button>
                     </div>
 
-                    <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
-                    <div class="settings-edit-footer"
-                        style="padding:24px 0 0 0; border:none; justify-content:flex-end;">
-                        <button class="ds-btn ds-btn--primary" id="btn-save-preferences" type="button"
-                            style="background:var(--primary-color,#0000FF); color:#FFF; border-radius:8px;">Update
-                            Preferences</button>
+                    <hr class="settings-divider settings-divider--edge-28">
+                    <div class="settings-edit-footer">
+                        <button class="ds-btn ds-btn--ghost" id="btn-cancel-preferences" type="reset">Cancel</button>
+                        <button class="ds-btn ds-btn--primary" id="btn-save-preferences" type="submit">Update Preferences</button>
                     </div>
                 </div>
-            </div>
+            </form>
 
-            <div class="ds-card holo-card settings-card" style="margin-bottom: 32px; width:100%; box-sizing:border-box;">
+            <form class="ds-card holo-card settings-card" id="form-leaderboard" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Leaderboard', 'Control your visibility and display name on
                             the public leaderboard.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
@@ -792,484 +713,557 @@
 					{% endcall %}
 
                 <div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <div class="settings-toggle-row">
                         <div>
-                            <div style="font-size:14px; font-weight:600; color:var(--page-title-color);">Show on
-                                Leaderboard</div>
-                            <div style="font-size:13px; color:#475467;">Appear in the public leaderboard rankings</div>
+                            <div class="settings-toggle-label" id="label-lb-visible">Show on Leaderboard</div>
+                            <div class="settings-toggle-subtitle">Appear in the public leaderboard rankings</div>
                         </div>
-                        <button class="ds-switch" data-state="active"
-                            onclick="this.dataset.state = this.dataset.state === 'active' ? 'inactive' : 'active'">
+                        <button id="settings-lb-visible" type="button" class="ds-switch" role="switch" aria-checked="false" aria-labelledby="label-lb-visible" data-state="inactive">
                             <div class="ds-switch-thumb"></div>
                         </button>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="settings-toggle-row">
                         <div>
-                            <div style="font-size:14px; font-weight:600; color:var(--page-title-color);">Show Avatar
-                            </div>
-                            <div style="font-size:13px; color:#475467;">Display your profile picture on the leaderboard
-                            </div>
+                            <div class="settings-toggle-label" id="label-lb-avatar">Show Avatar</div>
+                            <div class="settings-toggle-subtitle">Display your profile picture on the leaderboard</div>
                         </div>
-                        <button class="ds-switch" data-state="active"
-                            onclick="this.dataset.state = this.dataset.state === 'active' ? 'inactive' : 'active'">
+                        <button id="settings-lb-avatar" type="button" class="ds-switch" role="switch" aria-checked="false" aria-labelledby="label-lb-avatar" data-state="inactive">
                             <div class="ds-switch-thumb"></div>
                         </button>
                     </div>
 
-                    <hr class="settings-divider" style="margin:24px -28px;">
+                    <hr class="settings-divider settings-divider--edge-28">
 
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label">Display Name</span>
-                        <input type="text" class="settings-input" value="Tester ALman"
-                            placeholder="Leave blank to use your real name" style="border-radius:8px;">
+                    <div class="settings-form-row align-start settings-form-row--list">
+                        <label class="settings-label" for="settings-lb-display-name">Display Name</label>
+                        <input type="text" class="settings-input" id="settings-lb-display-name" name="display_name" autocomplete="nickname" placeholder="Leave blank to use your real name">
                     </div>
 
-                    <div style="margin-bottom:12px;">
-                        <div style="font-size:14px; font-weight:600; color:var(--page-title-color); margin-bottom:4px;">
-                            Community Bio</div>
-                        <div style="font-size:13px; color:#717680;">Let other members know what interests you. Max 300
-                            characters.</div>
+                    <div class="settings-bio-header">
+                        <label class="settings-block-title" for="settings-lb-bio">Community Bio</label>
+                        <div class="settings-block-subtitle">Let other members know what interests you.
+                            <span><span id="settings-lb-bio-count">0</span>/300</span>
+                        </div>
                     </div>
-                    <textarea class="settings-input"
-                        style="border-radius:8px; min-height:80px; resize:vertical; width:100%; max-width:none;">Sustainable investor • Long-term holder 🌱</textarea>
+                    <textarea class="settings-input settings-textarea" id="settings-lb-bio" name="bio" maxlength="300" rows="3"></textarea>
 
-                    <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
-                    <div class="settings-edit-footer"
-                        style="padding:24px 0 0 0; border:none; justify-content:flex-end;">
-                        <button class="ds-btn ds-btn--primary"
-                            style="background:var(--primary-color, #0000FF); color:#FFFFFF; border-radius:8px;">Save
-                            Settings</button>
+                    <hr class="settings-divider settings-divider--edge-28">
+                    <div class="settings-edit-footer">
+                        <button class="ds-btn ds-btn--ghost" type="reset">Cancel</button>
+                        <button class="ds-btn ds-btn--primary" id="btn-save-leaderboard-privacy" type="submit">Save Leaderboard Settings</button>
                     </div>
                 </div>
-            </div>
+            </form>
 
             <!-- Social Media Accounts (All Users) -->
-
-            <div class="ds-card holo-card settings-card" style="margin-bottom: 32px; width:100%; box-sizing:border-box;">
-                {% call macros.holo_card_header('Social Profiles', 'These appear on your public investor profile
-                            and leaderboard card.', 'blue', 'p-icon--md') %}
-						<svg viewBox="0 0 24 24">
-		<circle cx="18" cy="5" r="3" />
-                                <circle cx="6" cy="12" r="3" />
-                                <circle cx="18" cy="19" r="3" />
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-	</svg>
-					{% endcall %}
+            <form class="ds-card holo-card settings-card settings-card--spaced" id="form-social" autocomplete="on" novalidate>
+                {% call macros.holo_card_header('Social Profiles', 'These appear on your public investor profile and leaderboard card.', 'blue', 'p-icon--md') %}
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+                {% endcall %}
 
                 <div>
                     <!-- Twitter / X -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="settings-form-row settings-form-row--social">
+                        <label for="settings-social-twitter" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M4 4l11.733 16h4.267l-11.733-16zM4 20l6.768-6.768M17.56 4l-6.768 6.768" />
                             </svg>
                             Twitter / X
-                        </span>
-                        <input type="text" class="settings-input" placeholder="https://x.com/username"
-                            style="border-radius:8px;">
+                        </label>
+                        <input type="url" id="settings-social-twitter" name="twitter" class="settings-input settings-input--rounded" placeholder="https://x.com/username" autocomplete="url" inputmode="url">
                     </div>
                     <!-- LinkedIn -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path
-                                    d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                    <div class="settings-form-row settings-form-row--social">
+                        <label for="settings-social-linkedin" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
                                 <rect x="2" y="9" width="4" height="12" />
                                 <circle cx="4" cy="4" r="2" />
                             </svg>
                             LinkedIn
-                        </span>
-                        <input type="text" class="settings-input" placeholder="https://linkedin.com/in/username"
-                            style="border-radius:8px;">
+                        </label>
+                        <input type="url" id="settings-social-linkedin" name="linkedin" class="settings-input settings-input--rounded" placeholder="https://linkedin.com/in/username" autocomplete="url" inputmode="url">
                     </div>
                     <!-- Instagram -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="settings-form-row settings-form-row--social">
+                        <label for="settings-social-instagram" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
                             </svg>
                             Instagram
-                        </span>
-                        <input type="text" class="settings-input" placeholder="https://instagram.com/username"
-                            style="border-radius:8px;">
+                        </label>
+                        <input type="url" id="settings-social-instagram" name="instagram" class="settings-input settings-input--rounded" placeholder="https://instagram.com/username" autocomplete="url" inputmode="url">
                     </div>
                     <!-- Telegram -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="settings-form-row settings-form-row--social">
+                        <label for="settings-social-telegram" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <line x1="22" y1="2" x2="11" y2="13" />
                                 <polygon points="22 2 15 22 11 13 2 9 22 2" />
                             </svg>
                             Telegram
-                        </span>
-                        <input type="text" class="settings-input" placeholder="https://t.me/username"
-                            style="border-radius:8px;">
+                        </label>
+                        <input type="url" id="settings-social-telegram" name="telegram" class="settings-input settings-input--rounded" placeholder="https://t.me/username" autocomplete="url" inputmode="url">
                     </div>
                     <!-- Discord -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="settings-form-row settings-form-row--social">
+                        <label for="settings-social-discord" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
                             Discord
-                        </span>
-                        <input type="text" class="settings-input" placeholder="username#0000"
-                            style="border-radius:8px;">
+                        </label>
+                        <input type="text" id="settings-social-discord" name="discord" class="settings-input settings-input--rounded" placeholder="username#0000" autocomplete="username">
                     </div>
                     <!-- Website -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:0; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="settings-form-row settings-form-row--social settings-form-row--social-last">
+                        <label for="settings-social-website" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <circle cx="12" cy="12" r="10" />
                                 <line x1="2" y1="12" x2="22" y2="12" />
-                                <path
-                                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                             </svg>
                             Website
-                        </span>
-                        <input type="text" class="settings-input" placeholder="https://yoursite.com"
-                            style="border-radius:8px;">
+                        </label>
+                        <input type="url" id="settings-social-website" name="website" class="settings-input settings-input--rounded" placeholder="https://yoursite.com" autocomplete="url" inputmode="url">
                     </div>
 
-                    <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
-                    <div class="settings-edit-footer"
-                        style="padding:24px 0 0 0; border:none; justify-content:flex-end;">
-                        <button class="ds-btn ds-btn--primary"
-                            style="background:var(--primary-color, #0000FF); color:#FFFFFF; border-radius:8px;">Save
-                            Social Links</button>
+                    <hr class="settings-divider settings-divider--bleed">
+                    <div class="settings-edit-footer settings-edit-footer--flush">
+                        <button type="reset" class="ds-btn ds-btn--secondary settings-btn--rounded">Cancel</button>
+                        <button type="submit" id="btn-save-social" class="ds-btn ds-btn--primary settings-btn--primary" data-section="social">Save Social Links</button>
                     </div>
                 </div>
-            </div>
+            </form>
 
             <!-- Info & Learning -->
-            <div class="settings-identity-header" style="margin-top: 48px;">
-                <h2 class="section-title">Info & Learning</h2>
+            <div class="settings-identity-header settings-identity-header--spaced">
+                <h2 class="section-title">Info &amp; Learning</h2>
                 <p class="section-subtitle">Expand your knowledge or reach out to us.</p>
             </div>
 
             <div class="settings-action-grid">
-                <div class="action-grid-card ds-card holo-card">
+                <a href="/feedback?type=review" class="action-grid-card ds-card holo-card" data-action="rate">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
-	<svg viewBox="0 0 24 24">
-		<polygon
-                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-	</svg>
-{% endcall %}
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    {% endcall %}
                     <div class="action-text">
                         <h4>Rate us</h4>
                         <p>Your review matters</p>
                     </div>
-                </div>
-                <div class="action-grid-card ds-card holo-card">
+                </a>
+                <a href="/feedback" class="action-grid-card ds-card holo-card" data-action="feedback">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
-	<svg viewBox="0 0 24 24">
-		<path d="M12 20h9" />
-                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-	</svg>
-{% endcall %}
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </svg>
+                    {% endcall %}
                     <div class="action-text">
                         <h4>Feedback</h4>
                         <p>Share thoughts</p>
                     </div>
-                </div>
-                <div class="action-grid-card ds-card holo-card">
+                </a>
+                <a href="/referrals" class="action-grid-card ds-card holo-card" data-action="refer">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
-	<svg viewBox="0 0 24 24">
-		<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
-                                <circle cx="9" cy="7" r="4" />
-                                <path d="M22 21v-2a4 4 0 00-3-3.87" />
-                                <path d="M16 3.13a4 4 0 010 7.75" />
-	</svg>
-{% endcall %}
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 00-3-3.87" />
+                        <path d="M16 3.13a4 4 0 010 7.75" />
+                    </svg>
+                    {% endcall %}
                     <div class="action-text">
                         <h4>Refer</h4>
                         <p>Invite friends</p>
                     </div>
-                </div>
-                <div class="action-grid-card ds-card holo-card">
+                </a>
+                <a href="/glossary" class="action-grid-card ds-card holo-card" data-action="glossary">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
-	<svg viewBox="0 0 24 24">
-		<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-	</svg>
-{% endcall %}
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    </svg>
+                    {% endcall %}
                     <div class="action-text">
                         <h4>Glossary</h4>
-                        <p>Terms & concepts</p>
+                        <p>Terms &amp; concepts</p>
                     </div>
-                </div>
+                </a>
             </div>
 
-            <div class="settings-identity-header"
-                style="margin-top: 48px; margin-bottom: 24px; display:flex; justify-content:space-between; align-items:flex-end;">
+            <div class="settings-identity-header settings-identity-header--row">
                 <h2 class="section-title">Learn with POOOL</h2>
-                <a href="#"
-                    style="font-weight:700; color:var(--page-title-color); font-size:14px; text-decoration:none; display:flex; align-items:center; gap:4px;">See
-                    All <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-                        stroke-width="2">
+                <a href="/learn" class="settings-see-all-link">See All
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <polyline points="9 18 15 12 9 6" />
-                    </svg></a>
+                    </svg>
+                </a>
             </div>
 
-            <div class="learn-grid" style="margin-bottom: 48px;">
-                <div class="learn-card">
+            <div class="learn-grid settings-learn-grid" id="settings-learn-grid">
+                <!-- Seed cards; JS may replace with /api/learn/featured -->
+                <a href="/learn/real-estate-101" class="learn-card" data-learn-slug="real-estate-101">
                     <div class="learn-image-wrap">
-                        <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80"
-                            class="learn-image">
-                        <div class="learn-overlay-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
+                        <img src="/static/images/learn/real-estate-101.jpg" alt="" class="learn-image" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">
+                        <div class="learn-overlay-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                            </svg></div>
+                            </svg>
+                        </div>
                     </div>
                     <div class="learn-content">
-                        <div class="learn-category"><span
-                                style="display:inline-block; width:4px; height:4px; border-radius:50%; background:var(--brand-greeny-green, #03FF88);"></span>
-                            Investing</div>
+                        <div class="learn-category"><span class="learn-category-dot"></span>Investing</div>
                         <h4 class="learn-title">Real Estate 101 Guide</h4>
                     </div>
-                </div>
-                <div class="learn-card">
+                </a>
+                <a href="/learn/fractional-ownership" class="learn-card" data-learn-slug="fractional-ownership">
                     <div class="learn-image-wrap">
-                        <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80"
-                            class="learn-image">
-                        <div class="learn-overlay-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
+                        <img src="/static/images/learn/fractional-ownership.jpg" alt="" class="learn-image" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">
+                        <div class="learn-overlay-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
                                 <path d="M9 22v-4h6v4" />
-                                <path d="M8 8h.01" />
-                                <path d="M16 8h.01" />
-                                <path d="M12 8h.01" />
-                                <path d="M12 12h.01" />
-                                <path d="M16 12h.01" />
-                                <path d="M8 12h.01" />
-                                <path d="M12 16h.01" />
-                                <path d="M16 16h.01" />
-                                <path d="M8 16h.01" />
-                            </svg></div>
+                            </svg>
+                        </div>
                     </div>
                     <div class="learn-content">
-                        <div class="learn-category"><span
-                                style="display:inline-block; width:4px; height:4px; border-radius:50%; background:var(--brand-greeny-green, #03FF88);"></span>
-                            Guide</div>
+                        <div class="learn-category"><span class="learn-category-dot"></span>Guide</div>
                         <h4 class="learn-title">Fractional Ownership</h4>
                     </div>
-                </div>
-                <div class="learn-card">
+                </a>
+                <a href="/learn/bali-real-estate" class="learn-card" data-learn-slug="bali-real-estate">
                     <div class="learn-image-wrap">
-                        <img src="https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?auto=format&fit=crop&w=600&q=80"
-                            class="learn-image">
-                        <div class="learn-overlay-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
+                        <img src="/static/images/learn/bali-real-estate.jpg" alt="" class="learn-image" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">
+                        <div class="learn-overlay-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
                                 <path d="M9 22v-4h6v4" />
-                                <path d="M8 8h.01" />
-                                <path d="M16 8h.01" />
-                                <path d="M12 8h.01" />
-                                <path d="M12 12h.01" />
-                                <path d="M16 12h.01" />
-                                <path d="M8 12h.01" />
-                                <path d="M12 16h.01" />
-                                <path d="M16 16h.01" />
-                                <path d="M8 16h.01" />
-                            </svg></div>
+                            </svg>
+                        </div>
                     </div>
                     <div class="learn-content">
-                        <div class="learn-category"><span
-                                style="display:inline-block; width:4px; height:4px; border-radius:50%; background:var(--brand-greeny-green, #03FF88);"></span>
-                            Market</div>
+                        <div class="learn-category"><span class="learn-category-dot"></span>Market</div>
                         <h4 class="learn-title">Bali Real Estate</h4>
                     </div>
-                </div>
+                </a>
             </div>
 
 
-            <div class="ds-card holo-card settings-card" style="margin-bottom:32px; width:100%; box-sizing:border-box;">
-                {% call macros.holo_card_header('Developer Identity', 'Your company branding and public information
-                            visible to investors.', 'blue', 'p-icon--md') %}
-						<svg viewBox="0 0 24 24">
-		<polyline points="16 18 22 12 16 6" />
-                                <polyline points="8 6 2 12 8 18" />
-	</svg>
-					{% endcall %}
+            <!-- Developer Identity (developer-only) -->
+            <form class="ds-card holo-card settings-card settings-card--spaced" id="form-developer-identity" data-role="developer" autocomplete="on" novalidate hidden>
+                {% call macros.holo_card_header('Developer Identity', 'Your company branding and public information visible to investors.', 'blue', 'p-icon--md') %}
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <polyline points="16 18 22 12 16 6" />
+                    <polyline points="8 6 2 12 8 18" />
+                </svg>
+                {% endcall %}
 
                 <div>
                     <!-- Developer Logo Upload -->
-                    <div
-                        style="display:flex; align-items:center; gap:20px; margin-bottom:24px; padding:20px; border:1px dashed #D0D5DD; border-radius:12px; background:rgba(249,250,251,0.6);">
-                        <div
-                            style="width:72px; height:72px; border-radius:16px; background:linear-gradient(135deg,#F0F2FF 0%,#E8ECFF 100%); border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,255,0.06); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden;">
-                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#B0B8C9"
-                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="settings-logo-upload">
+                        <div class="settings-logo-upload__preview" id="settings-dev-logo-preview">
+                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#B0B8C9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                                 <circle cx="8.5" cy="8.5" r="1.5" />
                                 <polyline points="21 15 16 10 5 21" />
                             </svg>
                         </div>
-                        <div style="flex:1;">
-                            <div
-                                style="font-size:14px; font-weight:600; color:var(--page-title-color); margin-bottom:4px;">
-                                Developer Logo</div>
-                            <div style="font-size:13px; color:#717680; margin-bottom:12px;">Square logo, min 400×400px.
-                                PNG, JPG, WebP or SVG · Max 2 MB</div>
-                            <button class="ds-btn ds-btn--ghost ds-btn--sm"
-                                style="border:1px solid #E5E7EB; border-radius:8px; display:flex; align-items:center; gap:6px;"><svg
-                                    viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-                                    stroke-width="2">
+                        <div class="settings-logo-upload__body">
+                            <div class="settings-logo-upload__title">Developer Logo</div>
+                            <div class="settings-logo-upload__hint">Square logo, min 400×400px. PNG, JPG, WebP or SVG · Max 2 MB</div>
+                            <input type="file" id="settings-dev-logo-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+                            <button type="button" id="btn-upload-dev-logo" class="ds-btn ds-btn--ghost ds-btn--sm settings-upload-btn">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                     <polyline points="17 8 12 3 7 8" />
                                     <line x1="12" y1="3" x2="12" y2="15" />
-                                </svg> Upload Logo</button>
+                                </svg>
+                                Upload Logo
+                            </button>
                         </div>
                     </div>
 
                     <!-- Company / Developer Name -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label">Company Name</span>
-                        <input type="text" class="settings-input" value="POOOL Properties"
-                            placeholder="Your company or brand name" style="border-radius:8px;">
+                    <div class="settings-form-row settings-form-row--social">
+                        <label for="settings-dev-company" class="settings-label">Company Name</label>
+                        <input type="text" id="settings-dev-company" name="company_name" class="settings-input settings-input--rounded" placeholder="Your company or brand name" autocomplete="organization">
                     </div>
 
-                    <hr class="settings-divider" style="margin:8px -28px 24px -28px;">
+                    <hr class="settings-divider settings-divider--bleed-top">
 
                     <!-- Developer Bio -->
-                    <div class="settings-form-row align-start" style="grid-template-columns: 1fr; margin-bottom:0;">
-                        <div style="margin-bottom:12px;">
-                            <div
-                                style="font-size:14px; font-weight:600; color:var(--page-title-color); margin-bottom:4px;">
-                                Developer Description</div>
-                            <div style="font-size:13px; color:#717680;">Tell investors about your company, track record,
-                                and investment philosophy. Max 1,000 characters.</div>
+                    <div class="settings-form-row settings-form-row--single">
+                        <div class="settings-field-heading">
+                            <label for="settings-dev-description" class="settings-field-heading__title">Developer Description</label>
+                            <div class="settings-field-heading__hint">Tell investors about your company, track record, and investment philosophy. Max 1,000 characters.</div>
                         </div>
-                        <textarea class="settings-input"
-                            style="border-radius:8px; min-height:100px; resize:vertical; width:100%; max-width:none;"
-                            maxlength="1000"
-                            placeholder="We are a leading real estate development firm specializing in sustainable, high-yield properties across Southeast Asia...">We are a leading real estate development firm specializing in sustainable, high-yield properties across Southeast Asia with over 15 years of experience delivering premium investment-grade assets.</textarea>
+                        <textarea id="settings-dev-description" name="description" class="settings-input settings-textarea" maxlength="1000" rows="4" placeholder="We are a leading real estate development firm specializing in sustainable, high-yield properties across Southeast Asia..."></textarea>
+                        <div class="settings-char-counter"><span id="settings-dev-description-count">0</span>/1000</div>
                     </div>
 
-                    <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
-                    <div class="settings-edit-footer"
-                        style="padding:24px 0 0 0; border:none; justify-content:flex-end;">
-                        <button class="ds-btn ds-btn--ghost" style="color:#475467; font-weight:600;">Cancel</button>
-                        <button class="ds-btn ds-btn--primary"
-                            style="background:var(--primary-color, #0000FF); color:#FFFFFF; border-radius:8px;">Save
-                            Developer Profile</button>
+                    <hr class="settings-divider settings-divider--bleed">
+                    <div class="settings-edit-footer settings-edit-footer--flush">
+                        <button type="reset" class="ds-btn ds-btn--ghost settings-btn--muted">Cancel</button>
+                        <button type="submit" id="btn-save-developer-profile" class="ds-btn ds-btn--primary settings-btn--primary" data-section="developer-profile">Save Developer Profile</button>
                     </div>
                 </div>
-            </div>
+            </form>
 
-            <!-- Developer Social Links -->
-            <div class="ds-card holo-card settings-card" style="margin-bottom:48px; width:100%; box-sizing:border-box;">
-                {% call macros.holo_card_header('Developer Links', 'Public links shown on your developer page
-                            and asset listings.', 'blue', 'p-icon--md') %}
-						<svg viewBox="0 0 24 24">
-		<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-	</svg>
-					{% endcall %}
+            <!-- Developer Social Links (developer-only) -->
+            <form class="ds-card holo-card settings-card settings-card--spaced-bottom" id="form-developer-links" data-role="developer" autocomplete="on" novalidate hidden>
+                {% call macros.holo_card_header('Developer Links', 'Public links shown on your developer page and asset listings.', 'blue', 'p-icon--md') %}
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+                {% endcall %}
 
                 <div>
                     <!-- Website -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="settings-form-row settings-form-row--social">
+                        <label for="settings-dev-website" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <circle cx="12" cy="12" r="10" />
                                 <line x1="2" y1="12" x2="22" y2="12" />
-                                <path
-                                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                             </svg>
                             Website
-                        </span>
-                        <input type="text" class="settings-input" value="https://poool.properties"
-                            placeholder="https://yourcompany.com" style="border-radius:8px;">
+                        </label>
+                        <input type="url" id="settings-dev-website" name="website" class="settings-input settings-input--rounded" placeholder="https://yourcompany.com" autocomplete="url" inputmode="url">
                     </div>
                     <!-- GitHub -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path
-                                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                    <div class="settings-form-row settings-form-row--social">
+                        <label for="settings-dev-github" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
                             </svg>
                             GitHub
-                        </span>
-                        <input type="text" class="settings-input" placeholder="https://github.com/org"
-                            style="border-radius:8px;">
+                        </label>
+                        <input type="url" id="settings-dev-github" name="github" class="settings-input settings-input--rounded" placeholder="https://github.com/org" autocomplete="url" inputmode="url">
                     </div>
                     <!-- Twitter / X -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="settings-form-row settings-form-row--social">
+                        <label for="settings-dev-twitter" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M4 4l11.733 16h4.267l-11.733-16zM4 20l6.768-6.768M17.56 4l-6.768 6.768" />
                             </svg>
                             Twitter / X
-                        </span>
-                        <input type="text" class="settings-input" placeholder="https://x.com/company"
-                            style="border-radius:8px;">
+                        </label>
+                        <input type="url" id="settings-dev-twitter" name="twitter" class="settings-input settings-input--rounded" placeholder="https://x.com/company" autocomplete="url" inputmode="url">
                     </div>
                     <!-- LinkedIn -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:16px; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path
-                                    d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                    <div class="settings-form-row settings-form-row--social">
+                        <label for="settings-dev-linkedin" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
                                 <rect x="2" y="9" width="4" height="12" />
                                 <circle cx="4" cy="4" r="2" />
                             </svg>
                             LinkedIn
-                        </span>
-                        <input type="text" class="settings-input" placeholder="https://linkedin.com/company/name"
-                            style="border-radius:8px;">
+                        </label>
+                        <input type="url" id="settings-dev-linkedin" name="linkedin" class="settings-input settings-input--rounded" placeholder="https://linkedin.com/company/name" autocomplete="url" inputmode="url">
                     </div>
                     <!-- YouTube -->
-                    <div class="settings-form-row align-start"
-                        style="grid-template-columns: 160px 1fr; margin-bottom:0; align-items:center;">
-                        <span class="settings-label" style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path
-                                    d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.43z" />
+                    <div class="settings-form-row settings-form-row--social settings-form-row--social-last">
+                        <label for="settings-dev-youtube" class="settings-label settings-label--icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.43z" />
                                 <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
                             </svg>
                             YouTube
-                        </span>
-                        <input type="text" class="settings-input" placeholder="https://youtube.com/@channel"
-                            style="border-radius:8px;">
+                        </label>
+                        <input type="url" id="settings-dev-youtube" name="youtube" class="settings-input settings-input--rounded" placeholder="https://youtube.com/@channel" autocomplete="url" inputmode="url">
                     </div>
 
-                    <hr class="settings-divider" style="margin:24px -28px 0 -28px;">
-                    <div class="settings-edit-footer"
-                        style="padding:24px 0 0 0; border:none; justify-content:flex-end;">
-                        <button class="ds-btn ds-btn--primary"
-                            style="background:var(--primary-color, #0000FF); color:#FFFFFF; border-radius:8px;">Save
-                            Developer Links</button>
+                    <hr class="settings-divider settings-divider--bleed">
+                    <div class="settings-edit-footer settings-edit-footer--flush">
+                        <button type="reset" class="ds-btn ds-btn--secondary settings-btn--rounded">Cancel</button>
+                        <button type="submit" id="btn-save-developer-links" class="ds-btn ds-btn--primary settings-btn--primary" data-section="developer-links">Save Developer Links</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Data & Privacy (GDPR) -->
+            <div class="settings-identity-header settings-identity-header--spaced">
+                <h2 class="section-title">Data &amp; Privacy</h2>
+                <p class="section-subtitle">Your rights under GDPR — export, correct, or delete your personal data.</p>
+            </div>
+
+            <div class="ds-card holo-card settings-card settings-card--spaced-bottom" id="card-data-privacy">
+                {% call macros.holo_card_header('Data Rights', 'Download a copy of your data, or permanently delete your account.', 'blue', 'p-icon--md') %}
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z" />
+                    <path d="M9 12l2 2 4-4" />
+                </svg>
+                {% endcall %}
+
+                <!-- Data Export -->
+                <div class="settings-privacy-row">
+                    <div class="settings-privacy-row__body">
+                        <div class="settings-privacy-row__title">Export your data</div>
+                        <div class="settings-privacy-row__hint">Receive a machine-readable archive (JSON) of your profile, transactions, KYC status, and activity. Delivery via email. Usually takes up to 24 hours.</div>
+                    </div>
+                    <div class="settings-privacy-row__action">
+                        <button type="button" id="btn-request-data-export" class="ds-btn ds-btn--secondary settings-btn--rounded" data-action="request-data-export">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            Request export
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="settings-divider settings-divider--bleed">
+
+                <!-- Delete Account -->
+                <div class="settings-privacy-row settings-privacy-row--danger">
+                    <div class="settings-privacy-row__body">
+                        <div class="settings-privacy-row__title settings-privacy-row__title--danger">Delete account</div>
+                        <div class="settings-privacy-row__hint">Permanently removes your profile and personal data. Transaction records required by law (KYC, tax, AML) retained per regulatory schedule. This cannot be undone.</div>
+                    </div>
+                    <div class="settings-privacy-row__action">
+                        <button type="button" id="btn-delete-account" class="ds-btn ds-btn--danger settings-btn--danger" data-action="delete-account" data-modal-target="modal-delete-account">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+                                <path d="M10 11v6M14 11v6" />
+                                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                            </svg>
+                            Delete account…
+                        </button>
                     </div>
                 </div>
             </div>
+
             </section>
         </div>
     </main>
+</div>
+
+<!-- ───────── MODALS ───────── -->
+
+<!-- Change Email Modal -->
+<div class="settings-modal" id="modal-change-email" role="dialog" aria-modal="true" aria-labelledby="modal-change-email-title" hidden>
+    <div class="settings-modal__backdrop" data-modal-close></div>
+    <form class="settings-modal__panel" id="form-change-email" autocomplete="off" novalidate>
+        <header class="settings-modal__header">
+            <h3 class="settings-modal__title" id="modal-change-email-title">Change email address</h3>
+            <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
+        </header>
+        <div class="settings-modal__body">
+            <div class="settings-modal__hint">Enter your new email. We'll send a verification link before switching.</div>
+            <label for="modal-email-new" class="settings-label">New email</label>
+            <input type="email" id="modal-email-new" name="new_email" class="settings-input settings-input--rounded" required autocomplete="email" inputmode="email">
+            <label for="modal-email-password" class="settings-label">Current password</label>
+            <input type="password" id="modal-email-password" name="current_password" class="settings-input settings-input--rounded" required autocomplete="current-password">
+            <div class="settings-modal__error" id="modal-email-error" role="alert" aria-live="polite" hidden></div>
+        </div>
+        <footer class="settings-modal__footer">
+            <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
+            <button type="submit" class="ds-btn ds-btn--primary settings-btn--primary">Send verification</button>
+        </footer>
+    </form>
+</div>
+
+<!-- Change Password Modal -->
+<div class="settings-modal" id="modal-change-password" role="dialog" aria-modal="true" aria-labelledby="modal-change-password-title" hidden>
+    <div class="settings-modal__backdrop" data-modal-close></div>
+    <form class="settings-modal__panel" id="form-change-password" autocomplete="off" novalidate>
+        <header class="settings-modal__header">
+            <h3 class="settings-modal__title" id="modal-change-password-title">Change password</h3>
+            <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
+        </header>
+        <div class="settings-modal__body">
+            <label for="modal-password-current" class="settings-label">Current password</label>
+            <input type="password" id="modal-password-current" name="current_password" class="settings-input settings-input--rounded" required autocomplete="current-password">
+            <label for="modal-password-new" class="settings-label">New password</label>
+            <input type="password" id="modal-password-new" name="new_password" class="settings-input settings-input--rounded" required minlength="8" autocomplete="new-password" aria-describedby="modal-password-hint">
+            <div id="modal-password-hint" class="settings-modal__hint">At least 8 characters. Use a mix of letters, numbers, and symbols.</div>
+            <label for="modal-password-confirm" class="settings-label">Confirm new password</label>
+            <input type="password" id="modal-password-confirm" name="confirm_password" class="settings-input settings-input--rounded" required minlength="8" autocomplete="new-password">
+            <div class="settings-modal__error" id="modal-password-error" role="alert" aria-live="polite" hidden></div>
+        </div>
+        <footer class="settings-modal__footer">
+            <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
+            <button type="submit" class="ds-btn ds-btn--primary settings-btn--primary">Change password</button>
+        </footer>
+    </form>
+</div>
+
+<!-- Change Phone Modal -->
+<div class="settings-modal" id="modal-change-phone" role="dialog" aria-modal="true" aria-labelledby="modal-change-phone-title" hidden>
+    <div class="settings-modal__backdrop" data-modal-close></div>
+    <form class="settings-modal__panel" id="form-change-phone" autocomplete="off" novalidate>
+        <header class="settings-modal__header">
+            <h3 class="settings-modal__title" id="modal-change-phone-title">Change phone number</h3>
+            <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
+        </header>
+        <div class="settings-modal__body">
+            <div class="settings-modal__hint">Enter your new phone number with country code. We'll send an SMS verification code.</div>
+            <label for="modal-phone-new" class="settings-label">New phone number</label>
+            <input type="tel" id="modal-phone-new" name="new_phone" class="settings-input settings-input--rounded" required autocomplete="tel" inputmode="tel" placeholder="+1 555 123 4567">
+            <div class="settings-modal__error" id="modal-phone-error" role="alert" aria-live="polite" hidden></div>
+        </div>
+        <footer class="settings-modal__footer">
+            <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
+            <button type="submit" class="ds-btn ds-btn--primary settings-btn--primary">Send code</button>
+        </footer>
+    </form>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="settings-modal settings-modal--danger" id="modal-delete-account" role="dialog" aria-modal="true" aria-labelledby="modal-delete-account-title" hidden>
+    <div class="settings-modal__backdrop" data-modal-close></div>
+    <form class="settings-modal__panel" id="form-delete-account" autocomplete="off" novalidate>
+        <header class="settings-modal__header settings-modal__header--danger">
+            <h3 class="settings-modal__title" id="modal-delete-account-title">Delete your account?</h3>
+            <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
+        </header>
+        <div class="settings-modal__body">
+            <div class="settings-modal__warning">
+                <strong>This cannot be undone.</strong> All profile data, preferences, and non-regulatory records will be permanently removed. Pending trades and open positions must be settled first.
+            </div>
+            <label for="modal-delete-password" class="settings-label">Enter your password to confirm</label>
+            <input type="password" id="modal-delete-password" name="password" class="settings-input settings-input--rounded" required autocomplete="current-password">
+            <label for="modal-delete-confirm" class="settings-label">Type <code>DELETE</code> to confirm</label>
+            <input type="text" id="modal-delete-confirm" name="confirm_phrase" class="settings-input settings-input--rounded" required autocomplete="off" pattern="DELETE" aria-describedby="modal-delete-hint">
+            <div id="modal-delete-hint" class="settings-modal__hint">Must match exactly.</div>
+            <div class="settings-modal__error" id="modal-delete-error" role="alert" aria-live="polite" hidden></div>
+        </div>
+        <footer class="settings-modal__footer">
+            <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
+            <button type="submit" class="ds-btn ds-btn--danger settings-btn--danger" id="btn-confirm-delete-account">Delete account permanently</button>
+        </footer>
+    </form>
+</div>
+
+<!-- Confirm Revoke Session Modal -->
+<div class="settings-modal" id="modal-revoke-session" role="dialog" aria-modal="true" aria-labelledby="modal-revoke-session-title" hidden>
+    <div class="settings-modal__backdrop" data-modal-close></div>
+    <div class="settings-modal__panel">
+        <header class="settings-modal__header">
+            <h3 class="settings-modal__title" id="modal-revoke-session-title">Revoke session?</h3>
+            <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
+        </header>
+        <div class="settings-modal__body">
+            <div class="settings-modal__hint" id="modal-revoke-session-detail">This device will be signed out immediately.</div>
+        </div>
+        <footer class="settings-modal__footer">
+            <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
+            <button type="button" class="ds-btn ds-btn--danger settings-btn--danger" id="btn-confirm-revoke-session">Revoke</button>
+        </footer>
+    </div>
 </div>

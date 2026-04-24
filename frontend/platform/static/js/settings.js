@@ -1,815 +1,799 @@
 /**
- * settings.js  –  Phase 5: Polished UI Controller
+ * settings.js — Settings page controller.
  *
- * Fixes from UX audit:
- *   - Loading states properly resolved
- *   - Consistent badge rendering
- *   - Clean session/OAuth card rendering
- *   - Profile completeness
- *   - Tab ARIA roles
+ * Loads /api/settings, populates the card-based layout in settings-3.html,
+ * and wires per-form save handlers, toggle switches, modals, and GDPR actions.
+ *
+ * All server I/O flows through SettingsDataService (settings-service.js).
+ * CSRF + 401 handling is inherited from that layer.
  */
 (function () {
   "use strict";
 
-  // ─── State ──────────────────────────────────────────────────
+  // ─── State ────────────────────────────────────────────────────
   let savedSettings = null;
-  let pendingPhotoFile = null;
-  let pendingPhotoPreview = null;
+  let pendingAvatarFile = null;
+  let pendingDevLogoFile = null;
+  let pendingRevokeSessionId = null;
 
-  // ─── Toast Notification System ──────────────────────────────
+  // ─── Small helpers ────────────────────────────────────────────
 
-  function showToast(message, type) {
-  if(window.showPooolToast) {
-    window.showPooolToast(null, message, type);
+  function $(id) { return document.getElementById(id); }
+  function setVal(id, v) { const el = $(id); if (el) el.value = v == null ? "" : v; }
+  function getVal(id) { const el = $(id); return el ? el.value.trim() : ""; }
+
+  function toast(message, type) {
+    if (window.showPooolToast) window.showPooolToast(null, message, type || "info");
   }
-}
 
-  // ─── State Layer Switcher ────────────────────────────────────
+  function escapeHtml(s) {
+    if (s == null) return "";
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[c]);
+  }
+
+  // ─── State Layer Switcher ─────────────────────────────────────
 
   function showLayer(which) {
-    const skeleton = document.getElementById("settings-loading-skeleton");
-    const content = document.getElementById("settings-content");
-    const emptyState = document.getElementById("settings-empty-state");
-
-    const hidden = (el) => el && el.classList.add("hidden");
-    const shown = (el) => el && el.classList.remove("hidden");
-
-    hidden(skeleton); hidden(content); hidden(emptyState);
-
-    if (which === "loading") shown(skeleton);
-    else if (which === "content") shown(content);
-    else if (which === "error") shown(emptyState);
+    const skeleton = $("settings-loading-skeleton");
+    const content = $("settings-content");
+    const errorState = $("settings-empty-state");
+    [skeleton, content, errorState].forEach((el) => el && el.classList.add("hidden"));
+    if (which === "loading") skeleton && skeleton.classList.remove("hidden");
+    else if (which === "content") content && content.classList.remove("hidden");
+    else if (which === "error") errorState && errorState.classList.remove("hidden");
   }
 
   // ─── Load Settings ────────────────────────────────────────────
 
   async function loadSettings() {
     showLayer("loading");
-
     try {
-      if (typeof SettingsDataService === "undefined") {
-        throw new Error("SettingsDataService not loaded");
-      }
-
+      if (typeof SettingsDataService === "undefined") throw new Error("SettingsDataService missing");
       const data = await SettingsDataService.getSettings();
-
-      if (!data || data.error) {
-        throw new Error(data?.error || "Failed to fetch settings");
-      }
+      if (!data || data.error) throw new Error(data?.error || "Failed to fetch settings");
 
       savedSettings = { ...data };
-      populateMyDetails(data);
-      populatePreferences(data);
-      populateNotifications(data);
+      populateCore(data);
+      populateAddress(data);
+      populateIdentity(data);
+      populateFinancial(data);
       populateSecurity(data);
-
+      populatePreferences(data);
+      populateLeaderboard(data);
+      populateSocial(data);
+      populateDeveloper(data);
+      updateProfileCompleteness(data);
+      applyRoleGate(data.role);
       showLayer("content");
-      switchTab("mydetails");
-
     } catch (err) {
       console.error("Settings load failed:", err);
-      showToast(err.message || "Failed to load settings. Please refresh.", "error");
+      toast(err.message || "Failed to load settings.", "error");
       showLayer("error");
     }
   }
 
-  // ─── Tab: My Details ─────────────────────────────────────────
+  // ─── Populate: Core Profile ───────────────────────────────────
 
-  function populateMyDetails(data) {
-    setVal("settings-first-name", data.first_name || "");
-    setVal("settings-last-name", data.last_name || "");
-    setVal("settings-email", data.email || "");
-    setVal("settings-phone", data.phone_number || "");
-    setVal("settings-role", data.role || "investor");
+  function populateCore(d) {
+    setVal("settings-first-name", d.first_name);
+    setVal("settings-middle-name", d.middle_name);
+    setVal("settings-last-name", d.last_name);
+    setVal("settings-email", d.email);
+    setVal("settings-phone", d.phone_number);
+    setVal("settings-gender", d.gender);
 
-    setVal("settings-dob", data.date_of_birth || "");
-    setVal("settings-nationality", data.nationality || "");
-    setVal("settings-address-1", data.address_line_1 || "");
-    setVal("settings-address-2", data.address_line_2 || "");
-    setVal("settings-city", data.city || "");
-    setVal("settings-state", data.state_province || "");
-    setVal("settings-postal", data.postal_code || "");
-    setVal("settings-tax-id", data.tax_id || "");
-    setVal("settings-annual-income", data.annual_income_cents ? data.annual_income_cents / 100 : "");
+    const avatar = $("settings-avatar-img");
+    if (avatar && d.avatar_url) avatar.src = d.avatar_url;
 
-    // KYC Badge — properly resolve instead of showing "Loading"
-    const kycBadge = document.getElementById("settings-kyc-status");
+    const emailStatus = $("settings-email-verified");
+    if (emailStatus) {
+      emailStatus.textContent = d.email_verified ? "Verified" : "Not verified";
+      emailStatus.className = "settings-badge " + (d.email_verified ? "settings-badge--success" : "settings-badge--warn");
+    }
+
+    const displayName = $("settings-display-name");
+    if (displayName) {
+      const fn = [d.first_name, d.last_name].filter(Boolean).join(" ").trim();
+      displayName.textContent = fn || d.email || "Unnamed user";
+    }
+    const displayEmail = $("settings-display-email");
+    if (displayEmail) displayEmail.textContent = d.email || "";
+  }
+
+  // ─── Populate: Address ────────────────────────────────────────
+
+  function populateAddress(d) {
+    setVal("settings-address-1", d.address_line_1);
+    setVal("settings-address-2", d.address_line_2);
+    setVal("settings-city", d.city);
+    setVal("settings-state", d.state_province);
+    setVal("settings-postal", d.postal_code);
+    setVal("settings-country", d.country);
+  }
+
+  // ─── Populate: Identity Vault ─────────────────────────────────
+
+  function populateIdentity(d) {
+    setVal("settings-dob", d.date_of_birth);
+    setVal("settings-nationality", d.nationality);
+    setVal("settings-tax-id", d.tax_id);
+
+    const kycBadge = $("settings-kyc-status");
     if (kycBadge) {
-      const statusStr = (data.kyc_status || "not_started").toLowerCase();
-      const displayMap = {
-        approved: "Verified",
-        pending: "Pending",
-        in_review: "In Review",
-        rejected: "Rejected",
-        missing: "Not Started",
-        not_started: "Not Started",
+      const status = (d.kyc_status || "not_started").toLowerCase();
+      const map = {
+        approved: ["Verified", "success"],
+        pending: ["Pending review", "warn"],
+        in_progress: ["In progress", "warn"],
+        rejected: ["Rejected", "danger"],
+        not_started: ["Not started", "muted"],
       };
-      kycBadge.textContent = displayMap[statusStr] || statusStr.replace("_", " ");
-      kycBadge.className = `settings-badge settings-badge--${statusStr}`;
+      const [label, tone] = map[status] || map.not_started;
+      kycBadge.textContent = label;
+      kycBadge.className = "settings-badge settings-badge--" + tone;
     }
 
-    const imgPreview = document.querySelector(".settings-photo-current img");
-    if (imgPreview && data.avatar_url) {
-      imgPreview.src = data.avatar_url;
+    const kycBtn = $("btn-kyc-action");
+    if (kycBtn) {
+      const s = (d.kyc_status || "not_started").toLowerCase();
+      kycBtn.textContent = s === "approved" ? "View details"
+        : s === "pending" || s === "in_progress" ? "Continue"
+        : s === "rejected" ? "Retry verification"
+        : "Start verification";
     }
-
-    const countrySelect = document.getElementById("settings-country");
-    if (countrySelect && data.country) {
-      countrySelect.value = data.country;
-      if (typeof updateCountryFlag === "function") updateCountryFlag();
-    }
-
-    const tzSelect = document.getElementById("settings-timezone");
-    if (tzSelect && data.timezone) tzSelect.value = data.timezone;
-
-    // Financial Limits
-    const fmtMoney = (cents) => {
-      if (cents == null) return "—";
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
-    };
-    const invLimit = document.getElementById("settings-investment-limit");
-    if (invLimit) {
-      invLimit.textContent = fmtMoney(data.investment_limit_cents);
-    }
-    const inv12m = document.getElementById("settings-invested-12m");
-    if (inv12m) {
-      inv12m.textContent = fmtMoney(data.invested_12m_cents);
-    }
-    const limAvail = document.getElementById("settings-limit-available");
-    if (limAvail) {
-      limAvail.textContent = fmtMoney(data.limit_available_cents);
-    }
-
-    // Tier & Referral
-    const tierEl = document.getElementById("settings-tier-name");
-    if (tierEl) tierEl.textContent = data.tier_name || "Basic";
-    const refEl = document.getElementById("settings-referral-code");
-    if (refEl) refEl.textContent = data.referral_code || "—";
-
-    // Profile Completeness
-    updateProfileCompleteness(data);
   }
 
-  function updateProfileCompleteness(data) {
+  // ─── Populate: Financial Overview ─────────────────────────────
+
+  function populateFinancial(d) {
+    const refCode = $("settings-referral-code");
+    if (refCode) refCode.textContent = d.referral_code || "—";
+
+    const tier = $("settings-tier-name");
+    if (tier) tier.textContent = d.membership_tier || "Standard";
+
+    renderPaymentMethods(d.payment_methods || []);
+  }
+
+  function renderPaymentMethods(methods) {
+    const list = $("settings-payment-methods-list");
+    if (!list) return;
+    if (!methods.length) {
+      list.innerHTML = `<div class="settings-empty-row">No payment methods saved yet.</div>`;
+      return;
+    }
+    list.innerHTML = methods.map((m) => `
+      <div class="settings-payment-row" data-method-id="${escapeHtml(m.id)}">
+        <div class="settings-payment-row__brand">${escapeHtml(m.brand || "Card")}</div>
+        <div class="settings-payment-row__last4">•••• ${escapeHtml(m.last4 || "----")}</div>
+        <div class="settings-payment-row__expiry">${escapeHtml(m.exp_month || "")}/${escapeHtml(m.exp_year || "")}</div>
+        <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" data-action="delete-payment" data-method-id="${escapeHtml(m.id)}">Remove</button>
+      </div>
+    `).join("");
+  }
+
+  // ─── Populate: Security ───────────────────────────────────────
+
+  function populateSecurity(d) {
+    const emailDisplay = $("settings-security-email-display");
+    if (emailDisplay) emailDisplay.textContent = d.email || "—";
+
+    const totpStatus = $("settings-2fa-badge");
+    if (totpStatus) {
+      totpStatus.textContent = d.totp_enabled ? "Enabled" : "Disabled";
+      totpStatus.className = "settings-badge " + (d.totp_enabled ? "settings-badge--success" : "settings-badge--muted");
+    }
+
+    renderOAuthList(d.oauth_connections || []);
+    loadSessionsAsync();
+  }
+
+  function renderOAuthList(connections) {
+    const list = $("settings-oauth-list");
+    if (!list) return;
+    const providers = ["google", "facebook", "apple", "github"];
+    const byProvider = {};
+    connections.forEach((c) => (byProvider[c.provider] = c));
+    list.innerHTML = providers.map((p) => {
+      const conn = byProvider[p];
+      const label = p.charAt(0).toUpperCase() + p.slice(1);
+      return `
+        <div class="settings-oauth-row" data-provider="${p}">
+          <div class="settings-oauth-row__provider">${label}</div>
+          <div class="settings-oauth-row__status">${conn ? escapeHtml(conn.email || "Connected") : "Not connected"}</div>
+          <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" data-action="${conn ? "unlink-oauth" : "link-oauth"}" data-provider="${p}" ${conn ? `data-connection-id="${escapeHtml(conn.id)}"` : ""}>
+            ${conn ? "Disconnect" : "Connect"}
+          </button>
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function loadSessionsAsync() {
+    try {
+      const res = await SettingsDataService.listSessions();
+      renderSessions(res?.sessions || []);
+    } catch (_) { /* non-fatal */ }
+  }
+
+  function renderSessions(sessions) {
+    const list = $("settings-sessions-list");
+    if (!list) return;
+    if (!sessions.length) {
+      list.innerHTML = `<div class="settings-empty-row">No active sessions.</div>`;
+      return;
+    }
+    list.innerHTML = sessions.map((s) => `
+      <div class="settings-session-row" data-session-id="${escapeHtml(s.id)}">
+        <div class="settings-session-row__device">
+          <strong>${escapeHtml(s.device || "Unknown device")}</strong>${s.current ? ' <span class="settings-badge settings-badge--info">This device</span>' : ""}
+        </div>
+        <div class="settings-session-row__meta">
+          ${escapeHtml(s.browser || "")} · ${escapeHtml(s.location || "")} · ${escapeHtml(s.last_seen || "")}
+        </div>
+        ${s.current ? "" : `<button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" data-action="revoke-session" data-session-id="${escapeHtml(s.id)}">Revoke</button>`}
+      </div>
+    `).join("");
+  }
+
+  // ─── Populate: Preferences ────────────────────────────────────
+
+  function populatePreferences(d) {
+    setVal("settings-language", d.language || "en");
+    setVal("settings-timezone", d.timezone || "UTC");
+    setVal("settings-currency", d.currency || "USD");
+
+    setToggle("settings-notify-email", d.email_notifications);
+    setToggle("settings-notify-push", d.push_notifications);
+  }
+
+  // ─── Populate: Leaderboard ────────────────────────────────────
+
+  function populateLeaderboard(d) {
+    const lb = d.leaderboard || {};
+    setToggle("settings-lb-visible", lb.visible);
+    setToggle("settings-lb-avatar", lb.show_avatar);
+    setVal("settings-lb-display-name", lb.display_name);
+    setVal("settings-lb-bio", lb.bio);
+    updateBioCounter();
+  }
+
+  // ─── Populate: Social ─────────────────────────────────────────
+
+  function populateSocial(d) {
+    const s = d.social_links || {};
+    setVal("settings-social-twitter", s.twitter);
+    setVal("settings-social-linkedin", s.linkedin);
+    setVal("settings-social-instagram", s.instagram);
+    setVal("settings-social-telegram", s.telegram);
+    setVal("settings-social-discord", s.discord);
+    setVal("settings-social-website", s.website);
+  }
+
+  // ─── Populate: Developer ──────────────────────────────────────
+
+  function populateDeveloper(d) {
+    if (d.role !== "developer") return;
+    const dev = d.developer_profile || {};
+    setVal("settings-dev-company", dev.company_name);
+    setVal("settings-dev-description", dev.description);
+    updateDevDescriptionCounter();
+
+    const links = dev.links || {};
+    setVal("settings-dev-website", links.website);
+    setVal("settings-dev-github", links.github);
+    setVal("settings-dev-twitter", links.twitter);
+    setVal("settings-dev-linkedin", links.linkedin);
+    setVal("settings-dev-youtube", links.youtube);
+
+    const logoPreview = $("settings-dev-logo-preview");
+    if (logoPreview && dev.logo_url) {
+      logoPreview.innerHTML = `<img src="${escapeHtml(dev.logo_url)}" alt="">`;
+    }
+  }
+
+  function applyRoleGate(role) {
+    document.querySelectorAll('[data-role="developer"]').forEach((el) => {
+      if (role === "developer") el.removeAttribute("hidden");
+      else el.setAttribute("hidden", "");
+    });
+  }
+
+  // ─── Profile Completeness ─────────────────────────────────────
+
+  function updateProfileCompleteness(d) {
     const fields = [
-      "first_name", "last_name", "date_of_birth", "nationality",
-      "address_line_1", "city", "state_province", "postal_code", "tax_id", "annual_income_cents"
+      !!d.first_name,
+      !!d.last_name,
+      !!d.email,
+      !!d.phone_number,
+      !!d.date_of_birth,
+      !!d.nationality,
+      !!d.address_line_1,
+      !!d.city,
+      !!d.country,
+      !!d.postal_code,
+      !!d.avatar_url,
+      (d.kyc_status || "").toLowerCase() === "approved",
     ];
-    const filled = fields.filter(f => data[f] && String(data[f]).trim() !== "").length;
-    const pct = Math.round((filled / fields.length) * 100) || 0;
+    const done = fields.filter(Boolean).length;
+    const pct = Math.round((done / fields.length) * 100);
 
-    const bar = document.getElementById("profile-completeness-bar");
-    const txt = document.getElementById("profile-completeness-text");
-    const hint = document.getElementById("profile-completeness-hint");
-
-    if (bar && txt) {
+    const bar = $("profile-completeness-bar");
+    const text = $("profile-completeness-text");
+    const hint = $("profile-completeness-hint");
+    if (bar) {
       bar.style.width = pct + "%";
-      txt.textContent = pct + "%";
-
-      if (pct === 100) {
-        bar.style.background = "#12B76A";
-        txt.style.color = "#12B76A";
-        if (hint) hint.textContent = "Your profile is complete! You're ready to invest.";
-      } else {
-        bar.style.background = "var(--primary-color, #2E2EF9)";
-        txt.style.color = "var(--primary-color, #2E2EF9)";
-        if (hint) hint.textContent = "Fill in all your details to complete your profile.";
-      }
+      bar.setAttribute("aria-valuenow", String(pct));
+    }
+    if (text) text.textContent = pct + "%";
+    if (hint) {
+      hint.textContent = pct === 100
+        ? "All done. Your profile is fully complete."
+        : pct >= 80 ? "Almost there — add a few more details to finish."
+        : pct >= 50 ? "You're halfway there. Complete more to unlock features."
+        : "Complete your profile to unlock trading and KYC features.";
     }
   }
 
-  async function saveProfile() {
-    const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
-    const btn = e && e.target;
-    setButtonState(btn, true, "Saving...");
+  // ─── Toggle Switches ──────────────────────────────────────────
 
-    const body = {
+  function setToggle(id, active) {
+    const el = $(id);
+    if (!el) return;
+    const on = !!active;
+    el.setAttribute("aria-checked", on ? "true" : "false");
+    el.setAttribute("data-state", on ? "active" : "inactive");
+  }
+
+  function readToggle(id) {
+    const el = $(id);
+    return el ? el.getAttribute("aria-checked") === "true" : false;
+  }
+
+  function toggleSwitch(el) {
+    const cur = el.getAttribute("aria-checked") === "true";
+    const next = !cur;
+    el.setAttribute("aria-checked", next ? "true" : "false");
+    el.setAttribute("data-state", next ? "active" : "inactive");
+  }
+
+  function bindToggleSwitches() {
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest('[role="switch"]');
+      if (!btn) return;
+      if (btn.disabled) return;
+      toggleSwitch(btn);
+    });
+    document.addEventListener("keydown", (e) => {
+      const btn = e.target.closest('[role="switch"]');
+      if (!btn) return;
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        toggleSwitch(btn);
+      }
+    });
+  }
+
+  // ─── Form submit handlers ─────────────────────────────────────
+
+  async function onSubmitCore(e) {
+    e.preventDefault();
+    const payload = {
       first_name: getVal("settings-first-name"),
+      middle_name: getVal("settings-middle-name"),
       last_name: getVal("settings-last-name"),
       phone_number: getVal("settings-phone"),
-      country: getVal("settings-country"),
-      timezone: getVal("settings-timezone"),
-      date_of_birth: getVal("settings-dob"),
-      nationality: getVal("settings-nationality"),
+      gender: getVal("settings-gender"),
+    };
+    const res = await SettingsDataService.saveProfile(payload);
+    handleSaveResult(res, "Profile saved.");
+  }
+
+  async function onSubmitAddress(e) {
+    e.preventDefault();
+    const payload = {
       address_line_1: getVal("settings-address-1"),
       address_line_2: getVal("settings-address-2"),
       city: getVal("settings-city"),
       state_province: getVal("settings-state"),
       postal_code: getVal("settings-postal"),
+      country: getVal("settings-country"),
+    };
+    const res = await SettingsDataService.saveProfile(payload);
+    handleSaveResult(res, "Address saved.");
+  }
+
+  async function onSubmitIdentity(e) {
+    e.preventDefault();
+    const payload = {
+      date_of_birth: getVal("settings-dob"),
+      nationality: getVal("settings-nationality"),
       tax_id: getVal("settings-tax-id"),
-      annual_income_cents: getVal("settings-annual-income") ? parseInt(getVal("settings-annual-income")) * 100 : null,
     };
-
-    // 1. Upload photo if pending
-    if (pendingPhotoFile) {
-      showToast("Uploading photo...", "info");
-      const uploadRes = await SettingsDataService.uploadAvatar(pendingPhotoFile);
-      if (uploadRes && uploadRes.avatar_url) {
-        savedSettings.avatar_url = uploadRes.avatar_url;
-      } else {
-        showToast(uploadRes?.error || "Photo upload failed.", "error");
-        setButtonState(btn, false, "Save");
-        return;
-      }
-    }
-
-    const res = await SettingsDataService.saveProfile(body);
-    setButtonState(btn, false, "Save");
-
-    if (res && res.success) {
-      showToast(res.message, "success");
-      pendingPhotoFile = null;
-      pendingPhotoPreview = null;
-      updateSidebarName(body.first_name, body.last_name);
-      loadSettings(); // Refresh calculated limits
-    } else if (res) {
-      showToast(res.message || "Failed to save.", "error");
-    }
+    const res = await SettingsDataService.saveProfile(payload);
+    handleSaveResult(res, "Identity details saved.");
   }
 
-  function cancelProfile() {
-    if (!savedSettings) return;
-    populateMyDetails(savedSettings);
-    showToast("Changes discarded.", "success");
-  }
-
-  function updateSidebarName(firstName, lastName) {
-    const name = [firstName, lastName].filter(Boolean).join(" ") || "User";
-    document.querySelectorAll(".user-name, .sidebar-user-name")
-      .forEach((el) => { el.textContent = name; });
-  }
-
-  function handleProfilePhotoUpload(input) {
-    if (!input.files || !input.files[0]) return;
-    const file = input.files[0];
-
-    if (!file.type.match("image.*")) {
-      showToast("Please select a valid image file (JPG, PNG, SVG).", "error");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const imgPreview = document.querySelector(".settings-photo-current img");
-      if (imgPreview) imgPreview.src = e.target.result;
-
-      document.querySelectorAll(
-        ".profile-avatar img, .mobile-burger-menu__avatar img, .sidebar__account-avatar img"
-      ).forEach((el) => { el.src = e.target.result; });
-
-      pendingPhotoFile = file;
-      pendingPhotoPreview = e.target.result;
-      showToast("Photo selected. Click Save to apply changes.", "success");
+  async function onSubmitPreferences(e) {
+    e.preventDefault();
+    const payload = {
+      language: getVal("settings-language"),
+      timezone: getVal("settings-timezone"),
+      currency: getVal("settings-currency"),
     };
-    reader.readAsDataURL(file);
+    const prefs = await SettingsDataService.savePreferences(payload);
+    const notifs = await SettingsDataService.saveNotifications({
+      email_notifications: readToggle("settings-notify-email"),
+      push_notifications: readToggle("settings-notify-push"),
+    });
+    if (prefs?.success && notifs?.success) toast("Preferences saved.", "success");
+    else toast((prefs && prefs.message) || (notifs && notifs.message) || "Save failed.", "error");
   }
 
-  // ─── Tab: Preferences ────────────────────────────────────────
-
-  function populatePreferences(data) {
-    const langSelect = document.getElementById("settings-language");
-    if (langSelect && data.language) langSelect.value = data.language;
-
-    const currSelect = document.getElementById("settings-currency");
-    if (currSelect && data.currency) currSelect.value = data.currency;
-  }
-
-  async function savePreferences() {
-    const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
-    const btn = e && e.target;
-    setButtonState(btn, true, "Saving...");
-
-    const body = {
-      language: getVal("settings-language") || "en",
-      currency: getVal("settings-currency") || "USD",
+  async function onSubmitLeaderboard(e) {
+    e.preventDefault();
+    const payload = {
+      visible: readToggle("settings-lb-visible"),
+      show_avatar: readToggle("settings-lb-avatar"),
+      display_name: getVal("settings-lb-display-name"),
+      bio: getVal("settings-lb-bio"),
     };
-
-    const res = await SettingsDataService.savePreferences(body);
-    setButtonState(btn, false, "Save");
-
-    if (res && res.success) {
-      showToast(res.message, "success");
-      savedSettings = { ...savedSettings, ...body };
-    } else if (res) {
-      showToast(res.message || "Failed to save.", "error");
-    }
+    const res = await SettingsDataService.saveLeaderboard(payload);
+    handleSaveResult(res, "Leaderboard preferences saved.");
   }
 
-  function cancelPreferences() {
-    if (!savedSettings) return;
-    populatePreferences(savedSettings);
-    showToast("Changes discarded.", "success");
-  }
-
-  // ─── Tab: Notifications ───────────────────────────────────────
-
-  function populateNotifications(data) {
-    const notifyEmail = document.getElementById("settings-notify-email");
-    if (notifyEmail) notifyEmail.checked = !!data.email_notifications;
-
-    const notifyPush = document.getElementById("settings-notify-push");
-    if (notifyPush) notifyPush.checked = !!data.push_notifications;
-  }
-
-  async function saveNotifications() {
-    const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
-    const btn = e && e.target;
-    setButtonState(btn, true, "Saving...");
-
-    const body = {
-      email_notifications: !!document.getElementById("settings-notify-email")?.checked,
-      push_notifications: !!document.getElementById("settings-notify-push")?.checked,
+  async function onSubmitSocial(e) {
+    e.preventDefault();
+    const payload = {
+      twitter: getVal("settings-social-twitter"),
+      linkedin: getVal("settings-social-linkedin"),
+      instagram: getVal("settings-social-instagram"),
+      telegram: getVal("settings-social-telegram"),
+      discord: getVal("settings-social-discord"),
+      website: getVal("settings-social-website"),
     };
-
-    const res = await SettingsDataService.saveNotifications(body);
-    setButtonState(btn, false, "Save");
-
-    if (res && res.success) {
-      showToast(res.message, "success");
-      savedSettings = { ...savedSettings, ...body };
-    } else if (res) {
-      showToast(res.message || "Failed to save notifications.", "error");
-    }
+    const res = await SettingsDataService.saveSocialLinks(payload);
+    handleSaveResult(res, "Social links saved.");
   }
 
-  function cancelNotifications() {
-    if (!savedSettings) return;
-    populateNotifications(savedSettings);
-    showToast("Changes discarded.", "success");
-  }
-
-  // ─── Tab: Security ────────────────────────────────────────────
-
-  function populateSecurity(data) {
-    const secEmail = document.getElementById("settings-security-email");
-    if (secEmail) secEmail.value = data.email || "";
-
-    const verifiedBadge = document.getElementById("settings-email-verified");
-    if (verifiedBadge) {
-      if (data.email_verified) {
-        verifiedBadge.textContent = "Verified";
-        verifiedBadge.className = "settings-badge settings-badge--approved";
-      } else {
-        verifiedBadge.textContent = "Unverified";
-        verifiedBadge.className = "settings-badge settings-badge--pending";
-      }
-    }
-
-    const secPhone = document.getElementById("settings-security-phone");
-    if (secPhone) secPhone.value = data.phone_number || "";
-
-    // 2FA Badge & Actions
-    const totpBadge = document.getElementById("settings-2fa-badge");
-    const totpActions = document.getElementById("settings-2fa-actions");
-    if (totpBadge && totpActions) {
-      if (data.totp_enabled) {
-        totpBadge.textContent = "Enabled";
-        totpBadge.className = "settings-badge settings-badge--approved";
-        totpActions.innerHTML = `<button class="settings-btn settings-btn--secondary" style="border-color: #FDA29B; color: #D92D20;" onclick="disable2FA()">Disable 2FA</button>`;
-      } else {
-        totpBadge.textContent = "Disabled";
-        totpBadge.className = "settings-badge settings-badge--missing";
-        totpActions.innerHTML = `<a href="/auth/2fa/setup" class="settings-btn settings-btn--primary">Enable 2FA</a>`;
-      }
-    }
-
-    // KYC Details Badge in Security Tab
-    const kycDetailBadge = document.getElementById("settings-kyc-detail-badge");
-    const kycActionBtn = document.getElementById("settings-kyc-action-btn");
-    if (kycDetailBadge && kycActionBtn) {
-      const status = (data.kyc_status || "not_started").toLowerCase();
-      const displayMap = {
-        approved: "Verified",
-        pending: "Pending Review",
-        in_review: "In Review",
-        rejected: "Rejected",
-        missing: "Not Started",
-        not_started: "Not Started",
-      };
-      kycDetailBadge.textContent = displayMap[status] || status.replace("_", " ");
-      kycDetailBadge.className = `settings-badge settings-badge--${status}`;
-
-      if (status === "approved") {
-        kycActionBtn.textContent = "View status";
-      } else if (status === "rejected") {
-        kycActionBtn.textContent = "View reason";
-      } else {
-        kycActionBtn.textContent = "Start Verification";
-      }
-    }
-
-    // Active Sessions
-    const sessionsList = document.getElementById("settings-sessions-list");
-    if (sessionsList) {
-      sessionsList.innerHTML = "";
-      const sessions = data.active_sessions || [];
-      if (sessions.length === 0) {
-        sessionsList.innerHTML = `<div class="settings-session-card"><div class="settings-session-card__info"><div class="settings-session-card__device">No active sessions found</div></div></div>`;
-      } else {
-        sessions.forEach(s => {
-          const uAgent = s.user_agent || "Unknown device";
-          const ip = s.ip_address || "Unknown IP";
-          const dStr = s.created_at ? `Logged in ${s.created_at}` : "";
-          const card = document.createElement("div");
-          card.className = "settings-session-card";
-          card.innerHTML = `
-            <div class="settings-session-card__info">
-              <div class="settings-session-card__device">
-                ${escapeHtml(uAgent)}
-                ${s.is_current ? `<span class="settings-session-card__current">Current</span>` : ""}
-              </div>
-              <div class="settings-session-card__meta">${escapeHtml(ip)} &bull; ${escapeHtml(dStr)}</div>
-            </div>
-            <button class="settings-btn settings-btn--secondary" style="font-size: 12px; padding: 6px 10px;" aria-label="Revoke session">Revoke</button>
-          `;
-          sessionsList.appendChild(card);
-        });
-      }
-    }
-
-    // Leaderboard
-    const lbVisible = document.getElementById("settings-lb-visible");
-    const lbAvatar = document.getElementById("settings-lb-avatar");
-    const lbDisplayName = document.getElementById("settings-lb-display-name");
-
-    if (lbVisible) lbVisible.checked = !!data.lb_visible;
-    if (lbAvatar) lbAvatar.checked = !!data.lb_avatar;
-    if (lbDisplayName) lbDisplayName.value = data.lb_display_name || "";
-
-    // Linked OAuth Accounts
-    const oauthList = document.getElementById("settings-oauth-list");
-    if (oauthList) {
-      oauthList.innerHTML = "";
-      const oauths = data.oauth_accounts || [];
-      if (oauths.length === 0) {
-        oauthList.innerHTML = `<div class="settings-oauth-card"><div class="settings-oauth-card__provider"><span class="settings-oauth-card__provider-name">No linked accounts</span></div></div>`;
-      } else {
-        oauths.forEach(o => {
-          const card = document.createElement("div");
-          card.className = "settings-oauth-card";
-          card.innerHTML = `
-            <div class="settings-oauth-card__provider">
-              <span class="settings-oauth-card__provider-name">${escapeHtml(o.provider)}</span>
-              ${o.provider_email ? `<span class="settings-oauth-card__email">${escapeHtml(o.provider_email)}</span>` : ""}
-            </div>
-            <span class="settings-oauth-card__date">Linked ${escapeHtml(o.created_at || "")}</span>
-          `;
-          oauthList.appendChild(card);
-        });
-      }
-    }
-
-    // Consent Management
-    const termsVersionEl = document.getElementById("settings-terms-version");
-    const termsDateEl = document.getElementById("settings-terms-date");
-    if (termsVersionEl && termsDateEl) {
-      if (data.latest_terms_version) {
-        termsVersionEl.textContent = `Terms Version: ${data.latest_terms_version}`;
-        termsDateEl.textContent = `Accepted on: ${data.latest_terms_accepted_at}`;
-      } else {
-        termsVersionEl.textContent = `Terms Version: 1.0`;
-        termsDateEl.textContent = `Legacy user — please review latest terms`;
-      }
-    }
-  }
-
-  /** Escape HTML to prevent XSS in dynamic content */
-  function escapeHtml(str) {
-    if (!str) return "";
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
-  async function disable2FA() {
-    if (!await pooolConfirm({ title: 'Disable Two-Factor Authentication', message: 'This will make your account less secure. Are you sure?', confirmText: 'Disable 2FA', type: 'danger' })) return;
-    const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
-    const btn = e && e.target;
-    setButtonState(btn, true, "Disabling...");
-
-    const res = await SettingsDataService.disable2FA();
-    setButtonState(btn, false, "Disable 2FA");
-
-    if (res && res.success) {
-      showToast(res.message, "success");
-      if (savedSettings) savedSettings.totp_enabled = false;
-      populateSecurity(savedSettings || { totp_enabled: false });
-    } else {
-      showToast((res && res.message) || "Failed to disable 2FA.", "error");
-    }
-  }
-
-  async function exportData() {
-    showToast("Preparing data export...", "info");
-    const res = await SettingsDataService.requestDataExport();
-    if (res.success) {
-      showToast(res.message, "success");
-    } else {
-      showToast("Failed to request export.", "error");
-    }
-  }
-
-  async function saveLeaderboardPrivacy() {
-    const e = window.event || arguments[0] || (typeof event !== 'undefined' ? event : null);
-    const btn = e && e.target;
-    setButtonState(btn, true, "Saving...");
-
-    const body = {
-      visible: !!document.getElementById("settings-lb-visible")?.checked,
-      show_avatar: !!document.getElementById("settings-lb-avatar")?.checked,
-      display_name: getVal("settings-lb-display-name") || null,
+  async function onSubmitDevProfile(e) {
+    e.preventDefault();
+    const payload = {
+      company_name: getVal("settings-dev-company"),
+      description: getVal("settings-dev-description"),
     };
-
-    const res = await SettingsDataService.saveLeaderboard(body);
-    setButtonState(btn, false, "Save Privacy Details");
-
-    if (res && res.success) {
-      showToast(res.message, "success");
-      savedSettings = { ...savedSettings, lb_visible: body.visible, lb_avatar: body.show_avatar, lb_display_name: body.display_name };
-    } else if (res) {
-      showToast(res.message || "Failed to save leaderboard settings.", "error");
-    }
+    const res = await SettingsDataService.saveDeveloperProfile(payload);
+    handleSaveResult(res, "Developer profile saved.");
   }
 
-  // ─── Modals ──────────────────────────────────────────────────
+  async function onSubmitDevLinks(e) {
+    e.preventDefault();
+    const payload = {
+      website: getVal("settings-dev-website"),
+      github: getVal("settings-dev-github"),
+      twitter: getVal("settings-dev-twitter"),
+      linkedin: getVal("settings-dev-linkedin"),
+      youtube: getVal("settings-dev-youtube"),
+    };
+    const res = await SettingsDataService.saveDeveloperLinks(payload);
+    handleSaveResult(res, "Developer links saved.");
+  }
+
+  function handleSaveResult(res, okMsg) {
+    if (res?.success) toast(okMsg, "success");
+    else toast(res?.message || "Save failed.", "error");
+  }
+
+  // ─── Modal Helpers ────────────────────────────────────────────
 
   function openModal(id) {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-    modal.style.display = "flex";
-    modal.classList.add("active");
-    modal.setAttribute("aria-modal", "true");
-    modal.setAttribute("role", "dialog");
-    document.body.style.overflow = "hidden";
-    const firstInput = modal.querySelector("input");
-    if (firstInput) setTimeout(() => firstInput.focus(), 100);
+    const m = $(id);
+    if (!m) return;
+    m.removeAttribute("hidden");
+    m.classList.add("is-open");
+    const firstInput = m.querySelector("input, select, textarea, button");
+    firstInput && firstInput.focus();
+    document.body.classList.add("modal-open");
   }
 
-  function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-    modal.style.display = "none";
-    modal.classList.remove("active");
-    modal.removeAttribute("aria-modal");
-    document.body.style.overflow = "";
-    modal.querySelectorAll("input").forEach((inp) => (inp.value = ""));
-    modal.querySelectorAll(".settings-modal__error")
-      .forEach((el) => (el.textContent = ""));
+  function closeModal(m) {
+    if (!m) return;
+    m.setAttribute("hidden", "");
+    m.classList.remove("is-open");
+    const form = m.querySelector("form");
+    form && form.reset();
+    const err = m.querySelector("[id$=-error]");
+    if (err) { err.hidden = true; err.textContent = ""; }
+    document.body.classList.remove("modal-open");
   }
 
-  const openChangeEmailModal = () => openModal("modal-change-email");
-  const openChangePasswordModal = () => openModal("modal-change-password");
-  const openChangePhoneModal = () => openModal("modal-change-phone");
-
-  // ─── Modal: Change Email ──────────────────────────────────────
-
-  async function submitChangeEmail() {
-    const newEmail = getVal("modal-new-email");
-    const password = getVal("modal-email-password");
-    const errorEl = document.getElementById("modal-email-error");
-    const btn = document.getElementById("modal-email-submit");
-
-    setButtonState(btn, true, "Saving...");
-    const res = await SettingsDataService.changeEmail(newEmail, password);
-    setButtonState(btn, false, "Save");
-
-    if (!res) return;
-    if (res.success) {
-      showToast(res.message, "success");
-      closeModal("modal-change-email");
-      savedSettings.email = newEmail;
-      populateSecurity(savedSettings);
-      populateMyDetails(savedSettings);
-    } else {
-      if (errorEl) errorEl.textContent = res.message;
-    }
+  function showModalError(id, msg) {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.hidden = false;
   }
 
-  // ─── Modal: Change Password ───────────────────────────────────
-
-  async function submitChangePassword() {
-    const current = getVal("modal-current-password");
-    const newPw = getVal("modal-new-password");
-    const confirm = getVal("modal-confirm-password");
-    const errorEl = document.getElementById("modal-password-error");
-    const btn = document.getElementById("modal-password-submit");
-
-    setButtonState(btn, true, "Saving...");
-    const res = await SettingsDataService.changePassword(current, newPw, confirm);
-    setButtonState(btn, false, "Save");
-
-    if (!res) return;
-    if (res.success) {
-      showToast(res.message, "success");
-      closeModal("modal-change-password");
-    } else {
-      if (errorEl) errorEl.textContent = res.message;
-    }
-  }
-
-  // ─── Modal: Change Phone ──────────────────────────────────────
-
-  async function submitChangePhone() {
-    const newPhone = getVal("modal-new-phone");
-    const errorEl = document.getElementById("modal-phone-error");
-    const btn = document.getElementById("modal-phone-submit");
-
-    setButtonState(btn, true, "Saving...");
-    const res = await SettingsDataService.changePhone(newPhone);
-    setButtonState(btn, false, "Save");
-
-    if (!res) return;
-    if (res.success) {
-      showToast(res.message, "success");
-      closeModal("modal-change-phone");
-      savedSettings.phone_number = newPhone;
-      populateSecurity(savedSettings);
-    } else {
-      if (errorEl) errorEl.textContent = res.message;
-    }
-  }
-
-  // ─── Tab Switching with ARIA ──────────────────────────────────
-
-  function switchTab(tab) {
-    document.querySelectorAll(".settings-tab")
-      .forEach((t) => {
-        t.classList.remove("active");
-        t.setAttribute("aria-selected", "false");
-      });
-    document.querySelectorAll(".settings-panel")
-      .forEach((p) => p.classList.remove("active"));
-
-    const tabEl = document.getElementById("tab-" + tab);
-    const panelEl = document.getElementById("panel-" + tab);
-    if (tabEl) {
-      tabEl.classList.add("active");
-      tabEl.setAttribute("aria-selected", "true");
-    }
-    if (panelEl) panelEl.classList.add("active");
-
-    const titles = {
-      mydetails: "Settings – My Details",
-      preferences: "Settings – Preferences",
-      notifications: "Settings – Notifications",
-      security: "Settings – Security & Privacy",
-      more: "Settings – More",
-    };
-    document.title = titles[tab] || "Settings – POOOL";
-  }
-
-  // ─── Initialise ARIA on tabs ──────────────────────────────────
-
-  function initTabARIA() {
-    const tabContainer = document.querySelector(".settings-tabs-container");
-    if (tabContainer) {
-      tabContainer.setAttribute("role", "tablist");
-      tabContainer.setAttribute("aria-label", "Settings sections");
-    }
-    document.querySelectorAll(".settings-tab").forEach(t => {
-      t.setAttribute("role", "tab");
-      const tabId = t.id.replace("tab-", "");
-      t.setAttribute("aria-controls", "panel-" + tabId);
-      t.setAttribute("aria-selected", t.classList.contains("active") ? "true" : "false");
+  function bindModals() {
+    document.addEventListener("click", (e) => {
+      const opener = e.target.closest("[data-modal-target]");
+      if (opener) {
+        e.preventDefault();
+        openModal(opener.getAttribute("data-modal-target"));
+        return;
+      }
+      const closer = e.target.closest("[data-modal-close]");
+      if (closer) {
+        e.preventDefault();
+        closeModal(closer.closest(".settings-modal"));
+      }
     });
-    document.querySelectorAll(".settings-panel").forEach(p => {
-      p.setAttribute("role", "tabpanel");
-      const panelId = p.id.replace("panel-", "");
-      p.setAttribute("aria-labelledby", "tab-" + panelId);
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      const open = document.querySelector(".settings-modal:not([hidden])");
+      if (open) closeModal(open);
     });
   }
 
-  // ─── DOM Helpers ─────────────────────────────────────────────
-
-  function setVal(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.value = value;
-  }
-
-  function getVal(id) {
-    const el = document.getElementById(id);
-    return el ? el.value.trim() : "";
-  }
-
-  function setButtonState(btn, disabled, text) {
-    if (!btn) return;
-    btn.disabled = disabled;
-    btn.textContent = text;
-  }
-
-  // ─── Keyboard & Overlay ──────────────────────────────────────
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      ["modal-change-email", "modal-change-password", "modal-change-phone"]
-        .forEach(closeModal);
+  async function onSubmitChangeEmail(e) {
+    e.preventDefault();
+    const res = await SettingsDataService.changeEmail(
+      getVal("modal-email-new"),
+      getVal("modal-email-password"),
+    );
+    if (res?.success) {
+      toast(res.message || "Verification email sent.", "success");
+      closeModal($("modal-change-email"));
+    } else {
+      showModalError("modal-email-error", res?.message || "Failed.");
     }
-  });
+  }
 
-  document.addEventListener("click", function (e) {
-    if (e.target.classList.contains("settings-modal-overlay")) {
-      const id = e.target.id;
-      if (id) closeModal(id);
+  async function onSubmitChangePassword(e) {
+    e.preventDefault();
+    const res = await SettingsDataService.changePassword(
+      getVal("modal-password-current"),
+      getVal("modal-password-new"),
+      getVal("modal-password-confirm"),
+    );
+    if (res?.success) {
+      toast("Password changed.", "success");
+      closeModal($("modal-change-password"));
+    } else {
+      showModalError("modal-password-error", res?.message || "Failed.");
     }
-  });
+  }
 
-  // ─── Expose to HTML onclick handlers ─────────────────────────
+  async function onSubmitChangePhone(e) {
+    e.preventDefault();
+    const res = await SettingsDataService.changePhone(getVal("modal-phone-new"));
+    if (res?.success) {
+      toast(res.message || "Verification code sent.", "success");
+      closeModal($("modal-change-phone"));
+    } else {
+      showModalError("modal-phone-error", res?.message || "Failed.");
+    }
+  }
 
-  window.saveProfile = saveProfile;
-  window.cancelProfile = cancelProfile;
-  window.savePreferences = savePreferences;
-  window.cancelPreferences = cancelPreferences;
-  window.saveNotifications = saveNotifications;
-  window.cancelNotifications = cancelNotifications;
-  window.openChangeEmailModal = openChangeEmailModal;
-  window.openChangePasswordModal = openChangePasswordModal;
-  window.openChangePhoneModal = openChangePhoneModal;
-  window.submitChangeEmail = submitChangeEmail;
-  window.submitChangePassword = submitChangePassword;
-  window.submitChangePhone = submitChangePhone;
-  window.closeModal = closeModal;
-  window.handleProfilePhotoUpload = handleProfilePhotoUpload;
-  window.disable2FA = disable2FA;
+  async function onSubmitDeleteAccount(e) {
+    e.preventDefault();
+    const res = await SettingsDataService.deleteAccount(
+      getVal("modal-delete-password"),
+      getVal("modal-delete-confirm"),
+    );
+    if (res?.success) {
+      toast("Account deletion requested.", "success");
+      closeModal($("modal-delete-account"));
+      setTimeout(() => { window.location.href = "/"; }, 1500);
+    } else {
+      showModalError("modal-delete-error", res?.message || "Failed.");
+    }
+  }
 
-  // ─── Event Listeners (CSP Compliant) ────────────────────────
+  async function onConfirmRevokeSession() {
+    if (!pendingRevokeSessionId) return;
+    const res = await SettingsDataService.revokeSession(pendingRevokeSessionId);
+    pendingRevokeSessionId = null;
+    closeModal($("modal-revoke-session"));
+    if (res?.success) { toast("Session revoked.", "success"); loadSessionsAsync(); }
+    else toast(res?.message || "Failed to revoke session.", "error");
+  }
 
-  function setupListeners() {
-    // Tabs
-    document.querySelectorAll('.settings-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tabId = btn.id.replace('tab-', '');
-        switchTab(tabId);
-      });
+  // ─── Action Delegation ────────────────────────────────────────
+
+  function bindActions() {
+    document.addEventListener("click", async (e) => {
+      const act = e.target.closest("[data-action]");
+      if (!act) return;
+      const action = act.getAttribute("data-action");
+
+      switch (action) {
+        case "copy-referral": {
+          e.preventDefault();
+          const code = $("settings-referral-code")?.textContent?.trim() || "";
+          if (!code || code === "—") return toast("No referral code yet.", "error");
+          try { await navigator.clipboard.writeText(code); toast("Referral code copied.", "success"); }
+          catch (_) { toast("Copy failed — please copy manually.", "error"); }
+          break;
+        }
+        case "disable-2fa": {
+          e.preventDefault();
+          if (!confirm("Disable two-factor authentication?")) return;
+          const res = await SettingsDataService.disable2FA();
+          if (res?.success) { toast("2FA disabled.", "success"); loadSettings(); }
+          else toast(res?.message || "Failed.", "error");
+          break;
+        }
+        case "request-data-export": {
+          e.preventDefault();
+          act.disabled = true;
+          const res = await SettingsDataService.requestDataExport();
+          act.disabled = false;
+          handleSaveResult(res, "Export requested — check your email.");
+          break;
+        }
+        case "revoke-session": {
+          e.preventDefault();
+          pendingRevokeSessionId = act.getAttribute("data-session-id");
+          const detail = $("modal-revoke-session-detail");
+          if (detail) detail.textContent = "This device will be signed out immediately.";
+          openModal("modal-revoke-session");
+          break;
+        }
+        case "link-oauth": {
+          e.preventDefault();
+          const provider = act.getAttribute("data-provider");
+          const res = await SettingsDataService.linkOAuth(provider);
+          if (res?.redirect_url) window.location.href = res.redirect_url;
+          else toast(res?.message || "OAuth link failed.", "error");
+          break;
+        }
+        case "unlink-oauth": {
+          e.preventDefault();
+          const id = act.getAttribute("data-connection-id");
+          if (!confirm("Disconnect this account?")) return;
+          const res = await SettingsDataService.unlinkOAuth(id);
+          if (res?.success) { toast("Disconnected.", "success"); loadSettings(); }
+          else toast(res?.message || "Failed.", "error");
+          break;
+        }
+        case "delete-payment": {
+          e.preventDefault();
+          const id = act.getAttribute("data-method-id");
+          if (!confirm("Remove this payment method?")) return;
+          const res = await SettingsDataService.deletePaymentMethod(id);
+          if (res?.success) { toast("Payment method removed.", "success"); loadSettings(); }
+          else toast(res?.message || "Failed.", "error");
+          break;
+        }
+        case "retry-load": {
+          e.preventDefault();
+          loadSettings();
+          break;
+        }
+      }
     });
+  }
 
-    // Profile Save/Cancel
-    document.querySelectorAll('.btn-save-profile').forEach(btn => btn.addEventListener('click', saveProfile));
-    document.querySelectorAll('.btn-cancel-profile').forEach(btn => btn.addEventListener('click', cancelProfile));
-    
-    // Photo upload
-    const photoUploadBtn = document.getElementById('btn-photo-upload');
-    if (photoUploadBtn) {
-      photoUploadBtn.addEventListener('click', () => {
-        const input = document.getElementById('profile-photo-upload');
-        if (input) input.click();
+  // ─── File Inputs ──────────────────────────────────────────────
+
+  function bindFileInputs() {
+    const avatarBtn = $("btn-photo-upload");
+    const avatarInput = $("profile-photo-upload");
+    if (avatarBtn && avatarInput) {
+      avatarBtn.addEventListener("click", () => avatarInput.click());
+      avatarInput.addEventListener("change", async () => {
+        const file = avatarInput.files && avatarInput.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) return toast("File too large (max 5 MB).", "error");
+        pendingAvatarFile = file;
+        const preview = $("settings-avatar-img");
+        if (preview) preview.src = URL.createObjectURL(file);
+        const res = await SettingsDataService.uploadAvatar(file);
+        if (res?.url) { toast("Avatar updated.", "success"); if (preview) preview.src = res.url; }
+        else toast(res?.error || res?.message || "Upload failed.", "error");
       });
     }
 
-    const photoInput = document.getElementById('profile-photo-upload');
-    if (photoInput) {
-      photoInput.addEventListener('change', (e) => handleProfilePhotoUpload(e.target));
+    const devBtn = $("btn-upload-dev-logo");
+    const devInput = $("settings-dev-logo-input");
+    if (devBtn && devInput) {
+      devBtn.addEventListener("click", () => devInput.click());
+      devInput.addEventListener("change", async () => {
+        const file = devInput.files && devInput.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) return toast("Logo too large (max 2 MB).", "error");
+        pendingDevLogoFile = file;
+        const res = await SettingsDataService.uploadDeveloperLogo(file);
+        if (res?.url) {
+          toast("Logo updated.", "success");
+          const preview = $("settings-dev-logo-preview");
+          if (preview) preview.innerHTML = `<img src="${escapeHtml(res.url)}" alt="">`;
+        } else toast(res?.error || res?.message || "Upload failed.", "error");
+      });
     }
-
-    // Preferences
-    const savePref = document.getElementById('btn-save-preferences');
-    if (savePref) savePref.addEventListener('click', savePreferences);
-    const cancelPref = document.getElementById('btn-cancel-preferences');
-    if (cancelPref) cancelPref.addEventListener('click', cancelPreferences);
-
-    // Notifications
-    const saveNotify = document.getElementById('btn-save-notifications');
-    if (saveNotify) saveNotify.addEventListener('click', saveNotifications);
-    const cancelNotify = document.getElementById('btn-cancel-notifications');
-    if (cancelNotify) cancelNotify.addEventListener('click', cancelNotifications);
-
-    // Security Actions
-    const changeEmail = document.getElementById('btn-change-email');
-    if (changeEmail) changeEmail.addEventListener('click', openChangeEmailModal);
-    const changePass = document.getElementById('btn-change-password');
-    if (changePass) changePass.addEventListener('click', openChangePasswordModal);
-    const changePhone = document.getElementById('btn-change-phone');
-    if (changePhone) changePhone.addEventListener('click', openChangePhoneModal);
-    const exportBtn = document.getElementById('btn-export-data');
-    if (exportBtn) exportBtn.addEventListener('click', exportData);
-    const saveLbBtn = document.getElementById('btn-save-leaderboard-privacy');
-    if (saveLbBtn) saveLbBtn.addEventListener('click', saveLeaderboardPrivacy);
-
-    // Modals
-    const emailSubmit = document.getElementById('modal-email-submit-btn');
-    if (emailSubmit) emailSubmit.addEventListener('click', submitChangeEmail);
-    
-    document.querySelectorAll('.btn-close-email-modal').forEach(btn => {
-      btn.addEventListener('click', () => closeModal('modal-change-email'));
-    });
-    
-    // Missing IDs for other modals' Save/Cancel buttons in HTML edit — adding listeners by selector
-    document.querySelector('[onclick="submitChangePassword()"]')?.addEventListener('click', submitChangePassword);
-    document.querySelector('[onclick="closeModal(\'modal-change-password\')"]')?.addEventListener('click', () => closeModal('modal-change-password'));
-    document.querySelector('[onclick="submitChangePhone()"]')?.addEventListener('click', submitChangePhone);
-    document.querySelector('[onclick="closeModal(\'modal-change-phone\')"]')?.addEventListener('click', () => closeModal('modal-change-phone'));
   }
 
-  // ─── Boot ────────────────────────────────────────────────────
+  // ─── Char Counters ────────────────────────────────────────────
 
-  function boot() {
-    initTabARIA();
-    setupListeners();
+  function updateBioCounter() {
+    const el = $("settings-lb-bio");
+    const out = $("settings-lb-bio-count");
+    if (el && out) out.textContent = String(el.value.length);
+  }
+
+  function updateDevDescriptionCounter() {
+    const el = $("settings-dev-description");
+    const out = $("settings-dev-description-count");
+    if (el && out) out.textContent = String(el.value.length);
+  }
+
+  function bindCounters() {
+    $("settings-lb-bio")?.addEventListener("input", updateBioCounter);
+    $("settings-dev-description")?.addEventListener("input", updateDevDescriptionCounter);
+  }
+
+  // ─── Direct modal triggers (buttons with explicit IDs) ────────
+
+  function bindDirectModalButtons() {
+    $("btn-change-email")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-change-email"); });
+    $("btn-change-password")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-change-password"); });
+    $("btn-change-phone")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-change-phone"); });
+    $("btn-delete-account")?.addEventListener("click", (e) => { e.preventDefault(); openModal("modal-delete-account"); });
+    $("btn-retry-load")?.addEventListener("click", (e) => { e.preventDefault(); loadSettings(); });
+  }
+
+  // ─── Init ─────────────────────────────────────────────────────
+
+  function init() {
+    // Form submit handlers
+    $("form-core-profile")?.addEventListener("submit", onSubmitCore);
+    $("form-address")?.addEventListener("submit", onSubmitAddress);
+    $("form-identity")?.addEventListener("submit", onSubmitIdentity);
+    $("form-preferences")?.addEventListener("submit", onSubmitPreferences);
+    $("form-leaderboard")?.addEventListener("submit", onSubmitLeaderboard);
+    $("form-social")?.addEventListener("submit", onSubmitSocial);
+    $("form-developer-identity")?.addEventListener("submit", onSubmitDevProfile);
+    $("form-developer-links")?.addEventListener("submit", onSubmitDevLinks);
+
+    // Modal form submits
+    $("form-change-email")?.addEventListener("submit", onSubmitChangeEmail);
+    $("form-change-password")?.addEventListener("submit", onSubmitChangePassword);
+    $("form-change-phone")?.addEventListener("submit", onSubmitChangePhone);
+    $("form-delete-account")?.addEventListener("submit", onSubmitDeleteAccount);
+    $("btn-confirm-revoke-session")?.addEventListener("click", onConfirmRevokeSession);
+
+    // Reset handlers — repopulate from savedSettings
+    document.querySelectorAll("form[id^=form-]").forEach((f) => {
+      f.addEventListener("reset", () => {
+        setTimeout(() => savedSettings && (
+          populateCore(savedSettings),
+          populateAddress(savedSettings),
+          populateIdentity(savedSettings),
+          populatePreferences(savedSettings),
+          populateLeaderboard(savedSettings),
+          populateSocial(savedSettings),
+          populateDeveloper(savedSettings)
+        ), 0);
+      });
+    });
+
+    bindToggleSwitches();
+    bindActions();
+    bindModals();
+    bindDirectModalButtons();
+    bindFileInputs();
+    bindCounters();
+
     loadSettings();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
+    document.addEventListener("DOMContentLoaded", init);
   } else {
-    boot();
+    init();
   }
 })();

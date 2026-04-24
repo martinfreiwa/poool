@@ -228,11 +228,115 @@ const SettingsDataService = (function () {
     }
 
     /**
-     * Request data export (stub/future).
+     * Request a GDPR Art.15/20 data export.
+     * @returns {Promise<ApiResponse|null>}
      */
     async function requestDataExport() {
-        // Implement when backend endpoint exists
-        return { success: true, message: "Data export requested. You will receive an email shortly." };
+        return apiFetch("/api/settings/export-data", "POST");
+    }
+
+    /**
+     * Delete the user's account (GDPR Art.17).
+     * @param {string} password
+     * @param {string} confirmPhrase — must equal "DELETE"
+     * @returns {Promise<ApiResponse|null>}
+     */
+    async function deleteAccount(password, confirmPhrase) {
+        if (!password) return { success: false, message: "Password required." };
+        if (confirmPhrase !== "DELETE") return { success: false, message: "Type DELETE to confirm." };
+        return apiFetch("/api/settings/delete-account", "POST", {
+            password,
+            confirm: confirmPhrase,
+        });
+    }
+
+    /**
+     * Save social links (personal profile).
+     * @param {{twitter?:string, linkedin?:string, instagram?:string, telegram?:string, discord?:string, website?:string}} data
+     */
+    async function saveSocialLinks(data) {
+        return apiFetch("/api/settings/social", "POST", data);
+    }
+
+    /**
+     * Save developer company profile (developer role only).
+     * @param {{company_name?:string, description?:string}} data
+     */
+    async function saveDeveloperProfile(data) {
+        return apiFetch("/api/settings/developer/profile", "POST", data);
+    }
+
+    /**
+     * Save developer public links (developer role only).
+     */
+    async function saveDeveloperLinks(data) {
+        return apiFetch("/api/settings/developer/links", "POST", data);
+    }
+
+    /**
+     * Upload developer logo (developer role only).
+     */
+    async function uploadDeveloperLogo(file) {
+        return apiUpload("/api/upload/developer-logo", file);
+    }
+
+    /**
+     * List active sessions.
+     */
+    async function listSessions() {
+        return apiFetch("/api/settings/sessions", "GET");
+    }
+
+    /**
+     * Revoke a specific session.
+     * @param {string} sessionId
+     */
+    async function revokeSession(sessionId) {
+        return apiFetch(`/api/settings/sessions/${encodeURIComponent(sessionId)}`, "DELETE");
+    }
+
+    /**
+     * Revoke all sessions except the current one.
+     */
+    async function revokeOtherSessions() {
+        return apiFetch("/api/settings/sessions/revoke-others", "POST");
+    }
+
+    /**
+     * List OAuth connections.
+     */
+    async function listOAuthConnections() {
+        return apiFetch("/api/settings/oauth", "GET");
+    }
+
+    /**
+     * Initiate OAuth link flow (returns redirect URL).
+     * @param {'google'|'facebook'|'apple'|'github'} provider
+     */
+    async function linkOAuth(provider) {
+        return apiFetch(`/api/settings/oauth/${encodeURIComponent(provider)}/link`, "POST");
+    }
+
+    /**
+     * Unlink an OAuth connection.
+     * @param {string} connectionId
+     */
+    async function unlinkOAuth(connectionId) {
+        return apiFetch(`/api/settings/oauth/${encodeURIComponent(connectionId)}`, "DELETE");
+    }
+
+    /**
+     * List saved payment methods.
+     */
+    async function listPaymentMethods() {
+        return apiFetch("/api/settings/payment-methods", "GET");
+    }
+
+    /**
+     * Delete a saved payment method.
+     */
+    async function deletePaymentMethod(methodId) {
+        return apiFetch(`/api/settings/payment-methods/${encodeURIComponent(methodId)}`, "DELETE");
     }
 
     // ─── Exports ─────────────────────────────────────────────────
@@ -246,7 +350,20 @@ const SettingsDataService = (function () {
         changePassword,
         changePhone,
         requestDataExport,
+        deleteAccount,
         disable2FA,
         saveLeaderboard,
+        saveSocialLinks,
+        saveDeveloperProfile,
+        saveDeveloperLinks,
+        uploadDeveloperLogo,
+        listSessions,
+        revokeSession,
+        revokeOtherSessions,
+        listOAuthConnections,
+        linkOAuth,
+        unlinkOAuth,
+        listPaymentMethods,
+        deletePaymentMethod,
     };
 })();
