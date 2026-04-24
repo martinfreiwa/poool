@@ -15,7 +15,7 @@ Always update this board before and after you claim/complete a task.
 
 ### Developer Profile
 - [COMPLETED] `/developer/dashboard.html`
-- [COMPLETED] `/developer/settings.html` - Created developer settings based on investor layout
+- [COMPLETED] `/developer/settings` - Uses shared `settings.html` with developer context
 - [COMPLETED] `/developer/assets.html` - Audited and fixed missing bindings by Agent A-02 at 2026-03-09T00:20:00+07:00
 - [COMPLETED] `/developer/asset-detail.html` - Audited and verified by Agent A-06 at 2026-03-09T00:45:00
 - [COMPLETED] `/developer/add-asset.html` - Audited and fixed missing bindings by Agent A-02 at 2026-03-09T00:27:00
@@ -26,8 +26,8 @@ Always update this board before and after you claim/complete a task.
 ## Resolution Log
 Profile/Page: Developer Profile / Settings
 Initial State: Page missing
-Action Taken: Created `developer/settings.html` using the base layout of investor settings for consistency. Working towards a unified generic profile setup.
-Verification: Verified by creating the file successfully; layout and scripts are intact.
+Action Taken: Replaced the standalone developer settings file with shared `settings.html` using developer context.
+Verification: `/developer/settings` routes through the shared settings template.
 Resolved By: A-01
 
 Profile/Page: Developer Profile / Assets

@@ -130,7 +130,10 @@ pub async fn create_offer(
     }
 
     // ── Balance/Token Check ──────────────────────────────────
-    let total_cents = req.price_cents.saturating_mul(req.quantity as i64);
+    let total_cents = req
+        .price_cents
+        .checked_mul(req.quantity as i64)
+        .ok_or_else(|| AppError::BadRequest("Offer total exceeds maximum supported value".into()))?;
 
     if side == "buy" {
         // Maker is buying — check they have sufficient cash
@@ -344,7 +347,19 @@ async fn accept_offer(
     offer: &P2POffer,
     taker_user_id: Uuid,
 ) -> Result<P2POfferResponse, AppError> {
-    let total_cents = offer.price_cents.saturating_mul(offer.quantity as i64);
+    // Self-trade guard: the same wallet cannot sit on both sides of a
+    // match. Offer creation already rejects maker == taker, but re-check
+    // here so stale/hand-crafted requests can't bypass it.
+    if offer.maker_user_id == taker_user_id {
+        return Err(AppError::BadRequest(
+            "You cannot accept your own offer.".into(),
+        ));
+    }
+
+    let total_cents = offer
+        .price_cents
+        .checked_mul(offer.quantity as i64)
+        .ok_or_else(|| AppError::Internal("Offer total overflow on accept".into()))?;
 
     // Determine who is buyer and who is seller
     let (buyer_id, seller_id) = if offer.side == "buy" {
@@ -357,6 +372,31 @@ async fn accept_offer(
 
     // ── Begin ACID Transaction ───────────────────────────────
     let mut tx = pool.begin().await.map_err(AppError::Database)?;
+
+    // Re-load the offer with a row lock so two concurrent accepts cannot
+    // both succeed. If another acceptor already consummated it, status is
+    // no longer 'pending' and we bail out.
+    let locked_status: Option<String> = sqlx::query_scalar(
+        "SELECT status FROM p2p_offers WHERE id = $1 FOR UPDATE",
+    )
+    .bind(offer.id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(AppError::Database)?;
+    match locked_status.as_deref() {
+        Some("pending") => {}
+        Some(other) => {
+            tx.rollback().await.ok();
+            return Err(AppError::BadRequest(format!(
+                "Offer is already '{}', cannot accept.",
+                other
+            )));
+        }
+        None => {
+            tx.rollback().await.ok();
+            return Err(AppError::NotFound("Offer not found.".into()));
+        }
+    }
 
     // ── Check buyer balance ──────────────────────────────────
     let buyer_balance: i64 = sqlx::query_scalar(
@@ -531,16 +571,24 @@ async fn accept_offer(
     .await
     .map_err(AppError::Database)?;
 
-    // Collect platform fee
+    // Collect platform fee. Require rows_affected == 1 so a duplicated or
+    // missing platform_fee wallet aborts the tx rather than losing the fee.
     if taker_fee_cents > 0 {
-        sqlx::query(
+        let affected = sqlx::query(
             "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW()
              WHERE wallet_type = 'platform_fee' AND currency = 'USD'",
         )
         .bind(taker_fee_cents)
         .execute(&mut *tx)
         .await
-        .map_err(AppError::Database)?;
+        .map_err(AppError::Database)?
+        .rows_affected();
+        if affected != 1 {
+            return Err(AppError::Internal(format!(
+                "Platform fee wallet not uniquely matched (affected={})",
+                affected
+            )));
+        }
     }
 
     // ── Mark offer as accepted ───────────────────────────────

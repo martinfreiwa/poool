@@ -564,15 +564,26 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
     }
 
     // ── Read platform fee percentage from platform_settings ──
-    let platform_fee_pct: f64 = sqlx::query_scalar(
+    // Stored as a decimal string in percent ("2.5" = 2.5%). We parse via
+    // `rust_decimal` and carry the basis-point integer form (fee_bps) for
+    // money math; the f64 is kept only for display/data attributes.
+    let fee_raw: Option<String> = sqlx::query_scalar(
         "SELECT value FROM platform_settings WHERE key = 'platform_fee_percent'",
     )
     .fetch_optional(&state.db)
     .await
     .ok()
-    .flatten()
-    .and_then(|v: String| v.parse::<f64>().ok())
-    .unwrap_or(0.0); // Default to 0 if not configured
+    .flatten();
+    let fee_bps: i64 = {
+        use rust_decimal::prelude::*;
+        fee_raw
+            .as_deref()
+            .and_then(|s| Decimal::from_str(s.trim()).ok())
+            .and_then(|d| (d * Decimal::from(100)).to_i64())
+            .filter(|v| *v >= 0)
+            .unwrap_or(0)
+    };
+    let platform_fee_pct: f64 = fee_bps as f64 / 100.0;
 
     // Build populated cart HTML
     let mut cart_items_html = String::new();
@@ -966,10 +977,13 @@ pub async fn page_cart(jar: CookieJar, State(state): State<AppState>) -> axum::r
         ));
     }
 
-    // ── Calculate platform fee (integer cents, no floats for money) ──
-    // fee_cents = subtotal_cents * fee_pct / 100 (rounded down)
-    let fee_cents: i64 = if platform_fee_pct > 0.0 {
-        ((total_cents as f64) * platform_fee_pct / 100.0).round() as i64
+    // ── Calculate platform fee in integer cents ──
+    // fee_cents = subtotal_cents * fee_bps / 10_000, computed in i128 to
+    // avoid overflow on the multiplication (i64 * i64 can wrap well before
+    // the division brings it back into range). No floats.
+    let fee_cents: i64 = if fee_bps > 0 {
+        let num = (total_cents as i128) * (fee_bps as i128);
+        (num / 10_000) as i64
     } else {
         0
     };

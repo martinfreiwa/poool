@@ -205,18 +205,13 @@ if (typeof window.getCsrfToken === "undefined") {
                         <div class="profile-account-content">
                             <div class="profile-avatar-group">
                                 <div class="profile-avatar">
-                                    <div style="width: 32px; height: 32px; border-radius: 8px; background: #7F56D9; display: flex; align-items: center; justify-content: center;">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                                        </svg>
-                                    </div>
+                                    <img src="${initialsDataUrl}" alt="${escHtml(user.name)}">
                                     <div class="profile-avatar-border"></div>
                                     <div class="profile-online-indicator"></div>
                                 </div>
                                 <div class="profile-text-wrapper">
                                     <span class="profile-account-name">${escHtml(user.name)}</span>
-                                    <span class="profile-account-type">Admin Dashboard</span>
+                                    <span class="profile-account-type">Admin Profile</span>
                                 </div>
                             </div>
                             <div class="profile-checkbox">
@@ -250,18 +245,13 @@ if (typeof window.getCsrfToken === "undefined") {
                         <div class="mobile-profile-account-content">
                             <div class="mobile-profile-avatar-group">
                                 <div class="mobile-profile-avatar">
-                                    <div style="width: 32px; height: 32px; border-radius: 8px; background: #7F56D9; display: flex; align-items: center; justify-content: center;">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                                        </svg>
-                                    </div>
+                                    <img src="${initialsDataUrl}" alt="${escHtml(user.name)}">
                                     <div class="mobile-profile-avatar-border"></div>
                                     <div class="mobile-profile-online-indicator"></div>
                                 </div>
                                 <div class="mobile-profile-text-wrapper">
                                     <span class="mobile-profile-account-name">${escHtml(user.name)}</span>
-                                    <span class="mobile-profile-account-type">Admin Dashboard</span>
+                                    <span class="mobile-profile-account-type">Admin Profile</span>
                                 </div>
                             </div>
                             <div class="mobile-profile-checkbox">
@@ -278,7 +268,7 @@ if (typeof window.getCsrfToken === "undefined") {
         }
         // 3. Admin Dashboard Injection (if we are in /admin/)
         if (window.location.pathname.startsWith("/admin/")) {
-          setupAdminDashboardSwitcher(user);
+          setupAdminDashboardSwitcher(user, initialsDataUrl);
         }
       }
 
@@ -345,7 +335,7 @@ if (typeof window.getCsrfToken === "undefined") {
   /**
    * Setup the profile switcher for the Admin Dashboard sidebar.
    */
-  function setupAdminDashboardSwitcher(user) {
+  function setupAdminDashboardSwitcher(user, initialsDataUrl) {
     var sidebarFooter = document.querySelector(".admin-sidebar-footer");
     var sidebarUser = document.querySelector(".admin-sidebar-user");
 
@@ -356,11 +346,11 @@ if (typeof window.getCsrfToken === "undefined") {
     ) {
       // 1. Make the user card clickable
       sidebarUser.id = "nav-account-card";
-      sidebarUser.setAttribute(
-        "onclick",
-        'window.toggleProfileDropdown ? toggleProfileDropdown() : console.warn("toggleProfileDropdown not loaded")',
-      );
+      sidebarUser.style.cursor = "pointer";
       sidebarUser.style.position = "relative";
+      sidebarUser.addEventListener("click", function () {
+        if (window.toggleProfileDropdown) window.toggleProfileDropdown();
+      });
 
       // 2. Ensure CSS is loaded
       if (!document.querySelector('link[href*="profile-dropdown.css"]')) {
@@ -409,7 +399,7 @@ if (typeof window.getCsrfToken === "undefined") {
                             <div id="menu-item-current-account" class="profile-menu-item account-item ${!savedProfile || savedProfile === "investor" ? "selected" : ""}">
                                 <div class="profile-account-content">
                                     <div class="profile-avatar-group">
-                                        <div class="profile-avatar"><img src="${generateInitialsAvatar(user.initials)}" alt="${escHtml(user.name)}">
+                                        <div class="profile-avatar"><img src="${initialsDataUrl}" alt="${escHtml(user.name)}">
                                             <div class="profile-avatar-border"></div>
                                             <div class="profile-online-indicator"></div>
                                         </div>
@@ -439,17 +429,11 @@ if (typeof window.getCsrfToken === "undefined") {
                             <div id="menu-item-account-admin" class="profile-menu-item account-item ${savedProfile === "admin" ? "selected" : ""}" data-profile-id="${escHtml(user.email)}-admin">
                                 <div class="profile-account-content">
                                     <div class="profile-avatar-group">
-                                        <div class="profile-avatar">
-                                            <div style="width: 32px; height: 32px; border-radius: 8px; background: #7F56D9; display: flex; align-items: center; justify-content: center;">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                                                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                                                </svg>
-                                            </div>
+                                        <div class="profile-avatar"><img src="${initialsDataUrl}" alt="${escHtml(user.name)}">
                                             <div class="profile-avatar-border"></div>
                                             <div class="profile-online-indicator"></div>
                                         </div>
-                                        <div class="profile-text-wrapper"><span class="profile-account-name">${escHtml(user.name)}</span> <span class="profile-account-type">Admin Dashboard</span></div>
+                                        <div class="profile-text-wrapper"><span class="profile-account-name">${escHtml(user.name)}</span> <span class="profile-account-type">Admin Profile</span></div>
                                     </div>
                                     <div class="profile-checkbox ${savedProfile === "admin" ? "selected" : ""}">
                                         <div class="profile-checkbox-check"></div>

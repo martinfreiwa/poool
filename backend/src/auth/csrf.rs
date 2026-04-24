@@ -23,11 +23,14 @@ pub async fn csrf_middleware(
     next: Next,
 ) -> Result<Response, StatusCode> {
     let path = req.uri().path().to_string();
+    // Only skip CSRF for static asset paths and webhook endpoints (the latter
+    // are authenticated by HMAC signature, not cookies). Locale-prefixed
+    // routes ("/en/...", "/id/...") serve real mutating handlers and MUST
+    // enforce CSRF — otherwise any form posted to "/en/auth/login" bypassed
+    // the double-submit check entirely.
     if path.starts_with("/static/")
         || path.starts_with("/fonts/")
         || path.starts_with("/static/images/")
-        || path.starts_with("/en/")
-        || path.starts_with("/id/")
         || path.starts_with("/webhook")
         || path.starts_with("/api/webhooks/")
     {
@@ -139,7 +142,10 @@ pub async fn csrf_middleware(
             .http_only(false) // Must be readable by Javascript for fetch/htmx generic appending
             .secure(cookie_is_secure())
             .same_site(axum_extra::extract::cookie::SameSite::Lax)
-            .max_age(time::Duration::days(365));
+            // 24h max lifetime — a token stolen via XSS/subdomain is valid
+            // for at most a day instead of a year. Forms will re-issue on
+            // page load and long-lived sessions re-mint on next request.
+            .max_age(time::Duration::days(1));
 
         let cookie_string = cookie.to_string();
         response.headers_mut().append(
@@ -151,6 +157,22 @@ pub async fn csrf_middleware(
     }
 
     Ok(response)
+}
+
+/// Build a cookie that expires the existing `csrf_token` immediately.
+///
+/// Add this to the returned `CookieJar` on privilege changes (login, logout,
+/// 2FA verify/enroll). The browser drops the old token; the next request
+/// falls through `csrf_middleware` and receives a fresh token bound to the
+/// new session. Prevents session-fixation reuse of a pre-login CSRF token.
+pub fn rotation_cookie() -> Cookie<'static> {
+    Cookie::build(("csrf_token", ""))
+        .path("/")
+        .http_only(false)
+        .secure(cookie_is_secure())
+        .same_site(axum_extra::extract::cookie::SameSite::Lax)
+        .max_age(time::Duration::seconds(0))
+        .build()
 }
 
 fn cookie_is_secure() -> bool {

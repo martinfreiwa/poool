@@ -51,6 +51,12 @@
     } catch (e) { /* private browsing */ }
   }
 
+  function supportUrl() {
+    return window.location.pathname.startsWith("/developer")
+      ? "/developer/support"
+      : "/support";
+  }
+
   // Use event delegation on document so handlers work for dynamically
   // injected elements (e.g. sidebar cloned from a <template>).
   document.addEventListener("click", function (e) {
@@ -90,7 +96,7 @@
     // ── Desktop sidebar: "Chat to support" button ─────────────────────────
     var chatBtn = target.closest(".sidebar__featured-button--chat");
     if (chatBtn) {
-      window.location.href = "/support";
+      window.location.href = supportUrl();
       return;
     }
 
@@ -108,7 +114,7 @@
     // ── Mobile menu: "Chat to support" button ─────────────────────────────
     var mobileChatBtn = target.closest(".mobile-burger-menu__featured-button--chat");
     if (mobileChatBtn) {
-      window.location.href = "/support";
+      window.location.href = supportUrl();
       return;
     }
   }, true); // capture phase so we beat any stopPropagation in child handlers

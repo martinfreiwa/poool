@@ -687,16 +687,25 @@ pub async fn execute_checkout(
         .map_err(|e| format!("Wallet TX log failed: {}", e))?;
     }
 
-    // 8.5 Credit platform fee wallet (if fee exists and payment method is wallet)
+    // 8.5 Credit platform fee wallet (if fee exists and payment method is wallet).
+    // Require rows_affected == 1 so a duplicated or missing platform_fee
+    // wallet aborts the tx rather than losing the fee credit.
     if fee_cents > 0 && payment_method == "wallet" {
-        sqlx::query(
+        let affected = sqlx::query(
             "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW()
              WHERE wallet_type = 'platform_fee' AND currency = 'USD'",
         )
         .bind(fee_cents)
         .execute(&mut *tx)
         .await
-        .map_err(|e| format!("Platform fee wallet credit failed: {}", e))?;
+        .map_err(|e| format!("Platform fee wallet credit failed: {}", e))?
+        .rows_affected();
+        if affected != 1 {
+            return Err(format!(
+                "Platform fee wallet not uniquely matched (affected={})",
+                affected
+            ));
+        }
     }
 
     // 9. Clear cart

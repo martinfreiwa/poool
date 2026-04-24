@@ -344,7 +344,7 @@
     return s.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
-  // --- Public API for settings-2.js to set the value programmatically ---
+  // --- Public API for the settings page to set the value programmatically ---
   window.setNationalityDropdownValue = function (value) {
     const hiddenInput = document.getElementById("edit-nationality");
     const display = document.getElementById("nationality-display");

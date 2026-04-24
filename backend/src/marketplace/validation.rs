@@ -76,7 +76,9 @@ pub fn validate_order_fields(req: &SubmitOrderRequest) -> Result<(), AppError> {
             }
             Some(price) => {
                 // 5. Check minimum order value ($10)
-                let total = price.saturating_mul(req.quantity as i64);
+                let total = price.checked_mul(req.quantity as i64).ok_or_else(|| {
+                    AppError::BadRequest("Order total exceeds maximum supported value".into())
+                })?;
                 if total < MIN_ORDER_VALUE_CENTS {
                     return Err(OrderRejection::BelowMinimum {
                         min_cents: MIN_ORDER_VALUE_CENTS,

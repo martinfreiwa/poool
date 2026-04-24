@@ -36,9 +36,19 @@
         activePage = "leaderboard";
       } else if (path.includes("/developer/dashboard")) {
         activePage = "dashboard";
-      } else if (path.includes("/developer/submissions")) {
+      } else if (
+        path.includes("/developer/submissions") ||
+        path.includes("/developer/application-form") ||
+        path.includes("/developer/document-upload-step3") ||
+        path.includes("/developer/submission-success")
+      ) {
         activePage = "submissions";
-      } else if (path.includes("/developer/assets")) {
+      } else if (
+        path.includes("/developer/assets") ||
+        path.includes("/developer/add-asset") ||
+        path.includes("/developer/property-content") ||
+        path.includes("/developer/asset-detail")
+      ) {
         activePage = "assets";
       } else if (path.includes("/settings")) {
         activePage = "settings";
@@ -128,7 +138,7 @@
         <!-- Navigation Menu -->
         <nav id="sidebar-nav" class="sidebar__nav">
           <!-- Dashboard -->
-          <div id="nav-item-dashboard" class="sidebar__nav-item" class="sidebar__nav-item">
+          <div id="nav-item-dashboard" class="sidebar__nav-item">
             <a id="nav-item-dashboard-content" href="/developer/dashboard" class="sidebar__nav-item-content">
               <div id="nav-text-icon-dashboard" class="sidebar__nav-text-icon">
                 <div id="nav-icon-wrapper-dashboard" class="sidebar__nav-icon-wrapper">
@@ -233,7 +243,7 @@
                 Our support team is here to help.
               </p>
             </div>
-            <button class="sidebar__featured-button sidebar__featured-button--chat" type="button" onclick="window.location.href='/developer/support'">
+            <button class="sidebar__featured-button sidebar__featured-button--chat" type="button">
               <img  src="/static/images/icons/message-chat-circle-grey.svg" alt="Support" width="20"
                 height="20" />
               <span>Chat to support</span>
@@ -241,7 +251,7 @@
           </div>
         </div>
         <!-- Account Card - Now fully clickable -->
-        <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
+        <div id="nav-account-card" class="sidebar__account-card"
           style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
           <!-- Avatar Group -->
           <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
@@ -291,7 +301,7 @@
                   <span class="profile-switch-title">Switch account</span>
                 </div>
                 <!-- Current account (selected) -->
-                <div id="menu-item-current-account" class="profile-menu-item account-item selected">
+                <div id="menu-item-current-account" class="profile-menu-item account-item selected" data-profile="investor">
                   <div class="profile-account-content">
                     <div class="profile-avatar-group">
                       <div class="profile-avatar">
@@ -310,7 +320,7 @@
                   </div>
                 </div>
                 <!-- Other accounts -->
-                <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
+                <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item" data-profile="developer">
                   <div class="profile-account-content">
                     <div class="profile-avatar-group">
                       <div class="profile-avatar">
@@ -521,7 +531,7 @@
         </nav>
 
         <!-- Account Card - Now fully clickable -->
-        <div id="nav-account-card" class="sidebar__account-card" onclick="toggleProfileDropdown()"
+        <div id="nav-account-card" class="sidebar__account-card"
           style="cursor: pointer" role="button" aria-label="Account menu" tabindex="0">
           <!-- Avatar Group -->
           <div id="account-avatar-group" class="sidebar__account-avatar-group" style="pointer-events: none">
@@ -571,7 +581,7 @@
                   <span class="profile-switch-title">Switch account</span>
                 </div>
                 <!-- Current account (selected) -->
-                <div id="menu-item-current-account" class="profile-menu-item account-item selected">
+                <div id="menu-item-current-account" class="profile-menu-item account-item selected" data-profile="investor">
                   <div class="profile-account-content">
                     <div class="profile-avatar-group">
                       <div class="profile-avatar">
@@ -590,7 +600,7 @@
                   </div>
                 </div>
                 <!-- Other accounts -->
-                <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item">
+                <div id="menu-item-account-olivia-developer" class="profile-menu-item account-item" data-profile="developer">
                   <div class="profile-account-content">
                     <div class="profile-avatar-group">
                       <div class="profile-avatar">
@@ -631,90 +641,6 @@
         </div>
       </div>
     </div>
-    <!-- Profile Dropdown JavaScript -->
-    <script>
-      // Profile Dropdown Functions - Global scope
-      window.toggleProfileDropdown = function () {
-        const dropdown = document.getElementById(
-          "profile-dropdown-menu",
-        );
-        const button = document.getElementById(
-          "account-menu-button-inner",
-        );
-
-        if (!dropdown) {
-          return;
-        }
-
-        // SAFARI FIX: Move to body and restore proper styling
-
-        // Move to body to escape stacking context
-        if (dropdown.parentNode !== document.body) {
-          document.body.appendChild(dropdown);
-        }
-
-        // Apply proper dropdown styles (restore original design)
-        dropdown.style.display = "flex";
-        dropdown.style.position = "fixed";
-        dropdown.style.left = "248px"; // Original position
-        dropdown.style.bottom = "20px"; // Original position
-        dropdown.style.width = "264px"; // Original width
-        dropdown.style.height = "auto"; // Original height
-        dropdown.style.background = ""; // Clear test background
-        dropdown.style.border = ""; // Clear test border
-        dropdown.style.zIndex = "99999"; // High z-index for Safari
-
-        // Restore original CSS classes
-        dropdown.className = "profile-dropdown-menu";
-
-        if (button) button.classList.add("active");
-
-        // Add click outside listener
-        setTimeout(() => {
-          document.addEventListener(
-            "click",
-            window.closeDropdownOnClickOutside,
-          );
-        }, 100);
-      };
-
-      window.closeProfileDropdown = function () {
-        const dropdown = document.getElementById(
-          "profile-dropdown-menu",
-        );
-        const button = document.getElementById(
-          "account-menu-button-inner",
-        );
-
-        if (dropdown) dropdown.style.display = "none";
-        if (button) button.classList.remove("active");
-
-        // Remove click outside listener
-        document.removeEventListener(
-          "click",
-          window.closeDropdownOnClickOutside,
-        );
-      };
-
-      window.closeDropdownOnClickOutside = function (event) {
-        const dropdown = document.getElementById(
-          "profile-dropdown-menu",
-        );
-        const accountCard =
-          document.getElementById("nav-account-card");
-
-        if (
-          accountCard &&
-          !accountCard.contains(event.target) &&
-          dropdown &&
-          !dropdown.contains(event.target)
-        ) {
-          window.closeProfileDropdown();
-        }
-      };
-
-      // Profile dropdown functionality is handled by profile-dropdown.js
-    </script>
   </aside>
   {% endif %}
 <script>
@@ -724,6 +650,7 @@
     const button = document.getElementById(
       "account-menu-button-inner",
     );
+    const accountCard = document.getElementById("nav-account-card");
 
     if (!dropdown) {
       return;
@@ -741,11 +668,21 @@
       }
 
       // Apply proper dropdown styles (restore original design)
+      const dropdownWidth = 264;
+      const rect = accountCard
+        ? accountCard.getBoundingClientRect()
+        : { left: 248, top: window.innerHeight - 64 };
+      const left = Math.min(
+        Math.max(16, rect.left),
+        Math.max(16, window.innerWidth - dropdownWidth - 16),
+      );
+      const bottom = Math.max(20, window.innerHeight - rect.top + 8);
+
       dropdown.style.display = "flex";
       dropdown.style.position = "fixed";
-      dropdown.style.left = "248px"; // Original position
-      dropdown.style.bottom = "20px"; // Original position
-      dropdown.style.width = "264px"; // Original width
+      dropdown.style.left = `${left}px`;
+      dropdown.style.bottom = `${bottom}px`;
+      dropdown.style.width = `${dropdownWidth}px`;
       dropdown.style.height = "auto"; // Original height
       dropdown.style.background = ""; // Clear test background
       dropdown.style.border = ""; // Clear test border
@@ -801,6 +738,14 @@
   // Profile switching functionality for wrapper - matches other layouts
   window.switchProfile = function (profileType) {
     localStorage.setItem("selectedProfile", profileType);
+    localStorage.setItem(
+      "selectedAccountId",
+      profileType === "developer"
+        ? "olivia-developer"
+        : profileType === "admin"
+          ? "admin"
+          : "olivia-investor",
+    );
 
     // Close dropdown first
     window.closeProfileDropdown();
@@ -821,6 +766,24 @@
     if (window.__SIDEBAR_ACCOUNT_HANDLER_REGISTERED) return;
     window.__SIDEBAR_ACCOUNT_HANDLER_REGISTERED = true;
 
+    // Delegated toggle for account card (replaces inline onclick for CSP)
+    document.body.addEventListener("click", function (e) {
+      const card = e.target.closest("#nav-account-card");
+      if (card && !e.target.closest("#profile-dropdown-menu")) {
+        window.toggleProfileDropdown();
+      }
+    });
+
+    // Keyboard activation (Enter/Space) on account card
+    document.body.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const card = e.target.closest("#nav-account-card");
+      if (card && !e.target.closest("#profile-dropdown-menu")) {
+        e.preventDefault();
+        window.toggleProfileDropdown();
+      }
+    });
+
     document.body.addEventListener("click", function (e) {
       const accountItem = e.target.closest(
         ".profile-menu-item.account-item",
@@ -829,13 +792,9 @@
       if (accountItem) {
         e.stopPropagation();
 
-        const accountId = accountItem.id;
-        let profileType = "investor";
-        if (accountId.includes("admin")) {
-          profileType = "admin";
-        } else if (accountId.includes("developer")) {
-          profileType = "developer";
-        }
+        const raw = accountItem.getAttribute("data-profile");
+        const ALLOWED = ["investor", "developer", "admin"];
+        const profileType = ALLOWED.includes(raw) ? raw : "investor";
 
         const isSelected = accountItem.classList.contains("selected");
 
@@ -947,72 +906,42 @@
       sidebar.classList.add("sidebar--no-transition");
     }
 
-    // Use double requestAnimationFrame to ensure DOM is fully rendered
-    // before calculating heights (fixes clipping issue)
+    // rAF ensures layout is complete before measuring scrollHeight
     requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        // Restore expanded state from localStorage first
-        const parentItems = document.querySelectorAll(
-          ".sidebar__nav-item--parent",
-        );
-        parentItems.forEach(function (parentItem) {
-          const itemId = parentItem.getAttribute("data-item-id");
-          if (itemId) {
-            const savedState = localStorage.getItem(
-              "nav-expanded-" + itemId,
-            );
-            const childrenContainer = document.getElementById(
-              "nav-children-" + itemId,
-            );
-            const chevronIcon = document.getElementById(
-              "nav-chevron-" + itemId,
-            );
+      const parentItems = document.querySelectorAll(".sidebar__nav-item--parent");
+      const expandedContainers = [];
 
-            if (childrenContainer && chevronIcon) {
-              const isCurrentlyCollapsed =
-                childrenContainer.classList.contains(
-                  "sidebar__nav-children--collapsed",
-                );
-              const shouldBeExpanded = savedState === "true";
+      parentItems.forEach(function (parentItem) {
+        const itemId = parentItem.getAttribute("data-item-id");
+        if (!itemId) return;
 
-              if (shouldBeExpanded && isCurrentlyCollapsed) {
-                childrenContainer.classList.remove(
-                  "sidebar__nav-children--collapsed",
-                );
-                chevronIcon.classList.add(
-                  "sidebar__nav-chevron--expanded",
-                );
-              } else if (!shouldBeExpanded && !isCurrentlyCollapsed) {
-                childrenContainer.classList.add(
-                  "sidebar__nav-children--collapsed",
-                );
-                chevronIcon.classList.remove(
-                  "sidebar__nav-chevron--expanded",
-                );
-              }
-            }
-          }
-        });
+        const savedState = localStorage.getItem("nav-expanded-" + itemId);
+        const childrenContainer = document.getElementById("nav-children-" + itemId);
+        const chevronIcon = document.getElementById("nav-chevron-" + itemId);
 
-        // Set initial heights for all nav children after state is restored
-        document
-          .querySelectorAll(".sidebar__nav-children")
-          .forEach(function (container) {
-            if (
-              !container.classList.contains(
-                "sidebar__nav-children--collapsed",
-              )
-            ) {
-              const height = container.scrollHeight;
-              container.style.height = height + "px";
-            }
-          });
+        if (!childrenContainer || !chevronIcon) return;
 
-        // Remove no-transition class to enable smooth animations from now on
-        if (sidebar) {
-          sidebar.classList.remove("sidebar--no-transition");
+        const isCollapsed = childrenContainer.classList.contains("sidebar__nav-children--collapsed");
+        const shouldExpand = savedState === "true";
+
+        if (shouldExpand && isCollapsed) {
+          childrenContainer.classList.remove("sidebar__nav-children--collapsed");
+          chevronIcon.classList.add("sidebar__nav-chevron--expanded");
+        } else if (!shouldExpand && !isCollapsed) {
+          childrenContainer.classList.add("sidebar__nav-children--collapsed");
+          chevronIcon.classList.remove("sidebar__nav-chevron--expanded");
+        }
+
+        if (!childrenContainer.classList.contains("sidebar__nav-children--collapsed")) {
+          expandedContainers.push(childrenContainer);
         }
       });
+
+      expandedContainers.forEach(function (container) {
+        container.style.height = container.scrollHeight + "px";
+      });
+
+      if (sidebar) sidebar.classList.remove("sidebar--no-transition");
     });
 
     // Handle clicks on parent nav items

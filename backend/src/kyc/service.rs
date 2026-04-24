@@ -74,15 +74,31 @@ pub async fn initiate_kyc(
     callback_url: &str,
     document_type: Option<&str>,
 ) -> Result<KycInitiateResponse, AppError> {
-    // Check for existing active KYC
+    // Serialize concurrent initiate calls for the same user via a Postgres
+    // transaction-scoped advisory lock. Prior version read existing state
+    // and then inserted a new row in separate statements — a second request
+    // racing through the same gap could spawn duplicate provider sessions
+    // or blow past the 'approved' guard.
+    let mut tx = pool.begin().await.map_err(AppError::Database)?;
+
+    // advisory lock keyed on user UUID (hashed into two i32s for the 2-arg form).
+    let uid_bytes = user_id.as_bytes();
+    let key_hi = i32::from_be_bytes([uid_bytes[0], uid_bytes[1], uid_bytes[2], uid_bytes[3]]);
+    let key_lo = i32::from_be_bytes([uid_bytes[4], uid_bytes[5], uid_bytes[6], uid_bytes[7]]);
+    sqlx::query("SELECT pg_advisory_xact_lock($1, $2)")
+        .bind(key_hi)
+        .bind(key_lo)
+        .execute(&mut *tx)
+        .await
+        .map_err(AppError::Database)?;
+
     let existing: Option<String> = sqlx::query_scalar(
         "SELECT status FROM kyc_records WHERE user_id = $1 AND status IN ('pending', 'in_review', 'approved') ORDER BY created_at DESC LIMIT 1",
     )
     .bind(user_id)
-    .fetch_optional(pool)
+    .fetch_optional(&mut *tx)
     .await
-    .ok()
-    .flatten();
+    .map_err(AppError::Database)?;
 
     if let Some(ref status) = existing {
         if status == "approved" {
@@ -94,23 +110,22 @@ pub async fn initiate_kyc(
             ));
         }
         // status == "pending": session was created but user abandoned the flow.
-        // Delete the stale record so they can start fresh.
         if status == "pending" {
             tracing::info!(user_id = %user_id, "Deleting stale pending KYC record to allow restart");
-            let _ =
-                sqlx::query("DELETE FROM kyc_records WHERE user_id = $1 AND status = 'pending'")
-                    .bind(user_id)
-                    .execute(pool)
-                    .await;
+            sqlx::query("DELETE FROM kyc_records WHERE user_id = $1 AND status = 'pending'")
+                .bind(user_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(AppError::Database)?;
         }
     }
 
-    // Create a session with the provider
+    // Create a session with the provider (external side-effect — safe to do
+    // inside the tx since the advisory lock already blocks other initiators).
     let session_result = provider
         .create_session(user_id, user_email, callback_url)
         .await?;
 
-    // Insert the KYC record
     let kyc_id: String = sqlx::query_scalar(
         r#"INSERT INTO kyc_records (user_id, provider, provider_ref_id, status, document_type)
            VALUES ($1, $2, $3, 'pending', $4)
@@ -120,9 +135,11 @@ pub async fn initiate_kyc(
     .bind(provider.name())
     .bind(&session_result.session_id)
     .bind(document_type)
-    .fetch_one(pool)
+    .fetch_one(&mut *tx)
     .await
     .map_err(AppError::Database)?;
+
+    tx.commit().await.map_err(AppError::Database)?;
 
     tracing::info!(
         "KYC initiated for user {} via {} (kyc_id={}, session={})",

@@ -138,7 +138,13 @@ async fn settle_trade(
 ) -> Result<Uuid, AppError> {
     let total_cents = event
         .match_price_cents
-        .saturating_mul(event.match_quantity as i64);
+        .checked_mul(event.match_quantity as i64)
+        .ok_or_else(|| {
+            AppError::Internal(format!(
+                "Settlement overflow: price={} qty={}",
+                event.match_price_cents, event.match_quantity
+            ))
+        })?;
 
     // ── Begin ACID Transaction ───────────────────────────────
     let mut tx = pool.begin().await.map_err(AppError::Database)?;
@@ -331,19 +337,27 @@ async fn settle_trade(
     .map_err(AppError::Database)?;
 
     // ── Step 8: Release holds ────────────────────────────────
-    // Buyer: release held_balance for the matched amount
-    let buyer_hold_release = event
+    // Buyer: hold was placed at the bid's LIMIT price × qty at order creation.
+    // Trade executes at MATCH price (<= limit). Release hold at limit price,
+    // deduct balance at match price — the difference returns to free balance.
+    let held_release = buy_order
+        .price_cents
+        .checked_mul(event.match_quantity as i64)
+        .ok_or_else(|| AppError::Internal("Hold-release overflow".to_string()))?;
+    let actual_paid = event
         .match_price_cents
-        .saturating_mul(event.match_quantity as i64);
+        .checked_mul(event.match_quantity as i64)
+        .ok_or_else(|| AppError::Internal("Actual-paid overflow".to_string()))?;
 
     sqlx::query(
         "UPDATE wallets SET
             balance_cents = balance_cents - $1,
-            held_balance_cents = GREATEST(held_balance_cents - $1, 0),
+            held_balance_cents = GREATEST(held_balance_cents - $2, 0),
             updated_at = NOW()
-         WHERE user_id = $2 AND wallet_type = 'cash' AND currency = 'USD'",
+         WHERE user_id = $3 AND wallet_type = 'cash' AND currency = 'USD'",
     )
-    .bind(buyer_hold_release)
+    .bind(actual_paid)
+    .bind(held_release)
     .bind(event.buyer_user_id)
     .execute(&mut *tx)
     .await
@@ -363,16 +377,26 @@ async fn settle_trade(
     .await
     .map_err(AppError::Database)?;
 
-    // Collect platform fee into the platform wallet
+    // Collect platform fee into the singleton platform wallet. Require
+    // rows_affected == 1 so an unseeded or accidentally duplicated
+    // platform_fee wallet row aborts the settlement instead of silently
+    // losing or duplicating the fee credit.
     if taker_fee_cents > 0 {
-        sqlx::query(
+        let affected = sqlx::query(
             "UPDATE wallets SET balance_cents = balance_cents + $1, updated_at = NOW()
              WHERE wallet_type = 'platform_fee' AND currency = 'USD'",
         )
         .bind(taker_fee_cents)
         .execute(&mut *tx)
         .await
-        .map_err(AppError::Database)?;
+        .map_err(AppError::Database)?
+        .rows_affected();
+        if affected != 1 {
+            return Err(AppError::Internal(format!(
+                "Platform fee wallet not uniquely matched (affected={})",
+                affected
+            )));
+        }
     }
 
     // ── COMMIT ───────────────────────────────────────────────

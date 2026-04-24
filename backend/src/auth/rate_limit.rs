@@ -105,9 +105,15 @@ impl RateLimitBackend for RedisBackend {
         let mut conn = match self.pool.get().await {
             Ok(c) => c,
             Err(e) => {
-                // If Redis is down, fail open (allow the request)
-                tracing::warn!("Redis rate limiter unavailable, allowing request: {}", e);
-                return Ok(self.max_requests);
+                // Fail CLOSED for auth rate limiting. If the counter store is
+                // unavailable we cannot distinguish "first attempt" from
+                // "thousandth attempt", so allowing the request would hand
+                // attackers a free brute-force window whenever Redis flaps.
+                tracing::error!(
+                    "Redis rate limiter unavailable, rejecting request: {}",
+                    e
+                );
+                return Err(30);
             }
         };
 
@@ -182,8 +188,9 @@ impl RateLimitBackend for RedisBackend {
                 }
             }
             Err(e) => {
-                tracing::warn!("Redis rate limit check failed, allowing request: {}", e);
-                Ok(self.max_requests) // Fail open
+                // Fail CLOSED. See rationale above.
+                tracing::error!("Redis rate limit check failed, rejecting request: {}", e);
+                Err(30)
             }
         }
     }

@@ -91,10 +91,22 @@ pub async fn api_admin_kyc_records(
 
 /// GET /api/admin/kyc/:kyc_id/documents - Get signed URLs for documents.
 pub async fn api_admin_kyc_documents(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(kyc_id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<axum::response::Response, ApiError> {
+    // Audit the access — KYC documents are the most sensitive PII in the
+    // system (passport, ID, selfie). Every signed-URL issuance is logged.
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'admin.kyc_documents_access', 'kyc_records', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(kyc_id)
+    .bind(serde_json::json!({"endpoint": "GET /api/admin/kyc/:id/documents"}))
+    .execute(&state.db)
+    .await;
+
     let docs = sqlx::query_as::<_, (String, String, String)>(
         "SELECT id::text, gcs_path, document_type FROM kyc_documents WHERE kyc_record_id = $1",
     )

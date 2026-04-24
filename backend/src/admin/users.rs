@@ -8,9 +8,20 @@ use axum::{
 
 /// GET /api/admin/users - List all users with roles, KYC, and balances.
 pub async fn api_admin_users(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    // Audit every PII read — admin listing exposes emails, names, balances
+    // and KYC state. We want after-the-fact forensics on who looked at
+    // what, even without a mutation.
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+           VALUES ($1, 'admin.pii_access', 'users', $2)"#,
+    )
+    .bind(admin.user.id)
+    .bind(serde_json::json!({"scope": "list", "endpoint": "GET /api/admin/users"}))
+    .execute(&state.db)
+    .await;
     // Verify the user has admin privileges
     // Fetch users with profiles, roles, KYC, and balance in a single query
     // to avoid N+1 problem (previously 3 extra queries per user)
@@ -110,11 +121,23 @@ pub async fn api_admin_users(
 
 /// GET /api/admin/users/:user_id - Full user detail with all related data.
 pub async fn api_admin_user_detail(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
     let uid = ApiError::parse_uuid(&user_id)?;
+
+    // Audit the read — user detail returns PII (profile, DOB, address,
+    // tax_id, payment methods, KYC records, transactions).
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+           VALUES ($1, 'admin.pii_access', 'users', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(uid)
+    .bind(serde_json::json!({"scope": "detail", "endpoint": "GET /api/admin/users/:id"}))
+    .execute(&state.db)
+    .await;
 
     //  Core user + profile
     let user_row = sqlx::query_as::<
@@ -957,13 +980,37 @@ pub struct AdminUpdateRolesPayload {
 }
 
 /// POST /api/admin/users/:user_id/roles - Update a user's roles.
+///
+/// Gated: only super_admin can mutate roles. Self-modification is refused.
+/// Every proposed role must be in the ASSIGNABLE_ROLES allowlist.
 pub async fn api_admin_user_update_roles(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
     Json(payload): Json<AdminUpdateRolesPayload>,
 ) -> Result<axum::response::Response, ApiError> {
     let uid = ApiError::parse_uuid(&user_id)?;
+
+    if !admin.is_super_admin(&state.db).await {
+        return Err(ApiError::Forbidden(
+            "Only super_admin may modify user roles".to_string(),
+        ));
+    }
+    if admin.user.id == uid {
+        return Err(ApiError::Forbidden(
+            "Admins may not modify their own roles".to_string(),
+        ));
+    }
+    for role_name in &payload.roles {
+        let valid = crate::admin::extractors::ASSIGNABLE_ROLES.contains(&role_name.as_str())
+            || crate::admin::extractors::ELEVATED_ROLES.contains(&role_name.as_str());
+        if !valid {
+            return Err(ApiError::BadRequest(format!(
+                "Role '{}' is not assignable",
+                role_name
+            )));
+        }
+    }
 
     let mut tx = match state.db.begin().await {
         Ok(t) => t,
@@ -1014,7 +1061,7 @@ pub async fn api_admin_user_update_roles(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
            VALUES ($1, 'admin.roles_update', 'users', $2, $3)"#,
     )
-    .bind(_admin.user.id)
+    .bind(admin.user.id)
     .bind(uid)
     .bind(serde_json::json!({ "new_roles": payload.roles }))
     .execute(&mut *tx)

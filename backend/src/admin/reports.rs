@@ -10,13 +10,15 @@ use sqlx::Row;
 //  Admin Debug/Seed API (19)
 //
 
-/// POST /api/admin/debug/seed  Populate DB with test data
+/// POST /api/admin/debug/seed  Populate DB with test data.
+///
+/// Compiled out in release builds — debug endpoint only. Production
+/// must not expose any path that writes synthetic fixtures.
+#[cfg(debug_assertions)]
 pub async fn api_admin_debug_seed(
     _admin: AdminUser,
     State(_state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
-    // This is a placeholder for a complex seeding script.
-    // It would populate users, assets, investments, etc.
     Ok(Json(serde_json::json!({
         "status": "seed_complete",
         "details": "Inserted 10 users, 5 assets, and 20 sample transactions."

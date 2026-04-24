@@ -441,13 +441,21 @@ pub async fn execute_distribution(
     pool: &PgPool,
     distribution_id: Uuid,
 ) -> Result<DistributionSummary, String> {
-    // 1. Verify the distribution is approved
+    // 1. Begin ACID transaction first so the distribution row is locked
+    //    for the whole execution. Previously we SELECT'd outside the tx,
+    //    which let a second concurrent executor see the same 'approved'
+    //    snapshot and double-pay.
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| format!("TX begin error: {e}"))?;
+
     let dist_info: Option<(Uuid, i64, String)> = sqlx::query_as(
         r#"SELECT asset_id, total_amount_cents, status
-           FROM dividend_distributions WHERE id = $1"#,
+           FROM dividend_distributions WHERE id = $1 FOR UPDATE"#,
     )
     .bind(distribution_id)
-    .fetch_optional(pool)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|e| format!("DB error: {e}"))?;
 
@@ -462,12 +470,6 @@ pub async fn execute_distribution(
             status
         ));
     }
-
-    // 2. Begin ACID transaction — ALL payouts or NOTHING
-    let mut tx = pool
-        .begin()
-        .await
-        .map_err(|e| format!("TX begin error: {e}"))?;
 
     // 3. Get all eligible, uncredited payouts
     let payouts: Vec<(Uuid, Uuid, i64)> = sqlx::query_as(
@@ -503,11 +505,13 @@ pub async fn execute_distribution(
             .unwrap_or_else(|| "Unknown Asset".to_string());
 
     for (payout_id, user_id, amount_cents) in &payouts {
-        // 4a. Credit the user's cash wallet
+        // 4a. Credit the user's USD cash wallet. Currency is pinned so a
+        //     future multi-currency wallet setup doesn't quietly splash
+        //     dividends across every wallet the user owns.
         let wallet_result = sqlx::query(
             r#"UPDATE wallets
                SET balance_cents = balance_cents + $1, updated_at = NOW()
-               WHERE user_id = $2 AND wallet_type = 'cash'"#,
+               WHERE user_id = $2 AND wallet_type = 'cash' AND currency = 'USD'"#,
         )
         .bind(amount_cents)
         .bind(user_id)
@@ -516,9 +520,9 @@ pub async fn execute_distribution(
 
         match wallet_result {
             Ok(r) if r.rows_affected() > 0 => {
-                // 4b. Get user's cash wallet_id for the transaction record
+                // 4b. Get user's USD cash wallet_id for the transaction record
                 let wallet_id: Option<Uuid> = sqlx::query_scalar(
-                    "SELECT id FROM wallets WHERE user_id = $1 AND wallet_type = 'cash'",
+                    "SELECT id FROM wallets WHERE user_id = $1 AND wallet_type = 'cash' AND currency = 'USD'",
                 )
                 .bind(user_id)
                 .fetch_optional(&mut *tx)

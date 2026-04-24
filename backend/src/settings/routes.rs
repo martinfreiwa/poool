@@ -345,20 +345,19 @@ pub async fn delete_account_handler(
     }
 }
 
-/// GET /settings — Render the user settings page.
-#[allow(dead_code)]
+/// GET /settings — Render the canonical user settings page.
 pub async fn page_settings(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
     crate::common::routes_helper::serve_protected(jar, &state, "settings.html").await
 }
 
-/// GET /settings-2 — Render the alternative settings page design.
+/// GET /settings-2 — Legacy route kept for bookmarks.
 pub async fn page_settings_2(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
-    crate::common::routes_helper::serve_protected(jar, &state, "settings-2.html").await
+    crate::common::routes_helper::serve_protected(jar, &state, "settings.html").await
 }
 
-/// GET /settings-3 — Render the new alternative settings page design based on cards.
+/// GET /settings-3 — Legacy route kept for bookmarks.
 pub async fn page_settings_3(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
-    crate::common::routes_helper::serve_protected(jar, &state, "settings-3.html").await
+    crate::common::routes_helper::serve_protected(jar, &state, "settings.html").await
 }
 
 /// GET /account-deletion — Render the account deletion page.

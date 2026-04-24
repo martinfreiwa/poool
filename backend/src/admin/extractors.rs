@@ -39,15 +39,18 @@ pub enum ApiError {
 }
 
 impl std::fmt::Display for ApiError {
+    /// Client-safe Display — omits internal detail for `Internal`/`Database`
+    /// so a stray `format!("{}", err)` cannot leak stack context. For
+    /// server-side logging, use the `Debug` impl (or `.detail()`).
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ApiError::Internal(msg) => write!(f, "Internal: {}", msg),
+            ApiError::Internal(_) => write!(f, "Internal"),
             ApiError::NotFound(msg) => write!(f, "NotFound: {}", msg),
             ApiError::BadRequest(msg) => write!(f, "BadRequest: {}", msg),
             ApiError::Unauthorized(msg) => write!(f, "Unauthorized: {}", msg),
             ApiError::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
             ApiError::Conflict(msg) => write!(f, "Conflict: {}", msg),
-            ApiError::Database(err) => write!(f, "Database: {}", err),
+            ApiError::Database(_) => write!(f, "Database"),
         }
     }
 }
@@ -160,3 +163,58 @@ where
         Ok(AdminUser { user })
     }
 }
+
+impl AdminUser {
+    /// Enforce fine-grained admin permission (e.g. `"admins.manage"`,
+    /// `"roles.edit"`). Returns `Err(ApiError::Forbidden)` if the admin lacks
+    /// the permission. Use after `AdminUser` extraction to replace the legacy
+    /// `check_permission(&jar, ...)` pattern.
+    pub async fn require_permission(
+        &self,
+        pool: &sqlx::PgPool,
+        permission: &str,
+    ) -> Result<(), ApiError> {
+        if middleware::has_permission(pool, self.user.id, permission).await {
+            Ok(())
+        } else {
+            Err(ApiError::Forbidden(format!(
+                "Missing permission: {}",
+                permission
+            )))
+        }
+    }
+
+    /// Returns true if this admin has the `super_admin` role. Used to gate
+    /// role-mutation endpoints so only super admins can create/promote/demote
+    /// other admins.
+    pub async fn is_super_admin(&self, pool: &sqlx::PgPool) -> bool {
+        sqlx::query_scalar::<_, bool>(
+            r#"
+            SELECT EXISTS(
+                SELECT 1 FROM user_roles ur
+                JOIN roles r ON r.id = ur.role_id
+                WHERE ur.user_id = $1
+                  AND r.name = 'super_admin'
+                  AND ur.is_active = TRUE
+            )
+            "#,
+        )
+        .bind(self.user.id)
+        .fetch_one(pool)
+        .await
+        .unwrap_or(false)
+    }
+}
+
+/// Roles that require super_admin to assign. Any attempt to grant one of
+/// these from a non-super-admin caller is rejected.
+pub const ELEVATED_ROLES: &[&str] = &["admin", "super_admin"];
+
+/// Roles any admin (not just super_admin) may request. Elevated roles
+/// (`ELEVATED_ROLES`) are excluded — they require a separate super_admin gate.
+pub const ASSIGNABLE_ROLES: &[&str] = &[
+    "compliance",
+    "support",
+    "finance",
+    "kyc_reviewer",
+];

@@ -39,9 +39,11 @@ impl DiditConfig {
             .ok()
             .filter(|v| !v.is_empty())?;
         let workflow_id = std::env::var("DIDIT_WORKFLOW_ID").ok().unwrap_or_default();
+        // Webhook secret is mandatory when provider is enabled — empty means
+        // webhooks would be unauthenticated. Refuse to initialize provider.
         let webhook_secret = std::env::var("DIDIT_WEBHOOK_SECRET")
             .ok()
-            .unwrap_or_default();
+            .filter(|v| !v.is_empty())?;
 
         Some(Self {
             api_key,
@@ -149,73 +151,75 @@ impl KycProvider for DiditProvider {
         // 3. X-Signature: Signs raw JSON bytes.
         //
         // Our implementation tries V2 first if possible, then falls back to Simple.
-        if !self.config.webhook_secret.is_empty() {
-            if let Some(sig) = signature {
-                let body: serde_json::Value = serde_json::from_slice(payload)
-                    .map_err(|e| AppError::BadRequest(format!("Invalid webhook JSON: {e}")))?;
-
-                let mut verified = false;
-
-                // 1. Try X-Signature-V2 (If you want bit-perfect match, you need to re-encode exactly)
-                // Note: Rust's serde_json matches Didit's V2 expectations (no escaping Unicode).
-                if let Ok(v2_str) = self.serialize_v2(&body) {
-                    let mut mac = HmacSha256::new_from_slice(self.config.webhook_secret.as_bytes())
-                        .map_err(|e| AppError::Internal(format!("HMAC init failed: {e}")))?;
-                    mac.update(v2_str.as_bytes());
-                    let expected_v2 = hex::encode(mac.finalize().into_bytes());
-                    if expected_v2 == sig {
-                        verified = true;
-                        tracing::debug!("Didit webhook verified via X-Signature-V2");
-                    }
-                }
-
-                // 2. Fall back to X-Signature-Simple (signs core fields only)
-                if !verified {
-                    let timestamp = body["timestamp"].as_i64().unwrap_or(0);
-                    let session_id = body["session_id"].as_str().unwrap_or("");
-                    let status = body["status"].as_str().unwrap_or("");
-                    let webhook_type = body["webhook_type"].as_str().unwrap_or("");
-
-                    let sign_payload =
-                        format!("{}:{}:{}:{}", timestamp, session_id, status, webhook_type);
-
-                    let mut mac = HmacSha256::new_from_slice(self.config.webhook_secret.as_bytes())
-                        .map_err(|e| AppError::Internal(format!("HMAC init failed: {e}")))?;
-                    mac.update(sign_payload.as_bytes());
-
-                    let expected_simple = hex::encode(mac.finalize().into_bytes());
-                    if expected_simple == sig {
-                        verified = true;
-                        tracing::debug!("Didit webhook verified via X-Signature-Simple");
-                    }
-                }
-
-                if !verified {
-                    tracing::warn!("Didit webhook signature mismatch (sig={})", sig);
-                    return Err(AppError::Unauthorized(
-                        "Invalid webhook signature".to_string(),
-                    ));
-                }
-
-                // --- Timestamp Freshness Check (Recommended) ---
-                let timestamp = body["timestamp"].as_i64().unwrap_or(0);
-                let now = chrono::Utc::now().timestamp();
-                if (now - timestamp).abs() > 300 {
-                    tracing::warn!(
-                        "Didit webhook timestamp too old: {} (now={})",
-                        timestamp,
-                        now
-                    );
-                    return Err(AppError::Unauthorized(
-                        "Webhook timestamp expired".to_string(),
-                    ));
-                }
-            } else {
+        // Secret is mandatory (enforced in DiditConfig::from_env). Always verify.
+        let sig = match signature {
+            Some(s) => s,
+            None => {
                 tracing::warn!("Didit webhook received without signature header");
                 return Err(AppError::Unauthorized(
                     "Missing webhook signature".to_string(),
                 ));
             }
+        };
+
+        let sig_bytes = hex::decode(sig).map_err(|_| {
+            AppError::Unauthorized("Invalid webhook signature encoding".to_string())
+        })?;
+
+        let body: serde_json::Value = serde_json::from_slice(payload)
+            .map_err(|e| AppError::BadRequest(format!("Invalid webhook JSON: {e}")))?;
+
+        let mut verified = false;
+
+        // 1. Try X-Signature-V2 — constant-time compare via verify_slice
+        if let Ok(v2_str) = self.serialize_v2(&body) {
+            let mut mac = HmacSha256::new_from_slice(self.config.webhook_secret.as_bytes())
+                .map_err(|e| AppError::Internal(format!("HMAC init failed: {e}")))?;
+            mac.update(v2_str.as_bytes());
+            if mac.verify_slice(&sig_bytes).is_ok() {
+                verified = true;
+                tracing::debug!("Didit webhook verified via X-Signature-V2");
+            }
+        }
+
+        // 2. Fall back to X-Signature-Simple (signs core fields only)
+        if !verified {
+            let timestamp = body["timestamp"].as_i64().unwrap_or(0);
+            let session_id = body["session_id"].as_str().unwrap_or("");
+            let status = body["status"].as_str().unwrap_or("");
+            let webhook_type = body["webhook_type"].as_str().unwrap_or("");
+
+            let sign_payload =
+                format!("{}:{}:{}:{}", timestamp, session_id, status, webhook_type);
+
+            let mut mac = HmacSha256::new_from_slice(self.config.webhook_secret.as_bytes())
+                .map_err(|e| AppError::Internal(format!("HMAC init failed: {e}")))?;
+            mac.update(sign_payload.as_bytes());
+            if mac.verify_slice(&sig_bytes).is_ok() {
+                verified = true;
+                tracing::debug!("Didit webhook verified via X-Signature-Simple");
+            }
+        }
+
+        if !verified {
+            tracing::warn!("Didit webhook signature mismatch");
+            return Err(AppError::Unauthorized(
+                "Invalid webhook signature".to_string(),
+            ));
+        }
+
+        // --- Timestamp Freshness Check ---
+        let timestamp = body["timestamp"].as_i64().unwrap_or(0);
+        let now = chrono::Utc::now().timestamp();
+        if (now - timestamp).abs() > 300 {
+            tracing::warn!(
+                "Didit webhook timestamp too old: {} (now={})",
+                timestamp,
+                now
+            );
+            return Err(AppError::Unauthorized(
+                "Webhook timestamp expired".to_string(),
+            ));
         }
 
         // --- Parse the webhook body ---

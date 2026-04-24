@@ -273,23 +273,33 @@ pub async fn upload_kyc_document(
                 mime_type = ct.to_string();
             }
 
-            let bytes: Vec<u8> = match field.bytes().await {
-                Ok(b) => b.to_vec(),
-                Err(_) => {
-                    return (
-                        StatusCode::BAD_REQUEST,
-                        Json(serde_json::json!({"error": "Failed to read uploaded file"})),
-                    )
-                        .into_response()
+            // Stream the field chunk-by-chunk so an oversized upload is
+            // rejected before the whole body is in memory. `field.bytes()`
+            // would buffer the entire payload first and let a client burn
+            // RAM up to the request body limit.
+            let mut field = field;
+            let mut bytes: Vec<u8> = Vec::with_capacity(8 * 1024);
+            loop {
+                match field.chunk().await {
+                    Ok(Some(chunk)) => {
+                        if bytes.len().saturating_add(chunk.len()) > MAX_KYC_BYTES {
+                            return (
+                                StatusCode::PAYLOAD_TOO_LARGE,
+                                Json(serde_json::json!({"error": "File must be ≤ 10 MB"})),
+                            )
+                                .into_response();
+                        }
+                        bytes.extend_from_slice(&chunk);
+                    }
+                    Ok(None) => break,
+                    Err(_) => {
+                        return (
+                            StatusCode::BAD_REQUEST,
+                            Json(serde_json::json!({"error": "Failed to read uploaded file"})),
+                        )
+                            .into_response()
+                    }
                 }
-            };
-
-            if bytes.len() > MAX_KYC_BYTES {
-                return (
-                    StatusCode::PAYLOAD_TOO_LARGE,
-                    Json(serde_json::json!({"error": "File must be ≤ 10 MB"})),
-                )
-                    .into_response();
             }
 
             file_bytes = Some(bytes);
@@ -306,6 +316,26 @@ pub async fn upload_kyc_document(
                 .into_response()
         }
     };
+
+    // Magic-byte sniff: trust file contents, not the client-declared MIME.
+    let sniffed = match sniff_mime(&file_bytes) {
+        Some(m) => m,
+        None => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Unsupported or unrecognized file format"})),
+            )
+                .into_response()
+        }
+    };
+    if !mime_matches(&mime_type, sniffed) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "File content does not match declared type"})),
+        )
+            .into_response();
+    }
+    mime_type = sniffed.to_string();
 
     // Validate MIME
     if let Err(e) = service::validate_kyc_mime(&mime_type) {
@@ -401,7 +431,9 @@ pub async fn upload_kyc_document(
 // ─── Shared helpers ────────────────────────────────────────────
 
 /// Read bytes from the first `file` field in a multipart request.
-/// Returns `(bytes, mime_type)`.
+/// Returns `(bytes, mime_type)` where `mime_type` is sniffed from the file's
+/// magic bytes — never trusted directly from the client-supplied Content-Type,
+/// which is attacker-controlled.
 async fn read_multipart_file(
     multipart: &mut Multipart,
     max_bytes: usize,
@@ -411,7 +443,7 @@ async fn read_multipart_file(
             continue;
         }
 
-        let mime = field
+        let client_mime = field
             .content_type()
             .unwrap_or("application/octet-stream")
             .to_string();
@@ -427,10 +459,67 @@ async fn read_multipart_file(
             return Err(format!("File must be ≤ {} MB", limit_mb));
         }
 
-        return Ok((bytes, mime));
+        // Sniff magic bytes and reject if the file has no recognizable header
+        // or if the client-declared MIME doesn't match what's actually in the
+        // buffer. Mismatch indicates a spoofed upload.
+        let sniffed = sniff_mime(&bytes)
+            .ok_or_else(|| "Unsupported or unrecognized file format".to_string())?;
+        if !mime_matches(&client_mime, sniffed) {
+            return Err(format!(
+                "File content does not match declared type ({})",
+                client_mime
+            ));
+        }
+
+        return Ok((bytes, sniffed.to_string()));
     }
 
     Err("No `file` field found in request".to_string())
+}
+
+/// Sniff the MIME type from the leading bytes of a buffer. Returns None for
+/// formats we don't accept (executables, archives, office docs, etc.).
+fn sniff_mime(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.len() < 4 {
+        return None;
+    }
+    // JPEG: FF D8 FF
+    if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
+        return Some("image/jpeg");
+    }
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
+        return Some("image/png");
+    }
+    // GIF: "GIF87a" or "GIF89a"
+    if bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a") {
+        return Some("image/gif");
+    }
+    // WebP: "RIFF" .... "WEBP"
+    if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
+        return Some("image/webp");
+    }
+    // PDF: "%PDF-"
+    if bytes.starts_with(b"%PDF-") {
+        return Some("application/pdf");
+    }
+    None
+}
+
+/// Returns true when the client-declared MIME is acceptable for the sniffed
+/// type. We allow a loose match (e.g. "image/jpg" aliasing "image/jpeg") but
+/// require the major category to agree so JSON-bodied "image/jpeg" uploads fail.
+fn mime_matches(client_mime: &str, sniffed: &str) -> bool {
+    let c = client_mime.split(';').next().unwrap_or("").trim().to_ascii_lowercase();
+    if c == sniffed {
+        return true;
+    }
+    matches!(
+        (c.as_str(), sniffed),
+        ("image/jpg", "image/jpeg")
+            | ("image/pjpeg", "image/jpeg")
+            | ("application/octet-stream", _)
+    )
 }
 
 const MAX_ASSET_DOC_BYTES: usize = 20 * 1024 * 1024; // 20 MB
@@ -539,6 +628,26 @@ pub async fn upload_asset_document(
                 .into_response()
         }
     };
+
+    // Magic-byte sniff: don't trust client-declared Content-Type.
+    let sniffed = match sniff_mime(&file_bytes) {
+        Some(m) => m,
+        None => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Unsupported or unrecognized file format"})),
+            )
+                .into_response()
+        }
+    };
+    if !mime_matches(&mime_type, sniffed) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "File content does not match declared type"})),
+        )
+            .into_response();
+    }
+    mime_type = sniffed.to_string();
 
     if let Err(e) = service::validate_asset_doc_mime(&mime_type) {
         return e.into_response();
@@ -725,6 +834,26 @@ pub async fn upload_asset_image(
                 .into_response()
         }
     };
+
+    // Magic-byte sniff: don't trust client-declared Content-Type.
+    let sniffed = match sniff_mime(&file_bytes) {
+        Some(m) => m,
+        None => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Unsupported or unrecognized image format"})),
+            )
+                .into_response()
+        }
+    };
+    if !mime_matches(&mime_type, sniffed) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "File content does not match declared type"})),
+        )
+            .into_response();
+    }
+    mime_type = sniffed.to_string();
 
     if let Err(e) = service::validate_asset_image_mime(&mime_type) {
         return e.into_response();
@@ -1122,17 +1251,49 @@ pub async fn download_asset_document(
 ///
 /// Responses are cached for 1 hour via Cache-Control headers.
 pub async fn proxy_gcs_image(
+    State(state): State<AppState>,
     axum::extract::Path((bucket, object_path)): axum::extract::Path<(String, String)>,
 ) -> axum::response::Response {
+    // Bucket allowlist: only serve the configured project bucket. Without this
+    // check, the endpoint would act as an open GCS reverse proxy to any bucket
+    // an attacker names in the URL.
+    let allowed = state.config.gcs_bucket.as_deref();
+    if allowed != Some(bucket.as_str()) {
+        return (StatusCode::NOT_FOUND, "Not found").into_response();
+    }
+    // Reject object path traversal or encoded separators that could escape
+    // the intended prefix.
+    if object_path.contains("..") || object_path.contains("//") {
+        return (StatusCode::BAD_REQUEST, "Invalid path").into_response();
+    }
     match super::service::download_object(&bucket, &object_path).await {
         Ok((content_type, data)) => {
-            let headers = [
-                (axum::http::header::CONTENT_TYPE, content_type),
-                (
-                    axum::http::header::CACHE_CONTROL,
-                    "public, max-age=31536000, immutable".to_string(),
-                ),
-            ];
+            // Force download (attachment) for non-image types so browsers
+            // cannot render hostile HTML/PDF inline. Images may still be
+            // served inline for thumbnail rendering.
+            let is_inline_safe = content_type.starts_with("image/");
+            let mut headers = axum::http::HeaderMap::new();
+            if let Ok(v) = content_type.parse() {
+                headers.insert(axum::http::header::CONTENT_TYPE, v);
+            }
+            headers.insert(
+                axum::http::header::CACHE_CONTROL,
+                "public, max-age=31536000, immutable".parse().unwrap(),
+            );
+            headers.insert(
+                axum::http::header::HeaderName::from_static("x-content-type-options"),
+                "nosniff".parse().unwrap(),
+            );
+            if !is_inline_safe {
+                let filename = object_path
+                    .rsplit('/')
+                    .next()
+                    .unwrap_or("file")
+                    .replace('"', "");
+                if let Ok(v) = format!("attachment; filename=\"{}\"", filename).parse() {
+                    headers.insert(axum::http::header::CONTENT_DISPOSITION, v);
+                }
+            }
             (headers, data).into_response()
         }
         Err(e) => {

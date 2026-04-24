@@ -1,7 +1,7 @@
 /**
  * settings.js — Settings page controller.
  *
- * Loads /api/settings, populates the card-based layout in settings-3.html,
+ * Loads /api/settings, populates the card-based layout in settings.html,
  * and wires per-form save handlers, toggle switches, modals, and GDPR actions.
  *
  * All server I/O flows through SettingsDataService (settings-service.js).

@@ -85,20 +85,17 @@ pub async fn require_step_up_2fa(
     action: FinancialAction,
     amount_cents: i64,
 ) -> Result<(), AppError> {
-    // ── Developer account bypass ─────────────────────────────────
-    // support@traffic-creator.com is the web developer account and is
-    // permanently exempt from all step-up 2FA / dual-approval requirements.
-    let email: Option<String> = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-        .bind(user_id)
-        .fetch_optional(db)
-        .await
-        .ok()
-        .flatten();
-    if email.as_deref() == Some("support@traffic-creator.com") {
-        return Ok(());
+    // 1. Check amount threshold — operations below the threshold skip step-up.
+    if let Some(threshold) = action.threshold_cents() {
+        if amount_cents < threshold {
+            return Ok(());
+        }
     }
 
-    // 1. Check if user has TOTP enabled
+    // 2. TOTP enrollment required at/above threshold. No implicit bypass for
+    //    unenrolled users — step-up must fail closed so high-value operations
+    //    cannot proceed without 2FA. Frontend handles the enrollment prompt
+    //    via the TwoFactorRequired response.
     let totp_enabled: bool = sqlx::query_scalar(
         "SELECT COALESCE(totp_enabled, FALSE) FROM user_settings WHERE user_id = $1",
     )
@@ -108,15 +105,13 @@ pub async fn require_step_up_2fa(
     .unwrap_or(false);
 
     if !totp_enabled {
-        // User hasn't set up 2FA — can't enforce step-up
-        return Ok(());
-    }
-
-    // 2. Check amount threshold
-    if let Some(threshold) = action.threshold_cents() {
-        if amount_cents < threshold {
-            return Ok(());
-        }
+        tracing::info!(
+            user_id = %user_id,
+            action = ?action,
+            amount_cents = amount_cents,
+            "Step-up 2FA required — user has not enrolled TOTP"
+        );
+        return Err(AppError::TwoFactorRequired);
     }
 
     // 3. Check for existing trading session in Redis
@@ -299,8 +294,8 @@ pub async fn verify_and_create_trading_session(
         )
     })?;
 
-    // 2. Verify TOTP code
-    if !super::service::verify_totp_code(&secret, code) {
+    // 2. Verify TOTP code with Redis-backed replay protection
+    if !super::service::verify_totp_code_with_replay_guard(redis, user_id, &secret, code).await {
         return Err(AppError::Unauthorized(
             "Invalid authentication code.".to_string(),
         ));

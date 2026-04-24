@@ -139,13 +139,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
   // Close menu when clicking on nav links
-  const navLinks = document.querySelectorAll(".mobile-burger-menu__nav-item");
+  const navLinks = document.querySelectorAll(
+    ".mobile-burger-menu__nav-item[href], .mobile-burger-menu__nav-child[href]",
+  );
   navLinks.forEach((link) => {
-    if (!link.disabled) {
-      link.addEventListener("click", function () {
-        closeMobileMenu();
-      });
-    }
+    link.addEventListener("click", function () {
+      closeMobileMenu();
+    });
   });
 
   // NOTE: featured-card close / dismiss buttons are handled via event
@@ -228,6 +228,9 @@ function closeMobileDropdownOnClickOutside(event) {
 
 // Handle mobile account switching
 document.addEventListener("DOMContentLoaded", function () {
+  if (window.__MOBILE_ACCOUNT_HANDLER_REGISTERED) return;
+  window.__MOBILE_ACCOUNT_HANDLER_REGISTERED = true;
+
   // Use event delegation for mobile account items
   document.body.addEventListener("click", async function (e) {
     // Check for mobile account item clicks

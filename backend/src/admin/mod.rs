@@ -91,7 +91,8 @@ pub use withdrawals::*;
 /// Router function for admin API endpoints.
 pub fn router() -> axum::Router<AppState> {
     use axum::routing::{delete, get, patch, post, put};
-    axum::Router::new()
+    #[allow(unused_mut)]
+    let mut r = axum::Router::new()
         // ── HTML Pages ──────────────────────────────────────────
         .route("/admin/", get(page_admin_dashboard))
         .route("/admin/index.html", get(page_admin_dashboard))
@@ -541,8 +542,7 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/maintenance/rotate-logs",
             post(api_admin_rotate_logs),
         )
-        // Debug & Reports
-        .route("/api/admin/debug/seed", post(api_admin_debug_seed))
+        // Debug & Reports (debug builds only — seeding must never ship to prod)
         // Tax & Fiscal
         .route("/api/admin/tax-reports", get(api_admin_tax_reports))
         .route(
@@ -721,5 +721,13 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/blockchain/pin-metadata/:asset_id",
             post(blockchain::api_admin_blockchain_pin_metadata),
-        )
+        );
+
+    // Debug-only endpoints: DB seeder is gated so it cannot ship to prod.
+    #[cfg(debug_assertions)]
+    {
+        r = r.route("/api/admin/debug/seed", post(api_admin_debug_seed));
+    }
+
+    r
 }

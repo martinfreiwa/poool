@@ -147,8 +147,10 @@ pub async fn api_admin_update_settings(
 }
 
 /// POST /api/admin/settings/admins  Add a new admin user
+///
+/// Only super_admin may assign admin roles. Role must be in allowlist.
 pub async fn api_admin_add_admin(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
@@ -157,6 +159,15 @@ pub async fn api_admin_add_admin(
 
     if email.is_empty() {
         return Err(ApiError::BadRequest("Email is required".to_string()));
+    }
+
+    if !admin.is_super_admin(&state.db).await {
+        return Err(ApiError::Forbidden(
+            "Only super_admin may add admins".to_string(),
+        ));
+    }
+    if !crate::admin::extractors::ASSIGNABLE_ROLES.contains(&role) {
+        return Err(ApiError::BadRequest("Invalid role".to_string()));
     }
 
     // Find the user by email
@@ -206,11 +217,24 @@ pub async fn api_admin_add_admin(
 }
 
 /// DELETE /api/admin/settings/admins/:user_id  Remove admin role from user
+///
+/// Only super_admin may revoke admin roles. Cannot revoke own roles.
 pub async fn api_admin_remove_admin(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    if !admin.is_super_admin(&state.db).await {
+        return Err(ApiError::Forbidden(
+            "Only super_admin may remove admins".to_string(),
+        ));
+    }
+    let uid = ApiError::parse_uuid(&user_id)?;
+    if admin.user.id == uid {
+        return Err(ApiError::Forbidden(
+            "Admins may not revoke their own roles".to_string(),
+        ));
+    }
     let result = sqlx::query(
         r#"DELETE FROM user_roles WHERE user_id = $1::uuid
            AND role_id IN (SELECT id FROM roles WHERE name IN ('admin', 'super_admin', 'compliance', 'support', 'finance'))"#
@@ -229,8 +253,10 @@ pub async fn api_admin_remove_admin(
 }
 
 /// PATCH /api/admin/settings/admins/:user_id  Update admin role
+///
+/// Only super_admin may change admin roles. Cannot self-modify.
 pub async fn api_admin_update_admin_role(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(user_id): axum::extract::Path<String>,
     Json(body): Json<serde_json::Value>,
@@ -238,6 +264,21 @@ pub async fn api_admin_update_admin_role(
     let new_role = body.get("role").and_then(|v| v.as_str()).unwrap_or("");
     if new_role.is_empty() {
         return Err(ApiError::BadRequest("Role is required".to_string()));
+    }
+
+    if !admin.is_super_admin(&state.db).await {
+        return Err(ApiError::Forbidden(
+            "Only super_admin may change admin roles".to_string(),
+        ));
+    }
+    if !crate::admin::extractors::ASSIGNABLE_ROLES.contains(&new_role) {
+        return Err(ApiError::BadRequest("Invalid role".to_string()));
+    }
+    let target_uid = ApiError::parse_uuid(&user_id)?;
+    if admin.user.id == target_uid {
+        return Err(ApiError::Forbidden(
+            "Admins may not modify their own role".to_string(),
+        ));
     }
 
     // Find the new role ID

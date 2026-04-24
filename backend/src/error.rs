@@ -55,15 +55,23 @@ pub enum AppError {
 }
 
 impl std::fmt::Display for AppError {
+    /// Client-safe Display — never includes internal error strings or raw
+    /// DB error detail. Use `.detail()` (or the `Debug` impl) when logging
+    /// server-side and the full context is desired.
+    ///
+    /// This is defence-in-depth: the `IntoResponse` impl already sanitises
+    /// the HTTP body, but a stray `format!("{}", err)` anywhere in the
+    /// stack (log fields, error chain, template context) would otherwise
+    /// leak the raw message.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AppError::Internal(msg) => write!(f, "Internal: {}", msg),
+            AppError::Internal(_) => write!(f, "Internal"),
             AppError::NotFound(msg) => write!(f, "NotFound: {}", msg),
             AppError::BadRequest(msg) => write!(f, "BadRequest: {}", msg),
             AppError::Unauthorized(msg) => write!(f, "Unauthorized: {}", msg),
             AppError::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
             AppError::Conflict(msg) => write!(f, "Conflict: {}", msg),
-            AppError::Database(err) => write!(f, "Database: {}", err),
+            AppError::Database(_) => write!(f, "Database"),
             AppError::RateLimited(secs) => write!(f, "RateLimited: retry after {}s", secs),
             AppError::InsufficientBalance {
                 available_cents,
@@ -89,7 +97,20 @@ impl std::fmt::Display for AppError {
             AppError::TradingDisabled => write!(f, "TradingDisabled"),
             AppError::WashTradingBlocked => write!(f, "WashTradingBlocked"),
             AppError::OrderRejected(reason) => write!(f, "OrderRejected: {}", reason),
-            AppError::ServiceUnavailable(msg) => write!(f, "ServiceUnavailable: {}", msg),
+            AppError::ServiceUnavailable(_) => write!(f, "ServiceUnavailable"),
+        }
+    }
+}
+
+impl AppError {
+    /// Full server-side detail for tracing/Sentry. Do NOT send this to
+    /// clients — it may include raw DB errors or internal state.
+    pub fn detail(&self) -> String {
+        match self {
+            AppError::Internal(msg) => format!("Internal: {}", msg),
+            AppError::Database(err) => format!("Database: {}", err),
+            AppError::ServiceUnavailable(msg) => format!("ServiceUnavailable: {}", msg),
+            other => format!("{}", other),
         }
     }
 }

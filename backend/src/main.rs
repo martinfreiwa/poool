@@ -131,10 +131,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let redis_pool = if let Some(url) = &config.redis_url {
         use deadpool_redis::{Config, Runtime};
+
+        // Enforce TLS (`rediss://`) outside dev/local — data in flight to
+        // Redis includes session tokens, TOTP replay nonces, CSRF-adjacent
+        // state and rate-limit counters. `redis://` over an untrusted
+        // network exposes all of them. We fail closed rather than silently
+        // downgrade.
+        let is_dev = matches!(
+            std::env::var("POOOL_ENV").as_deref(),
+            Ok("development") | Ok("dev") | Ok("local")
+        );
+        let is_tls = url.starts_with("rediss://") || url.starts_with("unix://");
+        if !is_tls {
+            if is_dev {
+                tracing::warn!("Redis URL uses plaintext transport — acceptable in dev only");
+            } else {
+                tracing::error!(
+                    "REDIS_URL must use 'rediss://' (TLS) in production; refusing to start a plaintext connection. Set POOOL_ENV=development to override locally."
+                );
+                panic!("Insecure REDIS_URL rejected (non-TLS in non-dev environment)");
+            }
+        }
+
+        // Redact credentials before logging. Parse conservatively — if the
+        // URL is malformed we simply omit the host rather than echo it.
+        let safe_host = url::Url::parse(url)
+            .ok()
+            .and_then(|u| u.host_str().map(|h| h.to_string()))
+            .unwrap_or_else(|| "<redacted>".to_string());
+
         let cfg = Config::from_url(url);
         match cfg.create_pool(Some(Runtime::Tokio1)) {
             Ok(p) => {
-                tracing::info!("Redis pool initialized at {}", url);
+                tracing::info!("Redis pool initialized (host={}, tls={})", safe_host, is_tls);
                 Some(p)
             }
             Err(e) => {
@@ -150,12 +179,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tracing::info!("Rate limiter: using Redis backend (shared across instances)");
         auth::rate_limit::RateLimiter::new_redis(
             rp.clone(),
-            100, // Increased for E2E testing
+            5,
             std::time::Duration::from_secs(15 * 60),
         )
     } else {
         tracing::info!("Rate limiter: using in-memory backend (single instance only)");
-        auth::rate_limit::RateLimiter::new(100, std::time::Duration::from_secs(15 * 60))
+        auth::rate_limit::RateLimiter::new(5, std::time::Duration::from_secs(15 * 60))
     };
 
     let state = AppState {
@@ -855,16 +884,32 @@ async fn apply_security_headers(
     );
     headers.insert(
         axum::http::header::STRICT_TRANSPORT_SECURITY,
-        axum::http::HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+        // Two-year max-age with includeSubDomains + preload — required
+        // thresholds for HSTS preload list submission. Any subdomain
+        // accidentally served over HTTP is caught by browsers that have
+        // the preload entry (plus our existing upgrade-insecure-requests
+        // CSP directive catches requests from TLS pages).
+        axum::http::HeaderValue::from_static(
+            "max-age=63072000; includeSubDomains; preload",
+        ),
     );
     headers.insert(
         axum::http::header::CONTENT_SECURITY_POLICY,
         // BUG-003: Added https://www.youtube.com https://player.vimeo.com https://*.dropbox.com to frame-src to unblock video embeds
-        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"),
+        // Dropped 'unsafe-eval' from script-src — none of our current libraries
+        // (Stripe, Sentry, Quill v2, jsdelivr CDN bundles) use eval/new Function.
+        // 'unsafe-inline' remains pending a template-wide nonce rollout that
+        // replaces inline <script>/on* handlers. See security follow-up.
+        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"),
     );
     headers.insert(
         axum::http::header::REFERRER_POLICY,
-        axum::http::HeaderValue::from_static("strict-origin-when-cross-origin"),
+        // `same-origin` — cross-origin navigations (e.g. user clicks a
+        // link to an external help article or OAuth provider) send NO
+        // referrer at all. Prevents leaking authenticated URLs containing
+        // tokens/ids to third parties while preserving same-origin UX
+        // (analytics, in-app nav).
+        axum::http::HeaderValue::from_static("same-origin"),
     );
     headers.insert(
         axum::http::header::HeaderName::from_static("x-permitted-cross-domain-policies"),

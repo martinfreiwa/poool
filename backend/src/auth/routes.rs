@@ -150,17 +150,10 @@ pub async fn login_submit(
     headers: HeaderMap,
     Form(form): Form<LoginForm>,
 ) -> Result<Response, AppError> {
-    // Rate limiting — check before doing expensive Argon2 work
-    let client_ip = headers
-        .get("x-forwarded-for")
-        .or_else(|| headers.get("x-real-ip"))
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("unknown")
-        .split(',')
-        .next()
-        .unwrap_or("unknown")
-        .trim()
-        .to_string();
+    // Rate limiting — check before doing expensive Argon2 work. Use the
+    // trusted-proxy resolver so spoofed X-Forwarded-For headers cannot be
+    // used to carve out unshared buckets.
+    let client_ip = crate::common::net::client_ip(&headers);
 
     if let Err(retry_after) = state
         .auth_rate_limiter
@@ -168,6 +161,20 @@ pub async fn login_submit(
         .await
     {
         tracing::warn!("Rate limit exceeded for login from IP: {}", client_ip);
+        return Err(AppError::RateLimited(retry_after));
+    }
+
+    // Per-email lockout — an attacker rotating IPs cannot grind a single
+    // account. Keyed on the normalised email so case/whitespace variants
+    // share the same bucket. Uses the same window/limit as the IP check
+    // (configured once on the shared limiter).
+    let email_key = form.email.trim().to_lowercase();
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("login:email:{}", email_key))
+        .await
+    {
+        tracing::warn!("Rate limit exceeded for login on email: {}", email_key);
         return Err(AppError::RateLimited(retry_after));
     }
 
@@ -186,11 +193,10 @@ pub async fn login_submit(
     };
 
     // Extract client info for session
-    let ip = headers
-        .get("x-forwarded-for")
-        .or_else(|| headers.get("x-real-ip"))
-        .and_then(|v| v.to_str().ok())
-        .map(|s| s.to_string());
+    let ip = match crate::common::net::client_ip(&headers).as_str() {
+        "unknown" => None,
+        s => Some(s.to_string()),
+    };
 
     let user_agent = headers
         .get("user-agent")
@@ -240,7 +246,9 @@ pub async fn login_submit(
         .same_site(axum_extra::extract::cookie::SameSite::Lax)
         .max_age(time::Duration::seconds(max_age_secs));
 
-    let jar = jar.add(cookie);
+    // Rotate CSRF on login — drop pre-auth token so next request mints a
+    // fresh one bound to the new session (defends against fixation).
+    let jar = jar.add(cookie).add(super::csrf::rotation_cookie());
 
     // HTMX: send redirect header
     let mut response_headers = HeaderMap::new();
@@ -286,9 +294,10 @@ pub async fn totp_verify_submit(
     let session_token = jar
         .get(SESSION_COOKIE)
         .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?
-        .value();
+        .value()
+        .to_string();
 
-    let user = service::get_user_by_session_unverified(&state.db, session_token)
+    let user = service::get_user_by_session_unverified(&state.db, &session_token)
         .await?
         .ok_or_else(|| AppError::Unauthorized("Session expired.".to_string()))?;
 
@@ -297,19 +306,34 @@ pub async fn totp_verify_submit(
         .totp_secret
         .ok_or_else(|| AppError::Internal("2FA not configured.".to_string()))?;
 
-    if !service::verify_totp_code(&secret, &form.code) {
+    if !service::verify_totp_code_with_replay_guard(
+        state.redis.as_ref(),
+        user.id,
+        &secret,
+        &form.code,
+    )
+    .await
+    {
         return Err(AppError::Unauthorized(
             "Invalid authentication code.".to_string(),
         ));
     }
 
-    // Mark session as verified
-    service::verify_session_2fa(&state.db, session_token).await?;
+    // Rotate the session token on privilege elevation — a token captured
+    // before 2FA cannot be replayed post-verification.
+    let new_token = service::rotate_session_token(&state.db, &session_token).await?;
+
+    let cookie = Cookie::build((SESSION_COOKIE, new_token))
+        .path("/")
+        .http_only(true)
+        .secure(cookie_is_secure())
+        .same_site(axum_extra::extract::cookie::SameSite::Lax);
+    let jar = jar.add(cookie).add(super::csrf::rotation_cookie());
 
     let mut response_headers = HeaderMap::new();
     response_headers.insert("HX-Redirect", "/marketplace".parse().unwrap());
 
-    Ok((response_headers, Html("")).into_response())
+    Ok((jar, response_headers, Html("")).into_response())
 }
 
 /// GET /auth/2fa/setup – Render 2FA setup page (for admins or voluntary).
@@ -370,13 +394,20 @@ pub async fn totp_setup_submit(
     // Enable in DB
     service::enable_totp(&state.db, user.id, &form.secret).await?;
 
-    // Mark current session as verified
-    service::verify_session_2fa(&state.db, session_token).await?;
+    // Rotate session token on 2FA enrollment (privilege change).
+    let new_token = service::rotate_session_token(&state.db, session_token).await?;
+
+    let cookie = Cookie::build((SESSION_COOKIE, new_token))
+        .path("/")
+        .http_only(true)
+        .secure(cookie_is_secure())
+        .same_site(axum_extra::extract::cookie::SameSite::Lax);
+    let jar = jar.add(cookie).add(super::csrf::rotation_cookie());
 
     let mut response_headers = HeaderMap::new();
     response_headers.insert("HX-Redirect", "/marketplace".parse().unwrap());
 
-    Ok((response_headers, Html("")).into_response())
+    Ok((jar, response_headers, Html("")).into_response())
 }
 
 /// POST /auth/2fa/step-up – Verify TOTP code for step-up 2FA (JSON API).
@@ -431,16 +462,7 @@ pub async fn signup_submit(
     Form(form): Form<SignupForm>,
 ) -> Result<Response, AppError> {
     // Rate limiting — prevent mass account creation
-    let client_ip = headers
-        .get("x-forwarded-for")
-        .or_else(|| headers.get("x-real-ip"))
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("unknown")
-        .split(',')
-        .next()
-        .unwrap_or("unknown")
-        .trim()
-        .to_string();
+    let client_ip = crate::common::net::client_ip(&headers);
 
     if let Err(retry_after) = state
         .auth_rate_limiter
@@ -475,11 +497,10 @@ pub async fn signup_submit(
     .await?;
 
     // Extract client info
-    let ip = headers
-        .get("x-forwarded-for")
-        .or_else(|| headers.get("x-real-ip"))
-        .and_then(|v| v.to_str().ok())
-        .map(|s| s.to_string());
+    let ip = match crate::common::net::client_ip(&headers).as_str() {
+        "unknown" => None,
+        s => Some(s.to_string()),
+    };
 
     let user_agent = headers
         .get("user-agent")
@@ -619,16 +640,7 @@ pub async fn forgot_password_submit(
     Form(form): Form<super::models::ForgotPasswordForm>,
 ) -> Result<Response, AppError> {
     // Rate limiting — prevent email bombing
-    let client_ip = headers
-        .get("x-forwarded-for")
-        .or_else(|| headers.get("x-real-ip"))
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("unknown")
-        .split(',')
-        .next()
-        .unwrap_or("unknown")
-        .trim()
-        .to_string();
+    let client_ip = crate::common::net::client_ip(&headers);
 
     if let Err(retry_after) = state
         .auth_rate_limiter
@@ -638,6 +650,21 @@ pub async fn forgot_password_submit(
         tracing::warn!(
             "Rate limit exceeded for forgot-password from IP: {}",
             client_ip
+        );
+        return Err(AppError::RateLimited(retry_after));
+    }
+
+    // Per-email cap — stops attackers rotating IPs to spam a single inbox
+    // with reset emails (also a mild enumeration signal).
+    let email_key = form.email.trim().to_lowercase();
+    if let Err(retry_after) = state
+        .auth_rate_limiter
+        .check(&format!("forgot:email:{}", email_key))
+        .await
+    {
+        tracing::warn!(
+            "Rate limit exceeded for forgot-password on email: {}",
+            email_key
         );
         return Err(AppError::RateLimited(retry_after));
     }
@@ -713,8 +740,11 @@ pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoR
         let _ = service::delete_session(&state.db, cookie.value()).await;
     }
 
-    // Clear cookie
-    let jar = jar.remove(Cookie::from(SESSION_COOKIE));
+    // Clear cookies — session and CSRF both rotate on logout so the next
+    // authenticated session starts with fresh tokens.
+    let jar = jar
+        .remove(Cookie::from(SESSION_COOKIE))
+        .add(super::csrf::rotation_cookie());
 
     (jar, Redirect::to("/auth/login"))
 }
@@ -722,8 +752,14 @@ pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoR
 // ─── OAuth Routes ──────────────────────────────────────────────
 
 /// GET /auth/google – Redirect to Google OAuth consent screen.
+///
+/// Generates random `state` (CSRF) and PKCE `code_verifier`; stores both in
+/// short-lived HttpOnly cookies for verification on callback.
 pub async fn google_redirect(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
-    // If already logged in, no need to do OAuth
+    use base64::Engine;
+    use rand::RngCore;
+    use sha2::Digest;
+
     if middleware::is_authenticated(&jar, &state.db).await {
         return Redirect::to("/marketplace").into_response();
     }
@@ -738,13 +774,43 @@ pub async fn google_redirect(State(state): State<AppState>, jar: CookieJar) -> i
     };
     let redirect_uri = format!("{}/auth/google/callback", state.config.base_url);
 
+    // CSRF state — 32 random bytes, base64url
+    let mut state_bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut state_bytes);
+    let state_token = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(state_bytes);
+
+    // PKCE — 32 random bytes verifier, S256 challenge
+    let mut verifier_bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut verifier_bytes);
+    let code_verifier = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(verifier_bytes);
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(code_verifier.as_bytes());
+    let code_challenge =
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hasher.finalize());
+
     let auth_url = format!(
-        "https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri={}&response_type=code&scope=email%20profile&access_type=offline",
+        "https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri={}&response_type=code&scope=email%20profile&access_type=offline&state={}&code_challenge={}&code_challenge_method=S256",
         client_id,
-        urlencoding::encode(&redirect_uri)
+        urlencoding::encode(&redirect_uri),
+        urlencoding::encode(&state_token),
+        urlencoding::encode(&code_challenge),
     );
 
-    Redirect::to(&auth_url).into_response()
+    let state_cookie = Cookie::build(("oauth_state", state_token))
+        .path("/auth")
+        .http_only(true)
+        .secure(cookie_is_secure())
+        .same_site(axum_extra::extract::cookie::SameSite::Lax)
+        .max_age(time::Duration::minutes(10));
+    let verifier_cookie = Cookie::build(("oauth_pkce", code_verifier))
+        .path("/auth")
+        .http_only(true)
+        .secure(cookie_is_secure())
+        .same_site(axum_extra::extract::cookie::SameSite::Lax)
+        .max_age(time::Duration::minutes(10));
+
+    let jar = jar.add(state_cookie).add(verifier_cookie);
+    (jar, Redirect::to(&auth_url)).into_response()
 }
 
 /// GET /auth/google/callback – Handle Google OAuth callback.
@@ -772,6 +838,25 @@ async fn google_callback_inner(
         .get("code")
         .ok_or_else(|| AppError::BadRequest("Missing authorization code.".to_string()))?;
 
+    // Verify CSRF state cookie matches query param
+    let state_cookie = jar
+        .get("oauth_state")
+        .ok_or_else(|| AppError::Unauthorized("Missing OAuth state cookie".to_string()))?;
+    let state_param = params
+        .get("state")
+        .ok_or_else(|| AppError::Unauthorized("Missing OAuth state param".to_string()))?;
+    if state_cookie.value() != state_param {
+        return Err(AppError::Unauthorized(
+            "OAuth state mismatch (possible CSRF)".to_string(),
+        ));
+    }
+
+    // Pull PKCE verifier
+    let pkce_cookie = jar
+        .get("oauth_pkce")
+        .ok_or_else(|| AppError::Unauthorized("Missing OAuth PKCE cookie".to_string()))?;
+    let code_verifier = pkce_cookie.value().to_string();
+
     let client_id = state
         .config
         .google_client_id
@@ -784,7 +869,7 @@ async fn google_callback_inner(
         .ok_or_else(|| AppError::Internal("Google OAuth not configured".to_string()))?;
     let redirect_uri = format!("{}/auth/google/callback", state.config.base_url);
 
-    // Exchange code for access token
+    // Exchange code for access token (with PKCE verifier)
     let client = reqwest::Client::new();
     let token_response = client
         .post("https://oauth2.googleapis.com/token")
@@ -794,6 +879,7 @@ async fn google_callback_inner(
             ("client_secret", client_secret.as_str()),
             ("redirect_uri", redirect_uri.as_str()),
             ("grant_type", "authorization_code"),
+            ("code_verifier", code_verifier.as_str()),
         ])
         .send()
         .await
@@ -839,11 +925,17 @@ async fn google_callback_inner(
     let email = user_info["email"]
         .as_str()
         .ok_or_else(|| AppError::Internal("No email in Google user info".to_string()))?;
+    let email_verified = user_info["verified_email"].as_bool().unwrap_or(false);
+    if !email_verified {
+        return Err(AppError::Unauthorized(
+            "Google account email is not verified".to_string(),
+        ));
+    }
     let first_name = user_info["given_name"].as_str().map(|s| s.to_string());
     let last_name = user_info["family_name"].as_str().map(|s| s.to_string());
     let avatar_url = user_info["picture"].as_str().map(|s| s.to_string());
 
-    // Find or create user
+    // Find or create user — email_verified=true enforced above
     let user = service::oauth_find_or_create_user(
         &state.db,
         "google",
@@ -855,10 +947,22 @@ async fn google_callback_inner(
     )
     .await?;
 
-    // Create session
-    let session_token = service::create_session(&state.db, user.id, true, true, None, None).await?;
+    // Apply same 2FA gate as password login
+    let settings = service::get_user_settings(&state.db, user.id).await?;
+    let (is_2fa_verified, redirect_to) = if settings.totp_enabled {
+        (false, "/auth/2fa")
+    } else {
+        (true, "/marketplace")
+    };
 
-    // Track login streak for XP (M4-BE.9)
+    // Clear transient OAuth cookies
+    let jar = jar
+        .remove(Cookie::from("oauth_state"))
+        .remove(Cookie::from("oauth_pkce"));
+
+    let session_token =
+        service::create_session(&state.db, user.id, true, is_2fa_verified, None, None).await?;
+
     if let Some(c_pool) = &state.community_db {
         let _ = crate::community::xp::track_login_streak(c_pool, user.id).await;
     }
@@ -872,7 +976,7 @@ async fn google_callback_inner(
 
     let jar = jar.add(cookie);
 
-    Ok((jar, Redirect::to("/marketplace")).into_response())
+    Ok((jar, Redirect::to(redirect_to)).into_response())
 }
 
 // ─── Template helpers ──────────────────────────────────────────

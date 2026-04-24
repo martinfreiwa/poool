@@ -115,6 +115,25 @@ pub async fn register_user(
 
 // ─── Login ─────────────────────────────────────────────────────
 
+/// Dummy Argon2id hash lazily computed once at first use. Used as a
+/// verification target when authentication fails on email lookup so the
+/// unknown-email path takes roughly the same wall-clock time as the
+/// wrong-password path, defeating enumeration via timing side-channel.
+fn dummy_argon2_hash() -> &'static str {
+    use std::sync::OnceLock;
+    static HASH: OnceLock<String> = OnceLock::new();
+    HASH.get_or_init(|| {
+        let salt = argon2::password_hash::SaltString::generate(&mut argon2::password_hash::rand_core::OsRng);
+        let argon2 = argon2::Argon2::default();
+        argon2
+            .hash_password(b"dummy-password-never-matches-any-real-password", &salt)
+            .map(|h| h.to_string())
+            .unwrap_or_else(|_| String::from(
+                "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHRzb21lc2FsdA$FKJjxOQmGa/wlvKjYvJL6sY9SqwV9lWKt1uHxDkt8VQ"
+            ))
+    })
+}
+
 /// Authenticate a user with email and password.
 ///
 /// SECURITY: Returns a generic error for both "user not found" and
@@ -126,27 +145,37 @@ pub async fn authenticate_user(
 ) -> Result<User, AppError> {
     let email = email.trim().to_lowercase();
 
-    let user =
+    let user_opt =
         sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1 AND status = 'active'")
             .bind(&email)
             .fetch_optional(pool)
-            .await?
-            .ok_or_else(|| {
-                // Security: track failed login (unknown email)
-                sentry::with_scope(
-                    |scope| {
-                        scope.set_tag("security.event", "failed_login");
-                        scope.set_tag("security.reason", "unknown_email");
-                    },
-                    || {
-                        sentry::capture_message(
-                            &format!("Failed login: unknown email {}", email),
-                            sentry::Level::Warning,
-                        );
-                    },
-                );
-                AppError::Unauthorized("Invalid email or password.".to_string())
-            })?;
+            .await?;
+
+    let user = match user_opt {
+        Some(u) => u,
+        None => {
+            // Timing-attack defense: run an Argon2 verify against a dummy hash
+            // so unknown-email responses take roughly the same time as
+            // wrong-password responses. Without this, response time reveals
+            // whether an email is registered.
+            let _ = verify_password(password, dummy_argon2_hash());
+            sentry::with_scope(
+                |scope| {
+                    scope.set_tag("security.event", "failed_login");
+                    scope.set_tag("security.reason", "unknown_email");
+                },
+                || {
+                    sentry::capture_message(
+                        &format!("Failed login: unknown email {}", email),
+                        sentry::Level::Warning,
+                    );
+                },
+            );
+            return Err(AppError::Unauthorized(
+                "Invalid email or password.".to_string(),
+            ));
+        }
+    };
 
     // Verify password
     let password_hash = user.password_hash.as_ref().ok_or_else(|| {
@@ -169,7 +198,26 @@ pub async fn authenticate_user(
     })?;
 
     match verify_password(password, password_hash) {
-        Ok(()) => Ok(user),
+        Ok(()) => {
+            if !user.email_verified {
+                sentry::with_scope(
+                    |scope| {
+                        scope.set_tag("security.event", "failed_login");
+                        scope.set_tag("security.reason", "email_not_verified");
+                    },
+                    || {
+                        sentry::capture_message(
+                            &format!("Login blocked: email not verified {}", email),
+                            sentry::Level::Info,
+                        );
+                    },
+                );
+                return Err(AppError::Forbidden(
+                    "Please verify your email before signing in. Check your inbox for the verification link.".to_string(),
+                ));
+            }
+            Ok(user)
+        }
         Err(_) => {
             // Security: track failed login (wrong password)
             sentry::with_scope(
@@ -245,6 +293,34 @@ pub async fn verify_session_2fa(pool: &PgPool, session_token: &str) -> Result<()
     Ok(())
 }
 
+/// Rotate a session token after a privilege change (e.g., 2FA verification).
+/// Issues a brand-new session token bound to the same session row and
+/// invalidates the previous token. Defends against session-fixation: any
+/// attacker that captured the pre-2FA token cannot re-use it after the
+/// user completes the step-up.
+///
+/// Returns the new session token that must be written back to the cookie.
+pub async fn rotate_session_token(
+    pool: &PgPool,
+    old_token: &str,
+) -> Result<String, AppError> {
+    let new_token = generate_session_token();
+    let affected = sqlx::query(
+        "UPDATE user_sessions
+            SET session_token = $1, is_2fa_verified = TRUE, updated_at = NOW()
+            WHERE session_token = $2",
+    )
+    .bind(&new_token)
+    .bind(old_token)
+    .execute(pool)
+    .await?
+    .rows_affected();
+    if affected == 0 {
+        return Err(AppError::Unauthorized("Session expired.".to_string()));
+    }
+    Ok(new_token)
+}
+
 /// Look up a user by their session token.
 ///
 /// SECURITY: Only returns active sessions that have passed 2FA (if enabled).
@@ -270,19 +346,22 @@ pub async fn get_user_by_session(
     .fetch_optional(pool)
     .await?;
 
+    // Session tokens are bearer credentials; only log a short prefix.
+    let tok_preview = &session_token[..8.min(session_token.len())];
+
     if let Some(r) = row {
         // 2. Enforcement: If 2FA enabled globally but session hasn't verified it, deny access
         if r.totp_enabled.unwrap_or(false) && !r.is_2fa_verified {
             tracing::warn!(
-                "Session {} denied: totp_enabled={} is_2fa_verified={}",
-                session_token,
+                "Session {}… denied: totp_enabled={} is_2fa_verified={}",
+                tok_preview,
                 r.totp_enabled.unwrap_or(false),
                 r.is_2fa_verified
             );
             return Ok(None);
         }
 
-        tracing::info!("Session {} valid for user {}", session_token, r.email);
+        tracing::info!("Session {}… valid for user {}", tok_preview, r.email);
 
         Ok(Some(User {
             id: r.id,
@@ -295,7 +374,7 @@ pub async fn get_user_by_session(
             updated_at: r.updated_at,
         }))
     } else {
-        tracing::warn!("Session {} not found or expired in DB", session_token);
+        tracing::warn!("Session {}… not found or expired in DB", tok_preview);
         Ok(None)
     }
 }
@@ -376,7 +455,21 @@ pub async fn oauth_find_or_create_user(
         .await?;
 
     if let Some(user) = existing_email_user {
-        // Link OAuth account to existing user
+        // Refuse to auto-link a provider account to a local user whose email
+        // was never verified locally — attacker could have pre-registered
+        // victim's email and await the victim's first OAuth sign-in to take
+        // over the account. Require the existing record to have
+        // email_verified=TRUE before linking.
+        if !user.email_verified {
+            tracing::warn!(
+                user_id = %user.id,
+                "Refusing OAuth auto-link: existing account not email_verified"
+            );
+            return Err(AppError::Unauthorized(
+                "An account exists for this email but was not verified. Please verify via the original sign-up method first.".to_string(),
+            ));
+        }
+
         sqlx::query(
             r#"
             INSERT INTO oauth_accounts (user_id, provider, provider_id, provider_email)
@@ -391,7 +484,6 @@ pub async fn oauth_find_or_create_user(
         .execute(pool)
         .await?;
 
-        // Back-fill profile data from provider if user has blank fields
         update_oauth_profile(pool, user.id, first_name, last_name, avatar_url).await;
 
         return Ok(user);
@@ -595,9 +687,25 @@ pub async fn reset_password(
         .execute(&mut *tx)
         .await?;
 
-    // Mark token as used
-    sqlx::query("UPDATE password_reset_tokens SET used_at = NOW() WHERE id = $1")
-        .bind(token_id)
+    // Mark the used token AND every other outstanding reset token for this
+    // user as consumed — if the real user's mailbox was also compromised,
+    // any unclicked reset links lingering there are now dead.
+    sqlx::query(
+        "UPDATE password_reset_tokens
+            SET used_at = NOW()
+            WHERE (id = $1 OR user_id = $2)
+              AND used_at IS NULL",
+    )
+    .bind(token_id)
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    // Invalidate every active session for this user. A password reset
+    // implies "I did not control this account a moment ago," so existing
+    // session tokens — possibly held by an attacker — must not survive.
+    sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
+        .bind(user_id)
         .execute(&mut *tx)
         .await?;
 
@@ -745,6 +853,65 @@ pub fn verify_totp_code(secret_b32: &str, code: &str) -> bool {
     };
 
     totp.check_current(code).unwrap_or(false)
+}
+
+/// Verify a TOTP code with Redis-backed replay protection.
+///
+/// TOTP codes are valid for up to 90s (30s window × skew=1). Without
+/// replay protection, a captured code can be reused within that window.
+/// This helper stores `totp_used:{user_id}:{code}` in Redis with a 120s
+/// TTL and refuses any second attempt.
+///
+/// If Redis is unavailable, falls back to the base check and logs a
+/// warning. Operators should ensure Redis is reachable in production.
+pub async fn verify_totp_code_with_replay_guard(
+    redis: Option<&deadpool_redis::Pool>,
+    user_id: Uuid,
+    secret_b32: &str,
+    code: &str,
+) -> bool {
+    if !verify_totp_code(secret_b32, code) {
+        return false;
+    }
+    let Some(pool) = redis else {
+        tracing::warn!(
+            "TOTP verified without replay guard (Redis unavailable) for user {}",
+            user_id
+        );
+        return true;
+    };
+    let mut conn = match pool.get().await {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::warn!("Redis unavailable for TOTP replay guard: {}", e);
+            return true;
+        }
+    };
+    let key = format!("totp_used:{}:{}", user_id, code);
+    // SET key "1" NX EX 120 — succeeds only if key didn't exist.
+    let res: Result<Option<String>, _> = redis::cmd("SET")
+        .arg(&key)
+        .arg("1")
+        .arg("NX")
+        .arg("EX")
+        .arg(120)
+        .query_async(&mut *conn)
+        .await;
+    match res {
+        Ok(Some(_)) => true,
+        Ok(None) => {
+            tracing::warn!("TOTP replay blocked for user {}", user_id);
+            sentry::capture_message(
+                &format!("TOTP replay blocked: user {}", user_id),
+                sentry::Level::Warning,
+            );
+            false
+        }
+        Err(e) => {
+            tracing::warn!("TOTP replay check failed: {}", e);
+            true
+        }
+    }
 }
 
 /// Enable TOTP for a user after successful verification of the first code.

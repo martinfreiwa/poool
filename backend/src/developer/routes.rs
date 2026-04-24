@@ -167,7 +167,7 @@ pub async fn page_developer_settings(
     crate::common::routes_helper::serve_protected_with_context(
         jar,
         &state,
-        "settings-2.html",
+        "settings.html",
         serde_json::json!({ "is_developer": true }),
     )
     .await

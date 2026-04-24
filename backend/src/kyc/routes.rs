@@ -133,8 +133,12 @@ pub async fn didit_webhook(
     let provider = match super::didit::DiditConfig::from_env() {
         Some(cfg) => super::didit::DiditProvider::new(cfg),
         None => {
-            tracing::warn!("Received Didit webhook but DIDIT_API_KEY is not configured");
-            return (StatusCode::OK, Json(serde_json::json!({"ok": true}))).into_response();
+            tracing::error!("Didit webhook received but provider not configured (API key or webhook secret missing)");
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(serde_json::json!({"error": "KYC provider not configured"})),
+            )
+                .into_response();
         }
     };
 
@@ -147,6 +151,32 @@ pub async fn didit_webhook(
 
     match provider.process_webhook(&body, signature).await {
         Ok(update) => {
+            // Replay guard: the signature alone is a nonce — Didit signs
+            // deterministic payloads, so a resent webhook carries the same
+            // signature. SETNX the signature with a 10-minute TTL (covers the
+            // 5-minute freshness window on both sides). If Redis is absent
+            // we degrade open with a warning log.
+            if let (Some(sig), Some(redis_pool)) = (signature, state.redis.as_ref()) {
+                if let Ok(mut conn) = redis_pool.get().await {
+                    let key = format!("kyc_webhook_nonce:{}", sig);
+                    let res: Result<Option<String>, _> = redis::cmd("SET")
+                        .arg(&key)
+                        .arg("1")
+                        .arg("NX")
+                        .arg("EX")
+                        .arg(600)
+                        .query_async(&mut *conn)
+                        .await;
+                    if matches!(res, Ok(None)) {
+                        tracing::warn!("Didit webhook replay blocked (nonce already seen)");
+                        return (StatusCode::OK, Json(serde_json::json!({"ok": true})))
+                            .into_response();
+                    }
+                }
+            } else if state.redis.is_none() {
+                tracing::warn!("KYC webhook processed without replay guard (Redis unavailable)");
+            }
+
             let provider_name = provider.name();
             if let Err(e) = service::process_webhook_update(&state.db, update, provider_name).await
             {

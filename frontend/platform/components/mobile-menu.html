@@ -1,6 +1,6 @@
 <!-- Mobile Header -->
 <header id="mobile-header" class="mobile-header">
-  <!-- Logo --><a href="/marketplace" class="mobile-header__logo"><img src="/static/images/logos/Logo%20Pool.svg"
+  <!-- Logo --><a href="{% if is_developer %}/developer/dashboard{% else %}/marketplace{% endif %}" class="mobile-header__logo"><img src="/static/images/logos/Logo%20Pool.svg"
       alt="POOOL" /></a><!-- Icons Container -->
   <div class="mobile-header__icons">
     <!-- Notification Button --><button id="mobile-notification-btn"
@@ -47,9 +47,9 @@
     <div class="mobile-burger-menu__header">
       <div class="mobile-burger-menu__header-container">
         <!-- Logo -->
-        <div class="mobile-burger-menu__logo">
+        <a href="/developer/dashboard" class="mobile-burger-menu__logo">
           <img src="/static/images/logos/Logo%20premium.svg" alt="POOOL" />
-        </div>
+        </a>
         <!-- Close Button --><button class="mobile-burger-menu__close" onclick="closeMobileMenu()"
           aria-label="Close menu">
           <span class="mobile-burger-menu__close-icon"></span>
@@ -120,12 +120,12 @@
         <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
       </div>
       <!-- Settings -->
-      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+      <a href="{% if is_developer %}/developer/settings{% else %}/settings{% endif %}" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
           <img  src="/static/images/icons/settings-01.svg" alt="Settings" class="mobile-burger-menu__nav-icon" />
         </div>
         <span class="mobile-burger-menu__nav-text">Settings</span>
-      </div>
+      </a>
       <!-- Support -->
       <a href="{% if is_developer %}/developer/support{% else %}/support{% endif %}" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
@@ -292,8 +292,27 @@
 
         // Load saved profile from localStorage - mirrors desktop behavior
         window.loadSavedMobileProfile = function () {
-          const savedProfile = localStorage.getItem("selectedProfile");
-          const savedAccountId = localStorage.getItem("selectedAccountId");
+          const derivedProfile = window.location.pathname.startsWith("/developer")
+            ? "developer"
+            : window.location.pathname.startsWith("/admin")
+              ? "admin"
+              : "investor";
+          const savedProfile = localStorage.getItem("selectedProfile") || derivedProfile;
+          let savedAccountId = localStorage.getItem("selectedAccountId");
+
+          if (!localStorage.getItem("selectedProfile")) {
+            localStorage.setItem("selectedProfile", savedProfile);
+          }
+
+          if (!savedAccountId && savedProfile) {
+            savedAccountId =
+              savedProfile === "developer"
+                ? "olivia-developer"
+                : savedProfile === "admin"
+                  ? "admin"
+                  : "olivia-investor";
+            localStorage.setItem("selectedAccountId", savedAccountId);
+          }
 
           if (savedProfile && savedAccountId) {
             // Update dropdown selection state
@@ -627,12 +646,12 @@
         <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
       </div>
       <!-- Settings -->
-      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+      <a href="{% if is_developer %}/developer/settings{% else %}/settings{% endif %}" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
           <img  src="/static/images/icons/settings-01.svg" alt="Settings" class="mobile-burger-menu__nav-icon" />
         </div>
         <span class="mobile-burger-menu__nav-text">Settings</span>
-      </div>
+      </a>
       <!-- Support -->
       <a href="{% if is_developer %}/developer/support{% else %}/support{% endif %}" class="mobile-burger-menu__nav-item">
         <div class="mobile-burger-menu__nav-icon-wrapper">
@@ -1055,9 +1074,285 @@
   </nav>
 </template>
 
+<!-- Hidden template for developer burger menu -->
+<template id="developer-mobile-menu-template">
+  <nav id="mobile-burger-menu" class="mobile-burger-menu">
+    <div class="mobile-burger-menu__header">
+      <div class="mobile-burger-menu__header-container">
+        <div class="mobile-burger-menu__logo">
+          <img src="/static/images/logos/Logo%20premium.svg" alt="POOOL" />
+        </div>
+        <button class="mobile-burger-menu__close" onclick="closeMobileMenu()" aria-label="Close menu">
+          <span class="mobile-burger-menu__close-icon"></span>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-burger-menu__nav">
+      <a href="/developer/dashboard" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img src="/static/images/Menu%20developer/Dashboard.svg" alt="Dashboard" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Dashboard</span>
+      </a>
+      <a href="/developer/assets" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img src="/static/images/Menu%20developer/Assets.svg" alt="Assets" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Assets</span>
+      </a>
+      <a href="/developer/submissions" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img src="/static/images/icons/file-check-02.svg" alt="My Submissions" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">My Submissions</span>
+      </a>
+      <div class="mobile-burger-menu__nav-item mobile-burger-menu__nav-item--disabled">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img src="/static/images/Menu%20developer/Ranking.svg" alt="Ranking" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Ranking</span>
+        <span class="mobile-burger-menu__nav-badge soon-badge">Soon</span>
+      </div>
+      <a href="/developer/settings" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img src="/static/images/Menu%20developer/Settings.svg" alt="Settings" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Settings</span>
+      </a>
+      <a href="/developer/support" class="mobile-burger-menu__nav-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper">
+          <img src="/static/images/Menu%20developer/Support.svg" alt="Support" class="mobile-burger-menu__nav-icon" />
+        </div>
+        <span class="mobile-burger-menu__nav-text">Support</span>
+        <div class="mobile-burger-menu__support-badge">
+          <span class="mobile-burger-menu__support-dot"></span>
+          <span class="mobile-burger-menu__support-text">Online</span>
+        </div>
+      </a>
+      <a href="/developer/add-asset" class="mobile-burger-menu__nav-item mobile-burger-menu__add-asset-item">
+        <div class="mobile-burger-menu__nav-icon-wrapper mobile-burger-menu__add-asset-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 4.16667V15.8333M4.16667 10H15.8333" stroke="#FFFFFF" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>
+        <span class="mobile-burger-menu__nav-text mobile-burger-menu__add-asset-text">Add Asset</span>
+      </a>
+    </div>
+    <div class="mobile-burger-menu__footer">
+      <div class="mobile-burger-menu__featured-card mobile-burger-menu__featured-card--support">
+        <button class="mobile-burger-menu__featured-close" aria-label="Close">
+          <span class="mobile-burger-menu__featured-close-icon"></span>
+        </button>
+        <div class="mobile-burger-menu__featured-content">
+          <div class="mobile-burger-menu__featured-badge mobile-burger-menu__featured-badge--online">
+            <div class="mobile-burger-menu__support-dot"></div>
+            <span class="mobile-burger-menu__support-text">Online</span>
+          </div>
+          <div class="mobile-burger-menu__featured-text">
+            <h4 class="mobile-burger-menu__featured-title">Have questions?</h4>
+            <p class="mobile-burger-menu__featured-description">Our support team is here to help.</p>
+          </div>
+          <button class="mobile-burger-menu__featured-button mobile-burger-menu__featured-button--chat" type="button">
+            <img src="/static/images/Menu%20developer/Support.svg" alt="Support" width="20" height="20" />
+            <span>Chat to support</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="mobile-account-card" class="mobile-burger-menu__account-card"
+        onclick="toggleMobileProfileDropdown(event)" style="cursor: pointer" role="button" aria-label="Account menu"
+        tabindex="0">
+        <div class="mobile-burger-menu__avatar-group">
+          <div class="mobile-burger-menu__avatar">
+            <img loading="lazy" src="/static/images/ui/Image.webp" alt="" />
+            <div class="mobile-burger-menu__avatar-online"></div>
+          </div>
+          <div class="mobile-burger-menu__account-text">
+            <span class="mobile-burger-menu__account-name"></span>
+            <span class="mobile-burger-menu__account-email"></span>
+          </div>
+        </div>
+        <div id="mobile-account-menu-button" class="mobile-burger-menu__account-menu" style="pointer-events: none">
+          <div id="mobile-account-menu-button-inner" class="mobile-burger-menu__account-menu-button">
+            <svg class="mobile-burger-menu__account-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 8L10 3L15 8" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                stroke-linejoin="round"></path>
+              <path d="M5 12L10 17L15 12" stroke="#A4A7AE" stroke-width="1.66667" stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div id="mobile-profile-dropdown-menu" class="mobile-profile-dropdown-menu">
+        <div id="mobile-profile-menu-wrapper" class="mobile-profile-menu-wrapper">
+          <div id="mobile-profile-menu-items-top" class="mobile-profile-menu-items">
+            <div id="mobile-menu-item-documentation" class="mobile-profile-menu-item">
+              <div class="mobile-profile-menu-content">
+                <div class="mobile-profile-icon-text">
+                  <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M4 4V16H16V4H4Z" stroke="#717680" stroke-width="1.67"></path>
+                    <path d="M8 8H12M8 12H12" stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                  </svg>
+                  <span class="mobile-profile-menu-text">Documentation</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="mobile-profile-switch-section" class="mobile-profile-switch-section">
+            <div class="mobile-profile-switch-header">
+              <span class="mobile-profile-switch-title">Switch account</span>
+            </div>
+            <div id="mobile-menu-item-current-account"
+              class="mobile-profile-menu-item account-item selected mobile-profile-switcher"
+              data-profile-id="olivia-investor" data-account-type="Investor Profile" style="cursor: pointer">
+              <div class="mobile-profile-account-content">
+                <div class="mobile-profile-avatar-group">
+                  <div class="mobile-profile-avatar">
+                    <img loading="lazy" src="/static/images/ui/Image.webp" alt="" />
+                    <div class="mobile-profile-avatar-border"></div>
+                    <div class="mobile-profile-online-indicator"></div>
+                  </div>
+                  <div class="mobile-profile-text-wrapper">
+                    <span class="mobile-profile-account-name"></span>
+                    <span class="mobile-profile-account-type">Investor Profile</span>
+                  </div>
+                </div>
+                <div class="mobile-profile-checkbox selected">
+                  <div class="mobile-profile-checkbox-check"></div>
+                </div>
+              </div>
+            </div>
+            <div id="mobile-menu-item-account-olivia-developer"
+              class="mobile-profile-menu-item account-item mobile-profile-switcher"
+              data-profile-id="olivia-developer" data-account-type="Developer Profile" style="cursor: pointer">
+              <div class="mobile-profile-account-content">
+                <div class="mobile-profile-avatar-group">
+                  <div class="mobile-profile-avatar">
+                    <img loading="lazy" src="/static/images/ui/Featured%20icon.webp" alt="" />
+                    <div class="mobile-profile-avatar-border"></div>
+                    <div class="mobile-profile-online-indicator"></div>
+                  </div>
+                  <div class="mobile-profile-text-wrapper">
+                    <span class="mobile-profile-account-name"></span>
+                    <span class="mobile-profile-account-type">Developer Profile</span>
+                  </div>
+                </div>
+                <div class="mobile-profile-checkbox">
+                  <div class="mobile-profile-checkbox-check"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="mobile-profile-footer-items" class="mobile-profile-footer-items">
+          <div id="mobile-menu-item-sign-out" class="mobile-profile-menu-item">
+            <div class="mobile-profile-menu-content">
+              <div class="mobile-profile-icon-text">
+                <svg class="mobile-profile-menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M14 15L19 10L14 5" stroke="#717680" stroke-width="1.67"
+                    stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path d="M19 10H7M7 19H3C2.44772 19 2 18.5523 2 18V2C2 1.44772 2.44772 1 3 1H7"
+                    stroke="#717680" stroke-width="1.67" stroke-linecap="round"></path>
+                </svg>
+                <span class="mobile-profile-menu-text">Sign out</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</template>
+
 <!-- Script to switch mobile burger menu based on saved profile -->
 <script>
   (function () {
+    function normalizePath(path) {
+      if (!path) return "/";
+      const normalized = path.replace(/\/+$/, "");
+      return normalized || "/";
+    }
+
+    function applyMobileMenuActiveState() {
+      const path = normalizePath(window.location.pathname);
+      const container = document.getElementById("mobile-burger-menu-container");
+      if (!container) return;
+
+      container
+        .querySelectorAll(".mobile-burger-menu__nav-item.active")
+        .forEach((item) => item.classList.remove("active"));
+      container
+        .querySelectorAll(".mobile-burger-menu__nav-child--active")
+        .forEach((item) => item.classList.remove("mobile-burger-menu__nav-child--active"));
+
+      const activateItem = (href) => {
+        const link = container.querySelector(`.mobile-burger-menu__nav-item[href="${href}"]`);
+        if (link) link.classList.add("active");
+      };
+
+      const marketplaceParent = container.querySelector(
+        '.mobile-burger-menu__nav-item--parent[data-item-id="marketplace"]',
+      );
+      const marketplaceChevron = container.querySelector(".mobile-burger-menu__nav-chevron");
+      const marketplaceChildren = container.querySelector("#mobile-nav-children-marketplace");
+      const activateMarketplace = (href) => {
+        if (marketplaceParent) marketplaceParent.classList.add("active");
+        if (marketplaceChevron) {
+          marketplaceChevron.classList.add("mobile-burger-menu__nav-chevron--expanded");
+        }
+        if (marketplaceChildren) {
+          marketplaceChildren.classList.remove("mobile-burger-menu__nav-children--collapsed");
+        }
+        const child = container.querySelector(`.mobile-burger-menu__nav-child[href="${href}"]`);
+        if (child) child.classList.add("mobile-burger-menu__nav-child--active");
+      };
+
+      if (path.startsWith("/developer")) {
+        if (path === "/developer" || path === "/developer/dashboard") {
+          activateItem("/developer/dashboard");
+        } else if (
+          path.includes("/developer/submissions") ||
+          path.includes("/developer/application-form") ||
+          path.includes("/developer/document-upload-step3") ||
+          path.includes("/developer/submission-success")
+        ) {
+          activateItem("/developer/submissions");
+        } else if (
+          path.includes("/developer/assets") ||
+          path.includes("/developer/add-asset") ||
+          path.includes("/developer/property-content") ||
+          path.includes("/developer/asset-detail")
+        ) {
+          activateItem("/developer/assets");
+        } else if (path.includes("/developer/settings")) {
+          activateItem("/developer/settings");
+        } else if (path.includes("/developer/support")) {
+          activateItem("/developer/support");
+        }
+        return;
+      }
+
+      if (path === "/" || path === "/marketplace") {
+        activateMarketplace("/marketplace");
+      } else if (path === "/commodities-marketplace") {
+        activateMarketplace("/commodities-marketplace");
+      } else if (path.includes("/wallet") || path.includes("/transactions")) {
+        activateItem("/wallet");
+      } else if (path.includes("/portfolio")) {
+        activateItem("/portfolio");
+      } else if (path.includes("/rewards")) {
+        activateItem("/rewards");
+      } else if (path.includes("/affiliate")) {
+        activateItem("/affiliate");
+      } else if (path.includes("/cart") || path.includes("/checkout")) {
+        activateItem("/cart");
+      } else if (path.includes("/settings")) {
+        activateItem("/settings");
+      } else if (path.includes("/support")) {
+        activateItem("/support");
+      }
+    }
+
     // Function to replace mobile burger menu content
     function replaceMobileBurgerMenu(profileType) {
       const container = document.getElementById(
@@ -1083,6 +1378,10 @@
             window.loadSavedMobileProfile();
           } else {
           }
+          if (typeof window.initializeProfileSwitchers === "function") {
+            window.initializeProfileSwitchers();
+          }
+          applyMobileMenuActiveState();
         }, 0);
 
         // Re-initialize mobile navigation functionality if needed
@@ -1092,17 +1391,19 @@
     // Check current page to determine profile
     const currentPath = window.location.pathname;
 
-    // If we're on a developer page, show developer menu
-    if (currentPath.startsWith("/developer/")) {
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", function () {
-          replaceMobileBurgerMenu("developer");
-        });
-      } else {
+    function initializeMenuForCurrentPath() {
+      if (normalizePath(currentPath) === "/developer" || currentPath.startsWith("/developer/")) {
         replaceMobileBurgerMenu("developer");
+      } else {
+        applyMobileMenuActiveState();
       }
     }
-    // Otherwise use investor menu (default)
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initializeMenuForCurrentPath);
+    } else {
+      initializeMenuForCurrentPath();
+    }
 
     // Listen for profile changes
     window.addEventListener("storage", function (e) {

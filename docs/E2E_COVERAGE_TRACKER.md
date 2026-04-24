@@ -91,15 +91,15 @@ All screens a regular investor or issuer can see are rigidly tracked below. Cros
 | **F-4.07** | `/developer/property-content` → `developer/property-content.html` | Rich Content | 🖥️ | ⚪ Planned | WYSIWYG editor + image gallery. |
 | **F-4.08** | `/developer/document-upload-step3` → `developer/document-upload-step3.html` | Legal Docs | 🖥️ | ⚪ Planned | PDF/Doc upload via signed GCS. |
 | **F-4.09** | `/developer/submission-success` → `developer/submission-success.html` | Completion | 🖥️ | ⚪ Planned | Confirmation + redirect. |
-| **F-4.10** | `/developer/settings` → `developer/settings.html` | Issuer Org Setup | 🖥️ | ⚪ Planned | Org profile, payout bank nodes. |
+| **F-4.10** | `/developer/settings` → `settings.html` | Issuer Org Setup | 🖥️ | ⚪ Planned | Org profile, payout bank nodes. |
 | **F-4.11** | `/api/developer/draft` (CRUD) | Draft API | 🖥️ | ⚪ Planned | Create/update/delete/submit/duplicate. |
 | **F-4.12** | `/api/developer/assets/:id` (PUT) | Change Request | 🖥️ | ⚪ Planned | Edit live asset → admin review. |
 
 ### 2.5 Settings, Privacy & General Utility
 | Flow ID | Target Route / HTML File | Feature Scope | Viewports | Status | Action Items |
 |---|---|---|---|---|---|
-| **F-5.01** | `/settings` → `settings.html` (redirects to V2) | Profile Core | 🖥️📱 | ⚠️ Flaky | Name update. Needs `expect_response`. |
-| **F-5.02** | `settings-2.html` | Extended Prefs | 🖥️📱 | ⚪ Planned | Locale, currency, timezone. |
+| **F-5.01** | `/settings` → `settings.html` | Profile Core | 🖥️📱 | ⚠️ Flaky | Name update. Needs `expect_response`. |
+| **F-5.02** | `/settings` → `settings.html` | Extended Prefs | 🖥️📱 | ⚪ Planned | Locale, currency, timezone. |
 | **F-5.03** | `/api/settings/profile` (POST) | Profile Update API | 🖥️📱 | ⚪ Planned | First/last name, avatar. |
 | **F-5.04** | `/api/settings/password` (POST) | Password Change | 🖥️📱 | ⚪ Planned | Old vs new collision check. |
 | **F-5.05** | `/api/settings/email` (POST) | Email Change | 🖥️📱 | ⚪ Planned | Re-verification trigger. |
@@ -443,4 +443,3 @@ BASE_URL=https://platform.poool.app pytest tests/e2e/ -m smoke
 # View Playwright traces (after failure)
 npx playwright show-trace tests/e2e/traces/FAIL_*.zip
 ```
-

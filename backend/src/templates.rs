@@ -10,16 +10,31 @@ pub type Templates = Arc<Environment<'static>>;
 pub fn create_engine() -> Templates {
     let mut env = Environment::new();
 
+    // HTML autoescape for all .html/.htm/.xml templates — prevents XSS when
+    // user-controlled strings are interpolated without an explicit `|safe`.
+    env.set_auto_escape_callback(|name| {
+        if name.ends_with(".html")
+            || name.ends_with(".htm")
+            || name.ends_with(".xml")
+        {
+            minijinja::AutoEscape::Html
+        } else {
+            minijinja::AutoEscape::None
+        }
+    });
+
     // Dynamically load all templates from frontend platform directory
     env.set_loader(path_loader("../frontend/platform"));
 
-    // Detect environment for cache busting
+    // Detect environment for cache busting. Default to production behavior
+    // when POOOL_ENV / BASE_URL are unset — dev-mode defaults could leak
+    // cache-busting timestamps or other dev-only behavior into prod.
     let is_dev = matches!(
         std::env::var("POOOL_ENV").as_deref(),
         Ok("development") | Ok("dev") | Ok("local")
     ) || std::env::var("BASE_URL")
         .map(|url| url.contains("localhost"))
-        .unwrap_or(true); // default to dev when BASE_URL is not set
+        .unwrap_or(false);
 
     let version = if is_dev {
         // Use current timestamp as version in dev mode to break cache

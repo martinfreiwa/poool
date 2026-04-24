@@ -80,7 +80,12 @@ fn build_connect_options(database_url: &str) -> PgConnectOptions {
         })
     };
 
-    let mut opts: PgConnectOptions = database_url.parse().expect("Invalid DATABASE_URL");
+    // Parse URL with sanitized error — never include the raw URL in panic/log
+    // output because it contains the DB password.
+    let mut opts: PgConnectOptions = match database_url.parse() {
+        Ok(o) => o,
+        Err(_) => panic!("Invalid DATABASE_URL (format check failed; URL/credentials redacted)"),
+    };
 
     // If PGBOUNCER_ENABLED is true, we must disable SQLx's prepared statement cache
     // because PgBouncer in transaction mode does not support named prepared statements

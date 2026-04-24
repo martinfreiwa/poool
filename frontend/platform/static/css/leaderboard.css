@@ -7,7 +7,7 @@
 .lb-content-layer {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: var(--section-gap, 24px);
 }
 
 /* --- Page Layout (standard sidebar pattern) --- */
@@ -26,16 +26,18 @@
   background: var(--content-bg);
   display: flex;
   flex-direction: column;
+  gap: 0;
   z-index: 0;
 }
 
 .lb-container {
-  padding: var(--page-padding-top, 48px) var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--page-max-width, 1200px);
+  padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: var(--section-gap, 24px);
+  box-sizing: border-box;
 }
 
 @media (max-width: 768px) {

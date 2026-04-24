@@ -44,7 +44,7 @@ function toggleProfileDropdown() {
     // Close on click outside
     setTimeout(() => {
       document.addEventListener("click", closeDropdownOnClickOutside);
-    }, 10);
+    }, 100);
   }
 }
 
@@ -192,8 +192,27 @@ function setupProfileEventHandlers() {
 
 // Load saved profile on page load
 function loadSavedProfile() {
-  const savedProfile = localStorage.getItem("selectedProfile");
-  const savedAccountId = localStorage.getItem("selectedAccountId");
+  const derivedProfile = window.location.pathname.startsWith("/developer")
+    ? "developer"
+    : window.location.pathname.startsWith("/admin")
+      ? "admin"
+      : "investor";
+  const savedProfile = localStorage.getItem("selectedProfile") || derivedProfile;
+  let savedAccountId = localStorage.getItem("selectedAccountId");
+
+  if (!localStorage.getItem("selectedProfile")) {
+    localStorage.setItem("selectedProfile", savedProfile);
+  }
+
+  if (!savedAccountId && savedProfile) {
+    savedAccountId =
+      savedProfile === "developer"
+        ? "olivia-developer"
+        : savedProfile === "admin"
+          ? "admin"
+          : "olivia-investor";
+    localStorage.setItem("selectedAccountId", savedAccountId);
+  }
 
   if (savedProfile && savedAccountId) {
     const allAccountItems = document.querySelectorAll(

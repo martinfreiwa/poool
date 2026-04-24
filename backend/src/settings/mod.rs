@@ -4,16 +4,16 @@ pub mod service;
 
 use crate::auth::routes::AppState;
 use axum::{
-    routing::{get, post},
     Router,
+    routing::{get, post},
 };
 
 /// Compose all settings-domain routes into a single mountable [`Router`].
 pub fn router() -> Router<AppState> {
     use routes::*;
     Router::new()
-        // HTML page — V3 is now the primary settings page
-        .route("/settings", get(page_settings_3))
+        // HTML page — one canonical template, legacy URLs retained
+        .route("/settings", get(page_settings))
         .route("/settings-2", get(page_settings_2))
         .route("/settings-3", get(page_settings_3))
         .route("/account-deletion", get(page_account_deletion))

@@ -12,20 +12,29 @@ document.addEventListener('DOMContentLoaded', () => {
     searchWrapper.style.position = 'relative';
     searchWrapper.appendChild(resultsContainer);
 
-    const pages = [
-        { title: 'Properties Marketplace', subtitle: 'Browse all available properties recorded on-chain', url: '/marketplace', icon: '🏠' },
-        { title: 'Commodities Marketplace', subtitle: 'Invest in real-world agricultural & industrial assets', url: '/commodities-marketplace', icon: '🌽' },
-        { title: 'Resale Market', subtitle: 'Secondary market for existing tokens', url: '/marketplace-secondary', icon: '🔄' },
-        { title: 'Portfolio', subtitle: 'Real-time performance of your global RWA portfolio', url: '/portfolio', icon: '💼' },
-        { title: 'My Wallet', subtitle: 'Manage your USDT balance and transactions', url: '/wallet', icon: '💳' },
-        { title: 'Community Feed', subtitle: 'Insights and signals from the POOOL community', url: '/community/feed', icon: '👥' },
-        { title: 'Leaderboard', subtitle: 'Top performers and community rankings', url: '/leaderboard', icon: '🏆' },
-        { title: 'Referral Rewards', subtitle: 'Your lifetime earnings and level progression', url: '/rewards', icon: '🎁' },
-        { title: 'Settings', subtitle: 'Security, privacy, and account management', url: isDeveloperPage ? '/developer/settings' : '/settings', icon: '⚙️' },
-        { title: 'Support', subtitle: 'Connect with our elite support collective', url: isDeveloperPage ? '/developer/support' : '/support', icon: '🎧' },
-        { title: 'My Circles', subtitle: 'Private investment groups and DAO-gated chats', url: '/community/circles', icon: '🔘' },
-        { title: 'Challenges', subtitle: 'Complete active quests to earn XP & Badges', url: '/community/challenges', icon: '✨' },
-    ];
+    const pages = isDeveloperPage
+        ? [
+            { title: 'Developer Dashboard', subtitle: 'Portfolio, funding, and submission performance', url: '/developer/dashboard', icon: '📊' },
+            { title: 'My Assets', subtitle: 'Published assets, drafts, and detailed asset management', url: '/developer/assets', icon: '🏗️' },
+            { title: 'My Submissions', subtitle: 'Track onboarding progress and submission status', url: '/developer/submissions', icon: '🗂️' },
+            { title: 'Add Asset', subtitle: 'Start a new asset listing and submission flow', url: '/developer/add-asset', icon: '➕' },
+            { title: 'Settings', subtitle: 'Manage your developer account and profile', url: '/developer/settings', icon: '⚙️' },
+            { title: 'Support', subtitle: 'Connect with the POOOL support team', url: '/developer/support', icon: '🎧' },
+        ]
+        : [
+            { title: 'Properties Marketplace', subtitle: 'Browse all available properties recorded on-chain', url: '/marketplace', icon: '🏠' },
+            { title: 'Commodities Marketplace', subtitle: 'Invest in real-world agricultural & industrial assets', url: '/commodities-marketplace', icon: '🌽' },
+            { title: 'Resale Market', subtitle: 'Secondary market for existing tokens', url: '/marketplace-secondary', icon: '🔄' },
+            { title: 'Portfolio', subtitle: 'Real-time performance of your global RWA portfolio', url: '/portfolio', icon: '💼' },
+            { title: 'My Wallet', subtitle: 'Manage your USDT balance and transactions', url: '/wallet', icon: '💳' },
+            { title: 'Community Feed', subtitle: 'Insights and signals from the POOOL community', url: '/community/feed', icon: '👥' },
+            { title: 'Leaderboard', subtitle: 'Top performers and community rankings', url: '/leaderboard', icon: '🏆' },
+            { title: 'Referral Rewards', subtitle: 'Your lifetime earnings and level progression', url: '/rewards', icon: '🎁' },
+            { title: 'Settings', subtitle: 'Security, privacy, and account management', url: '/settings', icon: '⚙️' },
+            { title: 'Support', subtitle: 'Connect with our elite support collective', url: '/support', icon: '🎧' },
+            { title: 'My Circles', subtitle: 'Private investment groups and DAO-gated chats', url: '/community/circles', icon: '🔘' },
+            { title: 'Challenges', subtitle: 'Complete active quests to earn XP & Badges', url: '/community/challenges', icon: '✨' },
+        ];
 
     let debounceTimer;
 
@@ -70,8 +79,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') {
             const query = e.target.value.trim();
             if (query.length > 0) {
-                // If they press enter, default to marketplace search for assets
-                window.location.href = `/marketplace?q=${encodeURIComponent(query)}`;
+                const firstResult = resultsContainer.querySelector('.search-result-item');
+                if (firstResult) {
+                    window.location.href = firstResult.getAttribute('href');
+                    return;
+                }
+
+                window.location.href = isDeveloperPage
+                    ? `/developer/assets?q=${encodeURIComponent(query)}`
+                    : `/marketplace?q=${encodeURIComponent(query)}`;
             }
         }
     });

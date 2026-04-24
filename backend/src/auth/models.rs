@@ -11,6 +11,11 @@ use uuid::Uuid;
 pub struct User {
     pub id: Uuid,
     pub email: String,
+    /// Argon2id hash. Never serialised — `#[serde(skip)]` stops the hash
+    /// escaping via any `Json(user)` / `serde_json::to_string(&user)` call
+    /// (defence-in-depth against a future handler that forgets to strip
+    /// it). Still deserialised from the DB row via `FromRow`.
+    #[serde(skip_serializing)]
     pub password_hash: Option<String>,
     pub email_verified: bool,
     pub avatar_url: Option<String>,

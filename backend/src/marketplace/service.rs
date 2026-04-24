@@ -145,7 +145,12 @@ pub async fn create_order(
         }
     };
 
-    let order_total_cents = price_cents.saturating_mul(req.quantity as i64);
+    // Use checked_mul — saturating_mul would silently clamp to i64::MAX on
+    // overflow, giving an attacker a way to place an order whose stored
+    // total is wildly smaller than the real amount owed.
+    let order_total_cents = price_cents
+        .checked_mul(req.quantity as i64)
+        .ok_or_else(|| AppError::BadRequest("Order total exceeds maximum supported value".into()))?;
 
     // ── Concentration limit check (buy side only) ────────────
     if side == OrderSide::Buy {

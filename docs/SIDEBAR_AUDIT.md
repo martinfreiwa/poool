@@ -45,7 +45,7 @@ These pages use the developer-specific sidebar defined in the template within `c
 *   `developer/assets.html`
 *   `developer/submissions.html`
 *   `developer/add-asset.html`
-*   `developer/settings.html`
+*   `/developer/settings` (renders shared `settings.html`)
 *   `developer/asset-detail.html` (Dynamic)
 *   `developer/application-form.html`
 

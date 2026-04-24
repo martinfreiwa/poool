@@ -40,21 +40,41 @@ pub async fn initiate_deposit(
         ).into_response();
     }
 
-    // Parse amount
-    let amount_str = form.amount.replace([',', '.'], "");
-    let amount_cents: i64 = match amount_str.parse::<i64>() {
-        Ok(v) if v > 0 => {
-            if currency == "USD" {
-                v * 100 // Input is dollars, convert to cents
-            } else {
-                v // IDR input is already in smallest unit
+    // Parse amount — previous impl stripped both "," and ".", which silently
+    // mis-interpreted "50.25" as 5025 then *100 = $5,025 (100× overcharge).
+    // USD accepts dollars with up to 2 decimal places. IDR accepts whole rupiah
+    // only (no sub-unit). Thousands separators (",") are tolerated.
+    let amount_cents: i64 = {
+        use rust_decimal::prelude::*;
+        let raw = form.amount.trim().replace(',', "");
+        let parsed = Decimal::from_str(&raw).ok().filter(|d| d.is_sign_positive());
+        let cents = match (currency.as_str(), parsed) {
+            ("USD", Some(d)) => {
+                // Reject >2 decimal places (fractions of a cent).
+                if d.scale() > 2 {
+                    None
+                } else {
+                    (d * Decimal::from(100)).to_i64()
+                }
             }
-        }
-        _ => {
-            return (
-                axum::http::StatusCode::BAD_REQUEST,
-                Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">Invalid amount. Please enter a positive number.</div>"#.to_string()),
-            ).into_response();
+            ("IDR", Some(d)) => {
+                // IDR is quoted in whole rupiah; disallow fractional.
+                if d.scale() > 0 {
+                    None
+                } else {
+                    d.to_i64()
+                }
+            }
+            _ => None,
+        };
+        match cents {
+            Some(c) if c > 0 => c,
+            _ => {
+                return (
+                    axum::http::StatusCode::BAD_REQUEST,
+                    Html(r#"<div class="auth-error-message" style="color:#F04438;background:#FEF3F2;border:1px solid #FEE4E2;border-radius:8px;padding:12px 16px;font-size:14px;">Invalid amount. Please enter a positive number.</div>"#.to_string()),
+                ).into_response();
+            }
         }
     };
 
@@ -80,7 +100,7 @@ pub async fn initiate_deposit(
             let amount_display = if currency == "USD" {
                 format!("${}.{:02}", amount_cents / 100, (amount_cents % 100).abs())
             } else {
-                format!("Rp {}", amount_str)
+                format!("Rp {}", amount_cents)
             };
             let instructions = response.instructions;
             let status_html = format!(
@@ -111,13 +131,17 @@ pub async fn initiate_deposit(
 
 /// POST /api/webhooks/payments – Generic webhook handler for payment providers.
 ///
-/// Verifies the payment and atomically credits the user's wallet.
-/// Idempotent: calling twice with the same reference won't double-credit.
+/// Verifies HMAC-SHA256(secret, "{timestamp}.{raw_body}") against X-Signature
+/// header with constant-time compare, rejects >5min old timestamps to thwart
+/// replay, then atomically credits the user's wallet. Idempotent.
 pub async fn payment_webhook(
     State(state): State<AppState>,
-    Json(payload): Json<WebhookPayload>,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
 ) -> axum::response::Response {
-    // Ensure requests have the correct secret signature to prevent unauthorized calls
+    use hmac::{Hmac, Mac};
+    use sha2::Sha256;
+
     let secret = match std::env::var("PAYMENT_WEBHOOK_SECRET") {
         Ok(s) if !s.is_empty() => s,
         _ => {
@@ -129,14 +153,95 @@ pub async fn payment_webhook(
                 .into_response();
         }
     };
-    if payload.signature.as_deref() != Some(secret.as_str()) {
-        tracing::warn!("Webhook rejected: invalid or missing signature");
+
+    let sig_header = match headers.get("x-signature").and_then(|v| v.to_str().ok()) {
+        Some(s) => s.trim().to_string(),
+        None => {
+            tracing::warn!("Webhook rejected: missing X-Signature header");
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Missing signature"})),
+            )
+                .into_response();
+        }
+    };
+    let ts_header = match headers.get("x-timestamp").and_then(|v| v.to_str().ok()) {
+        Some(s) => s.trim().to_string(),
+        None => {
+            tracing::warn!("Webhook rejected: missing X-Timestamp header");
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Missing timestamp"})),
+            )
+                .into_response();
+        }
+    };
+
+    let ts: i64 = match ts_header.parse() {
+        Ok(v) => v,
+        Err(_) => {
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Invalid timestamp"})),
+            )
+                .into_response();
+        }
+    };
+    let now = chrono::Utc::now().timestamp();
+    if (now - ts).abs() > 300 {
+        tracing::warn!("Webhook rejected: timestamp outside 5min window");
         return (
             axum::http::StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({"error": "Unauthorized webhook signature"})),
+            Json(serde_json::json!({"error": "Stale timestamp"})),
         )
             .into_response();
     }
+
+    let provided = match hex::decode(&sig_header) {
+        Ok(b) => b,
+        Err(_) => {
+            tracing::warn!("Webhook rejected: signature not hex");
+            return (
+                axum::http::StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Invalid signature encoding"})),
+            )
+                .into_response();
+        }
+    };
+    let mut mac = match Hmac::<Sha256>::new_from_slice(secret.as_bytes()) {
+        Ok(m) => m,
+        Err(_) => {
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({"error": "HMAC init failed"})),
+            )
+                .into_response();
+        }
+    };
+    mac.update(ts_header.as_bytes());
+    mac.update(b".");
+    mac.update(&body);
+    if mac.verify_slice(&provided).is_err() {
+        tracing::warn!("Webhook rejected: HMAC mismatch");
+        return (
+            axum::http::StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({"error": "Invalid signature"})),
+        )
+            .into_response();
+    }
+
+    let payload: WebhookPayload = match serde_json::from_slice(&body) {
+        Ok(p) => p,
+        Err(e) => {
+            tracing::warn!("Webhook body parse failed: {}", e);
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Invalid payload"})),
+            )
+                .into_response();
+        }
+    };
+
     if payload.status != "paid" {
         tracing::info!(
             ref_id = %payload.provider_reference,

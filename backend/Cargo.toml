@@ -46,7 +46,7 @@ hex = "0.4"
 
 # Templating (for HTML responses to HTMX)
 minijinja = { version = "2.0", features = ["loader"] }
-redis = { version = "0.24.0", features = ["tokio-comp"] }
+redis = { version = "0.24.0", features = ["tokio-comp", "tls-rustls", "tokio-rustls-comp", "tls-rustls-webpki-roots"] }
 deadpool-redis = "0.14.0"
 # Error handling
 anyhow = "1.0"

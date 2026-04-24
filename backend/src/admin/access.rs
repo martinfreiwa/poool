@@ -1,21 +1,17 @@
 //! Role-Based Access Control (RBAC) and admin invitation handlers.
-use crate::auth::middleware;
+use crate::admin::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
 use axum::{
     extract::{Json, State},
-    response::IntoResponse,
+    response::{IntoResponse, Response},
 };
-use axum_extra::extract::CookieJar;
 
 /// GET /api/admin/admins - List all admin users with their roles and permissions.
-pub async fn api_admin_list(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
-    if !middleware::check_permission(&jar, &state.db, "admins.manage").await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Insufficient permissions"})),
-        )
-            .into_response();
-    }
+pub async fn api_admin_list(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Response, ApiError> {
+    admin.require_permission(&state.db, "admins.manage").await?;
 
     let users = sqlx::query!(
         r#"
@@ -66,48 +62,37 @@ pub async fn api_admin_list(jar: CookieJar, State(state): State<AppState>) -> im
     .fetch_all(&state.db)
     .await;
 
-    match users {
-        Ok(rows) => {
-            let admins: Vec<serde_json::Value> = rows
-                .into_iter()
-                .map(|r| {
-                    serde_json::json!({
-                        "id": r.id,
-                        "email": r.email,
-                        "first_name": r.first_name,
-                        "last_name": r.last_name,
-                        "roles": r.roles.unwrap_or_default(),
-                        "status": r.status,
-                        "totp_enabled": r.totp_enabled,
-                        "last_active": r.last_active,
-                        "last_ip": r.last_ip,
-                        "session_count": r.session_count.unwrap_or(0),
-                        "created_at": r.created_at,
-                    })
-                })
-                .collect();
-            Json(admins).into_response()
-        }
-        Err(e) => {
-            tracing::error!("Failed to fetch admins: {}", e);
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "Database error"})),
-            )
-                .into_response()
-        }
-    }
+    let rows = users.map_err(|e| {
+        tracing::error!("Failed to fetch admins: {}", e);
+        ApiError::Database(e)
+    })?;
+    let admins: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|r| {
+            serde_json::json!({
+                "id": r.id,
+                "email": r.email,
+                "first_name": r.first_name,
+                "last_name": r.last_name,
+                "roles": r.roles.unwrap_or_default(),
+                "status": r.status,
+                "totp_enabled": r.totp_enabled,
+                "last_active": r.last_active,
+                "last_ip": r.last_ip,
+                "session_count": r.session_count.unwrap_or(0),
+                "created_at": r.created_at,
+            })
+        })
+        .collect();
+    Ok(Json(admins).into_response())
 }
 
 /// GET /api/admin/roles - List all admin roles and their associated permissions.
-pub async fn api_roles_list(jar: CookieJar, State(state): State<AppState>) -> impl IntoResponse {
-    if !middleware::check_permission(&jar, &state.db, "roles.edit").await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Insufficient permissions"})),
-        )
-            .into_response();
-    }
+pub async fn api_roles_list(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Response, ApiError> {
+    admin.require_permission(&state.db, "roles.edit").await?;
 
     let roles = sqlx::query!(
         r#"
@@ -128,44 +113,30 @@ pub async fn api_roles_list(jar: CookieJar, State(state): State<AppState>) -> im
     .fetch_all(&state.db)
     .await;
 
-    match roles {
-        Ok(rows) => {
-            let roles_data: Vec<serde_json::Value> = rows
-                .into_iter()
-                .map(|r| {
-                    serde_json::json!({
-                        "id": r.id,
-                        "name": r.name,
-                        "description": r.description,
-                        "permissions": r.permissions.unwrap_or_default(),
-                    })
-                })
-                .collect();
-            Json(roles_data).into_response()
-        }
-        Err(e) => {
-            tracing::error!("Failed to fetch roles: {}", e);
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "Database error"})),
-            )
-                .into_response()
-        }
-    }
+    let rows = roles.map_err(|e| {
+        tracing::error!("Failed to fetch roles: {}", e);
+        ApiError::Database(e)
+    })?;
+    let roles_data: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|r| {
+            serde_json::json!({
+                "id": r.id,
+                "name": r.name,
+                "description": r.description,
+                "permissions": r.permissions.unwrap_or_default(),
+            })
+        })
+        .collect();
+    Ok(Json(roles_data).into_response())
 }
 
 /// GET /api/admin/permissions - Get a static list of all available system permissions.
 pub async fn api_permissions_list(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
-) -> impl IntoResponse {
-    if !middleware::check_permission(&jar, &state.db, "roles.edit").await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Insufficient permissions"})),
-        )
-            .into_response();
-    }
+) -> Result<Response, ApiError> {
+    admin.require_permission(&state.db, "roles.edit").await?;
 
     let permissions = vec![
         "users.view",
@@ -192,7 +163,7 @@ pub async fn api_permissions_list(
         "all",
     ];
 
-    Json(permissions).into_response()
+    Ok(Json(permissions).into_response())
 }
 
 /// Payload for inviting a new admin user.
@@ -206,49 +177,39 @@ pub struct InviteAdminPayload {
 
 /// POST /api/admin/admins/invite - Invite a new admin user.
 pub async fn api_admin_invite(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<InviteAdminPayload>,
-) -> impl IntoResponse {
-    if !middleware::check_permission(&jar, &state.db, "admins.manage").await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Insufficient permissions"})),
-        )
-            .into_response();
+) -> Result<Response, ApiError> {
+    admin.require_permission(&state.db, "admins.manage").await?;
+
+    // Allowlist: reject free-text role strings that would escalate to super_admin.
+    if !crate::admin::extractors::ASSIGNABLE_ROLES.contains(&payload.role.as_str()) {
+        return Err(ApiError::BadRequest("Invalid role".to_string()));
+    }
+
+    // Elevated roles (admin, super_admin) require super_admin to grant.
+    if crate::admin::extractors::ELEVATED_ROLES.contains(&payload.role.as_str())
+        && !admin.is_super_admin(&state.db).await
+    {
+        return Err(ApiError::Forbidden(
+            "Only super_admin may grant admin/super_admin roles".to_string(),
+        ));
     }
 
     // Check if role exists
-    let role_id = match sqlx::query_scalar!("SELECT id FROM roles WHERE name = $1", payload.role)
+    let role_id = sqlx::query_scalar!("SELECT id FROM roles WHERE name = $1", payload.role)
         .fetch_one(&state.db)
         .await
-    {
-        Ok(id) => id,
-        Err(_) => {
-            return (
-                axum::http::StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({"error": "Invalid role"})),
-            )
-                .into_response()
-        }
-    };
+        .map_err(|_| ApiError::BadRequest("Invalid role".to_string()))?;
 
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Unauthorized"})),
-            )
-                .into_response()
-        }
-    };
+    let user = &admin.user;
 
     let token = uuid::Uuid::new_v4().to_string();
     let token_hash = crate::config::hash_token(&token);
     let expires_at = chrono::Utc::now() + chrono::Duration::hours(24);
 
-    let result = sqlx::query!(
+    sqlx::query!(
         "INSERT INTO admin_invitations (email, role_id, invited_by, token_hash, expires_at) VALUES ($1, $2, $3, $4, $5)",
         payload.email,
         role_id,
@@ -257,52 +218,42 @@ pub async fn api_admin_invite(
         expires_at
     )
     .execute(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to create admin invitation: {}", e);
+        ApiError::Database(e)
+    })?;
+
+    // Log the invitation
+    let _ = sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+           VALUES ($1, 'admin.invite', 'admin_invitation', $2)"#,
+    )
+    .bind(user.id)
+    .bind(serde_json::json!({"email": payload.email, "role": payload.role}))
+    .execute(&state.db)
     .await;
 
-    match result {
-        Ok(_) => {
-            // Log the invitation
-            let _ = sqlx::query(
-                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state) 
-                   VALUES ($1, 'admin.invite', 'admin_invitation', $2)"#,
-            )
-            .bind(user.id)
-            .bind(serde_json::json!({"email": payload.email, "role": payload.role}))
-            .execute(&state.db)
-            .await;
+    let subject = "You have been invited to be a POOOL Admin";
+    let body = format!(
+        r#"
+        <h2>Admin Invitation</h2>
+        <p>You have been invited to join the POOOL admin dashboard as: <strong>{}</strong>.</p>
+        <p>Please click the link below to accept the invitation:</p>
+        <p><a href="{}/auth/admin/accept-invite?token={}">Accept Invitation</a></p>
+        "#,
+        payload.role, state.config.base_url, token
+    );
 
-            // In a real system, we'd send an email here.
-            let subject = "You have been invited to be a POOOL Admin";
-            let body = format!(
-                r#"
-                <h2>Admin Invitation</h2>
-                <p>You have been invited to join the POOOL admin dashboard as: <strong>{}</strong>.</p>
-                <p>Please click the link below to accept the invitation:</p>
-                <p><a href="{}/auth/admin/accept-invite?token={}">Accept Invitation</a></p>
-                "#,
-                payload.role, state.config.base_url, token
-            );
+    let _ = crate::common::email::send_email(&payload.email, subject, &body).await;
 
-            // Ignore error so we still return success even if email fails, or handle it? Let's ignore it like the mock.
-            let _ = crate::common::email::send_email(&payload.email, subject, &body).await;
-
-            tracing::info!(
-                "Admin invitation sent to {} with token {}",
-                payload.email,
-                token
-            );
-            Json(serde_json::json!({"status": "success", "message": "Invitation created"}))
-                .into_response()
-        }
-        Err(e) => {
-            tracing::error!("Failed to create admin invitation: {}", e);
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "Database error"})),
-            )
-                .into_response()
-        }
-    }
+    tracing::info!(
+        "Admin invitation sent to {} with token {}",
+        payload.email,
+        token
+    );
+    Ok(Json(serde_json::json!({"status": "success", "message": "Invitation created"}))
+        .into_response())
 }
 
 /// Represents a role and its new list of permissions.
@@ -323,84 +274,60 @@ pub struct BulkRoleUpdatePayload {
 
 /// POST /api/admin/roles/permissions - Bulk update role permissions.
 pub async fn api_roles_update_permissions(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<BulkRoleUpdatePayload>,
-) -> impl IntoResponse {
-    if !middleware::check_permission(&jar, &state.db, "roles.edit").await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Insufficient permissions"})),
-        )
-            .into_response();
-    }
+) -> Result<Response, ApiError> {
+    admin.require_permission(&state.db, "roles.edit").await?;
 
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Unauthorized"})),
-            )
-                .into_response()
-        }
-    };
+    let user = &admin.user;
 
-    let mut tx = match state.db.begin().await {
-        Ok(tx) => tx,
-        Err(_) => {
-            return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "TX error").into_response()
-        }
-    };
+    let mut tx = state
+        .db
+        .begin()
+        .await
+        .map_err(|e| ApiError::Internal(format!("TX begin: {}", e)))?;
 
-    // Save for audit log
     let audit_data = serde_json::to_value(&payload.roles).unwrap_or_default();
 
     for role_update in payload.roles {
-        // Clear existing permissions for this role
-        if let Err(e) = sqlx::query!(
+        sqlx::query!(
             "DELETE FROM admin_permissions WHERE role_id = $1",
             role_update.id
         )
         .execute(&mut *tx)
         .await
-        {
+        .map_err(|e| {
             tracing::error!(
                 "Failed to clear permissions for role {}: {}",
                 role_update.id,
                 e
             );
-            return (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "Clear error").into_response();
-        }
+            ApiError::Database(e)
+        })?;
 
-        // Insert new permissions
         for perm in role_update.permissions {
-            if let Err(e) = sqlx::query!(
+            sqlx::query!(
                 "INSERT INTO admin_permissions (role_id, permission) VALUES ($1, $2)",
                 role_update.id,
                 perm
             )
             .execute(&mut *tx)
             .await
-            {
+            .map_err(|e| {
                 tracing::error!(
                     "Failed to insert permission {} for role {}: {}",
                     perm,
                     role_update.id,
                     e
                 );
-                return (
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    "Insert error",
-                )
-                    .into_response();
-            }
+                ApiError::Database(e)
+            })?;
         }
     }
 
-    // Log the changes
     let _ = sqlx::query(
-        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state) 
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
            VALUES ($1, 'roles.bulk_update', 'permissions', $2)"#,
     )
     .bind(user.id)
@@ -408,15 +335,11 @@ pub async fn api_roles_update_permissions(
     .execute(&mut *tx)
     .await;
 
-    if tx.commit().await.is_err() {
-        return (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            "Commit error",
-        )
-            .into_response();
-    }
+    tx.commit()
+        .await
+        .map_err(|e| ApiError::Internal(format!("Commit: {}", e)))?;
 
-    Json(serde_json::json!({"status": "success"})).into_response()
+    Ok(Json(serde_json::json!({"status": "success"})).into_response())
 }
 
 /// Payload for creating a new role.
@@ -432,30 +355,14 @@ pub struct CreateRolePayload {
 
 /// POST /api/admin/roles - Create a new admin role.
 pub async fn api_roles_create(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<CreateRolePayload>,
-) -> impl IntoResponse {
-    if !middleware::check_permission(&jar, &state.db, "roles.edit").await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Insufficient permissions"})),
-        )
-            .into_response();
-    }
+) -> Result<Response, ApiError> {
+    admin.require_permission(&state.db, "roles.edit").await?;
 
-    let user = match middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error": "Unauthorized"})),
-            )
-                .into_response()
-        }
-    };
+    let user = &admin.user;
 
-    // Check uniqueness
     let exists = sqlx::query_scalar!(
         "SELECT EXISTS(SELECT 1 FROM roles WHERE name = $1) as \"exists!\"",
         payload.name
@@ -465,45 +372,29 @@ pub async fn api_roles_create(
     .unwrap_or(true);
 
     if exists {
-        return (
-            axum::http::StatusCode::CONFLICT,
-            Json(serde_json::json!({"error": "A role with this name already exists"})),
-        )
-            .into_response();
+        return Err(ApiError::Conflict(
+            "A role with this name already exists".to_string(),
+        ));
     }
 
-    let mut tx = match state.db.begin().await {
-        Ok(tx) => tx,
-        Err(_) => {
-            return (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "Transaction error"})),
-            )
-                .into_response()
-        }
-    };
+    let mut tx = state
+        .db
+        .begin()
+        .await
+        .map_err(|e| ApiError::Internal(format!("TX begin: {}", e)))?;
 
-    // Insert the role
-    let role_id = match sqlx::query_scalar!(
+    let role_id = sqlx::query_scalar!(
         "INSERT INTO roles (name, description) VALUES ($1, $2) RETURNING id",
         payload.name,
         payload.description.unwrap_or_default()
     )
     .fetch_one(&mut *tx)
     .await
-    {
-        Ok(id) => id,
-        Err(e) => {
-            tracing::error!("Failed to create role: {}", e);
-            return (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "Database error"})),
-            )
-                .into_response();
-        }
-    };
+    .map_err(|e| {
+        tracing::error!("Failed to create role: {}", e);
+        ApiError::Database(e)
+    })?;
 
-    // Insert initial permissions if provided
     if let Some(perms) = payload.permissions {
         for perm in &perms {
             let _ = sqlx::query!(
@@ -516,7 +407,6 @@ pub async fn api_roles_create(
         }
     }
 
-    // Audit log
     let _ = sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
            VALUES ($1, 'role.create', 'role', $2)"#,
@@ -526,29 +416,19 @@ pub async fn api_roles_create(
     .execute(&mut *tx)
     .await;
 
-    if tx.commit().await.is_err() {
-        return (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({"error": "Commit error"})),
-        )
-            .into_response();
-    }
+    tx.commit()
+        .await
+        .map_err(|e| ApiError::Internal(format!("Commit: {}", e)))?;
 
-    Json(serde_json::json!({"status": "success", "role_id": role_id})).into_response()
+    Ok(Json(serde_json::json!({"status": "success", "role_id": role_id})).into_response())
 }
 
 /// GET /api/admin/admins/invitations - List all pending admin invitations.
 pub async fn api_admin_invitations_list(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
-) -> impl IntoResponse {
-    if !middleware::check_permission(&jar, &state.db, "admins.manage").await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Insufficient permissions"})),
-        )
-            .into_response();
-    }
+) -> Result<Response, ApiError> {
+    admin.require_permission(&state.db, "admins.manage").await?;
 
     let invitations = sqlx::query!(
         r#"
@@ -585,126 +465,87 @@ pub async fn api_admin_invitations_list(
                     })
                 })
                 .collect();
-            Json(data).into_response()
+            Ok(Json(data).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to fetch invitations: {}", e);
-            // Return empty array on error (table may not have accepted_at column)
-            Json(serde_json::json!([])).into_response()
+            Ok(Json(serde_json::json!([])).into_response())
         }
     }
 }
 
 /// DELETE /api/admin/admins/invitations/:id - Revoke a pending invitation.
 pub async fn api_admin_invitation_revoke(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(invite_id): axum::extract::Path<uuid::Uuid>,
-) -> impl IntoResponse {
-    if !middleware::check_permission(&jar, &state.db, "admins.manage").await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Insufficient permissions"})),
-        )
-            .into_response();
-    }
+) -> Result<Response, ApiError> {
+    admin.require_permission(&state.db, "admins.manage").await?;
 
-    let result = sqlx::query!("DELETE FROM admin_invitations WHERE id = $1", invite_id)
+    let r = sqlx::query!("DELETE FROM admin_invitations WHERE id = $1", invite_id)
         .execute(&state.db)
-        .await;
-
-    match result {
-        Ok(r) if r.rows_affected() > 0 => {
-            Json(serde_json::json!({"status": "success"})).into_response()
-        }
-        Ok(_) => (
-            axum::http::StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": "Invitation not found"})),
-        )
-            .into_response(),
-        Err(e) => {
+        .await
+        .map_err(|e| {
             tracing::error!("Failed to revoke invitation: {}", e);
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "Database error"})),
-            )
-                .into_response()
-        }
+            ApiError::Database(e)
+        })?;
+
+    if r.rows_affected() == 0 {
+        return Err(ApiError::NotFound("Invitation not found".to_string()));
     }
+    Ok(Json(serde_json::json!({"status": "success"})).into_response())
 }
 
 /// POST /api/admin/admins/invitations/:id/resend - Resend an invitation email.
 pub async fn api_admin_invitation_resend(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(invite_id): axum::extract::Path<uuid::Uuid>,
-) -> impl IntoResponse {
-    if !middleware::check_permission(&jar, &state.db, "admins.manage").await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Insufficient permissions"})),
-        )
-            .into_response();
-    }
+) -> Result<Response, ApiError> {
+    admin.require_permission(&state.db, "admins.manage").await?;
 
-    let result = sqlx::query!(
+    let record = sqlx::query!(
         "SELECT email FROM admin_invitations WHERE id = $1",
         invite_id
     )
     .fetch_optional(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to resend invitation: {}", e);
+        ApiError::Database(e)
+    })?
+    .ok_or_else(|| ApiError::NotFound("Invitation not found".to_string()))?;
+
+    let _ = sqlx::query!(
+        "UPDATE admin_invitations SET expires_at = NOW() + INTERVAL '7 days' WHERE id = $1",
+        invite_id
+    )
+    .execute(&state.db)
     .await;
 
-    match result {
-        Ok(Some(record)) => {
-            // Re-send logic could go here. We'll simply update the expires_at and return success as a mock.
-            let _ = sqlx::query!(
-                "UPDATE admin_invitations SET expires_at = NOW() + INTERVAL '7 days' WHERE id = $1",
-                invite_id
-            )
-            .execute(&state.db)
-            .await;
+    let new_token = uuid::Uuid::new_v4().to_string();
+    let new_token_hash = crate::config::hash_token(&new_token);
+    let _ = sqlx::query!(
+        "UPDATE admin_invitations SET token_hash = $1 WHERE id = $2",
+        new_token_hash,
+        invite_id
+    )
+    .execute(&state.db)
+    .await;
 
-            // Generate a new token for the resend (the old hash is no longer usable as raw token)
-            let new_token = uuid::Uuid::new_v4().to_string();
-            let new_token_hash = crate::config::hash_token(&new_token);
-            let _ = sqlx::query!(
-                "UPDATE admin_invitations SET token_hash = $1 WHERE id = $2",
-                new_token_hash,
-                invite_id
-            )
-            .execute(&state.db)
-            .await;
+    let subject = "You have been invited to be a POOOL Admin";
+    let body = format!(
+        r#"
+        <h2>Admin Invitation</h2>
+        <p>You have been invited to join the POOOL admin dashboard.</p>
+        <p>Please click the link below to accept the invitation:</p>
+        <p><a href="{}/auth/admin/accept-invite?token={}">Accept Invitation</a></p>
+        "#,
+        state.config.base_url, new_token
+    );
+    let _ = crate::common::email::send_email(&record.email, subject, &body).await;
 
-            {
-                let subject = "You have been invited to be a POOOL Admin";
-                let body = format!(
-                    r#"
-                    <h2>Admin Invitation</h2>
-                    <p>You have been invited to join the POOOL admin dashboard.</p>
-                    <p>Please click the link below to accept the invitation:</p>
-                    <p><a href="{}/auth/admin/accept-invite?token={}">Accept Invitation</a></p>
-                    "#,
-                    state.config.base_url, new_token
-                );
-                let _ = crate::common::email::send_email(&record.email, subject, &body).await;
-            }
-
-            tracing::info!("Resent invitation to {}", record.email);
-            Json(serde_json::json!({"status": "success", "message": "Invitation resent"}))
-                .into_response()
-        }
-        Ok(None) => (
-            axum::http::StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error": "Invitation not found"})),
-        )
-            .into_response(),
-        Err(e) => {
-            tracing::error!("Failed to resend invitation: {}", e);
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error": "Database error"})),
-            )
-                .into_response()
-        }
-    }
+    tracing::info!("Resent invitation to {}", record.email);
+    Ok(Json(serde_json::json!({"status": "success", "message": "Invitation resent"}))
+        .into_response())
 }
