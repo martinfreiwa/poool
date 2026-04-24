@@ -26,6 +26,98 @@
     gap: 24px;
 }
 .settings-cards-section { display: block; }
+
+/* ----- Two-column grid: sticky left nav + sections ----------------------- */
+.settings-layout-grid {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+    margin-top: 24px;
+}
+.settings-sections { min-width: 0; }
+
+/* Nav rail */
+.settings-nav {
+    position: sticky;
+    top: 88px; /* clear investor-topbar */
+    align-self: start;
+}
+.settings-nav nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.settings-nav__link {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #475467;
+    text-decoration: none;
+    border-radius: 8px;
+    border-left: 2px solid transparent;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.settings-nav__link:hover { background: rgba(0, 0, 255, 0.04); color: #0000FF; }
+.settings-nav__link:focus-visible {
+    outline: 2px solid #0000FF;
+    outline-offset: 2px;
+}
+.settings-nav__link.is-active {
+    background: rgba(0, 0, 255, 0.08);
+    color: #0000FF;
+    border-left-color: #0000FF;
+    font-weight: 600;
+}
+.settings-nav__link--danger {
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    color: #B42318;
+}
+.settings-nav__link--danger:hover { background: rgba(217, 45, 32, 0.06); color: #B42318; }
+.settings-nav__link--danger.is-active {
+    background: rgba(217, 45, 32, 0.08);
+    color: #B42318;
+    border-left-color: #D92D20;
+}
+
+/* Scroll anchor offset so sticky topbar doesn't cover target */
+.settings-anchor {
+    display: block;
+    height: 0;
+    scroll-margin-top: 96px;
+}
+
+/* Sensitive section emphasis (Security, Privacy) */
+.settings-card--sensitive { border-left: 3px solid rgba(0, 0, 255, 0.25); }
+.settings-card--danger { border-left: 3px solid #D92D20; }
+
+@media (max-width: 900px) {
+    .settings-layout-grid { grid-template-columns: 1fr; }
+    .settings-nav { position: static; }
+    .settings-nav nav {
+        flex-direction: row;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .settings-nav nav::-webkit-scrollbar { display: none; }
+    .settings-nav__link {
+        flex-shrink: 0;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+    }
+    .settings-nav__link.is-active { border-left-color: transparent; border-bottom-color: #0000FF; }
+    .settings-nav__link--danger { margin-top: 0; padding-top: 8px; border-top: none; }
+}
 .settings-topbar {
     display: flex;
     align-items: center;

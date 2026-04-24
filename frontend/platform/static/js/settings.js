@@ -787,8 +787,60 @@
     bindDirectModalButtons();
     bindFileInputs();
     bindCounters();
+    bindSectionNav();
 
     loadSettings();
+  }
+
+  // ─── Section nav scroll-spy ───────────────────────────────────
+
+  function bindSectionNav() {
+    const links = document.querySelectorAll(".settings-nav__link");
+    if (!links.length || !("IntersectionObserver" in window)) return;
+
+    const anchorIds = Array.from(links).map((a) => a.getAttribute("href").slice(1));
+    const anchors = anchorIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+
+    const setActive = (id) => {
+      links.forEach((a) =>
+        a.classList.toggle("is-active", a.getAttribute("href") === `#${id}`)
+      );
+    };
+
+    // IntersectionObserver — anchor enters upper band of viewport = active
+    const io = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length) setActive(visible[0].target.id);
+      },
+      { rootMargin: "-96px 0px -60% 0px", threshold: 0 }
+    );
+    anchors.forEach((el) => io.observe(el));
+
+    // Click-to-scroll with smooth behavior + focus management
+    links.forEach((link) => {
+      link.addEventListener("click", (e) => {
+        const id = link.getAttribute("href").slice(1);
+        const target = document.getElementById(id);
+        if (!target) return;
+        e.preventDefault();
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        setActive(id);
+        history.replaceState(null, "", `#${id}`);
+      });
+    });
+
+    // Honor initial hash
+    if (location.hash) {
+      const id = location.hash.slice(1);
+      if (document.getElementById(id)) setActive(id);
+    } else {
+      setActive(anchorIds[0]);
+    }
   }
 
   if (document.readyState === "loading") {

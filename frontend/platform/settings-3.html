@@ -29,7 +29,7 @@
 
         <section id="settings-content" class="settings-cards-section hidden" aria-label="Account settings">
 
-            <!-- Profile Completion Banner -->
+            <!-- Profile Completion Banner (full-width above grid) -->
             <div id="completeness-banner" class="ds-card holo-card profile-completion-banner">
                 <div class="completion-header">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
@@ -51,6 +51,27 @@
                 <div id="completeness-missing" class="completion-badges" aria-label="Missing profile fields"></div>
             </div>
 
+            <!-- Two-column grid: sticky nav | content sections -->
+            <div class="settings-layout-grid">
+                <aside class="settings-nav" aria-label="Settings sections">
+                    <nav>
+                        <a href="#sec-core" class="settings-nav__link">Core Profile</a>
+                        <a href="#sec-address" class="settings-nav__link">Address</a>
+                        <a href="#sec-identity" class="settings-nav__link">Identity</a>
+                        <a href="#sec-financial" class="settings-nav__link">Financial</a>
+                        <a href="#sec-security" class="settings-nav__link">Security</a>
+                        <a href="#sec-preferences" class="settings-nav__link">Preferences</a>
+                        <a href="#sec-leaderboard" class="settings-nav__link">Leaderboard</a>
+                        <a href="#sec-social" class="settings-nav__link">Social</a>
+                        <a href="#sec-developer-identity" class="settings-nav__link" data-role="developer" hidden>Developer Identity</a>
+                        <a href="#sec-developer-links" class="settings-nav__link" data-role="developer" hidden>Developer Links</a>
+                        <a href="#sec-privacy" class="settings-nav__link settings-nav__link--danger">Data &amp; Privacy</a>
+                    </nav>
+                </aside>
+
+                <div class="settings-sections">
+
+            <span id="sec-core" class="settings-anchor" aria-hidden="true"></span>
             <!-- Core Profile -->
             <form class="ds-card holo-card settings-card" id="form-core-profile" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Core Profile', 'Manage your personal details and avatar.', 'blue', 'p-icon--md') %}
@@ -107,8 +128,6 @@
                         </select>
                     </div>
 
-                    <hr class="settings-divider settings-divider--edge-32">
-
                     <!-- Email (read-only, change via Security) -->
                     <div class="settings-form-row align-start settings-form-row--list">
                         <label class="settings-label" for="settings-email">Email
@@ -130,6 +149,7 @@
             </form>
 
             <!-- Residential Address -->
+            <span id="sec-address" class="settings-anchor" aria-hidden="true"></span>
             <form class="ds-card holo-card settings-card" id="form-address" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Residential Address', 'Where you currently reside for legal and tax
                             purposes.', 'blue', 'p-icon--md') %}
@@ -372,6 +392,7 @@
             </form>
 
             <!-- Identity Vault -->
+            <span id="sec-identity" class="settings-anchor" aria-hidden="true"></span>
             <form class="ds-card holo-card settings-card" id="form-identity" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Identity Vault', 'Your core verification details and
                             nationality data.', 'blue', 'p-icon--md') %}
@@ -385,12 +406,10 @@
                         <label class="settings-label" for="settings-dob">Date of Birth</label>
                         <input type="date" class="settings-input" id="settings-dob" name="date_of_birth" autocomplete="bday" max="2012-12-31">
                     </div>
-                    <hr class="settings-divider settings-divider--edge-32">
                     <div class="settings-form-row settings-form-row--list settings-form-row--wide-label">
                         <label class="settings-label" for="settings-nationality">Nationality</label>
                         <input type="text" class="settings-input" id="settings-nationality" name="nationality" autocomplete="off">
                     </div>
-                    <hr class="settings-divider settings-divider--edge-32">
                     <div class="settings-form-row settings-form-row--list settings-form-row--wide-label">
                         <label class="settings-label" for="settings-tax-id">Tax ID</label>
                         <input type="text" class="settings-input" id="settings-tax-id" name="tax_id" autocomplete="off" inputmode="text" spellcheck="false">
@@ -403,6 +422,7 @@
                     </div>
                 </div>
             </form>
+            <span id="sec-financial" class="settings-anchor" aria-hidden="true"></span>
             <div class="ds-card holo-card settings-card" style="margin-bottom:32px; width:100%; box-sizing:border-box;">
                 {% call macros.holo_card_header('Financial Overview', 'Your investment limits, KYC status, and
                             payment methods.', 'blue', 'p-icon--md') %}
@@ -486,7 +506,8 @@
             </div>
 
 
-            <div class="ds-card holo-card settings-card" style="margin-bottom: 32px; width:100%; box-sizing:border-box;">
+            <span id="sec-security" class="settings-anchor" aria-hidden="true"></span>
+            <div class="ds-card holo-card settings-card settings-card--sensitive" style="margin-bottom: 32px; width:100%; box-sizing:border-box;">
                 {% call macros.holo_card_header('Security & Access', 'Passwords, two-factor auth, sessions, and
                             linked accounts.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
@@ -540,6 +561,7 @@
                 </div>
             </div>
 
+            <span id="sec-preferences" class="settings-anchor" aria-hidden="true"></span>
             <form class="ds-card holo-card settings-card" id="form-preferences" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Preferences', 'Timezone, currency, and notification
                             preferences.', 'blue', 'p-icon--md') %}
@@ -699,6 +721,7 @@
                 </div>
             </form>
 
+            <span id="sec-leaderboard" class="settings-anchor" aria-hidden="true"></span>
             <form class="ds-card holo-card settings-card" id="form-leaderboard" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Leaderboard', 'Control your visibility and display name on
                             the public leaderboard.', 'blue', 'p-icon--md') %}
@@ -756,6 +779,7 @@
             </form>
 
             <!-- Social Media Accounts (All Users) -->
+            <span id="sec-social" class="settings-anchor" aria-hidden="true"></span>
             <form class="ds-card holo-card settings-card settings-card--spaced" id="form-social" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Social Profiles', 'These appear on your public investor profile and leaderboard card.', 'blue', 'p-icon--md') %}
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -961,6 +985,7 @@
 
 
             <!-- Developer Identity (developer-only) -->
+            <span id="sec-developer-identity" class="settings-anchor" aria-hidden="true" data-role="developer" hidden></span>
             <form class="ds-card holo-card settings-card settings-card--spaced" id="form-developer-identity" data-role="developer" autocomplete="on" novalidate hidden>
                 {% call macros.holo_card_header('Developer Identity', 'Your company branding and public information visible to investors.', 'blue', 'p-icon--md') %}
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1021,6 +1046,7 @@
             </form>
 
             <!-- Developer Social Links (developer-only) -->
+            <span id="sec-developer-links" class="settings-anchor" aria-hidden="true" data-role="developer" hidden></span>
             <form class="ds-card holo-card settings-card settings-card--spaced-bottom" id="form-developer-links" data-role="developer" autocomplete="on" novalidate hidden>
                 {% call macros.holo_card_header('Developer Links', 'Public links shown on your developer page and asset listings.', 'blue', 'p-icon--md') %}
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1095,12 +1121,13 @@
             </form>
 
             <!-- Data & Privacy (GDPR) -->
+            <span id="sec-privacy" class="settings-anchor" aria-hidden="true"></span>
             <div class="settings-identity-header settings-identity-header--spaced">
                 <h2 class="section-title">Data &amp; Privacy</h2>
                 <p class="section-subtitle">Your rights under GDPR — export, correct, or delete your personal data.</p>
             </div>
 
-            <div class="ds-card holo-card settings-card settings-card--spaced-bottom" id="card-data-privacy">
+            <div class="ds-card holo-card settings-card settings-card--spaced-bottom settings-card--danger" id="card-data-privacy">
                 {% call macros.holo_card_header('Data Rights', 'Download a copy of your data, or permanently delete your account.', 'blue', 'p-icon--md') %}
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z" />
@@ -1148,6 +1175,8 @@
                 </div>
             </div>
 
+                </div> <!-- /.settings-sections -->
+            </div> <!-- /.settings-layout-grid -->
             </section>
         </div>
     </main>
