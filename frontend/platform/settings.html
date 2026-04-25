@@ -36,7 +36,7 @@
         <section id="settings-content" class="settings-cards-section hidden" aria-label="Account settings">
 
             <!-- Profile Completion Banner (full-width above grid) -->
-            <div id="completeness-banner" class="ds-card holo-card profile-completion-banner">
+            <div id="completeness-banner" class="ds-card profile-completion-banner">
                 <div class="completion-header">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
 	<svg viewBox="0 0 24 24">
@@ -78,7 +78,7 @@
 
             <span id="sec-core" class="settings-anchor" aria-hidden="true"></span>
             <!-- Core Profile -->
-            <form class="ds-card holo-card settings-card" id="form-core-profile" autocomplete="on" novalidate>
+            <form class="ds-card settings-card" id="form-core-profile" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Core Profile', 'Manage your personal details and avatar.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
 		<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
@@ -155,7 +155,7 @@
 
             <!-- Residential Address -->
             <span id="sec-address" class="settings-anchor" aria-hidden="true"></span>
-            <form class="ds-card holo-card settings-card" id="form-address" autocomplete="on" novalidate>
+            <form class="ds-card settings-card" id="form-address" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Residential Address', 'Where you currently reside for legal and tax
                             purposes.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
@@ -398,7 +398,7 @@
 
             <!-- Identity Vault -->
             <span id="sec-identity" class="settings-anchor" aria-hidden="true"></span>
-            <form class="ds-card holo-card settings-card" id="form-identity" autocomplete="on" novalidate>
+            <form class="ds-card settings-card" id="form-identity" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Identity Vault', 'Your core verification details and
                             nationality data.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
@@ -428,7 +428,7 @@
                 </div>
             </form>
             <span id="sec-security" class="settings-anchor" aria-hidden="true"></span>
-            <div class="ds-card holo-card settings-card settings-card--sensitive" style="margin-bottom: 32px; width:100%; box-sizing:border-box;">
+            <div class="ds-card settings-card settings-card--sensitive" style="margin-bottom: 32px; width:100%; box-sizing:border-box;">
                 {% call macros.holo_card_header('Security & Access', 'Password, two-factor auth, and Google sign-in access.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
 		<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -457,6 +457,7 @@
                             <span class="settings-row-subtitle">Google Authenticator or compatible TOTP app</span>
                             <span id="settings-2fa-badge" class="settings-badge settings-badge--loading">Loading…</span>
                         </div>
+                        <button id="settings-2fa-action" type="button" class="ds-btn ds-btn--ghost ds-btn--sm settings-btn--outline">Manage</button>
                     </div>
 
                     <hr class="settings-divider settings-divider--edge-28">
@@ -473,7 +474,7 @@
             </div>
 
             <span id="sec-preferences" class="settings-anchor" aria-hidden="true"></span>
-            <form class="ds-card holo-card settings-card" id="form-preferences" autocomplete="on" novalidate>
+            <form class="ds-card settings-card" id="form-preferences" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Preferences', 'Timezone, currency, and notification
                             preferences.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
@@ -631,7 +632,7 @@
             </form>
 
             <span id="sec-leaderboard" class="settings-anchor" aria-hidden="true"></span>
-            <form class="ds-card holo-card settings-card" id="form-leaderboard" autocomplete="on" novalidate>
+            <form class="ds-card settings-card" id="form-leaderboard" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Leaderboard', 'Control your visibility and display name on
                             the public leaderboard.', 'blue', 'p-icon--md') %}
 						<svg viewBox="0 0 24 24">
@@ -687,7 +688,7 @@
 
             <!-- Social Media Accounts (All Users) -->
             <span id="sec-social" class="settings-anchor" aria-hidden="true"></span>
-            <form class="ds-card holo-card settings-card settings-card--spaced" id="form-social" autocomplete="on" novalidate>
+            <form class="ds-card settings-card settings-card--spaced" id="form-social" autocomplete="on" novalidate>
                 {% call macros.holo_card_header('Social Profiles', 'These appear on your public investor profile and leaderboard card.', 'blue', 'p-icon--md') %}
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="18" cy="5" r="3" />
@@ -782,7 +783,7 @@
             </div>
 
             <div class="settings-action-grid">
-                <a href="/feedback?type=review" class="action-grid-card ds-card holo-card" data-action="rate">
+                <a href="/feedback?type=review" class="action-grid-card ds-card" data-action="rate">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -793,7 +794,7 @@
                         <p>Your review matters</p>
                     </div>
                 </a>
-                <a href="/feedback" class="action-grid-card ds-card holo-card" data-action="feedback">
+                <a href="/feedback" class="action-grid-card ds-card" data-action="feedback">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M12 20h9" />
@@ -805,7 +806,7 @@
                         <p>Share thoughts</p>
                     </div>
                 </a>
-                <a href="/referrals" class="action-grid-card ds-card holo-card" data-action="refer">
+                <a href="/referrals" class="action-grid-card ds-card" data-action="refer">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
@@ -819,7 +820,7 @@
                         <p>Invite friends</p>
                     </div>
                 </a>
-                <a href="/glossary" class="action-grid-card ds-card holo-card" data-action="glossary">
+                <a href="/glossary" class="action-grid-card ds-card" data-action="glossary">
                     {% call macros.p_icon('blue', 'p-icon--sm') %}
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
@@ -892,7 +893,7 @@
 
             <!-- Developer Identity (developer-only) -->
             <span id="sec-developer-identity" class="settings-anchor" aria-hidden="true" data-role="developer" hidden></span>
-            <form class="ds-card holo-card settings-card settings-card--spaced" id="form-developer-identity" data-role="developer" autocomplete="on" novalidate hidden>
+            <form class="ds-card settings-card settings-card--spaced" id="form-developer-identity" data-role="developer" autocomplete="on" novalidate hidden>
                 {% call macros.holo_card_header('Developer Identity', 'Your company branding and public information visible to investors.', 'blue', 'p-icon--md') %}
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <polyline points="16 18 22 12 16 6" />
@@ -973,7 +974,7 @@
 
             <!-- Developer Social Links (developer-only) -->
             <span id="sec-developer-links" class="settings-anchor" aria-hidden="true" data-role="developer" hidden></span>
-            <form class="ds-card holo-card settings-card settings-card--spaced-bottom" id="form-developer-links" data-role="developer" autocomplete="on" novalidate hidden>
+            <form class="ds-card settings-card settings-card--spaced-bottom" id="form-developer-links" data-role="developer" autocomplete="on" novalidate hidden>
                 {% call macros.holo_card_header('Developer Links', 'Public links shown on your developer page and asset listings.', 'blue', 'p-icon--md') %}
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
@@ -1048,7 +1049,7 @@
 
             <!-- Data & Privacy (GDPR) -->
             <span id="sec-privacy" class="settings-anchor" aria-hidden="true"></span>
-            <div class="ds-card holo-card settings-card settings-card--spaced-bottom settings-card--danger" id="card-data-privacy">
+            <div class="ds-card settings-card settings-card--spaced-bottom settings-card--danger" id="card-data-privacy">
                 {% call macros.holo_card_header('Data Rights', 'Download a copy of your data, or permanently delete your account.', 'blue', 'p-icon--md') %}
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z" />
@@ -1060,7 +1061,7 @@
                 <div class="settings-privacy-row">
                     <div class="settings-privacy-row__body">
                         <div class="settings-privacy-row__title">Export your data</div>
-                        <div class="settings-privacy-row__hint">Receive a machine-readable archive (JSON) of your profile, transactions, KYC status, and activity. Delivery via email. Usually takes up to 24 hours.</div>
+                        <div class="settings-privacy-row__hint">Download a machine-readable JSON archive of your profile, transactions, KYC status, and account activity.</div>
                     </div>
                     <div class="settings-privacy-row__action">
                         <button type="button" id="btn-request-data-export" class="ds-btn ds-btn--secondary settings-btn--rounded" data-action="request-data-export">
@@ -1069,7 +1070,7 @@
                                 <polyline points="7 10 12 15 17 10" />
                                 <line x1="12" y1="15" x2="12" y2="3" />
                             </svg>
-                            Request export
+                            Download export
                         </button>
                     </div>
                 </div>
@@ -1137,14 +1138,39 @@
             <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
         </header>
         <div class="settings-modal__body">
-            <div class="settings-modal__hint">Enter your new phone number with country code. We'll send an SMS verification code.</div>
+            <div class="settings-modal__hint">Enter your new phone number with country code.</div>
             <label for="modal-phone-new" class="settings-label">New phone number</label>
             <input type="tel" id="modal-phone-new" name="new_phone" class="settings-input settings-input--rounded" required autocomplete="tel" inputmode="tel" placeholder="+1 555 123 4567">
             <div class="settings-modal__error" id="modal-phone-error" role="alert" aria-live="polite" hidden></div>
         </div>
         <footer class="settings-modal__footer">
             <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
-            <button type="submit" class="ds-btn ds-btn--primary settings-btn--primary">Send code</button>
+            <button type="submit" class="ds-btn ds-btn--primary settings-btn--primary">Update phone</button>
+        </footer>
+    </form>
+</div>
+
+<!-- Disable 2FA Modal -->
+<div class="settings-modal settings-modal--danger" id="modal-disable-2fa" role="dialog" aria-modal="true" aria-labelledby="modal-disable-2fa-title" hidden>
+    <div class="settings-modal__backdrop" data-modal-close></div>
+    <form class="settings-modal__panel" id="form-disable-2fa" autocomplete="off" novalidate>
+        <header class="settings-modal__header settings-modal__header--danger">
+            <h3 class="settings-modal__title" id="modal-disable-2fa-title">Disable two-factor authentication?</h3>
+            <button type="button" class="settings-modal__close" aria-label="Close" data-modal-close>×</button>
+        </header>
+        <div class="settings-modal__body">
+            <div class="settings-modal__warning">
+                This reduces account protection. Enter your password and a current authenticator code to continue.
+            </div>
+            <label for="modal-disable-2fa-password" class="settings-label">Current password</label>
+            <input type="password" id="modal-disable-2fa-password" name="current_password" class="settings-input settings-input--rounded" required autocomplete="current-password">
+            <label for="modal-disable-2fa-code" class="settings-label">Authenticator code</label>
+            <input type="text" id="modal-disable-2fa-code" name="code" class="settings-input settings-input--rounded" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6">
+            <div class="settings-modal__error" id="modal-disable-2fa-error" role="alert" aria-live="polite" hidden></div>
+        </div>
+        <footer class="settings-modal__footer">
+            <button type="button" class="ds-btn ds-btn--ghost" data-modal-close>Cancel</button>
+            <button type="submit" class="ds-btn ds-btn--danger settings-btn--danger">Disable 2FA</button>
         </footer>
     </form>
 </div>

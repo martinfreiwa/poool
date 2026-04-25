@@ -7,14 +7,15 @@
 
 /* ─── Layout: Make everything fluid ─────────────────────────── */
 .portfolio-main {
-    width: calc(100% - 256px);
+    width: calc(100% - var(--sidebar-width, 256px));
     min-height: 100vh;
-    margin-left: 256px;
+    margin-left: var(--sidebar-width, 256px);
     padding: 0;
-    background: #fafafa;
+    background: var(--content-bg);
     position: relative;
     display: flex;
     flex-direction: column;
+    gap: 0;
     z-index: 0;
 }
 
@@ -24,9 +25,22 @@
     gap: 24px;
     padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
     width: 100%;
-    max-width: 1096px !important;
+    max-width: var(--page-max-width, 1200px) !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .portfolio-main {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .portfolio-container {
+        padding: 80px 16px 16px;
+        max-width: none !important;
+    }
 }
 
 .portfolio-header {
@@ -538,14 +552,14 @@
 }
 
 #investment-limit-container .progress-bar-track {
-    background: #e5e7eb !important;
-    border-radius: 24px !important;
+    background: var(--progress-track-bg, #D5D7DA) !important;
+    border-radius: var(--progress-border-radius, 30px) !important;
     height: 10px !important;
 }
 
 #investment-limit-container .progress-bar-fill {
-    background: linear-gradient(90deg, #34d399, #6ee7b7, #a7f3d0) !important;
-    border-radius: 24px !important;
+    background: var(--progress-fill-bg, #98FB96) !important;
+    border-radius: var(--progress-border-radius, 30px) !important;
     height: 10px !important;
     transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1110,3 +1124,193 @@
 .p-front::after{content:'';position:absolute;inset:0;border-radius:inherit;opacity:.015;mix-blend-mode:soft-light;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:6;}
 .p-front::before{content:'';position:absolute;top:-20%;left:-20%;width:90%;height:90%;border-radius:50%;background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.22) 0%,rgba(255,255,255,.08) 40%,transparent 70%);z-index:5;pointer-events:none;}
 .p-front svg{width:15px;height:15px;stroke-width:1.75;fill:none;stroke-linecap:round;stroke-linejoin:round;position:relative;z-index:7;}
+
+/* ─── Design System Alignment: Portfolio Dashboard Surfaces ─── */
+#portfolio-body {
+    --portfolio-card-bg: var(--card-bg, #FFFFFF);
+    --portfolio-card-border: var(--card-border-color, #E5E7EB);
+    --portfolio-card-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+    --portfolio-card-shadow-hover: 0 4px 12px rgba(10, 13, 18, 0.06);
+    --portfolio-card-radius: var(--card-border-radius, 12px);
+    --portfolio-card-accent: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+    --portfolio-neutral: #414651;
+    --portfolio-neutral-strong: #181D27;
+}
+
+#portfolio-body .portfolio-value-card,
+#portfolio-body .quick-insights-card,
+#portfolio-body .key-financials-card,
+#portfolio-body .investment-limit-container,
+#portfolio-body .portfolio-assets-table,
+#portfolio-body .portfolio-state-panel:not(.portfolio-empty),
+#portfolio-body .mobile-portfolio-value-card,
+#portfolio-body .mobile-financial-card,
+#portfolio-body .mobile-insight-card,
+#portfolio-body .mobile-investment-limit-card {
+    background: var(--portfolio-card-bg) !important;
+    border: 1px solid var(--portfolio-card-border) !important;
+    border-radius: var(--portfolio-card-radius) !important;
+    box-shadow: var(--portfolio-card-shadow) !important;
+    overflow: hidden;
+}
+
+#portfolio-body .portfolio-value-card,
+#portfolio-body .quick-insights-card,
+#portfolio-body .key-financials-card,
+#portfolio-body .investment-limit-container,
+#portfolio-body .mobile-portfolio-value-card,
+#portfolio-body .mobile-financial-card,
+#portfolio-body .mobile-insight-card,
+#portfolio-body .mobile-investment-limit-card {
+    position: relative;
+}
+
+#portfolio-body .portfolio-value-card::before,
+#portfolio-body .quick-insights-card::before,
+#portfolio-body .key-financials-card::before,
+#portfolio-body .investment-limit-container::before,
+#portfolio-body .mobile-portfolio-value-card::before,
+#portfolio-body .mobile-financial-card::before,
+#portfolio-body .mobile-insight-card::before,
+#portfolio-body .mobile-investment-limit-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    width: auto;
+    height: 3px;
+    border-radius: 0;
+    background: var(--portfolio-card-accent);
+    opacity: 1;
+    z-index: 1;
+}
+
+#portfolio-body .portfolio-value-card:hover,
+#portfolio-body .quick-insights-card:hover,
+#portfolio-body .key-financials-card:hover,
+#portfolio-body .investment-limit-container:hover,
+#portfolio-body .portfolio-assets-table:hover,
+#portfolio-body .mobile-portfolio-value-card:hover,
+#portfolio-body .mobile-financial-card:hover,
+#portfolio-body .mobile-insight-card:hover,
+#portfolio-body .mobile-investment-limit-card:hover {
+    border-color: #D5D7DA !important;
+    box-shadow: var(--portfolio-card-shadow-hover) !important;
+    transform: none !important;
+}
+
+#portfolio-body .quick-insights-card:hover::before,
+#portfolio-body .key-financials-card:hover::before {
+    opacity: 1;
+}
+
+#portfolio-body .portfolio-show-more-btn,
+#portfolio-body .portfolio-chart-filter,
+#portfolio-body .portfolio-empty__cta-secondary,
+#portfolio-body .mobile-portfolio-action-button {
+    min-height: 40px;
+    background: #FFFFFF !important;
+    border: 1px solid #D5D7DA !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    color: var(--portfolio-neutral) !important;
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif) !important;
+    font-weight: 600 !important;
+}
+
+#portfolio-body .portfolio-show-more-btn:hover,
+#portfolio-body .portfolio-show-more-btn:active,
+#portfolio-body .portfolio-chart-filter:hover,
+#portfolio-body .portfolio-chart-filter:active,
+#portfolio-body .portfolio-empty__cta-secondary:hover,
+#portfolio-body .portfolio-empty__cta-secondary:active,
+#portfolio-body .mobile-portfolio-action-button:hover,
+#portfolio-body .mobile-portfolio-action-button:active {
+    background: #FFFFFF !important;
+    border-color: #D5D7DA !important;
+    color: var(--portfolio-neutral) !important;
+    transform: none !important;
+}
+
+#portfolio-body .portfolio-show-more-btn span,
+#portfolio-body .portfolio-chart-filter span,
+#portfolio-body .mobile-portfolio-action-button span {
+    color: var(--portfolio-neutral) !important;
+}
+
+#portfolio-body .mobile-portfolio-action-button svg path {
+    stroke: var(--portfolio-neutral) !important;
+}
+
+#portfolio-body .portfolio-chart-tabs {
+    background: #FFFFFF !important;
+    border: 1px solid #D5D7DA !important;
+    border-radius: 8px !important;
+    padding: 2px !important;
+}
+
+#portfolio-body .chart-tab {
+    color: var(--portfolio-neutral) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+#portfolio-body .chart-tab:hover:not(.active) {
+    background: #FFFFFF !important;
+    color: var(--portfolio-neutral) !important;
+}
+
+#portfolio-body .chart-tab.active {
+    background: #FFFFFF !important;
+    color: var(--portfolio-neutral-strong) !important;
+    border: 0 !important;
+    box-shadow: inset 0 -2px 0 var(--primary-color, #0000FF) !important;
+}
+
+#portfolio-body .quick-insights-card .p-bg,
+#portfolio-body .key-financials-card .p-bg,
+#portfolio-body .mobile-financial-icon-bg {
+    display: none !important;
+}
+
+#portfolio-body .quick-insights-card .p-icon::before,
+#portfolio-body .key-financials-card .p-icon::before {
+    display: none !important;
+}
+
+#portfolio-body .quick-insights-card .p-front,
+#portfolio-body .key-financials-card .p-front,
+#portfolio-body .mobile-financial-icon-glass {
+    background: #F9FAFB !important;
+    border: 1px solid var(--portfolio-card-border) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-radius: 10px !important;
+}
+
+#portfolio-body .quick-insights-card .p-front::before,
+#portfolio-body .quick-insights-card .p-front::after,
+#portfolio-body .key-financials-card .p-front::before,
+#portfolio-body .key-financials-card .p-front::after {
+    display: none !important;
+}
+
+#portfolio-body .quick-insights-card .p-front svg,
+#portfolio-body .key-financials-card .p-front svg {
+    filter: none !important;
+}
+
+#portfolio-body .quick-insights-card .insights-title,
+#portfolio-body .key-financials-card .insights-title,
+#portfolio-body .financials-title {
+    color: #717680 !important;
+    letter-spacing: 0 !important;
+}
+
+#portfolio-body .quick-insights-card .financials-amount,
+#portfolio-body .quick-insights-card .financials-currency,
+#portfolio-body .key-financials-card .financials-amount,
+#portfolio-body .key-financials-card .financials-currency,
+#portfolio-body .insights-value {
+    color: var(--portfolio-neutral-strong) !important;
+}

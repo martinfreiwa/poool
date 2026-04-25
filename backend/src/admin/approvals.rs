@@ -1,12 +1,95 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
-use crate::{auth, payments};
+use crate::{common::sanitize, payments};
 use axum::{
     extract::{Json, State},
     response::IntoResponse,
 };
-use axum_extra::extract::CookieJar;
 use sqlx::Row;
+
+#[derive(Clone, Copy)]
+struct ApprovalActionSpec {
+    entity_type: &'static str,
+    entity_id_required: bool,
+    permission: &'static str,
+}
+
+fn action_spec(action_type: &str) -> Option<ApprovalActionSpec> {
+    match action_type {
+        "deposit.confirm" | "deposit.cancel" => Some(ApprovalActionSpec {
+            entity_type: "deposit_requests",
+            entity_id_required: true,
+            permission: "deposits.write",
+        }),
+        "balance.adjust" => Some(ApprovalActionSpec {
+            entity_type: "user",
+            entity_id_required: true,
+            permission: "treasury.write",
+        }),
+        "user.suspend" | "user.delete" => Some(ApprovalActionSpec {
+            entity_type: "user",
+            entity_id_required: true,
+            permission: "admins.manage",
+        }),
+        "kyc.override" | "kyc.reject" => Some(ApprovalActionSpec {
+            entity_type: "kyc_records",
+            entity_id_required: true,
+            permission: "kyc.override",
+        }),
+        "settings.update" => Some(ApprovalActionSpec {
+            entity_type: "settings",
+            entity_id_required: false,
+            permission: "roles.edit",
+        }),
+        "submission.approve" | "submission.reject" => Some(ApprovalActionSpec {
+            entity_type: "assets",
+            entity_id_required: true,
+            permission: "assets.publish",
+        }),
+        "dividend.process" => Some(ApprovalActionSpec {
+            entity_type: "assets",
+            entity_id_required: true,
+            permission: "financials.payout.approve",
+        }),
+        // treasury.payout has no durable executor/table contract yet; do not
+        // allow new requests until the real payout flow is wired.
+        "treasury.payout" => None,
+        _ => None,
+    }
+}
+
+fn parse_action_contract(
+    action_type: &str,
+    entity_type: &str,
+    entity_id: Option<&str>,
+) -> Result<(ApprovalActionSpec, Option<uuid::Uuid>), ApiError> {
+    let spec = action_spec(action_type).ok_or_else(|| {
+        ApiError::BadRequest(format!(
+            "Invalid or unsupported action_type: {}",
+            action_type
+        ))
+    })?;
+
+    if entity_type != spec.entity_type {
+        return Err(ApiError::BadRequest(format!(
+            "Invalid entity_type for {}: expected {}",
+            action_type, spec.entity_type
+        )));
+    }
+
+    let entity_uuid = match entity_id {
+        Some(id) if !id.trim().is_empty() => Some(ApiError::parse_uuid(id.trim())?),
+        _ if spec.entity_id_required => {
+            return Err(ApiError::BadRequest(format!(
+                "entity_id is required for {}",
+                action_type
+            )));
+        }
+        _ => None,
+    };
+
+    Ok((spec, entity_uuid))
+}
 
 // ═══════════════════════════════════════════════════════════════════
 //  Four-Eyes (Maker-Checker) Approval Workflow
@@ -14,9 +97,13 @@ use sqlx::Row;
 
 /// GET /api/admin/approvals — List all approval requests (optionally filtered by status).
 pub async fn api_admin_approvals_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "approvals.manage")
+        .await?;
+
     let rows = sqlx::query(
         r#"SELECT ar.id::text, ar.action_type, ar.entity_type, ar.entity_id::text,
                   ar.payload, ar.status, ar.rejection_reason,
@@ -35,7 +122,7 @@ pub async fn api_admin_approvals_list(
     )
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::from)?;
 
     let approvals: Vec<serde_json::Value> = rows
         .iter()
@@ -67,11 +154,14 @@ pub async fn api_admin_approvals_list(
 
 /// POST /api/admin/approvals — Create a new approval request (Maker step).
 pub async fn api_admin_approvals_create(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
-    let user = _admin.user.clone();
+    admin
+        .require_permission(&state.db, "approvals.manage")
+        .await?;
+    let user = admin.user.clone();
     let action_type = payload
         .get("action_type")
         .and_then(|v| v.as_str())
@@ -92,31 +182,11 @@ pub async fn api_admin_approvals_create(
         ));
     }
 
-    // Validate action_type is a known four-eyes action
-    let valid_actions = [
-        "deposit.confirm",
-        "deposit.cancel",
-        "balance.adjust",
-        "user.suspend",
-        "user.delete",
-        "kyc.override",
-        "kyc.reject",
-        "treasury.payout",
-        "settings.update",
-        "submission.approve",
-        "submission.reject",
-        "dividend.process",
-    ];
-    if !valid_actions.contains(&action_type) {
-        return Err(ApiError::BadRequest(format!(
-            "Invalid action_type: {}. Must be one of: {:?}",
-            action_type, valid_actions
-        )));
-    }
+    let (spec, entity_uuid) = parse_action_contract(action_type, entity_type, entity_id)?;
+    admin.require_permission(&state.db, spec.permission).await?;
 
-    let entity_uuid: Option<uuid::Uuid> = entity_id.and_then(|s| s.parse().ok());
-
-    let result = sqlx::query_scalar::<_, uuid::Uuid>(
+    let mut tx = state.db.begin().await.map_err(ApiError::from)?;
+    let id = sqlx::query_scalar::<_, uuid::Uuid>(
         "INSERT INTO admin_approval_requests (requester_id, action_type, entity_type, entity_id, payload) VALUES ($1, $2, $3, $4, $5) RETURNING id"
     )
         .bind(user.id)
@@ -124,69 +194,57 @@ pub async fn api_admin_approvals_create(
         .bind(entity_type)
         .bind(entity_uuid)
         .bind(&action_payload)
-        .fetch_one(&state.db)
-        .await;
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
 
-    match result {
-        Ok(id) => {
-            // Audit log the request creation
-            let _ = sqlx::query(
-                "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
-            )
-                .bind(user.id)
-                .bind("approval_request.created")
-                .bind("admin_approval_requests")
-                .bind(id)
-                .bind(serde_json::json!({"action_type": action_type, "entity_type": entity_type, "entity_id": entity_id}))
-                .execute(&state.db)
-                .await;
+    sqlx::query(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
+    )
+        .bind(user.id)
+        .bind("approval_request.created")
+        .bind("admin_approval_requests")
+        .bind(id)
+        .bind(serde_json::json!({"action_type": action_type, "entity_type": entity_type, "entity_id": entity_uuid.map(|id| id.to_string())}))
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
 
-            Ok(Json(serde_json::json!({
-                "status": "pending",
-                "approval_id": id.to_string(),
-                "message": "Approval request created. Awaiting review from another administrator."
-            }))
-            .into_response())
-        }
-        Err(e) => {
-            tracing::error!("Failed to create approval request: {e}");
-            Err(ApiError::Internal(
-                "Failed to create approval request".to_string(),
-            ))
-        }
-    }
+    tx.commit().await.map_err(ApiError::from)?;
+
+    Ok(Json(serde_json::json!({
+        "status": "pending",
+        "approval_id": id.to_string(),
+        "message": "Approval request created. Awaiting review from another administrator."
+    }))
+    .into_response())
 }
 
 /// POST /api/admin/approvals/:id/approve — Approve a pending request (Checker step).
 /// The approver MUST be a different admin than the requester.
 pub async fn api_admin_approvals_approve(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(approval_id): axum::extract::Path<String>,
     Json(_body): Json<serde_json::Value>,
 ) -> Result<axum::response::Response, ApiError> {
-    let user = _admin.user.clone();
+    admin
+        .require_permission(&state.db, "approvals.manage")
+        .await?;
+    let user = admin.user.clone();
 
     let uid = ApiError::parse_uuid(&approval_id)?;
+    let mut tx = state.db.begin().await.map_err(ApiError::from)?;
 
     // Fetch the approval request
-    let request = sqlx::query(
-        "SELECT id, requester_id, action_type, entity_type, entity_id, payload, status, expires_at FROM admin_approval_requests WHERE id = $1"
+    let row = sqlx::query(
+        "SELECT id, requester_id, action_type, entity_type, entity_id, payload, status, expires_at FROM admin_approval_requests WHERE id = $1 FOR UPDATE"
     )
         .bind(uid)
-        .fetch_optional(&state.db)
-        .await;
-
-    let row = match request {
-        Ok(Some(r)) => r,
-        Ok(None) => {
-            return Err(ApiError::NotFound("Approval request not found".to_string()));
-        }
-        Err(e) => {
-            tracing::error!("Failed to fetch approval: {e}");
-            return Err(ApiError::Internal("Server error".to_string()));
-        }
-    };
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(ApiError::from)?
+        .ok_or_else(|| ApiError::NotFound("Approval request not found".to_string()))?;
 
     let status: String = row.get::<Option<String>, _>("status").unwrap_or_default();
     if status != "pending" {
@@ -210,24 +268,51 @@ pub async fn api_admin_approvals_approve(
     let payload: serde_json::Value = row
         .get::<Option<serde_json::Value>, _>("payload")
         .unwrap_or(serde_json::json!({}));
+    let spec = action_spec(&action_type).ok_or_else(|| {
+        ApiError::BadRequest(format!(
+            "Invalid or unsupported action_type: {}",
+            action_type
+        ))
+    })?;
+    if entity_type != spec.entity_type {
+        return Err(ApiError::BadRequest(format!(
+            "Invalid entity_type for {}: expected {}",
+            action_type, spec.entity_type
+        )));
+    }
+    admin.require_permission(&state.db, spec.permission).await?;
 
     // Execute the action
-    let execution_result =
-        execute_approved_action(&state, &action_type, &entity_type, entity_id, &payload).await;
+    let execution_result = execute_approved_action(
+        &state,
+        user.id,
+        &action_type,
+        &entity_type,
+        entity_id,
+        &payload,
+    )
+    .await;
 
     match execution_result {
         Ok(result_json) => {
             // Mark as approved
-            let _ = sqlx::query(
+            let updated = sqlx::query(
                 "UPDATE admin_approval_requests SET status = 'approved', approver_id = $1, updated_at = NOW() WHERE id = $2"
             )
                 .bind(user.id)
                 .bind(uid)
-                .execute(&state.db)
-                .await;
+                .execute(&mut *tx)
+                .await
+                .map_err(ApiError::from)?;
+
+            if updated.rows_affected() != 1 {
+                return Err(ApiError::Conflict(
+                    "Approval request could not be marked approved".to_string(),
+                ));
+            }
 
             // Audit log
-            let _ = sqlx::query(
+            sqlx::query(
                 "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
             )
                 .bind(user.id)
@@ -235,8 +320,11 @@ pub async fn api_admin_approvals_approve(
                 .bind("admin_approval_requests")
                 .bind(uid)
                 .bind(serde_json::json!({"action_type": action_type, "requester_id": requester_id.to_string(), "result": result_json}))
-                .execute(&state.db)
-                .await;
+                .execute(&mut *tx)
+                .await
+                .map_err(ApiError::from)?;
+
+            tx.commit().await.map_err(ApiError::from)?;
 
             Ok(Json(serde_json::json!({
                 "status": "approved",
@@ -254,116 +342,111 @@ pub async fn api_admin_approvals_approve(
 
 /// POST /api/admin/approvals/:id/reject — Reject a pending request.
 pub async fn api_admin_approvals_reject(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(approval_id): axum::extract::Path<String>,
     Json(body): Json<serde_json::Value>,
-) -> axum::response::Response {
-    let user = match auth::middleware::get_current_user(&jar, &state.db).await {
-        Some(u) => u,
-        None => {
-            return (
-                axum::http::StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({"error":"Unauthorized"})),
-            )
-                .into_response()
-        }
-    };
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error":"Admin access required"})),
-        )
-            .into_response();
-    }
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "approvals.manage")
+        .await?;
+    let user = admin.user.clone();
 
-    let uid: uuid::Uuid = match approval_id.parse() {
-        Ok(u) => u,
-        Err(_) => {
-            return (
-                axum::http::StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({"error":"Invalid ID"})),
-            )
-                .into_response()
-        }
-    };
+    let uid = ApiError::parse_uuid(&approval_id)?;
 
     let reason = body
         .get("reason")
         .and_then(|v| v.as_str())
-        .unwrap_or("No reason provided");
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| ApiError::BadRequest("Rejection reason is required".to_string()))?;
 
     // Fetch to check owner
-    let req = sqlx::query("SELECT requester_id, status FROM admin_approval_requests WHERE id = $1")
+    let mut tx = state.db.begin().await.map_err(ApiError::from)?;
+    let row = sqlx::query(
+        "SELECT requester_id, action_type, entity_type, status FROM admin_approval_requests WHERE id = $1 FOR UPDATE",
+    )
         .bind(uid)
-        .fetch_optional(&state.db)
-        .await;
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(ApiError::from)?
+        .ok_or_else(|| ApiError::NotFound("Approval request not found".to_string()))?;
 
-    match req {
-        Ok(Some(row)) => {
-            let status: String = row.get::<Option<String>, _>("status").unwrap_or_default();
-            if status != "pending" {
-                return (
-                    axum::http::StatusCode::CONFLICT,
-                    Json(serde_json::json!({"error": format!("Request is already {}", status)})),
-                )
-                    .into_response();
-            }
-
-            // Four-eyes: requester cannot also reject their own request
-            let requester_id: uuid::Uuid = row.get("requester_id");
-            if requester_id == user.id {
-                return (
-                    axum::http::StatusCode::FORBIDDEN,
-                    Json(serde_json::json!({"error": "You cannot reject your own request (four-eyes rule)"})),
-                )
-                    .into_response();
-            }
-
-            let _ = sqlx::query(
-                "UPDATE admin_approval_requests SET status = 'rejected', approver_id = $1, rejection_reason = $2, updated_at = NOW() WHERE id = $3"
-            )
-                .bind(user.id)
-                .bind(reason)
-                .bind(uid)
-                .execute(&state.db)
-                .await;
-
-            // Audit log
-            let _ = sqlx::query(
-                "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
-            )
-                .bind(user.id)
-                .bind("approval_request.rejected")
-                .bind("admin_approval_requests")
-                .bind(uid)
-                .bind(serde_json::json!({"reason": reason}))
-                .execute(&state.db)
-                .await;
-
-            Json(serde_json::json!({"status": "rejected", "message": "Request rejected."}))
-                .into_response()
-        }
-        Ok(None) => (
-            axum::http::StatusCode::NOT_FOUND,
-            Json(serde_json::json!({"error":"Not found"})),
-        )
-            .into_response(),
-        Err(e) => {
-            tracing::error!("Reject approval error: {e}");
-            (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({"error":"Server error"})),
-            )
-                .into_response()
-        }
+    let status: String = row.get::<Option<String>, _>("status").unwrap_or_default();
+    if status != "pending" {
+        return Err(ApiError::Conflict(format!("Request is already {}", status)));
     }
+
+    // Four-eyes: requester cannot also reject their own request
+    let requester_id: uuid::Uuid = row.get("requester_id");
+    if requester_id == user.id {
+        return Err(ApiError::Forbidden(
+            "You cannot reject your own request (four-eyes rule)".to_string(),
+        ));
+    }
+
+    let action_type: String = row
+        .get::<Option<String>, _>("action_type")
+        .unwrap_or_default();
+    let entity_type: String = row
+        .get::<Option<String>, _>("entity_type")
+        .unwrap_or_default();
+    let spec = action_spec(&action_type).ok_or_else(|| {
+        ApiError::BadRequest(format!(
+            "Invalid or unsupported action_type: {}",
+            action_type
+        ))
+    })?;
+    if entity_type != spec.entity_type {
+        return Err(ApiError::BadRequest(format!(
+            "Invalid entity_type for {}: expected {}",
+            action_type, spec.entity_type
+        )));
+    }
+    admin.require_permission(&state.db, spec.permission).await?;
+
+    let updated = sqlx::query(
+        "UPDATE admin_approval_requests SET status = 'rejected', approver_id = $1, rejection_reason = $2, updated_at = NOW() WHERE id = $3"
+    )
+        .bind(user.id)
+        .bind(reason)
+        .bind(uid)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
+
+    if updated.rows_affected() != 1 {
+        return Err(ApiError::Conflict(
+            "Approval request could not be marked rejected".to_string(),
+        ));
+    }
+
+    // Audit log
+    sqlx::query(
+        "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)"
+    )
+        .bind(user.id)
+        .bind("approval_request.rejected")
+        .bind("admin_approval_requests")
+        .bind(uid)
+        .bind(serde_json::json!({"reason": reason}))
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::from)?;
+
+    tx.commit().await.map_err(ApiError::from)?;
+
+    Ok(
+        Json(serde_json::json!({"status": "rejected", "message": "Request rejected."}))
+            .into_response(),
+    )
 }
 
 /// Execute the actual business action when a Four-Eyes request is approved.
 /// This is the "action executor" that performs the operation atomically.
 async fn execute_approved_action(
     state: &AppState,
+    approver_id: uuid::Uuid,
     action_type: &str,
     _entity_type: &str,
     entity_id: Option<uuid::Uuid>,
@@ -524,41 +607,52 @@ async fn execute_approved_action(
             .map_err(|e| format!("DB error: {e}"))
         }
         "treasury.payout" => {
-            // Simplified treasury payout execution
-            let amount = payload
-                .get("amount_cents")
-                .and_then(|v| v.as_i64())
-                .ok_or("amount_cents required")?;
-            let mut tx = state
-                .db
-                .begin()
-                .await
-                .map_err(|e| format!("TX error: {e}"))?;
-            sqlx::query("INSERT INTO treasury_transactions (type, amount_cents, status, created_at) VALUES ('payout', $1, 'completed', NOW())")
-                .bind(amount).execute(&mut *tx).await.ok(); // ignore if table doesn't exist
-            tx.commit()
-                .await
-                .map_err(|e| format!("Commit error: {e}"))?;
-            Ok(serde_json::json!({"payout_processed": true, "amount_cents": amount}))
+            Err("treasury.payout is not enabled until a durable treasury payout executor is implemented".to_string())
         }
         "settings.update" => {
+            let settings_obj = payload
+                .as_object()
+                .ok_or("settings.update payload must be a JSON object of setting keys")?;
             let mut tx = state
                 .db
                 .begin()
                 .await
                 .map_err(|e| format!("TX error: {e}"))?;
-            sqlx::query(
-                "UPDATE platform_settings SET settings = $1, updated_at = NOW() WHERE id = 1",
-            )
-            .bind(payload)
-            .execute(&mut *tx)
-            .await
-            .map_err(|e| format!("Settings update failed: {e}"))?;
+
+            for (key, val) in settings_obj {
+                if key.trim().is_empty() || key.len() > 100 {
+                    return Err("settings.update keys must be 1-100 characters".to_string());
+                }
+
+                let (str_val, val_type) = match val {
+                    serde_json::Value::Bool(b) => (b.to_string(), "boolean"),
+                    serde_json::Value::Number(n) => (n.to_string(), "number"),
+                    serde_json::Value::String(s) => (sanitize::sanitize_text(s), "string"),
+                    _ => (val.to_string(), "json"),
+                };
+
+                sqlx::query(
+                    r#"INSERT INTO platform_settings (key, value, value_type, updated_at, updated_by)
+                       VALUES ($1, $2, $3, NOW(), $4)
+                       ON CONFLICT (key)
+                       DO UPDATE SET value = EXCLUDED.value,
+                                     value_type = EXCLUDED.value_type,
+                                     updated_at = NOW(),
+                                     updated_by = EXCLUDED.updated_by"#,
+                )
+                .bind(key)
+                .bind(&str_val)
+                .bind(val_type)
+                .bind(approver_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| format!("Settings update failed: {e}"))?;
+            }
 
             tx.commit()
                 .await
                 .map_err(|e| format!("Commit error: {e}"))?;
-            Ok(serde_json::json!({"settings_updated": true}))
+            Ok(serde_json::json!({"settings_updated": true, "count": settings_obj.len()}))
         }
         "dividend.process" => {
             let aid = entity_id.ok_or("entity_id (asset_id) required for dividend.process")?;

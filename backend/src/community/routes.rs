@@ -1,5 +1,6 @@
 use axum::{
     extract::{Path, Query, State},
+    http::HeaderMap,
     response::{IntoResponse, Json},
     routing::{delete, get, post, put},
     Router,
@@ -29,6 +30,75 @@ pub struct CreateAnnouncementReq {
     pub category: String,
     pub image_urls: Option<Vec<String>>,
     pub is_pinned: Option<bool>,
+}
+
+const ANNOUNCEMENT_CATEGORIES: &[&str] = &[
+    "new_commodity",
+    "dividend",
+    "platform_update",
+    "market_news",
+    "farm_update",
+];
+
+const ADMIN_CIRCLE_DEFAULT_LIMIT: i64 = 50;
+const ADMIN_CIRCLE_MAX_LIMIT: i64 = 100;
+const ADMIN_COMMENTS_DEFAULT_LIMIT: i64 = 200;
+const ADMIN_COMMENTS_MAX_LIMIT: i64 = 200;
+
+fn validate_announcement_category(category: &str) -> Result<(), AppError> {
+    if ANNOUNCEMENT_CATEGORIES.contains(&category) {
+        Ok(())
+    } else {
+        Err(AppError::BadRequest(
+            "Invalid announcement category.".to_string(),
+        ))
+    }
+}
+
+fn require_csrf_header(headers: &HeaderMap, jar: &CookieJar) -> Result<(), AppError> {
+    let cookie_token = jar
+        .get("csrf_token")
+        .map(|cookie| cookie.value().to_string())
+        .unwrap_or_default();
+    let header_token = headers
+        .get("X-CSRF-Token")
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+
+    if !cookie_token.is_empty() && header_token == cookie_token {
+        Ok(())
+    } else {
+        Err(AppError::Forbidden("CSRF token validation failed".into()))
+    }
+}
+
+async fn require_community_manage(
+    state: &AppState,
+    admin: &crate::admin::extractors::AdminUser,
+) -> Result<(), AppError> {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage").await {
+        Ok(())
+    } else {
+        Err(AppError::Forbidden(
+            "Missing permission: community.manage".to_string(),
+        ))
+    }
+}
+
+async fn require_community_view_or_manage(
+    state: &AppState,
+    admin: &crate::admin::extractors::AdminUser,
+) -> Result<(), AppError> {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.view").await
+        || crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage")
+            .await
+    {
+        Ok(())
+    } else {
+        Err(AppError::Forbidden(
+            "Missing permission: community.view".to_string(),
+        ))
+    }
 }
 
 #[derive(Deserialize)]
@@ -266,6 +336,7 @@ pub fn map_to_post_display(
         disclaimer_shown: p.disclaimer_shown,
         verified_owner: false,
         created_at: p.created_at,
+        created_at_display: p.created_at.format("%b %e, %H:%M").to_string(),
     }
 }
 
@@ -394,18 +465,37 @@ async fn get_post_detail(
 
 async fn create_announcement(
     admin: crate::admin::extractors::AdminUser,
+    jar: CookieJar,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Json(payload): Json<CreateAnnouncementReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = admin.user;
+    let user_id = admin.user.id;
+
+    require_csrf_header(&headers, &jar)?;
+
+    if !crate::auth::middleware::has_permission(&state.db, user_id, "community.manage").await {
+        return Err(AppError::Forbidden(
+            "Missing permission: community.manage".to_string(),
+        ));
+    }
+
+    validate_announcement_category(&payload.category)?;
 
     let c_pool = get_community_pool(&state)?;
 
     let clean_html = validation::sanitize_html_basic(&payload.content);
+    if clean_html.trim().is_empty() || clean_html == "<p><br></p>" {
+        return Err(AppError::BadRequest(
+            "Announcement content is required.".to_string(),
+        ));
+    }
+    let clean_html_len = clean_html.chars().count();
+    let category = payload.category.clone();
 
     let post_id = service::create_announcement(
         &c_pool,
-        user.id,
+        user_id,
         payload.content,
         clean_html,
         payload.category,
@@ -414,7 +504,46 @@ async fn create_announcement(
     )
     .await?;
 
+    crate::community::audit::log(
+        &c_pool,
+        user_id,
+        "announcement.create",
+        "announcement",
+        Some(post_id),
+        None,
+        Some(serde_json::json!({
+            "category": category,
+            "is_pinned": payload.is_pinned.unwrap_or(false),
+            "content_length": clean_html_len
+        })),
+    )
+    .await;
+
     Ok(Json(serde_json::json!({ "id": post_id })))
+}
+
+async fn admin_list_announcements(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Query(query): Query<FeedQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    if !crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage").await
+    {
+        return Err(AppError::Forbidden(
+            "Missing permission: community.manage".to_string(),
+        ));
+    }
+
+    if let Some(category) = query.category.as_deref() {
+        if !category.is_empty() {
+            validate_announcement_category(category)?;
+        }
+    }
+
+    let c_pool = get_community_pool(&state)?;
+    let announcements = service::get_announcements(&c_pool, query.category, 50).await?;
+
+    Ok(Json(announcements))
 }
 
 async fn toggle_reaction(
@@ -937,16 +1066,22 @@ pub struct CreateChallengeReq {
     pub description: String,
     pub xp_reward: i32,
     pub badge_reward: Option<String>,
-    pub requirement_type: String, // e.g., "buy_asset", "invite_friend"
+    pub requirement_type: String, // e.g., "buy_asset", "write_review", "login_streak"
     pub requirement_value: i32,
-    pub frequency: String, // "once", "daily", "weekly"
+    pub frequency: String, // "one_time", "daily", "weekly"
 }
 
 async fn admin_list_challenges(
     admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _ = admin;
+    if !crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage").await
+    {
+        return Err(AppError::Forbidden(
+            "Missing permission: community.manage".to_string(),
+        ));
+    }
+
     let c_pool = get_community_pool(&state)?;
 
     let challenges: Vec<crate::community::challenges::Challenge> =
@@ -963,7 +1098,13 @@ async fn admin_create_challenge(
     State(state): State<AppState>,
     Json(payload): Json<CreateChallengeReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _ = admin;
+    if !crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage").await
+    {
+        return Err(AppError::Forbidden(
+            "Missing permission: community.manage".to_string(),
+        ));
+    }
+
     let c_pool = get_community_pool(&state)?;
 
     let challenge = crate::community::challenges::admin_create_challenge(
@@ -977,6 +1118,25 @@ async fn admin_create_challenge(
         &payload.frequency,
     )
     .await?;
+
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "challenge.create",
+        "challenge",
+        Some(challenge.id),
+        None,
+        Some(serde_json::json!({
+            "title": &challenge.title,
+            "requirement_type": &challenge.requirement_type,
+            "requirement_value": challenge.requirement_value,
+            "frequency": &challenge.frequency,
+            "xp_reward": challenge.xp_reward,
+            "badge_reward": &challenge.badge_reward,
+            "is_active": challenge.is_active
+        })),
+    )
+    .await;
 
     Ok(Json(challenge))
 }
@@ -992,12 +1152,36 @@ async fn admin_toggle_challenge(
     State(state): State<AppState>,
     Json(payload): Json<ToggleChallengeReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _ = admin;
+    if !crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage").await
+    {
+        return Err(AppError::Forbidden(
+            "Missing permission: community.manage".to_string(),
+        ));
+    }
+
     let c_pool = get_community_pool(&state)?;
 
-    crate::community::challenges::admin_toggle_challenge(&c_pool, id, payload.is_active).await?;
+    let challenge =
+        crate::community::challenges::admin_toggle_challenge(&c_pool, id, payload.is_active)
+            .await?;
 
-    Ok(Json(serde_json::json!({ "success": true })))
+    crate::community::audit::log(
+        &c_pool,
+        admin.user.id,
+        "challenge.toggle",
+        "challenge",
+        Some(challenge.id),
+        None,
+        Some(serde_json::json!({
+            "is_active": challenge.is_active,
+            "title": &challenge.title
+        })),
+    )
+    .await;
+
+    Ok(Json(
+        serde_json::json!({ "success": true, "challenge": challenge }),
+    ))
 }
 
 #[derive(serde::Serialize)]
@@ -1612,12 +1796,21 @@ pub struct AdminCommentDisplay {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
+#[derive(Deserialize)]
+struct AdminCommentsQuery {
+    limit: Option<i64>,
+}
+
 async fn admin_get_comments(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
-    axum::extract::Query(_q): axum::extract::Query<std::collections::HashMap<String, String>>,
+    Query(query): Query<AdminCommentsQuery>,
 ) -> Result<impl IntoResponse, AppError> {
-    let limit: i64 = _q.get("limit").and_then(|l| l.parse().ok()).unwrap_or(200);
+    require_community_view_or_manage(&state, &admin).await?;
+    let limit = query
+        .limit
+        .unwrap_or(ADMIN_COMMENTS_DEFAULT_LIMIT)
+        .clamp(1, ADMIN_COMMENTS_MAX_LIMIT);
     let c_pool = get_community_pool(&state)?;
 
     let comments: Vec<models::Comment> = sqlx::query_as(
@@ -1662,25 +1855,39 @@ async fn admin_hide_comment(
     admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(comment_id): Path<Uuid>,
-    Json(_payload): Json<HideCommentPayload>,
+    Json(payload): Json<HideCommentPayload>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
+    let mut tx = c_pool.begin().await?;
+    let comment: (Uuid, bool, String, Option<String>) = sqlx::query_as(
+        "SELECT user_id, is_hidden, content, content_sanitized FROM comments WHERE id = $1 FOR UPDATE",
+    )
+    .bind(comment_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Comment not found.".to_string()))?;
 
-    sqlx::query("UPDATE comments SET is_hidden = true WHERE id = $1") // missing hidden_reason in comment schema? just set hidden
+    sqlx::query("UPDATE comments SET is_hidden = true WHERE id = $1")
         .bind(comment_id)
-        .execute(&c_pool)
+        .execute(&mut *tx)
         .await?;
 
-    crate::community::audit::log(
-        &c_pool,
+    log_community_admin_action_tx(
+        &mut tx,
         admin.user.id,
         "comment.hide",
         "comment",
         Some(comment_id),
-        None,
-        None,
+        Some(comment.0),
+        serde_json::json!({
+            "reason": payload.reason.as_deref().unwrap_or("Admin hide"),
+            "previous_is_hidden": comment.1,
+            "content_preview": comment.3.as_deref().unwrap_or(&comment.2).chars().take(160).collect::<String>(),
+        }),
     )
-    .await;
+    .await?;
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1690,23 +1897,37 @@ async fn admin_delete_comment(
     State(state): State<AppState>,
     Path(comment_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
+    let mut tx = c_pool.begin().await?;
+    let comment: (Uuid, Uuid, bool, String, Option<String>) = sqlx::query_as(
+        "SELECT post_id, user_id, is_hidden, content, content_sanitized FROM comments WHERE id = $1 FOR UPDATE",
+    )
+    .bind(comment_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Comment not found.".to_string()))?;
 
     sqlx::query("DELETE FROM comments WHERE id = $1")
         .bind(comment_id)
-        .execute(&c_pool)
+        .execute(&mut *tx)
         .await?;
 
-    crate::community::audit::log(
-        &c_pool,
+    log_community_admin_action_tx(
+        &mut tx,
         admin.user.id,
         "comment.delete",
         "comment",
         Some(comment_id),
-        None,
-        None,
+        Some(comment.1),
+        serde_json::json!({
+            "post_id": comment.0,
+            "previous_is_hidden": comment.2,
+            "content_preview": comment.4.as_deref().unwrap_or(&comment.3).chars().take(160).collect::<String>(),
+        }),
     )
-    .await;
+    .await?;
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1722,12 +1943,20 @@ async fn admin_toggle_pin_comment(
     Path(comment_id): Path<Uuid>,
     Json(payload): Json<TogglePinCommentPayload>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
+    let mut tx = c_pool.begin().await?;
+    let comment: (Uuid, Option<bool>) =
+        sqlx::query_as("SELECT user_id, is_pinned FROM comments WHERE id = $1 FOR UPDATE")
+            .bind(comment_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Comment not found.".to_string()))?;
 
     sqlx::query("UPDATE comments SET is_pinned = $1 WHERE id = $2")
         .bind(payload.is_pinned)
         .bind(comment_id)
-        .execute(&c_pool)
+        .execute(&mut *tx)
         .await?;
 
     let action = if payload.is_pinned {
@@ -1735,16 +1964,20 @@ async fn admin_toggle_pin_comment(
     } else {
         "comment.unpin"
     };
-    crate::community::audit::log(
-        &c_pool,
+    log_community_admin_action_tx(
+        &mut tx,
         admin.user.id,
         action,
         "comment",
         Some(comment_id),
-        None,
-        None,
+        Some(comment.0),
+        serde_json::json!({
+            "previous_is_pinned": comment.1.unwrap_or(false),
+            "is_pinned": payload.is_pinned,
+        }),
     )
-    .await;
+    .await?;
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }
@@ -1758,7 +1991,7 @@ pub fn router() -> Router<AppState> {
         // Announcements
         .route(
             "/api/admin/community/announcements",
-            post(create_announcement),
+            get(admin_list_announcements).post(create_announcement),
         )
         // User Posts
         .route("/api/community/posts", post(create_user_post))
@@ -1953,6 +2186,7 @@ pub fn router() -> Router<AppState> {
             "/api/admin/community/amas",
             get(admin_list_amas).post(admin_create_ama),
         )
+        .route("/api/admin/community/amas/:id", get(admin_get_ama_detail))
         .route(
             "/api/admin/community/amas/:id/status",
             post(admin_update_ama_status),
@@ -3286,7 +3520,10 @@ async fn admin_list_amas(
     admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _user = admin.user;
+    admin
+        .require_permission(&state.db, "community.view")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
 
     let c_pool = get_community_pool(&state)?;
     let amas = crate::community::amas::list_amas_admin(&c_pool).await?;
@@ -3309,12 +3546,16 @@ async fn admin_create_ama(
     State(state): State<AppState>,
     Json(payload): Json<CreateAmaReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = admin.user;
+    let user_id = admin.user.id;
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
 
     let c_pool = get_community_pool(&state)?;
     let ama = crate::community::amas::create_ama(
         &c_pool,
-        user.id,
+        user_id,
         &payload.title,
         payload.description.as_deref(),
         &payload.expert_name,
@@ -3325,7 +3566,38 @@ async fn admin_create_ama(
     )
     .await?;
 
+    crate::community::audit::log(
+        &c_pool,
+        user_id,
+        "ama.create",
+        "ama",
+        Some(ama.id),
+        None,
+        Some(serde_json::json!({
+            "title": ama.title,
+            "status": ama.status,
+            "scheduled_at": ama.scheduled_at,
+        })),
+    )
+    .await;
+
     Ok(Json(ama))
+}
+
+async fn admin_get_ama_detail(
+    admin: crate::admin::extractors::AdminUser,
+    State(state): State<AppState>,
+    Path(ama_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = admin.user.id;
+    admin
+        .require_permission(&state.db, "community.view")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+
+    let c_pool = get_community_pool(&state)?;
+    let detail = crate::community::amas::get_ama_detail_admin(&c_pool, ama_id, user_id).await?;
+    Ok(Json(detail))
 }
 
 #[derive(Deserialize)]
@@ -3334,13 +3606,31 @@ struct UpdateAmaStatusReq {
 }
 
 async fn admin_update_ama_status(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(ama_id): Path<Uuid>,
     Json(payload): Json<UpdateAmaStatusReq>,
 ) -> Result<impl IntoResponse, AppError> {
+    let user_id = admin.user.id;
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+
     let c_pool = get_community_pool(&state)?;
     crate::community::amas::update_ama_status(&c_pool, ama_id, &payload.status).await?;
+
+    crate::community::audit::log(
+        &c_pool,
+        user_id,
+        "ama.status_update",
+        "ama",
+        Some(ama_id),
+        None,
+        Some(serde_json::json!({"status": payload.status})),
+    )
+    .await;
+
     Ok(Json(serde_json::json!({"success": true})))
 }
 
@@ -3352,33 +3642,168 @@ struct AnswerQuestionReq {
 async fn admin_answer_question(
     admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
-    Path((_, qid)): Path<(Uuid, Uuid)>,
+    Path((ama_id, qid)): Path<(Uuid, Uuid)>,
     Json(payload): Json<AnswerQuestionReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = admin.user;
+    let user_id = admin.user.id;
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
 
     let c_pool = get_community_pool(&state)?;
-    crate::community::amas::answer_question(&c_pool, qid, user.id, &payload.answer).await?;
+    let (target_user_id, _) =
+        crate::community::amas::answer_question(&c_pool, ama_id, qid, user_id, &payload.answer)
+            .await?;
+
+    crate::community::audit::log(
+        &c_pool,
+        user_id,
+        "ama.answer_question",
+        "ama_question",
+        Some(qid),
+        Some(target_user_id),
+        Some(serde_json::json!({"ama_id": ama_id})),
+    )
+    .await;
+
     Ok(Json(serde_json::json!({"success": true})))
 }
 
 async fn admin_toggle_featured(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
-    Path((_, qid)): Path<(Uuid, Uuid)>,
+    Path((ama_id, qid)): Path<(Uuid, Uuid)>,
 ) -> Result<impl IntoResponse, AppError> {
+    let user_id = admin.user.id;
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+
     let c_pool = get_community_pool(&state)?;
-    let is_featured = crate::community::amas::toggle_featured(&c_pool, qid).await?;
+    let is_featured = crate::community::amas::toggle_featured(&c_pool, ama_id, qid).await?;
+
+    crate::community::audit::log(
+        &c_pool,
+        user_id,
+        if is_featured {
+            "ama.question_feature"
+        } else {
+            "ama.question_unfeature"
+        },
+        "ama_question",
+        Some(qid),
+        None,
+        Some(serde_json::json!({"ama_id": ama_id})),
+    )
+    .await;
+
     Ok(Json(serde_json::json!({"is_featured": is_featured})))
 }
 
 // ─── Admin Badge Handlers (M3-ADMIN.4) ──────────────────────────────
 
+async fn log_community_admin_action_tx(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    actor_user_id: Uuid,
+    action: &str,
+    entity_type: &str,
+    entity_id: Option<Uuid>,
+    target_user_id: Option<Uuid>,
+    details: serde_json::Value,
+) -> Result<(), AppError> {
+    sqlx::query(
+        r#"INSERT INTO community_audit_logs (actor_user_id, action, entity_type, entity_id, target_user_id, details)
+           VALUES ($1, $2, $3, $4, $5, $6)"#,
+    )
+    .bind(actor_user_id)
+    .bind(action)
+    .bind(entity_type)
+    .bind(entity_id)
+    .bind(target_user_id)
+    .bind(details)
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
+}
+
+fn validate_badge_code(code: &str) -> Result<String, AppError> {
+    let code = code.trim().to_ascii_lowercase();
+    let len = code.chars().count();
+    let valid = len >= 2
+        && len <= 50
+        && code
+            .chars()
+            .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_' || ch == '-')
+        && code
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit());
+
+    if !valid {
+        return Err(AppError::BadRequest(
+            "Badge code must be 2-50 lowercase letters, numbers, underscores, or hyphens."
+                .to_string(),
+        ));
+    }
+
+    Ok(code)
+}
+
+fn validate_badge_text(value: &str, field: &str, max_chars: usize) -> Result<String, AppError> {
+    let value = value.trim();
+    if value.is_empty() {
+        return Err(AppError::BadRequest(format!("{field} is required.")));
+    }
+    if value.chars().count() > max_chars {
+        return Err(AppError::BadRequest(format!(
+            "{field} must be {max_chars} characters or fewer."
+        )));
+    }
+    Ok(value.to_string())
+}
+
+fn validate_optional_badge_text(
+    value: Option<String>,
+    field: &str,
+    max_chars: usize,
+) -> Result<Option<String>, AppError> {
+    match value {
+        Some(value) => validate_badge_text(&value, field, max_chars).map(Some),
+        None => Ok(None),
+    }
+}
+
+fn validate_badge_order(value: Option<i32>) -> Result<i32, AppError> {
+    let order = value.unwrap_or(0);
+    if !(0..=10_000).contains(&order) {
+        return Err(AppError::BadRequest(
+            "Display order must be between 0 and 10000.".to_string(),
+        ));
+    }
+    Ok(order)
+}
+
+fn map_badge_write_error(err: sqlx::Error) -> AppError {
+    if let sqlx::Error::Database(db_err) = &err {
+        if db_err.code().as_deref() == Some("23505") {
+            return AppError::Conflict("Badge code already exists.".to_string());
+        }
+    }
+    AppError::Database(err)
+}
+
 async fn admin_list_badges(
     admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _user = admin.user;
+    admin
+        .require_permission(&state.db, "community.view")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+
     let c_pool = get_community_pool(&state)?;
 
     let badges = sqlx::query_as::<_, BadgeRow>(
@@ -3394,10 +3819,29 @@ async fn admin_list_badges(
             .await?;
 
     let count_map: std::collections::HashMap<Uuid, i64> = counts.into_iter().collect();
+    let awards = sqlx::query_as::<_, BadgeAwardRow>(
+        "SELECT badge_id, user_id, earned_at FROM user_badges ORDER BY earned_at DESC",
+    )
+    .fetch_all(&c_pool)
+    .await?;
+
+    let mut award_map: std::collections::HashMap<Uuid, Vec<serde_json::Value>> =
+        std::collections::HashMap::new();
+    for award in awards {
+        award_map
+            .entry(award.badge_id)
+            .or_default()
+            .push(serde_json::json!({
+                "user_id": award.user_id,
+                "earned_at": award.earned_at,
+            }));
+    }
 
     let result: Vec<serde_json::Value> = badges
         .iter()
         .map(|b| {
+            let mut awarded_users = award_map.remove(&b.id).unwrap_or_default();
+            awarded_users.truncate(20);
             serde_json::json!({
                 "id": b.id,
                 "code": b.code,
@@ -3407,6 +3851,7 @@ async fn admin_list_badges(
                 "display_order": b.display_order,
                 "created_at": b.created_at,
                 "users_count": count_map.get(&b.id).copied().unwrap_or(0),
+                "awarded_users": awarded_users,
             })
         })
         .collect();
@@ -3425,6 +3870,13 @@ struct BadgeRow {
     created_at: chrono::DateTime<chrono::Utc>,
 }
 
+#[derive(sqlx::FromRow)]
+struct BadgeAwardRow {
+    badge_id: Uuid,
+    user_id: Uuid,
+    earned_at: chrono::DateTime<chrono::Utc>,
+}
+
 #[derive(Deserialize)]
 struct CreateBadgeReq {
     code: String,
@@ -3439,21 +3891,49 @@ async fn admin_create_badge(
     State(state): State<AppState>,
     Json(payload): Json<CreateBadgeReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _user = admin.user;
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+    let user = admin.user;
     let c_pool = get_community_pool(&state)?;
+    let code = validate_badge_code(&payload.code)?;
+    let name = validate_badge_text(&payload.name, "Badge name", 100)?;
+    let description = validate_badge_text(&payload.description, "Badge description", 500)?;
+    let icon = validate_badge_text(&payload.icon, "Badge icon", 20)?;
+    let display_order = validate_badge_order(payload.display_order)?;
+    let mut tx = c_pool.begin().await?;
 
     let badge = sqlx::query_as::<_, BadgeRow>(
         r#"INSERT INTO badges (code, name, description, icon, display_order)
            VALUES ($1, $2, $3, $4, $5)
            RETURNING id, code, name, description, icon, display_order, created_at"#,
     )
-    .bind(&payload.code)
-    .bind(&payload.name)
-    .bind(&payload.description)
-    .bind(&payload.icon)
-    .bind(payload.display_order.unwrap_or(0))
-    .fetch_one(&c_pool)
+    .bind(&code)
+    .bind(&name)
+    .bind(&description)
+    .bind(&icon)
+    .bind(display_order)
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(map_badge_write_error)?;
+
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "badge.create",
+        "badge",
+        Some(badge.id),
+        None,
+        serde_json::json!({
+            "code": badge.code,
+            "name": badge.name,
+            "display_order": badge.display_order,
+        }),
+    )
     .await?;
+
+    tx.commit().await?;
 
     Ok(Json(badge))
 }
@@ -3472,26 +3952,79 @@ async fn admin_update_badge(
     Path(badge_id): Path<Uuid>,
     Json(payload): Json<UpdateBadgeReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _user = admin.user;
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+    let user = admin.user;
     let c_pool = get_community_pool(&state)?;
+    let name = validate_optional_badge_text(payload.name, "Badge name", 100)?;
+    let description = validate_optional_badge_text(payload.description, "Badge description", 500)?;
+    let icon = validate_optional_badge_text(payload.icon, "Badge icon", 20)?;
+    let display_order = match payload.display_order {
+        Some(value) => Some(validate_badge_order(Some(value))?),
+        None => None,
+    };
 
-    sqlx::query(
+    if name.is_none() && description.is_none() && icon.is_none() && display_order.is_none() {
+        return Err(AppError::BadRequest(
+            "At least one badge field must be provided.".to_string(),
+        ));
+    }
+
+    let mut tx = c_pool.begin().await?;
+    let before = sqlx::query_as::<_, BadgeRow>(
+        "SELECT id, code, name, description, icon, display_order, created_at FROM badges WHERE id = $1 FOR UPDATE",
+    )
+    .bind(badge_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Badge not found.".to_string()))?;
+
+    let badge = sqlx::query_as::<_, BadgeRow>(
         r#"UPDATE badges SET
             name = COALESCE($1, name),
             description = COALESCE($2, description),
             icon = COALESCE($3, icon),
             display_order = COALESCE($4, display_order)
-           WHERE id = $5"#,
+           WHERE id = $5
+           RETURNING id, code, name, description, icon, display_order, created_at"#,
     )
-    .bind(payload.name.as_deref())
-    .bind(payload.description.as_deref())
-    .bind(payload.icon.as_deref())
-    .bind(payload.display_order)
+    .bind(name.as_deref())
+    .bind(description.as_deref())
+    .bind(icon.as_deref())
+    .bind(display_order)
     .bind(badge_id)
-    .execute(&c_pool)
+    .fetch_one(&mut *tx)
     .await?;
 
-    Ok(Json(serde_json::json!({"success": true})))
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "badge.update",
+        "badge",
+        Some(badge.id),
+        None,
+        serde_json::json!({
+            "before": {
+                "name": before.name,
+                "description": before.description,
+                "icon": before.icon,
+                "display_order": before.display_order,
+            },
+            "after": {
+                "name": badge.name,
+                "description": badge.description,
+                "icon": badge.icon,
+                "display_order": badge.display_order,
+            }
+        }),
+    )
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({"success": true, "badge": badge})))
 }
 
 #[derive(Deserialize)]
@@ -3505,28 +4038,66 @@ async fn admin_grant_badge(
     Path(user_id): Path<Uuid>,
     Json(payload): Json<GrantBadgeReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _user = admin.user;
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+    let user = admin.user;
+    let badge_code = validate_badge_code(&payload.badge_code)?;
+    let target_exists = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND status <> 'deleted')",
+    )
+    .bind(user_id)
+    .fetch_one(&state.db)
+    .await?;
+    if !target_exists {
+        return Err(AppError::NotFound("Target user not found.".to_string()));
+    }
+
     let c_pool = get_community_pool(&state)?;
+    let mut tx = c_pool.begin().await?;
 
     let badge_id: Uuid = sqlx::query_scalar("SELECT id FROM badges WHERE code = $1")
-        .bind(&payload.badge_code)
-        .fetch_optional(&c_pool)
+        .bind(&badge_code)
+        .fetch_optional(&mut *tx)
         .await?
-        .ok_or_else(|| {
-            AppError::NotFound(format!("Badge code '{}' not found", payload.badge_code))
-        })?;
+        .ok_or_else(|| AppError::NotFound(format!("Badge code '{}' not found", badge_code)))?;
 
     sqlx::query(
-        "INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
+    )
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    let inserted_badge_id: Option<Uuid> = sqlx::query_scalar(
+        "INSERT INTO user_badges (user_id, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING badge_id",
     )
     .bind(user_id)
     .bind(badge_id)
-    .execute(&c_pool)
+    .fetch_optional(&mut *tx)
     .await?;
 
-    Ok(Json(
-        serde_json::json!({"success": true, "badge_code": payload.badge_code}),
-    ))
+    if inserted_badge_id.is_some() {
+        log_community_admin_action_tx(
+            &mut tx,
+            user.id,
+            "badge.grant",
+            "badge",
+            Some(badge_id),
+            Some(user_id),
+            serde_json::json!({"badge_code": badge_code}),
+        )
+        .await?;
+    }
+
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "badge_code": badge_code,
+        "already_granted": inserted_badge_id.is_none(),
+    })))
 }
 
 async fn admin_revoke_badge(
@@ -3534,14 +4105,43 @@ async fn admin_revoke_badge(
     State(state): State<AppState>,
     Path((user_id, badge_id)): Path<(Uuid, Uuid)>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _user = admin.user;
+    admin
+        .require_permission(&state.db, "community.manage")
+        .await
+        .map_err(|e| AppError::Forbidden(e.to_string()))?;
+    let user = admin.user;
     let c_pool = get_community_pool(&state)?;
+    let mut tx = c_pool.begin().await?;
+    let badge_code: String = sqlx::query_scalar("SELECT code FROM badges WHERE id = $1")
+        .bind(badge_id)
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Badge not found.".to_string()))?;
 
-    sqlx::query("DELETE FROM user_badges WHERE user_id = $1 AND badge_id = $2")
+    let deleted = sqlx::query("DELETE FROM user_badges WHERE user_id = $1 AND badge_id = $2")
         .bind(user_id)
         .bind(badge_id)
-        .execute(&c_pool)
+        .execute(&mut *tx)
         .await?;
+
+    if deleted.rows_affected() == 0 {
+        return Err(AppError::NotFound(
+            "User does not currently hold this badge.".to_string(),
+        ));
+    }
+
+    log_community_admin_action_tx(
+        &mut tx,
+        user.id,
+        "badge.revoke",
+        "badge",
+        Some(badge_id),
+        Some(user_id),
+        serde_json::json!({"badge_code": badge_code}),
+    )
+    .await?;
+
+    tx.commit().await?;
 
     Ok(Json(serde_json::json!({"success": true})))
 }
@@ -3633,13 +4233,55 @@ async fn admin_get_user_detail(
 
 // ─── Admin Circle Handlers (M4-ADMIN) ──────────────────────────────────────
 
+#[derive(Deserialize)]
+struct AdminCircleListQuery {
+    search: Option<String>,
+    visibility: Option<String>,
+    limit: Option<i64>,
+    offset: Option<i64>,
+}
+
 async fn admin_list_circles(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
+    Query(query): Query<AdminCircleListQuery>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
-    let circles = crate::community::circles::admin_get_all_circles(&c_pool).await?;
-    Ok(Json(serde_json::json!({ "circles": circles })))
+
+    let search = query
+        .search
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let visibility = match query.visibility.as_deref() {
+        Some("public") => Some(true),
+        Some("private") => Some(false),
+        Some("all") | None | Some("") => None,
+        Some(_) => {
+            return Err(AppError::BadRequest(
+                "visibility must be public, private, or all".to_string(),
+            ))
+        }
+    };
+    let limit = query
+        .limit
+        .unwrap_or(ADMIN_CIRCLE_DEFAULT_LIMIT)
+        .clamp(1, ADMIN_CIRCLE_MAX_LIMIT);
+    let offset = query.offset.unwrap_or(0).max(0);
+
+    let (circles, total, total_members, total_xp) =
+        crate::community::circles::admin_get_circles(&c_pool, search, visibility, limit, offset)
+            .await?;
+
+    Ok(Json(serde_json::json!({
+        "circles": circles,
+        "total": total,
+        "total_members": total_members,
+        "total_xp": total_xp,
+        "limit": limit,
+        "offset": offset,
+    })))
 }
 
 async fn admin_delete_circle(
@@ -3647,18 +4289,9 @@ async fn admin_delete_circle(
     State(state): State<AppState>,
     Path(circle_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
-    crate::community::circles::admin_delete_circle(&c_pool, circle_id).await?;
-    crate::community::audit::log(
-        &c_pool,
-        admin.user.id,
-        "circle.delete",
-        "circle",
-        Some(circle_id),
-        None,
-        None,
-    )
-    .await;
+    crate::community::circles::admin_delete_circle(&c_pool, circle_id, admin.user.id).await?;
     Ok(Json(serde_json::json!({ "status": "deleted" })))
 }
 
@@ -3667,6 +4300,7 @@ async fn admin_remove_circle_member(
     State(state): State<AppState>,
     Path((circle_id, target_id)): Path<(Uuid, Uuid)>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::admin_remove_member(&c_pool, circle_id, target_id).await?;
     crate::community::audit::log(
@@ -3683,10 +4317,11 @@ async fn admin_remove_circle_member(
 }
 
 async fn admin_get_circle_detail(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(circle_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_view_or_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
     let circle = crate::community::circles::get_circle(&c_pool, circle_id)
         .await?
@@ -3713,6 +4348,7 @@ async fn admin_update_circle(
     Path(circle_id): Path<Uuid>,
     Json(payload): Json<AdminUpdateCircleReq>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
     let circle = crate::community::circles::admin_force_update_circle(
         &c_pool,
@@ -3748,9 +4384,11 @@ async fn admin_transfer_circle(
     Path(circle_id): Path<Uuid>,
     Json(payload): Json<AdminTransferCircleReq>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
     crate::community::circles::admin_force_transfer_circle(
         &c_pool,
+        &state.db,
         circle_id,
         payload.new_owner_id,
     )
@@ -3772,10 +4410,11 @@ async fn admin_transfer_circle(
 // ─── Admin Leaderboard Handlers (M4-ADMIN) ─────────────────────────────────
 
 async fn admin_get_leaderboard(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     axum::extract::Query(_q): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_view_or_manage(&state, &admin).await?;
     let limit = _q
         .get("limit")
         .and_then(|l| l.parse::<i64>().ok())
@@ -3792,42 +4431,163 @@ struct AdminAwardXpReq {
     description: String,
 }
 
+const MAX_ADMIN_XP_ADJUSTMENT: i32 = 10_000;
+const MAX_ADMIN_XP_DESCRIPTION_LEN: usize = 200;
+
+fn validate_admin_xp_adjustment(
+    payload: &AdminAwardXpReq,
+) -> Result<(&str, i32, String), AppError> {
+    let reason = payload.reason_label.trim();
+    if !matches!(reason, "admin_grant" | "admin_revoke") {
+        return Err(AppError::BadRequest(
+            "XP adjustment action must be admin_grant or admin_revoke.".to_string(),
+        ));
+    }
+
+    if payload.amount == 0 {
+        return Err(AppError::BadRequest(
+            "XP adjustment amount must not be zero.".to_string(),
+        ));
+    }
+
+    if payload.amount == i32::MIN || payload.amount.abs() > MAX_ADMIN_XP_ADJUSTMENT {
+        return Err(AppError::BadRequest(format!(
+            "XP adjustment amount must be between 1 and {}.",
+            MAX_ADMIN_XP_ADJUSTMENT
+        )));
+    }
+
+    if reason == "admin_grant" && payload.amount < 0 {
+        return Err(AppError::BadRequest(
+            "Grant adjustments must use a positive amount.".to_string(),
+        ));
+    }
+
+    if reason == "admin_revoke" && payload.amount > 0 {
+        return Err(AppError::BadRequest(
+            "Revoke adjustments must use a negative amount.".to_string(),
+        ));
+    }
+
+    let description = payload.description.trim();
+    if description.is_empty() {
+        return Err(AppError::BadRequest(
+            "XP adjustment description is required.".to_string(),
+        ));
+    }
+
+    if description.chars().count() > MAX_ADMIN_XP_DESCRIPTION_LEN {
+        return Err(AppError::BadRequest(format!(
+            "XP adjustment description must be {} characters or fewer.",
+            MAX_ADMIN_XP_DESCRIPTION_LEN
+        )));
+    }
+
+    Ok((reason, payload.amount, description.to_string()))
+}
+
 async fn admin_award_xp(
     admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<AdminAwardXpReq>,
 ) -> Result<impl IntoResponse, AppError> {
-    let c_pool = get_community_pool(&state)?;
+    require_community_manage(&state, &admin).await?;
+    let (reason, amount, description) = validate_admin_xp_adjustment(&payload)?;
 
-    let amount_awarded = crate::community::xp::award_xp(
-        &c_pool,
-        user_id,
-        &payload.reason_label,
-        Some(&payload.description),
-        Some(payload.amount),
+    let target_exists = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND status <> 'deleted')",
     )
+    .bind(user_id)
+    .fetch_one(&state.db)
     .await?;
-
-    if amount_awarded != 0 {
-        // Evaluate level up
-        crate::community::xp::update_user_level(&c_pool, user_id).await?;
+    if !target_exists {
+        return Err(AppError::NotFound("Target user not found.".to_string()));
     }
 
-    crate::community::audit::log(
-        &c_pool,
-        admin.user.id,
-        "xp.award",
-        "user",
-        None,
-        Some(user_id),
-        Some(serde_json::json!({"amount": payload.amount, "reason": payload.reason_label})),
-    )
-    .await;
+    let c_pool = get_community_pool(&state)?;
+    let mut tx = c_pool.begin().await?;
 
-    Ok(Json(
-        serde_json::json!({ "status": "xp_awarded", "amount": amount_awarded }),
-    ))
+    sqlx::query(
+        "INSERT INTO community_profiles (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
+    )
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    let current_xp: i32 =
+        sqlx::query_scalar("SELECT xp_total FROM community_profiles WHERE user_id = $1 FOR UPDATE")
+            .bind(user_id)
+            .fetch_one(&mut *tx)
+            .await?;
+
+    let new_xp = current_xp
+        .checked_add(amount)
+        .ok_or_else(|| AppError::BadRequest("XP adjustment would overflow.".to_string()))?;
+    if new_xp < 0 {
+        return Err(AppError::BadRequest(
+            "XP adjustment cannot reduce the user's XP below zero.".to_string(),
+        ));
+    }
+
+    let (new_level, new_level_name): (i32, String) = sqlx::query_as(
+        "SELECT level, name FROM xp_levels WHERE min_xp <= $1 ORDER BY level DESC LIMIT 1",
+    )
+    .bind(new_xp)
+    .fetch_optional(&mut *tx)
+    .await?
+    .unwrap_or((1, "Seedling".to_string()));
+
+    sqlx::query(
+        "INSERT INTO xp_ledger (user_id, amount, reason, description) VALUES ($1, $2, $3, $4)",
+    )
+    .bind(user_id)
+    .bind(amount)
+    .bind(reason)
+    .bind(&description)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        "UPDATE community_profiles SET xp_total = $1, level = $2, level_name = $3, updated_at = NOW() WHERE user_id = $4",
+    )
+    .bind(new_xp)
+    .bind(new_level)
+    .bind(&new_level_name)
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"INSERT INTO community_audit_logs (actor_user_id, action, entity_type, entity_id, target_user_id, details)
+           VALUES ($1, $2, $3, $4, $5, $6)"#,
+    )
+    .bind(admin.user.id)
+    .bind("xp.adjust")
+    .bind("user")
+    .bind(Option::<Uuid>::None)
+    .bind(user_id)
+    .bind(serde_json::json!({
+        "amount": amount,
+        "reason": reason,
+        "previous_xp": current_xp,
+        "new_xp": new_xp,
+        "new_level": new_level,
+        "description": description
+    }))
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(Json(serde_json::json!({
+        "status": "xp_adjusted",
+        "amount": amount,
+        "previous_xp": current_xp,
+        "new_xp": new_xp,
+        "level": new_level,
+        "level_name": new_level_name
+    })))
 }
 
 // ─── Admin Audit Log API (M2-ADMIN.7) ────────────────────────────────────────

@@ -1011,8 +1011,8 @@ button.community-tab-btn.active {
 
 .circle-challenge-progress-fill {
   height: 100%;
-  background: var(--primary-color, var(--brand-greeny-green, #03FF88));
-  border-radius: 4px;
+  background: var(--progress-fill-bg, #98FB96);
+  border-radius: var(--progress-border-radius, 30px);
   transition: width 0.6s ease;
 }
 

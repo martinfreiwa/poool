@@ -71,7 +71,7 @@
                     </div>
                     <h3 class="ds-table-empty__title">No open orders</h3>
                     <p class="ds-table-empty__description">Place buy or sell orders once you own assets, then track fills, fees, and activity here.</p>
-                    <a href="/marketplace-secondary" class="myt__empty-cta">Go to Resale Market</a>
+                    <a href="/marketplace-secondary" class="myt__empty-cta ds-btn ds-btn--primary">Go to Resale Market</a>
                 </div>
             </td></tr>`;
             return;
@@ -112,7 +112,7 @@
                     </div>
                     <h3 class="ds-table-empty__title">No buy interests</h3>
                     <p class="ds-table-empty__description">Tell holders you want to buy their asset and track responses in one place.</p>
-                    <a href="/marketplace-secondary" class="myt__empty-cta">Go to Resale Market</a>
+                    <a href="/marketplace-secondary" class="myt__empty-cta ds-btn ds-btn--primary">Go to Resale Market</a>
                 </div>
             </td></tr>`;
             return;
@@ -223,7 +223,7 @@
                     </div>
                     <h3 class="ds-table-empty__title">No assets</h3>
                     <p class="ds-table-empty__description">Invest in your first asset to unlock resale-market trading from this page.</p>
-                    <a href="/marketplace" class="myt__empty-cta">Browse Marketplace</a>
+                    <a href="/marketplace" class="myt__empty-cta ds-btn ds-btn--primary">Browse Marketplace</a>
                 </div>
             </td></tr>`;
             return;
@@ -254,8 +254,8 @@
                     <td><span class="myt__status myt__status--${a.status.toLowerCase()}">${a.status}</span></td>
                     <td>
                         ${(a.funding_status === 'funded' || currentUserEmail === 'support@traffic-creator.com') 
-                            ? `<a href="/marketplace-trading-v3?asset=${a.asset_slug}" class="myt__action-btn myt__action-btn--outline" style="padding: 4px 8px; font-size: 12px; height:auto;">Trade</a>`
-                            : `<span class="myt__action-btn myt__action-btn--outline" style="padding: 4px 8px; font-size: 11px; height:auto; opacity:0.5; cursor:not-allowed; background:#f2f4f7; border-color:#d0d5dd; color:#667085;" title="This asset is currently in its primary funding phase and cannot yet be traded.">Not Tradable</span>`
+                            ? `<a href="/marketplace-trading-v3?asset=${a.asset_slug}" class="myt__action-btn myt__action-btn--outline ds-btn ds-btn--secondary ds-btn--sm" style="height:auto;">Trade</a>`
+                            : `<span class="myt__action-btn myt__action-btn--outline ds-btn ds-btn--secondary ds-btn--sm" style="height:auto; opacity:0.5; cursor:not-allowed;" title="This asset is currently in its primary funding phase and cannot yet be traded.">Not Tradable</span>`
                         }
                     </td>
                 </tr>

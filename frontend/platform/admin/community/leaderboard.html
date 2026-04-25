@@ -8,13 +8,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Leaderboard | Admin | POOOL</title>
   
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
+  <script defer src="/static/js/admin-community-leaderboard.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .admin-alert {
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .admin-alert--error {
+      border: 1px solid #fecaca;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    .admin-alert--success {
+      border: 1px solid #bbf7d0;
+      background: #f0fdf4;
+      color: #166534;
+    }
+  </style>
 </head>
 
 <body class="admin-body dom-ready">
@@ -22,7 +40,7 @@
     {% include 'admin/components/sidebar.html' %}
 
     <!-- ===== MAIN CONTENT ===== -->
-    <main class="admin-main" x-data="leaderboardAdmin()">
+    <main class="admin-main">
       <!-- Top Bar -->
       <header class="admin-topbar">
         <div class="admin-topbar-left">
@@ -45,11 +63,11 @@
             <p class="admin-page-subtitle">View top community earners and manage XP manually.</p>
           </div>
           <div>
-            <button class="admin-btn admin-btn--secondary" @click="loadLeaderboard()">
+            <button class="admin-btn admin-btn--secondary" id="refresh-leaderboard-btn" type="button">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
               Refresh
             </button>
-            <button class="admin-btn admin-btn--primary" @click="openModal(null)">
+            <button class="admin-btn admin-btn--primary" id="open-xp-modal-btn" type="button">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               Adjust XP
             </button>
@@ -62,11 +80,16 @@
             
             <div class="admin-table-container">
               <!-- Loading State -->
-              <div x-show="loading" class="admin-table-empty">
+              <div id="leaderboard-loading" class="admin-table-empty">
                 <p>Loading leaderboard...</p>
               </div>
 
-              <table class="admin-table" x-show="!loading && entries.length > 0">
+              <div id="leaderboard-error" class="admin-table-empty" role="alert" hidden>
+                <p id="leaderboard-error-message">Unable to load leaderboard.</p>
+                <button class="admin-btn admin-btn--secondary" id="retry-leaderboard-btn" type="button">Retry</button>
+              </div>
+
+              <table class="admin-table" id="leaderboard-table" hidden>
                 <thead>
                   <tr>
                     <th style="width: 50px;">Rank</th>
@@ -77,40 +100,11 @@
                     <th style="text-align: right;">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <template x-for="(entry, index) in entries" :key="entry.user_id">
-                    <tr>
-                      <td>
-                        <div style="font-weight: 500; color: var(--text-tertiary);" x-text="'#' + (index + 1)"></div>
-                      </td>
-                      <td>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                          <div style="font-family: monospace; font-size: 13px; color: var(--brand-blue);" x-text="entry.user_id"></div>
-                          <a :href="'/admin/community/user-detail.html?id=' + entry.user_id" style="color: var(--text-tertiary); display: inline-flex;">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                          </a>
-                        </div>
-                      </td>
-                      <td>
-                        <div style="font-weight: 500; font-family: var(--font-heading);" x-text="'Lvl ' + entry.level"></div>
-                        <div style="font-size: 13px; color: var(--text-tertiary);" x-text="entry.level_name"></div>
-                      </td>
-                      <td style="text-align: right; font-weight: 600;" x-text="entry.xp_total.toLocaleString()"></td>
-                      <td style="text-align: right;">
-                        <span style="color: #f59e0b;" x-text="entry.login_streak + ' 🔥'"></span>
-                      </td>
-                      <td style="text-align: right;">
-                        <button class="admin-btn admin-btn--sm admin-btn--outline" @click="openModal(entry.user_id)">
-                          Manage XP
-                        </button>
-                      </td>
-                    </tr>
-                  </template>
-                </tbody>
+                <tbody id="leaderboard-body"></tbody>
               </table>
 
               <!-- Empty State -->
-              <div x-show="!loading && entries.length === 0" class="admin-table-empty">
+              <div id="leaderboard-empty" class="admin-table-empty" hidden>
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-tertiary); margin-bottom: 16px;"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
                 <p>No leaderboard entries found.</p>
               </div>
@@ -120,30 +114,31 @@
       </div>
 
       <!-- Manage XP Modal -->
-      <div class="admin-modal-overlay" x-show="modalOpen" style="display: none;" x-transition>
-        <div class="admin-modal" @click.away="closeModal()">
+      <div class="admin-modal-overlay" id="xp-modal-overlay" hidden>
+        <div class="admin-modal" id="xp-modal" role="dialog" aria-modal="true" aria-labelledby="xp-modal-title" tabindex="-1">
           <div class="admin-modal-header">
-            <h3 class="admin-modal-title">Adjust XP</h3>
-            <button class="admin-modal-close" @click="closeModal()">
+            <h3 class="admin-modal-title" id="xp-modal-title">Adjust XP</h3>
+            <button class="admin-modal-close" id="close-xp-modal-btn" type="button" aria-label="Close XP adjustment dialog">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
           </div>
           
           <div class="admin-modal-body">
+            <div id="xp-modal-status" class="admin-alert" role="status" aria-live="polite" hidden></div>
             <div class="admin-form-group">
-              <label class="admin-form-label">User ID (UUID)</label>
-              <input type="text" class="admin-form-input" x-model="xpForm.userId" placeholder="Enter user UUID">
+              <label class="admin-form-label" for="xp-user-id">User ID (UUID)</label>
+              <input type="text" class="admin-form-input" id="xp-user-id" placeholder="Enter user UUID" autocomplete="off">
               <span class="admin-form-help">Target user to adjust XP for.</span>
             </div>
 
             <div class="admin-form-group" style="display: flex; gap: 16px;">
               <div style="flex: 1;">
-                <label class="admin-form-label">XP Amount</label>
-                <input type="number" class="admin-form-input" x-model.number="xpForm.amount" placeholder="e.g. 50">
+                <label class="admin-form-label" for="xp-amount">XP Amount</label>
+                <input type="number" class="admin-form-input" id="xp-amount" min="1" max="10000" step="1" placeholder="e.g. 50">
               </div>
               <div style="flex: 1;">
-                <label class="admin-form-label">Action</label>
-                <select class="admin-form-input" x-model="xpForm.action">
+                <label class="admin-form-label" for="xp-action">Action</label>
+                <select class="admin-form-input" id="xp-action">
                   <option value="admin_grant">Grant (+)</option>
                   <option value="admin_revoke">Revoke (-)</option>
                 </select>
@@ -151,114 +146,21 @@
             </div>
 
             <div class="admin-form-group">
-              <label class="admin-form-label">Reason / Description</label>
-              <input type="text" class="admin-form-input" x-model="xpForm.description" placeholder="e.g. Compensation for bug report">
+              <label class="admin-form-label" for="xp-description">Reason / Description</label>
+              <input type="text" class="admin-form-input" id="xp-description" maxlength="200" placeholder="e.g. Compensation for bug report">
               <span class="admin-form-help">Visible in user's XP ledger history.</span>
             </div>
           </div>
 
           <div class="admin-modal-footer">
-            <button class="admin-btn admin-btn--outline" @click="closeModal()">Cancel</button>
-            <button class="admin-btn admin-btn--primary" @click="submitXpAdjustment()" :disabled="submitting">
-              <span x-text="submitting ? 'Processing...' : 'Submit XP Adjustment'"></span>
+            <button class="admin-btn admin-btn--outline" id="cancel-xp-modal-btn" type="button">Cancel</button>
+            <button class="admin-btn admin-btn--primary" id="submit-xp-btn" type="button">
+              <span id="submit-xp-btn-label">Submit XP Adjustment</span>
             </button>
           </div>
         </div>
       </div>
     </main>
   </div>
-
-  <script>
-    document.addEventListener('alpine:init', () => {
-      Alpine.data('leaderboardAdmin', () => ({
-        entries: [],
-        loading: true,
-        modalOpen: false,
-        submitting: false,
-        
-        xpForm: {
-          userId: '',
-          amount: 50,
-          action: 'admin_grant',
-          description: ''
-        },
-
-        async init() {
-          await this.loadLeaderboard();
-        },
-
-        async loadLeaderboard() {
-          this.loading = true;
-          try {
-            const res = await fetch('/api/admin/community/leaderboard?limit=100');
-            if (res.ok) {
-              const data = await res.json();
-              this.entries = data.leaderboard || [];
-            }
-          } catch (e) {
-            console.error(e);
-          } finally {
-            this.loading = false;
-          }
-        },
-
-        openModal(userId) {
-          this.xpForm.userId = userId || '';
-          this.xpForm.amount = 50;
-          this.xpForm.action = 'admin_grant';
-          this.xpForm.description = 'Manual XP adjustment by admin';
-          this.modalOpen = true;
-        },
-
-        closeModal() {
-          this.modalOpen = false;
-          this.xpForm.userId = '';
-        },
-
-        async submitXpAdjustment() {
-          if (!this.xpForm.userId) {
-            alert('User ID is required.');
-            return;
-          }
-
-          if (!this.xpForm.amount || this.xpForm.amount <= 0) {
-            alert('Amount must be positive.');
-            return;
-          }
-
-          this.submitting = true;
-
-          const payload = {
-            amount: this.xpForm.action === 'admin_grant' ? Math.abs(this.xpForm.amount) : -Math.abs(this.xpForm.amount),
-            reason_label: this.xpForm.action,
-            description: this.xpForm.description || 'Manual XP adjustment'
-          };
-
-          try {
-            const res = await fetch(`/api/admin/community/users/${this.xpForm.userId}/xp`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                alert(`XP adjustment successful. Applied: ${data.amount} XP`);
-                this.closeModal();
-                this.loadLeaderboard();
-            } else {
-                const err = await res.json();
-                alert(`Error: ${err.error || 'Failed to adjust XP'}`);
-            }
-          } catch (e) {
-            console.error(e);
-            alert('An unexpected error occurred.');
-          } finally {
-            this.submitting = false;
-          }
-        }
-      }));
-    });
-  </script>
 </body>
 </html>

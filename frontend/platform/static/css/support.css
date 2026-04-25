@@ -12,6 +12,15 @@
     --support-accent: var(--primary-color);
     --support-accent-light: #f4f4ff;
     --support-divider: rgba(16, 24, 40, 0.08);
+    --support-card-bg: var(--card-bg, #ffffff);
+    --support-card-border: var(--card-border-color, #E5E7EB);
+    --support-card-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+    --support-card-shadow-hover: 0 4px 12px rgba(10, 13, 18, 0.06);
+    --support-card-radius: var(--card-border-radius, 12px);
+    --support-card-accent: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+    --support-neutral-strong: #181D27;
+    --support-neutral: #414651;
+    --support-neutral-muted: #717680;
 }
 
 /* ─── Support Wrapper ──────────────────────────── */
@@ -29,13 +38,24 @@
 }
 
 .support-overview-card {
-    background: #ffffff;
-    border: 1px solid var(--support-border);
-    border-radius: 8px;
-    padding: 16px;
+    background: var(--support-card-bg);
+    border: 1px solid var(--support-card-border);
+    border-radius: var(--support-card-radius);
+    box-shadow: var(--support-card-shadow);
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.support-overview-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--support-card-accent);
 }
 
 .support-overview-card__label {
@@ -117,18 +137,30 @@
 
 .support-stat-card {
     flex: 1;
-    background: #ffffff;
-    border: 1px solid var(--table-border-color);
-    border-radius: 12px;
+    background: var(--support-card-bg);
+    border: 1px solid var(--support-card-border);
+    border-radius: var(--support-card-radius);
+    box-shadow: var(--support-card-shadow);
     padding: 20px 24px;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    transition: box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.support-stat-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--support-card-accent);
 }
 
 .support-stat-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    border-color: #D5D7DA;
+    box-shadow: var(--support-card-shadow-hover);
 }
 
 /* Stat card accent borders */
@@ -167,10 +199,21 @@
 
 /* ─── Cards ────────────────────────────────────── */
 .support-form-card {
-    background: #ffffff;
-    border: 1px solid var(--support-border);
-    border-radius: 12px;
+    background: var(--support-card-bg);
+    border: 1px solid var(--support-card-border);
+    border-radius: var(--support-card-radius);
+    box-shadow: var(--support-card-shadow);
     padding: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.support-form-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--support-card-accent);
 }
 
 .support-card-header {
@@ -230,7 +273,7 @@
 }
 
 .support-faq-card {
-    background: #ffffff;
+    background: var(--support-card-bg);
 }
 
 /* ─── Form Elements ────────────────────────────── */
@@ -327,13 +370,37 @@
     min-height: 40px;
 }
 
+body#support-body .ds-btn--secondary {
+    background: #FFFFFF;
+    border-color: #D5D7DA;
+    color: var(--support-neutral);
+    font-weight: 600;
+}
+
+body#support-body .ds-btn--secondary:hover,
+body#support-body .ds-btn--secondary:active {
+    background: #FFFFFF;
+    border-color: #D5D7DA;
+    color: var(--support-neutral);
+}
+
 .support-help-panel {
     position: sticky;
     top: 96px;
-    background: transparent;
-    border: 0;
-    border-radius: 12px;
-    padding: 4px 0 0;
+    background: var(--support-card-bg);
+    border: 1px solid var(--support-card-border);
+    border-radius: var(--support-card-radius);
+    box-shadow: var(--support-card-shadow);
+    padding: 20px;
+    overflow: hidden;
+}
+
+.support-help-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--support-card-accent);
 }
 
 body#support-body {
@@ -343,11 +410,11 @@ body#support-body {
 
 .support-help-panel h3 {
     color: var(--page-title-color);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 20px;
     margin: 0 0 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 .support-help-panel__note {
@@ -358,8 +425,8 @@ body#support-body {
 }
 
 .support-sla-list {
-    border: 1px solid var(--support-border);
-    border-radius: 8px;
+    border: 1px solid var(--support-card-border);
+    border-radius: 10px;
     overflow: hidden;
     background: #ffffff;
 }
@@ -428,24 +495,26 @@ body#support-body {
 
 /* ─── Drag & Drop File Upload ──────────────────── */
 .drop-zone {
-    border: 2px dashed #D0D5DD;
-    border-radius: 10px;
+    border: 1px dashed #D0D5DD;
+    border-radius: 12px;
     padding: 24px;
     text-align: center;
     cursor: pointer;
-    transition: border-color 0.2s, background-color 0.2s;
+    background: #FFFFFF;
+    transition: border-color 0.2s, box-shadow 0.2s;
     position: relative;
 }
 
 .drop-zone:hover {
-    border-color: var(--primary-color);
-    background: #f8f8ff;
+    border-color: #D0D5DD;
+    box-shadow: var(--support-card-shadow);
 }
 
 .drop-zone.drag-over {
     border-color: var(--primary-color);
-    background: #f0f0ff;
+    background: #ffffff;
     border-style: solid;
+    box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08);
 }
 
 .drop-zone.has-file {
@@ -508,9 +577,10 @@ body#support-body {
 .faq-suggestion-container {
     display: none;
     padding: 12px;
-    background: #f9fafb;
-    border: 1px solid var(--support-divider);
-    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid var(--support-card-border);
+    border-radius: 12px;
+    box-shadow: var(--support-card-shadow);
     margin-bottom: 16px;
 }
 
@@ -549,25 +619,25 @@ body#support-body {
     font-weight: 600;
     line-height: 18px;
     border-radius: 999px;
-    border: 1px solid rgba(0, 0, 255, 0.18);
+    border: 1px solid #D5D7DA;
     background: #ffffff;
-    color: var(--primary-color);
+    color: var(--support-neutral);
     cursor: pointer;
     font-family: var(--font-family, "TT Norms Pro", sans-serif);
-    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+    transition: box-shadow 0.15s;
 }
 
 .faq-cat-tab:hover {
-    border-color: var(--primary-color);
-    background: rgba(3, 255, 136, 0.12);
-    color: var(--primary-color);
+    border-color: #D5D7DA;
+    background: #ffffff;
+    color: var(--support-neutral);
 }
 
 .faq-cat-tab.active {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    color: var(--secondary-color);
-    box-shadow: inset 0 0 0 1px rgba(10, 13, 18, 0.16);
+    background: #ffffff;
+    border-color: #D5D7DA;
+    color: var(--support-neutral-strong);
+    box-shadow: inset 0 -2px 0 var(--primary-color);
 }
 
 /* ─── FAQ Search ───────────────────────────────── */
@@ -575,10 +645,10 @@ body#support-body {
     width: 100%;
     padding: 10px 14px;
     font-size: 14px;
-    border: 1px solid var(--table-border-color);
+    border: 1px solid var(--input-border-color, #D0D5DD);
     border-radius: 8px;
-    background: #ffffff;
-    color: var(--page-title-color);
+    background: var(--input-bg, #FFFFFF);
+    color: var(--input-text-color, #101828);
     font-family: var(--font-family, "TT Norms Pro", sans-serif);
     margin-bottom: 16px;
     box-sizing: border-box;
@@ -594,8 +664,8 @@ body#support-body {
 /* ─── FAQ Items ────────────────────────────────── */
 #faq-list {
     background: #ffffff;
-    border: 1px solid var(--support-border);
-    border-radius: 8px;
+    border: 1px solid var(--support-card-border);
+    border-radius: 12px;
     overflow: hidden;
 }
 
@@ -629,7 +699,7 @@ body#support-body {
 }
 
 .faq-question:hover {
-    background: #f8f9fc;
+    background: #FAFAFA;
 }
 
 .faq-answer {
@@ -659,9 +729,10 @@ body#support-body {
 
 /* ─── Existing Tickets Section ─────────────────── */
 .support-tickets-card {
-    background: #ffffff;
-    border: 1px solid var(--table-border-color);
-    border-radius: 12px;
+    background: var(--support-card-bg);
+    border: 1px solid var(--support-card-border);
+    border-radius: var(--support-card-radius);
+    box-shadow: var(--support-card-shadow);
     padding: 24px;
 }
 
@@ -681,12 +752,12 @@ body#support-body {
     font-size: 13px;
     font-weight: 500;
     border-radius: 8px;
-    border: 1px solid var(--table-border-color);
-    background: transparent;
-    color: #717680;
+    border: 1px solid #D5D7DA;
+    background: #ffffff;
+    color: var(--support-neutral);
     cursor: pointer;
     font-family: var(--font-family, "TT Norms Pro", sans-serif);
-    transition: all 0.15s;
+    transition: box-shadow 0.15s;
 }
 
 .support-tab span {
@@ -701,28 +772,31 @@ body#support-body {
 
 .support-tab.active span {
     background: #ffffff;
-    color: var(--primary-color);
+    color: var(--support-neutral-strong);
 }
 
 .support-tab:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
+    border-color: #D5D7DA;
+    color: var(--support-neutral);
+    background: #ffffff;
 }
 
 .support-tab.active {
-    background: #f4f4ff;
-    border-color: var(--primary-color);
-    color: var(--primary-color);
+    background: #ffffff;
+    border-color: #D5D7DA;
+    color: var(--support-neutral-strong);
     font-weight: 600;
+    box-shadow: inset 0 -2px 0 var(--primary-color);
 }
 
 /* ─── Ticket Cards ─────────────────────────────── */
 .support-ticket-card {
-    background: #ffffff;
-    border: 1px solid var(--support-border);
-    border-radius: 8px;
+    background: var(--support-card-bg);
+    border: 1px solid var(--support-card-border);
+    border-radius: var(--support-card-radius);
+    box-shadow: var(--support-card-shadow);
     margin-bottom: 12px;
-    padding: 16px;
+    padding: 18px 20px;
     padding-left: 20px;
     transition: box-shadow 0.2s, border-color 0.2s;
 }
@@ -732,8 +806,8 @@ body#support-body {
 }
 
 .support-ticket-card:hover {
-    border-color: #d0d5dd;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: #D5D7DA;
+    box-shadow: var(--support-card-shadow-hover);
 }
 
 /* Priority left-border accents on ticket cards */
@@ -980,7 +1054,7 @@ body#support-body {
     width: 100%;
     padding: 10px 14px;
     font-size: 14px;
-    border: 1px solid var(--table-border-color);
+    border: 1px solid var(--input-border-color, #D0D5DD);
     border-radius: 8px;
     resize: vertical;
     font-family: inherit;
@@ -1009,18 +1083,19 @@ body#support-body {
 .ticket-reopen-btn {
     padding: 8px 16px;
     background: #ffffff;
-    color: var(--body-color);
-    border: 1px solid var(--table-border-color);
+    color: var(--support-neutral);
+    border: 1px solid #D5D7DA;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.15s;
 }
 
 .ticket-reopen-btn:hover {
-    background: #f9fafb;
-    border-color: #d0d5dd;
+    background: #ffffff;
+    border-color: #D5D7DA;
+    transform: translateY(-1px);
 }
 
 /* ─── Empty State ──────────────────────────────── */

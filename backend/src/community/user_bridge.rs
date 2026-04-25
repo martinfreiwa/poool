@@ -121,7 +121,7 @@ pub async fn get_users_info_batch(
                 .collect();
 
             // Try mget
-            let cached: Vec<Option<String>> = conn.get(&keys).await.unwrap_or_default();
+            let cached: Vec<Option<String>> = conn.mget(&keys).await.unwrap_or_default();
             // If the size is different, fallback entirely to avoiding index out of bounds
             if cached.len() == user_ids.len() {
                 for (id, cached_json) in user_ids.iter().zip(cached.into_iter()) {

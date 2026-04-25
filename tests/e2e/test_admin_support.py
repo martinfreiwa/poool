@@ -49,9 +49,13 @@ def test_support_ticket_interaction(admin_page):
     
     reply_text = "Hello from Playwright E2E test"
     page.locator(".ql-editor").fill(reply_text)
-    page.click("#btn-send-reply")
-    
+    with page.expect_response(lambda r: f"/api/admin/support/" in r.url and r.url.endswith("/messages"), timeout=10000) as response_info:
+        page.click("#btn-send-reply")
+    assert response_info.value.ok
+
     # Wait for the reply constraint to show up (it should append to the thread)
+    page.reload()
+    expect(page.locator("#ticket-title")).not_to_have_text("Loading Ticket…", timeout=10000)
     expect(page.locator("#ticket-thread")).to_contain_text(reply_text)
 
 @pytest.mark.admin
@@ -81,4 +85,3 @@ def test_ticket_status_update(admin_page):
     
     # Wait for the status value to be updated by the async renderTicket function
     expect(page.locator("#sel-status")).to_have_value("resolved", timeout=10000)
-

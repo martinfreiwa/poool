@@ -1,5 +1,5 @@
 /// Developer dashboard service layer — all DB queries and business logic.
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 use super::models::*;
@@ -53,6 +53,15 @@ fn make_metric(label: &str, value: String, change_pct: f64) -> DeveloperMetric {
 
 /// Fetch all developer dashboard statistics for a given developer user.
 pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> DeveloperDashboardStats {
+    fetch_dashboard_stats_for_period(pool, developer_id, "all").await
+}
+
+/// Fetch all developer dashboard statistics for a given developer user and chart period.
+pub async fn fetch_dashboard_stats_for_period(
+    pool: &PgPool,
+    developer_id: Uuid,
+    chart_period: &str,
+) -> DeveloperDashboardStats {
     // ── 1. Total Assets (only approved/live) ─────────────────────
     let total_assets: i64 =
         sqlx::query_scalar(
@@ -98,6 +107,11 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     .unwrap_or(0);
 
     let amount_remaining_cents = total_funding_target_cents.saturating_sub(total_sales_cents);
+    let avg_funding_progress = if total_funding_target_cents > 0 {
+        (total_sales_cents as f64 / total_funding_target_cents as f64) * 100.0
+    } else {
+        0.0
+    };
 
     // ── 3. Total Investors (distinct users who invested in developer's approved/live assets) ──
     let total_investors: i64 = sqlx::query_scalar(
@@ -342,6 +356,11 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
         make_metric("Avg. Conversion Rate", format_pct(avg_conversion_rate), 0.0),
         make_metric("Sold Out Ratio", format_pct(sold_out_ratio), 0.0),
         make_metric(
+            "Avg. Funding Progress",
+            format_pct(avg_funding_progress),
+            0.0,
+        ),
+        make_metric(
             "Avg. Investment Amount",
             format_usd_compact(avg_investment_cents),
             avg_pct,
@@ -353,14 +372,7 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
     let attention_assets = fetch_attention_assets(pool, developer_id).await;
 
     // ── Chart percentage (all-time sales change vs prior period) ────────
-    let chart_percentage_display = if sales_pct > 0.01 {
-        format!("+{}", format_pct(sales_pct))
-    } else if sales_pct < -0.01 {
-        format!("-{}", format_pct(sales_pct.abs()))
-    } else {
-        "0%".to_string()
-    };
-    let chart_trend = trend(sales_pct);
+    let chart_data = fetch_sales_chart_data(pool, developer_id, chart_period).await;
 
     DeveloperDashboardStats {
         total_assets,
@@ -383,9 +395,288 @@ pub async fn fetch_dashboard_stats(pool: &PgPool, developer_id: Uuid) -> Develop
         metrics,
         top_assets,
         attention_assets,
-        chart_percentage_display,
-        chart_trend,
+        chart_percentage_display: chart_data.percentage_display,
+        chart_trend: chart_data.trend,
+        chart_period_label: chart_data.period_label,
+        chart_y_axis_labels: chart_data.y_axis_labels,
+        chart_x_axis_labels: chart_data.x_axis_labels,
+        chart_line_path: chart_data.line_path,
+        chart_area_path: chart_data.area_path,
+        chart_has_data: chart_data.has_data,
     }
+}
+
+struct SalesChartData {
+    period_label: String,
+    percentage_display: String,
+    trend: String,
+    y_axis_labels: Vec<String>,
+    x_axis_labels: Vec<String>,
+    line_path: String,
+    area_path: String,
+    has_data: bool,
+}
+
+struct SalesChartPoint {
+    label: String,
+    value_cents: i64,
+}
+
+async fn fetch_sales_chart_data(pool: &PgPool, developer_id: Uuid, period: &str) -> SalesChartData {
+    let period = normalize_chart_period(period);
+    let (period_label, start_sql, end_sql, step_sql, bucket_sql, label_format) = match period {
+        "24h" => (
+            "24 hours",
+            "date_trunc('hour', NOW()) - INTERVAL '23 hours'",
+            "date_trunc('hour', NOW())",
+            "INTERVAL '1 hour'",
+            "date_trunc('hour', i.purchased_at)",
+            "HH24:00",
+        ),
+        "7d" => (
+            "7 days",
+            "date_trunc('day', NOW()) - INTERVAL '6 days'",
+            "date_trunc('day', NOW())",
+            "INTERVAL '1 day'",
+            "date_trunc('day', i.purchased_at)",
+            "Dy",
+        ),
+        "30d" => (
+            "30 days",
+            "date_trunc('day', NOW()) - INTERVAL '29 days'",
+            "date_trunc('day', NOW())",
+            "INTERVAL '1 day'",
+            "date_trunc('day', i.purchased_at)",
+            "DD Mon",
+        ),
+        "1y" => (
+            "1 year",
+            "date_trunc('month', NOW()) - INTERVAL '11 months'",
+            "date_trunc('month', NOW())",
+            "INTERVAL '1 month'",
+            "date_trunc('month', i.purchased_at)",
+            "Mon",
+        ),
+        _ => (
+            "All time",
+            r#"
+            COALESCE((
+                SELECT date_trunc('month', MIN(i.purchased_at))
+                FROM investments i
+                JOIN assets a ON a.id = i.asset_id
+                INNER JOIN developer_projects dp ON dp.asset_id = a.id
+                WHERE a.developer_user_id = $1
+                  AND dp.status IN ('approved', 'live')
+                  AND a.deleted_at IS NULL
+                  AND i.status != 'exited'
+            ), date_trunc('month', NOW()))
+            "#,
+            "date_trunc('month', NOW())",
+            "INTERVAL '1 month'",
+            "date_trunc('month', i.purchased_at)",
+            "Mon",
+        ),
+    };
+
+    let query = format!(
+        r#"
+        WITH bounds AS (
+            SELECT {start_sql} AS start_at,
+                   {end_sql} AS end_at
+        ),
+        series AS (
+            SELECT generate_series(
+                (SELECT start_at FROM bounds),
+                (SELECT end_at FROM bounds),
+                {step_sql}
+            ) AS bucket
+        ),
+        bucket_sales AS (
+            SELECT {bucket_sql} AS bucket,
+                   COALESCE(SUM(i.purchase_value_cents), 0)::bigint AS sales_cents
+            FROM investments i
+            JOIN assets a ON a.id = i.asset_id
+            INNER JOIN developer_projects dp ON dp.asset_id = a.id
+            WHERE a.developer_user_id = $1
+              AND dp.status IN ('approved', 'live')
+              AND a.deleted_at IS NULL
+              AND i.status != 'exited'
+              AND i.purchased_at >= (SELECT start_at FROM bounds)
+              AND i.purchased_at < NOW() + {step_sql}
+            GROUP BY 1
+        )
+        SELECT TO_CHAR(s.bucket, '{label_format}') AS label,
+               (SUM(COALESCE(bs.sales_cents, 0)) OVER (ORDER BY s.bucket))::bigint AS value_cents
+        FROM series s
+        LEFT JOIN bucket_sales bs ON bs.bucket = s.bucket
+        ORDER BY s.bucket
+        "#
+    );
+
+    let points = sqlx::query(&query)
+        .bind(developer_id)
+        .fetch_all(pool)
+        .await
+        .map(|rows| {
+            rows.into_iter()
+                .map(|row| SalesChartPoint {
+                    label: row.try_get::<String, _>("label").unwrap_or_default(),
+                    value_cents: row.try_get::<i64, _>("value_cents").unwrap_or(0),
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    build_sales_chart_data(period_label, points)
+}
+
+fn normalize_chart_period(period: &str) -> &str {
+    match period {
+        "1y" | "30d" | "7d" | "24h" => period,
+        _ => "all",
+    }
+}
+
+fn build_sales_chart_data(period_label: &str, points: Vec<SalesChartPoint>) -> SalesChartData {
+    let points = if points.is_empty() {
+        vec![
+            SalesChartPoint {
+                label: String::new(),
+                value_cents: 0,
+            },
+            SalesChartPoint {
+                label: String::new(),
+                value_cents: 0,
+            },
+        ]
+    } else {
+        points
+    };
+
+    let max_value = points
+        .iter()
+        .map(|point| point.value_cents)
+        .max()
+        .unwrap_or(0);
+    let axis_max = nice_axis_max_cents(max_value);
+    let has_data = max_value > 0;
+    let y_axis_labels = (0..=5)
+        .rev()
+        .map(|step| format_chart_money_label(axis_max * step / 5))
+        .collect::<Vec<_>>();
+    let x_axis_labels = compact_chart_labels(
+        points
+            .iter()
+            .map(|point| point.label.clone())
+            .collect::<Vec<_>>(),
+    );
+    let line_path = chart_line_path(&points, axis_max);
+    let area_path = format!("{line_path} L 1002 240 L 0 240 Z");
+    let first = points.first().map(|point| point.value_cents).unwrap_or(0);
+    let last = points.last().map(|point| point.value_cents).unwrap_or(0);
+    let change_pct = if first > 0 {
+        ((last - first) as f64 / first as f64) * 100.0
+    } else if last > 0 {
+        100.0
+    } else {
+        0.0
+    };
+
+    let percentage_display = if change_pct > 0.01 {
+        format!("+{}", format_pct(change_pct))
+    } else if change_pct < -0.01 {
+        format!("-{}", format_pct(change_pct.abs()))
+    } else {
+        "0%".to_string()
+    };
+
+    SalesChartData {
+        period_label: period_label.to_string(),
+        percentage_display,
+        trend: trend(change_pct),
+        y_axis_labels,
+        x_axis_labels,
+        line_path,
+        area_path,
+        has_data,
+    }
+}
+
+fn chart_line_path(points: &[SalesChartPoint], axis_max_cents: i64) -> String {
+    let width = 1002.0;
+    let plot_height = 210.0;
+    let top_padding = 10.0;
+    let axis_max = axis_max_cents.max(1) as f64;
+    let denominator = points.len().saturating_sub(1).max(1) as f64;
+
+    points
+        .iter()
+        .enumerate()
+        .map(|(index, point)| {
+            let x = (index as f64 / denominator) * width;
+            let y =
+                top_padding + (1.0 - (point.value_cents.max(0) as f64 / axis_max)) * plot_height;
+            let command = if index == 0 { "M" } else { "L" };
+            format!("{command}{x:.2} {y:.2}")
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn nice_axis_max_cents(max_cents: i64) -> i64 {
+    if max_cents <= 0 {
+        return 0;
+    }
+
+    let dollars = ((max_cents + 99) / 100).max(1) as f64;
+    let magnitude = 10_f64.powf(dollars.log10().floor());
+    let normalized = dollars / magnitude;
+    let nice_normalized = if normalized <= 1.0 {
+        1.0
+    } else if normalized <= 2.0 {
+        2.0
+    } else if normalized <= 5.0 {
+        5.0
+    } else {
+        10.0
+    };
+
+    (nice_normalized * magnitude * 100.0).round() as i64
+}
+
+fn format_chart_money_label(cents: i64) -> String {
+    if cents <= 0 {
+        return "$0".to_string();
+    }
+
+    let dollars = cents as f64 / 100.0;
+    if dollars >= 1_000_000.0 {
+        format!("${:.1}M", dollars / 1_000_000.0)
+    } else if dollars >= 1_000.0 {
+        format!("${:.0}k", dollars / 1_000.0)
+    } else {
+        format!("${:.0}", dollars)
+    }
+}
+
+fn compact_chart_labels(labels: Vec<String>) -> Vec<String> {
+    if labels.len() <= 12 {
+        return labels;
+    }
+
+    let last_index = labels.len() - 1;
+    let step = (last_index as f64 / 11.0).ceil() as usize;
+    labels
+        .into_iter()
+        .enumerate()
+        .filter_map(|(index, label)| {
+            if index == 0 || index == last_index || index % step == 0 {
+                Some(label)
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 #[derive(sqlx::FromRow)]

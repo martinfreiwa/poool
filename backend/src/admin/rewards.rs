@@ -544,41 +544,119 @@ pub async fn api_admin_referral_update(
 
 /// GET /api/admin/rewards/affiliates/pending
 pub async fn api_admin_affiliates_pending(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
     let rows = sqlx::query!(
-        r#"SELECT a.user_id::text as id, u.email, 
-                  a.traffic_source, a.audience_size, a.main_url, a.phone_number, a.company_name, a.created_at::text
+        r#"SELECT a.user_id::text as id, u.email,
+                  a.traffic_source, a.audience_size, a.main_url, a.phone_number, a.company_name, a.tax_id,
+                  a.created_at::text, COALESCE(up.first_name, '') as first_name, COALESCE(up.last_name, '') as last_name
            FROM affiliates a
            JOIN users u ON u.id = a.user_id
+           LEFT JOIN user_profiles up ON up.user_id = a.user_id
            WHERE a.status = 'pending_approval'
            ORDER BY a.created_at DESC"#
     )
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(|e| {
+        tracing::error!("Admin affiliate pending query failed: {e}");
+        ApiError::Database(e)
+    })?;
 
-    let pending: Vec<serde_json::Value> = rows.iter().map(|r| {
-        serde_json::json!({
-            "id": r.id, "email": r.email, "traffic_source": r.traffic_source,
-            "audience_size": r.audience_size, "main_url": r.main_url, "phone_number": r.phone_number,
-            "company_name": r.company_name, "created_at": r.created_at
+    let counts = sqlx::query!(
+        r#"SELECT
+              COUNT(*) FILTER (WHERE status = 'pending_approval') as "pending!",
+              COUNT(*) FILTER (WHERE status = 'active') as "active!",
+              COUNT(*) FILTER (WHERE status = 'terminated') as "rejected!"
+           FROM affiliates"#
+    )
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| {
+        tracing::error!("Admin affiliate count query failed: {e}");
+        ApiError::Database(e)
+    })?;
+
+    let pending: Vec<serde_json::Value> = rows
+        .iter()
+        .map(|r| {
+            let user_name = format!(
+                "{} {}",
+                r.first_name.clone().unwrap_or_default(),
+                r.last_name.clone().unwrap_or_default()
+            )
+            .trim()
+            .to_string();
+            serde_json::json!({
+                "id": r.id, "email": r.email, "user_name": if user_name.is_empty() { r.email.clone() } else { user_name },
+                "traffic_source": r.traffic_source,
+                "audience_size": r.audience_size, "main_url": r.main_url, "phone_number": r.phone_number,
+                "company_name": r.company_name, "tax_id": r.tax_id, "created_at": r.created_at
+            })
         })
-    }).collect();
+        .collect();
 
-    Ok(Json(serde_json::json!({ "pending": pending })).into_response())
+    Ok(Json(serde_json::json!({
+        "pending": pending,
+        "counts": {
+            "pending": counts.pending,
+            "active": counts.active,
+            "rejected": counts.rejected
+        }
+    }))
+    .into_response())
+}
+
+/// Payload for approving an affiliate application.
+#[derive(serde::Deserialize)]
+pub struct AdminApproveAffiliatePayload {
+    /// The public referral code assigned by the admin.
+    pub referral_code: String,
+    /// Commission rate in basis points. 50 bps = 0.50%.
+    pub commission_rate_bps: i32,
 }
 
 /// POST /api/admin/rewards/affiliates/:id/approve
 pub async fn api_admin_affiliate_approve(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
+    Json(payload): Json<AdminApproveAffiliatePayload>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
     let uid = ApiError::parse_uuid(&id)?;
-    // Default 0.50% commission unless negotiated later
-    let commission_rate_bps = 50;
+    let referral_code = payload.referral_code.trim().to_uppercase();
+    let commission_rate_bps = payload.commission_rate_bps;
+
+    if referral_code.len() < 3 || referral_code.len() > 20 {
+        return Err(ApiError::BadRequest(
+            "Referral code must be 3-20 characters.".to_string(),
+        ));
+    }
+
+    if !referral_code
+        .chars()
+        .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_' || c == '-')
+    {
+        return Err(ApiError::BadRequest(
+            "Referral code may only contain letters, numbers, underscores, and hyphens."
+                .to_string(),
+        ));
+    }
+
+    if !(1..=450).contains(&commission_rate_bps) {
+        return Err(ApiError::BadRequest(
+            "Commission rate must be 1-450 basis points.".to_string(),
+        ));
+    }
 
     // E.3 KYC Gating: Do not allow approval if KYC is not approved
     let kyc_res = crate::kyc::service::get_kyc_status(&state.db, uid).await;
@@ -597,143 +675,144 @@ pub async fn api_admin_affiliate_approve(
         _ => {}
     }
 
-    // Retry loop: if the generated referral code collides with an existing UNIQUE code, retry
-    let max_retries = 3;
-    for attempt in 0..max_retries {
-        // Generate a unique 8-character alphanumeric referral code
-        let referral_code = uuid::Uuid::new_v4()
-            .as_simple()
-            .to_string()
-            .chars()
-            .take(8)
-            .collect::<String>()
-            .to_uppercase();
+    let mut tx = state.db.begin().await.map_err(|e| {
+        tracing::error!("Failed to begin affiliate approval tx: {e}");
+        ApiError::Internal("Server error".to_string())
+    })?;
 
-        let mut tx = state.db.begin().await.map_err(|e| {
-            tracing::error!("Failed to begin affiliate approval tx: {e}");
-            ApiError::Internal("Server error".to_string())
-        })?;
+    // Lock the affiliate row to prevent concurrent approval.
+    let current_status: Option<String> =
+        sqlx::query_scalar("SELECT status FROM affiliates WHERE user_id = $1 FOR UPDATE")
+            .bind(uid)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to lock affiliate row: {e}");
+                ApiError::Internal("Database error".to_string())
+            })?;
 
-        // Lock the affiliate row to prevent concurrent approval
-        let current_status: Option<String> =
-            sqlx::query_scalar("SELECT status FROM affiliates WHERE user_id = $1 FOR UPDATE")
-                .bind(uid)
-                .fetch_optional(&mut *tx)
-                .await
-                .map_err(|e| {
-                    tracing::error!("Failed to lock affiliate row: {e}");
-                    ApiError::Internal("Database error".to_string())
-                })?;
-
-        match current_status.as_deref() {
-            Some("pending_approval") => {} // expected state — proceed
-            Some("active") => {
-                let _ = tx.rollback().await;
-                return Err(ApiError::BadRequest(
-                    "Affiliate is already active".to_string(),
-                ));
-            }
-            Some(other) => {
-                let _ = tx.rollback().await;
-                return Err(ApiError::BadRequest(format!(
-                    "Cannot approve affiliate in '{}' status",
-                    other
-                )));
-            }
-            None => {
-                let _ = tx.rollback().await;
-                return Err(ApiError::NotFound(
-                    "Affiliate application not found".to_string(),
-                ));
-            }
+    match current_status.as_deref() {
+        Some("pending_approval") => {}
+        Some("active") => {
+            let _ = tx.rollback().await;
+            return Err(ApiError::BadRequest(
+                "Affiliate is already active".to_string(),
+            ));
         }
-
-        let result = sqlx::query!(
-            r#"UPDATE affiliates 
-               SET status = 'active', referral_code = $1, commission_rate_bps = $2, approved_at = NOW()
-               WHERE user_id = $3 AND status = 'pending_approval'"#,
-            referral_code,
-            commission_rate_bps,
-            uid
-        )
-        .execute(&mut *tx)
-        .await;
-
-        match result {
-            Ok(r) if r.rows_affected() > 0 => {
-                // Audit log within same transaction
-                let _ = sqlx::query!(
-                    "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)",
-                    _admin.user.id,
-                    "affiliate.approved",
-                    "affiliate",
-                    uid,
-                    serde_json::json!({ "referral_code": referral_code, "commission": commission_rate_bps })
-                ).execute(&mut *tx).await;
-
-                tx.commit().await.map_err(|e| {
-                    tracing::error!("Failed to commit affiliate approval tx: {e}");
-                    ApiError::Internal("Server error".to_string())
-                })?;
-
-                tracing::info!(
-                    affiliate_id = %uid,
-                    referral_code = %referral_code,
-                    "Affiliate application approved"
-                );
-
-                // Send email notification
-                let user_email: Option<String> =
-                    sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
-                        .bind(uid)
-                        .fetch_optional(&state.db)
-                        .await
-                        .unwrap_or_default();
-
-                if let Some(email) = user_email {
-                    let _ = crate::common::email::send_email(
-                        &email,
-                        "Welcome to the POOOL Affiliate Partner Syndicate",
-                        &format!(
-                            "<h3>Application Approved</h3><p>Congratulations! Your application to join the POOOL Affiliate Partner Syndicate has been approved.</p><p>Your unique referral code is: <b>{}</b></p><p>You can now log into your <a href=\"https://poool.app/admin/affiliate-dashboard\">Affiliate Dashboard</a> to access your tracking links and monitor commissions.</p>",
-                            referral_code
-                        )
-                    ).await;
-                }
-
-                return Ok(Json(
-                    serde_json::json!({"status": "approved", "referral_code": referral_code}),
-                )
-                .into_response());
-            }
-            Ok(_) => {
-                let _ = tx.rollback().await;
-                return Err(ApiError::BadRequest(
-                    "Affiliate application not found or already processed".to_string(),
-                ));
-            }
-            Err(e) => {
-                let _ = tx.rollback().await;
-                // Check if this is a unique constraint violation (code collision)
-                let err_str = e.to_string();
-                if err_str.contains("unique") || err_str.contains("duplicate") {
-                    if attempt < max_retries - 1 {
-                        tracing::warn!(
-                            "Referral code collision on attempt {}, retrying...",
-                            attempt + 1
-                        );
-                        continue;
-                    }
-                }
-                tracing::error!("Failed to approve affiliate {}: {}", id, e);
-                return Err(ApiError::Internal("Database error".to_string()));
-            }
+        Some(other) => {
+            let _ = tx.rollback().await;
+            return Err(ApiError::BadRequest(format!(
+                "Cannot approve affiliate in '{}' status",
+                other
+            )));
+        }
+        None => {
+            let _ = tx.rollback().await;
+            return Err(ApiError::NotFound(
+                "Affiliate application not found".to_string(),
+            ));
         }
     }
 
-    Err(ApiError::Internal(
-        "Failed to generate unique referral code after retries".to_string(),
-    ))
+    let code_owner: Option<uuid::Uuid> = sqlx::query_scalar(
+        "SELECT user_id FROM affiliates WHERE referral_code = $1 AND user_id <> $2",
+    )
+    .bind(&referral_code)
+    .bind(uid)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to validate affiliate referral code uniqueness: {e}");
+        ApiError::Internal("Database error".to_string())
+    })?;
+
+    if code_owner.is_some() {
+        let _ = tx.rollback().await;
+        return Err(ApiError::Conflict(
+            "Referral code is already assigned to another affiliate.".to_string(),
+        ));
+    }
+
+    let result = sqlx::query!(
+        r#"UPDATE affiliates
+           SET status = 'active', referral_code = $1, commission_rate_bps = $2, approved_at = NOW()
+           WHERE user_id = $3 AND status = 'pending_approval'"#,
+        referral_code,
+        commission_rate_bps,
+        uid
+    )
+    .execute(&mut *tx)
+    .await;
+
+    match result {
+        Ok(r) if r.rows_affected() > 0 => {
+            sqlx::query!(
+                "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)",
+                admin.user.id,
+                "affiliate.approved",
+                "affiliate",
+                uid,
+                serde_json::json!({ "referral_code": referral_code, "commission_rate_bps": commission_rate_bps })
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to write affiliate approval audit log: {e}");
+                ApiError::Internal("Database error".to_string())
+            })?;
+
+            tx.commit().await.map_err(|e| {
+                tracing::error!("Failed to commit affiliate approval tx: {e}");
+                ApiError::Internal("Server error".to_string())
+            })?;
+
+            tracing::info!(
+                affiliate_id = %uid,
+                referral_code = %referral_code,
+                "Affiliate application approved"
+            );
+
+            // Send email notification after the durable state change commits.
+            let user_email: Option<String> =
+                sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+                    .bind(uid)
+                    .fetch_optional(&state.db)
+                    .await
+                    .unwrap_or_default();
+
+            if let Some(email) = user_email {
+                let _ = crate::common::email::send_email(
+                    &email,
+                    "Welcome to the POOOL Affiliate Partner Syndicate",
+                    &format!(
+                        "<h3>Application Approved</h3><p>Congratulations! Your application to join the POOOL Affiliate Partner Syndicate has been approved.</p><p>Your unique referral code is: <b>{}</b></p><p>You can now log into your <a href=\"https://poool.app/affiliate/dashboard\">Affiliate Dashboard</a> to access your tracking links and monitor commissions.</p>",
+                        referral_code
+                    )
+                ).await;
+            }
+
+            Ok(
+                Json(serde_json::json!({"status": "approved", "referral_code": referral_code}))
+                    .into_response(),
+            )
+        }
+        Ok(_) => {
+            let _ = tx.rollback().await;
+            Err(ApiError::BadRequest(
+                "Affiliate application not found or already processed".to_string(),
+            ))
+        }
+        Err(e) => {
+            let _ = tx.rollback().await;
+            if e.to_string().contains("duplicate") || e.to_string().contains("unique") {
+                return Err(ApiError::Conflict(
+                    "Referral code is already assigned to another affiliate.".to_string(),
+                ));
+            }
+            tracing::error!("Failed to approve affiliate {}: {}", id, e);
+            Err(ApiError::Internal("Database error".to_string()))
+        }
+    }
 }
 
 /// Payload for rejecting an affiliate application.
@@ -745,34 +824,88 @@ pub struct AdminRejectAffiliatePayload {
 
 /// POST /api/admin/rewards/affiliates/:id/reject
 pub async fn api_admin_affiliate_reject(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
     Json(payload): Json<AdminRejectAffiliatePayload>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
     let uid = ApiError::parse_uuid(&id)?;
+    let reason = crate::common::sanitize::sanitize_text(payload.reason.trim());
+    if reason.is_empty() {
+        return Err(ApiError::BadRequest(
+            "A rejection reason is required.".to_string(),
+        ));
+    }
+
+    let mut tx = state.db.begin().await.map_err(|e| {
+        tracing::error!("Failed to begin affiliate rejection tx: {e}");
+        ApiError::Internal("Server error".to_string())
+    })?;
+
+    let current_status: Option<String> =
+        sqlx::query_scalar("SELECT status FROM affiliates WHERE user_id = $1 FOR UPDATE")
+            .bind(uid)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to lock affiliate row for rejection: {e}");
+                ApiError::Internal("Database error".to_string())
+            })?;
+
+    match current_status.as_deref() {
+        Some("pending_approval") => {}
+        Some(other) => {
+            let _ = tx.rollback().await;
+            return Err(ApiError::BadRequest(format!(
+                "Cannot reject affiliate in '{}' status",
+                other
+            )));
+        }
+        None => {
+            let _ = tx.rollback().await;
+            return Err(ApiError::NotFound(
+                "Affiliate application not found".to_string(),
+            ));
+        }
+    }
 
     let result = sqlx::query!(
-        r#"UPDATE affiliates 
+        r#"UPDATE affiliates
            SET status = 'terminated'
            WHERE user_id = $1 AND status = 'pending_approval'"#,
         uid
     )
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await;
 
     match result {
         Ok(r) if r.rows_affected() > 0 => {
-            let _ = sqlx::query!(
-                "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)",
-                _admin.user.id,
+            sqlx::query!(
+                "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state) VALUES ($1, $2, $3, $4, $5, $6)",
+                admin.user.id,
                 "affiliate.rejected",
                 "affiliate",
                 uid,
-                serde_json::json!({ "reason": payload.reason })
-            ).execute(&state.db).await;
+                serde_json::json!({ "status": "pending_approval" }),
+                serde_json::json!({ "status": "terminated", "reason": reason.clone() })
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to write affiliate rejection audit log: {e}");
+                ApiError::Internal("Database error".to_string())
+            })?;
 
-            // Send email notification
+            tx.commit().await.map_err(|e| {
+                tracing::error!("Failed to commit affiliate rejection tx: {e}");
+                ApiError::Internal("Server error".to_string())
+            })?;
+
+            // Send email notification after the durable state change commits.
             let user_email: Option<String> =
                 sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
                     .bind(uid)
@@ -786,17 +919,21 @@ pub async fn api_admin_affiliate_reject(
                     "Update on your POOOL Affiliate Application",
                     &format!(
                         "<h3>Application Update</h3><p>Thank you for your interest in the POOOL Affiliate Partner Syndicate.</p><p>After careful review, we are unable to approve your application at this time.</p><p>Reason provided: <i>{}</i></p>",
-                        payload.reason
+                        reason
                     )
                 ).await;
             }
 
             Ok(Json(serde_json::json!({"status": "rejected"})).into_response())
         }
-        Ok(_) => Err(ApiError::BadRequest(
-            "Affiliate application not found or already processed".to_string(),
-        )),
+        Ok(_) => {
+            let _ = tx.rollback().await;
+            Err(ApiError::BadRequest(
+                "Affiliate application not found or already processed".to_string(),
+            ))
+        }
         Err(e) => {
+            let _ = tx.rollback().await;
             tracing::error!("Failed to reject affiliate {}: {}", id, e);
             Err(ApiError::Internal("Database error".to_string()))
         }
@@ -812,12 +949,22 @@ pub struct AdminSuspendAffiliatePayload {
 
 /// POST /api/admin/rewards/affiliates/:id/suspend
 pub async fn api_admin_affiliate_suspend(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
     Json(payload): Json<AdminSuspendAffiliatePayload>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
     let uid = ApiError::parse_uuid(&id)?;
+    let reason = crate::common::sanitize::sanitize_text(payload.reason.trim());
+    if reason.is_empty() {
+        return Err(ApiError::BadRequest(
+            "A suspension reason is required.".to_string(),
+        ));
+    }
 
     let result = sqlx::query!(
         r#"UPDATE affiliates 
@@ -832,11 +979,11 @@ pub async fn api_admin_affiliate_suspend(
         Ok(r) if r.rows_affected() > 0 => {
             let _ = sqlx::query!(
                 "INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state) VALUES ($1, $2, $3, $4, $5)",
-                _admin.user.id,
+                admin.user.id,
                 "affiliate.suspended",
                 "affiliate",
                 uid,
-                serde_json::json!({ "reason": payload.reason })
+                serde_json::json!({ "reason": reason.clone() })
             ).execute(&state.db).await;
 
             // Send email notification
@@ -853,7 +1000,7 @@ pub async fn api_admin_affiliate_suspend(
                     "Important: Your POOOL Affiliate Account has been suspended",
                     &format!(
                         "<h3>Account Suspended</h3><p>Your POOOL Affiliate Partner Syndicate account has been temporarily suspended.</p><p>Reason provided: <i>{}</i></p><p>Please contact support for further information. Any pending commissions are on hold.</p>",
-                        payload.reason
+                        reason
                     )
                 ).await;
             }
@@ -873,9 +1020,13 @@ pub async fn api_admin_affiliate_suspend(
 /// GET /api/admin/rewards/affiliates/payouts/pending
 /// Groups all 'payable' commissions by affiliate so the admin knows who needs to be paid.
 pub async fn api_admin_affiliate_payouts_pending(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
     let rows = sqlx::query!(
         r#"SELECT 
             u.id as user_id, u.email, 
@@ -932,6 +1083,10 @@ pub async fn api_admin_affiliate_batch_payout(
     State(state): State<AppState>,
     axum::extract::Path(affiliate_id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
     // We execute this in an ACID transaction
     let mut tx = state.db.begin().await.map_err(|e| {
         tracing::error!("Tx start failed: {}", e);
@@ -1201,6 +1356,10 @@ pub async fn api_admin_affiliate_clawback(
     axum::extract::Path(id): axum::extract::Path<String>,
     axum::extract::Json(payload): axum::extract::Json<ClawbackPayload>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
     let affiliate_id = ApiError::parse_uuid(&id)?;
     let mut tx = state
         .db
@@ -1295,9 +1454,13 @@ pub async fn api_admin_affiliate_clawback(
 /// GET /api/admin/rewards/affiliates/materials
 /// Lists all affiliate custom marketing materials pending review.
 pub async fn api_admin_affiliate_materials_list(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
     // Non-macro: affiliate_materials table added in migration 076
     let rows = sqlx::query(
         r#"SELECT am.id::text as id, am.asset_name, am.gcs_path, am.status,
@@ -1349,6 +1512,10 @@ pub async fn api_admin_affiliate_material_review(
     axum::extract::Path(material_id): axum::extract::Path<String>,
     Json(payload): Json<AdminMaterialReviewPayload>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "affiliates.manage")
+        .await?;
+
     let mid = ApiError::parse_uuid(&material_id)?;
 
     let new_status = match payload.action.as_str() {

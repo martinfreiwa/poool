@@ -23,9 +23,16 @@
       if (parts.length === 2) token = parts.pop().split(';').shift();
       
       config.headers = config.headers || {};
-      if (token) {
+      let hasCsrfHeader = false;
+      if (config.headers instanceof Headers) {
+        hasCsrfHeader = config.headers.has("X-CSRF-Token") || config.headers.has("x-csrf-token");
+      } else {
+        hasCsrfHeader = Object.keys(config.headers).some((key) => key.toLowerCase() === "x-csrf-token");
+      }
+
+      if (token && !hasCsrfHeader) {
         if (config.headers instanceof Headers) {
-          config.headers.append("X-CSRF-Token", token);
+          config.headers.set("X-CSRF-Token", token);
         } else {
           config.headers["X-CSRF-Token"] = token;
         }
@@ -75,6 +82,17 @@
     "nav-mp-compliance": "marketplace.compliance",
     "nav-mp-analytics": "marketplace.view",
     "nav-mp-settings": "marketplace.manage",
+    "nav-com-overview": "community.view",
+    "nav-com-announcements": "community.manage",
+    "nav-com-posts": "community.manage",
+    "nav-com-comments": "community.manage",
+    "nav-com-reports": "community.manage",
+    "nav-com-users": "community.manage",
+    "nav-com-badges": "community.manage",
+    "nav-com-amas": "community.manage",
+    "nav-com-challenges": "community.manage",
+    "nav-com-circles": "community.manage",
+    "nav-com-leaderboard": "community.view",
   };
 
   // ── PII Masking Rules ──

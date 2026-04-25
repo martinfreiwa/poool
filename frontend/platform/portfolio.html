@@ -49,7 +49,7 @@ extra_js=['htmx-init',
           </svg>
           <h3 class="state-title">Failed to load portfolio</h3>
           <p class="state-desc">We couldn't fetch your portfolio data. Please try again or contact support.</p>
-          <button class="retry-btn" onclick="location.reload()">Retry</button>
+          <button class="retry-btn ds-btn ds-btn--primary" onclick="location.reload()">Retry</button>
         </div>
 
         <!-- Portfolio Value Card with Chart -->
@@ -81,7 +81,7 @@ extra_js=['htmx-init',
               </div>
               <!-- Actions -->
               <div id="portfolio-value-actions" class="portfolio-value-actions">
-                <button class="portfolio-show-more-btn" @click="expanded = !expanded">
+                <button class="portfolio-show-more-btn ds-btn ds-btn--secondary" @click="expanded = !expanded">
                   <span x-text="expanded ? 'Show less' : 'Show more'">Show more</span>
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="transition-transform duration-200" :class="expanded ? 'rotate-180' : ''">
                     <path d="M5 7.5L10 12.5L15 7.5" stroke="#414651" stroke-width="1.66667" stroke-linecap="round"
@@ -125,7 +125,7 @@ extra_js=['htmx-init',
                       24 hours
                     </button>
                   </div>
-                  <!-- Filter Button --><button id="portfolio-chart-filter" class="portfolio-chart-filter">
+                  <!-- Filter Button --><button id="portfolio-chart-filter" class="portfolio-chart-filter ds-btn ds-btn--secondary">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                       <path d="M5 10h10M2.5 5h15m-10 10h5" stroke="#414651" stroke-width="1.66667"
                         stroke-linecap="round" stroke-linejoin="round"></path>
@@ -638,7 +638,7 @@ extra_js=['htmx-init',
                     <path d="M5 12h14m-6-7 7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </a>
-                <a href="/marketplace#secondary" class="ds-btn portfolio-empty__cta-secondary">Browse Resale</a>
+                <a href="/marketplace#secondary" class="ds-btn ds-btn--secondary portfolio-empty__cta-secondary">Browse Resale</a>
               </div>
             </div>
             <div class="portfolio-empty__hero-art" aria-hidden="true">
@@ -880,7 +880,7 @@ extra_js=['htmx-init',
                 <span>Dec</span>
               </div>
             </div>
-            <!-- Action button (changes based on state) --><button class="mobile-portfolio-action-button"
+            <!-- Action button (changes based on state) --><button class="mobile-portfolio-action-button ds-btn ds-btn--secondary"
               @click="chartExpanded = !chartExpanded">
               <span x-text="chartExpanded ? 'Show less' : 'Show more'">Show more</span>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" x-show="!chartExpanded">

@@ -54,7 +54,7 @@ pub struct AdminTrade {
     pub quantity: i32,
     pub total_cents: i64,
     pub fee_cents: i64,
-    pub executed_at: chrono::NaiveDateTime,
+    pub executed_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// An order record with admin-visible fields.
@@ -82,12 +82,17 @@ pub struct TradeFilters {
     pub asset_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
     pub side: Option<String>,
-    pub _min_price_cents: Option<i64>,
-    pub _max_price_cents: Option<i64>,
-    pub _from_date: Option<String>,
-    pub _to_date: Option<String>,
+    #[serde(alias = "_min_price_cents")]
+    pub min_price_cents: Option<i64>,
+    #[serde(alias = "_max_price_cents")]
+    pub max_price_cents: Option<i64>,
+    #[serde(alias = "_from_date")]
+    pub from_date: Option<String>,
+    #[serde(alias = "_to_date")]
+    pub to_date: Option<String>,
     pub page: Option<i64>,
     pub per_page: Option<i64>,
+    pub limit: Option<i64>,
 }
 
 /// Query filters for order listing.
@@ -202,9 +207,12 @@ pub struct ToggleTradingRequest {
 
 /// GET /api/admin/marketplace/stats — KPIs: volume, orders, trades, pending.
 pub async fn api_admin_marketplace_stats(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<MarketplaceStats>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     let db = &state.db;
 
     let open_orders: i64 = sqlx::query_scalar::<_, i64>(
@@ -212,16 +220,16 @@ pub async fn api_admin_marketplace_stats(
     )
     .fetch_one(db)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::Database)?;
 
     let volume_24h: i64 = sqlx::query_scalar::<_, i64>(
-        "SELECT COALESCE(SUM(price_cents * quantity::BIGINT), 0)
+        "SELECT COALESCE(SUM(price_cents * quantity::BIGINT), 0)::BIGINT
          FROM trade_history
          WHERE executed_at >= NOW() - INTERVAL '24 hours'",
     )
     .fetch_one(db)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::Database)?;
 
     let trades_24h: i64 = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM trade_history
@@ -229,7 +237,7 @@ pub async fn api_admin_marketplace_stats(
     )
     .fetch_one(db)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::Database)?;
 
     let pending_reviews: i64 = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM market_orders
@@ -237,7 +245,7 @@ pub async fn api_admin_marketplace_stats(
     )
     .fetch_one(db)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::Database)?;
 
     let total_assets: i64 = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(DISTINCT asset_id) FROM market_orders
@@ -245,7 +253,7 @@ pub async fn api_admin_marketplace_stats(
     )
     .fetch_one(db)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::Database)?;
 
     let active_users: i64 = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(DISTINCT user_id) FROM market_orders
@@ -253,15 +261,15 @@ pub async fn api_admin_marketplace_stats(
     )
     .fetch_one(db)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::Database)?;
 
     let fees_24h: i64 = sqlx::query_scalar::<_, i64>(
-        "SELECT COALESCE(SUM(fee_cents), 0) FROM trade_history
+        "SELECT COALESCE(SUM(fee_cents), 0)::BIGINT FROM trade_history
          WHERE executed_at >= NOW() - INTERVAL '24 hours'",
     )
     .fetch_one(db)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::Database)?;
 
     // Check trading status from Redis (or default to active)
     let trading_status = if let Some(ref redis) = state.redis {
@@ -301,9 +309,12 @@ pub async fn api_admin_marketplace_stats(
 
 /// GET /api/admin/marketplace/recent-trades — Last 50 trades with user emails.
 pub async fn api_admin_marketplace_recent_trades(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<AdminTrade>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     let db = &state.db;
 
     let rows: Vec<AdminTrade> = sqlx::query_as(
@@ -342,13 +353,20 @@ pub async fn api_admin_marketplace_recent_trades(
 
 /// GET /api/admin/marketplace/trades — Paginated trade history with filters.
 pub async fn api_admin_marketplace_trades(
-    _admin: AdminUser,
+    admin: AdminUser,
     Query(filters): Query<TradeFilters>,
     State(state): State<AppState>,
 ) -> Result<Json<PaginatedResponse<AdminTrade>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     let db = &state.db;
     let page = filters.page.unwrap_or(1).max(1);
-    let per_page = filters.per_page.unwrap_or(25).clamp(1, 100);
+    let per_page = filters
+        .per_page
+        .or(filters.limit)
+        .unwrap_or(25)
+        .clamp(1, 200);
     let offset = (page - 1) * per_page;
 
     // Build WHERE clause dynamically
@@ -356,14 +374,70 @@ pub async fn api_admin_marketplace_trades(
     if let Some(aid) = filters.asset_id {
         conditions.push(format!("t.asset_id = '{}'", aid));
     }
-    if let Some(uid) = filters.user_id {
-        conditions.push(format!(
-            "(t.buyer_id = '{}' OR t.seller_id = '{}')",
-            uid, uid
-        ));
+    let side = filters
+        .side
+        .as_deref()
+        .map(str::to_ascii_lowercase)
+        .filter(|value| !value.trim().is_empty());
+    if let Some(ref side) = side {
+        if side != "buy" && side != "sell" {
+            return Err(ApiError::BadRequest(
+                "side must be either buy or sell".to_string(),
+            ));
+        }
+        if filters.user_id.is_none() {
+            return Err(ApiError::BadRequest(
+                "side filter requires user_id".to_string(),
+            ));
+        }
     }
-    if let Some(ref side) = filters.side {
-        conditions.push(format!("t.taker_side = '{}'", side));
+    if let Some(uid) = filters.user_id {
+        match side.as_deref() {
+            Some("buy") => conditions.push(format!("t.buyer_user_id = '{}'", uid)),
+            Some("sell") => conditions.push(format!("t.seller_user_id = '{}'", uid)),
+            _ => conditions.push(format!(
+                "(t.buyer_user_id = '{}' OR t.seller_user_id = '{}')",
+                uid, uid
+            )),
+        }
+    }
+    if let Some(min_price_cents) = filters.min_price_cents {
+        if min_price_cents < 0 {
+            return Err(ApiError::BadRequest(
+                "min_price_cents must be non-negative".to_string(),
+            ));
+        }
+        conditions.push(format!("t.price_cents >= {}", min_price_cents));
+    }
+    if let Some(max_price_cents) = filters.max_price_cents {
+        if max_price_cents < 0 {
+            return Err(ApiError::BadRequest(
+                "max_price_cents must be non-negative".to_string(),
+            ));
+        }
+        conditions.push(format!("t.price_cents <= {}", max_price_cents));
+    }
+    if let (Some(min_price_cents), Some(max_price_cents)) =
+        (filters.min_price_cents, filters.max_price_cents)
+    {
+        if min_price_cents > max_price_cents {
+            return Err(ApiError::BadRequest(
+                "min_price_cents cannot exceed max_price_cents".to_string(),
+            ));
+        }
+    }
+    if let Some(ref from_date) = filters.from_date {
+        let parsed = chrono::NaiveDate::parse_from_str(from_date, "%Y-%m-%d")
+            .map_err(|_| ApiError::BadRequest("from_date must use YYYY-MM-DD".to_string()))?;
+        conditions.push(format!("t.executed_at >= '{}'", parsed));
+    }
+    if let Some(ref to_date) = filters.to_date {
+        let parsed = chrono::NaiveDate::parse_from_str(to_date, "%Y-%m-%d")
+            .map_err(|_| ApiError::BadRequest("to_date must use YYYY-MM-DD".to_string()))?;
+        let exclusive_end = parsed.succ_opt().ok_or_else(|| {
+            ApiError::BadRequest("to_date is outside supported range".to_string())
+        })?;
+        conditions.push(format!("t.executed_at < '{}'", exclusive_end));
     }
 
     let where_clause = if conditions.is_empty() {
@@ -379,7 +453,7 @@ pub async fn api_admin_marketplace_trades(
     let total: i64 = sqlx::query_scalar::<_, i64>(&count_sql)
         .fetch_one(db)
         .await
-        .unwrap_or(0);
+        .map_err(ApiError::Database)?;
 
     let data_sql = format!(
         r#"

@@ -1231,3 +1231,280 @@
   font-size: 14px;
   letter-spacing: 0.1em;
 }
+
+/* ─── DESIGN.md Alignment: Developer Submissions ─────────────── */
+body#developer-submissions-body {
+  --sub-surface-bg: var(--card-bg, #FFFFFF);
+  --sub-surface-border: var(--card-border-color, #E5E7EB);
+  --sub-surface-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+  --sub-surface-shadow-hover: 0 4px 12px rgba(10, 13, 18, 0.06);
+  --sub-radius: var(--card-border-radius, 12px);
+  --sub-neutral: #414651;
+  --sub-neutral-strong: #181D27;
+  --sub-muted: #717680;
+}
+
+body#developer-submissions-body #developer-submissions-main .ds-page-header,
+body#developer-submissions-body #developer-submissions-main .page-header-divider,
+body#developer-submissions-body .sub-stats,
+body#developer-submissions-body .sub-toolbar,
+body#developer-submissions-body .submissions-table-container,
+body#developer-submissions-body .dev-empty-state,
+body#developer-submissions-body .submissions-loading {
+  max-width: var(--page-max-width, 1200px) !important;
+}
+
+body#developer-submissions-body .sub-stats {
+  gap: var(--section-gap, 24px);
+  margin-bottom: var(--section-gap, 24px);
+}
+
+body#developer-submissions-body .sub-stat,
+body#developer-submissions-body .submissions-table-container,
+body#developer-submissions-body .dev-empty-state,
+body#developer-submissions-body .submissions-loading,
+body#developer-submissions-body .sub-modal {
+  background: var(--sub-surface-bg) !important;
+  border: 1px solid var(--sub-surface-border) !important;
+  border-radius: var(--sub-radius) !important;
+  box-shadow: var(--sub-surface-shadow) !important;
+}
+
+body#developer-submissions-body .sub-stat {
+  padding: var(--card-padding, 24px);
+  min-height: 112px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+body#developer-submissions-body .sub-stat:hover {
+  border-color: var(--sub-surface-border) !important;
+  box-shadow: var(--sub-surface-shadow-hover) !important;
+}
+
+body#developer-submissions-body .sub-stat:focus-visible {
+  outline: 3px solid rgba(0, 0, 255, 0.16);
+  outline-offset: 2px;
+}
+
+body#developer-submissions-body .sub-stat.active {
+  border-color: var(--sub-surface-border, #E5E7EB) !important;
+  box-shadow: var(--sub-surface-shadow) !important;
+}
+
+body#developer-submissions-body .sub-stat.active::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0000FF 0%, #03FF88 100%);
+}
+
+body#developer-submissions-body .sub-stat__count {
+  color: var(--sub-neutral-strong);
+  letter-spacing: 0;
+}
+
+body#developer-submissions-body .sub-stat__label {
+  color: var(--sub-muted);
+}
+
+body#developer-submissions-body .sub-toolbar {
+  border: 0;
+  border-bottom: 1px solid var(--table-border-color, #E9EAEB);
+  padding: 14px 20px;
+}
+
+body#developer-submissions-body .sub-search,
+body#developer-submissions-body .sub-sort-btn,
+body#developer-submissions-body .sub-bulk-cancel-btn,
+body#developer-submissions-body .sub-edit-btn,
+body#developer-submissions-body .sub-page-nav,
+body#developer-submissions-body .sub-modal__btn--cancel {
+  min-height: 40px;
+  background: #FFFFFF !important;
+  border: 1px solid #D5D7DA !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  color: var(--sub-neutral) !important;
+  font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+  font-weight: 600;
+}
+
+body#developer-submissions-body .sub-search {
+  height: 40px;
+}
+
+body#developer-submissions-body .sub-search:focus-within {
+  border-color: var(--btn-primary-bg, #0000FF) !important;
+  box-shadow: 0 0 0 3px rgba(0, 0, 255, 0.08) !important;
+}
+
+body#developer-submissions-body .sub-sort-btn:hover,
+body#developer-submissions-body .sub-bulk-cancel-btn:hover,
+body#developer-submissions-body .sub-edit-btn:hover,
+body#developer-submissions-body .sub-page-nav:hover:not(:disabled),
+body#developer-submissions-body .sub-modal__btn--cancel:hover {
+  background: #FFFFFF !important;
+  border-color: #D5D7DA !important;
+  color: var(--sub-neutral) !important;
+  transform: none !important;
+}
+
+body#developer-submissions-body .sub-sort-menu {
+  border: 1px solid var(--sub-surface-border);
+  border-radius: 8px;
+  box-shadow: var(--sub-surface-shadow-hover);
+}
+
+body#developer-submissions-body .sub-sort-option:hover {
+  background: #F9FAFB;
+}
+
+body#developer-submissions-body .sub-sort-option.active {
+  background: #F5F5FF;
+  color: var(--btn-primary-bg, #0000FF);
+}
+
+body#developer-submissions-body .sub-result-count,
+body#developer-submissions-body .submission-type-badge,
+body#developer-submissions-body .submission-app-number {
+  border: 1px solid var(--sub-surface-border);
+  border-radius: 8px;
+  background: #F9FAFB;
+  color: var(--sub-neutral);
+}
+
+body#developer-submissions-body .submissions-table-container {
+  overflow: hidden;
+}
+
+body#developer-submissions-body .submissions-table thead {
+  background: var(--table-header-bg, #F9FAFB);
+}
+
+body#developer-submissions-body .submissions-table th {
+  color: var(--table-header-color, #717680);
+  letter-spacing: 0.04em;
+}
+
+body#developer-submissions-body .submissions-table th.sortable:hover {
+  color: var(--sub-neutral-strong);
+  background: var(--table-header-bg, #F9FAFB);
+}
+
+body#developer-submissions-body .submissions-table th.sort-active {
+  color: var(--btn-primary-bg, #0000FF);
+}
+
+body#developer-submissions-body .submissions-table td {
+  color: var(--table-cell-color, #535862);
+}
+
+body#developer-submissions-body .submissions-table tbody tr {
+  animation: none !important;
+  opacity: 1 !important;
+  transition: background 0.12s ease;
+}
+
+body#developer-submissions-body .submissions-table tbody tr:hover {
+  background: var(--table-row-hover-bg, #F8F9FC);
+}
+
+body#developer-submissions-body .submissions-table tbody tr.row-selected {
+  background: #F5F5FF;
+}
+
+body#developer-submissions-body .submission-cover-thumb,
+body#developer-submissions-body .submission-cover-placeholder {
+  border: 1px solid var(--sub-surface-border);
+  border-radius: 8px;
+  background: #F9FAFB;
+}
+
+body#developer-submissions-body .submission-title {
+  color: var(--sub-neutral-strong);
+  font-weight: 600;
+}
+
+body#developer-submissions-body .submission-progress-bar {
+  background: var(--progress-track-bg, #D5D7DA);
+}
+
+body#developer-submissions-body .submission-progress-bar__fill {
+  background: var(--progress-fill-bg, #98FB96);
+}
+
+body#developer-submissions-body .submission-progress-bar__fill--complete {
+  background: var(--progress-fill-bg, #98FB96);
+}
+
+body#developer-submissions-body .sub-icon-btn {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--sub-neutral);
+  background: transparent;
+  box-shadow: none;
+}
+
+body#developer-submissions-body .sub-icon-btn:hover {
+  background: #F9FAFB;
+  border-color: var(--sub-surface-border);
+  color: var(--sub-neutral);
+  transform: none;
+  box-shadow: none;
+}
+
+body#developer-submissions-body .sub-icon-btn--primary {
+  background: var(--btn-primary-bg, #0000FF);
+  border-color: var(--btn-primary-bg, #0000FF);
+  color: #98FB96;
+}
+
+body#developer-submissions-body .sub-icon-btn--primary:hover {
+  background: var(--btn-primary-bg, #0000FF);
+  border-color: var(--btn-primary-bg, #0000FF);
+  color: #98FB96;
+}
+
+body#developer-submissions-body .sub-resubmit-btn,
+body#developer-submissions-body .dev-empty-state__cta {
+  min-height: 40px;
+  border-radius: 8px;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+body#developer-submissions-body .sub-resubmit-btn:hover {
+  background: var(--btn-primary-bg, #0000FF);
+  border-color: var(--btn-primary-bg, #0000FF);
+  box-shadow: none;
+  transform: none;
+}
+
+body#developer-submissions-body .sub-page-btn:hover {
+  background: #F9FAFB;
+  color: var(--sub-neutral);
+}
+
+body#developer-submissions-body .sub-page-btn--active,
+body#developer-submissions-body .sub-page-btn--active:hover {
+  background: var(--btn-primary-bg, #0000FF);
+  border-color: var(--btn-primary-bg, #0000FF);
+  color: #98FB96;
+}
+
+body#developer-submissions-body .revision-notes-banner {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+body#developer-submissions-body .dev-empty-state {
+  padding: 56px 24px;
+  text-align: center;
+}
+
+body#developer-submissions-body .dev-empty-state__feature {
+  background: #F9FAFB;
+  border: 1px solid var(--sub-surface-border);
+  border-radius: 8px;
+}

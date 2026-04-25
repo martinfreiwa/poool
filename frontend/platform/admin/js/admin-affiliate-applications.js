@@ -7,6 +7,16 @@
 
   let pendingApps = [];
   let currentAppId = null;
+  let lastFocusedBeforeModal = null;
+
+  const FOCUSABLE_SELECTOR = [
+    'a[href]',
+    'button:not([disabled])',
+    'textarea:not([disabled])',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])'
+  ].join(',');
 
   // ── Load pending applications ────────────────────────────────
   async function loadPending() {
@@ -16,7 +26,7 @@
       const data = await res.json();
       pendingApps = data.pending || [];
       renderPending();
-      updateKPIs();
+      updateKPIs(data.counts || {});
     } catch (err) {
       console.error('Failed to load affiliate applications:', err);
       document.getElementById('pending-body').innerHTML =
@@ -67,10 +77,10 @@
   }
 
   // ── KPI Update ───────────────────────────────────────────────
-  function updateKPIs() {
-    document.getElementById('kpi-pending').textContent = pendingApps.length;
-    // Active and rejected are fetched from a separate counter endpoint or set statically
-    // For now, we only update pending from the loaded data
+  function updateKPIs(counts) {
+    document.getElementById('kpi-pending').textContent = counts.pending ?? pendingApps.length;
+    document.getElementById('kpi-active').textContent = counts.active ?? '—';
+    document.getElementById('kpi-rejected').textContent = counts.rejected ?? '—';
   }
 
   // ── Approve Modal ────────────────────────────────────────────
@@ -79,12 +89,11 @@
     document.getElementById('approve-modal-email').textContent = email;
     document.getElementById('approve-referral-code').value = '';
     document.getElementById('approve-commission-rate').value = '50';
-    const modal = document.getElementById('approve-modal');
-    modal.style.display = 'flex';
+    openModal(document.getElementById('approve-modal'));
   };
 
   window.closeApproveModal = function () {
-    document.getElementById('approve-modal').style.display = 'none';
+    closeModal(document.getElementById('approve-modal'));
     currentAppId = null;
   };
 
@@ -126,11 +135,11 @@
     currentAppId = appId;
     document.getElementById('reject-modal-email').textContent = email;
     document.getElementById('reject-reason').value = '';
-    document.getElementById('reject-modal').style.display = 'flex';
+    openModal(document.getElementById('reject-modal'));
   };
 
   window.closeRejectModal = function () {
-    document.getElementById('reject-modal').style.display = 'none';
+    closeModal(document.getElementById('reject-modal'));
     currentAppId = null;
   };
 
@@ -174,6 +183,66 @@
     return str.length > len ? str.substring(0, len) + '…' : str;
   }
 
+  function getFocusableElements(modal) {
+    return Array.from(modal.querySelectorAll(FOCUSABLE_SELECTOR))
+      .filter(el => el.offsetParent !== null || el === document.activeElement);
+  }
+
+  function openModal(modal) {
+    lastFocusedBeforeModal = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    modal.style.display = 'flex';
+    const focusTarget = getFocusableElements(modal)[0] || modal;
+    focusTarget.focus({ preventScroll: true });
+  }
+
+  function closeModal(modal) {
+    modal.style.display = 'none';
+    if (lastFocusedBeforeModal && document.contains(lastFocusedBeforeModal)) {
+      lastFocusedBeforeModal.focus({ preventScroll: true });
+    }
+    lastFocusedBeforeModal = null;
+  }
+
+  function closeActiveModal() {
+    const activeModal = document.querySelector('#details-modal[style*="display: flex"], #approve-modal[style*="display: flex"], #reject-modal[style*="display: flex"]');
+    if (!activeModal) return false;
+
+    if (activeModal.id === 'details-modal') closeDetailsModal();
+    if (activeModal.id === 'approve-modal') closeApproveModal();
+    if (activeModal.id === 'reject-modal') closeRejectModal();
+    return true;
+  }
+
+  function trapFocus(event) {
+    if (event.key === 'Escape') {
+      closeActiveModal();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const activeModal = document.querySelector('#details-modal[style*="display: flex"], #approve-modal[style*="display: flex"], #reject-modal[style*="display: flex"]');
+    if (!activeModal) return;
+
+    const focusable = getFocusableElements(activeModal);
+    if (!focusable.length) {
+      event.preventDefault();
+      activeModal.focus({ preventScroll: true });
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus({ preventScroll: true });
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus({ preventScroll: true });
+    }
+  }
+
   // ── Details Modal ────────────────────────────────────────────
   window.openDetailsModal = function (appId) {
     const app = pendingApps.find(a => a.id === appId);
@@ -197,11 +266,11 @@
     approveBtn.onclick = () => { closeDetailsModal(); openApproveModal(app.id, app.email || ''); };
     rejectBtn.onclick = () => { closeDetailsModal(); openRejectModal(app.id, app.email || ''); };
 
-    document.getElementById('details-modal').style.display = 'flex';
+    openModal(document.getElementById('details-modal'));
   };
 
   window.closeDetailsModal = function () {
-    document.getElementById('details-modal').style.display = 'none';
+    closeModal(document.getElementById('details-modal'));
   };
 
   // ── Close modals on backdrop click ───────────────────────────
@@ -214,6 +283,7 @@
   document.getElementById('details-modal').addEventListener('click', function (e) {
     if (e.target === this) closeDetailsModal();
   });
+  document.addEventListener('keydown', trapFocus);
 
   // ── Init ─────────────────────────────────────────────────────
   loadPending();

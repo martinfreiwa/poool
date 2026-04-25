@@ -451,11 +451,18 @@ Use existing layout tokens:
 | Section gap | `--section-gap: 24px` |
 | Card padding | `--card-padding: 24px` |
 | Card radius | `--card-border-radius: 12px` |
+| Topbar height | Use the shared investor/developer topbar height; do not redefine per page |
+| Topbar-to-content gap | Match `/leaderboard`: first content container starts `24px` below the topbar |
+| Sidebar-to-content gap | Use `--page-padding-x` after the `--sidebar-width` offset |
 
 ### Layout Rules
 
 - Use `dashboard-content` for dashboard page shells.
 - Investor dashboard pages may use `ds-main` plus page-specific wrappers such as `portfolio-main`, `wallet-main`, or `rv2-main`, but those wrappers must preserve the same sidebar offset, topbar position, content width, and vertical rhythm.
+- Use `/leaderboard` as the canonical spacing reference for investor dashboard pages. Its shell pattern is the baseline: main content width is `calc(100% - var(--sidebar-width, 256px))`, left offset is `margin-left: var(--sidebar-width, 256px)`, content max width is `var(--page-max-width, 1200px)`, content top padding is `24px`, horizontal padding is `var(--page-padding-x, 32px)`, bottom padding is `var(--page-padding-bottom, 48px)`, and section gap is `var(--section-gap, 24px)`.
+- The topbar must have the same visual height on every investor and developer dashboard page. Do not change topbar padding, line-height, min-height, icon size, or action button height inside page-specific CSS unless the shared topbar component itself is updated for all dashboard pages.
+- The first content block below the topbar must always start at the same vertical distance as `/leaderboard`: `24px` content-container top padding on desktop. Use the shared content container padding token/value instead of page-specific `margin-top`, negative margins, or custom top padding.
+- Page content must always start at the same horizontal distance from the sidebar. The main wrapper should offset by `--sidebar-width`, and the content container should use `--page-padding-x`; do not hardcode custom left margins or per-page sidebar gaps.
 - Keep page sections full-width or naturally constrained; do not nest cards inside cards.
 - Cards are for repeated items, stat panels, modals, and genuinely framed tools.
 - Avoid floating decorative section cards.
@@ -479,10 +486,14 @@ Required consistency:
 - Sidebar width: use `--sidebar-width`.
 - Content background: use `--content-bg`.
 - Content horizontal padding: use `--page-padding-x`.
+- Topbar height: use the shared topbar component without page-specific height overrides.
+- Topbar-to-content spacing: match `/leaderboard`; desktop content container top padding is `24px`.
+- Sidebar-to-content spacing: use the same sidebar offset plus `--page-padding-x` on every page.
 - Main content max width: use `--page-max-width` unless the page has a documented full-width reason.
 - Vertical section spacing: use `--section-gap`.
 - Card padding: use `--card-padding`.
 - Avoid page-specific hardcoded replacements for `256px`, `1200px`, `24px`, `32px`, and `48px` when tokens exist.
+- Do not use negative margins to pull content under, into, or away from the shared topbar. If a page needs a different offset, change the shared layout token/component or document the exception in this file first.
 
 The investor topbar should be the single source for the page title and primary header actions. Avoid duplicating a second desktop page title inside the content unless the page intentionally has a subsection title.
 
@@ -651,6 +662,30 @@ Rules:
 - Do not use decorative gradients behind financial values.
 - Do not rely on green/red alone to communicate positive/negative changes.
 - Values must not shift layout when loading or when numbers grow.
+
+### Progress Bars
+
+Progress bars must use the shared dashboard progress system.
+
+Use:
+
+- `.ds-progress`
+- `.ds-progress__fill`
+- `.ds-progress--sm`
+- `.ds-progress--lg`
+
+Default progress color:
+
+- Track: `var(--progress-track-bg, #D5D7DA)`
+- Fill: `var(--progress-fill-bg, #98FB96)`
+- Radius: `var(--progress-border-radius, 30px)`
+
+Rules:
+
+- The standard fill color for normal progress is the brand green progress token, not a custom gradient.
+- Use semantic variants only when the progress state itself is semantic: warning for approaching a limit, danger for failed/exceeded/error states.
+- Do not create page-specific progress colors for profile completion, funding, upload, or submission progress when the shared progress tokens can represent the state.
+- Inline styles may set dynamic width only, for example `style="width: 65%"`; color, radius, height, and transition belong in CSS.
 
 ### Tables
 
@@ -833,6 +868,9 @@ Use this checklist when auditing or fixing investor dashboard pages.
 - [ ] Page uses the shared investor topbar.
 - [ ] Page title appears once per breakpoint.
 - [ ] Main content uses tokenized sidebar offset, content background, padding, and max width.
+- [ ] Topbar height matches other dashboard pages; no page-specific topbar padding, line-height, min-height, icon-size, or button-height override.
+- [ ] First content block starts at the same vertical distance below the topbar as `/leaderboard` (`24px` desktop content-container top padding).
+- [ ] Content/cards start at the same horizontal distance from the sidebar as `/leaderboard` (`--sidebar-width` offset plus `--page-padding-x`).
 - [ ] Mobile header/navigation does not duplicate or overlap desktop shell elements.
 
 ### Components

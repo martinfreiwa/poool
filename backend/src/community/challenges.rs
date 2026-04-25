@@ -2,6 +2,22 @@ use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+pub const REQUIREMENT_TYPES: &[&str] = &[
+    "kyc_approved",
+    "buy_asset",
+    "write_review",
+    "join_circle",
+    "login_streak",
+];
+
+pub const FREQUENCIES: &[&str] = &["one_time", "daily", "weekly"];
+
+const MAX_TITLE_LEN: usize = 255;
+const MAX_DESCRIPTION_LEN: usize = 5_000;
+const MAX_BADGE_CODE_LEN: usize = 50;
+const MAX_XP_REWARD: i32 = 10_000;
+const MAX_REQUIREMENT_VALUE: i32 = 10_000;
+
 // ─── Models ─────────────────────────────────────────────────────────
 
 #[derive(Debug, serde::Serialize, sqlx::FromRow)]
@@ -151,6 +167,33 @@ pub async fn admin_create_challenge(
     req_value: i32,
     frequency: &str,
 ) -> Result<Challenge, AppError> {
+    let title = validate_text_field("Title", title, MAX_TITLE_LEN)?;
+    let description = validate_text_field("Description", description, MAX_DESCRIPTION_LEN)?;
+    validate_range("XP reward", xp_reward, 0, MAX_XP_REWARD)?;
+    validate_range("Requirement value", req_value, 1, MAX_REQUIREMENT_VALUE)?;
+    validate_allowed("Requirement type", req_type, REQUIREMENT_TYPES)?;
+    validate_allowed("Frequency", frequency, FREQUENCIES)?;
+
+    let badge_reward = match badge_reward {
+        Some(code) => {
+            let code = validate_text_field("Badge reward", code, MAX_BADGE_CODE_LEN)?;
+            let exists: bool =
+                sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM badges WHERE code = $1)")
+                    .bind(code)
+                    .fetch_one(community_pool)
+                    .await?;
+
+            if !exists {
+                return Err(AppError::BadRequest(
+                    "Badge reward must reference an existing badge code.".to_string(),
+                ));
+            }
+
+            Some(code)
+        }
+        None => None,
+    };
+
     let challenge = sqlx::query_as::<_, Challenge>(
         r#"
         INSERT INTO challenges (title, description, xp_reward, badge_reward, requirement_type, requirement_value, frequency)
@@ -160,10 +203,10 @@ pub async fn admin_create_challenge(
     )
     .bind(title)
     .bind(description)
-    .bind(xp_reward.max(0))
+    .bind(xp_reward)
     .bind(badge_reward)
     .bind(req_type)
-    .bind(req_value.max(1))
+    .bind(req_value)
     .bind(frequency)
     .fetch_one(community_pool)
     .await?;
@@ -175,11 +218,54 @@ pub async fn admin_toggle_challenge(
     community_pool: &PgPool,
     challenge_id: Uuid,
     is_active: bool,
-) -> Result<(), AppError> {
-    sqlx::query("UPDATE challenges SET is_active = $1 WHERE id = $2")
-        .bind(is_active)
-        .bind(challenge_id)
-        .execute(community_pool)
-        .await?;
+) -> Result<Challenge, AppError> {
+    let challenge = sqlx::query_as::<_, Challenge>(
+        "UPDATE challenges SET is_active = $1 WHERE id = $2 RETURNING *",
+    )
+    .bind(is_active)
+    .bind(challenge_id)
+    .fetch_optional(community_pool)
+    .await?;
+
+    challenge.ok_or_else(|| AppError::NotFound("Challenge not found.".to_string()))
+}
+
+fn validate_text_field<'a>(
+    name: &str,
+    value: &'a str,
+    max_len: usize,
+) -> Result<&'a str, AppError> {
+    let value = value.trim();
+    if value.is_empty() {
+        return Err(AppError::BadRequest(format!("{name} is required.")));
+    }
+
+    if value.chars().count() > max_len {
+        return Err(AppError::BadRequest(format!(
+            "{name} must be {max_len} characters or fewer."
+        )));
+    }
+
+    Ok(value)
+}
+
+fn validate_range(name: &str, value: i32, min: i32, max: i32) -> Result<(), AppError> {
+    if value < min || value > max {
+        return Err(AppError::BadRequest(format!(
+            "{name} must be between {min} and {max}."
+        )));
+    }
+
     Ok(())
+}
+
+fn validate_allowed(name: &str, value: &str, allowed: &[&str]) -> Result<(), AppError> {
+    if allowed.contains(&value) {
+        return Ok(());
+    }
+
+    Err(AppError::BadRequest(format!(
+        "{name} must be one of: {}.",
+        allowed.join(", ")
+    )))
 }

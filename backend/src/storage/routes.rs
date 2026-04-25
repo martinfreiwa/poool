@@ -20,6 +20,7 @@ use uuid::Uuid;
 use super::service;
 use crate::auth::middleware;
 use crate::auth::routes::AppState;
+use crate::common::sanitize::sanitize_text;
 
 const MAX_AVATAR_BYTES: usize = 5 * 1024 * 1024; // 5 MB
 const MAX_KYC_BYTES: usize = 10 * 1024 * 1024; // 10 MB
@@ -587,6 +588,17 @@ fn sniff_mime(bytes: &[u8]) -> Option<&'static str> {
     if bytes.starts_with(b"%PDF-") {
         return Some("application/pdf");
     }
+    // ZIP / DOCX containers: PK..
+    if bytes.starts_with(b"PK\x03\x04")
+        || bytes.starts_with(b"PK\x05\x06")
+        || bytes.starts_with(b"PK\x07\x08")
+    {
+        return Some("application/zip");
+    }
+    // Legacy Microsoft Office binary documents use OLE Compound File.
+    if bytes.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
+        return Some("application/msword");
+    }
     None
 }
 
@@ -607,12 +619,44 @@ fn mime_matches(client_mime: &str, sniffed: &str) -> bool {
         (c.as_str(), sniffed),
         ("image/jpg", "image/jpeg")
             | ("image/pjpeg", "image/jpeg")
+            | (
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/zip",
+            )
             | ("application/octet-stream", _)
     )
 }
 
+fn canonical_asset_doc_mime(client_mime: &str, sniffed: &str) -> String {
+    let c = client_mime
+        .split(';')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    if c == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        && sniffed == "application/zip"
+    {
+        c
+    } else {
+        sniffed.to_string()
+    }
+}
+
 const MAX_ASSET_DOC_BYTES: usize = 20 * 1024 * 1024; // 20 MB
 const MAX_ASSET_IMAGE_BYTES: usize = 10 * 1024 * 1024; // 10 MB
+
+fn normalize_asset_document_type(value: &str) -> Option<&'static str> {
+    match value.trim() {
+        "proof_of_title" => Some("proof_of_title"),
+        "legal_basis" => Some("legal_basis"),
+        "building_permit" => Some("building_permit"),
+        "tax_npwp" => Some("tax_npwp"),
+        "id_card" => Some("id_card"),
+        "other" => Some("other"),
+        _ => None,
+    }
+}
 
 // ─── Asset Document Upload ─────────────────────────────────────
 
@@ -717,6 +761,31 @@ pub async fn upload_asset_document(
                 .into_response()
         }
     };
+    document_type = match normalize_asset_document_type(&document_type) {
+        Some(value) => value.to_string(),
+        None => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({"error": "Invalid document type"})),
+            )
+                .into_response()
+        }
+    };
+    title = sanitize_text(&title);
+    if title.trim().is_empty() {
+        title = format!(
+            "{}.{}",
+            document_type,
+            service::extension_for_doc_mime(&mime_type)
+        );
+    }
+    if title.len() > 180 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "Document title must be 180 characters or fewer"})),
+        )
+            .into_response();
+    }
 
     // Magic-byte sniff: don't trust client-declared Content-Type.
     let sniffed = match sniff_mime(&file_bytes) {
@@ -736,7 +805,7 @@ pub async fn upload_asset_document(
         )
             .into_response();
     }
-    mime_type = sniffed.to_string();
+    mime_type = canonical_asset_doc_mime(&mime_type, sniffed);
 
     if let Err(e) = service::validate_asset_doc_mime(&mime_type) {
         return e.into_response();

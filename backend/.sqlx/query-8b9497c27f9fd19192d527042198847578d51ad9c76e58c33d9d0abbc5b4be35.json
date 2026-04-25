@@ -1,0 +1,158 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            a.id,\n            a.slug,\n            a.title,\n            a.asset_type,\n            COALESCE(a.location_city, '') as \"location_city!\",\n            COALESCE(a.location_country, '') as \"location_country!\",\n            a.token_price_cents,\n            a.tokens_total,\n            a.annual_yield_bps,\n            a.description,\n            a.total_value_cents,\n            a.tokens_available,\n            a.land_size_sqm,\n            a.building_size_sqm,\n            a.bedrooms,\n            a.bathrooms,\n            a.funding_status,\n            a.location_description,\n            a.occupancy_rate_bps,\n            a.lease_type,\n            a.property_type,\n            a.term_months,\n            a.capital_appreciation_bps,\n            ARRAY(\n                SELECT image_url \n                FROM asset_images \n                WHERE asset_id = a.id \n                ORDER BY is_cover DESC, created_at ASC\n            ) AS \"image_urls!\"\n        FROM assets a\n        WHERE a.published = true\n          AND a.asset_type != 'commodity'\n          AND a.funding_status IN ('funded', 'funding_in_progress', 'funding_open')\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "slug",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "asset_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "location_city!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "location_country!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "token_price_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "tokens_total",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "annual_yield_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "total_value_cents",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 11,
+        "name": "tokens_available",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "land_size_sqm",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 13,
+        "name": "building_size_sqm",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 14,
+        "name": "bedrooms",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 15,
+        "name": "bathrooms",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 16,
+        "name": "funding_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "location_description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
+        "name": "occupancy_rate_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 19,
+        "name": "lease_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 20,
+        "name": "property_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 21,
+        "name": "term_months",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 22,
+        "name": "capital_appreciation_bps",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 23,
+        "name": "image_urls!",
+        "type_info": "VarcharArray"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "8b9497c27f9fd19192d527042198847578d51ad9c76e58c33d9d0abbc5b4be35"
+}

@@ -249,11 +249,18 @@
       background: var(--admin-border);
       border-radius: 11px;
       cursor: pointer;
+      border: 0;
+      padding: 0;
       transition: background 0.2s;
     }
 
     .toggle-switch.active {
       background: var(--admin-success);
+    }
+
+    .toggle-switch:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
     }
 
     .toggle-switch::after {
@@ -689,7 +696,8 @@
                         Show on homepage carousel
                       </div>
                     </div>
-                    <div class="toggle-switch" id="toggle-featured"></div>
+                    <button type="button" class="toggle-switch" id="toggle-featured" role="switch" aria-checked="false"
+                      aria-label="Featured on landing"></button>
                   </div>
                   <div style="
                         display: flex;
@@ -707,16 +715,19 @@
                         Visible on marketplace
                       </div>
                     </div>
-                    <div class="toggle-switch" id="toggle-published"></div>
+                    <button type="button" class="toggle-switch" id="toggle-published" role="switch" aria-checked="false"
+                      aria-label="Published on marketplace"></button>
                   </div>
                   <div>
                     <span class="info-label">Funding Status</span>
                     <select class="admin-select" id="select-funding-status" style="width: 100%; margin-top: 4px">
-                      <option value="pre_funding">Pre-Funding</option>
-                      <option value="funding_open">Funding Open</option>
-                      <option value="fully_funded">Fully Funded</option>
-                      <option value="closed">Closed</option>
-                      <option value="exited">Exited</option>
+	                      <option value="upcoming">Upcoming</option>
+	                      <option value="funding_open">Funding Open</option>
+	                      <option value="funding_in_progress">Funding In Progress</option>
+	                      <option value="funded">Funded</option>
+	                      <option value="rented">Rented</option>
+	                      <option value="payout_pending">Payout Pending</option>
+	                      <option value="exited">Exited</option>
                     </select>
                   </div>
                 </div>
@@ -738,10 +749,10 @@
                   These actions are irreversible. Proceed with caution.
                 </p>
                 <div style="display: flex; flex-direction: column; gap: 10px">
-                  <button class="admin-btn admin-btn--secondary" style="
-                        color: var(--admin-danger);
-                        border-color: var(--admin-danger);
-                      " id="btn-freeze">
+	                  <button class="admin-btn admin-btn--secondary" style="
+	                        color: var(--admin-danger);
+	                        border-color: var(--admin-danger);
+	                      " id="btn-freeze" disabled title="Trading freeze requires the secondary trading freeze contract to be wired first">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
                       stroke-width="1.7">
                       <path d="M8 1v14M1 8h14M3.5 3.5l9 9M12.5 3.5l-9 9" />
@@ -761,10 +772,10 @@
                     </svg>
                     Unpublish from Marketplace
                   </button>
-                  <button class="admin-btn admin-btn--secondary" style="
-                        color: var(--admin-danger);
-                        border-color: var(--admin-danger);
-                      " id="btn-archive">
+	                  <button class="admin-btn admin-btn--secondary" style="
+	                        color: var(--admin-danger);
+	                        border-color: var(--admin-danger);
+	                      " id="btn-archive" disabled title="Archive requires a schema-backed asset lifecycle state">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor"
                       stroke-width="1.7">
                       <path d="M2 4h12v2H2z" />

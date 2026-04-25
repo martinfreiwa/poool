@@ -16,6 +16,38 @@
   <script src="/static/js/admin-permission-guard.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .admin-community-challenges-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+    }
+
+    .admin-community-challenges-actions {
+      flex: 0 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (max-width: 768px) {
+      .admin-community-challenges-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .admin-community-challenges-actions,
+      #new-challenge-btn {
+        width: 100%;
+      }
+
+      #new-challenge-btn {
+        justify-content: center;
+        position: relative;
+        z-index: 2;
+      }
+    }
+  </style>
 </head>
 
 <body class="admin-body dom-ready">
@@ -36,13 +68,13 @@
       </header>
 
       <div class="admin-content">
-        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+        <div class="admin-page-header admin-community-challenges-header">
           <div>
             <h1 class="admin-page-title">Challenges</h1>
             <p class="admin-page-subtitle">Create and manage gamified tasks for the community.</p>
           </div>
-          <div>
-            <button class="admin-btn admin-btn--primary" onclick="openCreateChallengeModal()">
+          <div class="admin-community-challenges-actions">
+            <button class="admin-btn admin-btn--primary" id="new-challenge-btn" onclick="openCreateChallengeModal()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               New Challenge
             </button>
@@ -78,11 +110,11 @@
   </div>
 
   <!-- Create Challenge Modal -->
-  <div id="challenge-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
+  <div id="challenge-modal" role="dialog" aria-modal="true" aria-labelledby="challenge-modal-title" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+    <div id="challenge-modal-panel" style="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:min(560px,calc(100vw - 32px));box-sizing:border-box;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-        <h3 style="font-size:20px;font-weight:700;color:#181D27;margin:0;">Create Challenge</h3>
-        <button onclick="closeCreateChallengeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#667085;">✕</button>
+        <h3 id="challenge-modal-title" style="font-size:20px;font-weight:700;color:#181D27;margin:0;">Create Challenge</h3>
+        <button type="button" aria-label="Close challenge modal" onclick="closeCreateChallengeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#667085;">✕</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px;">
         <div>
@@ -107,11 +139,11 @@
           <div>
             <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Requirement Type *</label>
             <select id="challenge-req-type" class="admin-input" style="width:100%;padding:8px 12px;">
+              <option value="kyc_approved">KYC Approved</option>
               <option value="buy_asset">Buy Asset</option>
-              <option value="write_post">Write Post</option>
-              <option value="invite_friend">Invite Friend</option>
-              <option value="leave_review">Leave Review</option>
-              <option value="daily_login">Daily Login</option>
+              <option value="write_review">Write Review</option>
+              <option value="join_circle">Join Circle</option>
+              <option value="login_streak">Login Streak</option>
             </select>
           </div>
           <div>
@@ -122,10 +154,9 @@
         <div>
           <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Frequency *</label>
           <select id="challenge-frequency" class="admin-input" style="width:100%;padding:8px 12px;">
-            <option value="once">Once (Lifetime)</option>
+            <option value="one_time">Once (Lifetime)</option>
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
           </select>
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
@@ -137,7 +168,23 @@
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => { loadChallenges(); });
+    let challengeModalOpener = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const modal = document.getElementById('challenge-modal');
+      const panel = document.getElementById('challenge-modal-panel');
+
+      modal.addEventListener('mousedown', (event) => {
+        if (event.target === modal) closeCreateChallengeModal();
+      });
+
+      panel.addEventListener('mousedown', (event) => {
+        event.stopPropagation();
+      });
+
+      document.addEventListener('keydown', handleChallengeModalKeydown);
+      loadChallenges();
+    });
 
     async function loadChallenges() {
       try {
@@ -165,10 +212,11 @@
           : '<span class="admin-badge" style="background:#F9FAFB;color:#667085;">Inactive</span>';
 
         // Requirement display e.g. "Buy Asset (x1)"
-        const reqDisplay = c.requirement_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ` (x${c.requirement_value})`;
+        const reqDisplay = formatChallengeValue(c.requirement_type) + ` (x${Number(c.requirement_value) || 0})`;
 
-        const rewardHtml = c.xp_reward > 0 
-          ? `<span style="font-weight:600;color:#027A48;">+${c.xp_reward} XP</span>${c.badge_reward ? ' + Badge' : ''}`
+        const xpReward = Number(c.xp_reward) || 0;
+        const rewardHtml = xpReward > 0
+          ? `<span style="font-weight:600;color:#027A48;">+${xpReward} XP</span>${c.badge_reward ? ' + Badge' : ''}`
           : (c.badge_reward ? 'Badge Only' : 'None');
 
         html += `<tr>
@@ -176,7 +224,7 @@
             <div style="font-weight:500;color:#181D27;">${escHtml(c.title)}</div>
             <div style="font-size:12px;color:#667085;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(c.description)}">${escHtml(c.description)}</div>
           </td>
-          <td style="font-size:13px;color:#344054;">${reqDisplay}</td>
+          <td style="font-size:13px;color:#344054;">${escHtml(reqDisplay)}</td>
           <td style="font-size:13px;">${rewardHtml}</td>
           <td style="font-size:13px;color:#667085;text-transform:capitalize;">${escHtml(c.frequency)}</td>
           <td>${statusHtml}</td>
@@ -191,7 +239,9 @@
     }
 
     function openCreateChallengeModal() {
+      challengeModalOpener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       document.getElementById('challenge-modal').style.display = 'flex';
+      requestAnimationFrame(() => document.getElementById('challenge-title').focus());
     }
 
     function closeCreateChallengeModal() {
@@ -204,7 +254,12 @@
       document.getElementById('challenge-badge').value = '';
       document.getElementById('challenge-req-type').value = 'buy_asset';
       document.getElementById('challenge-req-val').value = '1';
-      document.getElementById('challenge-frequency').value = 'once';
+      document.getElementById('challenge-frequency').value = 'one_time';
+
+      if (challengeModalOpener && document.body.contains(challengeModalOpener)) {
+        challengeModalOpener.focus();
+      }
+      challengeModalOpener = null;
     }
 
     async function createChallenge() {
@@ -262,6 +317,42 @@
       const div = document.createElement('div');
       div.textContent = str || '';
       return div.innerHTML;
+    }
+
+    function formatChallengeValue(value) {
+      return String(value || '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    }
+
+    function handleChallengeModalKeydown(event) {
+      const modal = document.getElementById('challenge-modal');
+      if (modal.style.display !== 'flex') return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeCreateChallengeModal();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const focusable = Array.from(
+        modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+      ).filter((element) => !element.disabled && element.offsetParent !== null);
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
   </script>
 </body>

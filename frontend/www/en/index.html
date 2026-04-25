@@ -228,6 +228,37 @@
   <script src="main-6QW32D7Z.js" type="module"></script>
   <script>
     (function () {
+      var platformLinks = {
+        "terms & conditions": "https://platform.poool.app/terms",
+        "cookies": "https://platform.poool.app/cookies",
+        "privacy policy": "https://platform.poool.app/privacy-policy",
+        "currency policy": "https://platform.poool.app/currency-policy"
+      };
+
+      document.addEventListener("click", function (event) {
+        var el = event.target && event.target.closest ? event.target.closest("a,button") : null;
+        if (!el) return;
+
+        var text = (el.textContent || "").trim().toLowerCase();
+        var href = el.getAttribute && el.getAttribute("href");
+        var target = platformLinks[text];
+
+        if (!target && href) {
+          if (href === "/terms" || href === "/terms-and-conditions") target = platformLinks["terms & conditions"];
+          if (href === "/cookies") target = platformLinks.cookies;
+          if (href === "/privacy-policy" || href === "/privacy") target = platformLinks["privacy policy"];
+          if (href === "/currency-policy" || href === "/currency") target = platformLinks["currency policy"];
+        }
+
+        if (!target) return;
+        event.preventDefault();
+        event.stopPropagation();
+        window.location.assign(target);
+      }, true);
+    })();
+  </script>
+  <script>
+    (function () {
       function linkIdButton() {
         var sel = document.querySelector('pool-land-language-selector');
         if (!sel) return false;

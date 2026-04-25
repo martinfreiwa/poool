@@ -1287,7 +1287,7 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
                         if let Some(url) = postback.postback_url {
                             let sub_id = postback.sub_id.unwrap_or_default();
                             let payout_cents = postback.payout_cents;
-                            
+
                             // Construct final URL
                             let mut parsed = url.clone();
                             if !parsed.contains('?') {
@@ -1296,7 +1296,7 @@ pub async fn run_affiliate_holdback_worker(pool: PgPool) {
                                 parsed.push('&');
                             }
                             let webhook_url = format!("{}subid={}&payout={}&currency=USD&status=approved", parsed, sub_id, (payout_cents as f64) / 100.0);
-                            
+
                             // Fire asynchronously without blocking the loop
                             tokio::spawn(async move {
                                 let client = reqwest::Client::new();

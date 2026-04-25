@@ -813,8 +813,8 @@
 
 .funding-progress-bar {
     height: 6px;
-    background: #E9EAEB; 
-    border-radius: 4px;
+    background: var(--progress-track-bg, #D5D7DA);
+    border-radius: var(--progress-border-radius, 30px);
     margin-bottom: 24px;
     overflow: hidden;
     position: relative;
@@ -822,9 +822,8 @@
 }
 .funding-fill {
     height: 100%;
-    /* Strict adherence to Signal Green from DESIGN.md */
-    background: var(--brand-greeny-green, #03FF88);
-    border-radius: 4px;
+    background: var(--progress-fill-bg, #98FB96);
+    border-radius: var(--progress-border-radius, 30px);
     position: relative;
 }
 
@@ -934,18 +933,17 @@
 }
 .completion-track {
     height: 6px;
-    background: #EAECF0;
-    border-radius: 4px;
+    background: var(--progress-track-bg, #D5D7DA);
+    border-radius: var(--progress-border-radius, 30px);
     margin-bottom: 20px;
     overflow: hidden;
 }
 .completion-fill {
     height: 100%;
-    /* Brand green progress */
-    background: linear-gradient(90deg, #34D399 0%, #03FF88 100%);
-    border-radius: 4px;
+    background: var(--progress-fill-bg, #98FB96);
+    border-radius: var(--progress-border-radius, 30px);
     transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1);
-    box-shadow: 0 0 10px rgba(3, 255, 136, 0.3);
+    box-shadow: none;
 }
 .completion-badges {
     display: flex;

@@ -16,6 +16,8 @@ pub struct SettingsResponse {
     pub country: Option<String>,
     pub timezone: String,
     pub role: String,
+    pub is_developer: bool,
+    pub is_admin: bool,
     pub language: String,
     pub currency: String,
     pub annual_income_cents: Option<i64>,
@@ -234,4 +236,13 @@ pub struct ChangePhoneForm {
 #[derive(Debug, Deserialize)]
 pub struct DeleteAccountForm {
     pub current_password: String,
+    pub confirm: String,
+}
+
+/// Form data for disabling TOTP.
+/// Requires current password and a fresh authenticator code.
+#[derive(Debug, Deserialize)]
+pub struct DisableTotpForm {
+    pub current_password: String,
+    pub code: String,
 }

@@ -81,9 +81,6 @@
             <img loading="lazy" src="{{ asset.cover_image_url }}" alt="{{ asset.title }}" class="table__cell-image" />
             <span class="table__cell-text">
               <span class="table__cell-primary">{{ asset.title }}</span>
-              <span class="table__cell-secondary">
-                {% if asset.city %}{{ asset.city }}{% if asset.country %}, {{ asset.country }}{% endif %}{% else %}Asset{% endif %}
-              </span>
             </span>
           </a>
         </div>

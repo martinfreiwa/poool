@@ -76,6 +76,13 @@
       padding: 40px;
       font-size: 14px;
     }
+    .mp-analytics-error {
+      color: var(--admin-danger, #b42318);
+    }
+    .mp-analytics-disabled-link {
+      opacity: 0.5;
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -104,28 +111,35 @@
         </div>
 
         <!-- Metabase Embed (primary) -->
-        <div class="admin-card">
+        <div
+          class="admin-card"
+          id="metabase-card"
+          data-metabase-base-url="{{ metabase_base_url }}"
+          data-metabase-dashboard-id="{{ metabase_dashboard_id }}"
+          data-metabase-public-dashboard-path="{{ metabase_public_dashboard_path }}"
+        >
           <div class="admin-card-header">
             <h3 class="admin-card-title">📊 Metabase Dashboard</h3>
             <div class="admin-card-actions">
-              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-open-metabase">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-open-metabase" type="button" disabled>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 <span>Open in Metabase</span>
               </button>
-              <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="document.getElementById('metabase-frame').src = document.getElementById('metabase-frame').src">
+              <button class="admin-btn admin-btn--secondary admin-btn--sm" id="btn-refresh-metabase" type="button" disabled>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
                 <span>Refresh</span>
               </button>
             </div>
           </div>
           <div class="admin-card-body" style="padding:0;">
+            <div id="metabase-empty" class="mp-analytics-empty">Metabase is not configured for this environment.</div>
             <iframe
               id="metabase-frame"
-              src="http://localhost:3000/public/dashboard/b0eea388-2a56-4419-82d4-909a9177adaf#theme=transparent&titled=false&bordered=false"
+              title="Marketplace analytics dashboard"
               frameborder="0"
               width="100%"
               height="800"
-              style="border:none; border-radius: 0 0 14px 14px; background: var(--admin-bg);"
+              style="display:none; border:none; border-radius: 0 0 14px 14px; background: var(--admin-bg);"
               allowtransparency="true"
             ></iframe>
           </div>
@@ -155,12 +169,12 @@
 
         <!-- Quick Links -->
         <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
-          <a href="http://localhost:3000/question/40" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">👥 Total Users</a>
-          <a href="http://localhost:3000/question/41" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">📈 User Signups</a>
-          <a href="http://localhost:3000/question/42" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">💰 Investment Volume</a>
-          <a href="http://localhost:3000/question/43" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">📦 Orders</a>
-          <a href="http://localhost:3000/question/44" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">📋 Recent Orders</a>
-          <a href="http://localhost:3000/question/45" target="_blank" class="admin-btn admin-btn--secondary admin-btn--sm">💳 Wallet Balances</a>
+          <a href="#" data-metabase-path="/question/40" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">👥 Total Users</a>
+          <a href="#" data-metabase-path="/question/41" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">📈 User Signups</a>
+          <a href="#" data-metabase-path="/question/42" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">💰 Investment Volume</a>
+          <a href="#" data-metabase-path="/question/43" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">📦 Orders</a>
+          <a href="#" data-metabase-path="/question/44" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">📋 Recent Orders</a>
+          <a href="#" data-metabase-path="/question/45" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary admin-btn--sm mp-analytics-disabled-link" aria-disabled="true">💳 Wallet Balances</a>
         </div>
       </div>
     </main>
@@ -168,14 +182,6 @@
 
   <script src="/static/js/mp-toast.js"></script>
   <script src="/static/js/mp-analytics.js"></script>
-  <script>
-    const METABASE_URL = 'http://localhost:3000';
-    const DASHBOARD_ID = 2;
-
-    document.getElementById('btn-open-metabase').addEventListener('click', () => {
-      window.open(`${METABASE_URL}/dashboard/${DASHBOARD_ID}`, '_blank');
-    });
-  </script>
 </body>
 
 </html>

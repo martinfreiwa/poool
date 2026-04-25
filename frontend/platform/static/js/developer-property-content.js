@@ -5,14 +5,81 @@
  * PUT /api/developer/draft/:id and POST /api/developer/draft/:id/submit
  */
 
+const MAX_ASSET_IMAGE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+let activeImageUploadCount = 0;
+
+function getCsrfToken() {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; csrf_token=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return "";
+}
+
+function getDraftId() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get("draft_id") || localStorage.getItem("draft_asset_id") || "";
+}
+
+function parsePercentField(id) {
+  const raw = document.getElementById(id)?.value || "";
+  if (!raw.trim()) return null;
+  const value = Number(raw.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(value) ? value : NaN;
+}
+
+function isValidPercent(value) {
+  return value === null || (Number.isFinite(value) && value >= 0 && value <= 100);
+}
+
+function showPageToast(message, type) {
+  if (window.showPooolToast) {
+    window.showPooolToast(null, message, type || "info");
+    return;
+  }
+
+  let toast = document.getElementById("form-error-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "form-error-toast";
+    toast.style.cssText =
+      "position:fixed;top:24px;right:24px;background:#f04438;color:#fff;padding:16px 24px;border-radius:8px;z-index:9999;font-size:0.95rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-width:400px;";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.display = "block";
+  setTimeout(() => {
+    toast.style.display = "none";
+  }, 5000);
+}
+
+async function readApiErrorMessage(resp, fallback) {
+  let message = fallback || "Something went wrong. Please try again.";
+  try {
+    const raw = await resp.text();
+    try {
+      const parsed = JSON.parse(raw);
+      message = parsed.error || parsed.message || message;
+    } catch {
+      const stripped = raw.replace(/<[^>]+>/g, "").trim();
+      if (stripped && stripped.length < 300) message = stripped;
+    }
+  } catch {
+    // Keep fallback.
+  }
+  if (resp.status === 401) return "You are not logged in. Please log in and try again.";
+  return message;
+}
+
 /**
  * Save & Exit — persists whatever the user has typed so far (no validation)
  * then navigates to the submissions list.
  */
 async function saveAndExitStep4(btn) {
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  const originalText = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
 
-  const assetId = localStorage.getItem('draft_asset_id');
+  const assetId = getDraftId();
   if (!assetId) {
     // No draft to save, just navigate
     window.location.href = '/developer/submissions';
@@ -20,7 +87,6 @@ async function saveAndExitStep4(btn) {
   }
 
   const getVal = (id) => document.getElementById(id)?.value || '';
-  const getFloat = (id) => parseFloat(document.getElementById(id)?.value) || 0;
 
   const payload = {};
   const assetTitle = getVal('asset-title');
@@ -36,14 +102,20 @@ async function saveAndExitStep4(btn) {
   const youtubeLink = getVal('youtube-link');
   if (youtubeLink) payload.video_url = youtubeLink.trim();
 
-  const rentalYield = getFloat('rental-yield');
-  if (rentalYield) payload.annual_yield_bps = Math.round(rentalYield * 100);
-  const capitalApp = getFloat('capital-appreciation');
-  if (capitalApp) payload.capital_appreciation_bps = Math.round(capitalApp * 100);
-  const investorShare = getFloat('investor-share');
-  if (investorShare) payload.investor_share_bps = Math.round(investorShare * 100);
-  const occupancyRate = getFloat('occupancy-rate');
-  if (occupancyRate) payload.occupancy_rate_bps = Math.round(occupancyRate * 100);
+  const rentalYield = parsePercentField('rental-yield');
+  if (rentalYield !== null) payload.annual_yield_bps = Math.round(rentalYield * 100);
+  const capitalApp = parsePercentField('capital-appreciation');
+  if (capitalApp !== null) payload.capital_appreciation_bps = Math.round(capitalApp * 100);
+  const investorShare = parsePercentField('investor-share');
+  if (investorShare !== null) payload.investor_share_bps = Math.round(investorShare * 100);
+  const occupancyRate = parsePercentField('occupancy-rate');
+  if (occupancyRate !== null) payload.occupancy_rate_bps = Math.round(occupancyRate * 100);
+
+  if (![rentalYield, capitalApp, investorShare, occupancyRate].every(isValidPercent)) {
+    showPageToast("Percent fields must be between 0 and 100.", "error");
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    return;
+  }
 
   try {
     const resp = await fetch(`/api/developer/draft/${assetId}`, {
@@ -55,12 +127,16 @@ async function saveAndExitStep4(btn) {
       body: JSON.stringify(payload),
     });
     if (!resp.ok) {
-      console.warn('Save & Exit: server returned', resp.status);
+      const message = await readApiErrorMessage(resp, `Save failed (${resp.status})`);
+      showPageToast(message, "error");
+      if (btn) { btn.disabled = false; btn.textContent = originalText; }
+      return;
     }
+    window.location.href = '/developer/submissions';
   } catch (err) {
     console.warn('Save & Exit: could not save draft', err);
-  } finally {
-    window.location.href = '/developer/submissions';
+    showPageToast("Connection lost - your draft was not saved. Please try again.", "error");
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
   }
 }
 
@@ -73,9 +149,16 @@ document.addEventListener("DOMContentLoaded", function () {
   if (urlDraftId) {
     localStorage.setItem("draft_asset_id", urlDraftId);
   }
+  const backBtn = document.getElementById("form-back-btn");
+  if (backBtn) {
+    backBtn.addEventListener("click", function () {
+      const id = getDraftId();
+      window.location.href = id ? `/developer/document-upload-step3?draft_id=${encodeURIComponent(id)}` : "/developer/document-upload-step3";
+    });
+  }
 
   // ── Pre-fill form from existing draft data ─────────────────────────
-  const assetId = localStorage.getItem("draft_asset_id");
+  const assetId = getDraftId();
   if (assetId) {
     fetch(`/api/developer/draft/${assetId}`)
       .then((r) => (r.ok ? r.json() : null))
@@ -145,19 +228,35 @@ document.addEventListener("DOMContentLoaded", function () {
         item.addEventListener("drop", handleDropImage);
         item.addEventListener("dragend", handleDragEnd);
 
-        // Highlight cover
-        const coverStyle = img.is_cover ? 'border: 3px solid #03FF88;' : '';
-        const badge = img.is_cover 
-            ? `<div style="position:absolute;top:8px;left:8px;background:#03FF88;color:#000;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:bold;">COVER</div>`
-            : `<button type="button" class="set-cover-btn" data-id="${img.id}" style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;">Set Cover</button>`;
+        const image = document.createElement("img");
+        image.className = "uploaded-image";
+        image.alt = "Property Image";
+        image.src = img.url || "";
+        if (img.is_cover) image.style.border = "3px solid #03FF88";
+        item.appendChild(image);
 
-        item.innerHTML = `
-          <img src="${img.url}" class="uploaded-image" alt="Property Image" style="${coverStyle}" />
-          ${badge}
-          <button type="button" class="image-remove-btn" data-id="${img.id}" style="background:rgba(255,0,0,0.8);color:#fff;">
-            <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </button>
-        `;
+        if (img.is_cover) {
+          const badge = document.createElement("div");
+          badge.textContent = "COVER";
+          badge.style.cssText = "position:absolute;top:8px;left:8px;background:#03FF88;color:#000;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:bold;";
+          item.appendChild(badge);
+        } else {
+          const setCoverBtn = document.createElement("button");
+          setCoverBtn.type = "button";
+          setCoverBtn.className = "set-cover-btn";
+          setCoverBtn.dataset.id = img.id;
+          setCoverBtn.textContent = "Set Cover";
+          setCoverBtn.style.cssText = "position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;";
+          item.appendChild(setCoverBtn);
+        }
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "image-remove-btn";
+        removeBtn.dataset.id = img.id;
+        removeBtn.style.cssText = "background:rgba(255,0,0,0.8);color:#fff;";
+        removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>';
+        item.appendChild(removeBtn);
         galleryEl.appendChild(item);
       });
 
@@ -287,7 +386,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function handleFiles(files) {
       if (!files || !files.length) return;
-      const arr = Array.from(files).filter(f => f.type.startsWith("image/"));
+      const arr = [];
+      Array.from(files).forEach((file) => {
+        if (!ALLOWED_IMAGE_MIME_TYPES.has(file.type)) {
+          showFormError(`${file.name} must be a JPG, PNG, WebP, or GIF image.`);
+          return;
+        }
+        if (file.size > MAX_ASSET_IMAGE_BYTES) {
+          showFormError(`${file.name} must be 10MB or smaller.`);
+          return;
+        }
+        arr.push(file);
+      });
       if (!arr.length) return;
 
       if (assetImages.length + arr.length > 16) {
@@ -296,6 +406,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       // Upload all files in parallel for speed
+      activeImageUploadCount += arr.length;
       const uploadPromises = arr.map((file, idx) => {
         const formData = new FormData();
         formData.append("file", file);
@@ -321,6 +432,9 @@ document.addEventListener("DOMContentLoaded", function () {
         .catch(err => {
           showFormError(`Failed to upload ${file.name}`);
           return null;
+        })
+        .finally(() => {
+          activeImageUploadCount = Math.max(0, activeImageUploadCount - 1);
         });
       });
 
@@ -371,28 +485,29 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("youtube-link")?.value || "";
 
     // Financial fields — convert percentages to basis points (× 100)
-    const rentalYield = parseFloat(
-      document.getElementById("rental-yield")?.value || "0"
-    );
-    const capitalAppreciation = parseFloat(
-      document.getElementById("capital-appreciation")?.value || "0"
-    );
-    const investorShare = parseFloat(
-      document.getElementById("investor-share")?.value || "0"
-    );
-    const occupancyRate = parseFloat(
-      document.getElementById("occupancy-rate")?.value || "0"
-    );
-    const totalReturn = parseFloat(
-      document.getElementById("total-return")?.value || "0"
-    );
+    const rentalYield = parsePercentField("rental-yield");
+    const capitalAppreciation = parsePercentField("capital-appreciation");
+    const investorShare = parsePercentField("investor-share");
+    const occupancyRate = parsePercentField("occupancy-rate");
 
     // ── Get draft asset ID from localStorage ─────────────────────────────
-    const assetId = localStorage.getItem("draft_asset_id");
+    const assetId = getDraftId();
     if (!assetId) {
       showFormError(
         "No draft asset found. Please go back to Step 2 and create one first."
       );
+      return;
+    }
+    if (activeImageUploadCount > 0) {
+      showFormError("Please wait for image uploads to finish before submitting.");
+      return;
+    }
+    if (assetImages.length === 0) {
+      showFormError("Please upload at least one property image before submitting.");
+      return;
+    }
+    if (![rentalYield, capitalAppreciation, investorShare, occupancyRate].every(isValidPercent)) {
+      showFormError("Percent fields must be between 0 and 100.");
       return;
     }
 
@@ -404,10 +519,10 @@ document.addEventListener("DOMContentLoaded", function () {
       location_description: locationDesc.trim() || null,
       google_maps_url: mapsLink.trim() || null,
       video_url: youtubeLink.trim() || null,
-      annual_yield_bps: Math.round(rentalYield * 100) || null,
-      capital_appreciation_bps: Math.round(capitalAppreciation * 100) || null,
-      investor_share_bps: Math.round(investorShare * 100) || null,
-      occupancy_rate_bps: Math.round(occupancyRate * 100) || null,
+      annual_yield_bps: rentalYield === null ? null : Math.round(rentalYield * 100),
+      capital_appreciation_bps: capitalAppreciation === null ? null : Math.round(capitalAppreciation * 100),
+      investor_share_bps: investorShare === null ? null : Math.round(investorShare * 100),
+      occupancy_rate_bps: occupancyRate === null ? null : Math.round(occupancyRate * 100),
       submission_step: 4,
     };
 

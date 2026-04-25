@@ -1,19 +1,21 @@
 # POOOL Latest Strategy Summary
 
-Date: 2026-04-24
-Source: POOOL Blog Research & Strategy automation
+Date: 2026-04-25
+Source: POOOL Daily Blog Brief & Outline Queue automation
 
 ## Current Recommendation
 
-Prioritize trust-led Bali investment content before broader lifestyle or hype topics. The next content should explain due diligence, legal structures, gross-vs-net ROI, SPV/ERSA/escrow documentation, rental licensing, liquidity limits, and developer readiness.
+Prioritize trust-led Bali investment content before broader lifestyle or hype topics. The immediate production candidate is the due-diligence article outline, followed by a legal-structure comparison brief covering leasehold, Hak Pakai, PT PMA/HGB, and fractional exposure.
 
 ## Pipeline Status
 
-- Local seeded/published DB topics: 7
-- Briefs: 1
-- Outlines: 0
+- Live local DB published topics: 6
+- Reserved SQL blog slugs: 6 additional Bali/fractional topics
+- Briefs: 2
+- Outlines: 1
 - Drafts: 0
-- Backlog risk: high if aiming for daily publishing; create at least 6 more briefs and 3 outlines before increasing cadence.
+- Publish-ready topics: 0
+- Backlog risk: high if aiming for daily publishing; create at least 6 more fully reviewed drafts before relying on a one-article-per-day cadence.
 
 ## Next 7 Topics
 
@@ -27,9 +29,15 @@ Prioritize trust-led Bali investment content before broader lifestyle or hype to
 
 ## Next 3 Briefs
 
-1. Leasehold vs Hak Pakai vs PT PMA vs Fractional Exposure in Bali
-2. Bali Villa ROI: Gross Yield vs Net Investor Return
-3. POOOL SPV, ERSA, Escrow, And Investor Documents Explained
+1. Bali Villa ROI: Gross Yield vs Net Investor Return
+2. POOOL SPV, ERSA, Escrow, And Investor Documents Explained
+3. Bali Property Red Flags Investors Should Check First
+
+## Latest Files
+
+- Queue report: `/Users/martin/Projects/poool/content-intelligence/2026-04-25-daily-blog-brief-outline-queue.md`
+- New outline: `/Users/martin/Projects/poool/outlines/2026-04-25-bali-property-due-diligence-checklist-outline.md`
+- New brief: `/Users/martin/Projects/poool/briefs/leasehold-hak-pakai-pt-pma-fractional-exposure-bali-brief.md`
 
 ## Persona Gaps
 
@@ -45,4 +53,4 @@ The POOOL persona exists but needs voice samples, segment-specific personas, obj
 
 ## Tool Limits
 
-Ubersuggest worked partially for keyword/domain/backlink data but Google suggestions hit HTTP 429. Search Console, GA4, Semrush, Ahrefs, and DataForSEO data were unavailable, so volumes and gaps are directional.
+Ubersuggest worked for keyword overview and SERP analysis, but Google suggestions hit HTTP 429. Search Console, GA4, Semrush, Ahrefs, and DataForSEO data were unavailable, so volumes and gaps are directional. Google Drive search found an older 2025 pre-launch marketing strategy PDF, but no current blog/Search Console performance report.

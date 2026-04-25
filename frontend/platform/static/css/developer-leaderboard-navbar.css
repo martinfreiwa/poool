@@ -32,7 +32,7 @@
   font-size: 20px;
   font-weight: 800;
   color: var(--btn-primary-bg, #0000FF);
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   margin: 0;
   line-height: inherit;
 }
@@ -54,7 +54,7 @@
   background: none;
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   white-space: nowrap;
   text-decoration: none;
 }
@@ -101,8 +101,25 @@
 
 .developer-lb-topbar-action--secondary {
   background: #fff;
-  color: var(--btn-primary-bg, #0000FF);
+  color: var(--body-color, #414651);
   border-color: var(--input-border-color, #D0D5DD);
+}
+
+body#developer-asset-detail-body .developer-lb-topbar-action--secondary,
+body#developer-asset-detail-body .developer-lb-topbar .btn-edit-mode,
+body#developer-asset-detail-body .developer-lb-topbar .btn-cancel-edit {
+  background: #FFFFFF !important;
+  border-color: #D5D7DA !important;
+  color: #414651 !important;
+  box-shadow: none !important;
+}
+
+body#developer-asset-detail-body .developer-lb-topbar-action--secondary:hover,
+body#developer-asset-detail-body .developer-lb-topbar .btn-edit-mode:hover,
+body#developer-asset-detail-body .developer-lb-topbar .btn-cancel-edit:hover {
+  background: #FFFFFF !important;
+  border-color: #D5D7DA !important;
+  color: #414651 !important;
 }
 
 .developer-lb-topbar-search {
@@ -163,7 +180,35 @@
 .developer-lb-shell-main {
   padding: 0 !important;
   gap: 0 !important;
-  background: #fafafa;
+  background: var(--content-bg, #fafafa);
+}
+
+body#developer-dashboard-body #developer-dashboard-main {
+  width: calc(100% - var(--sidebar-width, 256px)) !important;
+  margin-left: var(--sidebar-width, 256px) !important;
+}
+
+body#developer-submissions-body #developer-submissions-main,
+body#developer-asset-detail-body .developer-lb-shell-main {
+  width: calc(100% - var(--sidebar-width, 256px)) !important;
+  margin-left: var(--sidebar-width, 256px) !important;
+}
+
+body#developer-dashboard-body #developer-dashboard-main .developer-lb-topbar .lb-topbar-inner {
+  width: 100%;
+  max-width: var(--page-max-width, 1200px) !important;
+  padding: 0 var(--page-padding-x, 32px);
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+body#developer-submissions-body #developer-submissions-main .developer-lb-topbar .lb-topbar-inner,
+body#developer-asset-detail-body .developer-lb-shell-main .developer-lb-topbar .lb-topbar-inner {
+  width: 100%;
+  max-width: var(--page-max-width, 1200px) !important;
+  padding: 0 var(--page-padding-x, 32px);
+  margin: 0 !important;
+  box-sizing: border-box;
 }
 
 #developer-dashboard-main .ds-main__content,
@@ -172,7 +217,26 @@
 }
 
 #developer-dashboard-main .ds-main__content {
+  max-width: var(--page-max-width, 1200px) !important;
   padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+body#developer-dashboard-body #developer-dashboard-main #dashboard-content-wrapper,
+body#developer-dashboard-body #developer-dashboard-main .dashboard-main-content {
+  width: 100% !important;
+  max-width: var(--page-max-width, 1200px) !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box;
+}
+
+body#developer-asset-detail-body .developer-lb-shell-main > .admin-content {
+  width: 100% !important;
+  max-width: var(--page-max-width, 1200px) !important;
+  margin: 0 !important;
+  padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px) !important;
   box-sizing: border-box;
 }
 
@@ -208,6 +272,42 @@ body#property-content-body .cart-page-main > :not(.developer-lb-topbar):first-of
 @media (max-width: 768px) {
   .developer-lb-topbar.lb-topbar {
     display: none;
+  }
+
+  body#developer-dashboard-body #developer-dashboard-main {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  body#developer-submissions-body #developer-submissions-main,
+  body#developer-asset-detail-body .developer-lb-shell-main {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  body#developer-submissions-body #developer-submissions-main {
+    padding: 80px 16px 16px !important;
+  }
+
+  body#developer-submissions-body #developer-submissions-main > :not(.developer-lb-topbar) {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  body#developer-submissions-body #developer-submissions-main > :not(.developer-lb-topbar):first-of-type {
+    margin-top: 0 !important;
+  }
+
+  body#developer-dashboard-body #developer-dashboard-main .ds-main__content {
+    padding: 80px 16px 16px !important;
+    max-width: none !important;
+  }
+
+  body#developer-asset-detail-body .developer-lb-shell-main > .admin-content {
+    padding: 80px 16px 16px !important;
+    max-width: none !important;
   }
 
   #developer-dashboard-main .ds-main__content,

@@ -493,16 +493,16 @@
       </div>
       <!-- Action Buttons -->
       <div id="form-actions" class="form-actions">
-        <button id="form-back-btn" class="form-back-btn" onclick="var id1 = localStorage.getItem('draft_asset_id'); window.location.href = id1 ? '/developer/application-form?draft_id=' + id1 : '/developer/application-form'">
+        <button id="form-back-btn" type="button" class="form-back-btn">
           <svg class="back-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M12.5 5L7.5 10L12.5 15" stroke="#01011C" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"></path>
           </svg>
           <span>Previous</span>
         </button>
-        <button type="button" class="form-save-exit-btn" onclick="var id = localStorage.getItem('draft_asset_id'); if (id) { window.location.href = '/developer/submissions?draft_id=' + id; } else { window.location.href = '/developer/submissions'; }" style="padding:10px 20px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;cursor:pointer;font-weight:500;color:#414651;font-size:0.9rem;">
+        <button type="button" id="form-save-exit-btn" class="form-save-exit-btn" style="padding:10px 20px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;cursor:pointer;font-weight:500;color:#414651;font-size:0.9rem;">
           Save &amp; Exit
         </button>
-        <button id="form-next-btn" class="form-next-btn" onclick="var id2 = localStorage.getItem('draft_asset_id'); window.location.href = id2 ? '/developer/property-content?draft_id=' + id2 : '/developer/property-content'">
+        <button id="form-next-btn" type="button" class="form-next-btn">
           <span>Next Step</span>
         </button>
       </div>

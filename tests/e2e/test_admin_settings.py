@@ -19,7 +19,7 @@ def test_admin_platform_settings(admin_page):
     
     # Check if we can change a setting
     # Just save without making changes to avoid polluting for now
-    page.click("button:has-text('Save General Settings')")
+    page.locator("button[x-text*='Save General Settings']").click()
     
     # Wait for the success toast or button to not say 'Saving...'
     toast = page.locator("div[x-show='toast.show']")
@@ -40,7 +40,7 @@ def test_admin_legal_settings(admin_page):
     expect(terms_input).to_be_visible(timeout=10000)
     
     # Save the versions
-    page.click("button:has-text('Save Legal Versions')")
+    page.locator("button[x-text*='Save Legal Versions']").click()
     
     # Wait for toast
     toast = page.locator("div[x-show='toast.show']")

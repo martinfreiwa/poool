@@ -3,6 +3,20 @@ use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+const VALID_AMA_STATUSES: &[&str] = &[
+    "draft",
+    "scheduled",
+    "accepting_questions",
+    "live",
+    "closed",
+    "archived",
+];
+const MAX_TITLE_CHARS: usize = 300;
+const MAX_EXPERT_NAME_CHARS: usize = 200;
+const MAX_EXPERT_TITLE_CHARS: usize = 300;
+const MAX_DESCRIPTION_CHARS: usize = 5_000;
+const MAX_ANSWER_CHARS: usize = 5_000;
+
 // ─── Models ──────────────────────────────────────────────────────────
 
 #[derive(serde::Serialize, sqlx::FromRow)]
@@ -105,12 +119,30 @@ pub async fn get_ama_detail(
     ama_id: Uuid,
     user_id: Uuid,
 ) -> Result<AmaDetail, AppError> {
+    get_ama_detail_with_visibility(pool, ama_id, user_id, false).await
+}
+
+pub async fn get_ama_detail_admin(
+    pool: &PgPool,
+    ama_id: Uuid,
+    admin_id: Uuid,
+) -> Result<AmaDetail, AppError> {
+    get_ama_detail_with_visibility(pool, ama_id, admin_id, true).await
+}
+
+async fn get_ama_detail_with_visibility(
+    pool: &PgPool,
+    ama_id: Uuid,
+    user_id: Uuid,
+    include_drafts: bool,
+) -> Result<AmaDetail, AppError> {
     let ama = sqlx::query_as::<_, Ama>(
         r#"SELECT id, title, description, expert_name, expert_title, expert_avatar_url,
                   status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at
-           FROM amas WHERE id = $1"#,
+           FROM amas WHERE id = $1 AND ($2 OR status != 'draft')"#,
     )
     .bind(ama_id)
+    .bind(include_drafts)
     .fetch_optional(pool)
     .await?
     .ok_or_else(|| AppError::NotFound("AMA not found".into()))?;
@@ -256,7 +288,13 @@ pub async fn create_ama(
     scheduled_at: Option<chrono::DateTime<chrono::Utc>>,
     status: Option<&str>,
 ) -> Result<Ama, AppError> {
+    let title = validate_required_text(title, "Title", MAX_TITLE_CHARS)?;
+    let expert_name = validate_required_text(expert_name, "Expert name", MAX_EXPERT_NAME_CHARS)?;
+    let description = validate_optional_text(description, "Description", MAX_DESCRIPTION_CHARS)?;
+    let expert_title =
+        validate_optional_text(expert_title, "Expert title", MAX_EXPERT_TITLE_CHARS)?;
     let st = status.unwrap_or("scheduled");
+    validate_ama_status(st)?;
 
     let ama = sqlx::query_as::<_, Ama>(
         r#"INSERT INTO amas (title, description, expert_name, expert_title, expert_avatar_url, scheduled_at, status, created_by)
@@ -264,10 +302,10 @@ pub async fn create_ama(
            RETURNING id, title, description, expert_name, expert_title, expert_avatar_url,
                      status, scheduled_at, started_at, ended_at, max_questions, created_by, created_at"#
     )
-    .bind(title)
-    .bind(description)
-    .bind(expert_name)
-    .bind(expert_title)
+    .bind(&title)
+    .bind(description.as_deref())
+    .bind(&expert_name)
+    .bind(expert_title.as_deref())
     .bind(expert_avatar_url)
     .bind(scheduled_at)
     .bind(st)
@@ -285,48 +323,36 @@ pub async fn update_ama_status(
     ama_id: Uuid,
     new_status: &str,
 ) -> Result<(), AppError> {
-    let valid = [
-        "draft",
-        "scheduled",
-        "accepting_questions",
-        "live",
-        "closed",
-        "archived",
-    ];
-    if !valid.contains(&new_status) {
-        return Err(AppError::BadRequest(format!(
-            "Invalid AMA status: {}",
-            new_status
-        )));
-    }
+    validate_ama_status(new_status)?;
 
     // Set timestamps based on status
-    match new_status {
-        "live" => {
-            sqlx::query(
+    let result =
+        match new_status {
+            "live" => sqlx::query(
                 "UPDATE amas SET status = $1, started_at = NOW(), updated_at = NOW() WHERE id = $2",
             )
             .bind(new_status)
             .bind(ama_id)
             .execute(pool)
-            .await?;
-        }
-        "closed" | "archived" => {
-            sqlx::query(
+            .await?,
+            "closed" | "archived" => sqlx::query(
                 "UPDATE amas SET status = $1, ended_at = NOW(), updated_at = NOW() WHERE id = $2",
             )
             .bind(new_status)
             .bind(ama_id)
             .execute(pool)
-            .await?;
-        }
-        _ => {
-            sqlx::query("UPDATE amas SET status = $1, updated_at = NOW() WHERE id = $2")
-                .bind(new_status)
-                .bind(ama_id)
-                .execute(pool)
-                .await?;
-        }
+            .await?,
+            _ => {
+                sqlx::query("UPDATE amas SET status = $1, updated_at = NOW() WHERE id = $2")
+                    .bind(new_status)
+                    .bind(ama_id)
+                    .execute(pool)
+                    .await?
+            }
+        };
+
+    if result.rows_affected() == 0 {
+        return Err(AppError::NotFound("AMA not found".into()));
     }
 
     Ok(())
@@ -336,16 +362,20 @@ pub async fn update_ama_status(
 
 pub async fn answer_question(
     pool: &PgPool,
+    ama_id: Uuid,
     question_id: Uuid,
     admin_id: Uuid,
     answer: &str,
-) -> Result<(), AppError> {
+) -> Result<(Uuid, Uuid), AppError> {
+    let answer = validate_required_text(answer, "Answer", MAX_ANSWER_CHARS)?;
+
     let result = sqlx::query(
-        "UPDATE ama_questions SET answer = $1, answered_by = $2, answered_at = NOW() WHERE id = $3",
+        "UPDATE ama_questions SET answer = $1, answered_by = $2, answered_at = NOW() WHERE id = $3 AND ama_id = $4",
     )
-    .bind(answer)
+    .bind(&answer)
     .bind(admin_id)
     .bind(question_id)
+    .bind(ama_id)
     .execute(pool)
     .await?;
 
@@ -355,8 +385,9 @@ pub async fn answer_question(
 
     // Award XP to the question author and notify them
     let info: Option<(Uuid, Uuid)> =
-        sqlx::query_as("SELECT user_id, ama_id FROM ama_questions WHERE id = $1")
+        sqlx::query_as("SELECT user_id, ama_id FROM ama_questions WHERE id = $1 AND ama_id = $2")
             .bind(question_id)
+            .bind(ama_id)
             .fetch_optional(pool)
             .await?;
 
@@ -382,18 +413,25 @@ pub async fn answer_question(
             Some(&link),
         )
         .await;
+
+        return Ok((uid, ama_id));
     }
 
-    Ok(())
+    Err(AppError::NotFound("Question not found".into()))
 }
 
 // ─── Admin: Feature/Unfeature Question ───────────────────────────────
 
-pub async fn toggle_featured(pool: &PgPool, question_id: Uuid) -> Result<bool, AppError> {
+pub async fn toggle_featured(
+    pool: &PgPool,
+    ama_id: Uuid,
+    question_id: Uuid,
+) -> Result<bool, AppError> {
     let new_val: bool = sqlx::query_scalar(
-        "UPDATE ama_questions SET is_featured = NOT is_featured WHERE id = $1 RETURNING is_featured"
+        "UPDATE ama_questions SET is_featured = NOT is_featured WHERE id = $1 AND ama_id = $2 RETURNING is_featured"
     )
     .bind(question_id)
+    .bind(ama_id)
     .fetch_optional(pool)
     .await?
     .ok_or_else(|| AppError::NotFound("Question not found".into()))?;
@@ -411,4 +449,50 @@ pub async fn get_question_count(pool: &PgPool, ama_id: Uuid) -> Result<i64, AppE
             .await?;
 
     Ok(count)
+}
+
+fn validate_ama_status(status: &str) -> Result<(), AppError> {
+    if VALID_AMA_STATUSES.contains(&status) {
+        Ok(())
+    } else {
+        Err(AppError::BadRequest(format!(
+            "Invalid AMA status: {}",
+            status
+        )))
+    }
+}
+
+fn validate_required_text(value: &str, field: &str, max_chars: usize) -> Result<String, AppError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::BadRequest(format!("{} is required.", field)));
+    }
+    if trimmed.chars().count() > max_chars {
+        return Err(AppError::BadRequest(format!(
+            "{} must be {} characters or fewer.",
+            field, max_chars
+        )));
+    }
+    Ok(trimmed.to_string())
+}
+
+fn validate_optional_text(
+    value: Option<&str>,
+    field: &str,
+    max_chars: usize,
+) -> Result<Option<String>, AppError> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+    if trimmed.chars().count() > max_chars {
+        return Err(AppError::BadRequest(format!(
+            "{} must be {} characters or fewer.",
+            field, max_chars
+        )));
+    }
+    Ok(Some(trimmed.to_string()))
 }

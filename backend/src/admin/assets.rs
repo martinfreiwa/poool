@@ -4,6 +4,7 @@ use axum::{
     extract::{Json, State},
     response::IntoResponse,
 };
+use serde::Deserialize;
 use sqlx::Row;
 
 //
@@ -12,9 +13,11 @@ use sqlx::Row;
 
 /// GET /api/admin/assets  List published assets with funding progress
 pub async fn api_admin_assets(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.view").await?;
+
     let rows = sqlx::query(
         r#"SELECT a.id::text, a.title, a.slug, a.asset_type,
                   a.location_city, a.total_value_cents, a.token_price_cents,
@@ -28,7 +31,7 @@ pub async fn api_admin_assets(
     )
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::Database)?;
 
     let assets: Vec<serde_json::Value> = rows
         .iter()
@@ -57,40 +60,64 @@ pub async fn api_admin_assets(
 
 /// POST /api/admin/assets/:asset_id/toggle-featured
 pub async fn api_admin_toggle_featured(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(asset_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "assets.publish")
+        .await?;
+
     let uid = ApiError::parse_uuid(&asset_id)?;
 
-    let updated =
-        sqlx::query("UPDATE assets SET featured = NOT featured, updated_at = NOW() WHERE id = $1")
-            .bind(uid)
-            .execute(&state.db)
-            .await;
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
 
-    match updated {
-        Ok(r) if r.rows_affected() > 0 => {
-            Ok(Json(serde_json::json!({"status": "toggled"})).into_response())
-        }
-        Ok(_) => Err(ApiError::NotFound("Asset not found".to_string())),
-        Err(e) => {
-            tracing::error!("Failed to toggle featured {asset_id}: {e}");
-            Err(ApiError::Internal("Database error".to_string()))
-        }
-    }
+    let previous: Option<bool> =
+        sqlx::query_scalar("SELECT featured FROM assets WHERE id = $1 FOR UPDATE")
+            .bind(uid)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+    let previous = previous.ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
+    let next = !previous;
+
+    sqlx::query("UPDATE assets SET featured = $2, updated_at = NOW() WHERE id = $1")
+        .bind(uid)
+        .bind(next)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'asset.featured_toggled', 'assets', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(uid)
+    .bind(serde_json::json!({ "featured": previous }))
+    .bind(serde_json::json!({ "featured": next }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({"status": "success", "featured": next})).into_response())
 }
 
 /// GET /api/admin/assets/:asset_id/detail
 pub async fn api_admin_asset_detail(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(asset_id): axum::extract::Path<String>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.view").await?;
+
     let aid = ApiError::parse_uuid(&asset_id)?;
 
     let row = sqlx::query(
-        "SELECT a.title, a.slug, a.asset_type, a.property_type, a.city, a.country,
+        "SELECT a.id::text, a.title, a.slug, a.asset_type, a.property_type,
+                a.location_city as city, a.location_country as country,
                 COALESCE(a.total_value_cents,0) as total_value_cents,
                 COALESCE(a.token_price_cents,0) as token_price_cents,
                 COALESCE(a.tokens_total,0) as tokens_total,
@@ -104,14 +131,9 @@ pub async fn api_admin_asset_detail(
     )
     .bind(aid)
     .fetch_optional(&state.db)
-    .await;
-
-    let row = match row {
-        Ok(Some(r)) => r,
-        _ => {
-            return Err(ApiError::NotFound("Not found".to_string()));
-        }
-    };
+    .await
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::NotFound("Not found".to_string()))?;
 
     // Cap table
     let investors: Vec<(String, String, i32, i64, i64, i64, String)> = sqlx::query_as(
@@ -119,35 +141,35 @@ pub async fn api_admin_asset_detail(
                 COALESCE(i.tokens_owned,0), COALESCE(i.purchase_value_cents,0),
                 COALESCE(i.current_value_cents,0), COALESCE(i.total_rental_cents,0),
                 COALESCE(i.status,'active')
-         FROM investments i JOIN users u ON u.id = i.user_id LEFT JOIN user_profiles up ON up.user_id = u.id
-         WHERE i.asset_id = $1 ORDER BY i.tokens_owned DESC"
-    ).bind(aid).fetch_all(&state.db).await.unwrap_or_default();
+	         FROM investments i JOIN users u ON u.id = i.user_id LEFT JOIN user_profiles up ON up.user_id = u.id
+	         WHERE i.asset_id = $1 ORDER BY i.tokens_owned DESC"
+    ).bind(aid).fetch_all(&state.db).await.map_err(ApiError::Database)?;
 
     // Financial records
     let financials: Vec<(i32, i32, i64, i64, i64, Option<i32>)> = sqlx::query_as(
         "SELECT period_month, period_year, COALESCE(rental_income_cents,0), COALESCE(expenses_cents,0),
-                COALESCE(net_income_cents,0), occupancy_rate_bps
-         FROM asset_financials WHERE asset_id = $1 ORDER BY period_year, period_month"
-    ).bind(aid).fetch_all(&state.db).await.unwrap_or_default();
+	                COALESCE(net_income_cents,0), occupancy_rate_bps
+	         FROM asset_financials WHERE asset_id = $1 ORDER BY period_year, period_month"
+    ).bind(aid).fetch_all(&state.db).await.map_err(ApiError::Database)?;
 
     // Documents
-    let docs: Vec<(String, Option<i64>)> = sqlx::query_as(
-        "SELECT document_type, file_size_bytes FROM asset_documents WHERE asset_id = $1",
+    let docs: Vec<(String, String, String, Option<i64>)> = sqlx::query_as(
+        "SELECT id::text, document_type, title, file_size_bytes FROM asset_documents WHERE asset_id = $1 ORDER BY document_type, created_at",
     )
     .bind(aid)
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::Database)?;
 
     // Images
     let images: Vec<(String, bool, i32)> = sqlx::query_as(
         "SELECT COALESCE(image_url,''), COALESCE(is_cover,false), COALESCE(sort_order,0) FROM asset_images WHERE asset_id = $1 ORDER BY sort_order"
-    ).bind(aid).fetch_all(&state.db).await.unwrap_or_default();
+    ).bind(aid).fetch_all(&state.db).await.map_err(ApiError::Database)?;
 
     // Milestones
     let milestones: Vec<(String, Option<String>, Option<i32>, bool)> = sqlx::query_as(
         "SELECT title, description, month_index, COALESCE(is_completed,false) FROM asset_milestones WHERE asset_id = $1 ORDER BY month_index"
-    ).bind(aid).fetch_all(&state.db).await.unwrap_or_default();
+    ).bind(aid).fetch_all(&state.db).await.map_err(ApiError::Database)?;
 
     // Orders referencing this asset
     let orders: Vec<(String, String, i32, i64, String, String)> = sqlx::query_as(
@@ -162,9 +184,10 @@ pub async fn api_admin_asset_detail(
     .bind(aid)
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::Database)?;
 
     Ok(Json(serde_json::json!({
+        "id": row.get::<String, _>("id"),
         "title": row.get::<String, _>("title"),
         "slug": row.get::<Option<String>, _>("slug"),
         "asset_type": row.get::<Option<String>, _>("asset_type"),
@@ -194,7 +217,13 @@ pub async fn api_admin_asset_detail(
             "rental_income_cents": f.2, "expenses_cents": f.3,
             "net_income_cents": f.4, "occupancy_rate_bps": f.5
         })).collect::<Vec<_>>(),
-        "documents": docs.iter().map(|d| serde_json::json!({"document_type": d.0, "file_size": d.1})).collect::<Vec<_>>(),
+        "documents": docs.iter().map(|d| serde_json::json!({
+            "id": d.0,
+            "document_type": d.1,
+            "title": d.2,
+            "file_size": d.3,
+            "url": format!("/api/documents/{}/download", d.0)
+        })).collect::<Vec<_>>(),
         "images": images.iter().map(|i| {
             let url = crate::storage::service::rewrite_gcs_url(&i.0);
             serde_json::json!({"url": url, "is_cover": i.1, "sort_order": i.2})
@@ -205,4 +234,130 @@ pub async fn api_admin_asset_detail(
             "subtotal_cents": o.3, "status": o.4, "created_at": o.5
         })).collect::<Vec<_>>(),
     })).into_response())
+}
+
+/// Payload for publishing or unpublishing an asset.
+#[derive(Debug, Deserialize)]
+pub struct AssetPublicationPayload {
+    /// Whether the asset should be visible on the marketplace.
+    pub published: bool,
+}
+
+/// PATCH /api/admin/assets/:asset_id/publication
+pub async fn api_admin_asset_publication(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(asset_id): axum::extract::Path<String>,
+    Json(payload): Json<AssetPublicationPayload>,
+) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "assets.publish")
+        .await?;
+
+    let aid = ApiError::parse_uuid(&asset_id)?;
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+
+    let previous: Option<bool> =
+        sqlx::query_scalar("SELECT published FROM assets WHERE id = $1 FOR UPDATE")
+            .bind(aid)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+    let previous = previous.ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
+
+    sqlx::query("UPDATE assets SET published = $2, updated_at = NOW() WHERE id = $1")
+        .bind(aid)
+        .bind(payload.published)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'asset.publication_updated', 'assets', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(aid)
+    .bind(serde_json::json!({ "published": previous }))
+    .bind(serde_json::json!({ "published": payload.published }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({
+        "status": "success",
+        "published": payload.published
+    }))
+    .into_response())
+}
+
+/// Payload for updating an asset funding status.
+#[derive(Debug, Deserialize)]
+pub struct AssetFundingStatusPayload {
+    /// New funding status. Must match the database check constraint.
+    pub funding_status: String,
+}
+
+/// PATCH /api/admin/assets/:asset_id/funding-status
+pub async fn api_admin_asset_funding_status(
+    admin: AdminUser,
+    State(state): State<AppState>,
+    axum::extract::Path(asset_id): axum::extract::Path<String>,
+    Json(payload): Json<AssetFundingStatusPayload>,
+) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "assets.edit").await?;
+
+    const ALLOWED_STATUSES: &[&str] = &[
+        "upcoming",
+        "funding_open",
+        "funding_in_progress",
+        "funded",
+        "rented",
+        "payout_pending",
+        "exited",
+    ];
+
+    if !ALLOWED_STATUSES.contains(&payload.funding_status.as_str()) {
+        return Err(ApiError::BadRequest("Invalid funding status".to_string()));
+    }
+
+    let aid = ApiError::parse_uuid(&asset_id)?;
+    let mut tx = state.db.begin().await.map_err(ApiError::Database)?;
+
+    let previous: Option<String> =
+        sqlx::query_scalar("SELECT funding_status FROM assets WHERE id = $1 FOR UPDATE")
+            .bind(aid)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+    let previous = previous.ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
+
+    sqlx::query("UPDATE assets SET funding_status = $2, updated_at = NOW() WHERE id = $1")
+        .bind(aid)
+        .bind(&payload.funding_status)
+        .execute(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'asset.funding_status_updated', 'assets', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(aid)
+    .bind(serde_json::json!({ "funding_status": previous }))
+    .bind(serde_json::json!({ "funding_status": payload.funding_status }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    Ok(Json(serde_json::json!({
+        "status": "success",
+        "funding_status": payload.funding_status
+    }))
+    .into_response())
 }

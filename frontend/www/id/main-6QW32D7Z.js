@@ -4581,7 +4581,7 @@ var Ca = (() => {
             ["variant", "secondary"],
             [
               "href",
-              "/auth/login",
+              "https://platform.poool.app/auth/login",
               "target",
               "_blank",
               "rel",
@@ -8135,7 +8135,7 @@ var Ga = (() => {
             ["variant", "primary"],
             [
               "href",
-              "/auth/login",
+              "https://platform.poool.app/auth/login",
               "target",
               "_blank",
               "rel",

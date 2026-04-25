@@ -51,7 +51,7 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
           <div id="metrics-section" class="metrics-section" aria-label="Priority developer metrics">
             {% for metric in stats.metrics %}
             {% if metric.label == 'Amount Raised' or metric.label == 'Amount Remaining' or metric.label == 'Funding Target' or metric.label == 'Total Assets' %}
-            <div id="metric-card-{{ metric.label }}" class="ds-card ds-stat-card metric-card{% if metric.label == 'Amount Raised' %} metric-card--featured{% endif %}">
+            <div id="metric-card-{{ metric.label }}" class="ds-card ds-stat-card metric-card">
               <div id="metric-heading-{{ metric.label }}" class="ds-stat-card__label metric-heading">
                 {{ metric.label }}
               </div>
@@ -113,7 +113,7 @@ extra_js=['developer-dashboard', 'profile-dropdown', 'mobile-navigation'] %}{% i
           </div>
         </section>
 
-        <section class="developer-assets-performance-section" aria-labelledby="developer-assets-performance-title">
+        <section class="ds-card developer-assets-performance-section" aria-labelledby="developer-assets-performance-title">
           <div class="developer-assets-performance-section__header">
             <div>
               <h2 id="developer-assets-performance-title">Top Performing Assets</h2>

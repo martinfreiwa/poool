@@ -121,6 +121,12 @@ pub struct DeveloperDashboardStats {
     pub attention_assets: Vec<DeveloperTopAsset>,
     pub chart_percentage_display: String, // e.g. "+17.6%" or "0%"
     pub chart_trend: String,              // "up", "down", or "neutral"
+    pub chart_period_label: String,
+    pub chart_y_axis_labels: Vec<String>,
+    pub chart_x_axis_labels: Vec<String>,
+    pub chart_line_path: String,
+    pub chart_area_path: String,
+    pub chart_has_data: bool,
 }
 
 /// Form payload for updating a draft asset (Steps 3 & 4 content).

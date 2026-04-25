@@ -12,13 +12,15 @@ use sqlx::Row;
 
 /// GET /api/admin/audit-logs  Recent audit log entries
 pub async fn api_admin_audit_logs(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin.require_permission(&state.db, "audit.read").await?;
+
     let rows = sqlx::query(
         r#"SELECT al.id, al.action, al.entity_type, al.entity_id::text,
                   al.previous_state, al.new_state,
-                  al.ip_address::text, al.created_at::text,
+                  al.ip_address::text, al.user_agent, al.created_at::text,
                   COALESCE(u.email, 'system') AS actor_email
            FROM audit_logs al
            LEFT JOIN users u ON u.id = al.actor_user_id
@@ -27,7 +29,7 @@ pub async fn api_admin_audit_logs(
     )
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::from)?;
 
     let logs: Vec<serde_json::Value> = rows
         .iter()
@@ -40,6 +42,7 @@ pub async fn api_admin_audit_logs(
                 "previous_state": r.get::<Option<serde_json::Value>, _>("previous_state"),
                 "new_state": r.get::<Option<serde_json::Value>, _>("new_state"),
                 "ip_address": r.get::<Option<String>, _>("ip_address"),
+                "user_agent": r.get::<Option<String>, _>("user_agent"),
                 "created_at": r.get::<String, _>("created_at"),
                 "actor_email": r.get::<String, _>("actor_email")
             })

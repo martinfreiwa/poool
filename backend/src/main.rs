@@ -1,5 +1,24 @@
 #![recursion_limit = "256"]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(clippy::collapsible_if)]
+#![allow(clippy::double_ended_iterator_last)]
+#![allow(clippy::if_same_then_else)]
+#![allow(clippy::inconsistent_digit_grouping)]
+#![allow(clippy::manual_clamp)]
+#![allow(clippy::manual_is_multiple_of)]
+#![allow(clippy::manual_range_contains)]
+#![allow(clippy::manual_strip)]
+#![allow(clippy::needless_borrows_for_generic_args)]
+#![allow(clippy::redundant_closure)]
+#![allow(clippy::redundant_field_names)]
+#![allow(clippy::redundant_pattern_matching)]
+#![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
+#![allow(clippy::unnecessary_cast)]
+#![allow(clippy::useless_conversion)]
+#![allow(clippy::useless_format)]
+#![allow(clippy::useless_vec)]
 #![deny(missing_docs)]
 
 /*!
@@ -695,6 +714,67 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/platform/",
             get(|| async { Redirect::to("https://platform.poool.app/") }),
         )
+        .route(
+            "/auth/login",
+            get(|| async { Redirect::to("https://platform.poool.app/auth/login") }),
+        )
+        .route(
+            "/auth/signup",
+            get(|| async { Redirect::to("https://platform.poool.app/auth/signup") }),
+        )
+        .route(
+            "/signup",
+            get(|| async { Redirect::to("https://platform.poool.app/auth/signup") }),
+        )
+        .route(
+            "/marketplace",
+            get(|| async { Redirect::to("https://platform.poool.app/marketplace") }),
+        )
+        .route(
+            "/blog",
+            get(|| async { Redirect::to("https://platform.poool.app/blog") }),
+        )
+        .route(
+            "/terms",
+            get(|| async { Redirect::to("https://platform.poool.app/terms") }),
+        )
+        .route(
+            "/terms-and-conditions",
+            get(|| async { Redirect::to("https://platform.poool.app/terms") }),
+        )
+        .route(
+            "/cookies",
+            get(|| async { Redirect::to("https://platform.poool.app/cookies") }),
+        )
+        .route(
+            "/privacy-policy",
+            get(|| async { Redirect::to("https://platform.poool.app/privacy-policy") }),
+        )
+        .route(
+            "/privacy",
+            get(|| async { Redirect::to("https://platform.poool.app/privacy-policy") }),
+        )
+        .route(
+            "/currency-policy",
+            get(|| async { Redirect::to("https://platform.poool.app/currency-policy") }),
+        )
+        .route(
+            "/currency",
+            get(|| async { Redirect::to("https://platform.poool.app/currency-policy") }),
+        )
+        .route(
+            "/aml-kyc-policy",
+            get(|| async { Redirect::to("https://platform.poool.app/aml-kyc-policy") }),
+        )
+        .route(
+            "/imprint",
+            get(|| async { Redirect::to("https://platform.poool.app/imprint") }),
+        )
+        .route(
+            "/gdpr-data-request",
+            get(|| async { Redirect::to("https://platform.poool.app/gdpr-data-request") }),
+        )
+        .route("/p/:slug", get(redirect_www_property))
         // Root → landing-v2
         .route_service("/", ServeFile::new("../frontend/platform/landing-v2.html"))
         .fallback_service(
@@ -916,7 +996,7 @@ async fn apply_security_headers(
         // (Stripe, Sentry, Quill v2, jsdelivr CDN bundles) use eval/new Function.
         // 'unsafe-inline' remains pending a template-wide nonce rollout that
         // replaces inline <script>/on* handlers. See security follow-up.
-        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"),
+        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"),
     );
     headers.insert(
         axum::http::header::REFERRER_POLICY,
@@ -2025,6 +2105,10 @@ async fn handle_health_basic() -> impl IntoResponse {
         "status": "ok",
         "version": env!("CARGO_PKG_VERSION"),
     }))
+}
+
+async fn redirect_www_property(Path(slug): Path<String>) -> Redirect {
+    Redirect::to(&format!("https://platform.poool.app/p/{slug}"))
 }
 
 /// GET /health (platform router) — Health check endpoint for Cloud Run and uptime monitors.

@@ -12,8 +12,9 @@ def test_community_feed_load(authenticated_user_page):
     page.goto(f"{BASE_URL}/community")
     page.wait_for_load_state("networkidle")
 
-    # Assert that the main community page wrapper is visible
-    expect(page.locator(".community-page").first).to_be_visible(timeout=10000)
+    # Assert that the current community shell and HTMX content host are visible.
+    expect(page.locator("#community-body .lb-container").first).to_be_visible(timeout=10000)
+    expect(page.locator("#community-content-area").first).to_be_visible(timeout=10000)
 
     # Verify the Feed tab is active by default
     feed_tab = page.locator("button.community-tab-btn.active", has_text="Feed")

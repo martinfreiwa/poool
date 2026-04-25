@@ -97,38 +97,32 @@ pub async fn get_announcements(
 
     let query_str = if category.is_some() && category.as_deref() != Some("") {
         r#"
-        SELECT p.id, u.display_name as author_name, u.avatar_url as author_avatar, 
+        SELECT p.id, 'POOOL Official'::text as author_name, NULL::text as author_avatar,
                ac.category, p.content_sanitized, p.content, p.image_urls, 
                p.reaction_count, p.comment_count, p.is_pinned, p.created_at
         FROM posts p
         JOIN announcement_categories ac ON ac.post_id = p.id
-        LEFT JOIN user_profiles u ON u.user_id = p.user_id
         WHERE p.is_hidden = false AND ac.category = $1
         ORDER BY p.is_pinned DESC, p.created_at DESC
         LIMIT $2
         "#
     } else {
         r#"
-        SELECT p.id, u.display_name as author_name, u.avatar_url as author_avatar, 
+        SELECT p.id, 'POOOL Official'::text as author_name, NULL::text as author_avatar,
                ac.category, p.content_sanitized, p.content, p.image_urls, 
                p.reaction_count, p.comment_count, p.is_pinned, p.created_at
         FROM posts p
         JOIN announcement_categories ac ON ac.post_id = p.id
-        LEFT JOIN user_profiles u ON u.user_id = p.user_id
         WHERE p.is_hidden = false
         ORDER BY p.is_pinned DESC, p.created_at DESC
-        LIMIT $2
+        LIMIT $1
         "#
     };
 
     use sqlx::Row;
     let rows = if let Some(cat) = category {
         if cat.is_empty() {
-            sqlx::query(query_str)
-                .bind("")
-                .bind(limit)
-                .fetch_all(pool)
-                .await?
+            sqlx::query(query_str).bind(limit).fetch_all(pool).await?
         } else {
             sqlx::query(query_str)
                 .bind(cat)
@@ -137,22 +131,18 @@ pub async fn get_announcements(
                 .await?
         }
     } else {
-        sqlx::query(query_str)
-            .bind("")
-            .bind(limit)
-            .fetch_all(pool)
-            .await?
+        sqlx::query(query_str).bind(limit).fetch_all(pool).await?
     };
 
     let mut results = Vec::new();
     for row in rows {
         let content_sanitized: Option<String> = row.get("content_sanitized");
         let content: String = row.get("content");
-        let image_urls: Option<serde_json::Value> = row.try_get("image_urls").unwrap_or(None);
-        let parsed_images = match image_urls {
-            Some(v) => serde_json::from_value(v).unwrap_or_default(),
-            None => vec![],
-        };
+        let parsed_images: Vec<String> = row
+            .try_get::<Option<Vec<String>>, _>("image_urls")
+            .ok()
+            .flatten()
+            .unwrap_or_default();
 
         results.push(crate::community::models::AnnouncementDisplay {
             id: row.get("id"),
@@ -167,6 +157,10 @@ pub async fn get_announcements(
             comment_count: row.get("comment_count"),
             is_pinned: row.get("is_pinned"),
             created_at: row.get("created_at"),
+            created_at_display: row
+                .get::<chrono::DateTime<chrono::Utc>, _>("created_at")
+                .format("%B %e, %Y")
+                .to_string(),
         });
     }
 

@@ -46,7 +46,12 @@ def mock_funded_asset():
     
     cur.execute(
         "SELECT id, slug, funding_status, tokens_available "
-        "FROM assets WHERE published = true AND deleted_at IS NULL LIMIT 1"
+        "FROM assets "
+        "WHERE published = true "
+        "AND deleted_at IS NULL "
+        "AND asset_type IN ('real_estate', 'commercial_property', 'land_plot') "
+        "AND tokens_available > 0 "
+        "LIMIT 1"
     )
     row = cur.fetchone()
     if not row:

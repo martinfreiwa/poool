@@ -28,6 +28,30 @@
       gap: 16px;
       margin-bottom: 24px;
     }
+    .admin-status-message {
+      border-radius: 8px;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+    .admin-status-message[hidden] {
+      display: none;
+    }
+    .admin-status-message--success {
+      background: #ECFDF3;
+      color: #027A48;
+      border: 1px solid #ABEFC6;
+    }
+    .admin-status-message--error {
+      background: #FEF3F2;
+      color: #B42318;
+      border: 1px solid #FECDCA;
+    }
+    .admin-status-message--info {
+      background: #EFF8FF;
+      color: #175CD3;
+      border: 1px solid #B2DDFF;
+    }
     @media (max-width: 1024px) {
       .grid-layout { grid-template-columns: 1fr; }
     }
@@ -57,7 +81,7 @@
 
       <!-- Page Content -->
       <div class="admin-content" id="circle-detail-container">
-        <div style="text-align:center; padding: 40px;">Loading...</div>
+        <div role="status" aria-live="polite" style="text-align:center; padding: 40px;">Loading...</div>
       </div>
     </main>
   </div>
@@ -69,11 +93,56 @@
         const urlParams = new URLSearchParams(window.location.search);
         const circleId = urlParams.get('id');
         if (!circleId) {
-            document.getElementById('circle-detail-container').innerHTML = '<div style="padding:40px; color:red;">No circle ID specified.</div>';
+            renderPageMessage('No circle ID specified.', 'error');
             return;
         }
         loadCircleDetail(circleId);
     });
+
+    function csrfHeaders(extraHeaders = {}) {
+        const token = typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : '';
+        return token ? { ...extraHeaders, 'X-CSRF-Token': token } : extraHeaders;
+    }
+
+    function renderPageMessage(message, type = 'info') {
+        const container = document.getElementById('circle-detail-container');
+        const role = type === 'error' ? 'alert' : 'status';
+        container.innerHTML = `<div role="${role}" aria-live="${type === 'error' ? 'assertive' : 'polite'}" style="padding:40px; color:${type === 'error' ? '#B42318' : '#175CD3'};">${escapeHtml(message)}</div>`;
+    }
+
+    function setStatus(message, type = 'info') {
+        const status = document.getElementById('circle-status');
+        if (!status) return;
+        status.textContent = message;
+        status.hidden = false;
+        status.className = `admin-status-message admin-status-message--${type}`;
+        status.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        status.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+        status.focus();
+    }
+
+    function clearStatus() {
+        const status = document.getElementById('circle-status');
+        if (!status) return;
+        status.hidden = true;
+        status.textContent = '';
+    }
+
+    async function readErrorMessage(res, fallback) {
+        try {
+            const body = await res.json();
+            return body.error || body.message || fallback;
+        } catch (_) {
+            return fallback;
+        }
+    }
+
+    function setFormBusy(form, isBusy) {
+        if (!form) return;
+        form.querySelectorAll('button, input, select, textarea').forEach((el) => {
+            el.disabled = isBusy;
+        });
+    }
 
     async function loadCircleDetail(circleId) {
         try {
@@ -83,11 +152,11 @@
                 currentCircle = data.circle;
                 renderDetail(circleId, data);
             } else {
-                document.getElementById('circle-detail-container').innerHTML = '<div style="padding:40px; color:red;">Circle not found or network error.</div>';
+                renderPageMessage(await readErrorMessage(res, 'Circle not found or network error.'), 'error');
             }
         } catch(e) {
             console.error(e);
-            document.getElementById('circle-detail-container').innerHTML = '<div style="padding:40px; color:red;">Error connecting to server.</div>';
+            renderPageMessage('Error connecting to server.', 'error');
         }
     }
 
@@ -114,9 +183,10 @@
         `;
 
         document.getElementById('circle-detail-container').innerHTML = `
+            <div id="circle-status" class="admin-status-message admin-status-message--info" tabindex="-1" hidden></div>
             <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
                 <div>
-                  <h1 class="admin-page-title">${c.avatar_emoji || '🟢'} ${escapeHtml(c.name)}</h1>
+                  <h1 class="admin-page-title">${escapeHtml(c.avatar_emoji || '🟢')} ${escapeHtml(c.name)}</h1>
                   <p class="admin-page-subtitle">ID: <span style="font-family:monospace;">${circleId}</span></p>
                 </div>
                 <div style="display:flex; gap:12px;">
@@ -191,16 +261,16 @@
                         <div class="admin-card-body">
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                                 <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
-                                    <div style="font-size:24px; font-weight:600; color:#101828;">${c.member_count} / ${c.max_members}</div>
+                                    <div style="font-size:24px; font-weight:600; color:#101828;">${Number(c.member_count || 0)} / ${Number(c.max_members || 0)}</div>
                                     <div style="font-size:12px; color:#667085; text-transform:uppercase;">Members</div>
                                 </div>
                                 <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center;">
-                                    <div style="font-size:24px; font-weight:600; color:#101828;">${c.total_xp.toLocaleString()}</div>
+                                    <div style="font-size:24px; font-weight:600; color:#101828;">${Number(c.total_xp || 0).toLocaleString()}</div>
                                     <div style="font-size:12px; color:#667085; text-transform:uppercase;">Total XP</div>
                                 </div>
                                 <div style="border:1px solid var(--admin-border-color); padding:12px; border-radius:8px; text-align:center; grid-column:span 2;">
                                     <div style="font-size:24px; font-weight:600; color:#101828;">Level ${c.level}</div>
-                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">${c.level_name}</div>
+                                    <div style="font-size:12px; color:#667085; text-transform:uppercase;">${escapeHtml(c.level_name || '')}</div>
                                 </div>
                             </div>
                         </div>
@@ -222,6 +292,8 @@
 
     async function updateCircle(e, circleId) {
         e.preventDefault();
+        clearStatus();
+        setFormBusy(e.currentTarget, true);
         
         const name = document.getElementById('edit-name').value.trim() || undefined;
         const emoji = document.getElementById('edit-emoji').value.trim() || undefined;
@@ -231,90 +303,104 @@
         try {
             const res = await fetch(`/api/admin/community/circles/${circleId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ name, avatar_emoji: emoji, description, is_public: isPublic })
             });
 
             if (res.ok) {
-                alert('Circle updated.');
-                loadCircleDetail(circleId); // Refresh
+                setStatus('Circle updated.', 'success');
+                await loadCircleDetail(circleId); // Refresh
+                setStatus('Circle updated.', 'success');
             } else {
-                alert('Failed to update circle.');
+                setStatus(await readErrorMessage(res, 'Failed to update circle.'), 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('Error updating circle.');
+            setStatus('Error updating circle.', 'error');
+        } finally {
+            setFormBusy(e.currentTarget, false);
         }
     }
 
     async function forceTransfer(e, circleId) {
         e.preventDefault();
+        clearStatus();
         const input = document.getElementById('transfer-user-id');
         const newUserId = input.value.trim();
         
         if (!newUserId) return;
         if (!confirm('Are you ABSOLUTELY SURE you want to forcibly transfer leadership of this circle to this specific User ID?')) return;
+        setFormBusy(e.currentTarget, true);
 
         try {
             const res = await fetch(`/api/admin/community/circles/${circleId}/transfer`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: csrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ new_owner_id: newUserId })
             });
 
             if (res.ok) {
-                alert('Ownership transferred successfully.');
                 input.value = '';
-                loadCircleDetail(circleId); // Refresh
+                setStatus('Ownership transferred successfully.', 'success');
+                await loadCircleDetail(circleId); // Refresh
+                setStatus('Ownership transferred successfully.', 'success');
             } else {
-                alert('Transfer failed. Please check the User ID and try again.');
+                setStatus(await readErrorMessage(res, 'Transfer failed. Please check the User ID and try again.'), 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('Error transferring ownership.');
+            setStatus('Error transferring ownership.', 'error');
+        } finally {
+            setFormBusy(e.currentTarget, false);
         }
     }
 
     async function kickMember(circleId, targetUserId) {
+        clearStatus();
         if (!confirm('Are you sure you want to kick this member?')) return;
         
         try {
             const res = await fetch(`/api/admin/community/circles/${circleId}/members/${targetUserId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: csrfHeaders()
             });
 
             if (res.ok) {
-                loadCircleDetail(circleId); // Refresh
+                await loadCircleDetail(circleId); // Refresh
+                setStatus('Member removed from circle.', 'success');
             } else {
-                alert('Failed to kick member.');
+                setStatus(await readErrorMessage(res, 'Failed to kick member.'), 'error');
             }
         } catch (err) {
             console.error(err);
+            setStatus('Error removing member.', 'error');
         }
     }
 
     async function deleteCircle(circleId) {
+        clearStatus();
         if (!confirm('Are you sure you want to DESTROY this circle entirely? This action is irreversible.')) return;
         
         try {
             const res = await fetch(`/api/admin/community/circles/${circleId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: csrfHeaders()
             });
 
             if (res.ok) {
-                alert('Circle deleted. Returning to circles list.');
                 window.location.href = '/admin/community/circles.html';
             } else {
-                alert('Failed to delete circle.');
+                setStatus(await readErrorMessage(res, 'Failed to delete circle.'), 'error');
             }
         } catch (err) {
             console.error(err);
+            setStatus('Error deleting circle.', 'error');
         }
     }
 
     function escapeHtml(unsafe) {
         if (unsafe == null) return '';
-        return unsafe
+        return String(unsafe)
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")

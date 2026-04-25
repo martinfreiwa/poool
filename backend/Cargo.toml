@@ -46,8 +46,8 @@ hex = "0.4"
 
 # Templating (for HTML responses to HTMX)
 minijinja = { version = "2.0", features = ["loader"] }
-redis = { version = "0.24.0", features = ["tokio-comp", "tls-rustls", "tokio-rustls-comp", "tls-rustls-webpki-roots"] }
-deadpool-redis = "0.14.0"
+redis = { version = "1.2.0", default-features = false, features = ["tokio-comp", "tls-rustls", "tokio-rustls-comp", "tls-rustls-webpki-roots"] }
+deadpool-redis = { version = "0.23.0", features = ["tokio-comp", "tls-rustls", "tokio-rustls-comp", "tls-rustls-webpki-roots"] }
 # Error handling
 anyhow = "1.0"
 totp-rs = { version = "5.6.0", features = ["gen_secret", "otpauth", "qr"] }
@@ -59,7 +59,7 @@ mime_guess = "2.0"
 pulldown-cmark = { version = "0.12", default-features = false, features = ["html"] }
 
 # Error monitoring & performance tracking
-sentry = { version = "0.34", default-features = false, features = [
+sentry = { version = "0.47", default-features = false, features = [
     "backtrace",
     "contexts",
     "panic",
@@ -68,7 +68,7 @@ sentry = { version = "0.34", default-features = false, features = [
     "tracing",
     "tower",
 ] }
-sentry-tracing = "0.34"
+sentry-tracing = "0.47"
 axum_csrf = "0.11.0"
 url = "2.5.8"
 ammonia = "4.1.2"

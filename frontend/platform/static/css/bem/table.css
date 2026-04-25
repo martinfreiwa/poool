@@ -376,14 +376,14 @@
   gap: 10px;
   width: 159px;
   height: 8px;
-  background: #d5d7da;
-  border-radius: 30px;
+  background: var(--progress-track-bg, #D5D7DA);
+  border-radius: var(--progress-border-radius, 30px);
 }
 
 .table__progress-fill {
   height: 8px;
-  background: var(--accent-color);
-  border-radius: 30px;
+  background: var(--progress-fill-bg, #98FB96);
+  border-radius: var(--progress-border-radius, 30px);
 }
 
 /* Badge Cell */

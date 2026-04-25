@@ -9,6 +9,8 @@ let currentPage = 1;
 const PAGE_SIZE = 20;
 let sortField = "created_at";
 let sortOrder = "desc";
+let loadError = "";
+let lastFocusedBeforeModal = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   loadLogs();
@@ -49,11 +51,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Modal Close
   document.getElementById("diff-modal-close")?.addEventListener("click", () => {
-    document.getElementById("diff-modal").style.display = "none";
+    closeDiff();
   });
   document.getElementById("diff-modal")?.addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeDiff();
   });
+  document.addEventListener("keydown", handleModalKeydown);
 });
 
 function setupSorting() {
@@ -75,16 +78,22 @@ function setupSorting() {
 }
 
 async function loadLogs() {
+  loadError = "";
+  setExportEnabled(false);
   try {
     const resp = await fetch("/api/admin/audit-logs");
     if (resp.ok) {
       const data = await resp.json();
       allLogs = data.logs || [];
     } else {
-      console.error('Audit logs API error:', resp.status);
+      allLogs = [];
+      loadError = `Audit logs could not be loaded (${resp.status}).`;
+      console.error("Audit logs API error:", resp.status);
     }
   } catch (e) {
-    console.error('Audit logs fetch failed:', e);
+    allLogs = [];
+    loadError = "Audit logs could not be loaded. Check your connection and try again.";
+    console.error("Audit logs fetch failed:", e);
     if (window.Sentry) Sentry.captureException(e);
   }
 
@@ -122,12 +131,26 @@ function applyFilters() {
   currentPage = 1;
   const auditCountEl = document.getElementById("audit-count-label");
   if (auditCountEl) auditCountEl.textContent = `${filteredLogs.length} entries`;
+  setExportEnabled(!loadError && filteredLogs.length > 0);
   renderTable();
 }
 
 function renderTable() {
   const tbody = document.getElementById("audit-table-body");
   if (!tbody) return;
+
+  if (loadError) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center;padding:40px;color:var(--admin-danger);">
+          <div style="font-weight:600;margin-bottom:6px;">${esc(loadError)}</div>
+          <button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" data-audit-retry>Retry</button>
+        </td>
+      </tr>`;
+    tbody.querySelector("[data-audit-retry]")?.addEventListener("click", loadLogs);
+    updatePaginationLabel("Unable to load audit logs");
+    return;
+  }
 
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE));
   currentPage = Math.min(currentPage, totalPages);
@@ -137,13 +160,12 @@ function renderTable() {
   if (slice.length === 0) {
     tbody.innerHTML =
       '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No logs match your filters.</td></tr>';
+    updatePaginationLabel("Page 1 of 1 (0 total)");
     return;
   }
 
   // Update Pagination UI
-  const info = document.getElementById("audit-page-info");
-  if (info)
-    info.textContent = `Page ${currentPage} of ${totalPages} (${filteredLogs.length} total)`;
+  updatePaginationLabel(`Page ${currentPage} of ${totalPages} (${filteredLogs.length} total)`);
   const prevBtn = document.getElementById("audit-prev");
   const nextBtn = document.getElementById("audit-next");
   if (prevBtn) prevBtn.disabled = currentPage <= 1;
@@ -229,6 +251,7 @@ function formatAction(log) {
 function showDiff(id) {
   const l = allLogs.find((x) => x.id === id);
   if (!l) return;
+  lastFocusedBeforeModal = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   document.getElementById("diff-modal-title").textContent =
     `${l.action} — ${l.entity_type}`;
   const prev = l.previous_state
@@ -244,11 +267,55 @@ function showDiff(id) {
         ${prev ? `<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:600;color:var(--admin-danger);margin-bottom:4px;">Previous State</div><pre style="background:var(--admin-bg);border:1px solid var(--admin-border);border-radius:var(--admin-radius-md);padding:12px;font-size:11px;overflow-x:auto;max-height:200px;color:var(--admin-text-secondary);margin:0;">${esc(prev)}</pre></div>` : ""}
         ${next ? `<div><div style="font-size:11px;font-weight:600;color:var(--admin-success);margin-bottom:4px;">New State</div><pre style="background:var(--admin-bg);border:1px solid var(--admin-border);border-radius:var(--admin-radius-md);padding:12px;font-size:11px;overflow-x:auto;max-height:200px;color:var(--admin-text-secondary);margin:0;">${esc(next)}</pre></div>` : ""}
     `;
-  document.getElementById("diff-modal").style.display = "flex";
+  const modal = document.getElementById("diff-modal");
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+  document.getElementById("diff-modal-close")?.focus();
 }
 
 function closeDiff() {
-  document.getElementById("diff-modal").style.display = "none";
+  const modal = document.getElementById("diff-modal");
+  if (!modal || modal.style.display === "none") return;
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+  if (lastFocusedBeforeModal && document.contains(lastFocusedBeforeModal)) {
+    lastFocusedBeforeModal.focus();
+  }
+  lastFocusedBeforeModal = null;
+}
+
+function handleModalKeydown(e) {
+  const modal = document.getElementById("diff-modal");
+  if (!modal || modal.style.display === "none") return;
+
+  if (e.key === "Escape") {
+    e.preventDefault();
+    closeDiff();
+    return;
+  }
+
+  if (e.key !== "Tab") return;
+
+  const focusable = modal.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+  );
+  if (focusable.length === 0) {
+    e.preventDefault();
+    modal.focus();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
 }
 
 function esc(s) {
@@ -289,7 +356,23 @@ function entityBadge(e) {
     kyc_record: "admin-badge--warning",
     support_ticket: "admin-badge--neutral",
   };
-  return `<span class="admin-badge ${m[e] || "admin-badge--neutral"}" style="text-transform:capitalize;">${(e || "").replace(/_/g, " ")}</span>`;
+  return `<span class="admin-badge ${m[e] || "admin-badge--neutral"}" style="text-transform:capitalize;">${esc((e || "").replace(/_/g, " "))}</span>`;
+}
+
+function updatePaginationLabel(text) {
+  const info = document.getElementById("audit-page-info");
+  if (info) info.textContent = text;
+  const prevBtn = document.getElementById("audit-prev");
+  const nextBtn = document.getElementById("audit-next");
+  if (prevBtn) prevBtn.disabled = true;
+  if (nextBtn) nextBtn.disabled = true;
+}
+
+function setExportEnabled(enabled) {
+  const btn = document.getElementById("audit-export-csv");
+  if (!btn) return;
+  btn.disabled = !enabled;
+  btn.setAttribute("aria-disabled", String(!enabled));
 }
 
 function exportAuditCSV() {

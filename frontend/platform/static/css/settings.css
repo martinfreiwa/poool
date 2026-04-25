@@ -25,6 +25,731 @@
     flex-direction: column;
     gap: 24px;
 }
+
+.developer-settings-main .settings-content-wrapper {
+    padding-top: 24px;
+}
+
+.developer-settings-main .completion-track {
+    height: var(--progress-sm-height, 6px);
+    background: var(--progress-track-bg, #D5D7DA);
+    border-radius: var(--progress-border-radius, 30px);
+}
+
+.developer-settings-main .completion-fill {
+    background: var(--progress-fill-bg, #98FB96);
+    border-radius: var(--progress-border-radius, 30px);
+    box-shadow: none;
+}
+
+.developer-settings-main .settings-form-row--list {
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom-color: var(--card-border-color, #E5E7EB);
+}
+
+.developer-settings-main .settings-label {
+    color: var(--color-text-muted, #414651);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.developer-settings-main .settings-input {
+    min-height: 44px;
+    padding: 10px 12px;
+    background: var(--input-bg, #FFFFFF);
+    border: 1px solid var(--input-border, #D5D7DA);
+    border-radius: var(--input-radius, 8px);
+    color: var(--color-text, #181D27);
+    font-family: var(--font-family, 'TT Norms Pro', sans-serif);
+    font-size: 14px;
+    line-height: 20px;
+    box-shadow: none;
+}
+
+.developer-settings-main .settings-input::placeholder {
+    color: var(--color-text-subtle, #717680);
+}
+
+.developer-settings-main .settings-input:focus {
+    border-color: var(--input-focus-border, #0000FF);
+    box-shadow: var(--input-focus-shadow, 0 0 0 3px rgba(0, 0, 255, 0.08));
+}
+
+.developer-settings-main .settings-input[readonly],
+.developer-settings-main .settings-input--readonly {
+    background: var(--input-readonly-bg, #F9FAFB);
+    color: var(--color-text-muted, #414651);
+}
+
+.developer-settings-main .settings-select {
+    min-height: 44px;
+}
+
+.developer-settings-main .settings-edit-footer {
+    padding-top: 20px;
+    border-top-color: var(--card-border-color, #E5E7EB);
+}
+
+.developer-settings-main .settings-edit-footer .ds-btn {
+    min-height: 40px;
+    border-radius: var(--btn-border-radius, 8px);
+    font-weight: var(--btn-font-weight, 600);
+}
+
+.developer-settings-main .settings-edit-footer .ds-btn--primary,
+.developer-settings-main .settings-edit-footer .settings-btn--primary {
+    background: var(--btn-primary-bg, #0000FF);
+    border: 1px solid var(--btn-primary-bg, #0000FF);
+    color: var(--btn-primary-color, #98FB96);
+    box-shadow: none;
+}
+
+.developer-settings-main .settings-edit-footer .ds-btn--primary:hover,
+.developer-settings-main .settings-edit-footer .settings-btn--primary:hover {
+    background: var(--btn-primary-hover-bg, #0000CC);
+    border-color: var(--btn-primary-hover-bg, #0000CC);
+    color: var(--btn-primary-color, #98FB96);
+}
+
+.developer-settings-main .settings-edit-footer .settings-btn--cancel,
+.developer-settings-main .settings-edit-footer .ds-btn--ghost {
+    background: var(--btn-secondary-bg, #FFFFFF);
+    border: 1px solid var(--btn-secondary-border, #D5D7DA);
+    color: var(--btn-secondary-color, #414651);
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+}
+
+.developer-settings-main .settings-edit-footer .settings-btn--cancel:hover,
+.developer-settings-main .settings-edit-footer .ds-btn--ghost:hover {
+    background: var(--btn-secondary-hover-bg, #F9FAFB);
+    border-color: var(--btn-secondary-hover-border, #D5D7DA);
+    color: var(--btn-secondary-color, #414651);
+}
+
+.developer-settings-main .settings-nav {
+    top: calc(var(--topbar-height, 76px) + 24px);
+}
+
+.developer-settings-main .settings-nav nav {
+    gap: 4px;
+    padding: 8px;
+    background: var(--card-bg, #FFFFFF);
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    border-radius: var(--card-border-radius, 12px);
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.developer-settings-main .settings-nav__link {
+    min-height: 36px;
+    padding: 8px 12px;
+    border-left: 0;
+    border-radius: 6px;
+    color: var(--color-text-muted, #414651);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.developer-settings-main .settings-nav__link:hover {
+    background: rgba(3, 255, 136, 0.09);
+    color: var(--color-text, #181D27);
+}
+
+.developer-settings-main .settings-nav__link:focus-visible {
+    outline: 2px solid var(--focus-ring-color, #0000FF);
+    outline-offset: 2px;
+}
+
+.developer-settings-main .settings-nav__link.is-active {
+    background: rgba(3, 255, 136, 0.15);
+    color: var(--color-text, #181D27);
+    font-weight: 700;
+}
+
+.developer-settings-main .settings-nav__link.is-active:hover {
+    background: rgba(3, 255, 136, 0.18);
+}
+
+.developer-settings-main .settings-nav__link--danger {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--card-border-color, #E5E7EB);
+    color: var(--danger-text, #B42318);
+}
+
+.developer-settings-main .settings-nav__link--danger:hover {
+    background: var(--danger-bg-subtle, #FEF3F2);
+    color: var(--danger-text, #B42318);
+}
+
+.developer-settings-main .settings-nav__link--danger.is-active {
+    background: var(--danger-bg-subtle, #FEF3F2);
+    color: var(--danger-text, #B42318);
+}
+
+.developer-settings-main #form-core-profile > div:first-child {
+    gap: 16px !important;
+    margin-bottom: 20px !important;
+}
+
+.developer-settings-main #form-core-profile > div:first-child + .settings-divider {
+    margin: 0 -24px 24px -24px !important;
+}
+
+.developer-settings-main .settings-avatar-row {
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    gap: 16px;
+    padding: 0 0 20px;
+}
+
+.developer-settings-main .settings-photo-current {
+    width: 64px !important;
+    max-width: 64px !important;
+    height: 64px !important;
+    max-height: 64px !important;
+    background: var(--badge-neutral-bg, #F2F4F7);
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    box-shadow: none;
+}
+
+.developer-settings-main .settings-identity-name {
+    color: var(--page-title-color, #181D27);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.developer-settings-main .settings-identity-email {
+    color: var(--color-text-subtle, #717680);
+    font-size: 13px;
+}
+
+.developer-settings-main .settings-change-photo-btn {
+    min-height: 36px;
+    padding: 8px 12px;
+    background: var(--btn-secondary-bg, #FFFFFF);
+    border: 1px solid var(--btn-secondary-border, #D5D7DA);
+    border-radius: var(--btn-border-radius, 8px);
+    color: var(--btn-secondary-color, #414651);
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+}
+
+.developer-settings-main .settings-change-photo-btn:hover {
+    background: var(--btn-secondary-hover-bg, #F9FAFB);
+    border-color: var(--btn-secondary-hover-border, #D5D7DA);
+    color: var(--btn-secondary-color, #414651);
+}
+
+.developer-settings-main .settings-divider,
+.developer-settings-main .settings-divider--edge-32 {
+    background: var(--card-border-color, #E5E7EB);
+}
+
+.developer-settings-main .settings-divider--edge-32 {
+    margin-left: -24px;
+    margin-right: -24px;
+}
+
+.developer-settings-main #form-address .settings-input--narrow {
+    max-width: 240px;
+}
+
+.developer-settings-main #form-address .settings-select {
+    max-width: 640px;
+}
+
+.developer-settings-main #form-address .settings-form-row--last {
+    border-bottom: 0;
+}
+
+.developer-settings-main #form-identity .settings-form-row--wide-label {
+    grid-template-columns: 200px minmax(0, 1fr);
+}
+
+.developer-settings-main #form-identity .settings-input {
+    max-width: 640px;
+}
+
+.developer-settings-main #settings-dob {
+    max-width: 240px;
+}
+
+.developer-settings-main #settings-tax-id {
+    letter-spacing: 0;
+}
+
+.developer-settings-main .settings-card--sensitive {
+    border-left: 1px solid var(--card-border-color, #E5E7EB) !important;
+}
+
+.developer-settings-main .settings-form-row--security-action {
+    grid-template-columns: 200px minmax(0, 1fr) auto;
+    gap: 20px;
+    min-height: 56px;
+    padding: 16px 0;
+    align-items: center;
+}
+
+.developer-settings-main .settings-form-row--security-action > :last-child {
+    justify-self: end;
+}
+
+.developer-settings-main .settings-value-with-badge {
+    gap: 10px;
+    color: var(--color-text, #181D27);
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.developer-settings-main .settings-row-subtitle {
+    color: var(--color-text-subtle, #717680);
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.developer-settings-main .settings-password-mask {
+    color: var(--color-text-muted, #414651);
+    letter-spacing: 0.12em;
+}
+
+.developer-settings-main .settings-label-badge,
+.developer-settings-main .settings-badge {
+    border-radius: var(--badge-border-radius, 16px);
+    font-size: var(--badge-font-size, 12px);
+    font-weight: 600;
+    line-height: 18px;
+    padding: 2px 8px;
+}
+
+.developer-settings-main .settings-label-badge,
+.developer-settings-main .settings-badge--info {
+    background: var(--badge-info-bg, #EEF4FF);
+    color: var(--badge-info-color, #1B2559);
+}
+
+.developer-settings-main .settings-badge--success {
+    background: var(--badge-success-bg, #ECFDF3);
+    color: var(--badge-success-color, #027A48);
+}
+
+.developer-settings-main .settings-badge--muted,
+.developer-settings-main .settings-badge--loading {
+    background: var(--badge-neutral-bg, #F2F4F7);
+    color: var(--badge-neutral-color, #344054);
+}
+
+.developer-settings-main .settings-btn--outline,
+.developer-settings-main .settings-oauth-row .ds-btn {
+    min-height: 36px;
+    padding: 8px 12px;
+    background: var(--btn-secondary-bg, #FFFFFF);
+    border: 1px solid var(--btn-secondary-border, #D5D7DA);
+    border-radius: var(--btn-border-radius, 8px);
+    color: var(--btn-secondary-color, #414651);
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+}
+
+.developer-settings-main .settings-btn--outline:hover,
+.developer-settings-main .settings-oauth-row .ds-btn:hover {
+    background: var(--btn-secondary-hover-bg, #F9FAFB);
+    border-color: var(--btn-secondary-hover-border, #D5D7DA);
+    color: var(--btn-secondary-color, #414651);
+}
+
+.developer-settings-main .settings-block-title {
+    color: var(--page-title-color, #181D27);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.developer-settings-main .settings-block-subtitle {
+    color: var(--color-text-subtle, #717680);
+}
+
+.developer-settings-main .settings-oauth-list {
+    margin-top: 12px;
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    border-radius: var(--card-border-radius, 12px);
+    overflow: hidden;
+}
+
+.developer-settings-main .settings-oauth-row {
+    grid-template-columns: minmax(120px, 1fr) minmax(0, 1.4fr) auto;
+    gap: 16px;
+    padding: 14px 16px;
+    border-bottom-color: var(--card-border-color, #E5E7EB);
+}
+
+.developer-settings-main .settings-oauth-row__provider {
+    color: var(--page-title-color, #181D27);
+    font-weight: 700;
+}
+
+.developer-settings-main .settings-oauth-row__status {
+    color: var(--color-text-subtle, #717680);
+}
+
+.developer-settings-main .settings-empty-inline {
+    color: var(--color-text-subtle, #717680);
+    padding: 14px 16px;
+}
+
+.developer-settings-main #form-preferences .settings-select {
+    max-width: 640px;
+}
+
+.developer-settings-main #form-preferences .settings-form-row--last {
+    border-bottom: 0;
+}
+
+.developer-settings-main #form-preferences .settings-block-title--group {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--card-border-color, #E5E7EB);
+}
+
+.developer-settings-main .settings-toggle-row {
+    min-height: 64px;
+    padding: 16px 0;
+    border-bottom-color: var(--card-border-color, #E5E7EB);
+}
+
+.developer-settings-main .settings-toggle-label {
+    color: var(--page-title-color, #181D27);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.developer-settings-main .settings-toggle-subtitle {
+    color: var(--color-text-subtle, #717680);
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.developer-settings-main [role="switch"] {
+    background: var(--switch-bg, #E4E7EC);
+    box-shadow: none;
+}
+
+.developer-settings-main [role="switch"][aria-checked="true"],
+.developer-settings-main [role="switch"][data-state="active"] {
+    background: var(--progress-fill-bg, #98FB96);
+}
+
+.developer-settings-main [role="switch"]::after {
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+}
+
+.developer-settings-main #form-leaderboard .settings-form-row--group {
+    margin-top: 16px;
+    padding-top: 20px;
+    border-top: 1px solid var(--card-border-color, #E5E7EB);
+}
+
+.developer-settings-main #form-leaderboard .settings-input {
+    max-width: 640px;
+}
+
+.developer-settings-main #form-leaderboard .settings-bio-header {
+    align-items: flex-end;
+    margin-top: 20px;
+    margin-bottom: 8px;
+}
+
+.developer-settings-main #form-leaderboard .settings-bio-header .settings-block-title {
+    margin-bottom: 0;
+}
+
+.developer-settings-main #form-leaderboard .settings-bio-header .settings-block-subtitle {
+    margin-bottom: 0;
+    text-align: right;
+}
+
+.developer-settings-main #form-leaderboard .settings-textarea {
+    max-width: none;
+    min-height: 112px;
+    resize: vertical;
+}
+
+.developer-settings-main .settings-form-row--social {
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 0;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--card-border-color, #E5E7EB);
+}
+
+.developer-settings-main .settings-form-row--social-last {
+    border-bottom: 0;
+}
+
+.developer-settings-main .settings-label--icon {
+    color: var(--color-text-muted, #414651);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.developer-settings-main .settings-label--icon svg {
+    stroke: currentColor;
+}
+
+.developer-settings-main #form-social .settings-input {
+    max-width: 640px;
+}
+
+.developer-settings-main .settings-divider--bleed {
+    margin: 20px -24px 0;
+    background: var(--card-border-color, #E5E7EB);
+}
+
+.developer-settings-main .settings-edit-footer--flush {
+    padding-top: 20px;
+}
+
+.developer-settings-main .settings-identity-header {
+    margin-bottom: 16px;
+}
+
+.developer-settings-main .settings-identity-header--spaced {
+    margin-top: 32px;
+}
+
+.developer-settings-main .settings-identity-header--row {
+    margin-top: 32px;
+    margin-bottom: 16px;
+}
+
+.developer-settings-main .settings-identity-header .section-title {
+    color: var(--page-title-color, #181D27);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0;
+    margin: 0 0 4px;
+}
+
+.developer-settings-main .settings-identity-header .section-subtitle {
+    color: var(--color-text-subtle, #717680);
+    font-size: 14px;
+}
+
+.developer-settings-main .settings-action-grid {
+    gap: 16px;
+}
+
+.developer-settings-main .action-grid-card,
+.developer-settings-main .learn-card {
+    background: var(--card-bg, #FFFFFF) !important;
+    border: 1px solid var(--card-border-color, #E5E7EB) !important;
+    border-radius: var(--card-border-radius, 12px) !important;
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05)) !important;
+    text-decoration: none;
+}
+
+.developer-settings-main .action-grid-card:hover,
+.developer-settings-main .learn-card:hover {
+    transform: none;
+    border-color: var(--card-border-color, #E5E7EB) !important;
+    box-shadow: var(--dev-surface-shadow-hover, 0 4px 12px rgba(10, 13, 18, 0.06)) !important;
+}
+
+.developer-settings-main .action-grid-card.holo-card::before {
+    display: none !important;
+}
+
+.developer-settings-main .action-text h4,
+.developer-settings-main .learn-title {
+    color: var(--page-title-color, #181D27);
+    letter-spacing: 0;
+}
+
+.developer-settings-main .action-text p,
+.developer-settings-main .learn-category {
+    color: var(--color-text-subtle, #717680);
+}
+
+.developer-settings-main .settings-see-all-link {
+    color: var(--color-text, #181D27);
+    font-weight: 700;
+}
+
+.developer-settings-main .settings-see-all-link:hover {
+    color: var(--primary-color, #0000FF);
+    opacity: 1;
+}
+
+.developer-settings-main .settings-learn-grid {
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.developer-settings-main .learn-image-wrap {
+    height: 120px;
+    background: var(--badge-neutral-bg, #F2F4F7);
+}
+
+.developer-settings-main .learn-image {
+    opacity: 1;
+}
+
+.developer-settings-main .learn-overlay-icon {
+    color: var(--progress-fill-bg, #98FB96);
+    filter: none;
+}
+
+.developer-settings-main .settings-logo-upload {
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--badge-neutral-bg, #F2F4F7);
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    border-radius: var(--card-border-radius, 12px);
+}
+
+.developer-settings-main .settings-logo-upload__preview {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    background: var(--card-bg, #FFFFFF);
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    box-shadow: none;
+}
+
+.developer-settings-main .settings-logo-upload__title {
+    color: var(--page-title-color, #181D27);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.developer-settings-main .settings-logo-upload__hint {
+    color: var(--color-text-subtle, #717680);
+    font-size: 13px;
+}
+
+.developer-settings-main .settings-upload-btn {
+    min-height: 36px;
+    padding: 8px 12px;
+    background: var(--btn-secondary-bg, #FFFFFF);
+    border: 1px solid var(--btn-secondary-border, #D5D7DA);
+    border-radius: var(--btn-border-radius, 8px);
+    color: var(--btn-secondary-color, #414651);
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+}
+
+.developer-settings-main .settings-upload-btn:hover {
+    background: var(--btn-secondary-hover-bg, #F9FAFB);
+    border-color: var(--btn-secondary-hover-border, #D5D7DA);
+    color: var(--btn-secondary-color, #414651);
+}
+
+.developer-settings-main #form-developer-identity .settings-form-row--social {
+    border-bottom: 0;
+}
+
+.developer-settings-main #form-developer-identity .settings-input {
+    max-width: 640px;
+}
+
+.developer-settings-main .settings-divider--bleed-top {
+    margin: 20px -24px 0;
+    background: var(--card-border-color, #E5E7EB);
+}
+
+.developer-settings-main .settings-dev-description-block {
+    padding: 20px 0 0;
+}
+
+.developer-settings-main .settings-dev-description-grid {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 20px;
+}
+
+.developer-settings-main .settings-field-heading__title {
+    color: var(--page-title-color, #181D27);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.developer-settings-main .settings-field-heading__hint,
+.developer-settings-main .settings-char-counter {
+    color: var(--color-text-subtle, #717680);
+}
+
+.developer-settings-main .settings-dev-preview {
+    background: var(--badge-neutral-bg, #F2F4F7);
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    border-radius: var(--card-border-radius, 12px);
+    padding: 16px;
+}
+
+.developer-settings-main .settings-dev-preview__label {
+    color: var(--color-text-subtle, #717680);
+    letter-spacing: 0;
+}
+
+.developer-settings-main .settings-dev-preview__logo {
+    background: var(--card-bg, #FFFFFF);
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    box-shadow: none;
+}
+
+.developer-settings-main .settings-dev-preview__company {
+    color: var(--page-title-color, #181D27);
+}
+
+.developer-settings-main .settings-dev-preview__description {
+    color: var(--color-text-muted, #414651);
+}
+
+.developer-settings-main #form-developer-links {
+    margin-bottom: 32px;
+}
+
+.developer-settings-main #form-developer-links .settings-input {
+    max-width: 640px;
+}
+
+.developer-settings-main #form-developer-links .settings-form-row--social-last {
+    border-bottom: 0;
+}
+
+.developer-settings-main #form-developer-identity .settings-edit-footer .settings-btn--primary,
+.developer-settings-main #form-developer-links .settings-edit-footer .settings-btn--primary {
+    background: var(--btn-primary-bg, #0000FF);
+    border-color: var(--btn-primary-bg, #0000FF);
+    color: var(--btn-primary-color, #98FB96);
+}
+
+.developer-settings-main #form-developer-identity .settings-edit-footer .settings-btn--primary:hover,
+.developer-settings-main #form-developer-links .settings-edit-footer .settings-btn--primary:hover {
+    background: var(--btn-primary-hover-bg, #0000CC);
+    border-color: var(--btn-primary-hover-bg, #0000CC);
+    color: var(--btn-primary-color, #98FB96);
+}
+
+.developer-settings-main #form-developer-identity .settings-edit-footer .settings-btn--cancel,
+.developer-settings-main #form-developer-links .settings-edit-footer .settings-btn--cancel {
+    background: var(--btn-secondary-bg, #FFFFFF);
+    border-color: var(--btn-secondary-border, #D5D7DA);
+    color: var(--btn-secondary-color, #414651);
+}
+
+.developer-settings-main #form-developer-identity .settings-edit-footer .settings-btn--cancel:hover,
+.developer-settings-main #form-developer-links .settings-edit-footer .settings-btn--cancel:hover {
+    background: var(--btn-secondary-hover-bg, #F9FAFB);
+    border-color: var(--btn-secondary-hover-border, #D5D7DA);
+    color: var(--btn-secondary-color, #414651);
+}
+
 .settings-cards-section { display: block; }
 
 /* ----- Two-column grid: sticky left nav + sections ----------------------- */
@@ -167,12 +892,13 @@
 
 /* ----- Card wrapper — matches .ds-card for cross-page consistency -------- */
 .settings-card {
-    padding: 28px;
+    padding: 24px;
     width: 100%;
     box-sizing: border-box;
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.85) 100%);
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    border-radius: 24px;
+    background: var(--card-bg, #FFFFFF);
+    border: 1px solid var(--card-border-color, #E5E7EB);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
     margin-bottom: 24px;
     position: relative;
     overflow: hidden;
@@ -679,6 +1405,15 @@
     border: 1px solid #D92D20;
 }
 .settings-btn--danger:hover { background: #B42318; border-color: #B42318; }
+.settings-btn--danger-outline {
+    color: #B42318;
+    border-color: #FECDCA;
+}
+.settings-btn--danger-outline:hover {
+    color: #B42318;
+    border-color: #FDA29B;
+    background: #FFFBFA;
+}
 .settings-upload-btn {
     border: 1px solid #E5E7EB;
     border-radius: 8px;

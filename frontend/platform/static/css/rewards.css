@@ -561,8 +561,8 @@
 
 .tp-progress-bar {
   height: 8px;
-  background: var(--card-border-color);
-  border-radius: 4px;
+  background: var(--progress-track-bg, #D5D7DA);
+  border-radius: var(--progress-border-radius, 30px);
   overflow: hidden;
   margin-bottom: 8px;
 }
@@ -573,8 +573,8 @@
 
 .tp-progress-fill {
   height: 100%;
-  background: var(--primary-color);
-  border-radius: 4px;
+  background: var(--progress-fill-bg, #98FB96);
+  border-radius: var(--progress-border-radius, 30px);
 }
 
 .tp-hint {
@@ -899,10 +899,10 @@
 }
 .tier-progress-fill.past {
   width: 100%;
-  background: var(--brand-greeny-green, #03FF88);
+  background: var(--progress-fill-bg, #98FB96);
 }
 .tier-progress-fill.active {
-  background: var(--primary-color, #0000FF);
+  background: var(--progress-fill-bg, #98FB96);
 }
 
 .tier-status-text {
@@ -2617,5 +2617,457 @@
 
   .commissions-date-input {
     flex: 1;
+  }
+}
+
+/* ============================================================
+   DESIGN.MD ALIGNMENT — REWARDS DASHBOARD
+   Scoped to /rewards so older marketing-style reward rules do not
+   leak into the rest of the platform.
+   ============================================================ */
+
+body#rewards-body {
+  --rewards-card-bg: var(--card-bg, #FFFFFF);
+  --rewards-card-border: var(--card-border-color, #E5E7EB);
+  --rewards-card-shadow: var(--card-shadow, 0 1px 2px rgba(10, 13, 18, 0.05));
+  --rewards-muted: var(--text-secondary, #535862);
+  --rewards-title: var(--page-title-color, #181D27);
+  --rewards-focus: 0 0 0 3px rgba(0, 0, 255, 0.08);
+  font-family: 'TT Norms Pro', sans-serif;
+  background: var(--content-bg, #FAFAFA);
+}
+
+body#rewards-body .rewards-page {
+  background: var(--content-bg, #FAFAFA);
+}
+
+body#rewards-body .rewards-main {
+  width: calc(100% - var(--sidebar-width, 256px));
+  min-height: 100vh;
+  margin-left: var(--sidebar-width, 256px);
+  padding: 0 !important;
+  background: var(--content-bg, #FAFAFA);
+}
+
+body#rewards-body .rewards-container {
+  width: 100%;
+  max-width: var(--page-max-width, 1200px);
+  padding: 24px var(--page-padding-x, 32px) var(--page-padding-bottom, 48px);
+  gap: var(--section-gap, 24px);
+}
+
+body#rewards-body .rewards-content-layer,
+body#rewards-body .rewards-tab-panel,
+body#rewards-body #affiliate-tab,
+body#rewards-body #marketing-tab,
+body#rewards-body #commissions-tab {
+  gap: var(--section-gap, 24px);
+}
+
+body#rewards-body .rewards-tab-panel {
+  padding-top: 0;
+}
+
+body#rewards-body .rewards-hero-grid,
+body#rewards-body .partner-metrics-grid,
+body#rewards-body .commissions-summary-grid {
+  gap: var(--section-gap, 24px) !important;
+  margin-bottom: 0 !important;
+}
+
+body#rewards-body .tier-progress-card,
+body#rewards-body .rewards-summary-card,
+body#rewards-body .refer-earn-card,
+body#rewards-body .tier-card,
+body#rewards-body .metric-card,
+body#rewards-body .campaign-breakdown-card,
+body#rewards-body .campaign-link-generator-card,
+body#rewards-body .marketing-section,
+body#rewards-body .marketing-asset-card,
+body#rewards-body .marketing-color-swatch,
+body#rewards-body .commissions-card,
+body#rewards-body .quick-insights-card,
+body#rewards-body .rewards-error-layer,
+body#rewards-body .rewards-empty-layer,
+body#rewards-body .rewards-pending-modal {
+  background: var(--rewards-card-bg) !important;
+  border: 1px solid var(--rewards-card-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--rewards-card-shadow) !important;
+  transform: none !important;
+}
+
+body#rewards-body .tier-progress-card,
+body#rewards-body .rewards-summary-card,
+body#rewards-body .refer-earn-card,
+body#rewards-body .tier-card,
+body#rewards-body .metric-card,
+body#rewards-body .marketing-section,
+body#rewards-body .commissions-card,
+body#rewards-body .rewards-error-layer,
+body#rewards-body .rewards-empty-layer {
+  padding: 24px !important;
+}
+
+body#rewards-body .tier-card--active,
+body#rewards-body .tier-card--locked,
+body#rewards-body .tier-progress-card.intro-style {
+  background: var(--rewards-card-bg) !important;
+  border-color: var(--rewards-card-border) !important;
+  opacity: 1 !important;
+}
+
+body#rewards-body .tier-card--active::before,
+body#rewards-body .tier-progress-card::before,
+body#rewards-body .rewards-summary-card::before,
+body#rewards-body .metric-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-color, #0000FF), var(--progress-fill-bg, #98FB96));
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+}
+
+body#rewards-body .tier-progress-card,
+body#rewards-body .rewards-summary-card,
+body#rewards-body .metric-card {
+  position: relative;
+  overflow: hidden;
+}
+
+body#rewards-body .metric-card:hover,
+body#rewards-body .marketing-asset-card:hover,
+body#rewards-body .marketing-color-swatch:hover,
+body#rewards-body .tier-card:hover {
+  border-color: var(--rewards-card-border) !important;
+  box-shadow: var(--rewards-card-shadow) !important;
+  transform: none !important;
+}
+
+body#rewards-body .summary-label,
+body#rewards-body .metric-card-title,
+body#rewards-body .tp-label,
+body#rewards-body .tier-benefits-label,
+body#rewards-body .insights-title,
+body#rewards-body .campaign-subtitle,
+body#rewards-body .marketing-asset-meta,
+body#rewards-body .state-desc,
+body#rewards-body .reward-context,
+body#rewards-body .social-share-label {
+  color: var(--rewards-muted) !important;
+  letter-spacing: 0 !important;
+}
+
+body#rewards-body .summary-amount,
+body#rewards-body .metric-card-value,
+body#rewards-body .tp-amount,
+body#rewards-body .reward-amount,
+body#rewards-body .financials-amount,
+body#rewards-body .state-title,
+body#rewards-body .tier-name-block h3,
+body#rewards-body .refer-title-wrap h3,
+body#rewards-body .campaign-title-wrap h3,
+body#rewards-body .marketing-section-header h3,
+body#rewards-body .commissions-card-header h3,
+body#rewards-body .section-title {
+  color: var(--rewards-title) !important;
+  letter-spacing: 0 !important;
+}
+
+body#rewards-body .summary-amount,
+body#rewards-body .metric-card-value,
+body#rewards-body .tp-amount,
+body#rewards-body .reward-amount,
+body#rewards-body .financials-amount {
+  font-size: 28px !important;
+  line-height: 34px !important;
+  font-weight: 700 !important;
+}
+
+body#rewards-body .refer-title-wrap svg,
+body#rewards-body .campaign-title-wrap svg,
+body#rewards-body .marketing-section-header svg,
+body#rewards-body .commissions-card-header svg,
+body#rewards-body .commissions-list-title svg {
+  color: var(--rewards-muted) !important;
+  stroke: currentColor !important;
+}
+
+body#rewards-body .glass-icon-bg,
+body#rewards-body .p-bg,
+body#rewards-body .p-icon::before,
+body#rewards-body .p-front::before,
+body#rewards-body .p-front::after {
+  display: none !important;
+}
+
+body#rewards-body .glass-icon-container,
+body#rewards-body .p-icon {
+  width: 44px !important;
+  height: 44px !important;
+  transform: none !important;
+}
+
+body#rewards-body .glass-icon-front,
+body#rewards-body .p-front,
+body#rewards-body .marketing-asset-preview,
+body#rewards-body .icon-outer-circle {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px;
+  border-radius: 10px !important;
+  background: #F5F7FF !important;
+  border: 1px solid var(--rewards-card-border) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body#rewards-body .glass-icon-front span,
+body#rewards-body .p-front svg,
+body#rewards-body .benefit-tick {
+  color: var(--primary-color, #0000FF) !important;
+  stroke: currentColor !important;
+}
+
+body#rewards-body .copy-link-btn,
+body#rewards-body .retry-btn,
+body#rewards-body .chart-date-apply-btn,
+body#rewards-body .ds-btn--primary {
+  min-height: 42px;
+  border-radius: 8px !important;
+  border: 1px solid var(--btn-primary-bg, #0000FF) !important;
+  background: var(--btn-primary-bg, #0000FF) !important;
+  color: var(--btn-primary-text, #98FB96) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+body#rewards-body .copy-link-btn:hover,
+body#rewards-body .retry-btn:hover,
+body#rewards-body .chart-date-apply-btn:hover,
+body#rewards-body .ds-btn--primary:hover {
+  background: var(--btn-primary-hover-bg, #0000CC) !important;
+  color: var(--btn-primary-text, #98FB96) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+body#rewards-body #campaign-export-btn,
+body#rewards-body .social-share-pill,
+body#rewards-body .marketing-download-btn,
+body#rewards-body .marketing-copy-btn,
+body#rewards-body .commission-export-btn,
+body#rewards-body .chart-filter-btn {
+  border: 1px solid var(--rewards-card-border) !important;
+  border-radius: 8px !important;
+  background: #FFFFFF !important;
+  color: var(--body-color, #344054) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+body#rewards-body #campaign-export-btn:hover,
+body#rewards-body .social-share-pill:hover,
+body#rewards-body .marketing-download-btn:hover,
+body#rewards-body .marketing-copy-btn:hover,
+body#rewards-body .commission-export-btn:hover,
+body#rewards-body .chart-filter-btn:hover {
+  background: #FFFFFF !important;
+  color: var(--body-color, #344054) !important;
+  border-color: var(--rewards-card-border) !important;
+}
+
+body#rewards-body .chart-filter-group {
+  background: #F5F5F5 !important;
+  border: 1px solid var(--rewards-card-border);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+body#rewards-body .chart-filter-btn.active {
+  background: #FFFFFF !important;
+  color: var(--rewards-title) !important;
+  box-shadow: var(--rewards-card-shadow) !important;
+}
+
+body#rewards-body .refer-input-wrapper,
+body#rewards-body #campaign-subid-input,
+body#rewards-body #campaign-search-input,
+body#rewards-body .chart-date-field input[type="date"],
+body#rewards-body .commissions-date-picker,
+body#rewards-body .commissions-date-input,
+body#rewards-body .settings-input,
+body#rewards-body .ds-select,
+body#rewards-body .commissions-input,
+body#rewards-body .commissions-select {
+  min-height: 42px;
+  border: 1px solid var(--input-border-color, #D5D7DA) !important;
+  border-radius: 8px !important;
+  background: #FFFFFF !important;
+  box-shadow: none !important;
+  font-family: 'TT Norms Pro', sans-serif !important;
+  color: var(--body-color, #344054) !important;
+}
+
+body#rewards-body .refer-input-wrapper:focus-within,
+body#rewards-body #campaign-subid-input:focus,
+body#rewards-body #campaign-search-input:focus,
+body#rewards-body .chart-date-field input[type="date"]:focus,
+body#rewards-body .settings-input:focus,
+body#rewards-body .ds-select:focus,
+body#rewards-body .commissions-input:focus,
+body#rewards-body .commissions-select:focus {
+  border-color: var(--primary-color, #0000FF) !important;
+  box-shadow: var(--rewards-focus) !important;
+  outline: none !important;
+}
+
+body#rewards-body .tp-progress-bar,
+body#rewards-body .tier-progress-track,
+body#rewards-body .ds-progress {
+  background: var(--progress-track-bg, #D5D7DA) !important;
+  border-radius: var(--progress-border-radius, 30px) !important;
+}
+
+body#rewards-body .tp-progress-fill,
+body#rewards-body .tier-progress-fill,
+body#rewards-body .ds-progress__fill {
+  background: var(--progress-fill-bg, #98FB96) !important;
+  border-radius: var(--progress-border-radius, 30px) !important;
+}
+
+body#rewards-body .campaign-table,
+body#rewards-body .data-table,
+body#rewards-body .commissions-table {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-family: 'TT Norms Pro', sans-serif !important;
+}
+
+body#rewards-body .campaign-table thead th,
+body#rewards-body .data-table__th,
+body#rewards-body .commissions-table thead th {
+  background: #FFFFFF !important;
+  color: var(--rewards-muted) !important;
+  border-bottom: 1px solid var(--rewards-card-border) !important;
+  font-size: 12px !important;
+  line-height: 18px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em !important;
+}
+
+body#rewards-body .campaign-table tbody td,
+body#rewards-body .data-table__td,
+body#rewards-body .commissions-table tbody td {
+  color: var(--body-color, #344054) !important;
+  border-bottom: 1px solid #F2F4F7 !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+body#rewards-body .campaign-table tbody tr:hover,
+body#rewards-body .data-table__row:hover,
+body#rewards-body .commissions-table tbody tr:hover {
+  background: #FAFAFA !important;
+}
+
+body#rewards-body .campaign-subid-badge,
+body#rewards-body .ds-badge,
+body#rewards-body .metric-card-trend {
+  border-radius: 999px !important;
+  border: 1px solid var(--rewards-card-border) !important;
+  background: #F5F5F5 !important;
+  color: var(--body-color, #344054) !important;
+  box-shadow: none !important;
+}
+
+body#rewards-body .metric-card-trend.positive,
+body#rewards-body .campaign-cvr {
+  background: #ECFDF3 !important;
+  color: #067647 !important;
+  border-color: #ABEFC6 !important;
+}
+
+body#rewards-body .campaign-cvr.low {
+  background: transparent !important;
+  color: #B54708 !important;
+}
+
+body#rewards-body .marketing-asset-preview.template-preview,
+body#rewards-body .marketing-asset-preview.video-preview,
+body#rewards-body .marketing-asset-preview.banner-preview {
+  width: 100% !important;
+  height: 120px !important;
+  border-radius: 0 !important;
+  background: #F5F7FF !important;
+}
+
+body#rewards-body .marketing-asset-preview.template-preview svg,
+body#rewards-body .marketing-asset-preview.video-preview svg,
+body#rewards-body .marketing-asset-preview.banner-preview svg {
+  color: var(--primary-color, #0000FF) !important;
+  fill: currentColor !important;
+}
+
+body#rewards-body .template-label {
+  color: var(--body-color, #344054) !important;
+  letter-spacing: 0 !important;
+}
+
+body#rewards-body .email-block-header,
+body#rewards-body .campaign-subtitle code {
+  background: #FAFAFA !important;
+  border-color: var(--rewards-card-border) !important;
+}
+
+body#rewards-body .rewards-pending-modal {
+  border-radius: 12px !important;
+}
+
+@media (max-width: 1024px) {
+  body#rewards-body .rewards-main {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  body#rewards-body .rewards-container {
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  body#rewards-body .rewards-container {
+    padding: 16px;
+    padding-top: 80px;
+    gap: 20px;
+  }
+
+  body#rewards-body .rewards-hero-grid,
+  body#rewards-body .partner-metrics-grid,
+  body#rewards-body .marketing-assets-grid,
+  body#rewards-body .commissions-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  body#rewards-body .campaign-card-header,
+  body#rewards-body .commissions-card-header,
+  body#rewards-body .tier-card-header-new,
+  body#rewards-body .tp-invested-row,
+  body#rewards-body .refer-input-group,
+  body#rewards-body .campaign-card-header .campaign-table-actions,
+  body#rewards-body .commissions-form-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  body#rewards-body #campaign-search-input,
+  body#rewards-body .copy-link-btn,
+  body#rewards-body #campaign-export-btn {
+    width: 100% !important;
   }
 }

@@ -49,6 +49,32 @@ function getDropdownVal(selectId) {
   return el.value || '';
 }
 
+function isStaleDraftResponse(resp) {
+  return resp && (resp.status === 404 || resp.status === 410);
+}
+
+async function readApiErrorMessage(resp, fallback) {
+  let errMessage = fallback || "Something went wrong. Please try again.";
+  try {
+    const rawText = await resp.text();
+    try {
+      const errData = JSON.parse(rawText);
+      if (errData.error) errMessage = errData.error;
+      else if (errData.message) errMessage = errData.message;
+    } catch {
+      const stripped = rawText.replace(/<[^>]+>/g, '').trim();
+      if (stripped && stripped.length < 300) errMessage = stripped;
+    }
+  } catch {
+    // Body read failed; keep fallback.
+  }
+  if (resp.status === 401) return "You are not logged in. Please log in and try again.";
+  if (resp.status === 403 && errMessage === (fallback || "Something went wrong. Please try again.")) {
+    return "You don't have permission to perform this action. Please refresh the page and try again.";
+  }
+  return errMessage;
+}
+
 /**
  * Save & Exit — saves whatever the user has filled in so far (no full validation)
  * then navigates to the submissions list.
@@ -127,9 +153,10 @@ async function saveAndExitStep2(btn) {
       body: JSON.stringify(payload),
     });
 
-    // If PUT failed (stale draft ID), clear it and fall back to POST
-    if (!resp.ok && existingId) {
-      console.warn('Save & Exit: PUT failed (' + resp.status + '), falling back to POST (new draft)');
+    // If PUT failed because the local draft pointer is stale, clear it and create a new draft.
+    // Validation, permission, and state errors must stay visible instead of duplicating assets.
+    if (!resp.ok && existingId && isStaleDraftResponse(resp)) {
+      console.warn('Save & Exit: stale draft ID (' + resp.status + '), falling back to POST (new draft)');
       localStorage.removeItem('draft_asset_id');
       resp = await fetch('/api/developer/draft', {
         method: 'POST',
@@ -148,16 +175,18 @@ async function saveAndExitStep2(btn) {
         const savedId = data.asset_id;
         if (savedId) localStorage.setItem('draft_asset_id', savedId);
       } catch { /* non-JSON success response is fine */ }
+      window.location.href = '/developer/submissions';
     } else {
-      const rawText = await resp.text().catch(() => '');
-      let msg = `Save failed (${resp.status})`;
-      try { const j = JSON.parse(rawText); msg = j.error || j.message || msg; } catch {}
-      console.warn('Save & Exit: server error:', msg);
+      const msg = await readApiErrorMessage(resp, `Save failed (${resp.status})`);
+      showFormError(msg);
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
   } catch (err) {
     console.warn('Save & Exit: network error', err);
-  } finally {
-    window.location.href = '/developer/submissions';
+    showFormError("Connection lost — your draft was not saved. Please try again.");
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 
@@ -400,9 +429,10 @@ document.addEventListener("DOMContentLoaded", function () {
           body: JSON.stringify(payload),
         });
 
-        // If PUT failed (stale/deleted draft), clear ID and fall back to POST
-        if (!resp.ok && existingId) {
-          console.warn('Next Step: PUT failed (' + resp.status + '), falling back to POST (new draft)');
+        // If PUT failed because the local draft pointer is stale/deleted, create a new draft.
+        // Do not fall back on validation/permission/state errors because that duplicates assets.
+        if (!resp.ok && existingId && isStaleDraftResponse(resp)) {
+          console.warn('Next Step: stale draft ID (' + resp.status + '), falling back to POST (new draft)');
           localStorage.removeItem('draft_asset_id');
           resp = await fetch('/api/developer/draft', {
             method: 'POST',
@@ -419,28 +449,16 @@ document.addEventListener("DOMContentLoaded", function () {
           let data = {};
           try { data = JSON.parse(rawText); } catch { /* ok */ }
           const savedId = data.asset_id || existingId;
-          if (savedId) localStorage.setItem("draft_asset_id", savedId);
+          if (!savedId) {
+            showFormError("Draft saved, but the server did not return a draft ID. Please refresh and try again.");
+            nextBtn.disabled = false;
+            nextBtn.querySelector("span").textContent = "Next Step";
+            return;
+          }
+          localStorage.setItem("draft_asset_id", savedId);
           window.location.href = "/developer/document-upload-step3?draft_id=" + savedId;
         } else {
-          // Read body once as text, then try to extract a message from it
-          let errMessage = "Something went wrong. Please try again.";
-          try {
-            const rawText = await resp.text();
-            // Try JSON first (our API routes return JSON errors when possible)
-            try {
-              const errData = JSON.parse(rawText);
-              if (errData.error) errMessage = errData.error;
-              else if (errData.message) errMessage = errData.message;
-            } catch {
-              // Plain text or HTML error (AppError returns HTML) — extract text content
-              const stripped = rawText.replace(/<[^>]+>/g, '').trim();
-              if (stripped && stripped.length < 300) errMessage = stripped;
-            }
-          } catch { /* body read failed */ }
-          if (resp.status === 403 && errMessage === "Something went wrong. Please try again.") {
-            errMessage = "You don't have permission to perform this action. Please refresh the page and try again.";
-          }
-          if (resp.status === 401) errMessage = "You are not logged in. Please log in and try again.";
+          const errMessage = await readApiErrorMessage(resp, "Something went wrong. Please try again.");
           showFormError(errMessage);
           nextBtn.disabled = false;
           nextBtn.querySelector("span").textContent = "Next Step";

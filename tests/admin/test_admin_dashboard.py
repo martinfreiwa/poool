@@ -520,7 +520,7 @@ def main():
     
     # Detailed Item Pages (Requiring Params / Mock Data in URL)
     test_admin_page(session, results, "/admin/user-details.html?id=1", "Specific User Details", "user-content")
-    test_admin_page(session, results, "/admin/asset-details.html?id=1", "Specific Asset Details", "asset-sc-details")
+    test_admin_page(session, results, "/admin/asset-details.html?id=1", "Specific Asset Details", "asset-content")
     test_admin_page(session, results, "/admin/support-ticket.html?id=1", "Specific Support Ticket", "ticket-thread")
     test_admin_page(session, results, "/admin/developer-submission-review.html?id=1", "Developer Submission Review", "review-content")
     

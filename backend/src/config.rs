@@ -59,6 +59,12 @@ pub struct Config {
     pub sanity_read_token: Option<String>,
     /// Server-side Sanity token for Content Lake mutations and asset uploads.
     pub sanity_write_token: Option<String>,
+    /// Optional Metabase base URL for admin analytics, e.g. https://metabase.example.com.
+    pub metabase_base_url: String,
+    /// Optional public Metabase dashboard path used for embedding.
+    pub metabase_public_dashboard_path: String,
+    /// Optional internal Metabase dashboard ID opened by the admin button.
+    pub metabase_dashboard_id: String,
 }
 
 impl Config {
@@ -97,6 +103,13 @@ impl Config {
             sanity_studio_url,
             sanity_read_token: env_optional("SANITY_READ_TOKEN"),
             sanity_write_token: env_optional("SANITY_WRITE_TOKEN"),
+            metabase_base_url: env_optional("METABASE_BASE_URL")
+                .unwrap_or_default()
+                .trim_end_matches('/')
+                .to_string(),
+            metabase_public_dashboard_path: env_optional("METABASE_PUBLIC_DASHBOARD_PATH")
+                .unwrap_or_default(),
+            metabase_dashboard_id: env_optional("METABASE_DASHBOARD_ID").unwrap_or_default(),
         }
     }
 

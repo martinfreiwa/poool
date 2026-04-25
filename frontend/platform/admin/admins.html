@@ -426,7 +426,7 @@
                   <circle cx="11" cy="11" r="6" />
                   <path d="M21 21l-4.35-4.35" />
                 </svg>
-                <input id="admin-directory-search" type="text" placeholder="Search by email or role..." x-model="searchQuery"
+                <input id="admin-directory-search" type="text" placeholder="Search by email, name, ID, or role..." x-model="searchQuery"
                   @input="applyFilters()" />
               </div>
               <select id="admin-directory-role-filter" class="admin-select" x-model="filterRole" @change="applyFilters()">

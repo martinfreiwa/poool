@@ -39,9 +39,7 @@ pub async fn fragment_chart(
 
     let period = query.period.unwrap_or_else(|| "all".to_string());
 
-    // In a real implementation this would pass the period parameter
-    // For now we just fetch the stats which we will soon enhance
-    let stats = service::fetch_dashboard_stats(&state.db, user.id).await;
+    let stats = service::fetch_dashboard_stats_for_period(&state.db, user.id, &period).await;
 
     match state
         .templates

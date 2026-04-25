@@ -21,7 +21,11 @@
           </div>
 
           <!-- Error area -->
-          <div id="auth-error"></div>
+          <div id="auth-error" aria-live="polite">
+            {% if error %}
+            <div class="auth-error-message" role="alert">{{ error }}</div>
+            {% endif %}
+          </div>
 
           <!-- Social login buttons -->
           <div id="social-buttons">
@@ -41,7 +45,8 @@
           </div>
 
           <!-- Login form -->
-          <form id="login-form" hx-post="/auth/login" hx-target="#auth-error" hx-swap="innerHTML">
+          <form id="login-form" method="post" action="/auth/login" hx-post="/auth/login" hx-target="#auth-error" hx-swap="innerHTML">
+            <input type="hidden" id="csrf-token-input" name="csrf_token" value="{{ csrf_token }}">
             <div class="input-field">
               <div class="input-with-label">
                 <label for="email-input" class="input-label">Email</label>
@@ -92,13 +97,21 @@
 
     <section id="right-section">
       <div id="testimonial-container">
+        <img
+          id="testimonial-image"
+          src="/static/images/auth/indonesian-login-portrait.webp"
+          alt="Portrait of a POOOL investor"
+          width="1536"
+          height="1024"
+          fetchpriority="high"
+        >
         <div id="quote-panel">
           <div id="attribution-card">
-            <h2 id="testimonial-quote">"All my real estate experience was building up to this moment — launching <span class="highlight-green">POOOL</span>."</h2>
+            <h2 id="testimonial-quote">"POOOL made my first real estate investment feel clear, local, and within reach."</h2>
             <div id="name-and-stars">
               <div id="text-and-supporting">
-                <span id="author-name">Jonas Freiwald</span>
-                <span id="author-company">Co-CEO, Founder</span>
+                <span id="author-name">POOOL Investor</span>
+                <span id="author-company">Indonesia</span>
               </div>
               <div id="stars-container">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="#22c55e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -123,7 +136,23 @@
   </div>
 
   <script>
+    (function () {
+      function getCookie(name) {
+        var value = '; ' + document.cookie;
+        var parts = value.split('; ' + name + '=');
+        if (parts.length === 2) {
+          return parts.pop().split(';').shift();
+        }
+        return '';
+      }
+      var csrfInput = document.getElementById('csrf-token-input');
+      if (csrfInput) {
+        csrfInput.value = decodeURIComponent(getCookie('csrf_token') || '');
+      }
+    })();
+
     var team = [
+      { img: '/static/images/auth/indonesian-login-portrait.webp', quote: 'POOOL made my first real estate investment feel clear, local, and within reach.', name: 'POOOL Investor', role: 'Indonesia' },
       { img: '/webp/team/Jonas Freiwald.webp',       quote: 'All my real estate experience was building up to this moment — launching <span class="highlight-green">POOOL</span>.', name: 'Jonas Freiwald',       role: 'Co-CEO, Founder' },
       { img: '/webp/team/Dmitry Sikorski.webp',       quote: 'I know what it\'s like to build from zero. <span class="highlight-green">POOOL</span> gives that chance to anyone.', name: 'Dmitry Sikorski',       role: 'Co-CEO, Founder' },
       { img: '/webp/team/Nikita Kokhanevych.webp',    quote: 'Before it was a rich man\'s game. <span class="highlight-green">POOOL</span> hacked the rules for everyone.', name: 'Nikita Kokhanevych',    role: 'CTO, Blockchain' },
@@ -142,13 +171,18 @@
     ];
     var current = 0;
     var container = document.getElementById('testimonial-container');
+    var imageEl   = document.getElementById('testimonial-image');
     var quoteEl   = document.getElementById('testimonial-quote');
     var nameEl    = document.getElementById('author-name');
     var roleEl    = document.getElementById('author-company');
 
     function show(idx) {
       var t = team[idx];
-      container.style.backgroundImage = 'url("' + t.img + '")';
+      if (imageEl) {
+        imageEl.src = t.img;
+      } else {
+        container.style.backgroundImage = 'url("' + t.img + '")';
+      }
       quoteEl.innerHTML = '\u201c' + t.quote + '\u201d';
       nameEl.textContent = t.name;
       roleEl.textContent = t.role;

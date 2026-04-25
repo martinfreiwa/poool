@@ -216,16 +216,16 @@
 /* Progress bar */
 .holo-progress-bar {
   height: 6px;
-  background: #E9EAEB;
-  border-radius: 4px;
+  background: var(--progress-track-bg, #D5D7DA);
+  border-radius: var(--progress-border-radius, 30px);
   overflow: hidden;
   margin-bottom: 8px;
 }
 
 .holo-progress-fill {
   height: 100%;
-  background: var(--brand-greeny-green, #03FF88);
-  border-radius: 4px;
+  background: var(--progress-fill-bg, #98FB96);
+  border-radius: var(--progress-border-radius, 30px);
 }
 
 .holo-progress-text {

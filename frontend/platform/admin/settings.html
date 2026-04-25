@@ -8,8 +8,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Settings | Admin | POOOL</title>
   <meta name="description" content="POOOL Admin — Platform settings and role-based access control." />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
@@ -445,7 +443,7 @@
         </div>
 
         <!-- ═══ LEGAL & COMPLIANCE ═══ -->
-        <div x-show="activeTab === 'legal'" x-cloak>
+        <div x-show="activeTab === 'legal'">
           <!-- Consent Stats -->
           <div class="admin-card" style="padding: 24px 28px; margin-bottom: 16px" x-show="legalStats">
             <h4 style="

@@ -78,9 +78,9 @@
 
 /* Default is green (--progress-fill-bg). These override for special cases. */
 
-/* Blue — for tier progress or primary-branded bars */
+/* Legacy alias. Normal progress stays green per DESIGN.md. */
 .ds-progress--blue .ds-progress__fill {
-    background: var(--btn-primary-bg, #0000FF);
+    background: var(--progress-fill-bg);
 }
 
 /* Warning — approaching limits */

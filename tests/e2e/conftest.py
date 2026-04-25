@@ -29,6 +29,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime
 from pathlib import Path
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright, expect
 
 # ─── Configuration ────────────────────────────────────────────────────────────
@@ -382,23 +383,144 @@ def cleanup_test_user(user_id):
         conn = get_db_connection()
         cur = conn.cursor()
         uid = str(user_id)
-        # Order matters: child tables first
-        for table in [
-            "kyc_records", "wallet_transactions", "wallets",
-            "orders", "order_items", "investments",
-            "sessions", "user_settings", "user_profiles",
-            "referral_tracking", "user_tiers", "user_consents",
-        ]:
+        cleanup_statements = [
+            ("DELETE FROM user_sessions WHERE user_id = %s", (uid,)),
+            (
+                "DELETE FROM wallet_transactions WHERE wallet_id IN (SELECT id FROM wallets WHERE user_id = %s)",
+                (uid,),
+            ),
+            ("DELETE FROM wallets WHERE user_id = %s", (uid,)),
+            ("DELETE FROM kyc_records WHERE user_id = %s", (uid,)),
+            ("DELETE FROM user_roles WHERE user_id = %s", (uid,)),
+            ("DELETE FROM user_settings WHERE user_id = %s", (uid,)),
+            ("DELETE FROM user_profiles WHERE user_id = %s", (uid,)),
+            ("DELETE FROM investment_limits WHERE user_id = %s", (uid,)),
+            ("DELETE FROM investments WHERE user_id = %s", (uid,)),
+            ("DELETE FROM orders WHERE user_id = %s", (uid,)),
+            ("DELETE FROM referral_tracking WHERE user_id = %s", (uid,)),
+            ("DELETE FROM user_tiers WHERE user_id = %s", (uid,)),
+            ("DELETE FROM user_consents WHERE user_id = %s", (uid,)),
+        ]
+        for sql, params in cleanup_statements:
             try:
-                cur.execute(f"DELETE FROM {table} WHERE user_id = %s", (uid,))
+                cur.execute(sql, params)
             except Exception:
-                conn.rollback()  # Can continue — table may not have user_id
+                conn.rollback()  # Can continue — table may not exist in older local DBs.
         cur.execute("DELETE FROM users WHERE id = %s", (uid,))
         conn.commit()
         cur.close()
         conn.close()
     except Exception:
         pass  # Best effort cleanup
+
+
+def create_e2e_user(
+    *,
+    email_prefix="e2e-test",
+    display_name="E2E Tester",
+    roles=(),
+    cash_balance_cents=1_000_000,
+    kyc_status="approved",
+):
+    """Create an authenticated test user directly in DB to avoid auth rate limits."""
+    unique_id = uuid.uuid4().hex[:8]
+    email = f"{email_prefix}-{unique_id}@poool.app"
+    session_token = str(uuid.uuid4())
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            INSERT INTO users (email, email_verified, status)
+            VALUES (%s, TRUE, 'active')
+            RETURNING id
+            """,
+            (email,),
+        )
+        user_id = cur.fetchone()[0]
+        cur.execute(
+            """
+            INSERT INTO user_profiles (user_id, first_name, last_name, display_name, annual_income_cents)
+            VALUES (%s, 'E2E', 'Tester', %s, 100000000)
+            ON CONFLICT (user_id) DO UPDATE SET
+                first_name = EXCLUDED.first_name,
+                last_name = EXCLUDED.last_name,
+                display_name = EXCLUDED.display_name,
+                annual_income_cents = EXCLUDED.annual_income_cents
+            """,
+            (user_id, display_name),
+        )
+        cur.execute(
+            """
+            INSERT INTO investment_limits (user_id, annual_limit_cents, invested_12m_cents, limit_year)
+            VALUES (%s, 10000000, 0, EXTRACT(YEAR FROM NOW())::INTEGER)
+            ON CONFLICT (user_id, limit_year) DO UPDATE SET
+                annual_limit_cents = EXCLUDED.annual_limit_cents,
+                invested_12m_cents = 0
+            """,
+            (user_id,),
+        )
+        cur.execute(
+            """
+            INSERT INTO wallets (user_id, wallet_type, currency, balance_cents, held_balance_cents)
+            VALUES (%s, 'cash', 'USD', %s, 0)
+            ON CONFLICT (user_id, wallet_type, currency) DO UPDATE SET
+                balance_cents = EXCLUDED.balance_cents,
+                held_balance_cents = 0
+            """,
+            (user_id, cash_balance_cents),
+        )
+        cur.execute(
+            """
+            INSERT INTO wallets (user_id, wallet_type, currency, balance_cents, held_balance_cents)
+            VALUES (%s, 'rewards', 'USD', 0, 0)
+            ON CONFLICT (user_id, wallet_type, currency) DO NOTHING
+            """,
+            (user_id,),
+        )
+        cur.execute(
+            """
+            INSERT INTO kyc_records (user_id, status)
+            SELECT %s, %s
+            WHERE NOT EXISTS (
+                SELECT 1 FROM kyc_records WHERE user_id = %s
+            )
+            """,
+            (user_id, kyc_status, user_id),
+        )
+        for role in roles:
+            cur.execute(
+                """
+                INSERT INTO user_roles (user_id, role_id, is_active)
+                SELECT %s, id, TRUE
+                FROM roles
+                WHERE name = %s
+                ON CONFLICT (user_id, role_id) DO UPDATE SET is_active = TRUE
+                """,
+                (user_id, role),
+            )
+        cur.execute(
+            """
+            INSERT INTO user_sessions (user_id, session_token, remember_me, expires_at)
+            VALUES (%s, %s, FALSE, NOW() + INTERVAL '1 hour')
+            """,
+            (user_id, session_token),
+        )
+        conn.commit()
+        return {
+            "email": email,
+            "password": "TestPass123!",
+            "user_id": user_id,
+            "unique_id": unique_id,
+            "session_token": session_token,
+        }
+    finally:
+        cur.close()
+        conn.close()
+
+
+def attach_session_cookie(context, session_token):
+    context.add_cookies([{"name": "poool_session", "value": session_token, "url": BASE_URL}])
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -422,7 +544,11 @@ def playwright_session():
         elif browser_name == "webkit":
             browser = p.webkit.launch(**launch_opts)
         else:
-            browser = p.chromium.launch(**launch_opts)
+            try:
+                browser = p.chromium.launch(**launch_opts)
+            except PlaywrightError as exc:
+                print(f"Chromium launch failed; falling back to Firefox: {exc}")
+                browser = p.firefox.launch(**launch_opts)
         yield browser
         browser.close()
 
@@ -551,99 +677,22 @@ def tablet_page(playwright_session, request):
 @pytest.fixture(scope="function")
 def authenticated_user_page(playwright_session, request):
     """
-    Creates a fresh test user via UI signup, bypasses KYC via DB,
+    Creates a fresh test user directly in DB, bypasses KYC,
     funds wallet with $10,000, returns (page, tracker, user_context).
     Cleans up test user after the test.
     """
     context, page, tracker = _create_context_and_page(
         playwright_session, request.node.name
     )
-
-    full_uuid = str(uuid.uuid4())
-    unique_id = full_uuid[0:8]
-    email = f"e2e-test-{unique_id}@poool.app"
-    password = "TestPass123!"
-    user_id = None
-
-    # 1. Sign up via the UI
-    page.goto(f"{BASE_URL}/auth/signup")
-    page.fill("#email-input", email)
-    page.fill("#password-input", password)
-    page.click("#terms-checkbox")
-    page.click("#login-button")
-
-    # Wait for redirect (signup creates session + redirects)
-    try:
-        page.wait_for_url(lambda url: "/auth/signup" not in url, timeout=10000)
-    except Exception:
-        pass  # May already be redirected
-
-    # 2. DB: Verify user + bypass KYC + fund wallet
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("SELECT id FROM users WHERE email = %s", (email,))
-    row = cur.fetchone()
-    if not row:
-        cur.close()
-        conn.close()
-        pytest.fail(f"User {email} was not created in DB after signup")
-
-    user_id = row[0]
-
-    # Ensure profile
-    cur.execute("SELECT id FROM user_profiles WHERE user_id = %s", (user_id,))
-    if not cur.fetchone():
-        cur.execute(
-            "INSERT INTO user_profiles (id, user_id, first_name, last_name, display_name) "
-            "VALUES (gen_random_uuid(), %s, 'E2E', 'Tester', %s)",
-            (user_id, f"e2e_{unique_id}"),
-        )
-
-    # Ensure wallet with $10,000 (1_000_000 cents)
-    cur.execute("SELECT id FROM wallets WHERE user_id = %s", (user_id,))
-    if not cur.fetchone():
-        cur.execute(
-            "INSERT INTO wallets (id, user_id, balance_cents, hold_cents) "
-            "VALUES (gen_random_uuid(), %s, 1000000, 0)",
-            (user_id,),
-        )
-    else:
-        cur.execute(
-            "UPDATE wallets SET balance_cents = 1000000 WHERE user_id = %s",
-            (user_id,),
-        )
-
-    # Approve KYC
-    cur.execute("SELECT id FROM kyc_records WHERE user_id = %s", (user_id,))
-    if not cur.fetchone():
-        cur.execute(
-            "INSERT INTO kyc_records (id, user_id, status) "
-            "VALUES (gen_random_uuid(), %s, 'approved')",
-            (user_id,),
-        )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    # Give session a moment to settle
-    time.sleep(1)
-    
-    # Reload to pick up KYC state
-    page.reload(wait_until="domcontentloaded")
-    
-    # Wait for dashboard/marketplace to confirm auth state
-    try:
-        page.wait_for_selector(".sidebar, .nav", timeout=5000)
-    except Exception:
-        pass
+    user = create_e2e_user(email_prefix="e2e-test", display_name="E2E Tester")
+    user_id = user["user_id"]
+    attach_session_cookie(context, user["session_token"])
 
     yield page, tracker, {
-        "email": email,
-        "password": password,
+        "email": user["email"],
+        "password": user["password"],
         "user_id": user_id,
-        "unique_id": unique_id,
+        "unique_id": user["unique_id"],
     }
 
     # Cleanup
@@ -655,96 +704,41 @@ def authenticated_user_page(playwright_session, request):
 @pytest.fixture(scope="function")
 def admin_page(playwright_session, request):
     """
-    Logs in as admin, returns (page, tracker).
-    Uses admin credentials from env vars.
+    Creates a fresh super-admin session, returns (page, tracker).
     """
     context, page, tracker = _create_context_and_page(
         playwright_session, request.node.name
     )
-
-    # 1. Sign up a new user via UI
-    full_uuid = str(uuid.uuid4())
-    unique_id = full_uuid[0:8]
-    email = f"e2e-admin-{unique_id}@poool.app"
-    password = "TestAdminPass123!"
-
-    page.goto(f"{BASE_URL}/auth/signup")
-    page.fill("#email-input", email)
-    page.fill("#password-input", password)
-    page.click("#terms-checkbox")
-    page.click("#login-button")
-
-    try:
-        page.wait_for_url(lambda url: "/auth/signup" not in url, timeout=10000)
-    except Exception:
-        pass
-
-    # 2. Assign superadmin role using direct SQL
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        query = """
-        INSERT INTO user_roles (user_id, role_id)
-        SELECT u.id, r.id
-        FROM users u, roles r
-        WHERE u.email = %s AND (r.name = 'super_admin' OR r.name = 'admin')
-        ON CONFLICT DO NOTHING;
-        """
-        cur.execute(query, (email,))
-        conn.commit()
-    finally:
-        cur.close()
-        conn.close()
+    user = create_e2e_user(
+        email_prefix="e2e-admin",
+        display_name="E2E Admin",
+        roles=("admin", "super_admin"),
+    )
+    attach_session_cookie(context, user["session_token"])
 
     yield page, tracker
     _teardown_context(context, page, tracker, request)
+    cleanup_test_user(user["user_id"])
 
 
 @pytest.fixture(scope="function")
 def admin_mobile_page(playwright_session, request):
     """
-    Logs in as admin on a mobile viewport (375x812), returns (page, tracker).
+    Creates a fresh super-admin session on a mobile viewport, returns (page, tracker).
     """
     context, page, tracker = _create_context_and_page(
         playwright_session, request.node.name, viewport="mobile"
     )
-
-    # 1. Sign up a new user via UI
-    full_uuid = str(uuid.uuid4())
-    unique_id = full_uuid[0:8]
-    email = f"e2e-admin-mob-{unique_id}@poool.app"
-    password = "TestAdminPass123!"
-
-    page.goto(f"{BASE_URL}/auth/signup")
-    page.fill("#email-input", email)
-    page.fill("#password-input", password)
-    page.click("#terms-checkbox")
-    page.click("#login-button")
-
-    try:
-        page.wait_for_url(lambda url: "/auth/signup" not in url, timeout=10000)
-    except Exception:
-        pass
-
-    # 2. Assign superadmin role using direct SQL
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        query = """
-        INSERT INTO user_roles (user_id, role_id)
-        SELECT u.id, r.id
-        FROM users u, roles r
-        WHERE u.email = %s AND (r.name = 'super_admin' OR r.name = 'admin')
-        ON CONFLICT DO NOTHING;
-        """
-        cur.execute(query, (email,))
-        conn.commit()
-    finally:
-        cur.close()
-        conn.close()
+    user = create_e2e_user(
+        email_prefix="e2e-admin-mob",
+        display_name="E2E Mobile Admin",
+        roles=("admin", "super_admin"),
+    )
+    attach_session_cookie(context, user["session_token"])
 
     yield page, tracker
     _teardown_context(context, page, tracker, request)
+    cleanup_test_user(user["user_id"])
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -775,7 +769,10 @@ def take_named_screenshot(page, name):
 
 def check_toast_message(page, expected_text=None, timeout=5000):
     """Wait for and verify a toast notification appears."""
-    toast = page.locator(".toast, .notification, .alert-success, [role='alert'], .poool-toast-card").first
+    toast = page.locator(
+        ".poool-toast-card:visible, .toast:visible, .notification:visible, "
+        ".alert-success:visible, [role='alert']:visible"
+    ).first
     expect(toast).to_be_visible(timeout=timeout)
     if expected_text:
         expect(toast).to_contain_text(expected_text, ignore_case=True)

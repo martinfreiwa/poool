@@ -80,6 +80,14 @@ function serveFile(res, filePath) {
   });
 }
 
+function redirectToPlatform(res, targetPath) {
+  res.writeHead(303, {
+    Location: `https://platform.poool.app${targetPath}`,
+    "Cache-Control": "no-cache",
+  });
+  res.end();
+}
+
 // Collect POST body
 function getBody(req) {
   return new Promise((resolve) => {
@@ -91,6 +99,38 @@ function getBody(req) {
 
 const server = http.createServer(async (req, res) => {
   let urlPath = decodeURIComponent(req.url.split("?")[0]);
+  const query = req.url.includes("?") ? `?${req.url.split("?").slice(1).join("?")}` : "";
+
+  const platformRedirects = new Map([
+    ["/auth/login", "/auth/login"],
+    ["/auth/signup", "/auth/signup"],
+    ["/signup", "/auth/signup"],
+    ["/marketplace", "/marketplace"],
+    ["/blog", "/blog"],
+    ["/terms", "/terms"],
+    ["/terms-and-conditions", "/terms"],
+    ["/cookies", "/cookies"],
+    ["/privacy-policy", "/privacy-policy"],
+    ["/privacy", "/privacy-policy"],
+    ["/currency-policy", "/currency-policy"],
+    ["/currency", "/currency-policy"],
+    ["/aml-kyc-policy", "/aml-kyc-policy"],
+    ["/imprint", "/imprint"],
+    ["/gdpr-data-request", "/gdpr-data-request"],
+  ]);
+
+  if (req.method === "GET" || req.method === "HEAD") {
+    const target = platformRedirects.get(urlPath);
+    if (target) {
+      redirectToPlatform(res, `${target}${query}`);
+      return;
+    }
+
+    if (urlPath.startsWith("/p/")) {
+      redirectToPlatform(res, `${urlPath}${query}`);
+      return;
+    }
+  }
 
   // ============= LOCAL AUTH (mock) =============
   if (urlPath === "/auth/login" && req.method === "POST") {

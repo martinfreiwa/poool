@@ -458,14 +458,10 @@ pub async fn execute_checkout(
     .and_then(|v: String| v.parse().ok())
     .unwrap_or(rust_decimal::Decimal::from(0));
 
-    let fee_cents_dec = (rust_decimal::Decimal::from(subtotal_cents) * platform_fee_pct)
-        / rust_decimal::Decimal::from(100);
-    use rust_decimal::prelude::ToPrimitive;
-    let fee_cents = fee_cents_dec
-        .ceil()
-        .to_i64()
-        .ok_or("Fee amount too large to process")?;
-    let grand_total_cents = subtotal_cents + fee_cents;
+    let fee_cents = calculate_platform_fee_cents(subtotal_cents, platform_fee_pct)?;
+    let grand_total_cents = subtotal_cents
+        .checked_add(fee_cents)
+        .ok_or("Grand total amount too large to process")?;
 
     // 3. Handle FX if payment currency differs from asset currency (USD)
     // Phase 1.10: Uses Decimal arithmetic to avoid IEEE754 rounding errors
@@ -1022,20 +1018,41 @@ pub fn calculate_fx_deduction(
     total_usd_cents: i64,
     payment_currency: &str,
 ) -> (i64, Option<rust_decimal::Decimal>) {
-    use rust_decimal::prelude::FromPrimitive;
     use rust_decimal::prelude::ToPrimitive;
     use rust_decimal::Decimal;
     if payment_currency == "IDR" {
-        // Mock exchange rate: 1 USD = 15,500 IDR
-        // In production, fetch from an FX API (OpenExchangeRates, etc.)
-        let rate_f64: f64 = crate::config::DEFAULT_USD_TO_IDR_RATE;
-        let rate = Decimal::from_f64(rate_f64).unwrap_or(Decimal::from(15500));
+        let rate = Decimal::from(crate::config::DEFAULT_USD_TO_IDR_RATE_I64);
         let idr_total_dec = (Decimal::from(total_usd_cents) * rate) / Decimal::from(100);
         let idr_total = idr_total_dec.to_i64().unwrap_or(i64::MAX); // Better ceiling than zero on theoretical overflow
         (idr_total, Some(rate))
     } else {
         (total_usd_cents, None)
     }
+}
+
+/// Calculate platform checkout fee in cents from a percentage stored in
+/// `platform_settings`. Uses Decimal all the way through and rounds up to avoid
+/// under-collecting fractional cents.
+pub fn calculate_platform_fee_cents(
+    subtotal_cents: i64,
+    platform_fee_pct: Decimal,
+) -> Result<i64, String> {
+    if subtotal_cents < 0 {
+        return Err("Subtotal cannot be negative".to_string());
+    }
+    if platform_fee_pct < Decimal::ZERO {
+        return Err("Platform fee percent cannot be negative".to_string());
+    }
+
+    use rust_decimal::prelude::ToPrimitive;
+    let fee_cents_dec = Decimal::from(subtotal_cents)
+        .checked_mul(platform_fee_pct)
+        .and_then(|fee| fee.checked_div(Decimal::from(100)))
+        .ok_or_else(|| "Fee amount too large to process".to_string())?;
+    fee_cents_dec
+        .ceil()
+        .to_i64()
+        .ok_or_else(|| "Fee amount too large to process".to_string())
 }
 
 /// Admin: Approve a pending order (e.g. after manual bank transfer verified).
@@ -1372,12 +1389,54 @@ mod tests {
         // $500.00 * 15,500 = 7,750,000 IDR
         let (cents_idr, rate_idr) = calculate_fx_deduction(50000, "IDR");
         assert_eq!(cents_idr, 7750000);
-        assert_eq!(rate_idr, Some(15500.0));
+        assert_eq!(rate_idr, Some(Decimal::from(15500)));
 
         // Test rounding / decimals logic
         // 1 cent = $0.01
         // $0.01 * 15,500 = 155 IDR
         let (cents_idr_small, _) = calculate_fx_deduction(1, "IDR");
         assert_eq!(cents_idr_small, 155);
+    }
+
+    #[test]
+    fn test_calculate_platform_fee_cents_decimal_percent() {
+        let fee = calculate_platform_fee_cents(10_000, Decimal::new(25, 1)).unwrap();
+        assert_eq!(fee, 250);
+    }
+
+    #[test]
+    fn test_calculate_platform_fee_cents_rounds_fractional_cent_up() {
+        let fee = calculate_platform_fee_cents(101, Decimal::new(25, 1)).unwrap();
+        assert_eq!(fee, 3);
+    }
+
+    #[test]
+    fn test_calculate_platform_fee_cents_zero_percent() {
+        let fee = calculate_platform_fee_cents(10_000, Decimal::ZERO).unwrap();
+        assert_eq!(fee, 0);
+    }
+
+    #[test]
+    fn test_calculate_platform_fee_cents_small_fractional_percent() {
+        let fee = calculate_platform_fee_cents(99, Decimal::new(1, 2)).unwrap();
+        assert_eq!(fee, 1);
+    }
+
+    #[test]
+    fn test_calculate_platform_fee_cents_rejects_negative_subtotal() {
+        let err = calculate_platform_fee_cents(-1, Decimal::new(25, 1)).unwrap_err();
+        assert_eq!(err, "Subtotal cannot be negative");
+    }
+
+    #[test]
+    fn test_calculate_platform_fee_cents_rejects_negative_percent() {
+        let err = calculate_platform_fee_cents(10_000, Decimal::new(-1, 0)).unwrap_err();
+        assert_eq!(err, "Platform fee percent cannot be negative");
+    }
+
+    #[test]
+    fn test_calculate_platform_fee_cents_rejects_overflow() {
+        let err = calculate_platform_fee_cents(i64::MAX, Decimal::from(i64::MAX)).unwrap_err();
+        assert_eq!(err, "Fee amount too large to process");
     }
 }

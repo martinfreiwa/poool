@@ -21,9 +21,9 @@
 
             dashboardData = await res.json();
             
-            // Redirect pending affiliates back to rewards/onboarding check
+            // Pending applicants stay in the affiliate flow until admin approval.
             if (dashboardData.status === 'pending_approval') {
-                window.location.href = '/rewards';
+                renderPendingReviewState();
                 return;
             }
 
@@ -133,6 +133,54 @@
         if (dashboardData.policy_reacceptance_required) {
             showPolicyReacceptanceBanner(dashboardData.current_policy_version);
         }
+    }
+
+    function renderPendingReviewState() {
+        const container = document.querySelector('.affiliate-dashboard-container');
+        if (!container) return;
+
+        container.innerHTML = `
+            <section class="affiliate-review-state ds-card" aria-labelledby="affiliate-review-title">
+                <div class="affiliate-review-icon" aria-hidden="true">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 6v6l4 2"></path>
+                    </svg>
+                </div>
+                <p class="affiliate-review-eyebrow">Application submitted</p>
+                <h1 id="affiliate-review-title" class="affiliate-review-title">Your affiliate application is under review</h1>
+                <p class="affiliate-review-copy">
+                    Thanks for applying to the POOOL Partner Syndicate. An admin needs to review and approve your application before your referral link, materials, payout settings, and reporting tools unlock.
+                </p>
+                <div class="affiliate-review-steps" aria-label="Affiliate approval progress">
+                    <div class="affiliate-review-step affiliate-review-step--done">
+                        <span class="affiliate-review-dot"></span>
+                        <div>
+                            <strong>Application received</strong>
+                            <span>Your profile, tax details, agreements, and exam answers were submitted.</span>
+                        </div>
+                    </div>
+                    <div class="affiliate-review-step affiliate-review-step--active">
+                        <span class="affiliate-review-dot"></span>
+                        <div>
+                            <strong>Admin review</strong>
+                            <span>We verify fit, compliance posture, and KYC before activation.</span>
+                        </div>
+                    </div>
+                    <div class="affiliate-review-step">
+                        <span class="affiliate-review-dot"></span>
+                        <div>
+                            <strong>Full affiliate access</strong>
+                            <span>After approval, this page becomes your affiliate dashboard.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="affiliate-review-actions">
+                    <a href="/affiliate/onboarding" class="ds-btn ds-btn--secondary">Review Application</a>
+                    <a href="/support" class="ds-btn ds-btn--ghost">Contact Support</a>
+                </div>
+            </section>
+        `;
     }
 
     /**

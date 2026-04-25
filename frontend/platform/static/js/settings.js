@@ -88,6 +88,9 @@
       if (!current || !next || !confirm) return "Please fill in all fields.";
       if (next !== confirm) return "New passwords do not match.";
       if (next.length < 8) return "Password must be at least 8 characters.";
+      if (!/[a-z]/.test(next) || !/[A-Z]/.test(next) || !/[0-9]/.test(next)) {
+        return "Password must include uppercase, lowercase, and a number.";
+      }
       return "";
     }
 
@@ -97,7 +100,10 @@
       savePreferences: (data) => apiFetch("/api/settings/preferences", "POST", data),
       saveNotifications: (data) => apiFetch("/api/settings/notifications", "POST", data),
       uploadAvatar: (file) => apiUpload("/api/upload/avatar", file),
-      disable2FA: () => apiFetch("/api/settings/2fa/disable", "POST"),
+      disable2FA: (currentPassword, code) => apiFetch("/api/settings/2fa/disable", "POST", {
+        current_password: currentPassword || "",
+        code: code || "",
+      }),
       saveLeaderboard: (data) => apiFetch("/api/settings/leaderboard", "POST", data),
       saveSocialLinks: (data) => apiFetch("/api/settings/social", "POST", data),
       saveDeveloperProfile: (data) => apiFetch("/api/settings/developer/profile", "POST", data),
@@ -107,9 +113,39 @@
       linkOAuth: (provider) => apiFetch(`/api/settings/oauth/${encodeURIComponent(provider)}/link`, "POST"),
       unlinkOAuth: (id) => apiFetch(`/api/settings/oauth/${encodeURIComponent(id)}`, "DELETE"),
       changePhone: (newPhone) => apiFetch("/api/settings/phone", "POST", { new_phone: newPhone || "" }),
-      requestDataExport: () => {
-        window.location.href = "/api/settings/export-data";
-        return Promise.resolve({ success: true });
+      requestDataExport: async () => {
+        try {
+          const res = await fetch("/api/settings/export-data", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-CSRF-Token": csrfToken() },
+          });
+          if (res.status === 401) {
+            window.location.href = "/auth/login";
+            return { success: false, message: "Session expired." };
+          }
+          if (!res.ok) {
+            const contentType = res.headers.get("content-type") || "";
+            if (contentType.includes("application/json")) {
+              const json = await res.json();
+              return { success: false, message: json.message || json.error || "Export failed." };
+            }
+            return { success: false, message: `Export failed (${res.status}).` };
+          }
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "poool_data_export.json";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          return { success: true };
+        } catch (err) {
+          console.error("Data export failed:", err);
+          return { success: false, message: "Network error. Please try again later." };
+        }
       },
       deleteAccount: (password, confirmPhrase) => {
         if (!password) return Promise.resolve({ success: false, message: "Password required." });
@@ -141,13 +177,6 @@
 
   function toast(message, type) {
     if (window.showPooolToast) window.showPooolToast(null, message, type || "info");
-  }
-
-  function escapeHtml(s) {
-    if (s == null) return "";
-    return String(s).replace(/[&<>"']/g, (c) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-    })[c]);
   }
 
   const LOGO_PLACEHOLDER_SVG = `
@@ -306,6 +335,12 @@
       totpStatus.textContent = d.totp_enabled ? "Enabled" : "Disabled";
       totpStatus.className = "settings-badge " + (d.totp_enabled ? "settings-badge--success" : "settings-badge--muted");
     }
+    const totpAction = $("settings-2fa-action");
+    if (totpAction) {
+      totpAction.textContent = d.totp_enabled ? "Disable 2FA" : "Enable 2FA";
+      totpAction.dataset.action = d.totp_enabled ? "open-disable-2fa" : "enable-2fa";
+      totpAction.classList.toggle("settings-btn--danger-outline", !!d.totp_enabled);
+    }
 
     renderOAuthList(d.oauth_connections || d.oauth_accounts || []);
   }
@@ -316,21 +351,35 @@
     const providers = ["google"];
     const byProvider = {};
     connections.forEach((c) => (byProvider[c.provider] = c));
-    list.innerHTML = providers.map((p) => {
+    list.replaceChildren();
+    providers.forEach((p) => {
       const conn = byProvider[p];
       const label = p.charAt(0).toUpperCase() + p.slice(1);
       const email = conn && (conn.email || conn.provider_email);
       const connectionId = conn && conn.id;
-      return `
-        <div class="settings-oauth-row" data-provider="${p}">
-          <div class="settings-oauth-row__provider">${label}</div>
-          <div class="settings-oauth-row__status">${conn ? escapeHtml(email || "Connected") : "Not connected"}</div>
-          <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" data-action="${conn ? "unlink-oauth" : "link-oauth"}" data-provider="${p}" ${conn && connectionId ? `data-connection-id="${escapeHtml(connectionId)}"` : ""}>
-            ${conn ? "Disconnect" : "Connect"}
-          </button>
-        </div>
-      `;
-    }).join("");
+      const row = document.createElement("div");
+      row.className = "settings-oauth-row";
+      row.dataset.provider = p;
+
+      const provider = document.createElement("div");
+      provider.className = "settings-oauth-row__provider";
+      provider.textContent = label;
+
+      const status = document.createElement("div");
+      status.className = "settings-oauth-row__status";
+      status.textContent = conn ? (email || "Connected") : "Not connected";
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "ds-btn ds-btn--ghost ds-btn--sm";
+      button.dataset.action = conn ? "unlink-oauth" : "link-oauth";
+      button.dataset.provider = p;
+      if (conn && connectionId) button.dataset.connectionId = connectionId;
+      button.textContent = conn ? "Disconnect" : "Connect";
+
+      row.append(provider, status, button);
+      list.appendChild(row);
+    });
   }
 
   // ─── Populate: Preferences ────────────────────────────────────
@@ -375,7 +424,7 @@
   // ─── Populate: Developer ──────────────────────────────────────
 
   function populateDeveloper(d) {
-    if (d.role !== "developer") return;
+    if (!d.is_developer && d.role !== "developer") return;
     const dev = d.developer_profile || {};
     setVal("settings-dev-company", dev.company_name);
     setVal("settings-dev-description", dev.description);
@@ -393,8 +442,9 @@
   }
 
   function applyRoleGate(role) {
+    const isDeveloper = savedSettings?.is_developer || role === "developer";
     document.querySelectorAll('[data-role="developer"]').forEach((el) => {
-      if (role === "developer") el.removeAttribute("hidden");
+      if (isDeveloper) el.removeAttribute("hidden");
       else el.setAttribute("hidden", "");
     });
   }
@@ -660,10 +710,26 @@
     e.preventDefault();
     const res = await SettingsDataService.changePhone(getVal("modal-phone-new"));
     if (res?.success) {
-      toast(res.message || "Verification code sent.", "success");
+      toast(res.message || "Phone number updated.", "success");
       closeModal($("modal-change-phone"));
+      loadSettings();
     } else {
       showModalError("modal-phone-error", res?.message || "Failed.");
+    }
+  }
+
+  async function onSubmitDisable2FA(e) {
+    e.preventDefault();
+    const res = await SettingsDataService.disable2FA(
+      getVal("modal-disable-2fa-password"),
+      getVal("modal-disable-2fa-code"),
+    );
+    if (res?.success) {
+      toast("2FA disabled.", "success");
+      closeModal($("modal-disable-2fa"));
+      loadSettings();
+    } else {
+      showModalError("modal-disable-2fa-error", res?.message || "Failed.");
     }
   }
 
@@ -691,12 +757,14 @@
       const action = act.getAttribute("data-action");
 
       switch (action) {
-        case "disable-2fa": {
+        case "enable-2fa": {
           e.preventDefault();
-          if (!confirm("Disable two-factor authentication?")) return;
-          const res = await SettingsDataService.disable2FA();
-          if (res?.success) { toast("2FA disabled.", "success"); loadSettings(); }
-          else toast(res?.message || "Failed.", "error");
+          window.location.href = "/auth/2fa/setup";
+          break;
+        }
+        case "open-disable-2fa": {
+          e.preventDefault();
+          openModal("modal-disable-2fa");
           break;
         }
         case "request-data-export": {
@@ -795,6 +863,14 @@
     $("settings-dev-company")?.addEventListener("input", updateDeveloperPreview);
   }
 
+  function setDateOfBirthLimit() {
+    const dob = $("settings-dob");
+    if (!dob) return;
+    const max = new Date();
+    max.setFullYear(max.getFullYear() - 18);
+    dob.max = max.toISOString().slice(0, 10);
+  }
+
   // ─── Direct modal triggers (buttons with explicit IDs) ────────
 
   function bindDirectModalButtons() {
@@ -820,6 +896,7 @@
     // Modal form submits
     $("form-change-password")?.addEventListener("submit", onSubmitChangePassword);
     $("form-change-phone")?.addEventListener("submit", onSubmitChangePhone);
+    $("form-disable-2fa")?.addEventListener("submit", onSubmitDisable2FA);
     $("form-delete-account")?.addEventListener("submit", onSubmitDeleteAccount);
 
     // Reset handlers — repopulate from savedSettings
@@ -844,6 +921,7 @@
     bindFileInputs();
     bindCounters();
     bindSectionNav();
+    setDateOfBirthLimit();
 
     loadSettings();
   }

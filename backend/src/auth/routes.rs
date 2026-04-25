@@ -7,8 +7,8 @@
 ///
 /// NO business logic lives here.
 use axum::{
-    extract::{Query, State},
-    http::HeaderMap,
+    extract::{Extension, Query, State},
+    http::{HeaderMap, StatusCode},
     response::{Html, IntoResponse, Redirect, Response},
     routing::{get, post},
     Form, Router,
@@ -86,6 +86,7 @@ pub fn router(state: AppState) -> Router<AppState> {
 /// GET /auth/login – Render the login page.
 pub async fn login_page(
     State(state): State<AppState>,
+    Extension(csrf_token): Extension<super::csrf::CsrfToken>,
     jar: CookieJar,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> impl IntoResponse {
@@ -95,7 +96,7 @@ pub async fn login_page(
     }
 
     let error = params.get("error").cloned();
-    render_login(&state, error)
+    render_login(&state, error, csrf_token.0)
 }
 
 /// GET /auth/signup – Render the signup page.
@@ -161,7 +162,10 @@ pub async fn login_submit(
         .await
     {
         tracing::warn!("Rate limit exceeded for login from IP: {}", client_ip);
-        return Err(AppError::RateLimited(retry_after));
+        return Ok(login_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+        ));
     }
 
     // Per-email lockout — an attacker rotating IPs cannot grind a single
@@ -175,11 +179,17 @@ pub async fn login_submit(
         .await
     {
         tracing::warn!("Rate limit exceeded for login on email: {}", email_key);
-        return Err(AppError::RateLimited(retry_after));
+        return Ok(login_error_response(
+            AppError::RateLimited(retry_after),
+            &headers,
+        ));
     }
 
     // 1. Authenticate user (password check)
-    let user = service::authenticate_user(&state.db, &form.email, &form.password).await?;
+    let user = match service::authenticate_user(&state.db, &form.email, &form.password).await {
+        Ok(user) => user,
+        Err(err) => return Ok(login_error_response(err, &headers)),
+    };
 
     // 2. Check 2FA settings
     let settings = service::get_user_settings(&state.db, user.id).await?;
@@ -250,11 +260,13 @@ pub async fn login_submit(
     // fresh one bound to the new session (defends against fixation).
     let jar = jar.add(cookie).add(super::csrf::rotation_cookie());
 
-    // HTMX: send redirect header
-    let mut response_headers = HeaderMap::new();
-    response_headers.insert("HX-Redirect", redirect_to.parse().unwrap());
-
-    Ok((jar, response_headers, Html("")).into_response())
+    if is_htmx_request(&headers) {
+        let mut response_headers = HeaderMap::new();
+        response_headers.insert("HX-Redirect", redirect_to.parse().unwrap());
+        Ok((jar, response_headers, Html("")).into_response())
+    } else {
+        Ok((jar, Redirect::to(redirect_to)).into_response())
+    }
 }
 
 // ─── 2FA Routes ───────────────────────────────────────────────
@@ -1036,7 +1048,91 @@ async fn google_callback_inner(
 
 // ─── Template helpers ──────────────────────────────────────────
 
-fn render_login(state: &AppState, error: Option<String>) -> Response {
+fn is_htmx_request(headers: &HeaderMap) -> bool {
+    headers
+        .get("HX-Request")
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value.eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
+
+fn login_error_response(error: AppError, headers: &HeaderMap) -> Response {
+    let (status, message, retry_after) = match error {
+        AppError::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message, None),
+        AppError::Forbidden(message) => (StatusCode::FORBIDDEN, message, None),
+        AppError::BadRequest(message) => (StatusCode::BAD_REQUEST, message, None),
+        AppError::Conflict(message) => (StatusCode::CONFLICT, message, None),
+        AppError::RateLimited(seconds) => (
+            StatusCode::TOO_MANY_REQUESTS,
+            format!(
+                "Too many attempts. Please try again in {} seconds.",
+                seconds
+            ),
+            Some(seconds),
+        ),
+        AppError::ServiceUnavailable(_) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Service temporarily unavailable. Please try again later.".to_string(),
+            None,
+        ),
+        AppError::Internal(message) => {
+            tracing::error!("Login internal error: {}", message);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again.".to_string(),
+                None,
+            )
+        }
+        AppError::Database(err) => {
+            tracing::error!("Login database error: {}", err);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again.".to_string(),
+                None,
+            )
+        }
+        other => {
+            tracing::warn!("Unexpected login error: {}", other);
+            (
+                StatusCode::BAD_REQUEST,
+                "Unable to sign in. Please try again.".to_string(),
+                None,
+            )
+        }
+    };
+
+    if is_htmx_request(headers) {
+        let mut response = (status, Html(render_auth_error_html(&message))).into_response();
+        if let Some(seconds) = retry_after {
+            if let Ok(value) = seconds.to_string().parse() {
+                response
+                    .headers_mut()
+                    .insert(axum::http::header::RETRY_AFTER, value);
+            }
+        }
+        return response;
+    }
+
+    let encoded_message: String =
+        url::form_urlencoded::byte_serialize(message.as_bytes()).collect();
+    Redirect::to(&format!("/auth/login?error={}", encoded_message)).into_response()
+}
+
+fn render_auth_error_html(message: &str) -> String {
+    let escaped = message
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;");
+
+    format!(
+        r#"<div class="auth-error-message" role="alert">{}</div>"#,
+        escaped
+    )
+}
+
+fn render_login(state: &AppState, error: Option<String>, csrf_token: String) -> Response {
     let tmpl = match state.templates.get_template("login.html") {
         Ok(t) => t,
         Err(e) => {
@@ -1047,6 +1143,7 @@ fn render_login(state: &AppState, error: Option<String>) -> Response {
     let html = tmpl
         .render(context! {
             error => error.unwrap_or_default(),
+            csrf_token => csrf_token,
             google_enabled => state.config.google_oauth_enabled(),
         })
         .unwrap_or_else(|e| format!("Template error: {}", e));

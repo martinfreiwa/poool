@@ -16,6 +16,41 @@ const ITEMS_PER_PAGE = 20;
 let currentPage = 1;
 let totalPages = 1;
 
+function getCsrfToken() {
+  if (typeof window.getCsrfToken === "function") return window.getCsrfToken();
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; csrf_token=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return "";
+}
+
+function isDraftDeletable(status) {
+  return status === "draft";
+}
+
+async function confirmAction(options) {
+  if (typeof window.pooolConfirm === "function") return window.pooolConfirm(options);
+  return window.confirm(options.message || options.title || "Continue?");
+}
+
+async function readApiErrorMessage(resp, fallback) {
+  let message = fallback || "Request failed. Please try again.";
+  try {
+    const raw = await resp.text();
+    try {
+      const parsed = JSON.parse(raw);
+      message = parsed.error || parsed.message || message;
+    } catch {
+      const stripped = raw.replace(/<[^>]+>/g, "").trim();
+      if (stripped && stripped.length < 300) message = stripped;
+    }
+  } catch {
+    // Keep fallback.
+  }
+  if (resp.status === 401) return "You are not logged in. Please log in and try again.";
+  return message;
+}
+
 document.addEventListener("DOMContentLoaded", async function () {
   const tbody = document.getElementById("submissions-tbody");
   const loadingEl = document.getElementById("submissions-loading");
@@ -24,6 +59,8 @@ document.addEventListener("DOMContentLoaded", async function () {
   const statsRow = document.getElementById("sub-stats-row");
 
   if (!tbody) return;
+
+  initStatCardFilters();
 
   // Close sort dropdown when clicking outside
   document.addEventListener("click", (e) => {
@@ -264,7 +301,11 @@ function renderTable(items) {
       ? `<img class="submission-cover-thumb" src="${escapeAttr(safeImageUrl(item.cover_image_url))}" alt="" />`
       : `<div class="submission-cover-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A4A7AE" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>`;
 
-    const isSelected = selectedIds.has(item.id);
+    const canDelete = isDraftDeletable(status);
+    const isSelected = canDelete && selectedIds.has(item.id);
+    const checkboxAttrs = canDelete
+      ? `data-id="${safeId}" ${isSelected ? 'checked' : ''} onchange="toggleRowSelect(this, ${jsId})"`
+      : `data-id="${safeId}" disabled aria-disabled="true" title="Only draft submissions can be deleted"`;
 
     const tr = document.createElement("tr");
     tr.dataset.status = status;
@@ -274,7 +315,7 @@ function renderTable(items) {
     tr.innerHTML = `
       <td class="col-checkbox">
         <label class="sub-checkbox-label">
-                  <input type="checkbox" class="row-checkbox" data-id="${safeId}" ${isSelected ? 'checked' : ''} onchange="toggleRowSelect(this, ${jsId})">
+                  <input type="checkbox" class="row-checkbox" ${checkboxAttrs}>
           <span class="sub-checkbox-custom"></span>
         </label>
       </td>
@@ -390,9 +431,26 @@ function getRelativeTime(dateStr) {
 
 // ─── Filtering ────────────────────────────────────────────
 
+function initStatCardFilters() {
+  document.querySelectorAll(".sub-stat").forEach((card) => {
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-pressed", card.classList.contains("active") ? "true" : "false");
+    card.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      card.click();
+    });
+  });
+}
+
 function filterByCard(status, el) {
-  document.querySelectorAll(".sub-stat").forEach((c) => c.classList.remove("active"));
+  document.querySelectorAll(".sub-stat").forEach((c) => {
+    c.classList.remove("active");
+    c.setAttribute("aria-pressed", "false");
+  });
   el.classList.add("active");
+  el.setAttribute("aria-pressed", "true");
   currentFilter = status;
   currentPage = 1;
   applyFiltersAndSort();
@@ -534,7 +592,7 @@ function toggleRowSelect(checkbox, id) {
 }
 
 function toggleSelectAll(checked) {
-  document.querySelectorAll(".row-checkbox").forEach((cb) => {
+  document.querySelectorAll(".row-checkbox:not(:disabled)").forEach((cb) => {
     const id = cb.dataset.id;
     cb.checked = checked;
     const tr = cb.closest("tr");
@@ -578,9 +636,11 @@ function clearSelection() {
 function syncSelectAllCheckbox() {
   const allCb = document.getElementById("select-all-checkbox");
   if (!allCb) return;
-  const total = document.querySelectorAll(".row-checkbox").length;
-  allCb.checked = total > 0 && selectedIds.size === total;
-  allCb.indeterminate = selectedIds.size > 0 && selectedIds.size < total;
+  const visibleDraftIds = Array.from(document.querySelectorAll(".row-checkbox:not(:disabled)"))
+    .map((cb) => cb.dataset.id);
+  const selectedVisible = visibleDraftIds.filter((id) => selectedIds.has(id)).length;
+  allCb.checked = visibleDraftIds.length > 0 && selectedVisible === visibleDraftIds.length;
+  allCb.indeterminate = selectedVisible > 0 && selectedVisible < visibleDraftIds.length;
 }
 
 function confirmBulkDelete() {
@@ -670,8 +730,7 @@ async function duplicateDraft(assetId) {
       headers: { "X-CSRF-Token": getCsrfToken() },
     });
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.message || data.error || "Duplicate failed");
+      throw new Error(await readApiErrorMessage(res, "Duplicate failed"));
     }
     showToast("success", "Asset duplicated");
     setTimeout(() => window.location.reload(), 800);
@@ -682,15 +741,14 @@ async function duplicateDraft(assetId) {
 }
 
 async function resubmitDraft(assetId, title) {
-  if (!await pooolConfirm({ title: 'Resubmit for review', message: `Submit "${title}" for admin review? The team will be notified.`, confirmText: 'Resubmit', type: 'success' })) return;
+  if (!await confirmAction({ title: 'Resubmit for review', message: `Submit "${title}" for admin review? The team will be notified.`, confirmText: 'Resubmit', type: 'success' })) return;
   try {
     const res = await fetch(`/api/developer/draft/${assetId}/submit`, {
       method: "POST",
       headers: { "X-CSRF-Token": getCsrfToken() },
     });
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.message || "Resubmit failed");
+      throw new Error(await readApiErrorMessage(res, "Resubmit failed"));
     }
     showToast("success", "Submission sent for review");
     setTimeout(() => window.location.reload(), 800);
@@ -734,14 +792,14 @@ function confirmDelete(assetId, title) {
     btn.disabled = true;
     try {
       const res = await fetch(`/api/developer/draft/${assetId}`, { method: "DELETE", headers: { "X-CSRF-Token": getCsrfToken() } });
-      if (!res.ok) throw new Error("Delete failed");
+      if (!res.ok) throw new Error(await readApiErrorMessage(res, "Delete failed"));
       overlay.remove();
       showToast("success", "Draft deleted");
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       console.error("Delete error:", err);
       overlay.remove();
-      showToast("error", "Failed to delete. Please try again.");
+      showToast("error", err.message || "Failed to delete. Please try again.");
     }
   };
 }
@@ -749,7 +807,23 @@ function confirmDelete(assetId, title) {
 // ─── Toast ────────────────────────────────────────────────
 
 function showToast(type, msg) {
-  if(window.showPooolToast) {
+  if (window.showPooolToast) {
     window.showPooolToast(null, msg, type);
+    return;
   }
+
+  let toast = document.getElementById("submissions-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "submissions-toast";
+    toast.style.cssText =
+      "position:fixed;top:24px;right:24px;color:#fff;padding:14px 18px;border-radius:8px;z-index:9999;font-size:0.95rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-width:420px;";
+    document.body.appendChild(toast);
+  }
+  toast.style.background = type === "success" ? "#079455" : "#d92d20";
+  toast.textContent = msg;
+  toast.style.display = "block";
+  setTimeout(() => {
+    toast.style.display = "none";
+  }, 5000);
 }

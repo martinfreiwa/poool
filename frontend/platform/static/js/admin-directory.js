@@ -21,6 +21,11 @@
     },
     { id: "5", name: "auditor_read_only", permissions: ["users.view", "treasury.read", "kyc.read", "audit.read"] },
   ];
+  const invitableRoleNames = ["compliance", "support", "finance", "kyc_reviewer"];
+  const fallbackInvitableRoleNames = ["compliance", "support", "finance"];
+  const fallbackInvitableRoles = fallbackInvitableRoleNames.map(function (name) {
+    return { id: name, name, permissions: [] };
+  });
 
   const state = {
     admins: [],
@@ -185,7 +190,8 @@
 
       if (!Array.isArray(state.admins)) state.admins = [];
       if (!Array.isArray(state.roles) || !state.roles.length) state.roles = fallbackRoles;
-      if (!state.inviteForm.role && state.roles.length) state.inviteForm.role = state.roles[0].name;
+      const invitableRoles = getInvitableRoles();
+      if (!state.inviteForm.role && invitableRoles.length) state.inviteForm.role = invitableRoles[0].name;
 
       try {
         const invitesResp = await fetch("/api/admin/admins/invitations");
@@ -413,10 +419,13 @@
 
   function renderInviteModal() {
     if (els.inviteRole) {
-      els.inviteRole.innerHTML = state.roles.map(function (role) {
+      const invitableRoles = getInvitableRoles();
+      els.inviteRole.innerHTML = invitableRoles.map(function (role) {
         return `<option value="${escapeAttr(role.name)}">${escapeHtml(role.name)}</option>`;
       }).join("");
-      els.inviteRole.value = state.inviteForm.role || (state.roles[0] && state.roles[0].name) || "";
+      els.inviteRole.value = invitableRoleNames.includes(state.inviteForm.role)
+        ? state.inviteForm.role
+        : (invitableRoles[0] && invitableRoles[0].name) || "";
     }
   }
 
@@ -436,6 +445,10 @@
     const role = els.inviteRole ? els.inviteRole.value : "";
     if (!email) {
       showToast("Email address is required", "error");
+      return;
+    }
+    if (!invitableRoleNames.includes(role)) {
+      showToast("Select an assignable admin role", "error");
       return;
     }
 
@@ -575,6 +588,13 @@
         if (button.dataset.editAction === "sessions") killSessions(state.editTarget.id);
       });
     });
+  }
+
+  function getInvitableRoles() {
+    const roles = state.roles.filter(function (role) {
+      return invitableRoleNames.includes(role.name);
+    });
+    return roles.length ? roles : fallbackInvitableRoles;
   }
 
   async function saveAdminEdit() {

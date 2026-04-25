@@ -10,6 +10,22 @@ import os
 
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 
+def set_settings_select(page, selector, value):
+    """Set native settings selects even after PooolDropdown hides them."""
+    select = page.locator(selector)
+    if select.is_visible():
+        select.select_option(value)
+        return
+    page.evaluate(
+        """({ selector, value }) => {
+            const select = document.querySelector(selector);
+            if (!select) throw new Error(`Missing select: ${selector}`);
+            select.value = value;
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+        }""",
+        {"selector": selector, "value": value},
+    )
+
 @pytest.mark.settings
 @pytest.mark.smoke
 def test_user_settings_profile_update(authenticated_user_page):
@@ -22,15 +38,11 @@ def test_user_settings_profile_update(authenticated_user_page):
     # Wait for the client-side data fetch if applicable
     page.wait_for_timeout(1000)
     
-    # 2. Click edit on Core Profile
-    page.locator("#morph-core-profile .js-morph-edit").first.click()
-    
-    # 3. Fill profile form
-    page.fill("#edit-first-name", "John")
-    page.fill("#edit-last-name", "Doe")
-    
-    # 4. Save profile
-    page.locator("#morph-core-profile .js-morph-save").click()
+    page.locator("#settings-content").wait_for(state="visible", timeout=15000)
+
+    page.fill("#settings-first-name", "John")
+    page.fill("#settings-last-name", "Doe")
+    page.click("#form-core-profile button[type='submit']")
     
     # 5. Success check (Toast / Alert)
     from tests.e2e.conftest import check_toast_message
@@ -39,8 +51,8 @@ def test_user_settings_profile_update(authenticated_user_page):
     # 6. Reload and verify persistence
     page.reload()
     page.wait_for_timeout(1000)
-    # The read view should show "John Doe"
-    expect(page.locator("#read-name").first).to_have_text("John Doe", ignore_case=True)
+    page.locator("#settings-content").wait_for(state="visible", timeout=15000)
+    expect(page.locator("#settings-display-name")).to_contain_text("John Doe", ignore_case=True)
     
     tracker.full_health_check()
 
@@ -52,24 +64,17 @@ def test_user_settings_preferences_update(authenticated_user_page):
     tracker.navigate_and_check(f"{BASE_URL}/settings")
     page.wait_for_timeout(1000)
     
-    # 1. Switch to Preferences tab
-    page.click("a[href='#section-preferences']")
-    
-    # 2. Select timezone (the select is visually hidden by a custom dropdown, use force=True)
-    page.select_option("#edit-timezone", "Europe/London", force=True)
-    
-    # Trigger the change event because custom dropdowns often listen to native change events
-    page.locator("#edit-timezone").evaluate("node => node.dispatchEvent(new Event('change'))")
-    
-    # 3. Save preferences
-    page.click("#save-localization-btn")
+    page.locator("#settings-content").wait_for(state="visible", timeout=15000)
+    page.click("a[href='#sec-preferences']")
+    set_settings_select(page, "#settings-timezone", "Europe/London")
+    page.click("#btn-save-preferences")
     from tests.e2e.conftest import check_toast_message
     check_toast_message(page, "success")
     
     # 4. Reload and verify
     page.reload()
-    page.wait_for_timeout(1000)
-    page.click("a[href='#section-preferences']")
-    expect(page.locator("#edit-timezone")).to_have_value("Europe/London")
+    page.locator("#settings-content").wait_for(state="visible", timeout=15000)
+    page.click("a[href='#sec-preferences']")
+    expect(page.locator("#settings-timezone")).to_have_value("Europe/London")
     
     tracker.full_health_check()

@@ -349,8 +349,8 @@
   gap: 10px;
   width: 144px;
   height: 8px;
-  background: #d5d7da;
-  border-radius: 30px;
+  background: var(--progress-track-bg, #D5D7DA);
+  border-radius: var(--progress-border-radius, 30px);
   flex: none;
   order: 0;
   flex-grow: 0;
@@ -358,7 +358,8 @@
 
 .progress-bar-fill {
   height: 8px;
-  background: var(--accent-color);
+  background: var(--progress-fill-bg, #98FB96);
+  border-radius: var(--progress-border-radius, 30px);
   flex: none;
   order: 0;
   flex-grow: 0;

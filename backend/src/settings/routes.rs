@@ -15,9 +15,9 @@ use axum::{
 use axum_extra::extract::cookie::CookieJar;
 
 use super::models::{
-    ApiResponse, ChangeEmailForm, ChangePasswordForm, ChangePhoneForm, UpdateDeveloperLinksForm,
-    UpdateDeveloperProfileForm, UpdateLeaderboardForm, UpdateNotificationsForm,
-    UpdatePreferencesForm, UpdateProfileForm, UpdateSocialLinksForm,
+    ApiResponse, ChangeEmailForm, ChangePasswordForm, ChangePhoneForm, DisableTotpForm,
+    UpdateDeveloperLinksForm, UpdateDeveloperProfileForm, UpdateLeaderboardForm,
+    UpdateNotificationsForm, UpdatePreferencesForm, UpdateProfileForm, UpdateSocialLinksForm,
 };
 use super::service;
 use crate::auth::middleware;
@@ -35,6 +35,28 @@ async fn require_user_id(
         None => Err((
             StatusCode::UNAUTHORIZED,
             Json(serde_json::json!({"error": "Not authenticated"})),
+        )
+            .into_response()),
+    }
+}
+
+async fn require_sensitive_rate_limit(
+    state: &AppState,
+    user_id: uuid::Uuid,
+    action: &str,
+) -> Result<(), axum::response::Response> {
+    match state
+        .auth_rate_limiter
+        .check(&format!("settings:{}:{}", action, user_id))
+        .await
+    {
+        Ok(_) => Ok(()),
+        Err(retry_after_secs) => Err((
+            StatusCode::TOO_MANY_REQUESTS,
+            Json(serde_json::json!({
+                "success": false,
+                "message": format!("Too many attempts. Try again in {} seconds.", retry_after_secs)
+            })),
         )
             .into_response()),
     }
@@ -365,9 +387,19 @@ pub async fn change_password_handler(
         Err(resp) => return resp,
     };
 
+    if let Err(resp) = require_sensitive_rate_limit(&state, user_id, "password").await {
+        return resp;
+    }
+
+    let session_token = jar
+        .get(crate::auth::middleware::SESSION_COOKIE)
+        .map(|c| c.value().to_string())
+        .unwrap_or_default();
+
     match service::change_password(
         &state.db,
         user_id,
+        &session_token,
         &form.current_password,
         &form.new_password,
         &form.confirm_password,
@@ -418,22 +450,46 @@ pub async fn change_phone_handler(
 pub async fn disable_totp_handler(
     jar: CookieJar,
     State(state): State<AppState>,
+    Json(form): Json<DisableTotpForm>,
 ) -> axum::response::Response {
     let user_id = match require_user_id(&jar, &state).await {
         Ok(id) => id,
         Err(resp) => return resp,
     };
 
-    match service::disable_totp(&state.db, user_id).await {
+    if let Err(resp) = require_sensitive_rate_limit(&state, user_id, "disable_totp").await {
+        return resp;
+    }
+
+    let session_token = jar
+        .get(crate::auth::middleware::SESSION_COOKIE)
+        .map(|c| c.value().to_string())
+        .unwrap_or_default();
+
+    match service::disable_totp(
+        &state.db,
+        state.redis.as_ref(),
+        user_id,
+        &session_token,
+        &form.current_password,
+        &form.code,
+    )
+    .await
+    {
         Ok(()) => Json(ApiResponse::ok("Two-factor authentication disabled.")).into_response(),
         Err(e) => {
             tracing::warn!("Failed to disable 2FA for user {}: {}", user_id, e);
-            Json(ApiResponse::err("Failed to disable 2FA.")).into_response()
+            let msg = match &e {
+                crate::error::AppError::BadRequest(m) => m.clone(),
+                crate::error::AppError::Unauthorized(m) => m.clone(),
+                _ => "Failed to disable 2FA.".to_string(),
+            };
+            Json(ApiResponse::err(&msg)).into_response()
         }
     }
 }
 
-// ─── GET /api/settings/export-data (GDPR Art. 15/20) ──────────
+// ─── POST /api/settings/export-data (GDPR Art. 15/20) ─────────
 
 /// Export all user data as a downloadable JSON file.
 pub async fn export_data_handler(
@@ -444,6 +500,10 @@ pub async fn export_data_handler(
         Ok(id) => id,
         Err(resp) => return resp,
     };
+
+    if let Err(resp) = require_sensitive_rate_limit(&state, user_id, "export_data").await {
+        return resp;
+    }
 
     match service::export_user_data(&state.db, user_id).await {
         Ok(data) => {
@@ -485,7 +545,18 @@ pub async fn delete_account_handler(
         Err(resp) => return resp,
     };
 
-    match service::delete_account_selective(&state.db, user_id, &form.current_password).await {
+    if let Err(resp) = require_sensitive_rate_limit(&state, user_id, "delete_account").await {
+        return resp;
+    }
+
+    match service::delete_account_selective(
+        &state.db,
+        user_id,
+        &form.current_password,
+        &form.confirm,
+    )
+    .await
+    {
         Ok(()) => Json(ApiResponse::ok(
             "Account deletion completed. You will be logged out.",
         ))

@@ -10,7 +10,9 @@
  *   POST /api/admin/notifications/broadcast — send broadcast
  */
 
-document.addEventListener("alpine:init", () => {
+function registerAdminSettingsComponent() {
+  if (!window.Alpine || window.__pooolAdminSettingsRegistered) return;
+  window.__pooolAdminSettingsRegistered = true;
   Alpine.data("adminSettings", () => ({
     activeTab: "general",
     saving: false,
@@ -439,4 +441,356 @@ document.addEventListener("alpine:init", () => {
       }
     },
   }));
-});
+
+  const root = document.querySelector('[x-data="adminSettings"]');
+  if (root && !root._x_dataStack && typeof Alpine.initTree === "function") {
+    Alpine.initTree(root);
+  }
+}
+
+document.addEventListener("alpine:init", registerAdminSettingsComponent);
+registerAdminSettingsComponent();
+
+(function () {
+  "use strict";
+
+  const state = {
+    activeTab: "general",
+    saving: false,
+    broadcasting: false,
+    toast: { show: false, message: "", type: "success" },
+    settings: {
+      platform_name: "POOOL Finance",
+      support_email: "support@poool.finance",
+      enable_registrations: true,
+      require_kyc: true,
+      platform_fee_percent: 2.5,
+      withdrawal_fee_cents: 5.0,
+      referral_commission_percent: 1.0,
+      min_withdrawal_cents: 10.0,
+      maintenance_mode: false,
+      resend_api_key: "",
+    },
+    broadcast: { title: "", message: "", type: "system" },
+    legalStats: null,
+    savingLegal: false,
+    legalForm: {
+      legal_terms_version: "1.0",
+      legal_privacy_version: "1.0",
+      legal_last_updated: new Date().toISOString().split("T")[0],
+    },
+  };
+
+  document.addEventListener("DOMContentLoaded", initVanillaAdminSettings);
+
+  async function initVanillaAdminSettings() {
+    const root = document.querySelector('[x-data="adminSettings"]');
+    if (!root) return;
+
+    attachEvents(root);
+    render();
+    await Promise.all([loadSettings(), loadKycProvider()]);
+    render();
+  }
+
+  function attachEvents(root) {
+    root.querySelectorAll("[x-model]").forEach((input) => {
+      input.addEventListener("input", () => setPath(input.getAttribute("x-model"), getInputValue(input)));
+      input.addEventListener("change", () => {
+        setPath(input.getAttribute("x-model"), getInputValue(input));
+        render();
+      });
+    });
+
+    root.querySelectorAll(".admin-tabs .admin-tab").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const action = button.getAttribute("@click") || "";
+        const match = action.match(/activeTab\s*=\s*'([^']+)'/);
+        if (!match) return;
+        state.activeTab = match[1];
+        render();
+        if (state.activeTab === "legal") {
+          await loadLegalStatus();
+          render();
+        }
+      });
+    });
+
+    root.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", async (event) => {
+        const action = button.getAttribute("@click") || "";
+        if (!action) return;
+        if (action.includes("activeTab")) return;
+
+        event.preventDefault();
+        if (action.includes("saveSettings")) await saveSettings();
+        if (action.includes("saveLegalVersion")) await saveLegalVersion();
+        if (action.includes("sendBroadcast")) await sendBroadcast();
+        if (action.includes("toggleMaintenance")) await toggleMaintenance();
+        if (action.includes("clearCache")) await clearCache();
+        if (action.includes("runLogRotation")) await runLogRotation();
+      });
+    });
+  }
+
+  function getInputValue(input) {
+    if (input.type === "checkbox") return input.checked;
+    if (input.type === "number") return input.value === "" ? "" : Number(input.value);
+    return input.value;
+  }
+
+  function setInputValue(input, value) {
+    if (input.type === "checkbox") {
+      input.checked = Boolean(value);
+    } else {
+      input.value = value ?? "";
+    }
+  }
+
+  function getPath(path) {
+    return String(path || "").split(".").reduce((current, key) => current?.[key], state);
+  }
+
+  function setPath(path, value) {
+    const keys = String(path || "").split(".");
+    const finalKey = keys.pop();
+    const target = keys.reduce((current, key) => current?.[key], state);
+    if (target && finalKey) target[finalKey] = value;
+  }
+
+  function render() {
+    document.querySelectorAll("[x-model]").forEach((input) => {
+      setInputValue(input, getPath(input.getAttribute("x-model")));
+    });
+
+    document.querySelectorAll(".admin-tabs .admin-tab").forEach((button) => {
+      const action = button.getAttribute("@click") || "";
+      const match = action.match(/activeTab\s*=\s*'([^']+)'/);
+      button.classList.toggle("active", Boolean(match && match[1] === state.activeTab));
+    });
+
+    document.querySelectorAll("[x-show]").forEach((element) => {
+      const expr = element.getAttribute("x-show") || "";
+      if (expr.startsWith("activeTab ===")) {
+        const match = expr.match(/'([^']+)'/);
+        element.style.display = match && match[1] === state.activeTab ? "" : "none";
+      } else if (expr === "toast.show") {
+        element.style.display = state.toast.show ? "flex" : "none";
+        element.textContent = state.toast.message;
+        element.style.background = state.toast.type === "success" ? "var(--admin-success)" : "var(--admin-danger)";
+        element.style.color = "#fff";
+      } else if (expr === "settings.maintenance_mode") {
+        element.style.display = state.settings.maintenance_mode ? "" : "none";
+      } else if (expr === "legalStats") {
+        element.style.display = state.legalStats ? "" : "none";
+      }
+    });
+
+    setButton('button[x-text*="Save General Settings"]', state.saving, "Saving...", "Save General Settings");
+    setButton('button[x-text*="Save Financial Settings"]', state.saving, "Saving...", "Save Financial Settings");
+    setButton('button[x-text*="Save Integrations"]', state.saving, "Saving...", "Save Integrations");
+    setButton('button[x-text*="Send to All Users"]', state.broadcasting, "Sending...", "Send to All Users");
+    setButton('button[x-text*="Save Legal Versions"]', state.savingLegal, "Saving...", "Save Legal Versions");
+
+    const maintenanceButton = document.querySelector('button[x-text*="Enable Maintenance"]');
+    if (maintenanceButton) {
+      maintenanceButton.textContent = state.settings.maintenance_mode ? "Disable Maintenance" : "Enable Maintenance";
+      maintenanceButton.classList.toggle("admin-btn--danger", Boolean(state.settings.maintenance_mode));
+      maintenanceButton.classList.toggle("admin-btn--secondary", !state.settings.maintenance_mode);
+    }
+
+    const stats = state.legalStats?.stats || {};
+    setText('[x-text*="total_consents"]', stats.total_consents ?? "-");
+    setText('[x-text*="accepted_current_version"]', stats.accepted_current_version ?? "-");
+    setText('[x-text*="pending_reacceptance"]', stats.pending_reacceptance ?? "-");
+  }
+
+  function setButton(selector, busy, busyText, idleText) {
+    const button = document.querySelector(selector);
+    if (!button) return;
+    button.disabled = Boolean(busy);
+    button.textContent = busy ? busyText : idleText;
+  }
+
+  function setText(selector, value) {
+    document.querySelectorAll(selector).forEach((element) => {
+      element.textContent = String(value);
+    });
+  }
+
+  function showToast(message, type = "success") {
+    state.toast = { show: true, message, type };
+    render();
+    window.clearTimeout(showToast.timeoutId);
+    showToast.timeoutId = window.setTimeout(() => {
+      state.toast.show = false;
+      render();
+    }, 3000);
+  }
+
+  async function loadSettings() {
+    try {
+      const resp = await fetch("/api/admin/settings");
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.settings) {
+        Object.assign(state.settings, data.settings);
+      }
+    } catch (error) {
+      console.error("Failed to load admin settings:", error);
+      if (window.Sentry) window.Sentry.captureException(error);
+    }
+  }
+
+  async function saveSettings() {
+    state.saving = true;
+    render();
+    try {
+      const resp = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(state.settings),
+      });
+      if (resp.ok) {
+        showToast("Settings saved successfully");
+      } else {
+        const err = await resp.json().catch(() => ({}));
+        showToast(err.error || "Failed to save settings", "error");
+      }
+    } catch (_) {
+      showToast("Network error - settings not saved", "error");
+    } finally {
+      state.saving = false;
+      render();
+    }
+  }
+
+  async function toggleMaintenance() {
+    const newState = !state.settings.maintenance_mode;
+    try {
+      const resp = await fetch("/api/admin/settings/maintenance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: newState }),
+      });
+      if (resp.ok) {
+        state.settings.maintenance_mode = newState;
+        showToast(`Maintenance mode ${newState ? "enabled" : "disabled"}`);
+      } else {
+        showToast("Failed to toggle maintenance mode", "error");
+      }
+    } catch (_) {
+      showToast("Network error", "error");
+    } finally {
+      render();
+    }
+  }
+
+  async function clearCache() {
+    if (window.pooolConfirm && !await window.pooolConfirm({ title: "Clear system cache", message: "This will purge all cached data. Are you sure?", confirmText: "Clear Cache", type: "warning" })) return;
+    try {
+      const resp = await fetch("/api/admin/maintenance/clear-cache", { method: "POST" });
+      if (resp.ok) {
+        const data = await resp.json();
+        showToast(data.message || "Cache cleared");
+      } else {
+        showToast("Failed to clear cache", "error");
+      }
+    } catch (_) {
+      showToast("Network error", "error");
+    }
+  }
+
+  async function runLogRotation() {
+    if (window.pooolConfirm && !await window.pooolConfirm({ title: "Trigger log rotation", message: "This will rotate logs immediately. Continue?", confirmText: "Rotate Now", type: "warning" })) return;
+    try {
+      const resp = await fetch("/api/admin/maintenance/rotate-logs", { method: "POST" });
+      if (resp.ok) {
+        const data = await resp.json();
+        showToast(data.message || "Log rotation initiated");
+      } else {
+        showToast("Failed to rotate logs", "error");
+      }
+    } catch (_) {
+      showToast("Network error", "error");
+    }
+  }
+
+  async function sendBroadcast() {
+    if (!state.broadcast.title.trim()) {
+      showToast("Notification title is required", "error");
+      return;
+    }
+    state.broadcasting = true;
+    render();
+    try {
+      const resp = await fetch("/api/admin/notifications/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(state.broadcast),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        showToast(`Broadcast sent to ${data.count || 0} users`);
+        state.broadcast = { title: "", message: "", type: "system" };
+      } else {
+        const err = await resp.json().catch(() => ({}));
+        showToast(err.error || "Failed to send broadcast", "error");
+      }
+    } catch (_) {
+      showToast("Network error", "error");
+    } finally {
+      state.broadcasting = false;
+      render();
+    }
+  }
+
+  async function loadKycProvider() {
+    try {
+      await fetch("/api/kyc/provider");
+    } catch (_) {
+      // KYC provider status is informational on this page.
+    }
+  }
+
+  async function loadLegalStatus() {
+    try {
+      const resp = await fetch("/api/admin/legal/version");
+      if (!resp.ok) return;
+      const data = await resp.json();
+      state.legalStats = data;
+      if (data.settings) {
+        state.legalForm.legal_terms_version = data.settings.legal_terms_version || "1.0";
+        state.legalForm.legal_privacy_version = data.settings.legal_privacy_version || "1.0";
+        state.legalForm.legal_last_updated = data.settings.legal_last_updated || new Date().toISOString().split("T")[0];
+      }
+    } catch (error) {
+      console.error("Failed to load legal status:", error);
+      if (window.Sentry) window.Sentry.captureException(error);
+    }
+  }
+
+  async function saveLegalVersion() {
+    state.savingLegal = true;
+    render();
+    try {
+      const resp = await fetch("/api/admin/legal/version", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(state.legalForm),
+      });
+      if (resp.ok) {
+        showToast("Legal versions updated - users will be prompted to re-accept");
+        await loadLegalStatus();
+      } else {
+        const err = await resp.json().catch(() => ({}));
+        showToast(err.error || "Failed to update legal versions", "error");
+      }
+    } catch (_) {
+      showToast("Network error - legal versions not saved", "error");
+    } finally {
+      state.savingLegal = false;
+      render();
+    }
+  }
+})();

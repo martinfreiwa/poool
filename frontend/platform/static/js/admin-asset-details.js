@@ -5,6 +5,9 @@
 
 let assetData = null;
 let assetId = null;
+let featuredPending = false;
+let publishedPending = false;
+let fundingStatusPending = false;
 
 // ─── Init ─────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
@@ -43,6 +46,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("toggle-published")
     ?.addEventListener("click", togglePublished);
+  document
+    .getElementById("select-funding-status")
+    ?.addEventListener("change", updateFundingStatus);
 
   // Danger zone
   document
@@ -59,8 +65,8 @@ document.addEventListener("DOMContentLoaded", () => {
 // ─── Load ─────────────────────────────────────────────────────
 async function loadAsset() {
   try {
-    const resp = await fetch(`/api/admin/assets/${assetId}/detail`);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const resp = await fetch(`/api/admin/assets/${encodeURIComponent(assetId)}/detail`);
+    if (!resp.ok) throw new Error(await responseError(resp));
     assetData = await resp.json();
     renderAll(assetData);
   } catch (err) {
@@ -95,10 +101,12 @@ function renderAll(a) {
 
   const fundingBadge = document.getElementById("asset-funding-badge");
   const fundingMap = {
-    pre_funding: ["Pre-Funding", "admin-badge--neutral"],
+    upcoming: ["Upcoming", "admin-badge--neutral"],
     funding_open: ["Funding Open", "admin-badge--info"],
-    fully_funded: ["Fully Funded", "admin-badge--success"],
-    closed: ["Closed", "admin-badge--danger"],
+    funding_in_progress: ["Funding In Progress", "admin-badge--info"],
+    funded: ["Funded", "admin-badge--success"],
+    rented: ["Rented", "admin-badge--success"],
+    payout_pending: ["Payout Pending", "admin-badge--warning"],
     exited: ["Exited", "admin-badge--danger"],
   };
   const [fLabel, fClass] = fundingMap[a.funding_status] || [
@@ -221,20 +229,29 @@ function renderMedia(a) {
     `${images.length} image${images.length !== 1 ? "s" : ""}`;
 
   if (images.length > 0) {
-    document.getElementById("media-grid").innerHTML = images
-      .map(
-        (img) => `
-            <div class="media-item" style="background-image:url('${esc(img.url)}')">
-                ${img.is_cover ? '<span class="cover-badge">Cover</span>' : ""}
-            </div>
-        `,
-      )
-      .join("");
+    const grid = document.getElementById("media-grid");
+    grid.textContent = "";
+    images.forEach((img) => {
+      const item = document.createElement("div");
+      item.className = "media-item";
+      const url = safeUrl(img.url, { allowExternal: true });
+      if (url) item.style.backgroundImage = `url("${url}")`;
+      if (img.is_cover) {
+        const badge = document.createElement("span");
+        badge.className = "cover-badge";
+        badge.textContent = "Cover";
+        item.appendChild(badge);
+      }
+      grid.appendChild(item);
+    });
   }
 
   if (a.video_url) {
-    document.getElementById("video-section").hidden = false;
-    document.getElementById("video-link").href = a.video_url;
+    const videoUrl = safeUrl(a.video_url, { allowExternal: true });
+    if (videoUrl) {
+      document.getElementById("video-section").hidden = false;
+      document.getElementById("video-link").href = videoUrl;
+    }
   }
 }
 
@@ -243,23 +260,24 @@ function renderDocuments(a) {
   const docs = a.documents || [];
   if (docs.length === 0) return;
 
-  const docIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--admin-text-muted);"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
-
   document.getElementById("documents-list").innerHTML = docs
     .map((d) => {
       const size = d.file_size
         ? `${(d.file_size / 1024 / 1024).toFixed(2)} MB`
         : "—";
+      const url = safeUrl(d.url);
+      const label = d.title || formatAssetType(d.document_type || "document");
       return `
             <div class="document-item">
                 <div style="display:flex;align-items:center;gap:12px;">
-                    ${docIcon}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--admin-text-muted);" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     <div>
-                        <span class="document-type-badge">${esc(d.document_type.replace(/_/g, " "))}</span>
+                        <span class="document-type-badge">${esc((d.document_type || "document").replace(/_/g, " "))}</span>
+                        <span style="font-size:13px;color:var(--admin-text-primary);margin-left:8px;">${esc(label)}</span>
                         <span style="font-size:12px;color:var(--admin-text-muted);margin-left:8px;">${size}</span>
                     </div>
                 </div>
-                <a href="${d.url ? esc(d.url) : '#'}" target="_blank" rel="noopener" class="admin-btn admin-btn--secondary admin-btn--sm">View</a>
+                ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener" class="admin-btn admin-btn--secondary admin-btn--sm">View</a>` : '<button type="button" class="admin-btn admin-btn--secondary admin-btn--sm" disabled>Unavailable</button>'}
             </div>
         `;
     })
@@ -385,50 +403,116 @@ function renderSettings(a) {
   const publishedEl = document.getElementById("toggle-published");
   const fundingSelect = document.getElementById("select-funding-status");
 
-  if (a.featured) featuredEl?.classList.add("active");
-  if (a.published) publishedEl?.classList.add("active");
+  setSwitchState(featuredEl, Boolean(a.featured));
+  setSwitchState(publishedEl, Boolean(a.published));
   if (fundingSelect && a.funding_status) fundingSelect.value = a.funding_status;
 }
 
 // ─── Actions ──────────────────────────────────────────────────
 async function toggleFeatured() {
+  if (featuredPending) return;
+  const toggle = document.getElementById("toggle-featured");
+  featuredPending = true;
+  if (toggle) toggle.disabled = true;
   try {
-    const resp = await fetch(`/api/admin/assets/${assetId}/toggle-featured`, {
+    const resp = await fetch(`/api/admin/assets/${encodeURIComponent(assetId)}/toggle-featured`, {
       method: "POST",
+      headers: csrfHeaders(),
     });
-    if (resp.ok) {
-      document.getElementById("toggle-featured")?.classList.toggle("active");
-      showToast("Featured status updated");
-    }
+    if (!resp.ok) throw new Error(await responseError(resp));
+    const data = await resp.json();
+    assetData = { ...assetData, featured: Boolean(data.featured) };
+    setSwitchState(toggle, assetData.featured);
+    showToast("Featured status updated", "success");
   } catch (e) {
     console.error(e);
+    showToast(e.message || "Failed to update featured status", "error");
+    setSwitchState(toggle, Boolean(assetData?.featured));
+  } finally {
+    featuredPending = false;
+    if (toggle) toggle.disabled = false;
   }
 }
 
 async function togglePublished() {
-  // Placeholder — would need backend route
-  document.getElementById("toggle-published")?.classList.toggle("active");
-  showToast("Published status toggled (save pending)");
+  if (publishedPending) return;
+  await setPublished(!Boolean(assetData?.published));
+}
+
+async function setPublished(nextPublished, options = {}) {
+  if (publishedPending) return;
+  const toggle = document.getElementById("toggle-published");
+  if (options.confirm) {
+    const label = nextPublished ? "publish" : "unpublish";
+    const confirmed = await pooolConfirm({
+      title: `${nextPublished ? "Publish" : "Unpublish"} asset`,
+      message: `Are you sure you want to ${label} "${assetData?.title}"?`,
+      confirmText: nextPublished ? "Publish" : "Unpublish",
+      type: nextPublished ? "default" : "danger",
+    });
+    if (!confirmed) return;
+  }
+
+  publishedPending = true;
+  if (toggle) toggle.disabled = true;
+  try {
+    const resp = await fetch(`/api/admin/assets/${encodeURIComponent(assetId)}/publication`, {
+      method: "PATCH",
+      headers: csrfHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ published: Boolean(nextPublished) }),
+    });
+    if (!resp.ok) throw new Error(await responseError(resp));
+    const data = await resp.json();
+    assetData = { ...assetData, published: Boolean(data.published) };
+    setSwitchState(toggle, assetData.published);
+    renderAll(assetData);
+    showToast(assetData.published ? "Asset published" : "Asset unpublished", "success");
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || "Failed to update publication status", "error");
+    setSwitchState(toggle, Boolean(assetData?.published));
+  } finally {
+    publishedPending = false;
+    if (toggle) toggle.disabled = false;
+  }
+}
+
+async function updateFundingStatus(e) {
+  if (fundingStatusPending) return;
+  const select = e.currentTarget;
+  const nextStatus = select.value;
+  const previousStatus = assetData?.funding_status;
+
+  fundingStatusPending = true;
+  select.disabled = true;
+  try {
+    const resp = await fetch(`/api/admin/assets/${encodeURIComponent(assetId)}/funding-status`, {
+      method: "PATCH",
+      headers: csrfHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ funding_status: nextStatus }),
+    });
+    if (!resp.ok) throw new Error(await responseError(resp));
+    const data = await resp.json();
+    assetData = { ...assetData, funding_status: data.funding_status };
+    renderAll(assetData);
+    showToast("Funding status updated", "success");
+  } catch (err) {
+    console.error(err);
+    select.value = previousStatus || "upcoming";
+    showToast(err.message || "Failed to update funding status", "error");
+  } finally {
+    fundingStatusPending = false;
+    select.disabled = false;
+  }
 }
 
 async function dangerAction(action) {
-  const names = {
-    freeze: "freeze trading on",
-    unpublish: "unpublish",
-    archive: "archive",
-  };
-  if (
-    !await pooolConfirm({
-      title: `${action.charAt(0).toUpperCase() + action.slice(1)} asset`,
-      message: `Are you sure you want to ${names[action]} "${assetData?.title}"? This action may be irreversible.`,
-      confirmText: action.charAt(0).toUpperCase() + action.slice(1),
-      type: 'danger',
-    })
-  )
+  if (action === "unpublish") {
+    await setPublished(false, { confirm: true });
     return;
-  showToast(
-    `${action.charAt(0).toUpperCase() + action.slice(1)} action triggered for ${assetData?.title}`,
-  );
+  }
+
+  showToast("This action is unavailable until its backend workflow is implemented.", "warning");
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -437,6 +521,46 @@ function esc(s) {
   const d = document.createElement("div");
   d.textContent = s;
   return d.innerHTML;
+}
+
+function setSwitchState(el, active) {
+  if (!el) return;
+  el.classList.toggle("active", active);
+  el.setAttribute("aria-checked", active ? "true" : "false");
+}
+
+function safeUrl(value, options = {}) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value, window.location.origin);
+    if (!["http:", "https:"].includes(url.protocol)) return "";
+    if (!options.allowExternal && url.origin !== window.location.origin) return "";
+    return url.href;
+  } catch (_) {
+    return "";
+  }
+}
+
+function csrfHeaders(headers = {}) {
+  const token = getCsrfToken();
+  return token ? { ...headers, "X-CSRF-Token": token } : headers;
+}
+
+function getCsrfToken() {
+  const value = `; ${document.cookie}`;
+  const parts = value.split("; csrf_token=");
+  if (parts.length !== 2) return "";
+  return decodeURIComponent(parts.pop().split(";").shift() || "");
+}
+
+async function responseError(resp) {
+  try {
+    const data = await resp.json();
+    if (data && data.error) return data.error;
+  } catch (_) {
+    // Fall through to status text below.
+  }
+  return resp.statusText || `HTTP ${resp.status}`;
 }
 
 function formatUSD(cents) {
@@ -493,8 +617,10 @@ function orderStatusBadge(status) {
   return `<span class="admin-badge ${cls}"><span class="admin-badge-dot"></span>${status || "—"}</span>`;
 }
 
-function showToast(msg) {
+function showToast(msg, type = "info") {
   if(window.showPooolToast) {
-    window.showPooolToast(null, msg, "info");
+    window.showPooolToast(null, msg, type);
+  } else if (window.showToast) {
+    window.showToast(msg, type);
   }
 }

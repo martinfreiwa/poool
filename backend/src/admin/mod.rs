@@ -125,8 +125,8 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/treasury", get(page_admin_generic))
         .route("/admin/rewards.html", get(page_admin_generic))
         .route("/admin/rewards", get(page_admin_generic))
-        .route("/admin/audit-logs.html", get(page_admin_generic))
-        .route("/admin/audit-logs", get(page_admin_generic))
+        .route("/admin/audit-logs.html", get(page_admin_audit_logs))
+        .route("/admin/audit-logs", get(page_admin_audit_logs))
         .route("/admin/reports.html", get(page_admin_generic))
         .route("/admin/reports", get(page_admin_generic))
         .route("/admin/notifications.html", get(page_admin_generic))
@@ -164,24 +164,39 @@ pub fn router() -> axum::Router<AppState> {
         // ── Admin Community Pages ─────────────────────────────────
         .route("/admin/community/", get(page_admin_generic))
         .route("/admin/community/index.html", get(page_admin_generic))
-        .route("/admin/community/amas.html", get(page_admin_generic))
-        .route("/admin/community/amas", get(page_admin_generic))
+        .route("/admin/community/amas.html", get(page_admin_community_amas))
+        .route("/admin/community/amas", get(page_admin_community_amas))
         .route(
             "/admin/community/announcements.html",
-            get(page_admin_generic),
+            get(page_admin_community_announcements),
         )
-        .route("/admin/community/announcements", get(page_admin_generic))
+        .route(
+            "/admin/community/announcements",
+            get(page_admin_community_announcements),
+        )
         .route("/admin/community/badges.html", get(page_admin_generic))
         .route("/admin/community/badges", get(page_admin_generic))
-        .route("/admin/community/challenges.html", get(page_admin_generic))
-        .route("/admin/community/challenges", get(page_admin_generic))
+        .route(
+            "/admin/community/challenges.html",
+            get(page_admin_community_challenges),
+        )
+        .route(
+            "/admin/community/challenges",
+            get(page_admin_community_challenges),
+        )
         .route(
             "/admin/community/circle-detail.html",
             get(page_admin_generic),
         )
         .route("/admin/community/circle-detail", get(page_admin_generic))
-        .route("/admin/community/circles.html", get(page_admin_generic))
-        .route("/admin/community/circles", get(page_admin_generic))
+        .route(
+            "/admin/community/circles.html",
+            get(page_admin_community_circles),
+        )
+        .route(
+            "/admin/community/circles",
+            get(page_admin_community_circles),
+        )
         .route("/admin/community/comments.html", get(page_admin_generic))
         .route("/admin/community/comments", get(page_admin_generic))
         .route("/admin/community/leaderboard.html", get(page_admin_generic))
@@ -208,8 +223,14 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/admin-affiliate-fraud", get(page_admin_generic))
         .route("/admin/affiliate-fraud.html", get(page_admin_generic))
         .route("/admin/affiliate-fraud", get(page_admin_generic))
-        .route("/admin/affiliate-compliance.html", get(page_admin_generic))
-        .route("/admin/affiliate-compliance", get(page_admin_generic))
+        .route(
+            "/admin/affiliate-compliance.html",
+            get(page_admin_affiliate_compliance_redirect),
+        )
+        .route(
+            "/admin/affiliate-compliance",
+            get(page_admin_affiliate_compliance_redirect),
+        )
         // ── Admin Blockchain Pages ───────────────────────────────
         .route("/admin/asset-tokenize.html", get(page_admin_generic))
         .route("/admin/asset-tokenize", get(page_admin_generic))
@@ -264,6 +285,7 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/marketplace/compliance", get(page_admin_generic))
         // ── JSON API ─────────────────────────────────────────────
         .route("/api/admin/stats/overview", get(api_admin_stats_overview))
+        .route("/api/admin/search", get(api_admin_search))
         // Access / RBAC
         .route("/api/admin/admins", get(access::api_admin_list))
         .route(
@@ -447,6 +469,14 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/assets/:asset_id/toggle-featured",
             post(api_admin_toggle_featured),
+        )
+        .route(
+            "/api/admin/assets/:asset_id/publication",
+            patch(api_admin_asset_publication),
+        )
+        .route(
+            "/api/admin/assets/:asset_id/funding-status",
+            patch(api_admin_asset_funding_status),
         )
         .route(
             "/api/admin/assets/:asset_id/detail",

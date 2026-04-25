@@ -111,6 +111,10 @@ def test_toggle_user_status(admin_page, test_user_email):
     expect(status_cell).not_to_have_text(initial_status_text, timeout=5000)
 
     # Cleanup: Toggle back
+    row = page.locator("#users-table-body tr").first
+    expect(row).to_contain_text(test_user_email, timeout=5000)
+    status_cell = row.locator("td:nth-child(6)")
+    toggle_btn = row.locator("td:nth-child(8) button").last
     with page.expect_response("**/api/admin/users/**/status") as response_info:
         toggle_btn.click()
         page.locator("#pc-confirm").click()

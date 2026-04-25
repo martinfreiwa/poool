@@ -16,15 +16,16 @@ pub async fn api_admin_system(
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
     // DB size
-    let (db_size, db_bytes): (String, i64) = sqlx::query_as(
+    let db_size_result: Result<(String, i64), sqlx::Error> = sqlx::query_as(
         "SELECT pg_size_pretty(pg_database_size(current_database())), pg_database_size(current_database())"
     )
     .fetch_one(&state.db)
-    .await
-    .unwrap_or_else(|_| ("unknown".to_string(), 0));
+    .await;
+    let db_healthy = db_size_result.is_ok();
+    let (db_size, db_bytes) = db_size_result.unwrap_or_else(|_| ("unknown".to_string(), 0));
 
     // Storage estimation for costs
-    let storage_bytes: i64 = sqlx::query_scalar(
+    let storage_bytes_result: Result<i64, sqlx::Error> = sqlx::query_scalar(
         r#"
         SELECT 
             (SELECT COUNT(*) FROM kyc_documents) * 350000 + 
@@ -34,19 +35,21 @@ pub async fn api_admin_system(
         "#,
     )
     .fetch_one(&state.db)
-    .await
-    .unwrap_or(0);
+    .await;
+    let storage_available = storage_bytes_result.is_ok();
+    let storage_bytes = storage_bytes_result.unwrap_or(0);
 
     // Table stats
-    let table_rows = sqlx::query_as::<_, (String, i64, String)>(
+    let table_rows_result = sqlx::query_as::<_, (String, i64, String)>(
         r#"SELECT s.relname, s.n_live_tup, pg_size_pretty(pg_total_relation_size(c.oid))
            FROM pg_stat_user_tables s
            JOIN pg_class c ON c.relname = s.relname AND c.relnamespace = s.schemaname::regnamespace
            ORDER BY s.n_live_tup DESC"#,
     )
     .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    .await;
+    let table_stats_available = table_rows_result.is_ok();
+    let table_rows = table_rows_result.unwrap_or_default();
 
     let total_records: i64 = table_rows.iter().map(|r| r.1).sum();
     let max_rows = table_rows.iter().map(|r| r.1).max().unwrap_or(1);
@@ -67,14 +70,44 @@ pub async fn api_admin_system(
 
     let total_monthly_cost = storage_cost + db_cost + compute_cost;
 
+    let psp_connected = std::env::var("STRIPE_SECRET_KEY")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .is_some()
+        || std::env::var("STRIPE_PUBLISHABLE_KEY")
+            .ok()
+            .filter(|v| !v.trim().is_empty())
+            .is_some();
+    let kyc_provider = if state.config.didit_api_key.is_some() {
+        Some("didit")
+    } else {
+        None
+    };
+    let email_configured = std::env::var("RESEND_API_KEY")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .is_some()
+        || std::env::var("SMTP_HOST")
+            .ok()
+            .filter(|v| !v.trim().is_empty())
+            .is_some();
+    let api_healthy = db_healthy && storage_available && table_stats_available;
+
     Ok(Json(serde_json::json!({
-        "api_healthy": true,
-        "db_healthy": true,
+        "api_healthy": api_healthy,
+        "db_healthy": db_healthy,
+        "db_connected": db_healthy,
+        "psp_connected": psp_connected,
+        "kyc_provider": kyc_provider,
+        "email_configured": email_configured,
+        "email_connected": email_configured,
         "database": {
             "size": db_size,
             "tables": tables,
             "total_records": total_records,
             "max_rows": max_rows,
+            "storage_available": storage_available,
+            "table_stats_available": table_stats_available,
         },
         "costs": {
             "storage_monthly_usd": (storage_cost * 100.0).round() / 100.0,

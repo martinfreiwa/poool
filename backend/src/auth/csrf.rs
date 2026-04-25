@@ -10,6 +10,9 @@ use std::collections::HashMap;
 use url::form_urlencoded;
 use uuid::Uuid;
 
+#[derive(Clone, Debug)]
+pub struct CsrfToken(pub String);
+
 /// CSRF Protection Middleware
 ///
 /// Implements Double Submit Cookie pattern:
@@ -49,6 +52,7 @@ pub async fn csrf_middleware(
     }
 
     let token = current_token.unwrap();
+    req.extensions_mut().insert(CsrfToken(token.clone()));
 
     // Validate token for state-changing methods
     let method = req.method().clone();

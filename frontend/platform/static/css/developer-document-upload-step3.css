@@ -234,8 +234,8 @@
 .progress-bar {
   flex: 1;
   height: 8px;
-  background: var(--table-border-color);
-  border-radius: 4px;
+  background: var(--progress-track-bg, #D5D7DA);
+  border-radius: var(--progress-border-radius, 30px);
   position: relative;
   overflow: hidden;
 }
@@ -245,8 +245,8 @@
   height: 100%;
   left: 0;
   top: 0;
-  background: var(--primary-color);
-  border-radius: 4px;
+  background: var(--progress-fill-bg, #98FB96);
+  border-radius: var(--progress-border-radius, 30px);
   transition: width 0.3s ease;
 }
 

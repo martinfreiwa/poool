@@ -1078,7 +1078,7 @@
 
   .mobile-investment-progress-fill {
     height: 100%;
-    background: var(--accent-color);
+    background: var(--progress-fill-bg, #98FB96);
     border-radius: 30px;
     transition: width 0.3s ease;
   }

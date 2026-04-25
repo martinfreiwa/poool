@@ -16,7 +16,7 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 # ── Stage 3: Build & cache dependencies ────────────────────────
 FROM chef AS builder
-RUN apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev curl git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev curl git cmake && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/backend
 COPY --from=planner /app/backend/recipe.json recipe.json
 # Build dependencies
@@ -85,8 +85,8 @@ COPY backend/templates /app/backend/templates
 COPY database/ /app/database/
 
 # Copy PgBouncer entrypoint and config
-COPY pgbouncer/entrypoint.sh /app/entrypoint.sh
-COPY pgbouncer/pgbouncer.ini /app/pgbouncer/pgbouncer.ini
+COPY backend/pgbouncer/entrypoint.sh /app/entrypoint.sh
+COPY backend/pgbouncer/pgbouncer.ini /app/pgbouncer/pgbouncer.ini
 RUN chmod +x /app/entrypoint.sh
 
 # Set working directory to /app/backend so relative paths like ../frontend work
@@ -108,4 +108,3 @@ EXPOSE 8080
 
 # Use ENTRYPOINT with the PgBouncer sidecar script
 ENTRYPOINT ["/app/entrypoint.sh"]
-

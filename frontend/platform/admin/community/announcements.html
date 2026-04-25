@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
   <script src="/static/js/admin-theme.js"></script>
@@ -64,7 +63,7 @@
             <h1 class="admin-page-title">Manage Announcements</h1>
             <p class="admin-page-subtitle">Post global updates to the community feed.</p>
           </div>
-          <button class="admin-btn admin-btn--primary" onclick="document.getElementById('create-modal').style.display = 'flex'">
+          <button type="button" id="open-create-modal" class="admin-btn admin-btn--primary">
             + New Announcement
           </button>
         </div>
@@ -101,17 +100,17 @@
   </div>
 
   <!-- Create Modal -->
-  <div id="create-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(16,24,40,0.6); backdrop-filter:blur(4px); z-index:9999; justify-content:center; align-items:flex-start; padding-top: 5vh; overflow-y:auto;">
+  <div id="create-modal" role="dialog" aria-modal="true" aria-labelledby="create-modal-title" aria-describedby="create-modal-description" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(16,24,40,0.6); backdrop-filter:blur(4px); z-index:9999; justify-content:center; align-items:flex-start; padding-top: 5vh; overflow-y:auto;">
     
-    <div style="background:var(--admin-bg-card); width: 100%; max-width: 900px; border-radius:12px; border:1px solid var(--admin-border); display:flex; flex-direction:column; box-shadow: 0 20px 24px -4px rgba(16, 24, 40, 0.08);">
+    <div id="create-modal-panel" tabindex="-1" style="background:var(--admin-bg-card); width: 100%; max-width: 900px; border-radius:12px; border:1px solid var(--admin-border); display:flex; flex-direction:column; box-shadow: 0 20px 24px -4px rgba(16, 24, 40, 0.08);">
       
       <!-- Modal Header -->
       <div style="padding: 24px; border-bottom: 1px solid var(--admin-border); display:flex; justify-content:space-between; align-items:center;">
           <div>
-              <h2 style="margin:0; font-size: 18px; color:#101828;">Create New Announcement</h2>
-              <span style="font-size:14px; color:#667085;">It will be published immediately to all investors.</span>
+              <h2 id="create-modal-title" style="margin:0; font-size: 18px; color:#101828;">Create New Announcement</h2>
+              <span id="create-modal-description" style="font-size:14px; color:#667085;">It will be published immediately to all investors.</span>
           </div>
-          <button onclick="document.getElementById('create-modal').style.display='none'" style="background:none; border:none; cursor:pointer; color:#98A2B3;">
+          <button type="button" id="close-create-modal" aria-label="Close create announcement modal" style="background:none; border:none; cursor:pointer; color:#98A2B3;">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
       </div>
@@ -148,9 +147,10 @@
             </div>
 
             <div style="display:flex; gap:12px; justify-content:flex-end;">
-              <button type="button" class="admin-btn admin-btn--secondary" onclick="document.getElementById('create-modal').style.display='none'">Cancel</button>
+              <button type="button" id="cancel-create-modal" class="admin-btn admin-btn--secondary">Cancel</button>
               <button type="submit" class="admin-btn admin-btn--primary">Publish to Feed</button>
             </div>
+            <div id="create-form-status" role="status" aria-live="polite" style="margin-top:12px; font-size:14px; color:#667085;"></div>
           </form>
 
           <!-- Right: Live Preview -->
@@ -190,8 +190,21 @@
   <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
-        // Initialize Quill
-        var quill = new Quill('#editor-container', {
+        const modal = document.getElementById('create-modal');
+        const modalPanel = document.getElementById('create-modal-panel');
+        const openModalButton = document.getElementById('open-create-modal');
+        const closeModalButton = document.getElementById('close-create-modal');
+        const cancelModalButton = document.getElementById('cancel-create-modal');
+        const form = document.getElementById('create-form');
+        const formStatus = document.getElementById('create-form-status');
+        const categoryInput = document.getElementById('ann-category');
+        const pinInput = document.getElementById('ann-pin');
+        const previewContent = document.getElementById('preview-content');
+        const previewBadge = document.getElementById('preview-badge');
+        const tableBody = document.getElementById('announcements-table');
+        let lastFocusedElement = null;
+
+        const quill = new Quill('#editor-container', {
           theme: 'snow',
           placeholder: 'Write your announcement...',
           modules: {
@@ -204,113 +217,218 @@
           }
         });
 
-        const loadAll = async () => {
-            const tbody = document.getElementById('announcements-table');
-            try {
-                // Feeds return the announcements essentially
-                const res = await fetch('/api/community/feed');
-                if(!res.ok) throw new Error("Failed");
-                const posts = await res.json();
+        const setStatus = (message, isError = false) => {
+            formStatus.textContent = message || '';
+            formStatus.style.color = isError ? '#d92d20' : '#027A48';
+        };
 
-                if (posts.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--admin-text-muted);">No announcements yet.</td></tr>';
-                    return;
-                }
-                
-                let html = '';
-                posts.forEach(p => {
-                    const date = new Date(p.created_at).toLocaleDateString();
-                    // Preview limits to ~60 chars and strips html tags
-                    const stripped = p.content.replace(/(<([^>]+)>)/gi, "");
-                    const preview = stripped.length > 50 ? stripped.substring(0, 50) + "..." : stripped;
-
-                    html += `
-                        <tr>
-                            <td>
-                                ${p.is_pinned ? `<span class="admin-badge" style="background:#eef4ff; color:#3538cd;">Pinned</span>` : `<span class="admin-badge" style="background:#ecfdf3; color:#027A48;">Live</span>`}
-                            </td>
-                            <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${stripped}">
-                                ${preview}
-                            </td>
-                            <td>${p.category}</td>
-                            <td>${date}</td>
-                            <td>🔥 ${p.reaction_count || 0}</td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = html;
-
-            } catch(e) {
-                console.error(e);
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#d92d20;">Error loading announcements.</td></tr>';
+        const clearElement = (element) => {
+            while (element.firstChild) {
+                element.removeChild(element.firstChild);
             }
         };
 
-        await loadAll();
+        const stripHtml = (value) => {
+            const temp = document.createElement('div');
+            temp.innerHTML = value || '';
+            return temp.textContent || temp.innerText || '';
+        };
 
-        // Live Preview Logic
-        const categoryInput = document.getElementById('ann-category');
-        const previewContent = document.getElementById('preview-content');
-        const previewBadge = document.getElementById('preview-badge');
+        const appendTableMessage = (message, isError = false) => {
+            clearElement(tableBody);
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 5;
+            cell.style.textAlign = 'center';
+            cell.style.padding = '20px';
+            cell.style.color = isError ? '#d92d20' : 'var(--admin-text-muted)';
+            cell.textContent = message;
+            row.appendChild(cell);
+            tableBody.appendChild(row);
+        };
+
+        const renderAnnouncements = (posts) => {
+            clearElement(tableBody);
+            if (!posts.length) {
+                appendTableMessage('No announcements yet.');
+                return;
+            }
+
+            posts.forEach((post) => {
+                const row = document.createElement('tr');
+                const statusCell = document.createElement('td');
+                const badge = document.createElement('span');
+                badge.className = 'admin-badge';
+                badge.style.background = post.is_pinned ? '#eef4ff' : '#ecfdf3';
+                badge.style.color = post.is_pinned ? '#3538cd' : '#027A48';
+                badge.textContent = post.is_pinned ? 'Pinned' : 'Live';
+                statusCell.appendChild(badge);
+
+                const previewCell = document.createElement('td');
+                previewCell.style.maxWidth = '300px';
+                previewCell.style.overflow = 'hidden';
+                previewCell.style.textOverflow = 'ellipsis';
+                previewCell.style.whiteSpace = 'nowrap';
+                const stripped = stripHtml(post.content);
+                previewCell.title = stripped;
+                previewCell.textContent = stripped.length > 50 ? `${stripped.substring(0, 50)}...` : stripped;
+
+                const categoryCell = document.createElement('td');
+                categoryCell.textContent = post.category || '-';
+
+                const dateCell = document.createElement('td');
+                const createdAt = post.created_at ? new Date(post.created_at) : null;
+                dateCell.textContent = createdAt && !Number.isNaN(createdAt.getTime())
+                    ? createdAt.toLocaleDateString()
+                    : '-';
+
+                const reactionsCell = document.createElement('td');
+                reactionsCell.textContent = `Reactions: ${post.reaction_count || 0}`;
+
+                row.append(statusCell, previewCell, categoryCell, dateCell, reactionsCell);
+                tableBody.appendChild(row);
+            });
+        };
+
+        const loadAll = async () => {
+            appendTableMessage('Loading announcements...');
+            try {
+                const res = await fetch('/api/admin/community/announcements', {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+                renderAnnouncements(await res.json());
+            } catch (error) {
+                console.error(error);
+                appendTableMessage('Error loading announcements. Refresh the page or try again later.', true);
+            }
+        };
+
+        const getFocusableElements = () => Array.from(
+            modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        ).filter((element) => !element.disabled && element.offsetParent !== null);
+
+        const openModal = () => {
+            lastFocusedElement = document.activeElement;
+            modal.style.display = 'flex';
+            modalPanel.focus();
+            setStatus('');
+        };
+
+        const closeModal = () => {
+            modal.style.display = 'none';
+            setStatus('');
+            if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+                lastFocusedElement.focus();
+            }
+        };
+
+        const handleModalKeydown = (event) => {
+            if (modal.style.display !== 'flex') return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeModal();
+                return;
+            }
+            if (event.key !== 'Tab') return;
+
+            const focusable = getFocusableElements();
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
 
         const updatePreview = () => {
-            const raw = quill.root.innerHTML;
             const textContent = quill.getText().trim();
+            clearElement(previewContent);
 
-            if(!textContent) {
-                previewContent.innerHTML = '<span style="color:#98A2B3; font-style:italic;">Start typing to see the preview...</span>';
+            if (!textContent) {
+                const placeholder = document.createElement('span');
+                placeholder.style.color = '#98A2B3';
+                placeholder.style.fontStyle = 'italic';
+                placeholder.textContent = 'Start typing to see the preview...';
+                previewContent.appendChild(placeholder);
             } else {
-                previewContent.innerHTML = raw; 
+                previewContent.textContent = textContent;
             }
-            
-            const cat = categoryInput.options[categoryInput.selectedIndex].text;
-            previewBadge.textContent = cat;
+
+            previewBadge.textContent = categoryInput.options[categoryInput.selectedIndex].text;
         };
 
         quill.on('text-change', updatePreview);
         categoryInput.addEventListener('change', updatePreview);
+        openModalButton.addEventListener('click', openModal);
+        closeModalButton.addEventListener('click', closeModal);
+        cancelModalButton.addEventListener('click', closeModal);
+        modal.addEventListener('mousedown', (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+        document.addEventListener('keydown', handleModalKeydown);
 
-        document.getElementById('create-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
 
-            // Validate Quill has content
             const textContent = quill.getText().trim();
             if (!textContent) {
-                alert("Please enter message content.");
+                setStatus('Please enter message content.', true);
                 return;
             }
 
-            const btn = e.target.querySelector('button[type="submit"]');
-            
+            const submitButton = form.querySelector('button[type="submit"]');
             const payload = {
                 content: quill.root.innerHTML,
-                category: document.getElementById('ann-category').value,
-                is_pinned: document.getElementById('ann-pin').checked,
+                category: categoryInput.value,
+                is_pinned: pinInput.checked,
                 image_urls: null
             };
 
-            btn.textContent = 'Posting...';
-            btn.disabled = true;
+            submitButton.textContent = 'Posting...';
+            submitButton.disabled = true;
+            setStatus('Publishing announcement...');
 
             try {
                 const res = await fetch('/api/admin/community/announcements', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': window.getCsrfToken ? window.getCsrfToken() : ''
+                    },
                     body: JSON.stringify(payload)
                 });
-                if(!res.ok) throw new Error(await res.text());
-                
-                quill.root.innerHTML = '';
-                document.getElementById('create-modal').style.display = 'none';
-                await loadAll(); // refresh table
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+
+                quill.setText('');
+                pinInput.checked = false;
+                updatePreview();
+                closeModal();
+                await loadAll();
             } catch(error) {
                 console.error(error);
-                alert("Failed to create announcement: " + error.message);
+                setStatus(`Failed to create announcement: ${error.message}`, true);
             } finally {
-                btn.textContent = 'Post to Community';
-                btn.disabled = false;
+                submitButton.textContent = 'Publish to Feed';
+                submitButton.disabled = false;
             }
         });
+
+        await loadAll();
     });
   </script>
 

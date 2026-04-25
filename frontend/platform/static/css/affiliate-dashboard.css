@@ -123,6 +123,98 @@
     bottom: 24px;
 }
 
+.affiliate-review-state {
+    max-width: 760px;
+    padding: 32px;
+}
+
+.affiliate-review-icon {
+    display: inline-flex;
+    width: 56px;
+    height: 56px;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-accent, #1E58FB);
+    background: rgba(30, 88, 251, 0.08);
+    border: 1px solid rgba(30, 88, 251, 0.18);
+    border-radius: 14px;
+    margin-bottom: 18px;
+}
+
+.affiliate-review-eyebrow {
+    margin: 0 0 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.affiliate-review-title {
+    margin: 0 0 12px;
+    color: var(--text-primary);
+    font-size: 28px;
+    line-height: 1.18;
+}
+
+.affiliate-review-copy {
+    max-width: 620px;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.affiliate-review-steps {
+    display: grid;
+    gap: 14px;
+    margin: 28px 0;
+}
+
+.affiliate-review-step {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    color: var(--text-secondary);
+}
+
+.affiliate-review-step strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 14px;
+    margin-bottom: 3px;
+}
+
+.affiliate-review-step span:not(.affiliate-review-dot) {
+    display: block;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.affiliate-review-dot {
+    width: 10px;
+    height: 10px;
+    margin-top: 5px;
+    border-radius: 999px;
+    background: var(--border-color, #D5D7DA);
+}
+
+.affiliate-review-step--done .affiliate-review-dot {
+    background: #10b981;
+}
+
+.affiliate-review-step--active .affiliate-review-dot {
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
+}
+
+.affiliate-review-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
 /* Layout Split */
 .dashboard-split {
     display: grid;
@@ -250,15 +342,15 @@
 .tier-bar-bg {
     width: 100%;
     height: 12px;
-    background: var(--bg-canvas);
-    border-radius: 6px;
+    background: var(--progress-track-bg, #D5D7DA);
+    border-radius: var(--progress-border-radius, 30px);
     overflow: hidden;
 }
 
 .tier-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #06b6d4);
-    border-radius: 6px;
+    background: var(--progress-fill-bg, #98FB96);
+    border-radius: var(--progress-border-radius, 30px);
     transition: width 1s ease-out;
 }
 

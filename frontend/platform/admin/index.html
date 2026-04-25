@@ -8,10 +8,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard | Admin | POOOL</title>
   <meta name="description" content="POOOL Admin Dashboard — Platform overview, KPIs, and operational control center." />
-  <!-- HTMX -->
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <!-- Alpine.js -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <!-- Admin CSS -->
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <!-- User data -->
@@ -86,8 +82,8 @@
           </div>
 
           <!-- Notifications -->
-          <button type="button" class="admin-notification-btn" title="Notifications" aria-label="View notifications"
-            onclick="window.location.href='/admin/notifications.html';">
+          <button type="button" class="admin-notification-btn" id="admin-notification-button" title="Notifications"
+            aria-label="View notifications">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
               stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9z" fill="currentColor" fill-opacity="0.1" />
@@ -147,7 +143,7 @@
           <!-- Deposits (24h) -->
           <div class="admin-kpi-card">
             <div class="admin-kpi-header">
-              <span class="admin-kpi-label">Deposits (24h)</span>
+              <span class="admin-kpi-label" id="kpi-deposits-label">Deposits</span>
               <div class="admin-kpi-icon">
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">

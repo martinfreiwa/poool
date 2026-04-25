@@ -144,11 +144,11 @@
   </div>
 
   <!-- Details Modal -->
-  <div id="details-modal" style="display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+  <div id="details-modal" role="dialog" aria-modal="true" aria-labelledby="details-modal-title" tabindex="-1" style="display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
     <div style="background: var(--admin-bg-card); border: 1px solid var(--admin-border); border-radius: var(--admin-radius-xl); padding: 28px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; animation: admin-fadeIn 0.2s ease-out;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h3 style="font-size: 18px; font-weight: 700; color: var(--admin-text-primary); margin: 0;" id="details-modal-title">Application Details</h3>
-        <button onclick="closeDetailsModal()" style="background: none; border: none; color: var(--admin-text-muted); cursor: pointer; padding: 4px;">
+        <button type="button" onclick="closeDetailsModal()" aria-label="Close application details" style="background: none; border: none; color: var(--admin-text-muted); cursor: pointer; padding: 4px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
@@ -219,7 +219,7 @@
   </div>
 
   <!-- Approve Modal -->
-  <div id="approve-modal" style="display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+  <div id="approve-modal" role="dialog" aria-modal="true" aria-labelledby="approve-modal-title" tabindex="-1" style="display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
     <div style="background: var(--admin-bg-card); border: 1px solid var(--admin-border); border-radius: var(--admin-radius-xl); padding: 28px; max-width: 460px; width: 90%; animation: admin-fadeIn 0.2s ease-out;">
       <h3 style="font-size: 18px; font-weight: 700; color: var(--admin-text-primary); margin: 0 0 8px;" id="approve-modal-title">Approve Affiliate</h3>
       <p style="font-size: 13px; color: var(--admin-text-secondary); margin: 0 0 20px;" id="approve-modal-email">—</p>
@@ -234,8 +234,8 @@
         <span style="font-size: 11px; color: var(--admin-text-muted);">50 bps = 0.50%. Max: 450 bps (4.50%)</span>
       </div>
       <div style="display: flex; gap: 8px; justify-content: flex-end">
-        <button class="admin-btn admin-btn--secondary" onclick="closeApproveModal()">Cancel</button>
-        <button class="admin-btn admin-btn--primary" id="approve-confirm-btn" onclick="confirmApprove()">
+        <button type="button" class="admin-btn admin-btn--secondary" onclick="closeApproveModal()">Cancel</button>
+        <button type="button" class="admin-btn admin-btn--primary" id="approve-confirm-btn" onclick="confirmApprove()">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8l3.5 3.5L13 4" /></svg>
           Approve
         </button>
@@ -244,17 +244,17 @@
   </div>
 
   <!-- Reject Modal -->
-  <div id="reject-modal" style="display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+  <div id="reject-modal" role="dialog" aria-modal="true" aria-labelledby="reject-modal-title" tabindex="-1" style="display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
     <div style="background: var(--admin-bg-card); border: 1px solid var(--admin-border); border-radius: var(--admin-radius-xl); padding: 28px; max-width: 460px; width: 90%; animation: admin-fadeIn 0.2s ease-out;">
-      <h3 style="font-size: 18px; font-weight: 700; color: var(--admin-text-primary); margin: 0 0 8px;">Reject Application</h3>
+      <h3 style="font-size: 18px; font-weight: 700; color: var(--admin-text-primary); margin: 0 0 8px;" id="reject-modal-title">Reject Application</h3>
       <p style="font-size: 13px; color: var(--admin-text-secondary); margin: 0 0 20px;" id="reject-modal-email">—</p>
       <div class="admin-form-group" style="margin-bottom: 20px">
         <label class="admin-form-label" for="reject-reason">Reason for Rejection *</label>
         <textarea class="admin-textarea" id="reject-reason" placeholder="Explain why this application is being rejected…" rows="3"></textarea>
       </div>
       <div style="display: flex; gap: 8px; justify-content: flex-end">
-        <button class="admin-btn admin-btn--secondary" onclick="closeRejectModal()">Cancel</button>
-        <button class="admin-btn admin-btn--danger" id="reject-confirm-btn" onclick="confirmReject()">
+        <button type="button" class="admin-btn admin-btn--secondary" onclick="closeRejectModal()">Cancel</button>
+        <button type="button" class="admin-btn admin-btn--danger" id="reject-confirm-btn" onclick="confirmReject()">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
           Reject
         </button>

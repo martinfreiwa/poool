@@ -12,7 +12,7 @@ BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 
 @pytest.mark.admin
 @pytest.mark.financial
-def test_admin_reports_csv_download(admin_page):
+def test_admin_reports_csv_download(admin_page, tmp_path):
     """
     Verifies that the CSV download buttons on the Admin Reports page 
     trigger a file download successfully.
@@ -27,34 +27,22 @@ def test_admin_reports_csv_download(admin_page):
     # Based on the JS, buttons have IDs like 'dl-btn-{report.id}'
     report_buttons = page.locator("button[id^='dl-btn-']").all()
     
-    home_dir = os.path.expanduser("~")
-    downloads_dir = os.path.join(home_dir, "Downloads")
-    
     print(f"\n📊 Found {len(report_buttons)} reports to download.")
-    
-    for btn in report_buttons:
-        btn_id = btn.get_attribute("id")
-        report_id = btn_id.replace("dl-btn-", "")
-        
-        # We only want to test CSV and JSON for now as per the requirements
-        # But let's just trigger whatever download button is there
-        
-        print(f"📥 Downloading report: {report_id}...")
-        
-        try:
-            with page.expect_download(timeout=10000) as download_info:
-                btn.click()
-            
-            download = download_info.value
-            save_path = os.path.join(downloads_dir, download.suggested_filename)
-            
-            download.save_as(save_path)
-            assert os.path.getsize(save_path) > 0
-            print(f"✅ Saved to: {save_path}")
-            
-        except Exception as e:
-            print(f"❌ Failed to download {report_id}: {str(e)}")
-            continue
+    assert report_buttons, "No report download buttons found"
+
+    btn = report_buttons[0]
+    btn_id = btn.get_attribute("id")
+    report_id = btn_id.replace("dl-btn-", "")
+    print(f"📥 Downloading report: {report_id}...")
+
+    with page.expect_download(timeout=10000) as download_info:
+        btn.click()
+
+    download = download_info.value
+    save_path = tmp_path / download.suggested_filename
+    download.save_as(str(save_path))
+    assert save_path.stat().st_size > 0
+    print(f"✅ Saved to: {save_path}")
 
     # 4. Final health check
     tracker.assert_no_critical_errors()

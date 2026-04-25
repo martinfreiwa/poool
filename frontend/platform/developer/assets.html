@@ -20,10 +20,10 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
       <!-- Status Tabs: Available / Funded -->
       {% if developer_assets %}
       <div id="dev-assets-status-tabs" class="status-tabs" style="width: 280px; max-width: 100%; height: auto; padding: 4px; gap: 0;">
-        <button id="dev-tab-available" class="status-tab active" style="flex: 0 0 auto; width: auto; min-width: 136px; height: auto; min-height: 44px; padding: 10px 32px;" onclick="showDevTab('available')">
+        <button id="dev-tab-available" class="status-tab active" data-dev-assets-tab="available" style="flex: 0 0 auto; width: auto; min-width: 136px; height: auto; min-height: 44px; padding: 10px 32px;">
           Available
         </button>
-        <button id="dev-tab-funded" class="status-tab" style="flex: 0 0 auto; width: auto; min-width: 136px; height: auto; min-height: 44px; padding: 10px 32px;" onclick="showDevTab('funded')">
+        <button id="dev-tab-funded" class="status-tab" data-dev-assets-tab="funded" style="flex: 0 0 auto; width: auto; min-width: 136px; height: auto; min-height: 44px; padding: 10px 32px;">
           Funded
         </button>
       </div>
@@ -52,22 +52,19 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
         {% if asset.lease_type == "freehold" %}{% set badge_class = "ds-badge--freehold" %}{% endif %}
 
         <div class="property-card dev-asset-card" data-status="{{ asset.status }}" data-funded="{{ is_funded }}"
-          data-funding-pct="{{ funded_percentage }}"
-          onclick="window.location.href = '/developer/asset-detail?id={{ asset.id }}'">
+          data-funding-pct="{{ funded_percentage }}" data-asset-id="{{ asset.id }}" role="link" tabindex="0">
           <div class="property-gallery">
             <div class="property-image-container">
-              <div class="property-image active"
-                style="background-image: url('{{ asset.cover_image_url }}'); background-size: cover; background-position: center;"
+              <div class="property-image active" data-cover-url="{{ asset.cover_image_url }}"
+                style="background-size: cover; background-position: center;"
                 aria-label="{{ asset.title }}"></div>
-              <button class="property-nav-arrow property-nav-prev"
-                onclick="event.stopPropagation(); cardPrevImage(this)" aria-label="Previous image">
+              <button class="property-nav-arrow property-nav-prev" aria-label="Previous image">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5"
                   stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="15 18 9 12 15 6" />
                 </svg>
               </button>
-              <button class="property-nav-arrow property-nav-next"
-                onclick="event.stopPropagation(); cardNextImage(this)" aria-label="Next image">
+              <button class="property-nav-arrow property-nav-next" aria-label="Next image">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5"
                   stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6" />
@@ -251,45 +248,6 @@ extra_js=['htmx-init', 'property-card', 'developer-assets', 'profile-dropdown', 
         </div>
     </main>
   </div>
-
-  <script>
-    function showDevTab(tab) {
-      const tabs = document.querySelectorAll('#dev-assets-status-tabs .status-tab');
-      tabs.forEach(t => t.classList.remove('active'));
-      document.getElementById('dev-tab-' + tab).classList.add('active');
-
-      const cards = document.querySelectorAll('#dev-assets-grid .property-card');
-      let visibleCount = 0;
-      cards.forEach(card => {
-        let isFunded = false;
-        try {
-          const status = (card.dataset.status || '').toLowerCase();
-          const fundedStr = (card.dataset.funded || '').toLowerCase();
-          const isFundedStatus = ['funded', 'rented', 'exited'].includes(status);
-          const pct = parseFloat(card.dataset.fundingPct) || 0;
-          isFunded = isFundedStatus || fundedStr === 'true' || pct >= 100;
-        } catch (e) { console.error("Filter error:", e); }
-
-        const show = tab === 'available' ? !isFunded : isFunded;
-        card.style.setProperty('display', show ? 'flex' : 'none', 'important');
-        if (show) visibleCount++;
-      });
-
-      // Keep the management view focused on real assets only.
-      const ghostCards = document.querySelectorAll('#dev-assets-grid .ghost-card');
-      ghostCards.forEach((gc) => {
-        gc.style.setProperty('display', 'none', 'important');
-      });
-
-    }
-
-    // Auto-init default "Available" tab
-    document.addEventListener('DOMContentLoaded', function() {
-      if (document.getElementById('dev-assets-status-tabs')) {
-        showDevTab('available');
-      }
-    });
-  </script>
 </body>
 
 </html>

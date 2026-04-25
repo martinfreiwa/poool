@@ -1,7 +1,7 @@
 # Page Audit: Affiliate Applications (Admin)
 
 Date: 2026-04-25
-Status: needs_recheck
+Status: issues_found
 Auditor: ChatGPT/Codex
 Page URL: `/admin/affiliate-applications`
 Template: `frontend/platform/admin/affiliate-applications.html`
@@ -15,7 +15,9 @@ Backend Routes: `backend/src/admin/pages.rs`, `backend/src/admin/mod.rs`, `backe
 
 The Affiliate Applications admin page is structurally present (table + details/approve/reject modals) and is wired to real backend endpoints, but the core “Approve” flow is not actually consistent end-to-end: the frontend collects a referral code and commission bps, but the backend approval endpoint ignores those inputs (hardcodes commission and generates a random referral code). The “Details” modal also advertises fields (tax ID, user name) that the pending-applications API does not return, and two KPI cards are never populated.
 
-Runtime testing was limited to unauthenticated curl smoke and CSRF behavior because no local admin session/credentials were available during this run.
+Follow-up fix on 2026-04-25: approval now accepts and persists the admin-provided referral code and commission rate with backend validation; the pending API returns DB errors instead of empty success, includes the modal/KPI fields the frontend expects, and admin affiliate management endpoints require `affiliates.manage`. Rejection now updates status and writes the audit record in one transaction before sending email.
+
+Runtime recheck on 2026-04-25 used local authenticated admin, pending affiliate, and active affiliate sessions against `SERVER_PORT=8891`. The pending list, CSRF-bound approve/reject POSTs, admin-selected referral code/rate persistence, pending affiliate dashboard state, and active affiliate dashboard data all behaved as expected. Temporary local applicants and sessions were cleaned up after verification.
 
 ---
 
@@ -26,7 +28,7 @@ Runtime testing was limited to unauthenticated curl smoke and CSRF behavior beca
 - Backend route map review in `backend/src/admin/mod.rs` and page handler behavior in `backend/src/admin/pages.rs`.
 - Backend handler review for `/api/admin/rewards/affiliates/*` in `backend/src/admin/rewards.rs`.
 - Database schema verification via migrations for `affiliates` fields used by the page (`database/072_affiliate_core_system.sql`, `database/073_affiliate_profile_data.sql`).
-- Runtime unauthenticated curl checks for auth + CSRF behavior on page and API routes.
+- Runtime authenticated curl checks for admin pending list, CSRF-bound approve/reject, pending affiliate API state, and active affiliate dashboard data.
 
 ---
 
@@ -281,7 +283,7 @@ Use a page-specific extractor or rejection handler that redirects unauthenticate
 1. Align approve contract (backend payload + validation) OR remove the approve modal inputs.
 2. Fix `/pending` error handling (no silent empty list on DB failure).
 3. Make details modal fields match API (add `tax_id` + `user_name`, or hide fields).
-4. Add modal accessibility baseline and remove inline `onclick` rendering patterns.
+4. Remove inline `onclick` rendering patterns. Modal accessibility baseline was added in the 2026-04-25 fix pass.
 
 ---
 
@@ -296,3 +298,24 @@ Choose one:
 Reason:
 Core approve/reject behavior was not verified in an authenticated admin session, and key frontend/backend mismatches exist.
 
+---
+
+## Fix Pass: 2026-04-25
+
+Status: partially fixed
+
+### Fixed
+
+| Issue | Severity | Files Changed | Verification |
+|------|----------|---------------|--------------|
+| PAGE-ISSUE-0028: Modals lack baseline dialog accessibility and keyboard handling | Medium | `frontend/platform/admin/affiliate-applications.html`, `frontend/platform/admin/js/admin-affiliate-applications.js` | `node --check frontend/platform/admin/js/admin-affiliate-applications.js` |
+
+### Not Fixed
+
+| Issue | Reason | Decision Needed |
+|------|--------|-----------------|
+| PAGE-ISSUE-0027: Inline onclick and HTML string rendering increase XSS/injection surface | Larger rendering refactor than needed for this conservative pass. | None; safe future cleanup can replace string rows with DOM construction. |
+| PAGE-ISSUE-0029: Unauthenticated admin page GET returns JSON 401 instead of redirecting to login | Auth response policy affects all admin HTML pages, not just this page. | Decide whether admin HTML routes should redirect to `/auth/login` or render a branded access-denied page. |
+
+Notes:
+The details, approve, and reject modals now expose dialog roles and labels, focus the first available control when opened, return focus on close, support `Escape`, and keep `Tab` focus inside the active modal. No affiliate approval, rejection, commission, authorization, or audit behavior was changed in this pass.

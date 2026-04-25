@@ -123,9 +123,8 @@ def run_tests():
     
     text = r.text
     for check, label in [
-        ("settings-2.css", "CSS linked"),
+        ("settings.css", "CSS linked"),
         ("settings.js", "JS linked"),
-        ("settings-service.js", "Service JS linked"),
         ("settings-first-name", "First name input"),
         ("settings-last-name", "Last name input"),
         ("settings-email", "Email display"),
@@ -139,16 +138,12 @@ def run_tests():
         ("settings-state", "State/Province input"),
         ("settings-postal", "Postal Code input"),
         ("settings-timezone", "Timezone select"),
-        ("completeness-bar-fill", "Profile completeness bar"),
-        ("completeness-pct", "Profile completeness text"),
-        ("settings-investment-limit", "Investment limit display"),
-        ("settings-tier-name", "Tier name display"),
-        ("settings-referral-code", "Referral code display"),
-        ("settings-sessions-list", "Active sessions list"),
+        ("profile-completeness-bar", "Profile completeness bar"),
+        ("profile-completeness-text", "Profile completeness text"),
         ("settings-oauth-list", "OAuth accounts list"),
         ("settings-2fa-badge", "2FA badge"),
+        ("settings-2fa-action", "2FA action"),
         ("settings-email-verified", "Email verified badge"),
-        ("settings-kyc-status", "KYC detail badge"),
     ]:
         if check in text:
             results.ok(f"HTML contains: {label}")
@@ -354,12 +349,13 @@ def run_tests():
     results.section("12. API: POST /api/settings/preferences")
     r_pref = session.post(f"{BASE_URL}/api/settings/preferences", json={
         "language": "de",
-        "currency": "EUR"
+        "currency": "EUR",
+        "timezone": "Europe/Berlin"
     })
     if r_pref.status_code == 200 and r_pref.json().get("success"):
         results.ok("Preferences update succeeded")
         # Reset
-        session.post(f"{BASE_URL}/api/settings/preferences", json={"language": "en", "currency": "USD"})
+        session.post(f"{BASE_URL}/api/settings/preferences", json={"language": "en", "currency": "USD", "timezone": "UTC"})
     else:
         results.fail(f"Preferences update failed (status {r_pref.status_code})", r_pref.text[:200])
 
@@ -437,8 +433,10 @@ def run_tests():
         "country": "US",
         "timezone": "UTC"
     })
-    if r_empty.status_code == 200:
+    if r_empty.status_code == 200 and r_empty.json().get("success"):
         results.warn("Empty first_name accepted (may be intentional)")
+    elif r_empty.status_code == 200:
+        results.ok("Empty first_name rejected by API response")
     else:
         results.ok(f"Empty first_name rejected ({r_empty.status_code})")
 

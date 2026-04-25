@@ -1,5 +1,6 @@
 use super::extractors::{AdminUser, ApiError};
 use crate::auth::routes::AppState;
+use crate::common::sanitize;
 use axum::{
     extract::{Json, State},
     response::IntoResponse,
@@ -490,7 +491,7 @@ pub async fn api_admin_project_notes_list(
     Ok(Json(serde_json::json!({"notes": notes})).into_response())
 }
 
-/// POST /api/admin/developer-projects/:id/notes — add a note to a project
+/// POST /api/admin/developer-projects/:id/notes — add a note or review decision to a project
 pub async fn api_admin_project_notes_create(
     _admin: AdminUser,
     State(state): State<AppState>,
@@ -503,28 +504,35 @@ pub async fn api_admin_project_notes_create(
 
     let action = match body.get("action").and_then(|v| v.as_str()) {
         Some(a) if matches!(a, "approve" | "reject" | "request_revision" | "in_review") => {
-            a.to_string()
+            Some(a.to_string())
         }
         Some(other) => return Err(ApiError::BadRequest(format!("Unknown action: {other}"))),
-        None => {
-            return Err(ApiError::BadRequest(
-                "Action is required (approve | reject | request_revision | in_review)".to_string(),
-            ))
-        }
+        None => None,
     };
 
-    let notes = body
+    let raw_notes = body
         .get("notes")
+        .or_else(|| body.get("content"))
         .and_then(|v| v.as_str())
         .unwrap_or("")
-        .trim()
-        .to_string();
+        .trim();
+    let notes = sanitize::sanitize_multiline(raw_notes);
+
+    if notes.chars().count() > 5000 {
+        return Err(ApiError::BadRequest(
+            "Note must be 5000 characters or less".to_string(),
+        ));
+    }
 
     // Notes required for reject and request_revision (not for approve or in_review)
-    if (action == "reject" || action == "request_revision") && notes.is_empty() {
+    if matches!(action.as_deref(), Some("reject" | "request_revision")) && notes.is_empty() {
         return Err(ApiError::BadRequest(
             "Notes are required for rejection and revision requests".to_string(),
         ));
+    }
+
+    if action.is_none() && notes.is_empty() {
+        return Err(ApiError::BadRequest("Note content is required".to_string()));
     }
 
     // Fetch the project to get developer_id, asset_id, project_name, and current status
@@ -561,6 +569,60 @@ pub async fn api_admin_project_notes_create(
                 "Database transaction error: {e}"
             )));
         }
+    };
+
+    if action.is_none() {
+        let note_row = sqlx::query(
+            r#"INSERT INTO developer_project_notes (project_id, author_id, content)
+               VALUES ($1, $2, $3)
+               RETURNING id::text, content, created_at::text"#,
+        )
+        .bind(pid)
+        .bind(admin_user.as_ref().map(|u| u.id))
+        .bind(&notes)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to create admin note for project {pid}: {e}");
+            ApiError::BadRequest(format!("Failed to create note: {e}"))
+        })?;
+
+        let note_id: String = note_row.get("id");
+        let note_content: String = note_row.get("content");
+        let created_at: String = note_row.get("created_at");
+
+        if let Err(e) = sqlx::query(
+            r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+               VALUES ($1, 'developer_project.note_created', 'developer_projects', $2, $3, $4)"#,
+        )
+        .bind(admin_user.as_ref().map(|u| u.id))
+        .bind(pid)
+        .bind(serde_json::json!({"status": previous_status}))
+        .bind(serde_json::json!({"note_id": note_id}))
+        .execute(&mut *tx)
+        .await
+        {
+            tracing::error!("Failed to create admin note audit log for project {pid}: {e}");
+        }
+
+        tx.commit().await.map_err(|e| {
+            tracing::error!("Failed to commit admin note transaction for project {pid}: {e}");
+            ApiError::BadRequest(format!("Failed to commit note: {e}"))
+        })?;
+
+        return Ok(Json(serde_json::json!({
+            "id": note_id,
+            "content": note_content,
+            "created_at": created_at,
+            "status": "created"
+        }))
+        .into_response());
+    }
+
+    let Some(action) = action else {
+        return Err(ApiError::BadRequest(
+            "Action is required for project review decisions".to_string(),
+        ));
     };
 
     match action.as_str() {

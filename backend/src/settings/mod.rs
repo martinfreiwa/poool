@@ -55,6 +55,6 @@ pub fn router() -> Router<AppState> {
         .route("/api/settings/password", post(change_password_handler))
         .route("/api/settings/phone", post(change_phone_handler))
         // GDPR Compliance (Phase 10.5)
-        .route("/api/settings/export-data", get(export_data_handler))
+        .route("/api/settings/export-data", post(export_data_handler))
         .route("/api/settings/delete-account", post(delete_account_handler))
 }

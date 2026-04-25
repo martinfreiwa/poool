@@ -12,6 +12,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
 };
+use chrono::Datelike;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -48,6 +49,17 @@ pub async fn get_settings(
                p.country,
                COALESCE(s.timezone, 'UTC') as timezone,
                r.name as role_name,
+               EXISTS (
+                   SELECT 1 FROM user_roles ur2
+                   JOIN roles r2 ON r2.id = ur2.role_id
+                   WHERE ur2.user_id = u.id AND r2.name = 'developer'
+               ) as is_developer,
+               EXISTS (
+                   SELECT 1 FROM user_roles ur3
+                   JOIN roles r3 ON r3.id = ur3.role_id
+                   WHERE ur3.user_id = u.id
+                     AND r3.name IN ('admin', 'super_admin', 'compliance', 'finance')
+               ) as is_admin,
                COALESCE(s.language, 'en') as language,
                COALESCE(s.currency, 'USD') as currency,
                u.avatar_url,
@@ -121,6 +133,8 @@ pub async fn get_settings(
         role: row
             .try_get("role_name")
             .unwrap_or_else(|_| "investor".to_string()),
+        is_developer: row.try_get("is_developer").unwrap_or(false),
+        is_admin: row.try_get("is_admin").unwrap_or(false),
         language: row.try_get("language").unwrap_or_else(|_| "en".to_string()),
         currency: row
             .try_get("currency")
@@ -296,34 +310,142 @@ fn sanitize_opt(opt: &Option<String>) -> Option<String> {
     opt.as_ref().map(|s| sanitize::sanitize_text(s))
 }
 
+fn sanitize_nullable_text(opt: &Option<String>) -> Option<String> {
+    opt.as_ref()
+        .map(|s| sanitize::sanitize_text(s))
+        .filter(|s| !s.is_empty())
+}
+
+fn validate_short_text(
+    field: &str,
+    value: &Option<String>,
+    max_len: usize,
+) -> Result<(), AppError> {
+    if let Some(value) = value {
+        if value.len() > max_len {
+            return Err(AppError::BadRequest(format!(
+                "{} must be {} characters or less.",
+                field, max_len
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn validate_required_short_text(
+    field: &str,
+    value: &Option<String>,
+    max_len: usize,
+) -> Result<(), AppError> {
+    if let Some(value) = value {
+        if value.trim().is_empty() {
+            return Err(AppError::BadRequest(format!("{} is required.", field)));
+        }
+    }
+    validate_short_text(field, value, max_len)
+}
+
+fn validate_iso_code(field: &str, value: &Option<String>) -> Result<(), AppError> {
+    if let Some(value) = value {
+        let trimmed = value.trim();
+        if !trimmed.is_empty()
+            && (!(2..=3).contains(&trimmed.len())
+                || !trimmed.chars().all(|c| c.is_ascii_uppercase()))
+        {
+            return Err(AppError::BadRequest(format!(
+                "{} must be a 2 or 3-letter uppercase ISO code.",
+                field
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn validate_date_of_birth(value: &Option<String>) -> Result<(), AppError> {
+    let Some(value) = value else {
+        return Ok(());
+    };
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Ok(());
+    }
+
+    let dob = chrono::NaiveDate::parse_from_str(trimmed, "%Y-%m-%d")
+        .map_err(|_| AppError::BadRequest("Date of birth must use YYYY-MM-DD.".to_string()))?;
+    let today = chrono::Utc::now().date_naive();
+    let min_date = chrono::NaiveDate::from_ymd_opt(1900, 1, 1).unwrap();
+    if dob < min_date || dob >= today {
+        return Err(AppError::BadRequest(
+            "Date of birth must be a valid past date.".to_string(),
+        ));
+    }
+    let latest_allowed = today
+        .with_year(today.year() - 18)
+        .unwrap_or_else(|| today - chrono::Duration::days(18 * 365));
+    if dob > latest_allowed {
+        return Err(AppError::BadRequest(
+            "You must be at least 18 years old.".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_timezone(value: &str) -> Result<(), AppError> {
+    let value = value.trim();
+    let allowed_prefixes = [
+        "Africa/",
+        "America/",
+        "Asia/",
+        "Atlantic/",
+        "Australia/",
+        "Europe/",
+        "Pacific/",
+    ];
+    let has_allowed_chars = value
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '/' | '_' | '-' | '+'));
+    if value == "UTC"
+        || (value.len() <= 64
+            && allowed_prefixes.iter().any(|p| value.starts_with(p))
+            && has_allowed_chars)
+    {
+        Ok(())
+    } else {
+        Err(AppError::BadRequest(
+            "Timezone must be a valid IANA timezone identifier.".to_string(),
+        ))
+    }
+}
+
+fn clean_external_url(opt: &Option<String>) -> Option<String> {
+    let url = opt.as_ref()?.trim();
+    if url.is_empty() {
+        return None;
+    }
+    match url::Url::parse(url) {
+        Ok(parsed) if matches!(parsed.scheme(), "http" | "https") => Some(url.to_string()),
+        _ => None,
+    }
+}
+
 /// Update user profile fields (name, phone, country, timezone).
 pub async fn update_profile(
     pool: &PgPool,
     user_id: Uuid,
     form: UpdateProfileForm,
 ) -> Result<(), AppError> {
-    // Validate name length
-    if let Some(ref name) = form.first_name {
-        if name.len() > 100 {
-            return Err(AppError::BadRequest(
-                "First name must be 100 characters or less.".to_string(),
-            ));
-        }
-    }
-    if let Some(ref name) = form.middle_name {
-        if name.len() > 100 {
-            return Err(AppError::BadRequest(
-                "Middle name must be 100 characters or less.".to_string(),
-            ));
-        }
-    }
-    if let Some(ref name) = form.last_name {
-        if name.len() > 100 {
-            return Err(AppError::BadRequest(
-                "Last name must be 100 characters or less.".to_string(),
-            ));
-        }
-    }
+    validate_required_short_text("First name", &form.first_name, 100)?;
+    validate_short_text("Middle name", &form.middle_name, 100)?;
+    validate_required_short_text("Last name", &form.last_name, 100)?;
+    validate_short_text("City", &form.city, 100)?;
+    validate_short_text("State / region", &form.state_province, 100)?;
+    validate_short_text("Postal code", &form.postal_code, 20)?;
+    validate_short_text("Tax ID", &form.tax_id, 50)?;
+    validate_short_text("Address line 1", &form.address_line_1, 255)?;
+    validate_short_text("Address line 2", &form.address_line_2, 255)?;
+    validate_date_of_birth(&form.date_of_birth)?;
+    validate_iso_code("Country", &form.country)?;
+    validate_iso_code("Nationality", &form.nationality)?;
     if let Some(ref gender) = form.gender {
         if !gender.is_empty() && !["male", "female", "other"].contains(&gender.as_str()) {
             return Err(AppError::BadRequest(
@@ -353,16 +475,8 @@ pub async fn update_profile(
         }
     }
 
-    // Validate country code (ISO 3166-1 alpha-2, 2 chars)
-    if let Some(ref country) = form.country {
-        let len = country.len();
-        if !country.is_empty()
-            && (!(2..=3).contains(&len) || !country.chars().all(|c| c.is_ascii_uppercase()))
-        {
-            return Err(AppError::BadRequest(
-                "Country must be a 2 or 3-letter ISO code (e.g. US, GB, IDN).".to_string(),
-            ));
-        }
+    if let Some(ref timezone) = form.timezone {
+        validate_timezone(timezone)?;
     }
 
     // Upsert user_profiles with all fields
@@ -375,68 +489,55 @@ pub async fn update_profile(
             $8::DATE, $9, $10, $11, $12,
             $13, $14, $15, $16)
         ON CONFLICT (user_id) DO UPDATE SET
-            first_name     = COALESCE(EXCLUDED.first_name, user_profiles.first_name),
-            middle_name    = COALESCE(EXCLUDED.middle_name, user_profiles.middle_name),
-            last_name      = COALESCE(EXCLUDED.last_name, user_profiles.last_name),
-            gender         = COALESCE(EXCLUDED.gender, user_profiles.gender),
-            phone_number   = COALESCE(EXCLUDED.phone_number, user_profiles.phone_number),
-            country        = COALESCE(EXCLUDED.country, user_profiles.country),
-            date_of_birth  = COALESCE(EXCLUDED.date_of_birth, user_profiles.date_of_birth),
-            nationality    = COALESCE(EXCLUDED.nationality, user_profiles.nationality),
-            address_line_1 = COALESCE(EXCLUDED.address_line_1, user_profiles.address_line_1),
-            address_line_2 = COALESCE(EXCLUDED.address_line_2, user_profiles.address_line_2),
-            city           = COALESCE(EXCLUDED.city, user_profiles.city),
-            state_province = COALESCE(EXCLUDED.state_province, user_profiles.state_province),
-            postal_code    = COALESCE(EXCLUDED.postal_code, user_profiles.postal_code),
-            tax_id         = COALESCE(EXCLUDED.tax_id, user_profiles.tax_id),
-            annual_income_cents = COALESCE(EXCLUDED.annual_income_cents, user_profiles.annual_income_cents),
+            first_name     = CASE WHEN $17 THEN EXCLUDED.first_name ELSE user_profiles.first_name END,
+            middle_name    = CASE WHEN $18 THEN EXCLUDED.middle_name ELSE user_profiles.middle_name END,
+            last_name      = CASE WHEN $19 THEN EXCLUDED.last_name ELSE user_profiles.last_name END,
+            gender         = CASE WHEN $20 THEN EXCLUDED.gender ELSE user_profiles.gender END,
+            phone_number   = CASE WHEN $21 THEN EXCLUDED.phone_number ELSE user_profiles.phone_number END,
+            country        = CASE WHEN $22 THEN EXCLUDED.country ELSE user_profiles.country END,
+            date_of_birth  = CASE WHEN $23 THEN EXCLUDED.date_of_birth ELSE user_profiles.date_of_birth END,
+            nationality    = CASE WHEN $24 THEN EXCLUDED.nationality ELSE user_profiles.nationality END,
+            address_line_1 = CASE WHEN $25 THEN EXCLUDED.address_line_1 ELSE user_profiles.address_line_1 END,
+            address_line_2 = CASE WHEN $26 THEN EXCLUDED.address_line_2 ELSE user_profiles.address_line_2 END,
+            city           = CASE WHEN $27 THEN EXCLUDED.city ELSE user_profiles.city END,
+            state_province = CASE WHEN $28 THEN EXCLUDED.state_province ELSE user_profiles.state_province END,
+            postal_code    = CASE WHEN $29 THEN EXCLUDED.postal_code ELSE user_profiles.postal_code END,
+            tax_id         = CASE WHEN $30 THEN EXCLUDED.tax_id ELSE user_profiles.tax_id END,
+            annual_income_cents = CASE WHEN $31 THEN EXCLUDED.annual_income_cents ELSE user_profiles.annual_income_cents END,
             updated_at     = NOW()
         "#,
     )
     .bind(user_id)
-    .bind(sanitize_opt(&form.first_name))
-    .bind(sanitize_opt(&form.middle_name))
-    .bind(sanitize_opt(&form.last_name))
-    .bind(sanitize_opt(&form.gender).filter(|s| !s.is_empty()))
-    .bind(&form.phone_number) // phone is already validated above
-    .bind(&form.country) // country is validated as ISO code above
-    .bind(form.date_of_birth.as_deref().filter(|s| !s.is_empty()))
-    .bind(
-        sanitize_opt(&form.nationality)
-            .as_deref()
-            .filter(|s| !s.is_empty()),
-    )
-    .bind(
-        sanitize_opt(&form.address_line_1)
-            .as_deref()
-            .filter(|s| !s.is_empty()),
-    )
-    .bind(
-        sanitize_opt(&form.address_line_2)
-            .as_deref()
-            .filter(|s| !s.is_empty()),
-    )
-    .bind(
-        sanitize_opt(&form.city)
-            .as_deref()
-            .filter(|s| !s.is_empty()),
-    )
-    .bind(
-        sanitize_opt(&form.state_province)
-            .as_deref()
-            .filter(|s| !s.is_empty()),
-    )
-    .bind(
-        sanitize_opt(&form.postal_code)
-            .as_deref()
-            .filter(|s| !s.is_empty()),
-    )
-    .bind(
-        sanitize_opt(&form.tax_id)
-            .as_deref()
-            .filter(|s| !s.is_empty()),
-    )
+    .bind(sanitize_nullable_text(&form.first_name))
+    .bind(sanitize_nullable_text(&form.middle_name))
+    .bind(sanitize_nullable_text(&form.last_name))
+    .bind(sanitize_nullable_text(&form.gender))
+    .bind(form.phone_number.as_ref().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()))
+    .bind(form.country.as_ref().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()))
+    .bind(form.date_of_birth.as_deref().map(str::trim).filter(|s| !s.is_empty()))
+    .bind(sanitize_nullable_text(&form.nationality))
+    .bind(sanitize_nullable_text(&form.address_line_1))
+    .bind(sanitize_nullable_text(&form.address_line_2))
+    .bind(sanitize_nullable_text(&form.city))
+    .bind(sanitize_nullable_text(&form.state_province))
+    .bind(sanitize_nullable_text(&form.postal_code))
+    .bind(sanitize_nullable_text(&form.tax_id))
     .bind(form.annual_income_cents)
+    .bind(form.first_name.is_some())
+    .bind(form.middle_name.is_some())
+    .bind(form.last_name.is_some())
+    .bind(form.gender.is_some())
+    .bind(form.phone_number.is_some())
+    .bind(form.country.is_some())
+    .bind(form.date_of_birth.is_some())
+    .bind(form.nationality.is_some())
+    .bind(form.address_line_1.is_some())
+    .bind(form.address_line_2.is_some())
+    .bind(form.city.is_some())
+    .bind(form.state_province.is_some())
+    .bind(form.postal_code.is_some())
+    .bind(form.tax_id.is_some())
+    .bind(form.annual_income_cents.is_some())
     .execute(pool)
     .await?;
 
@@ -545,12 +646,6 @@ pub async fn update_preferences(
 
 // ─── UPDATE: Social Links ──────────────────────────────────────
 
-fn clean_url(opt: &Option<String>) -> Option<String> {
-    opt.as_ref()
-        .and_then(|s| sanitize::sanitize_url(s))
-        .filter(|s| !s.is_empty())
-}
-
 pub async fn update_social_links(
     pool: &PgPool,
     user_id: Uuid,
@@ -574,12 +669,12 @@ pub async fn update_social_links(
         "#,
     )
     .bind(user_id)
-    .bind(clean_url(&form.twitter))
-    .bind(clean_url(&form.linkedin))
-    .bind(clean_url(&form.instagram))
-    .bind(clean_url(&form.telegram))
+    .bind(clean_external_url(&form.twitter))
+    .bind(clean_external_url(&form.linkedin))
+    .bind(clean_external_url(&form.instagram))
+    .bind(clean_external_url(&form.telegram))
     .bind(sanitize_opt(&form.discord).filter(|s| !s.is_empty()))
-    .bind(clean_url(&form.website))
+    .bind(clean_external_url(&form.website))
     .execute(pool)
     .await?;
 
@@ -667,11 +762,11 @@ pub async fn update_developer_links(
                linkedin_url = $5, youtube_url = $6, updated_at = NOW()"#,
     )
     .bind(user_id)
-    .bind(clean_url(&form.website))
-    .bind(clean_url(&form.github))
-    .bind(clean_url(&form.twitter))
-    .bind(clean_url(&form.linkedin))
-    .bind(clean_url(&form.youtube))
+    .bind(clean_external_url(&form.website))
+    .bind(clean_external_url(&form.github))
+    .bind(clean_external_url(&form.twitter))
+    .bind(clean_external_url(&form.linkedin))
+    .bind(clean_external_url(&form.youtube))
     .execute(pool)
     .await?;
 
@@ -816,6 +911,7 @@ pub async fn change_email(
 pub async fn change_password(
     pool: &PgPool,
     user_id: Uuid,
+    current_session_token: &str,
     current_password: &str,
     new_password: &str,
     confirm_password: &str,
@@ -846,16 +942,32 @@ pub async fn change_password(
 
     // Verify current password
     verify_password(current_password, &password_hash)?;
+    if verify_password(new_password, &password_hash).is_ok() {
+        return Err(AppError::BadRequest(
+            "New password must be different from your current password.".to_string(),
+        ));
+    }
 
     // Hash new password
     let new_hash = hash_password(new_password)?;
 
+    let mut tx = pool.begin().await?;
+
     // Update password
-    sqlx::query("UPDATE users SET password_hash = $1 WHERE id = $2")
+    sqlx::query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2")
         .bind(&new_hash)
         .bind(user_id)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
+
+    // Revoke all other active sessions after a credential change.
+    sqlx::query("DELETE FROM user_sessions WHERE user_id = $1 AND session_token != $2")
+        .bind(user_id)
+        .bind(current_session_token)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
 
     // Audit log
     crate::common::audit::log(
@@ -904,11 +1016,28 @@ pub async fn change_phone(pool: &PgPool, user_id: Uuid, new_phone: &str) -> Resu
         Some(trimmed.to_string())
     };
 
-    sqlx::query("UPDATE user_profiles SET phone_number = $1 WHERE user_id = $2")
-        .bind(&phone_value)
-        .bind(user_id)
-        .execute(pool)
-        .await?;
+    sqlx::query(
+        r#"INSERT INTO user_profiles (user_id, phone_number)
+           VALUES ($1, $2)
+           ON CONFLICT (user_id) DO UPDATE
+           SET phone_number = $2, updated_at = NOW()"#,
+    )
+    .bind(user_id)
+    .bind(&phone_value)
+    .execute(pool)
+    .await?;
+
+    crate::common::audit::log(
+        pool,
+        Some(user_id),
+        "phone_changed",
+        "user",
+        Some(user_id),
+        None,
+        None,
+    )
+    .await
+    .ok();
 
     Ok(())
 }
@@ -940,13 +1069,81 @@ fn verify_password(password: &str, hash: &str) -> Result<(), AppError> {
 // ─── 2FA Management ────────────────────────────────────────────
 
 /// Disable 2FA for a user.
-pub async fn disable_totp(pool: &PgPool, user_id: Uuid) -> Result<(), AppError> {
-    sqlx::query(
-        "UPDATE user_settings SET totp_enabled = FALSE, totp_secret = NULL WHERE user_id = $1",
+pub async fn disable_totp(
+    pool: &PgPool,
+    redis: Option<&deadpool_redis::Pool>,
+    user_id: Uuid,
+    current_session_token: &str,
+    current_password: &str,
+    code: &str,
+) -> Result<(), AppError> {
+    let row = sqlx::query(
+        r#"
+        SELECT u.password_hash, us.totp_secret, COALESCE(us.totp_enabled, FALSE) as totp_enabled
+        FROM users u
+        LEFT JOIN user_settings us ON us.user_id = u.id
+        WHERE u.id = $1 AND u.status = 'active'
+        "#,
     )
     .bind(user_id)
-    .execute(pool)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("User not found.".to_string()))?;
+
+    use sqlx::Row;
+    let password_hash: Option<String> = row.try_get("password_hash").unwrap_or(None);
+    let password_hash = password_hash.ok_or_else(|| {
+        AppError::BadRequest(
+            "Add a password before changing two-factor authentication.".to_string(),
+        )
+    })?;
+    verify_password(current_password, &password_hash)?;
+
+    let totp_enabled: bool = row.try_get("totp_enabled").unwrap_or(false);
+    if !totp_enabled {
+        return Ok(());
+    }
+
+    let secret: Option<String> = row.try_get("totp_secret").unwrap_or(None);
+    let secret = secret.ok_or_else(|| {
+        AppError::BadRequest("Two-factor authentication is not configured.".to_string())
+    })?;
+    if !crate::auth::service::verify_totp_code_with_replay_guard(redis, user_id, &secret, code)
+        .await
+    {
+        return Err(AppError::Unauthorized(
+            "Invalid authentication code.".to_string(),
+        ));
+    }
+
+    let mut tx = pool.begin().await?;
+    sqlx::query(
+        "UPDATE user_settings SET totp_enabled = FALSE, totp_secret = NULL, updated_at = NOW() WHERE user_id = $1",
+    )
+    .bind(user_id)
+    .execute(&mut *tx)
     .await?;
+
+    // Force other sessions to re-authenticate after a 2FA downgrade.
+    sqlx::query("DELETE FROM user_sessions WHERE user_id = $1 AND session_token != $2")
+        .bind(user_id)
+        .bind(current_session_token)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
+
+    crate::common::audit::log(
+        pool,
+        Some(user_id),
+        "totp_disabled",
+        "user",
+        Some(user_id),
+        None,
+        None,
+    )
+    .await
+    .ok();
 
     Ok(())
 }
@@ -1122,6 +1319,18 @@ pub async fn export_user_data(pool: &PgPool, user_id: Uuid) -> Result<serde_json
         })
         .collect();
 
+    crate::common::audit::log(
+        pool,
+        Some(user_id),
+        "data_export_requested",
+        "user",
+        Some(user_id),
+        None,
+        None,
+    )
+    .await
+    .ok();
+
     Ok(serde_json::json!({
         "export_date": chrono::Utc::now().to_rfc3339(),
         "user_id": user_id.to_string(),
@@ -1149,8 +1358,15 @@ pub async fn delete_account_selective(
     pool: &PgPool,
     user_id: Uuid,
     current_password: &str,
+    confirm_phrase: &str,
 ) -> Result<(), AppError> {
     use sqlx::Row;
+
+    if confirm_phrase != "DELETE" {
+        return Err(AppError::BadRequest(
+            "Type DELETE to confirm account deletion.".to_string(),
+        ));
+    }
 
     // 1. Verify the user exists and get their password hash
     let user_row =
@@ -1163,12 +1379,10 @@ pub async fn delete_account_selective(
     let password_hash: Option<String> = user_row.try_get("password_hash").unwrap_or(None);
     let _email: String = user_row.try_get("email").unwrap_or_default();
 
-    // For accounts with a password, verify it
-    if let Some(ref hash) = password_hash {
-        if !hash.is_empty() {
-            verify_password(current_password, hash)?;
-        }
-    }
+    let password_hash = password_hash.ok_or_else(|| {
+        AppError::BadRequest("Add a password before deleting your account.".to_string())
+    })?;
+    verify_password(current_password, &password_hash)?;
 
     // 5. Begin transaction for atomic check and deletion
     let mut tx = pool
@@ -1230,7 +1444,10 @@ pub async fn delete_account_selective(
     sqlx::query(
         r#"UPDATE user_profiles SET
             first_name = NULL,
+            middle_name = NULL,
             last_name = NULL,
+            gender = NULL,
+            display_name = NULL,
             phone_number = NULL,
             address_line_1 = NULL,
             address_line_2 = NULL,
@@ -1241,6 +1458,12 @@ pub async fn delete_account_selective(
             nationality = NULL,
             date_of_birth = NULL,
             annual_income_cents = NULL,
+            social_twitter_url = NULL,
+            social_linkedin_url = NULL,
+            social_instagram_url = NULL,
+            social_telegram_url = NULL,
+            social_discord = NULL,
+            social_website_url = NULL,
             updated_at = NOW()
            WHERE user_id = $1"#,
     )
@@ -1308,7 +1531,13 @@ pub async fn delete_account_selective(
         .execute(&mut *tx)
         .await?;
 
-    // 5m. Anonymize support tickets (keep for audit, clear PII)
+    // 5m. Delete developer profile branding and links if present.
+    sqlx::query("DELETE FROM developer_profiles WHERE user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    // 5n. Anonymize support tickets (keep for audit, clear PII)
     sqlx::query(
         r#"UPDATE support_tickets SET
             subject = 'Deleted user ticket',

@@ -7,6 +7,13 @@ BASE_URL = os.environ.get("BASE_URL", "http://localhost:8888")
 DB_URL = os.environ.get("DATABASE_URL", "postgres://martin@localhost/poool")
 
 
+def set_switch_off(page, selector):
+    switch = page.locator(selector)
+    expect(switch).to_be_visible(timeout=5000)
+    if switch.get_attribute("aria-checked") == "true":
+        switch.click()
+
+
 # Fixture to parameterize viewport sizes for Mobile and Desktop
 @pytest.fixture(
     params=[
@@ -42,8 +49,7 @@ class TestExpertAuthAndSettings:
         """Test enabling Leaderboard Anonymity and checking if it saves and reflects appropriately."""
         page, tracker, user = authenticated_user_page
 
-        # Go to settings page (settings-2.html served at /developer/settings)
-        page.goto(f"{BASE_URL}/developer/settings")
+        page.goto(f"{BASE_URL}/settings")
         page.wait_for_load_state("networkidle")
 
         # Wait for settings content to finish loading (JS removes 'hidden' class)
@@ -51,28 +57,26 @@ class TestExpertAuthAndSettings:
         expect(settings_content).to_be_visible(timeout=15000)
 
         # Click the Leaderboard tab (leaderboard privacy settings are in their own section)
-        tab_leaderboard = page.locator(
-            "a.settings-tab-link[href='#section-leaderboard']"
-        )
+        tab_leaderboard = page.locator("a.settings-nav__link[href='#sec-leaderboard']")
         expect(tab_leaderboard).to_be_visible(timeout=10000)
         tab_leaderboard.click()
         page.wait_for_timeout(500)
 
         # Verify the leaderboard section is visible
-        expect(page.locator("#section-leaderboard")).to_be_visible(timeout=5000)
+        expect(page.locator("#sec-leaderboard")).to_be_attached(timeout=5000)
 
         # Test the Leaderboard privacy controls
         checkbox_visible = page.locator("#settings-lb-visible")
         checkbox_avatar = page.locator("#settings-lb-avatar")
         input_display = page.locator("#settings-lb-display-name")
-        btn_save = page.locator("#save-leaderboard-btn")
+        btn_save = page.locator("#btn-save-leaderboard-privacy")
 
         # Wait for the leaderboard section to be ready
         expect(btn_save).to_be_visible(timeout=5000)
 
         # Perform modification
-        checkbox_visible.uncheck(force=True)
-        checkbox_avatar.uncheck(force=True)
+        set_switch_off(page, "#settings-lb-visible")
+        set_switch_off(page, "#settings-lb-avatar")
         input_display.fill("E2E_Whale")
 
         # Capture pre-save state
@@ -104,33 +108,33 @@ class TestExpertAuthAndSettings:
         """Expert check verifying modal dialog boundaries and correct change operations."""
         page, tracker, user = authenticated_user_page
 
-        page.goto(f"{BASE_URL}/developer/settings")
+        page.goto(f"{BASE_URL}/settings")
         page.wait_for_load_state("networkidle")
 
         # Wait for settings content to finish loading
         expect(page.locator("#settings-content")).to_be_visible(timeout=15000)
 
         # Click Security & Access tab
-        tab_security = page.locator("a.settings-tab-link[href='#section-security']")
+        tab_security = page.locator("a.settings-nav__link[href='#sec-security']")
         expect(tab_security).to_be_visible(timeout=10000)
         tab_security.click()
         page.wait_for_timeout(500)
 
-        # 1. Open Email Modal via the Change Email button
-        change_email_btn = page.locator("button", has_text="Change Email")
-        expect(change_email_btn).to_be_visible(timeout=5000)
-        change_email_btn.click()
+        # 1. Open password modal via the Change Password button
+        change_password_btn = page.locator("#btn-change-password")
+        expect(change_password_btn).to_be_visible(timeout=5000)
+        change_password_btn.click()
 
-        email_modal = page.locator("#modal-change-email")
-        expect(email_modal).to_be_visible(timeout=5000)
+        password_modal = page.locator("#modal-change-password")
+        expect(password_modal).to_be_visible(timeout=5000)
 
         # Visual sanity
         take_screenshot(page, "modal_change_email_open")
 
         # Close the modal via Cancel button
-        cancel_btn = email_modal.locator("button", has_text="Cancel")
+        cancel_btn = password_modal.locator("button", has_text="Cancel")
         cancel_btn.click()
-        expect(email_modal).not_to_be_visible(timeout=3000)
+        expect(password_modal).not_to_be_visible(timeout=3000)
 
 
 class TestExpertDataGridAndUI:

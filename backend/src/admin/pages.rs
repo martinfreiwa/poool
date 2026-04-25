@@ -67,9 +67,78 @@ pub async fn page_admin_blog_editor(
     }
 }
 
+/// GET /admin/affiliate-compliance  Legacy affiliate compliance route.
+///
+/// Affiliate compliance is user-facing through `/affiliate/onboarding` and
+/// `/affiliate/dashboard`; admins only review applications from the admin
+/// applications board.
+pub async fn page_admin_affiliate_compliance_redirect(_admin: AdminUser) -> impl IntoResponse {
+    Redirect::to("/admin/affiliate-applications").into_response()
+}
+
+/// GET /admin/audit-logs  Audit trail (protected, requires audit.read).
+pub async fn page_admin_audit_logs(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "audit.read").await {
+        render_admin_template(&state, "admin/audit-logs.html")
+    } else {
+        Redirect::to("/admin/").into_response()
+    }
+}
+
+/// GET /admin/community/announcements  Community announcements admin page.
+pub async fn page_admin_community_announcements(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage").await {
+        render_admin_template(&state, "admin/community/announcements.html")
+    } else {
+        Redirect::to("/admin/").into_response()
+    }
+}
+
+/// GET /admin/community/amas  Community AMA management.
+pub async fn page_admin_community_amas(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.view").await {
+        render_admin_template(&state, "admin/community/amas.html")
+    } else {
+        Redirect::to("/admin/").into_response()
+    }
+}
+
+/// GET /admin/community/circles  Community circle management.
+pub async fn page_admin_community_circles(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage").await {
+        render_admin_template(&state, "admin/community/circles.html")
+    } else {
+        Redirect::to("/admin/").into_response()
+    }
+}
+
+/// GET /admin/community/challenges  Community challenge management.
+pub async fn page_admin_community_challenges(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    if crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage").await {
+        render_admin_template(&state, "admin/community/challenges.html")
+    } else {
+        Redirect::to("/admin/").into_response()
+    }
+}
+
 /// GET /admin/{any}.html  Serve admin sub-pages (protected).
 pub async fn page_admin_generic(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     req: Request,
 ) -> impl IntoResponse {
@@ -90,6 +159,30 @@ pub async fn page_admin_generic(
         format!("{}.html", relative)
     };
 
+    if relative.starts_with("admin/community/")
+        && !crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.view")
+            .await
+        && !crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage")
+            .await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
+    if relative.starts_with("admin/marketplace/")
+        && !crate::auth::middleware::has_permission(&state.db, admin.user.id, "marketplace.view")
+            .await
+        && !crate::auth::middleware::has_permission(&state.db, admin.user.id, "marketplace.manage")
+            .await
+        && !crate::auth::middleware::has_permission(
+            &state.db,
+            admin.user.id,
+            "marketplace.compliance",
+        )
+        .await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
     render_admin_template(&state, &file)
 }
 
@@ -106,7 +199,11 @@ fn render_admin_template(state: &AppState, file: &str) -> axum::response::Respon
     }
     use axum::response::Html;
     match state.templates.get_template(file) {
-        Ok(template) => match template.render(minijinja::context! {}) {
+        Ok(template) => match template.render(minijinja::context! {
+            metabase_base_url => state.config.metabase_base_url,
+            metabase_public_dashboard_path => state.config.metabase_public_dashboard_path,
+            metabase_dashboard_id => state.config.metabase_dashboard_id,
+        }) {
             Ok(content) => Html(content).into_response(),
             Err(e) => {
                 tracing::error!("Template rendering error for admin {}: {}", file, e);

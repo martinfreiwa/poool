@@ -219,7 +219,7 @@ Cross-referenced against **61 admin HTML files** and **100+ admin API endpoints*
 | **A-4.05** | `/admin/asset-change-requests.html` | Edit Queue | 🖥️ | ⚪ Planned | Issuer change requests. |
 | **A-4.06** | `/admin/asset-change-review.html` | Change Review | 🖥️ | ⚪ Planned | Diff comparison. |
 | **A-4.07** | `/admin/dividends.html` | Dividend Payouts | 🖥️ | ⚪ Planned | Create/approve/execute distributions. |
-| **A-4.08** | `/admin/approvals.html` | Unified Approvals | 🖥️ | ⚪ Planned | Central approval queue. |
+| **A-4.08** | `/admin/approvals.html` | Unified Approvals | 🖥️ | 🔴 Gap Audited | 2026-04-25 report: `docs/automation-reports/2026-04-25-e2e-coverage-admin-approvals.md`. Broad page/API smoke exists, but missing maker/checker mutation, CSRF, authorization, four-eyes, DB state, audit-log, concurrency, error-state, and modal/mobile coverage. |
 
 ### 3.5 Marketplace Admin Hub
 | Flow ID | Target Route / HTML File | Feature Scope | Viewports | Status | Action Items |

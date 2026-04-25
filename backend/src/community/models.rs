@@ -84,6 +84,7 @@ pub struct AnnouncementDisplay {
     pub comment_count: i32,
     pub is_pinned: bool,
     pub created_at: DateTime<Utc>,
+    pub created_at_display: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -120,6 +121,7 @@ pub struct PostDisplay {
     pub disclaimer_shown: bool,
     pub verified_owner: bool,
     pub created_at: DateTime<Utc>,
+    pub created_at_display: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]

@@ -14,6 +14,190 @@ use axum_extra::extract::cookie::CookieJar;
 
 // ─── Page Handlers ──────────────────────────────────────────
 
+const MIN_TOKEN_PRICE_CENTS: i64 = 50_000;
+const MAX_TOKENS_TOTAL: i64 = i32::MAX as i64;
+
+fn normalize_asset_type(value: &str) -> Result<String, AppError> {
+    let normalized = value.trim().replace('-', "_").to_lowercase();
+    match normalized.as_str() {
+        "real_estate"
+        | "commercial_property"
+        | "commodity"
+        | "business"
+        | "startup"
+        | "land_plot" => Ok(normalized),
+        _ => Err(AppError::BadRequest(
+            "Unsupported asset type for developer submission.".to_string(),
+        )),
+    }
+}
+
+fn validate_text_len(label: &str, value: &Option<String>, max_len: usize) -> Result<(), AppError> {
+    if let Some(value) = value {
+        if value.trim().len() > max_len {
+            return Err(AppError::BadRequest(format!(
+                "{label} must be {max_len} characters or fewer."
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn validate_optional_i32_range(
+    label: &str,
+    value: Option<i32>,
+    min: i32,
+    max: i32,
+) -> Result<(), AppError> {
+    if let Some(value) = value {
+        if value < min || value > max {
+            return Err(AppError::BadRequest(format!(
+                "{label} must be between {min} and {max}."
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn validate_optional_f64_range(
+    label: &str,
+    value: Option<f64>,
+    min_exclusive: f64,
+    max: f64,
+) -> Result<(), AppError> {
+    if let Some(value) = value {
+        if !value.is_finite() || value <= min_exclusive || value > max {
+            return Err(AppError::BadRequest(format!(
+                "{label} must be greater than 0 and no more than {max}."
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn validate_optional_bps_range(label: &str, value: Option<i32>) -> Result<(), AppError> {
+    if let Some(value) = value {
+        if !(0..=10_000).contains(&value) {
+            return Err(AppError::BadRequest(format!(
+                "{label} must be between 0% and 100%."
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn derive_tokens_total(total_value_cents: i64, token_price_cents: i64) -> Result<i64, AppError> {
+    if total_value_cents < 0 {
+        return Err(AppError::BadRequest(
+            "Purchase price cannot be negative.".to_string(),
+        ));
+    }
+    if token_price_cents < MIN_TOKEN_PRICE_CENTS {
+        return Err(AppError::BadRequest(
+            "Minimum share price is $500.".to_string(),
+        ));
+    }
+
+    let tokens_total = if total_value_cents == 0 {
+        1
+    } else {
+        total_value_cents
+            .checked_add(token_price_cents - 1)
+            .and_then(|value| value.checked_div(token_price_cents))
+            .ok_or_else(|| AppError::BadRequest("Invalid asset pricing.".to_string()))?
+    };
+
+    if tokens_total <= 0 || tokens_total > MAX_TOKENS_TOTAL {
+        return Err(AppError::BadRequest(
+            "Token count is outside the supported range.".to_string(),
+        ));
+    }
+
+    Ok(tokens_total)
+}
+
+fn validate_draft_shape(
+    title: &str,
+    asset_type: &str,
+    total_value_cents: i64,
+    token_price_cents: i64,
+    lease_term_years: Option<i32>,
+    land_size_sqm: Option<f64>,
+    building_size_sqm: Option<f64>,
+    bedrooms: Option<i32>,
+    bathrooms: Option<i32>,
+    year_built: Option<i32>,
+) -> Result<i64, AppError> {
+    if title.trim().len() > 160 {
+        return Err(AppError::BadRequest(
+            "Property name must be 160 characters or fewer.".to_string(),
+        ));
+    }
+    normalize_asset_type(asset_type)?;
+    validate_optional_i32_range("Lease term", lease_term_years, 1, 150)?;
+    validate_optional_f64_range("Land size", land_size_sqm, 0.0, 1_000_000.0)?;
+    validate_optional_f64_range("Building size", building_size_sqm, 0.0, 1_000_000.0)?;
+    validate_optional_i32_range("Bedrooms", bedrooms, 0, 200)?;
+    validate_optional_i32_range("Bathrooms", bathrooms, 0, 200)?;
+    validate_optional_i32_range("Year built", year_built, 1800, 2100)?;
+    derive_tokens_total(total_value_cents, token_price_cents)
+}
+
+#[cfg(test)]
+mod draft_validation_tests {
+    use super::*;
+
+    #[test]
+    fn derives_one_token_for_empty_save_and_exit_draft() {
+        assert_eq!(derive_tokens_total(0, MIN_TOKEN_PRICE_CENTS).unwrap(), 1);
+    }
+
+    #[test]
+    fn derives_ceiling_token_count_without_client_trust() {
+        assert_eq!(derive_tokens_total(100_001, 50_000).unwrap(), 3);
+    }
+
+    #[test]
+    fn rejects_negative_purchase_price() {
+        assert!(derive_tokens_total(-1, MIN_TOKEN_PRICE_CENTS).is_err());
+    }
+
+    #[test]
+    fn rejects_share_price_below_platform_minimum() {
+        assert!(derive_tokens_total(100_000, MIN_TOKEN_PRICE_CENTS - 1).is_err());
+    }
+
+    #[test]
+    fn rejects_unsupported_asset_type() {
+        assert!(normalize_asset_type("crypto-option").is_err());
+    }
+
+    #[test]
+    fn accepts_known_asset_type_aliases() {
+        assert_eq!(
+            normalize_asset_type("commercial-property").unwrap(),
+            "commercial_property"
+        );
+    }
+
+    #[test]
+    fn rejects_out_of_range_property_numbers() {
+        assert!(validate_draft_shape(
+            "Villa",
+            "real_estate",
+            100_000,
+            MIN_TOKEN_PRICE_CENTS,
+            Some(0),
+            Some(100.0),
+            Some(100.0),
+            Some(2),
+            Some(2),
+            Some(2020),
+        )
+        .is_err());
+    }
+}
+
 async fn user_has_developer_access(state: &AppState, user_id: uuid::Uuid) -> bool {
     sqlx::query_scalar!(
         "SELECT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.name IN ('developer', 'admin', 'super_admin') AND COALESCE(ur.is_active, TRUE) = TRUE)",
@@ -369,6 +553,29 @@ pub async fn api_developer_create_draft(
     if let Some(ref v) = payload.construction_status {
         payload.construction_status = Some(sanitize_text(v));
     }
+    if payload.title.trim().is_empty() {
+        payload.title = "Untitled Draft".to_string();
+    }
+    payload.asset_type = normalize_asset_type(&payload.asset_type)?;
+    validate_text_len("Property type", &payload.property_type, 80)?;
+    validate_text_len("Area", &payload.area, 120)?;
+    validate_text_len("Address", &payload.address, 240)?;
+    validate_text_len("City", &payload.city, 120)?;
+    validate_text_len("Country", &payload.country, 120)?;
+    validate_text_len("Lease type", &payload.lease_type, 80)?;
+    validate_text_len("Construction status", &payload.construction_status, 80)?;
+    payload.tokens_total = validate_draft_shape(
+        &payload.title,
+        &payload.asset_type,
+        payload.total_value_cents,
+        payload.token_price_cents,
+        payload.lease_term_years,
+        payload.land_size_sqm,
+        payload.building_size_sqm,
+        payload.bedrooms,
+        payload.bathrooms,
+        payload.year_built,
+    )?;
 
     // Use full UUID to avoid slug collisions (B8 fix)
     let slug_base = payload
@@ -411,8 +618,12 @@ pub async fn api_developer_create_draft(
     .bind(&payload.asset_type)
     .bind(payload.total_value_cents)
     .bind(payload.token_price_cents)
-    .bind(payload.tokens_total as i32)
-    .bind(payload.tokens_total as i32)
+    .bind(i32::try_from(payload.tokens_total).map_err(|_| {
+        AppError::BadRequest("Token count is outside the supported range.".to_string())
+    })?)
+    .bind(i32::try_from(payload.tokens_total).map_err(|_| {
+        AppError::BadRequest("Token count is outside the supported range.".to_string())
+    })?)
     .bind(&payload.property_type)
     .bind(&payload.area)
     .bind(&payload.address)
@@ -667,7 +878,11 @@ pub async fn api_developer_update_draft(
     .bind(id)
     .fetch_optional(&state.db)
     .await
-    .unwrap_or(None);
+    .map_err(|err| {
+        tracing::error!("Failed to verify developer draft ownership: {err}");
+        AppError::Internal("Database error".to_string())
+    })?
+    .flatten();
 
     if owner_id != Some(user.id) {
         return Err(AppError::Forbidden(
@@ -733,6 +948,55 @@ pub async fn api_developer_update_draft(
     }
     if let Some(ref v) = payload.construction_status {
         payload.construction_status = Some(sanitize_text(v));
+    }
+    if payload.title.as_ref().is_some_and(|v| v.trim().is_empty()) {
+        return Err(AppError::BadRequest(
+            "Property name cannot be empty.".to_string(),
+        ));
+    }
+    validate_text_len("Property name", &payload.title, 160)?;
+    validate_text_len("Short description", &payload.short_description, 240)?;
+    validate_text_len("Full description", &payload.description, 8_000)?;
+    validate_text_len("Location description", &payload.location_description, 2_000)?;
+    validate_text_len("Property type", &payload.property_type, 80)?;
+    validate_text_len("Area", &payload.area, 120)?;
+    validate_text_len("Address", &payload.address, 240)?;
+    validate_text_len("City", &payload.city, 120)?;
+    validate_text_len("Country", &payload.country, 120)?;
+    validate_text_len("Lease type", &payload.lease_type, 80)?;
+    validate_text_len("Construction status", &payload.construction_status, 80)?;
+    validate_optional_i32_range("Lease term", payload.lease_term_years, 1, 150)?;
+    validate_optional_f64_range("Land size", payload.land_size_sqm, 0.0, 1_000_000.0)?;
+    validate_optional_f64_range("Building size", payload.building_size_sqm, 0.0, 1_000_000.0)?;
+    validate_optional_i32_range("Bedrooms", payload.bedrooms, 0, 200)?;
+    validate_optional_i32_range("Bathrooms", payload.bathrooms, 0, 200)?;
+    validate_optional_i32_range("Year built", payload.year_built, 1800, 2100)?;
+    validate_optional_bps_range("Rental yield", payload.annual_yield_bps)?;
+    validate_optional_bps_range("Capital appreciation", payload.capital_appreciation_bps)?;
+    validate_optional_bps_range("Investor share", payload.investor_share_bps)?;
+    validate_optional_bps_range("Occupancy rate", payload.occupancy_rate_bps)?;
+
+    let financial_fields_touched =
+        payload.total_value_cents.is_some() || payload.token_price_cents.is_some();
+    if payload.tokens_total.is_some() && !financial_fields_touched {
+        return Err(AppError::BadRequest(
+            "Token count is derived from purchase price and share price.".to_string(),
+        ));
+    }
+    if financial_fields_touched {
+        let current_financials: (i64, i64) = sqlx::query_as(
+            "SELECT COALESCE(total_value_cents, 0), COALESCE(token_price_cents, $2) FROM assets WHERE id = $1 AND deleted_at IS NULL",
+        )
+        .bind(id)
+        .bind(MIN_TOKEN_PRICE_CENTS)
+        .fetch_one(&state.db)
+        .await?;
+        let total_value_cents = payload.total_value_cents.unwrap_or(current_financials.0);
+        let token_price_cents = payload.token_price_cents.unwrap_or(current_financials.1);
+        let tokens_total = derive_tokens_total(total_value_cents, token_price_cents)?;
+        payload.tokens_total = Some(i32::try_from(tokens_total).map_err(|_| {
+            AppError::BadRequest("Token count is outside the supported range.".to_string())
+        })?);
     }
 
     // Build dynamic UPDATE query for only provided fields
@@ -1007,7 +1271,7 @@ pub async fn api_developer_list_drafts(
         Err(e) => return e.into_response(),
     };
 
-    let rows = sqlx::query(
+    let rows = match sqlx::query(
         r#"
         SELECT a.id, a.title, COALESCE(a.asset_type, 'real_estate') as asset_type,
                COALESCE(a.submission_step, 1) as submission_step,
@@ -1026,7 +1290,13 @@ pub async fn api_developer_list_drafts(
     .bind(user.id)
     .fetch_all(&state.db)
     .await
-    .unwrap_or_default();
+    {
+        Ok(rows) => rows,
+        Err(err) => {
+            tracing::error!("Failed to list developer drafts: {err}");
+            return AppError::Internal("Failed to load submissions".to_string()).into_response();
+        }
+    };
 
     use sqlx::Row;
     let items: Vec<serde_json::Value> = rows
@@ -1261,43 +1531,51 @@ pub async fn api_developer_delete_draft(
     };
 
     // Verify ownership
-    let owner_id: Option<uuid::Uuid> =
-        sqlx::query_scalar("SELECT developer_user_id FROM assets WHERE id = $1")
-            .bind(id)
-            .fetch_optional(&state.db)
-            .await
-            .unwrap_or(None);
-
-    if owner_id != Some(user.id) {
-        return Err(AppError::Forbidden("Not authorized".to_string()));
-    }
-
-    // Block deletion of approved/live assets
-    let project_status: Option<String> = sqlx::query_scalar(
-        "SELECT dp.status FROM developer_projects dp WHERE dp.asset_id = $1 LIMIT 1",
+    let owner_id: Option<uuid::Uuid> = sqlx::query_scalar(
+        "SELECT developer_user_id FROM assets WHERE id = $1 AND deleted_at IS NULL",
     )
     .bind(id)
     .fetch_optional(&state.db)
     .await
     .unwrap_or(None);
 
-    if let Some(ref status) = project_status {
-        if status == "approved" || status == "live" {
-            return Err(AppError::BadRequest(
-                "Cannot delete an approved or live asset. Please contact support.".to_string(),
-            ));
-        }
+    if owner_id != Some(user.id) {
+        return Err(AppError::Forbidden("Not authorized".to_string()));
+    }
+
+    // Only draft assets can be self-deleted. Submitted/reviewed/live assets are
+    // part of the admin review or marketplace record and need support handling.
+    let project_status: Option<String> = sqlx::query_scalar(
+        "SELECT dp.status FROM developer_projects dp WHERE dp.asset_id = $1 LIMIT 1",
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|err| {
+        tracing::error!("Failed to load developer project status for delete: {err}");
+        AppError::Internal("Database error".to_string())
+    })?
+    .flatten();
+
+    let project_status = project_status.unwrap_or_else(|| "draft".to_string());
+    if project_status != "draft" {
+        return Err(AppError::BadRequest(
+            "Only draft assets can be deleted. Please contact support for submitted assets."
+                .to_string(),
+        ));
     }
 
     // Block deletion of assets with existing investments
-    let has_investors: bool = sqlx::query_scalar(
+    let has_investors: bool = sqlx::query_scalar::<_, bool>(
         "SELECT EXISTS(SELECT 1 FROM investments WHERE asset_id = $1 AND status != 'exited')",
     )
     .bind(id)
     .fetch_one(&state.db)
     .await
-    .unwrap_or(Some(false))
-    .unwrap_or(false);
+    .map_err(|err| {
+        tracing::error!("Failed to check active investors before draft delete: {err}");
+        AppError::Internal("Database error".to_string())
+    })?;
 
     if has_investors {
         return Err(AppError::BadRequest(

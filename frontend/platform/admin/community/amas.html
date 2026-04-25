@@ -14,6 +14,7 @@
   <script src="/static/js/user-data.js"></script>
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
+  <script src="/static/js/csrf.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
 </head>
@@ -42,7 +43,7 @@
             <p class="admin-page-subtitle">Create, manage, and moderate Ask Me Anything sessions.</p>
           </div>
           <div>
-            <button class="admin-btn admin-btn--primary" onclick="openCreateAmaModal()">
+            <button class="admin-btn admin-btn--primary" id="open-ama-modal-btn" type="button">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               New AMA
             </button>
@@ -78,7 +79,7 @@
         <div id="ama-detail-panel" class="admin-card" style="display: none; margin-top: 24px;">
           <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h3 class="admin-card-title" id="detail-title">Questions</h3>
-            <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="closeDetailPanel()">✕ Close</button>
+            <button class="admin-btn admin-btn--ghost admin-btn--sm" id="close-detail-panel-btn" type="button">✕ Close</button>
           </div>
           <div class="admin-card-body admin-card-body--flush" id="ama-questions-table">
             <!-- Rendered dynamically -->
@@ -89,11 +90,11 @@
   </div>
 
   <!-- Create AMA Modal -->
-  <div id="ama-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center;">
+  <div id="ama-modal" role="dialog" aria-modal="true" aria-labelledby="ama-modal-title" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:16px;padding:32px;max-width:560px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-        <h3 style="font-size:20px;font-weight:700;color:#181D27;margin:0;">Create AMA</h3>
-        <button onclick="closeAmaModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#667085;">✕</button>
+        <h3 id="ama-modal-title" style="font-size:20px;font-weight:700;color:#181D27;margin:0;">Create AMA</h3>
+        <button id="close-ama-modal-btn" type="button" aria-label="Close create AMA modal" style="background:none;border:none;font-size:20px;cursor:pointer;color:#667085;">✕</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px;">
         <div>
@@ -129,104 +130,248 @@
           </div>
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
-          <button class="admin-btn admin-btn--secondary" onclick="closeAmaModal()" style="flex:1;">Cancel</button>
-          <button class="admin-btn admin-btn--primary" onclick="createAma()" style="flex:1;">Create AMA</button>
+          <button class="admin-btn admin-btn--secondary" id="cancel-ama-modal-btn" type="button" style="flex:1;">Cancel</button>
+          <button class="admin-btn admin-btn--primary" id="create-ama-btn" type="button" style="flex:1;">Create AMA</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Answer Question Modal -->
-  <div id="answer-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center;">
+  <div id="answer-modal" role="dialog" aria-modal="true" aria-labelledby="answer-modal-title" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:16px;padding:32px;max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <h3 style="font-size:18px;font-weight:700;color:#181D27;margin:0;">Answer Question</h3>
-        <button onclick="closeAnswerModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#667085;">✕</button>
+        <h3 id="answer-modal-title" style="font-size:18px;font-weight:700;color:#181D27;margin:0;">Answer Question</h3>
+        <button id="close-answer-modal-btn" type="button" aria-label="Close answer question modal" style="background:none;border:none;font-size:20px;cursor:pointer;color:#667085;">✕</button>
       </div>
       <div id="answer-question-text" style="font-size:14px;color:#344054;background:#F9FAFB;padding:12px 16px;border-radius:8px;margin-bottom:16px;line-height:1.5;"></div>
       <textarea id="answer-text" class="admin-input" placeholder="Type your expert answer..." rows="4" style="width:100%;resize:none;"></textarea>
       <div style="display:flex;gap:12px;margin-top:12px;">
-        <button class="admin-btn admin-btn--secondary" onclick="closeAnswerModal()" style="flex:1;">Cancel</button>
-        <button class="admin-btn admin-btn--primary" onclick="submitAnswer()" style="flex:1;">Submit Answer</button>
+        <button class="admin-btn admin-btn--secondary" id="cancel-answer-modal-btn" type="button" style="flex:1;">Cancel</button>
+        <button class="admin-btn admin-btn--primary" id="submit-answer-btn" type="button" style="flex:1;">Submit Answer</button>
       </div>
     </div>
   </div>
 
   <script>
     let _selectedAmaId = null;
+    let _selectedAmaTitle = '';
     let _answerQuestionId = null;
-
-    document.addEventListener('DOMContentLoaded', () => { loadAmas(); });
+    let _lastFocusedElement = null;
+    let _activeModal = null;
 
     const STATUS_STYLES = {
-      'draft':               { bg: '#F9FAFB', color: '#667085', text: 'Draft' },
-      'scheduled':           { bg: '#EFF8FF', color: '#175CD3', text: 'Scheduled' },
-      'accepting_questions': { bg: '#ECFDF3', color: '#027A48', text: 'Accepting Questions' },
-      'live':                { bg: '#FEF3F2', color: '#B42318', text: '🔴 LIVE' },
-      'closed':              { bg: '#FFFAEB', color: '#B54708', text: 'Closed' },
-      'archived':            { bg: '#F9FAFB', color: '#98A2B3', text: 'Archived' },
+      draft: { bg: '#F9FAFB', color: '#667085', text: 'Draft' },
+      scheduled: { bg: '#EFF8FF', color: '#175CD3', text: 'Scheduled' },
+      accepting_questions: { bg: '#ECFDF3', color: '#027A48', text: 'Accepting Questions' },
+      live: { bg: '#FEF3F2', color: '#B42318', text: 'LIVE' },
+      closed: { bg: '#FFFAEB', color: '#B54708', text: 'Closed' },
+      archived: { bg: '#F9FAFB', color: '#98A2B3', text: 'Archived' },
     };
 
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('open-ama-modal-btn')?.addEventListener('click', openCreateAmaModal);
+      document.getElementById('close-ama-modal-btn')?.addEventListener('click', closeAmaModal);
+      document.getElementById('cancel-ama-modal-btn')?.addEventListener('click', closeAmaModal);
+      document.getElementById('create-ama-btn')?.addEventListener('click', createAma);
+      document.getElementById('close-detail-panel-btn')?.addEventListener('click', closeDetailPanel);
+      document.getElementById('close-answer-modal-btn')?.addEventListener('click', closeAnswerModal);
+      document.getElementById('cancel-answer-modal-btn')?.addEventListener('click', closeAnswerModal);
+      document.getElementById('submit-answer-btn')?.addEventListener('click', submitAnswer);
+
+      document.getElementById('amas-table')?.addEventListener('click', (event) => {
+        const questionsBtn = event.target.closest('[data-action="view-questions"]');
+        if (questionsBtn) {
+          viewQuestions(questionsBtn.dataset.amaId, questionsBtn.dataset.amaTitle || '');
+        }
+      });
+
+      document.getElementById('amas-table')?.addEventListener('change', (event) => {
+        const statusSelect = event.target.closest('[data-action="change-status"]');
+        if (statusSelect) {
+          changeStatus(statusSelect.dataset.amaId, statusSelect.value);
+        }
+      });
+
+      document.getElementById('ama-questions-table')?.addEventListener('click', (event) => {
+        const answerBtn = event.target.closest('[data-action="answer-question"]');
+        if (answerBtn) {
+          openAnswerModal(answerBtn.dataset.questionId, answerBtn.dataset.questionText || '');
+          return;
+        }
+        const featureBtn = event.target.closest('[data-action="toggle-featured"]');
+        if (featureBtn) {
+          toggleFeatured(featureBtn.dataset.questionId);
+        }
+      });
+
+      document.addEventListener('keydown', handleModalKeydown);
+      loadAmas();
+    });
+
+    async function apiFetch(url, options = {}) {
+      const headers = new Headers(options.headers || {});
+      if (options.body && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+      }
+      const method = (options.method || 'GET').toUpperCase();
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        const token = typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : getCookie('csrf_token');
+        if (token) headers.set('X-CSRF-Token', token);
+      }
+
+      const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+      if (res.ok) return res;
+
+      let message = 'Request failed';
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json().catch(() => ({}));
+        message = data.error || data.message || message;
+      } else {
+        message = (await res.text().catch(() => '')).trim() || message;
+      }
+      throw new Error(message);
+    }
+
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return '';
+    }
+
     async function loadAmas() {
+      const tbody = document.getElementById('amas-table');
       try {
-        const res = await fetch('/api/admin/community/amas');
-        if (!res.ok) throw new Error('Failed');
+        const res = await apiFetch('/api/admin/community/amas');
         const data = await res.json();
         renderAmas(data.amas || []);
       } catch (e) {
-        document.getElementById('amas-table').innerHTML =
-          '<tr><td colspan="6" style="text-align:center;padding:40px;color:#D92D20;">Failed to load</td></tr>';
+        tbody.replaceChildren(createTableMessageRow('Failed to load AMAs. Refresh and try again.', true));
       }
     }
 
     function renderAmas(amas) {
       const tbody = document.getElementById('amas-table');
+      tbody.replaceChildren();
       if (amas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No AMAs yet. Create the first one!</td></tr>';
+        tbody.appendChild(createTableMessageRow('No AMAs yet. Create the first one!', false));
         return;
       }
 
-      let html = '';
-      for (const a of amas) {
-        const s = STATUS_STYLES[a.status] || STATUS_STYLES['draft'];
-        const date = a.scheduled_at ? new Date(a.scheduled_at).toLocaleString() : '—';
-
-        html += `<tr>
-          <td>
-            <div style="font-weight:500;color:#181D27;">${escHtml(a.title)}</div>
-            <div style="font-size:11px;color:#98A2B3;font-family:monospace;">${a.id.substring(0,8)}...</div>
-          </td>
-          <td>
-            <div style="font-weight:500;">${escHtml(a.expert_name)}</div>
-            <div style="font-size:11px;color:#667085;">${escHtml(a.expert_title || '')}</div>
-          </td>
-          <td><span class="admin-badge" style="background:${s.bg};color:${s.color};">${s.text}</span></td>
-          <td style="font-size:13px;color:#667085;">${date}</td>
-          <td style="font-weight:500;">—</td>
-          <td style="text-align:right;">
-            <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">
-              <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="viewQuestions('${a.id}', '${escHtml(a.title)}')">Questions</button>
-              <select class="admin-input" style="padding:4px 8px;font-size:11px;min-width:100px;" onchange="changeStatus('${a.id}', this.value)">
-                <option value="" disabled selected>Status...</option>
-                <option value="draft">Draft</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="accepting_questions">Accepting Q</option>
-                <option value="live">Go Live</option>
-                <option value="closed">Close</option>
-                <option value="archived">Archive</option>
-              </select>
-            </div>
-          </td>
-        </tr>`;
+      for (const ama of amas) {
+        tbody.appendChild(createAmaRow(ama));
       }
-      tbody.innerHTML = html;
+    }
+
+    function createAmaRow(ama) {
+      const row = document.createElement('tr');
+      const status = STATUS_STYLES[ama.status] || STATUS_STYLES.draft;
+
+      const titleCell = document.createElement('td');
+      const title = document.createElement('div');
+      title.style.fontWeight = '500';
+      title.style.color = '#181D27';
+      title.textContent = ama.title || 'Untitled AMA';
+      const id = document.createElement('div');
+      id.style.fontSize = '11px';
+      id.style.color = '#98A2B3';
+      id.style.fontFamily = 'monospace';
+      id.textContent = `${String(ama.id || '').substring(0, 8)}...`;
+      titleCell.append(title, id);
+
+      const expertCell = document.createElement('td');
+      const expertName = document.createElement('div');
+      expertName.style.fontWeight = '500';
+      expertName.textContent = ama.expert_name || 'Unknown expert';
+      const expertTitle = document.createElement('div');
+      expertTitle.style.fontSize = '11px';
+      expertTitle.style.color = '#667085';
+      expertTitle.textContent = ama.expert_title || '';
+      expertCell.append(expertName, expertTitle);
+
+      const statusCell = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className = 'admin-badge';
+      badge.style.background = status.bg;
+      badge.style.color = status.color;
+      badge.textContent = status.text;
+      statusCell.appendChild(badge);
+
+      const dateCell = document.createElement('td');
+      dateCell.style.fontSize = '13px';
+      dateCell.style.color = '#667085';
+      dateCell.textContent = ama.scheduled_at ? new Date(ama.scheduled_at).toLocaleString() : '-';
+
+      const questionCell = document.createElement('td');
+      questionCell.style.fontWeight = '500';
+      questionCell.textContent = typeof ama.question_count === 'number' ? String(ama.question_count) : '-';
+
+      const actionCell = document.createElement('td');
+      actionCell.style.textAlign = 'right';
+      const actions = document.createElement('div');
+      actions.style.display = 'flex';
+      actions.style.gap = '4px';
+      actions.style.justifyContent = 'flex-end';
+      actions.style.flexWrap = 'wrap';
+
+      const questionsBtn = document.createElement('button');
+      questionsBtn.type = 'button';
+      questionsBtn.className = 'admin-btn admin-btn--ghost admin-btn--sm';
+      questionsBtn.dataset.action = 'view-questions';
+      questionsBtn.dataset.amaId = ama.id;
+      questionsBtn.dataset.amaTitle = ama.title || '';
+      questionsBtn.textContent = 'Questions';
+
+      const statusSelect = document.createElement('select');
+      statusSelect.className = 'admin-input';
+      statusSelect.style.padding = '4px 8px';
+      statusSelect.style.fontSize = '11px';
+      statusSelect.style.minWidth = '100px';
+      statusSelect.dataset.action = 'change-status';
+      statusSelect.dataset.amaId = ama.id;
+      appendOption(statusSelect, '', 'Status...', true, true);
+      appendOption(statusSelect, 'draft', 'Draft');
+      appendOption(statusSelect, 'scheduled', 'Scheduled');
+      appendOption(statusSelect, 'accepting_questions', 'Accepting Q');
+      appendOption(statusSelect, 'live', 'Go Live');
+      appendOption(statusSelect, 'closed', 'Close');
+      appendOption(statusSelect, 'archived', 'Archive');
+
+      actions.append(questionsBtn, statusSelect);
+      actionCell.appendChild(actions);
+      row.append(titleCell, expertCell, statusCell, dateCell, questionCell, actionCell);
+      return row;
+    }
+
+    function appendOption(select, value, label, disabled = false, selected = false) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      option.disabled = disabled;
+      option.selected = selected;
+      select.appendChild(option);
+    }
+
+    function createTableMessageRow(message, isError) {
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 6;
+      cell.style.textAlign = 'center';
+      cell.style.padding = '40px';
+      cell.style.color = isError ? '#D92D20' : 'var(--admin-text-muted)';
+      cell.textContent = message;
+      row.appendChild(cell);
+      return row;
     }
 
     function openCreateAmaModal() {
-      document.getElementById('ama-modal').style.display = 'flex';
+      openModal(document.getElementById('ama-modal'), document.getElementById('ama-title'));
     }
+
     function closeAmaModal() {
-      document.getElementById('ama-modal').style.display = 'none';
+      closeModal(document.getElementById('ama-modal'));
     }
 
     async function createAma() {
@@ -236,11 +381,12 @@
 
       const dt = document.getElementById('ama-scheduled').value;
       const scheduled = dt ? new Date(dt).toISOString() : null;
+      const submitBtn = document.getElementById('create-ama-btn');
 
       try {
-        const res = await fetch('/api/admin/community/amas', {
+        setButtonLoading(submitBtn, true, 'Creating...');
+        await apiFetch('/api/admin/community/amas', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title,
             description: document.getElementById('ama-description').value || null,
@@ -250,125 +396,271 @@
             status: document.getElementById('ama-status').value,
           })
         });
-        if (!res.ok) throw new Error(await res.text());
         closeAmaModal();
+        resetCreateAmaForm();
         loadAmas();
       } catch (e) {
         alert('Error: ' + e.message);
+      } finally {
+        setButtonLoading(submitBtn, false);
       }
+    }
+
+    function resetCreateAmaForm() {
+      document.getElementById('ama-title').value = '';
+      document.getElementById('ama-description').value = '';
+      document.getElementById('ama-expert-name').value = '';
+      document.getElementById('ama-expert-title').value = '';
+      document.getElementById('ama-scheduled').value = '';
+      document.getElementById('ama-status').value = 'scheduled';
     }
 
     async function changeStatus(amaId, newStatus) {
       if (!newStatus) return;
       try {
-        const res = await fetch('/api/admin/community/amas/' + amaId + '/status', {
+        await apiFetch('/api/admin/community/amas/' + encodeURIComponent(amaId) + '/status', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: newStatus })
         });
-        if (!res.ok) throw new Error(await res.text());
-        loadAmas();
-        if (_selectedAmaId === amaId) viewQuestions(amaId);
+        await loadAmas();
+        if (_selectedAmaId === amaId) viewQuestions(amaId, _selectedAmaTitle);
       } catch (e) {
         alert('Failed: ' + e.message);
+        loadAmas();
       }
     }
 
     async function viewQuestions(amaId, title) {
       _selectedAmaId = amaId;
+      _selectedAmaTitle = title || _selectedAmaTitle || '';
       const panel = document.getElementById('ama-detail-panel');
       panel.style.display = 'block';
-      if (title) document.getElementById('detail-title').textContent = 'Questions — ' + title;
+      document.getElementById('detail-title').textContent = _selectedAmaTitle ? 'Questions - ' + _selectedAmaTitle : 'Questions';
 
       try {
-        const res = await fetch('/api/community/amas/' + amaId);
-        if (!res.ok) throw new Error('Failed');
+        const res = await apiFetch('/api/admin/community/amas/' + encodeURIComponent(amaId));
         const data = await res.json();
         renderQuestions(data.questions || []);
       } catch (e) {
-        document.getElementById('ama-questions-table').innerHTML =
-          '<div style="padding:20px;color:#D92D20;">Failed to load questions</div>';
+        const container = document.getElementById('ama-questions-table');
+        const error = document.createElement('div');
+        error.style.padding = '20px';
+        error.style.color = '#D92D20';
+        error.textContent = 'Failed to load questions.';
+        container.replaceChildren(error);
       }
     }
 
     function renderQuestions(questions) {
       const container = document.getElementById('ama-questions-table');
+      container.replaceChildren();
       if (questions.length === 0) {
-        container.innerHTML = '<div style="padding:20px;color:#667085;text-align:center;">No questions yet.</div>';
+        const empty = document.createElement('div');
+        empty.style.padding = '20px';
+        empty.style.color = '#667085';
+        empty.style.textAlign = 'center';
+        empty.textContent = 'No questions yet.';
+        container.appendChild(empty);
         return;
       }
 
-      let html = '<table class="admin-table"><thead><tr><th>Question</th><th>Upvotes</th><th>Featured</th><th>Answer</th><th style="text-align:right;">Actions</th></tr></thead><tbody>';
-      for (const q of questions) {
-        const featuredBadge = q.is_featured
-          ? '<span class="admin-badge" style="background:#FFF9C4;color:#F57F17;">⭐ Yes</span>'
-          : '<span style="color:#98A2B3;">No</span>';
-        const answerHtml = q.answer
-          ? '<span class="admin-badge" style="background:#ECFDF3;color:#027A48;">Answered</span>'
-          : '<span style="color:#D92D20;">Pending</span>';
-        html += `<tr>
-          <td style="max-width:300px;white-space:normal;font-size:13px;">${escHtml(q.question)}</td>
-          <td style="font-weight:600;">${q.upvote_count}</td>
-          <td>${featuredBadge}</td>
-          <td>${answerHtml}</td>
-          <td style="text-align:right;">
-            <div style="display:flex;gap:4px;justify-content:flex-end;">
-              ${!q.answer ? `<button class="admin-btn admin-btn--primary admin-btn--sm" onclick="openAnswerModal('${q.id}', '${escHtml(q.question).replace(/'/g, "\\'")}')">Answer</button>` : ''}
-              <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="toggleFeatured('${q.id}')">${q.is_featured ? 'Unfeature' : 'Feature'}</button>
-            </div>
-          </td>
-        </tr>`;
+      const table = document.createElement('table');
+      table.className = 'admin-table';
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      ['Question', 'Upvotes', 'Featured', 'Answer', 'Actions'].forEach((label, index) => {
+        const th = document.createElement('th');
+        th.textContent = label;
+        if (index === 4) th.style.textAlign = 'right';
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      const tbody = document.createElement('tbody');
+      questions.forEach((question) => tbody.appendChild(createQuestionRow(question)));
+      table.append(thead, tbody);
+      container.appendChild(table);
+    }
+
+    function createQuestionRow(question) {
+      const row = document.createElement('tr');
+      const questionCell = document.createElement('td');
+      questionCell.style.maxWidth = '300px';
+      questionCell.style.whiteSpace = 'normal';
+      questionCell.style.fontSize = '13px';
+      questionCell.textContent = question.question || '';
+
+      const upvoteCell = document.createElement('td');
+      upvoteCell.style.fontWeight = '600';
+      upvoteCell.textContent = String(question.upvote_count || 0);
+
+      const featuredCell = document.createElement('td');
+      if (question.is_featured) {
+        const badge = document.createElement('span');
+        badge.className = 'admin-badge';
+        badge.style.background = '#FFF9C4';
+        badge.style.color = '#F57F17';
+        badge.textContent = 'Featured';
+        featuredCell.appendChild(badge);
+      } else {
+        featuredCell.textContent = 'No';
+        featuredCell.style.color = '#98A2B3';
       }
-      html += '</tbody></table>';
-      container.innerHTML = html;
+
+      const answerCell = document.createElement('td');
+      if (question.answer) {
+        const badge = document.createElement('span');
+        badge.className = 'admin-badge';
+        badge.style.background = '#ECFDF3';
+        badge.style.color = '#027A48';
+        badge.textContent = 'Answered';
+        answerCell.appendChild(badge);
+      } else {
+        answerCell.textContent = 'Pending';
+        answerCell.style.color = '#D92D20';
+      }
+
+      const actionCell = document.createElement('td');
+      actionCell.style.textAlign = 'right';
+      const actions = document.createElement('div');
+      actions.style.display = 'flex';
+      actions.style.gap = '4px';
+      actions.style.justifyContent = 'flex-end';
+
+      if (!question.answer) {
+        const answerBtn = document.createElement('button');
+        answerBtn.type = 'button';
+        answerBtn.className = 'admin-btn admin-btn--primary admin-btn--sm';
+        answerBtn.dataset.action = 'answer-question';
+        answerBtn.dataset.questionId = question.id;
+        answerBtn.dataset.questionText = question.question || '';
+        answerBtn.textContent = 'Answer';
+        actions.appendChild(answerBtn);
+      }
+
+      const featureBtn = document.createElement('button');
+      featureBtn.type = 'button';
+      featureBtn.className = 'admin-btn admin-btn--ghost admin-btn--sm';
+      featureBtn.dataset.action = 'toggle-featured';
+      featureBtn.dataset.questionId = question.id;
+      featureBtn.textContent = question.is_featured ? 'Unfeature' : 'Feature';
+      actions.appendChild(featureBtn);
+
+      actionCell.appendChild(actions);
+      row.append(questionCell, upvoteCell, featuredCell, answerCell, actionCell);
+      return row;
     }
 
     function closeDetailPanel() {
       document.getElementById('ama-detail-panel').style.display = 'none';
       _selectedAmaId = null;
+      _selectedAmaTitle = '';
     }
 
     function openAnswerModal(questionId, questionText) {
       _answerQuestionId = questionId;
       document.getElementById('answer-question-text').textContent = questionText;
       document.getElementById('answer-text').value = '';
-      document.getElementById('answer-modal').style.display = 'flex';
+      openModal(document.getElementById('answer-modal'), document.getElementById('answer-text'));
     }
+
     function closeAnswerModal() {
-      document.getElementById('answer-modal').style.display = 'none';
+      closeModal(document.getElementById('answer-modal'));
     }
 
     async function submitAnswer() {
       const answer = document.getElementById('answer-text').value.trim();
       if (!answer) return alert('Please type an answer.');
+      if (!_selectedAmaId || !_answerQuestionId) return alert('No question selected.');
+      const submitBtn = document.getElementById('submit-answer-btn');
       try {
-        const res = await fetch('/api/admin/community/amas/' + _selectedAmaId + '/questions/' + _answerQuestionId + '/answer', {
+        setButtonLoading(submitBtn, true, 'Submitting...');
+        await apiFetch('/api/admin/community/amas/' + encodeURIComponent(_selectedAmaId) + '/questions/' + encodeURIComponent(_answerQuestionId) + '/answer', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ answer })
         });
-        if (!res.ok) throw new Error(await res.text());
         closeAnswerModal();
-        viewQuestions(_selectedAmaId);
+        viewQuestions(_selectedAmaId, _selectedAmaTitle);
       } catch (e) {
         alert('Failed: ' + e.message);
+      } finally {
+        setButtonLoading(submitBtn, false);
       }
     }
 
     async function toggleFeatured(questionId) {
+      if (!_selectedAmaId) return alert('No AMA selected.');
       try {
-        const res = await fetch('/api/admin/community/amas/' + _selectedAmaId + '/questions/' + questionId + '/feature', { method: 'POST' });
-        if (!res.ok) throw new Error(await res.text());
-        viewQuestions(_selectedAmaId);
+        await apiFetch('/api/admin/community/amas/' + encodeURIComponent(_selectedAmaId) + '/questions/' + encodeURIComponent(questionId) + '/feature', {
+          method: 'POST'
+        });
+        viewQuestions(_selectedAmaId, _selectedAmaTitle);
       } catch (e) {
         alert('Failed: ' + e.message);
       }
     }
 
-    function escHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str || '';
-      return div.innerHTML;
+    function openModal(modal, focusTarget) {
+      if (!modal) return;
+      _lastFocusedElement = document.activeElement;
+      _activeModal = modal;
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => (focusTarget || firstFocusable(modal))?.focus(), 0);
+    }
+
+    function closeModal(modal) {
+      if (!modal) return;
+      modal.style.display = 'none';
+      if (_activeModal === modal) _activeModal = null;
+      document.body.style.overflow = '';
+      if (_lastFocusedElement && typeof _lastFocusedElement.focus === 'function') {
+        _lastFocusedElement.focus();
+      }
+      _lastFocusedElement = null;
+    }
+
+    function handleModalKeydown(event) {
+      if (!_activeModal) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (_activeModal.id === 'answer-modal') closeAnswerModal();
+        else closeAmaModal();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusables = getFocusableElements(_activeModal);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    function firstFocusable(root) {
+      return getFocusableElements(root)[0] || null;
+    }
+
+    function getFocusableElements(root) {
+      return Array.from(root.querySelectorAll('a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+        .filter((el) => el.offsetParent !== null);
+    }
+
+    function setButtonLoading(button, loading, label) {
+      if (!button) return;
+      if (loading) {
+        button.dataset.originalText = button.textContent;
+        button.textContent = label || 'Working...';
+        button.disabled = true;
+      } else {
+        button.textContent = button.dataset.originalText || button.textContent;
+        button.disabled = false;
+        delete button.dataset.originalText;
+      }
     }
   </script>
 </body>

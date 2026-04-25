@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n              COUNT(*) FILTER (WHERE status = 'pending_approval') as \"pending!\",\n              COUNT(*) FILTER (WHERE status = 'active') as \"active!\",\n              COUNT(*) FILTER (WHERE status = 'terminated') as \"rejected!\"\n           FROM affiliates",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pending!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "active!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "rejected!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "5e576739d4248f1ff4d3c987ca62aa9573fd4a214c01fdd9216f720eb273f774"
+}

@@ -7,6 +7,7 @@
 
   let allApprovals = [];
   let currentFilter = "";
+  const inFlight = new Set();
 
   document.addEventListener("DOMContentLoaded", () => {
     loadApprovals();
@@ -89,7 +90,7 @@
                 <div class="approval-card" data-id="${esc(a.id)}">
                     <div class="approval-card__header">
                         <div class="approval-card__left">
-                            <span class="approval-card__action-badge">${actionLabel(a.action_type)}</span>
+                            <span class="approval-card__action-badge">${esc(actionLabel(a.action_type))}</span>
                             <span class="approval-card__entity">${esc(a.entity_type)} ${a.entity_id ? `<code>${esc(a.entity_id.substring(0, 8))}…</code>` : ""}</span>
                         </div>
                         <div class="approval-card__right">
@@ -124,7 +125,7 @@
                                 <span>View Payload</span>
                                 <button type="button" class="approval-btn--copy" onclick="window._copyPayload(event, '${esc(a.id)}')">Copy JSON</button>
                             </summary>
-                            <pre id="payload-${esc(a.id)}">${JSON.stringify(a.payload, null, 2)}</pre>
+                            <pre id="payload-${esc(a.id)}">${esc(JSON.stringify(a.payload, null, 2))}</pre>
                         </details>`
             : ""
           }
@@ -158,6 +159,7 @@
 
   // Expose approve/reject actions
   window._approveRequest = async function (id) {
+    if (inFlight.has(id)) return;
     if (
       !await pooolConfirm({
         title: 'Approve & Execute',
@@ -169,12 +171,13 @@
       return;
 
     try {
+      setCardBusy(id, true);
       const resp = await fetch(`/api/admin/approvals/${id}/approve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({}),
       });
-      const data = await resp.json();
+      const data = await parseJson(resp);
 
       if (resp.ok) {
         showToast(
@@ -189,20 +192,24 @@
       console.error("Error approving request", e);
       if (typeof Sentry !== 'undefined') Sentry.captureException(e);
       showToast("Network error. Please try again.", "error");
+    } finally {
+      setCardBusy(id, false);
     }
   };
 
     window._rejectRequest = async function (id) {
-    const reason = prompt("Rejection reason (required):");
+    if (inFlight.has(id)) return;
+    const reason = await requestRejectionReason();
     if (!reason) return;
 
     try {
+      setCardBusy(id, true);
       const resp = await fetch(`/api/admin/approvals/${id}/reject`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({ reason }),
       });
-      const data = await resp.json();
+      const data = await parseJson(resp);
 
       if (resp.ok) {
         showToast("Request rejected.", "success");
@@ -214,6 +221,8 @@
       console.error("Error rejecting request", e);
       if (typeof Sentry !== 'undefined') Sentry.captureException(e);
       showToast("Network error.", "error");
+    } finally {
+      setCardBusy(id, false);
     }
   };
 
@@ -231,6 +240,7 @@
 
   async function handleNewRequest(e) {
     e.preventDefault();
+    const submitButton = e.target.querySelector('button[type="submit"]');
     const actionType = document.getElementById("req-action-type")?.value;
     const entityType = document.getElementById("req-entity-type")?.value;
     const entityId =
@@ -246,9 +256,10 @@
     }
 
     try {
+      if (submitButton) submitButton.disabled = true;
       const resp = await fetch("/api/admin/approvals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: jsonHeaders(),
         body: JSON.stringify({
           action_type: actionType,
           entity_type: entityType,
@@ -256,7 +267,7 @@
           payload,
         }),
       });
-      const data = await resp.json();
+      const data = await parseJson(resp);
 
       if (resp.ok) {
         showToast(
@@ -272,6 +283,8 @@
       console.error("Error creating approval request", e);
       if (typeof Sentry !== 'undefined') Sentry.captureException(e);
       showToast("Network error.", "error");
+    } finally {
+      if (submitButton) submitButton.disabled = false;
     }
   }
 
@@ -316,6 +329,91 @@
   function setEl(id, val) {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
+  }
+
+  function jsonHeaders() {
+    const headers = { "Content-Type": "application/json" };
+    const token =
+      typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "";
+    if (token) headers["X-CSRF-Token"] = token;
+    return headers;
+  }
+
+  async function parseJson(resp) {
+    try {
+      return await resp.json();
+    } catch {
+      return {
+        error: resp.statusText || `Request failed with status ${resp.status}`,
+      };
+    }
+  }
+
+  function setCardBusy(id, busy) {
+    if (busy) {
+      inFlight.add(id);
+    } else {
+      inFlight.delete(id);
+    }
+    const card = Array.from(document.querySelectorAll(".approval-card")).find(
+      (item) => item.dataset.id === id,
+    );
+    if (!card) return;
+    card.querySelectorAll(".approval-btn").forEach((btn) => {
+      btn.disabled = busy;
+      btn.setAttribute("aria-busy", busy ? "true" : "false");
+    });
+  }
+
+  function requestRejectionReason() {
+    return new Promise((resolve) => {
+      const previousFocus = document.activeElement;
+      const overlay = document.createElement("div");
+      overlay.className = "approval-reject-modal";
+      overlay.innerHTML = `
+        <div class="approval-reject-modal__panel" role="dialog" aria-modal="true" aria-labelledby="approval-reject-title">
+          <h2 id="approval-reject-title">Reject approval request</h2>
+          <label for="approval-reject-reason">Reason</label>
+          <textarea id="approval-reject-reason" rows="4" required></textarea>
+          <p class="approval-reject-modal__error" aria-live="polite"></p>
+          <div class="approval-reject-modal__actions">
+            <button type="button" class="approval-btn approval-btn--reject" data-action="cancel">Cancel</button>
+            <button type="button" class="approval-btn approval-btn--approve" data-action="confirm">Reject request</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+
+      const textarea = overlay.querySelector("#approval-reject-reason");
+      const error = overlay.querySelector(".approval-reject-modal__error");
+      const confirm = overlay.querySelector('[data-action="confirm"]');
+      const cancel = overlay.querySelector('[data-action="cancel"]');
+
+      function close(value) {
+        overlay.remove();
+        if (previousFocus && typeof previousFocus.focus === "function") {
+          previousFocus.focus();
+        }
+        resolve(value);
+      }
+
+      confirm.addEventListener("click", () => {
+        const reason = textarea.value.trim();
+        if (!reason) {
+          error.textContent = "Enter a rejection reason.";
+          textarea.focus();
+          return;
+        }
+        close(reason);
+      });
+      cancel.addEventListener("click", () => close(""));
+      overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) close("");
+      });
+      overlay.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") close("");
+      });
+      textarea.focus();
+    });
   }
 
   function esc(s) {

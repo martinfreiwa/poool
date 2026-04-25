@@ -1,7 +1,7 @@
 use axum::{
-    Json,
     extract::{Path, Query, State},
     response::{Html, IntoResponse, Redirect},
+    Json,
 };
 use axum_extra::extract::CookieJar;
 use minijinja::context;

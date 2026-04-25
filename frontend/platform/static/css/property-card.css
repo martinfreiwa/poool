@@ -478,7 +478,7 @@
   height: 100%;
   min-width: 0;
   border-radius: 99px;
-  background: #03FF88;
+  background: var(--progress-fill-bg, #98FB96);
   transition: width 0.6s ease;
 }
 
@@ -608,7 +608,7 @@
 }
 
 .ds-progress__fill--complete {
-  background: #03FF88;
+  background: var(--progress-fill-bg, #98FB96);
 }
 
 .badge-standard,

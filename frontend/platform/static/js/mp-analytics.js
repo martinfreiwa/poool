@@ -2,8 +2,8 @@
  * mp-analytics.js — Admin Marketplace Analytics (Task 6B.12)
  *
  * Provides built-in analytics charts as a fallback when Metabase is unavailable.
- * Fetches data from GET /api/admin/marketplace/stats and
- * GET /api/admin/marketplace/recent-trades, then renders
+   * Fetches data from GET /api/admin/marketplace/stats and
+   * GET /api/admin/marketplace/trades, then renders
  * volume timeline, top assets, and fee revenue charts.
  */
 (function () {
@@ -15,21 +15,33 @@
   // ── API ──────────────────────────────
   // ═══════════════════════════════════════
 
-  async function fetchStats() {
+  async function fetchJson(url) {
     try {
-      const res = await fetch(`${API_BASE}/stats`, { credentials: 'same-origin' });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch { return null; }
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!res.ok) {
+        return { ok: false, message: `Request failed with HTTP ${res.status}` };
+      }
+      return { ok: true, data: await res.json() };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : 'Request failed',
+      };
+    }
+  }
+
+  async function fetchStats() {
+    return fetchJson(`${API_BASE}/stats`);
   }
 
   async function fetchTrades(limit = 100) {
-    try {
-      const res = await fetch(`${API_BASE}/trades?limit=${limit}`, { credentials: 'same-origin' });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.trades || data || [];
-    } catch { return []; }
+    const result = await fetchJson(`${API_BASE}/trades?limit=${limit}`);
+    if (!result.ok) return result;
+    const payload = result.data;
+    if (Array.isArray(payload)) return { ok: true, data: payload };
+    if (Array.isArray(payload.trades)) return { ok: true, data: payload.trades };
+    if (Array.isArray(payload.data)) return { ok: true, data: payload.data };
+    return { ok: false, message: 'Unexpected trades response shape' };
   }
 
   // ═══════════════════════════════════════
@@ -40,9 +52,17 @@
     return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
 
+  function renderMessage(container, message, options = {}) {
+    container.replaceChildren();
+    const el = document.createElement('div');
+    el.className = options.error ? 'mp-analytics-empty mp-analytics-error' : 'mp-analytics-empty';
+    el.textContent = message;
+    container.appendChild(el);
+  }
+
   function buildVolumeChart(container, trades) {
     if (typeof ApexCharts === 'undefined' || !trades.length) {
-      container.innerHTML = '<div class="mp-analytics-empty">No trade data available</div>';
+      renderMessage(container, 'No trade data available');
       return;
     }
 
@@ -111,7 +131,10 @@
   }
 
   function buildTradeCountChart(container, trades) {
-    if (typeof ApexCharts === 'undefined' || !trades.length) return;
+    if (typeof ApexCharts === 'undefined' || !trades.length) {
+      renderMessage(container, 'No asset trade data available');
+      return;
+    }
 
     // Group by asset
     const assetMap = {};
@@ -168,28 +191,83 @@
 
   function buildStatsCards(container, stats) {
     if (!stats) {
-      container.innerHTML = '<div class="mp-analytics-empty">Stats unavailable</div>';
+      renderMessage(container, 'Stats unavailable', { error: true });
       return;
     }
 
     const items = [
-      { label: 'Total Trades', value: (stats.total_trades || 0).toLocaleString(), icon: '📊' },
-      { label: 'Total Volume', value: fmtUSD(stats.total_volume_cents || 0), icon: '💰' },
+      { label: 'Trades 24h', value: (stats.trades_24h ?? stats.total_trades ?? 0).toLocaleString(), icon: '📊' },
+      { label: 'Volume 24h', value: fmtUSD(stats.volume_24h_cents ?? stats.total_volume_cents ?? 0), icon: '💰' },
       { label: 'Open Orders', value: (stats.open_orders || 0).toLocaleString(), icon: '📋' },
-      { label: 'Active Assets', value: (stats.active_assets || 0).toLocaleString(), icon: '🏠' },
-      { label: 'Fee Revenue', value: fmtUSD(stats.total_fees_cents || 0), icon: '💵' },
-      { label: 'Pending Orders', value: (stats.pending_orders || 0).toLocaleString(), icon: '⏳' },
+      { label: 'Trading Assets', value: (stats.total_assets_trading ?? stats.active_assets ?? 0).toLocaleString(), icon: '🏠' },
+      { label: 'Fees 24h', value: fmtUSD(stats.fees_collected_24h_cents ?? stats.total_fees_cents ?? 0), icon: '💵' },
+      { label: 'Pending Reviews', value: (stats.pending_reviews ?? stats.pending_orders ?? 0).toLocaleString(), icon: '⏳' },
     ];
 
-    container.innerHTML = items.map(item => `
-      <div class="mp-analytics-stat">
-        <span class="mp-analytics-stat-icon">${item.icon}</span>
-        <div>
-          <div class="mp-analytics-stat-value">${item.value}</div>
-          <div class="mp-analytics-stat-label">${item.label}</div>
-        </div>
-      </div>
-    `).join('');
+    container.replaceChildren();
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'mp-analytics-stat';
+
+      const icon = document.createElement('span');
+      icon.className = 'mp-analytics-stat-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = item.icon;
+
+      const body = document.createElement('div');
+      const value = document.createElement('div');
+      value.className = 'mp-analytics-stat-value';
+      value.textContent = item.value;
+      const label = document.createElement('div');
+      label.className = 'mp-analytics-stat-label';
+      label.textContent = item.label;
+
+      body.append(value, label);
+      card.append(icon, body);
+      container.appendChild(card);
+    });
+  }
+
+  function initMetabase() {
+    const card = document.getElementById('metabase-card');
+    if (!card) return;
+
+    const baseUrl = (card.dataset.metabaseBaseUrl || '').replace(/\/+$/, '');
+    const publicDashboardPath = card.dataset.metabasePublicDashboardPath || '';
+    const dashboardId = card.dataset.metabaseDashboardId || '';
+    const frame = document.getElementById('metabase-frame');
+    const empty = document.getElementById('metabase-empty');
+    const openBtn = document.getElementById('btn-open-metabase');
+    const refreshBtn = document.getElementById('btn-refresh-metabase');
+
+    document.querySelectorAll('[data-metabase-path]').forEach(link => {
+      if (!baseUrl) return;
+      link.href = `${baseUrl}${link.dataset.metabasePath}`;
+      link.classList.remove('mp-analytics-disabled-link');
+      link.removeAttribute('aria-disabled');
+    });
+
+    if (!baseUrl || !publicDashboardPath || !frame) {
+      return;
+    }
+
+    const frameUrl = `${baseUrl}${publicDashboardPath}`;
+    frame.src = frameUrl;
+    frame.style.display = 'block';
+    if (empty) empty.style.display = 'none';
+
+    if (openBtn && dashboardId) {
+      openBtn.disabled = false;
+      openBtn.addEventListener('click', () => {
+        window.open(`${baseUrl}/dashboard/${dashboardId}`, '_blank', 'noopener,noreferrer');
+      });
+    }
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.addEventListener('click', () => {
+        frame.src = frame.src;
+      });
+    }
   }
 
   // ═══════════════════════════════════════
@@ -200,35 +278,41 @@
     const fallbackContainer = document.getElementById('analytics-fallback');
     if (!fallbackContainer) return;
 
-    // Check if Metabase iframe loaded successfully
-    const iframe = document.getElementById('metabase-frame');
-    let metabaseOk = false;
-
-    if (iframe) {
-      try {
-        // Give Metabase 3 seconds to respond
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        // If the iframe errored (CORS or unreachable), show fallback
-        metabaseOk = true; // Assume ok — we can't detect cross-origin iframe errors
-      } catch {}
-    }
-
     // Always build fallback charts below Metabase
     fallbackContainer.style.display = 'block';
+    initMetabase();
 
-    const [stats, trades] = await Promise.all([fetchStats(), fetchTrades(200)]);
+    const [statsResult, tradesResult] = await Promise.all([fetchStats(), fetchTrades(200)]);
 
     // Stats cards
     const statsGridEl = document.getElementById('analytics-stats-grid');
-    if (statsGridEl) buildStatsCards(statsGridEl, stats);
+    if (statsGridEl) {
+      if (statsResult.ok) {
+        buildStatsCards(statsGridEl, statsResult.data);
+      } else {
+        renderMessage(statsGridEl, `Stats unavailable: ${statsResult.message}`, { error: true });
+      }
+    }
 
     // Volume timeline
     const volumeChartEl = document.getElementById('analytics-volume-chart');
-    if (volumeChartEl) buildVolumeChart(volumeChartEl, trades);
+    if (volumeChartEl) {
+      if (tradesResult.ok) {
+        buildVolumeChart(volumeChartEl, tradesResult.data);
+      } else {
+        renderMessage(volumeChartEl, `Trade data unavailable: ${tradesResult.message}`, { error: true });
+      }
+    }
 
     // Top assets by volume
     const assetsChartEl = document.getElementById('analytics-assets-chart');
-    if (assetsChartEl) buildTradeCountChart(assetsChartEl, trades);
+    if (assetsChartEl) {
+      if (tradesResult.ok) {
+        buildTradeCountChart(assetsChartEl, tradesResult.data);
+      } else {
+        renderMessage(assetsChartEl, `Asset data unavailable: ${tradesResult.message}`, { error: true });
+      }
+    }
   }
 
   document.addEventListener('DOMContentLoaded', init);

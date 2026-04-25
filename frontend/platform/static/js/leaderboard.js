@@ -324,7 +324,7 @@
     
     // Previous Button
     var prev = document.createElement('button');
-    prev.className = 'lb-pag-btn';
+    prev.className = 'lb-pag-btn ds-btn ds-btn--secondary ds-btn--sm';
     prev.innerHTML = '&laquo;';
     prev.disabled = currentPage === 1;
     prev.onclick = function() { goToPage(currentPage - 1); };
@@ -344,7 +344,7 @@
        }
        
        var btn = document.createElement('button');
-       btn.className = 'lb-pag-btn' + (currentPage === i ? ' active' : '');
+       btn.className = 'lb-pag-btn ds-btn ds-btn--secondary ds-btn--sm' + (currentPage === i ? ' active' : '');
        btn.innerText = i;
        (function(p) {
          btn.onclick = function() { goToPage(p); };
@@ -354,7 +354,7 @@
 
     // Next Button
     var next = document.createElement('button');
-    next.className = 'lb-pag-btn';
+    next.className = 'lb-pag-btn ds-btn ds-btn--secondary ds-btn--sm';
     next.innerHTML = '&raquo;';
     next.disabled = currentPage === totalPages;
     next.onclick = function() { goToPage(currentPage + 1); };
