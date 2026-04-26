@@ -1,12 +1,23 @@
 /**
  * MP Settings — mp-settings.js
- * Loads and saves marketplace settings from/to the backend via Redis.
- * Falls back to local-only behavior if the API is unavailable.
+ * Loads and saves supported marketplace settings from/to the backend.
  */
 (function () {
   'use strict';
 
   const API = '/api/admin/marketplace/settings';
+  const DEFAULT_SETTINGS = {
+    matching_algorithm: 'price-time',
+    tick_size_cents: 5,
+    min_order_size: 1,
+    max_order_size: 10000,
+    settlement_mode: 'instant',
+    max_gas_gwei: 5,
+    settlement_batch_size: 50,
+    trading_enabled: true,
+    maintenance_window: false,
+    weekend_trading: false,
+  };
 
   const tradingHours = [
     { enabled: true, label: '24/7 Trading', desc: 'Marketplace is open continuously with no scheduled downtime', key: 'trading_enabled' },
@@ -14,88 +25,192 @@
     { enabled: false, label: 'Weekend Trading', desc: 'Allow trading on Saturday and Sunday (disabled = weekday only)', key: 'weekend_trading' },
   ];
 
-  const notifPrefs = [
-    { enabled: true, label: 'Large order alerts (>$10,000)', desc: 'Get notified when any single order exceeds threshold' },
-    { enabled: true, label: 'Settlement failures', desc: 'Immediate notification on failed on-chain settlement' },
-    { enabled: true, label: 'Wash trading detection', desc: 'Alert when wash trading patterns are detected' },
-    { enabled: false, label: 'Daily trading summary', desc: 'End-of-day email with volume, fees, and anomaly summary' },
-    { enabled: true, label: 'Kill switch activation', desc: 'Notify all admins when trading is halted' },
-    { enabled: false, label: 'New asset listing', desc: 'Alert when a new asset becomes tradeable on the marketplace' },
-  ];
+  function csrfToken() {
+    if (typeof window.getCsrfToken === 'function') return window.getCsrfToken();
+    const value = `; ${document.cookie}`;
+    const parts = value.split('; csrf_token=');
+    return parts.length === 2 ? parts.pop().split(';').shift() : '';
+  }
 
-  function renderToggles(containerId, items, storageKey) {
+  function csrfHeaders(headers = {}) {
+    const token = csrfToken();
+    return token ? { ...headers, 'X-CSRF-Token': token } : headers;
+  }
+
+  function setFieldValue(id, value) {
+    const field = document.getElementById(id);
+    if (field) field.value = value;
+  }
+
+  function parsePositiveInt(id, label) {
+    const raw = document.getElementById(id)?.value || '';
+    if (!/^\d+$/.test(raw.trim())) {
+      throw new Error(`${label} must be a positive whole number.`);
+    }
+    const value = Number(raw);
+    if (!Number.isSafeInteger(value) || value < 1) {
+      throw new Error(`${label} must be a positive whole number.`);
+    }
+    return value;
+  }
+
+  function parseUsdToCents(id, label) {
+    const raw = (document.getElementById(id)?.value || '').trim();
+    const match = raw.match(/^(\d+)(?:\.(\d{1,2}))?$/);
+    if (!match) {
+      throw new Error(`${label} must be a dollar amount with at most two decimals.`);
+    }
+
+    const dollars = Number(match[1]);
+    const cents = Number((match[2] || '').padEnd(2, '0'));
+    if (!Number.isSafeInteger(dollars) || !Number.isSafeInteger(cents)) {
+      throw new Error(`${label} is too large.`);
+    }
+
+    const total = dollars * 100 + cents;
+    if (!Number.isSafeInteger(total) || total < 1) {
+      throw new Error(`${label} must be at least $0.01.`);
+    }
+    return total;
+  }
+
+  function formatCents(cents) {
+    const safeCents = Number.isSafeInteger(Number(cents)) ? Number(cents) : DEFAULT_SETTINGS.tick_size_cents;
+    const dollars = Math.floor(safeCents / 100);
+    const remainder = String(safeCents % 100).padStart(2, '0');
+    return `${dollars}.${remainder}`;
+  }
+
+  function renderToggles(containerId, items) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    container.innerHTML = items.map((item, i) => `
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; ${i < items.length - 1 ? 'border-bottom:1px solid var(--admin-border);' : ''}">
-        <div style="flex:1;">
-          <div style="font-size:14px; font-weight:600; color:var(--admin-text-primary);">${item.label}</div>
-          <div style="font-size:12px; color:var(--admin-text-muted); margin-top:2px;">${item.desc}</div>
-        </div>
-        <label class="mp-toggle" style="flex-shrink:0;">
-          <input type="checkbox" ${item.enabled ? 'checked' : ''} data-idx="${i}" data-key="${storageKey}">
-          <span class="mp-toggle-slider"></span>
-        </label>
-      </div>
-    `).join('');
+    container.replaceChildren();
 
-    container.querySelectorAll('input[type="checkbox"]').forEach(input => {
+    items.forEach((item, index) => {
+      const row = document.createElement('div');
+      row.className = 'mp-settings-toggle-row';
+      row.style.display = 'flex';
+      row.style.alignItems = 'center';
+      row.style.justifyContent = 'space-between';
+      row.style.gap = '16px';
+      row.style.padding = '12px 0';
+      if (index < items.length - 1) row.style.borderBottom = '1px solid var(--admin-border)';
+
+      const textWrap = document.createElement('div');
+      textWrap.style.flex = '1';
+
+      const labelText = document.createElement('div');
+      labelText.style.fontSize = '14px';
+      labelText.style.fontWeight = '600';
+      labelText.style.color = 'var(--admin-text-primary)';
+      labelText.textContent = item.label;
+
+      const desc = document.createElement('div');
+      desc.style.fontSize = '12px';
+      desc.style.color = 'var(--admin-text-muted)';
+      desc.style.marginTop = '2px';
+      desc.textContent = item.desc;
+
+      textWrap.append(labelText, desc);
+
+      const label = document.createElement('label');
+      label.className = 'mp-toggle';
+      label.style.flexShrink = '0';
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = item.enabled;
+      input.dataset.idx = String(index);
+
+      const slider = document.createElement('span');
+      slider.className = 'mp-toggle-slider';
+
       input.addEventListener('change', function () {
-        const idx = parseInt(this.dataset.idx);
-        const key = this.dataset.key;
-        const arr = key === 'hours' ? tradingHours : notifPrefs;
-        arr[idx].enabled = this.checked;
-        if (typeof mpToast === 'function') {
-          mpToast(`"${arr[idx].label}" ${this.checked ? 'enabled' : 'disabled'}`, this.checked ? 'success' : 'warning');
-        }
+        const idx = Number(this.dataset.idx);
+        tradingHours[idx].enabled = this.checked;
       });
+
+      label.append(input, slider);
+      row.append(textWrap, label);
+      container.appendChild(row);
     });
   }
 
-  // ── Collect current settings into payload ───────────────────────
   function collectSettings() {
+    const tickSizeCents = parseUsdToCents('setting-tick', 'Tick size');
+    const minOrderSize = parsePositiveInt('setting-min-order', 'Min order size');
+    const maxOrderSize = parsePositiveInt('setting-max-order', 'Max order size');
+    const maxGasGwei = parsePositiveInt('setting-gas', 'Max gas price');
+    const settlementBatchSize = parsePositiveInt('setting-batch', 'Settlement batch size');
+
+    if (minOrderSize > maxOrderSize) {
+      throw new Error('Min order size cannot exceed max order size.');
+    }
+
     return {
-      matching_algorithm: document.getElementById('setting-algo')?.value || 'price-time',
-      tick_size_cents: parseInt(document.getElementById('setting-tick')?.value || '5') * 100,
-      min_order_size: parseInt(document.getElementById('setting-min-order')?.value || '1'),
-      max_order_size: parseInt(document.getElementById('setting-max-order')?.value || '10000'),
-      settlement_mode: document.getElementById('setting-settlement')?.value || 'instant',
-      max_gas_gwei: parseInt(document.getElementById('setting-gas')?.value || '5'),
-      settlement_batch_size: parseInt(document.getElementById('setting-batch')?.value || '50'),
+      matching_algorithm: document.getElementById('setting-algo')?.value || DEFAULT_SETTINGS.matching_algorithm,
+      tick_size_cents: tickSizeCents,
+      min_order_size: minOrderSize,
+      max_order_size: maxOrderSize,
+      settlement_mode: document.getElementById('setting-settlement')?.value || DEFAULT_SETTINGS.settlement_mode,
+      max_gas_gwei: maxGasGwei,
+      settlement_batch_size: settlementBatchSize,
       trading_enabled: tradingHours[0].enabled,
       maintenance_window: tradingHours[1].enabled,
       weekend_trading: tradingHours[2].enabled,
     };
   }
 
-  // ── Apply settings from API to form ─────────────────────────────
   function applySettings(data) {
-    if (document.getElementById('setting-algo')) document.getElementById('setting-algo').value = data.matching_algorithm || 'price-time';
-    if (document.getElementById('setting-tick')) document.getElementById('setting-tick').value = ((data.tick_size_cents || 5) / 100).toFixed(2);
-    if (document.getElementById('setting-min-order')) document.getElementById('setting-min-order').value = data.min_order_size || 1;
-    if (document.getElementById('setting-max-order')) document.getElementById('setting-max-order').value = data.max_order_size || 10000;
-    if (document.getElementById('setting-settlement')) document.getElementById('setting-settlement').value = data.settlement_mode || 'instant';
-    if (document.getElementById('setting-gas')) document.getElementById('setting-gas').value = data.max_gas_gwei || 5;
-    if (document.getElementById('setting-batch')) document.getElementById('setting-batch').value = data.settlement_batch_size || 50;
+    const settings = { ...DEFAULT_SETTINGS, ...(data || {}) };
+    setFieldValue('setting-algo', settings.matching_algorithm);
+    setFieldValue('setting-tick', formatCents(settings.tick_size_cents));
+    setFieldValue('setting-min-order', settings.min_order_size);
+    setFieldValue('setting-max-order', settings.max_order_size);
+    setFieldValue('setting-settlement', settings.settlement_mode);
+    setFieldValue('setting-gas', settings.max_gas_gwei);
+    setFieldValue('setting-batch', settings.settlement_batch_size);
 
-    tradingHours[0].enabled = data.trading_enabled !== false;
-    tradingHours[1].enabled = !!data.maintenance_window;
-    tradingHours[2].enabled = !!data.weekend_trading;
+    tradingHours[0].enabled = settings.trading_enabled !== false;
+    tradingHours[1].enabled = !!settings.maintenance_window;
+    tradingHours[2].enabled = !!settings.weekend_trading;
   }
 
-  // ── Load Settings ───────────────────────────────────────────────
+  async function parseJsonError(res) {
+    try {
+      const data = await res.json();
+      return data.error || data.message || `HTTP ${res.status}`;
+    } catch (_) {
+      return `HTTP ${res.status}`;
+    }
+  }
+
   async function loadSettings() {
     try {
       const res = await fetch(API, { credentials: 'same-origin' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(await parseJsonError(res));
       const data = await res.json();
       applySettings(data);
     } catch (err) {
-      console.warn('[mp-settings] API unavailable, defaults used:', err);
+      console.warn('[mp-settings] Load failed:', err);
+      if (typeof mpToast === 'function') {
+        mpToast('Marketplace settings could not be loaded. Showing defaults only.', 'warning');
+      }
+      applySettings(DEFAULT_SETTINGS);
     }
-    renderToggles('trading-hours-body', tradingHours, 'hours');
-    renderToggles('notif-prefs-body', notifPrefs, 'notifs');
+    renderToggles('trading-hours-body', tradingHours);
+  }
+
+  async function saveSettings(payload, successMessage) {
+    const res = await fetch(API, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await parseJsonError(res));
+    if (typeof mpToast === 'function') mpToast(successMessage, 'success');
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -104,31 +219,51 @@
     document.getElementById('btn-save-settings')?.addEventListener('click', async function () {
       const btn = this;
       btn.disabled = true;
-      btn.textContent = 'Saving…';
+      btn.textContent = 'Saving...';
 
       try {
         const payload = collectSettings();
-        const res = await fetch(API, {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        if (typeof mpToast === 'function') mpToast('All marketplace settings saved successfully', 'success');
+        await saveSettings(payload, 'Marketplace settings saved successfully');
       } catch (err) {
         console.warn('[mp-settings] Save failed:', err);
-        if (typeof mpToast === 'function') mpToast('Settings saved locally (API unavailable)', 'warning');
+        if (typeof mpToast === 'function') {
+          mpToast(err.message || 'Marketplace settings were not saved.', 'error');
+        }
       }
 
       btn.disabled = false;
       btn.textContent = 'Save All Settings';
     });
 
-    document.getElementById('btn-reset-settings')?.addEventListener('click', function () {
-      if (typeof mpButtonAction === 'function') {
-        mpButtonAction(this, 'Settings reset to factory defaults', 1000);
+    document.getElementById('btn-reset-settings')?.addEventListener('click', async function () {
+      const confirmed = typeof window.pooolConfirm === 'function'
+        ? await window.pooolConfirm({
+          title: 'Reset marketplace settings',
+          message: 'This will persist the default marketplace settings and update the trading flag.',
+          confirmText: 'Reset settings',
+          cancelText: 'Cancel',
+          type: 'warning',
+        })
+        : window.confirm('Reset marketplace settings to defaults?');
+      if (!confirmed) return;
+
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Resetting...';
+
+      try {
+        await saveSettings(DEFAULT_SETTINGS, 'Marketplace settings reset to defaults');
+        applySettings(DEFAULT_SETTINGS);
+        renderToggles('trading-hours-body', tradingHours);
+      } catch (err) {
+        console.warn('[mp-settings] Reset failed:', err);
+        if (typeof mpToast === 'function') {
+          mpToast(err.message || 'Marketplace settings were not reset.', 'error');
+        }
       }
+
+      btn.disabled = false;
+      btn.textContent = 'Reset to Defaults';
     });
   });
 })();

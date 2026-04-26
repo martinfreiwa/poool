@@ -8,14 +8,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Community Dashboard | Admin | POOOL</title>
   
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
+  <script defer src="/static/js/admin-community-index.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .community-index-table-wrap {
+      overflow-x: auto;
+    }
+
+    @media (max-width: 768px) {
+      .admin-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+
+      .admin-content,
+      .admin-page-header,
+      #community-overview-status {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .admin-kpi-grid,
+      .admin-kpi-grid[style] {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  </style>
 </head>
 
 <body class="admin-body dom-ready">
@@ -42,6 +65,7 @@
           <h1 class="admin-page-title">Community Overview</h1>
           <p class="admin-page-subtitle">Platform community health and engagement metrics.</p>
         </div>
+        <div id="community-overview-status" role="status" aria-live="polite" style="margin-bottom:16px;"></div>
 
         <!-- KPI Cards -->
         <div class="admin-kpi-grid">
@@ -108,7 +132,7 @@
               <h3 class="admin-card-title">Recent Announcements</h3>
               <a href="/admin/community/announcements.html" class="admin-btn admin-btn--secondary admin-btn--sm">View All</a>
             </div>
-            <div class="admin-card-body admin-card-body--flush">
+            <div class="admin-card-body admin-card-body--flush community-index-table-wrap">
               <table class="admin-table">
                 <thead>
                   <tr>
@@ -154,66 +178,5 @@
     </main>
   </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        // Fetch KPIs
-        try {
-            const res = await fetch('/api/admin/community/stats');
-            if(res.ok) {
-                const stats = await res.json();
-                document.getElementById('kpi-profiles').textContent = stats.active_profiles;
-                document.getElementById('kpi-posts').textContent = stats.total_posts;
-                document.getElementById('kpi-comments').textContent = stats.total_comments;
-                document.getElementById('kpi-reactions').textContent = stats.total_reactions;
-                
-                document.getElementById('kpi-circles').textContent = stats.total_circles || 0;
-                document.getElementById('kpi-xp').textContent = (stats.total_xp || 0).toLocaleString();
-                document.getElementById('kpi-reports').textContent = stats.pending_reports_count || 0;
-            }
-        } catch(e) {
-            console.error("Failed to load community stats", e);
-        }
-
-        // Fetch Recent Activity (re-using feed for now since MVP only has announcements)
-        try {
-            const res = await fetch('/api/community/feed');
-            if(res.ok) {
-                const posts = await res.json();
-                const tbody = document.getElementById('recent-announcements-table');
-                
-                if (posts.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--admin-text-muted);">No announcements yet.</td></tr>';
-                    return;
-                }
-                
-                let html = '';
-                // Limit to 5
-                posts.slice(0, 5).forEach(p => {
-                    const date = new Date(p.created_at).toLocaleDateString();
-                    html += `
-                        <tr>
-                            <td>
-                                <div style="display:flex; align-items:center; gap:8px;">
-                                    ${p.author_avatar ? `<img src="${p.author_avatar}" style="width:24px; height:24px; border-radius:50%;">` : `<div style="width:24px; height:24px; border-radius:50%; background:#f2f4f7;"></div>`}
-                                    <span style="font-weight: 500;">${p.author_name}</span>
-                                </div>
-                            </td>
-                            <td><span class="admin-badge" style="background:#eef4ff; color:#3538cd;">${p.category}</span></td>
-                            <td>${date}</td>
-                            <td>
-                                <span style="font-size:12px; color:#667085;">
-                                    🔥 ${p.reaction_count || 0} · 💬 ${p.comment_count || 0}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = html;
-            }
-        } catch(e) {
-            console.error("Failed to load feed", e);
-        }
-    });
-  </script>
 </body>
 </html>

@@ -379,7 +379,7 @@ mod tests {
         // In a standard order book, match price = maker's price (resting order)
         // The ask was placed first (in the book), so it's the maker
         let ask_price = 10000i64;
-        let bid_price = 10500i64;
+        let _bid_price = 10500i64;
         let match_price = ask_price; // NOT bid_price
         assert_eq!(match_price, 10000);
     }

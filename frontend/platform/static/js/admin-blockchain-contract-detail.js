@@ -1,139 +1,419 @@
 // Admin Blockchain Contract Detail Controller
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const address = urlParams.get('address');
-    
-    if (!address) {
-        document.getElementById('page-asset-title').textContent = "No Address Specified";
-        document.getElementById('clone-address').textContent = "N/A";
-        document.getElementById('holders-tbody').innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--admin-danger);">Invalid URL parameter.</td></tr>`;
-        return;
-    }
+(function () {
+  "use strict";
 
-    // Set initial UI states
-    document.getElementById('clone-address').textContent = address;
-    document.getElementById('contract-link').href = `https://amoy.polygonscan.com/address/${address}`;
+  const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 
-    // Danger Zone Wireup — Per-Clone Pause/Unpause (SPV isolation)
-    document.getElementById("btn-freeze-transfers").addEventListener("click", async () => {
-        const isPaused = document.getElementById("btn-freeze-transfers").dataset.isPaused === "true";
-        const action = isPaused ? "UNPAUSE" : "FREEZE";
-        const endpoint = isPaused
-            ? `/api/admin/blockchain/contracts/${address}/unpause`
-            : `/api/admin/blockchain/contracts/${address}/pause`;
+  const els = {};
+  let contractAddress = "";
 
-        if (!confirm(`CRITICAL WARNING:\n\nAre you sure you want to ${action} ALL TOKEN TRANSFERS for contract ${address}?\n\nThis will ${isPaused ? 'resume' : 'halt'} trading on this specific EIP-1167 clone.`)) {
-            return;
-        }
-
-        const btn = document.getElementById("btn-freeze-transfers");
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = `${action === "FREEZE" ? "Pausing" : "Unpausing"}... sending TX`;
-
-        try {
-            const resp = await fetch(endpoint, { method: "POST" });
-            if (!resp.ok) {
-                const err = await resp.json().catch(() => ({}));
-                throw new Error(err.error || `HTTP ${resp.status}`);
-            }
-            const result = await resp.json();
-            alert(`${action} successful!\n\nTx Hash: ${result.tx_hash || "unknown"}`);
-            window.location.reload(); // Reload to reflect new state
-        } catch (e) {
-            alert(`${action} failed: ${e.message}`);
-            btn.disabled = false;
-            btn.textContent = originalText;
-        }
+  document.addEventListener("DOMContentLoaded", () => {
+    cacheElements();
+    init().catch((err) => {
+      console.error("Failed to load clone detail:", err);
+      setTitle("Error Loading Contract");
+      renderMessageRow("Failed to load blockchain metadata: " + getErrorMessage(err), "danger");
+      setStatus("Contract metadata failed to load.");
     });
+  });
 
-    try {
-        const response = await fetch(`/api/admin/blockchain/contracts/${address}/detail`);
-        
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
-        }
+  function cacheElements() {
+    els.title = document.getElementById("page-asset-title");
+    els.cloneAddress = document.getElementById("clone-address");
+    els.copyCloneAddress = document.getElementById("copy-clone-address");
+    els.contractLink = document.getElementById("contract-link");
+    els.statusBadge = document.getElementById("kpi-live-status");
+    els.kpiSupply = document.getElementById("kpi-supply");
+    els.kpiSold = document.getElementById("kpi-sold");
+    els.kpiSoldBar = document.getElementById("kpi-sold-bar");
+    els.kpiHoldersCount = document.getElementById("kpi-holders-count");
+    els.holdersTbody = document.getElementById("holders-tbody");
+    els.freezeButton = document.getElementById("btn-freeze-transfers");
+    els.refreshButton = document.getElementById("refresh-contract-detail");
+    els.statusRegion = document.getElementById("contract-detail-status");
+  }
 
-        const data = await response.json();
-        
-        // Populate Header
-        document.getElementById('page-asset-title').textContent = data.title;
-        
-        // Populate Status Badge
-        const statusBadge = document.getElementById('kpi-live-status');
-        if (data.is_paused) {
-            statusBadge.innerHTML = `<span class="admin-badge admin-badge--warning" style="padding: 6px 12px; font-size: 13px;"><span class="contract-status-dot contract-status-dot--paused"></span> Contract Paused</span>`;
-            document.getElementById("btn-freeze-transfers").textContent = "Unfreeze Token Transfers (Activate)";
-            document.getElementById("btn-freeze-transfers").classList.replace("admin-btn--danger", "admin-btn--success");
-            document.getElementById("btn-freeze-transfers").dataset.isPaused = "true";
-        } else {
-            statusBadge.innerHTML = `<span class="admin-badge admin-badge--success" style="padding: 6px 12px; font-size: 13px;"><span class="contract-status-dot contract-status-dot--live"></span> Live Clone</span>`;
-            document.getElementById("btn-freeze-transfers").dataset.isPaused = "false";
-        }
+  async function init() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const address = (urlParams.get("address") || "").trim();
 
-        // Populate KPIs
-        const totalSupply = data.total_supply || 0;
-        const tokensSold = data.tokens_sold || 0;
-        const percentSold = totalSupply > 0 ? ((tokensSold / totalSupply) * 100).toFixed(1) : 0;
-        
-        document.getElementById('kpi-supply').textContent = totalSupply.toLocaleString();
-        document.getElementById('kpi-sold').innerHTML = `${tokensSold.toLocaleString()} <span style="font-size:16px; font-weight:600; color:var(--admin-text-muted);">(${percentSold}%)</span>`;
-        document.getElementById('kpi-sold-bar').style.width = `${percentSold}%`;
-        document.getElementById('kpi-holders-count').textContent = (data.holders ? data.holders.length : 0).toLocaleString();
-
-        // Populate Holders Table
-        const tbody = document.getElementById('holders-tbody');
-        if (!data.holders || data.holders.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--admin-text-muted);">No on-chain holders found for this contract.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = data.holders.map(holder => {
-            const shortWallet = `${holder.wallet_address.substring(0,8)}...${holder.wallet_address.substring(36)}`;
-            const holderPercent = totalSupply > 0 ? ((holder.balance / totalSupply) * 100).toFixed(2) : 0;
-            const blockExplorerUrl = `https://amoy.polygonscan.com/address/${holder.wallet_address}`;
-            const avatarUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${holder.wallet_address}`; // Use blockie style pseudorandom avatar
-
-            return `
-                <tr>
-                  <td>
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <img src="${avatarUrl}" alt="Avatar" style="width:24px; height:24px; border-radius:4px; opacity:0.8;">
-                        <div>
-                            <div class="wallet-address-display" style="padding:2px 6px; font-size:12px; border:none; background:none;">
-                                <a href="${blockExplorerUrl}" target="_blank" class="basescan-link">${shortWallet}</a>
-                                <button class="copy-btn" title="Copy Address" onclick="window._copyAddr('${holder.wallet_address}')">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
-                            </div>
-                            <div style="font-size:11px; color:var(--admin-text-muted); margin-left:6px;">${holder.email}</div>
-                        </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div style="font-family:'SF Mono', monospace; font-size:14px; font-weight:700; color:var(--admin-text-primary);">
-                        ${holder.balance.toLocaleString()}
-                    </div>
-                  </td>
-                  <td>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:12px; font-weight:600; width:40px;">${holderPercent}%</span>
-                        <div class="token-supply-bar" style="width:80px; margin-top:0;">
-                            <div class="sold" style="width: ${holderPercent}%"></div>
-                        </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div style="font-size:12px; color:var(--admin-text-muted);">${holder.last_synced_at}</div>
-                  </td>
-                </tr>
-            `;
-        }).join("");
-
-    } catch (e) {
-        console.error("Failed to load clone detail:", e);
-        document.getElementById('holders-tbody').innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--admin-danger);">Failed to load blockchain metadata: ${e.message}</td></tr>`;
-        document.getElementById('page-asset-title').textContent = "Error Loading Contract";
+    if (!ADDRESS_RE.test(address)) {
+      contractAddress = "";
+      setTitle(address ? "Invalid Contract Address" : "No Address Specified");
+      setText(els.cloneAddress, "N/A");
+      renderMessageRow("Invalid URL parameter.", "danger");
+      setStatus("Invalid contract address.");
+      disableFreeze("Invalid Contract Address");
+      return;
     }
-});
+
+    contractAddress = address.toLowerCase();
+    setText(els.cloneAddress, contractAddress);
+    setupExplorerLink(els.contractLink, contractAddress);
+    setupCopyButton(els.copyCloneAddress, contractAddress);
+    setupRefreshButton();
+    setupFreezeButton();
+
+    const response = await fetch(`/api/admin/blockchain/contracts/${contractAddress}/detail`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || `API Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    renderDetail(data);
+  }
+
+  function renderDetail(data) {
+    setTitle(data.title || "Untitled Contract");
+
+    const totalSupply = toSafeNumber(data.total_supply);
+    const tokensSold = toSafeNumber(data.tokens_sold);
+    const rawPercentSold = totalSupply > 0 ? (tokensSold / totalSupply) * 100 : 0;
+    const percentSold = clamp(rawPercentSold, 0, 100);
+
+    setText(els.kpiSupply, totalSupply.toLocaleString());
+    renderSoldKpi(tokensSold, rawPercentSold);
+    els.kpiSoldBar.style.width = `${percentSold.toFixed(1)}%`;
+    setText(els.kpiHoldersCount, Array.isArray(data.holders) ? data.holders.length.toLocaleString() : "0");
+    renderPauseState(data.pause_state || (data.is_paused ? "paused" : "unknown"));
+    renderHolders(Array.isArray(data.holders) ? data.holders : [], totalSupply);
+    setStatus(`Loaded contract ${data.title || contractAddress}.`);
+  }
+
+  function renderSoldKpi(tokensSold, rawPercentSold) {
+    els.kpiSold.replaceChildren();
+    els.kpiSold.appendChild(document.createTextNode(tokensSold.toLocaleString() + " "));
+
+    const pct = document.createElement("span");
+    pct.style.fontSize = "16px";
+    pct.style.fontWeight = "600";
+    pct.style.color = "var(--admin-text-muted)";
+    pct.textContent = `(${rawPercentSold.toFixed(1)}%)`;
+    els.kpiSold.appendChild(pct);
+  }
+
+  function renderPauseState(pauseState) {
+    els.statusBadge.replaceChildren();
+    const badge = document.createElement("span");
+    badge.style.padding = "6px 12px";
+    badge.style.fontSize = "13px";
+
+    const dot = document.createElement("span");
+    dot.className = "contract-status-dot";
+    badge.appendChild(dot);
+
+    if (pauseState === "paused") {
+      badge.className = "admin-badge admin-badge--warning";
+      dot.classList.add("contract-status-dot--paused");
+      badge.appendChild(document.createTextNode(" Contract Paused"));
+      els.statusBadge.appendChild(badge);
+      els.freezeButton.textContent = "Unfreeze Token Transfers (Activate)";
+      els.freezeButton.classList.remove("admin-btn--danger");
+      els.freezeButton.classList.add("admin-btn--success");
+      els.freezeButton.dataset.isPaused = "true";
+      els.freezeButton.disabled = false;
+      els.freezeButton.setAttribute("aria-disabled", "false");
+      return;
+    }
+
+    if (pauseState === "live") {
+      badge.className = "admin-badge admin-badge--success";
+      dot.classList.add("contract-status-dot--live");
+      badge.appendChild(document.createTextNode(" Live Clone"));
+      els.statusBadge.appendChild(badge);
+      els.freezeButton.textContent = "Freeze Token Transfers (Pause)";
+      els.freezeButton.classList.remove("admin-btn--success");
+      els.freezeButton.classList.add("admin-btn--danger");
+      els.freezeButton.dataset.isPaused = "false";
+      els.freezeButton.disabled = false;
+      els.freezeButton.setAttribute("aria-disabled", "false");
+      return;
+    }
+
+    badge.className = "admin-badge admin-badge--warning";
+    dot.classList.add("contract-status-dot--paused");
+    badge.appendChild(document.createTextNode(" State Unknown"));
+    els.statusBadge.appendChild(badge);
+    disableFreeze("Contract State Unknown");
+  }
+
+  function renderHolders(holders, totalSupply) {
+    els.holdersTbody.replaceChildren();
+
+    if (holders.length === 0) {
+      renderMessageRow("No on-chain holders found for this contract.", "muted");
+      return;
+    }
+
+    holders.forEach((holder) => {
+      const wallet = typeof holder.wallet_address === "string" ? holder.wallet_address : "";
+      const safeWallet = ADDRESS_RE.test(wallet) ? wallet : "";
+      const balance = toSafeNumber(holder.balance);
+      const holderPercent = totalSupply > 0 ? clamp((balance / totalSupply) * 100, 0, 100) : 0;
+      const tr = document.createElement("tr");
+
+      const walletTd = document.createElement("td");
+      const walletWrap = document.createElement("div");
+      walletWrap.style.cssText = "display:flex;align-items:center;gap:12px;";
+
+      const avatar = document.createElement("div");
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.style.cssText = "width:24px;height:24px;border-radius:4px;opacity:0.8;background:linear-gradient(135deg,var(--admin-accent),var(--admin-success));";
+
+      const walletTextWrap = document.createElement("div");
+      const addressWrap = document.createElement("div");
+      addressWrap.className = "wallet-address-display";
+      addressWrap.style.cssText = "padding:2px 6px;font-size:12px;border:none;background:none;";
+
+      const walletLink = document.createElement("a");
+      walletLink.className = "basescan-link";
+      walletLink.target = "_blank";
+      walletLink.rel = "noopener noreferrer";
+      walletLink.textContent = safeWallet ? shortAddress(safeWallet) : "Invalid wallet";
+      if (safeWallet) {
+        walletLink.href = explorerUrl(safeWallet);
+      }
+      addressWrap.appendChild(walletLink);
+
+      const copyBtn = createCopyButton(safeWallet, "Copy holder wallet address");
+      addressWrap.appendChild(copyBtn);
+
+      const email = document.createElement("div");
+      email.style.cssText = "font-size:11px;color:var(--admin-text-muted);margin-left:6px;";
+      email.textContent = holder.email || "Unknown holder";
+
+      walletTextWrap.append(addressWrap, email);
+      walletWrap.append(avatar, walletTextWrap);
+      walletTd.appendChild(walletWrap);
+
+      const balanceTd = document.createElement("td");
+      const balanceDiv = document.createElement("div");
+      balanceDiv.style.cssText = "font-family:'SF Mono',monospace;font-size:14px;font-weight:700;color:var(--admin-text-primary);";
+      balanceDiv.textContent = balance.toLocaleString();
+      balanceTd.appendChild(balanceDiv);
+
+      const percentTd = document.createElement("td");
+      const percentWrap = document.createElement("div");
+      percentWrap.style.cssText = "display:flex;align-items:center;gap:8px;";
+      const percentLabel = document.createElement("span");
+      percentLabel.style.cssText = "font-size:12px;font-weight:600;width:40px;";
+      percentLabel.textContent = `${holderPercent.toFixed(2)}%`;
+      const bar = document.createElement("div");
+      bar.className = "token-supply-bar";
+      bar.style.cssText = "width:80px;margin-top:0;";
+      const sold = document.createElement("div");
+      sold.className = "sold";
+      sold.style.width = `${holderPercent.toFixed(2)}%`;
+      bar.appendChild(sold);
+      percentWrap.append(percentLabel, bar);
+      percentTd.appendChild(percentWrap);
+
+      const syncTd = document.createElement("td");
+      const sync = document.createElement("div");
+      sync.style.cssText = "font-size:12px;color:var(--admin-text-muted);";
+      sync.textContent = holder.last_synced_at || "Not synced";
+      syncTd.appendChild(sync);
+
+      tr.append(walletTd, balanceTd, percentTd, syncTd);
+      els.holdersTbody.appendChild(tr);
+    });
+  }
+
+  function setupFreezeButton() {
+    els.freezeButton.addEventListener("click", async () => {
+      if (!contractAddress || els.freezeButton.disabled) return;
+
+      const isPaused = els.freezeButton.dataset.isPaused === "true";
+      const action = isPaused ? "UNPAUSE" : "FREEZE";
+      const endpoint = isPaused
+        ? `/api/admin/blockchain/contracts/${contractAddress}/unpause`
+        : `/api/admin/blockchain/contracts/${contractAddress}/pause`;
+
+      const confirmed = await confirmAction({
+        title: `${action === "FREEZE" ? "Freeze" : "Unfreeze"} token transfers`,
+        message: `This will ${isPaused ? "resume" : "halt"} transfers for ${contractAddress}. Continue only for a verified operational, legal, or security reason.`,
+        confirmText: action === "FREEZE" ? "Freeze Transfers" : "Unfreeze Transfers",
+        type: action === "FREEZE" ? "danger" : "warning",
+      });
+      if (!confirmed) return;
+
+      const originalText = els.freezeButton.textContent;
+      els.freezeButton.disabled = true;
+      els.freezeButton.setAttribute("aria-busy", "true");
+      els.freezeButton.textContent = `${action === "FREEZE" ? "Pausing" : "Unpausing"}... sending TX`;
+      setStatus(`${action} request submitted.`);
+
+      try {
+        const resp = await fetch(endpoint, { method: "POST" });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${resp.status}`);
+        }
+        const result = await resp.json();
+        showToast(`${action} successful. Tx Hash: ${result.tx_hash || "unknown"}`, "success");
+        setStatus(`${action} successful.`);
+        window.location.reload();
+      } catch (err) {
+        showToast(`${action} failed: ${getErrorMessage(err)}`, "error");
+        setStatus(`${action} failed.`);
+        els.freezeButton.disabled = false;
+        els.freezeButton.removeAttribute("aria-busy");
+        els.freezeButton.textContent = originalText;
+      }
+    });
+  }
+
+  function setupRefreshButton() {
+    if (!els.refreshButton) return;
+    els.refreshButton.addEventListener("click", () => {
+      setStatus("Refreshing contract detail.");
+      window.location.reload();
+    });
+  }
+
+  async function confirmAction(options) {
+    if (typeof window.pooolConfirm === "function") {
+      return window.pooolConfirm(options);
+    }
+    showToast("Confirmation dialog unavailable. Please refresh and try again.", "error");
+    return false;
+  }
+
+  function renderMessageRow(message, type) {
+    if (!els.holdersTbody) return;
+    els.holdersTbody.replaceChildren();
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 4;
+    td.style.cssText = "text-align:center;padding:40px;";
+    td.style.color = type === "danger" ? "var(--admin-danger)" : "var(--admin-text-muted)";
+    td.textContent = message;
+    tr.appendChild(td);
+    els.holdersTbody.appendChild(tr);
+  }
+
+  function disableFreeze(text) {
+    els.freezeButton.textContent = text;
+    els.freezeButton.disabled = true;
+    els.freezeButton.setAttribute("aria-disabled", "true");
+    els.freezeButton.dataset.isPaused = "";
+  }
+
+  function setupExplorerLink(link, address) {
+    if (!link) return;
+    link.href = explorerUrl(address);
+    link.rel = "noopener noreferrer";
+  }
+
+  function explorerUrl(address) {
+    return `https://amoy.polygonscan.com/address/${encodeURIComponent(address)}`;
+  }
+
+  function setupCopyButton(button, text) {
+    if (!button) return;
+    button.addEventListener("click", () => copyText(text));
+  }
+
+  function createCopyButton(text, label) {
+    const button = document.createElement("button");
+    button.className = "copy-btn";
+    button.type = "button";
+    button.title = label;
+    button.setAttribute("aria-label", label);
+    button.disabled = !text;
+    button.appendChild(copyIcon(10));
+    if (text) button.addEventListener("click", () => copyText(text));
+    return button;
+  }
+
+  async function copyText(text) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("Address copied", "success");
+      setStatus("Address copied.");
+    } catch (_err) {
+      showToast("Copy failed. Select the address manually.", "error");
+      setStatus("Address copy failed.");
+    }
+  }
+
+  function copyIcon(size) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", String(size));
+    svg.setAttribute("height", String(size));
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("aria-hidden", "true");
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "9");
+    rect.setAttribute("y", "9");
+    rect.setAttribute("width", "13");
+    rect.setAttribute("height", "13");
+    rect.setAttribute("rx", "2");
+    rect.setAttribute("ry", "2");
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1");
+
+    svg.append(rect, path);
+    return svg;
+  }
+
+  function showToast(message, type) {
+    if (window.showPooolToast) {
+      window.showPooolToast(null, message, type || "info");
+      return;
+    }
+
+    let toast = document.getElementById("contract-detail-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "contract-detail-toast";
+      toast.setAttribute("role", "status");
+      toast.style.cssText = "position:fixed;right:24px;bottom:24px;z-index:99999;padding:12px 16px;border-radius:8px;color:#fff;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.18);";
+      document.body.appendChild(toast);
+    }
+    toast.style.background = type === "error" ? "#D92D20" : "#027A48";
+    toast.textContent = message;
+    toast.style.display = "block";
+    window.clearTimeout(toast._hideTimer);
+    toast._hideTimer = window.setTimeout(() => {
+      toast.style.display = "none";
+    }, 4000);
+  }
+
+  function setStatus(message) {
+    if (els.statusRegion) els.statusRegion.textContent = message;
+  }
+
+  function setTitle(title) {
+    setText(els.title, title);
+  }
+
+  function setText(element, text) {
+    if (element) element.textContent = text;
+  }
+
+  function toSafeNumber(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function shortAddress(address) {
+    return `${address.substring(0, 8)}...${address.substring(36)}`;
+  }
+
+  function getErrorMessage(err) {
+    return err && err.message ? err.message : "Unknown error";
+  }
+})();

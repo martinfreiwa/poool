@@ -4,17 +4,86 @@ use axum::{
     extract::{Json, State},
     response::IntoResponse,
 };
+use serde::Deserialize;
+use serde_json::json;
 use sqlx::Row;
+
+const MAX_TITLE_LEN: usize = 255;
+const MAX_MESSAGE_LEN: usize = 2_000;
 
 //
 //  Admin Notifications API
 //
 
+/// Request body for broadcasting an admin notification to platform users.
+#[derive(Debug, Deserialize)]
+pub struct BroadcastNotificationRequest {
+    #[serde(rename = "type")]
+    notification_type: String,
+    title: String,
+    message: String,
+}
+
+impl BroadcastNotificationRequest {
+    fn validate(self) -> Result<ValidatedBroadcastNotification, ApiError> {
+        let notification_type = self.notification_type.trim().to_string();
+        let title = self.title.trim().to_string();
+        let message = self.message.trim().to_string();
+
+        if !matches!(
+            notification_type.as_str(),
+            "kyc" | "investment" | "payout" | "system" | "promo"
+        ) {
+            return Err(ApiError::BadRequest(
+                "Notification type is invalid.".to_string(),
+            ));
+        }
+
+        if title.is_empty() {
+            return Err(ApiError::BadRequest("Title is required.".to_string()));
+        }
+
+        if title.chars().count() > MAX_TITLE_LEN {
+            return Err(ApiError::BadRequest(format!(
+                "Title must be {} characters or fewer.",
+                MAX_TITLE_LEN
+            )));
+        }
+
+        if message.is_empty() {
+            return Err(ApiError::BadRequest("Message is required.".to_string()));
+        }
+
+        if message.chars().count() > MAX_MESSAGE_LEN {
+            return Err(ApiError::BadRequest(format!(
+                "Message must be {} characters or fewer.",
+                MAX_MESSAGE_LEN
+            )));
+        }
+
+        Ok(ValidatedBroadcastNotification {
+            notification_type,
+            title,
+            message,
+        })
+    }
+}
+
+struct ValidatedBroadcastNotification {
+    notification_type: String,
+    title: String,
+    message: String,
+}
+
 /// GET /api/admin/notifications  Recent notifications
 pub async fn api_admin_notifications(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<axum::response::Response, ApiError> {
+    admin
+        .require_permission(&state.db, "notifications.view")
+        .await?;
+
     let rows = sqlx::query(
         r#"SELECT n.id::text, n.title, n.message, n.type, n.is_read, n.created_at::text,
                   COALESCE(u.email, '') AS user_email,
@@ -26,8 +95,7 @@ pub async fn api_admin_notifications(
            ORDER BY n.created_at DESC LIMIT 200"#,
     )
     .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    .await?;
 
     let notifs: Vec<serde_json::Value> = rows
         .iter()
@@ -54,39 +122,43 @@ pub async fn api_admin_notifications(
 
 /// POST /api/admin/notifications/broadcast  Send to all users
 pub async fn api_admin_notification_broadcast(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
-    Json(body): Json<serde_json::Value>,
+    Json(body): Json<BroadcastNotificationRequest>,
 ) -> Result<axum::response::Response, ApiError> {
-    let title = body.get("title").and_then(|v| v.as_str()).unwrap_or("");
-    let message = body.get("message").and_then(|v| v.as_str()).unwrap_or("");
-    let ntype = body
-        .get("type")
-        .and_then(|v| v.as_str())
-        .unwrap_or("system");
+    admin
+        .require_permission(&state.db, "notifications.send")
+        .await?;
+    let body = body.validate()?;
 
-    if title.is_empty() {
-        return Err(ApiError::BadRequest("Title is required".to_string()));
-    }
-
+    let mut tx = state.db.begin().await?;
     let result = sqlx::query(
         r#"INSERT INTO notifications (user_id, title, message, type)
            SELECT id, $1, $2, $3 FROM users"#,
     )
-    .bind(title)
-    .bind(message)
-    .bind(ntype)
-    .execute(&state.db)
-    .await;
+    .bind(&body.title)
+    .bind(&body.message)
+    .bind(&body.notification_type)
+    .execute(&mut *tx)
+    .await?;
 
-    match result {
-        Ok(r) => Ok(Json(
-            serde_json::json!({"status":"broadcast_sent","count": r.rows_affected()}),
-        )
-        .into_response()),
-        Err(e) => {
-            tracing::error!("Broadcast failed: {e}");
-            Err(ApiError::Internal("Database error".to_string()))
-        }
-    }
+    let recipient_count = result.rows_affected();
+    let audit_payload = json!({
+        "type": body.notification_type,
+        "title": body.title,
+        "recipient_count": recipient_count
+    });
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state, metadata)
+           VALUES ($1, 'notification.broadcast', 'notifications', $2, $2)"#,
+    )
+    .bind(admin.user.id)
+    .bind(audit_payload)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(Json(json!({"status":"broadcast_sent","count": recipient_count})).into_response())
 }

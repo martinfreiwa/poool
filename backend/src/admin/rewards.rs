@@ -5,6 +5,8 @@ use axum::{
     response::IntoResponse,
 };
 
+const AFFILIATE_REJECTION_REASON_MAX_CHARS: usize = 1000;
+
 //
 //  Admin Rewards API
 //
@@ -839,6 +841,12 @@ pub async fn api_admin_affiliate_reject(
         return Err(ApiError::BadRequest(
             "A rejection reason is required.".to_string(),
         ));
+    }
+    if reason.chars().count() > AFFILIATE_REJECTION_REASON_MAX_CHARS {
+        return Err(ApiError::BadRequest(format!(
+            "Rejection reason must be {} characters or fewer.",
+            AFFILIATE_REJECTION_REASON_MAX_CHARS
+        )));
     }
 
     let mut tx = state.db.begin().await.map_err(|e| {

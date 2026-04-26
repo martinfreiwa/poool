@@ -148,7 +148,7 @@
     <div style="background: var(--admin-bg-card); border: 1px solid var(--admin-border); border-radius: var(--admin-radius-xl); padding: 28px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; animation: admin-fadeIn 0.2s ease-out;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h3 style="font-size: 18px; font-weight: 700; color: var(--admin-text-primary); margin: 0;" id="details-modal-title">Application Details</h3>
-        <button type="button" onclick="closeDetailsModal()" aria-label="Close application details" style="background: none; border: none; color: var(--admin-text-muted); cursor: pointer; padding: 4px;">
+        <button type="button" id="details-close-btn" aria-label="Close application details" style="background: none; border: none; color: var(--admin-text-muted); cursor: pointer; padding: 4px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
@@ -225,17 +225,19 @@
       <p style="font-size: 13px; color: var(--admin-text-secondary); margin: 0 0 20px;" id="approve-modal-email">—</p>
       <div class="admin-form-group" style="margin-bottom: 14px">
         <label class="admin-form-label" for="approve-referral-code">Referral Code *</label>
-        <input class="admin-input" type="text" id="approve-referral-code" placeholder="e.g. PARTNER_JOHN" style="text-transform: uppercase" />
-        <span style="font-size: 11px; color: var(--admin-text-muted);">Unique brand-aligned code for this partner</span>
+        <input class="admin-input" type="text" id="approve-referral-code" placeholder="e.g. PARTNER_JOHN" minlength="3" maxlength="20" pattern="[A-Z0-9_-]{3,20}" style="text-transform: uppercase" aria-describedby="approve-referral-help approve-referral-error" />
+        <span id="approve-referral-help" style="font-size: 11px; color: var(--admin-text-muted);">3-20 uppercase letters, numbers, underscores, or hyphens</span>
+        <span id="approve-referral-error" role="alert" style="display: none; font-size: 11px; color: var(--admin-danger); margin-top: 4px;"></span>
       </div>
       <div class="admin-form-group" style="margin-bottom: 20px">
         <label class="admin-form-label" for="approve-commission-rate">Commission Rate (basis points) *</label>
-        <input class="admin-input" type="number" id="approve-commission-rate" value="50" min="1" max="450" />
-        <span style="font-size: 11px; color: var(--admin-text-muted);">50 bps = 0.50%. Max: 450 bps (4.50%)</span>
+        <input class="admin-input" type="number" id="approve-commission-rate" value="50" min="1" max="450" aria-describedby="approve-commission-help approve-commission-error" />
+        <span id="approve-commission-help" style="font-size: 11px; color: var(--admin-text-muted);">50 bps = 0.50%. Max: 450 bps (4.50%)</span>
+        <span id="approve-commission-error" role="alert" style="display: none; font-size: 11px; color: var(--admin-danger); margin-top: 4px;"></span>
       </div>
       <div style="display: flex; gap: 8px; justify-content: flex-end">
-        <button type="button" class="admin-btn admin-btn--secondary" onclick="closeApproveModal()">Cancel</button>
-        <button type="button" class="admin-btn admin-btn--primary" id="approve-confirm-btn" onclick="confirmApprove()">
+        <button type="button" class="admin-btn admin-btn--secondary" id="approve-cancel-btn">Cancel</button>
+        <button type="button" class="admin-btn admin-btn--primary" id="approve-confirm-btn">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8l3.5 3.5L13 4" /></svg>
           Approve
         </button>
@@ -250,11 +252,13 @@
       <p style="font-size: 13px; color: var(--admin-text-secondary); margin: 0 0 20px;" id="reject-modal-email">—</p>
       <div class="admin-form-group" style="margin-bottom: 20px">
         <label class="admin-form-label" for="reject-reason">Reason for Rejection *</label>
-        <textarea class="admin-textarea" id="reject-reason" placeholder="Explain why this application is being rejected…" rows="3"></textarea>
+        <textarea class="admin-textarea" id="reject-reason" placeholder="Explain why this application is being rejected…" rows="3" maxlength="1000" aria-describedby="reject-reason-help reject-reason-error"></textarea>
+        <span id="reject-reason-help" style="font-size: 11px; color: var(--admin-text-muted);">Maximum 1000 characters.</span>
+        <span id="reject-reason-error" role="alert" style="display: none; font-size: 11px; color: var(--admin-danger); margin-top: 4px;"></span>
       </div>
       <div style="display: flex; gap: 8px; justify-content: flex-end">
-        <button type="button" class="admin-btn admin-btn--secondary" onclick="closeRejectModal()">Cancel</button>
-        <button type="button" class="admin-btn admin-btn--danger" id="reject-confirm-btn" onclick="confirmReject()">
+        <button type="button" class="admin-btn admin-btn--secondary" id="reject-cancel-btn">Cancel</button>
+        <button type="button" class="admin-btn admin-btn--danger" id="reject-confirm-btn">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
           Reject
         </button>

@@ -56,7 +56,6 @@
                 <label class="admin-form-label">Matching Algorithm</label>
                 <select class="admin-select" id="setting-algo">
                   <option value="price-time" selected>Price-Time Priority (FIFO)</option>
-                  <option value="pro-rata">Pro-Rata</option>
                 </select>
                 <div style="font-size:11px; color:var(--admin-text-muted); margin-top:4px;">Determines order priority in the matching engine</div>
               </div>
@@ -93,14 +92,6 @@
                 </select>
               </div>
               <div class="admin-form-group">
-                <label class="admin-form-label">On-Chain Network</label>
-                <select class="admin-select" id="setting-chain">
-                  <option value="base" selected>Base L2 (Mainnet)</option>
-                  <option value="base-sepolia">Base Sepolia (Testnet)</option>
-                  <option value="ethereum">Ethereum Mainnet</option>
-                </select>
-              </div>
-              <div class="admin-form-group">
                 <label class="admin-form-label">Max Gas Price (Gwei)</label>
                 <input type="number" class="admin-input" id="setting-gas" value="5" step="1" min="1">
               </div>
@@ -121,16 +112,6 @@
             <div id="trading-hours-body">
               <!-- Filled by JS -->
             </div>
-          </div>
-        </div>
-
-        <!-- Notification Preferences -->
-        <div class="admin-card" style="margin-bottom:20px;">
-          <div class="admin-card-header">
-            <h3 class="admin-card-title">Admin Notification Preferences</h3>
-          </div>
-          <div class="admin-card-body" id="notif-prefs-body">
-            <!-- Filled by JS -->
           </div>
         </div>
 

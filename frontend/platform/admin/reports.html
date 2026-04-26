@@ -9,7 +9,6 @@
   <title>Reports &amp; Exports | Admin | POOOL</title>
   <meta name="description"
     content="POOOL Admin — Generate, preview, and export platform reports for compliance and analytics." />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
@@ -57,14 +56,16 @@
                 gap: 8px;
                 flex-wrap: wrap;
               ">
-            <label style="
+            <span style="
                   font-size: 12px;
                   font-weight: 600;
                   color: var(--admin-text-muted);
-                ">Date Range:</label>
-            <input type="date" id="range-from" class="admin-input" style="width: 140px" title="From" />
+                ">Date Range:</span>
+            <label for="range-from" style="font-size: 12px; font-weight: 600; color: var(--admin-text-muted);">From</label>
+            <input type="date" id="range-from" class="admin-input" style="width: 140px" />
             <span style="color: var(--admin-text-muted); font-size: 14px">→</span>
-            <input type="date" id="range-to" class="admin-input" style="width: 140px" title="To" />
+            <label for="range-to" style="font-size: 12px; font-weight: 600; color: var(--admin-text-muted);">To</label>
+            <input type="date" id="range-to" class="admin-input" style="width: 140px" />
             <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="setPreset('30d')">
               30d
             </button>
@@ -76,6 +77,17 @@
             </button>
           </div>
         </div>
+
+        <div id="reports-status" role="status" aria-live="polite" style="
+              display: none;
+              margin: 0 0 16px;
+              padding: 10px 12px;
+              border: 1px solid var(--admin-border);
+              border-radius: var(--admin-radius-md);
+              background: var(--admin-surface, #fff);
+              color: var(--admin-text-muted);
+              font-size: 13px;
+            "></div>
 
         <!-- Section: Financial Reports -->
         <div style="margin-bottom: 28px">

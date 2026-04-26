@@ -39,6 +39,7 @@ markers = [
     "smoke: Quick page-load health checks (< 5 sec each)",
     "auth: Authentication flows (login, signup, OAuth, 2FA)",
     "admin: Admin dashboard and operational flows",
+    "blockchain: Blockchain admin and on-chain sync flows",
     "marketplace: Marketplace, trading, and asset flows",
     "wallet: Wallet deposits, withdrawals, balance",
     "developer: Developer/issuer dashboard pipeline",

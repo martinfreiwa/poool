@@ -1,156 +1,320 @@
 /**
  * P2P Offers — mp-p2p.js
- * Fetches P2P offers from the backend API with price deviation warnings.
- * Falls back to mock data if the API is unavailable.
+ * Fetches real P2P offers from the backend API and supports audited admin cancellation.
  */
 (function () {
   'use strict';
 
   const API = '/api/admin/marketplace/p2p';
+  const tbody = () => document.getElementById('p2p-body');
   let offers = [];
-  let usingMockData = false;
 
-  // ── Mock Data ───────────────────────────────────────────────────
-  const MOCK_OFFERS = [
-    { id: 'P2P-001', seller: 'USR-8291', asset: 'Bali Villa Resort (BVRT)', qty: 200, offerPrice: 58.00, marketPrice: 52.40, created: '1h ago' },
-    { id: 'P2P-002', seller: 'USR-3384', asset: 'Jakarta Office Tower (JOTX)', qty: 50, offerPrice: 108.00, marketPrice: 105.00, created: '3h ago' },
-    { id: 'P2P-003', seller: 'USR-6643', asset: 'Surabaya Warehouse (SWHS)', qty: 800, offerPrice: 30.00, marketPrice: 23.75, created: '5h ago' },
-    { id: 'P2P-004', seller: 'USR-1738', asset: 'Bandung Tech Hub (BTHB)', qty: 100, offerPrice: 88.00, marketPrice: 87.20, created: '6h ago' },
-    { id: 'P2P-005', seller: 'USR-5561', asset: 'Yogya Heritage Hotel (YHHT)', qty: 300, offerPrice: 42.00, marketPrice: 34.90, created: '8h ago' },
-    { id: 'P2P-006', seller: 'USR-2201', asset: 'Bali Villa Resort (BVRT)', qty: 150, offerPrice: 51.00, marketPrice: 52.40, created: '12h ago' },
-    { id: 'P2P-007', seller: 'USR-7829', asset: 'Jakarta Office Tower (JOTX)', qty: 40, offerPrice: 130.00, marketPrice: 105.00, created: '14h ago' },
-    { id: 'P2P-008', seller: 'USR-4410', asset: 'Surabaya Warehouse (SWHS)', qty: 600, offerPrice: 24.00, marketPrice: 23.75, created: '1d ago' },
-  ];
+  function csrfToken() {
+    return document.cookie
+      .split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith('csrf_token='))
+      ?.split('=')
+      .slice(1)
+      .join('=') || '';
+  }
+
+  function formatMoney(cents) {
+    if (typeof cents !== 'number') return '--';
+    return `$${(cents / 100).toFixed(2)}`;
+  }
+
+  function formatEmail(email) {
+    if (!email) return '--';
+    return email.split('@')[0] || email;
+  }
+
+  function shortId(id) {
+    return typeof id === 'string' && id.length > 8 ? id.substring(0, 8) : (id || '--');
+  }
 
   function timeAgo(dateStr) {
-    const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-    if (diff < 60) return Math.floor(diff) + 's ago';
-    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-    return Math.floor(diff / 86400) + 'd ago';
+    const timestamp = new Date(dateStr).getTime();
+    if (!Number.isFinite(timestamp)) return '--';
+    const diff = Math.max(0, (Date.now() - timestamp) / 1000);
+    if (diff < 60) return `${Math.floor(diff)}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  }
+
+  function formatDateTime(dateStr) {
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return '--';
+    return date.toLocaleString();
+  }
+
+  function setKpis(warningCount) {
+    const total = document.getElementById('kpi-p2p-total');
+    const warnings = document.getElementById('kpi-p2p-warnings');
+    if (total) total.textContent = offers.length;
+    if (warnings) warnings.textContent = warningCount;
+  }
+
+  function clearTable() {
+    const body = tbody();
+    if (!body) return null;
+    body.replaceChildren();
+    return body;
+  }
+
+  function renderState(message, detail, retryable) {
+    const body = clearTable();
+    if (!body) return;
+
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 13;
+    cell.className = 'admin-table-empty';
+
+    const title = document.createElement('div');
+    title.style.fontWeight = '600';
+    title.textContent = message;
+    cell.appendChild(title);
+
+    if (detail) {
+      const sub = document.createElement('div');
+      sub.style.marginTop = '4px';
+      sub.style.color = 'var(--admin-text-muted)';
+      sub.textContent = detail;
+      cell.appendChild(sub);
+    }
+
+    if (retryable) {
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'admin-btn admin-btn--secondary admin-btn--sm';
+      retry.style.marginTop = '12px';
+      retry.textContent = 'Retry';
+      retry.addEventListener('click', loadP2P);
+      cell.appendChild(retry);
+    }
+
+    row.appendChild(cell);
+    body.appendChild(row);
+    setKpis(0);
+  }
+
+  function appendTextCell(row, text, options = {}) {
+    const cell = document.createElement('td');
+    if (options.alignRight) cell.style.textAlign = 'right';
+    if (options.center) cell.style.textAlign = 'center';
+    if (options.muted) cell.style.color = 'var(--admin-text-muted)';
+    if (options.bold) cell.style.fontWeight = '600';
+    if (options.mono) cell.style.fontVariantNumeric = 'tabular-nums';
+    cell.textContent = text;
+    row.appendChild(cell);
+    return cell;
+  }
+
+  function appendCodeCell(row, text) {
+    const cell = document.createElement('td');
+    const code = document.createElement('code');
+    code.style.fontSize = '11px';
+    code.style.padding = '2px 6px';
+    code.style.background = 'var(--admin-code-bg)';
+    code.style.borderRadius = '4px';
+    code.textContent = text;
+    cell.appendChild(code);
+    row.appendChild(cell);
+    return cell;
+  }
+
+  function badge(text, variant) {
+    const span = document.createElement('span');
+    const allowed = new Set(['neutral', 'warning', 'success', 'danger']);
+    span.className = `admin-badge admin-badge--${allowed.has(variant) ? variant : 'neutral'}`;
+    span.textContent = text;
+    return span;
+  }
+
+  function statusVariant(status) {
+    if (status === 'pending') return 'warning';
+    if (status === 'accepted') return 'success';
+    if (status === 'admin_cancelled' || status === 'cancelled' || status === 'declined') return 'danger';
+    return 'neutral';
+  }
+
+  function appendDeviationCell(row, offer) {
+    const cell = document.createElement('td');
+    const marketPrice = typeof offer.market_price_cents === 'number' ? offer.market_price_cents : null;
+    const devPct = typeof offer.price_deviation_pct === 'number' ? offer.price_deviation_pct : null;
+    if (devPct === null || marketPrice === null) {
+      cell.appendChild(badge('N/A', 'neutral'));
+    } else {
+      const devAbs = Math.abs(devPct);
+      const sign = devPct >= 0 ? '+' : '';
+      if (devAbs > 20) {
+        const warning = document.createElement('span');
+        warning.className = 'mp-price-warning';
+        warning.textContent = `${sign}${devPct.toFixed(2)}%`;
+        cell.appendChild(warning);
+      } else if (devAbs > 5) {
+        cell.appendChild(badge(`${sign}${devPct.toFixed(2)}%`, 'warning'));
+      } else {
+        cell.appendChild(badge(`${sign}${devPct.toFixed(2)}%`, 'success'));
+      }
+    }
+    row.appendChild(cell);
   }
 
   function render() {
-    const tbody = document.getElementById('p2p-body');
-    if (!tbody) return;
+    const body = clearTable();
+    if (!body) return;
 
-    // KPIs
-    const kTotal = document.getElementById('kpi-p2p-total');
-    const kWarning = document.getElementById('kpi-p2p-warnings');
-    if (kTotal) kTotal.textContent = offers.length;
+    if (!offers.length) {
+      renderState('No P2P offers found', 'Pending, accepted, and cancelled P2P offers will appear here.', false);
+      return;
+    }
 
     let warningCount = 0;
+    offers.forEach((offer) => {
+      const devPct = typeof offer.price_deviation_pct === 'number' ? offer.price_deviation_pct : null;
+      if (devPct !== null && Math.abs(devPct) > 20) warningCount += 1;
 
-    tbody.innerHTML = offers.map((o, i) => {
-      let offerId, seller, asset, qty, offerPrice, marketPrice, devPct, created;
+      const row = document.createElement('tr');
+      row.dataset.offerId = offer.id;
 
-      if (usingMockData) {
-        offerId = o.id; seller = o.seller; asset = o.asset; qty = o.qty;
-        offerPrice = o.offerPrice; marketPrice = o.marketPrice;
-        devPct = (((o.offerPrice - o.marketPrice) / o.marketPrice) * 100).toFixed(1);
-        created = o.created;
+      appendCodeCell(row, shortId(offer.id));
+      appendTextCell(row, (offer.side || '--').toUpperCase(), { bold: true });
+      appendCodeCell(row, formatEmail(offer.maker_email));
+      appendCodeCell(row, formatEmail(offer.taker_email));
+      appendTextCell(row, offer.asset_name || shortId(offer.asset_id), { bold: true });
+      appendTextCell(row, Number(offer.quantity || 0).toLocaleString(), { alignRight: true, mono: true });
+      appendTextCell(row, formatMoney(offer.price_cents), { alignRight: true, mono: true, bold: true });
+      appendTextCell(row, formatMoney(offer.market_price_cents), { alignRight: true, mono: true, muted: true });
+      appendDeviationCell(row, offer);
+
+      const statusCell = document.createElement('td');
+      statusCell.appendChild(badge(offer.status || '--', statusVariant(offer.status)));
+      row.appendChild(statusCell);
+
+      const expiresCell = appendTextCell(row, formatDateTime(offer.expires_at), { muted: true });
+      expiresCell.style.fontSize = '12px';
+      const createdCell = appendTextCell(row, timeAgo(offer.created_at), { muted: true });
+      createdCell.style.fontSize = '12px';
+
+      const actionCell = document.createElement('td');
+      actionCell.style.textAlign = 'center';
+      if (offer.status === 'pending') {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'admin-btn admin-btn--danger admin-btn--sm btn-cancel-p2p';
+        button.textContent = 'Admin Cancel';
+        button.addEventListener('click', () => openCancelModal(offer, button));
+        actionCell.appendChild(button);
       } else {
-        offerId = o.id.substring(0, 8);
-        seller = o.maker_email ? o.maker_email.split('@')[0] : '—';
-        asset = o.asset_name || o.asset_id.substring(0, 8);
-        qty = o.quantity;
-        offerPrice = o.price_cents / 100;
-        marketPrice = o.market_price_cents ? o.market_price_cents / 100 : null;
-        devPct = o.price_deviation_pct;
-        created = timeAgo(o.created_at);
+        actionCell.textContent = '--';
+        actionCell.style.color = 'var(--admin-text-muted)';
       }
+      row.appendChild(actionCell);
 
-      const devAbs = devPct !== null ? Math.abs(parseFloat(devPct)) : 0;
-      const isWarning = devAbs > 20;
-      if (isWarning) warningCount++;
-      const devSign = devPct !== null && parseFloat(devPct) >= 0 ? '+' : '';
+      body.appendChild(row);
+    });
 
-      let devHTML;
-      if (devPct === null || marketPrice === null) {
-        devHTML = '<span class="admin-badge admin-badge--neutral">N/A</span>';
-      } else if (isWarning) {
-        devHTML = `<span class="mp-price-warning">⚠️ ${devSign}${devPct}%</span>`;
-      } else if (devAbs > 5) {
-        devHTML = `<span class="admin-badge admin-badge--warning">${devSign}${devPct}%</span>`;
-      } else {
-        devHTML = `<span class="admin-badge admin-badge--success">${devSign}${devPct}%</span>`;
-      }
+    setKpis(warningCount);
+  }
 
-      const statusBadge = o.status
-        ? `<span class="admin-badge admin-badge--${o.status === 'pending' ? 'warning' : (o.status === 'accepted' ? 'success' : 'neutral')}"><span class="admin-badge-dot"></span>${o.status}</span>`
-        : '';
+  function buildCancelBody() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'admin-form-group';
 
-      return `
-        <tr id="p2p-row-${i}">
-          <td><code style="font-size:11px; padding:2px 6px; background:var(--admin-code-bg); border-radius:4px;">${offerId}</code></td>
-          <td><code style="font-size:11px; padding:2px 6px; background:var(--admin-code-bg); border-radius:4px;">${seller}</code></td>
-          <td style="font-weight:600; color:var(--admin-text-primary);">${asset}</td>
-          <td style="text-align:right; font-variant-numeric:tabular-nums;">${qty.toLocaleString()}</td>
-          <td style="text-align:right; font-weight:600; font-variant-numeric:tabular-nums;">$${offerPrice.toFixed(2)}</td>
-          <td style="text-align:right; font-variant-numeric:tabular-nums; color:var(--admin-text-muted);">${marketPrice !== null ? '$' + marketPrice.toFixed(2) : '—'}</td>
-          <td>${devHTML}</td>
-          <td style="font-size:12px; color:var(--admin-text-muted);">${created}</td>
-          <td style="text-align:center;">
-            <button class="admin-btn admin-btn--danger admin-btn--sm btn-cancel-p2p" data-idx="${i}">Admin Cancel</button>
-          </td>
-        </tr>
-      `;
-    }).join('');
+    const label = document.createElement('label');
+    label.className = 'admin-form-label';
+    label.setAttribute('for', 'p2p-cancel-reason');
+    label.textContent = 'Cancellation Reason *';
 
-    if (kWarning) kWarning.textContent = warningCount;
+    const textarea = document.createElement('textarea');
+    textarea.className = 'admin-textarea';
+    textarea.id = 'p2p-cancel-reason';
+    textarea.maxLength = 500;
+    textarea.placeholder = 'e.g. Price significantly deviates from market';
+    textarea.setAttribute('aria-describedby', 'p2p-cancel-error');
 
-    document.querySelectorAll('.btn-cancel-p2p').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const idx = parseInt(this.dataset.idx);
-        const offer = offers[idx];
-        const label = usingMockData ? offer.id : offer.id.substring(0, 8);
-        const assetLabel = usingMockData ? offer.asset : (offer.asset_name || 'Asset');
-        const priceLabel = usingMockData ? offer.offerPrice.toFixed(2) : (offer.price_cents / 100).toFixed(2);
+    const error = document.createElement('div');
+    error.id = 'p2p-cancel-error';
+    error.style.marginTop = '6px';
+    error.style.color = 'var(--admin-danger)';
+    error.style.fontSize = '12px';
+    error.setAttribute('role', 'alert');
 
-        if (typeof mpModal === 'function') {
-          mpModal({
-            title: 'Cancel P2P Offer',
-            subtitle: `${label} — ${assetLabel} @ $${priceLabel}`,
-            bodyHTML: `
-              <div class="admin-form-group">
-                <label class="admin-form-label">Cancellation Reason *</label>
-                <textarea class="admin-textarea" id="p2p-cancel-reason" placeholder="e.g. Price significantly deviates from market…"></textarea>
-              </div>
-            `,
-            confirmLabel: 'Cancel Offer',
-            onConfirm: (overlay) => {
-              const reason = overlay.querySelector('#p2p-cancel-reason')?.value?.trim();
-              if (!reason) {
-                mpToast('Please provide a reason', 'error');
-                return;
-              }
-              const row = document.getElementById(`p2p-row-${idx}`);
-              if (row) {
-                row.style.transition = 'opacity 0.3s';
-                row.style.opacity = '0';
-                setTimeout(() => row.remove(), 300);
-              }
-              mpToast(`P2P offer ${label} cancelled`, 'success');
-            }
-          });
+    wrapper.append(label, textarea, error);
+    return wrapper;
+  }
+
+  function openCancelModal(offer, triggerButton) {
+    if (typeof mpModal !== 'function') return;
+
+    mpModal({
+      title: 'Cancel P2P Offer',
+      subtitle: `${shortId(offer.id)} - ${offer.asset_name || shortId(offer.asset_id)} @ ${formatMoney(offer.price_cents)}`,
+      bodyNode: buildCancelBody(),
+      confirmLabel: 'Cancel Offer',
+      onConfirm: async (overlay) => {
+        const textarea = overlay.querySelector('#p2p-cancel-reason');
+        const error = overlay.querySelector('#p2p-cancel-error');
+        const reason = textarea?.value?.trim() || '';
+        if (!reason) {
+          if (error) error.textContent = 'Please provide a cancellation reason.';
+          textarea?.focus();
+          return false;
         }
-      });
+
+        if (triggerButton) {
+          triggerButton.disabled = true;
+          triggerButton.setAttribute('aria-busy', 'true');
+        }
+
+        try {
+          const res = await fetch(`${API}/${encodeURIComponent(offer.id)}/cancel`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': csrfToken()
+            },
+            body: JSON.stringify({ reason })
+          });
+          const payload = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(payload.error || `HTTP ${res.status}`);
+          mpToast(`P2P offer ${shortId(offer.id)} cancelled`, 'success');
+          await loadP2P();
+          return true;
+        } catch (err) {
+          if (triggerButton) {
+            triggerButton.disabled = false;
+            triggerButton.removeAttribute('aria-busy');
+          }
+          if (error) error.textContent = err.message || 'Cancellation failed.';
+          mpToast(err.message || 'Cancellation failed', 'error');
+          return false;
+        }
+      }
     });
   }
 
-  // ── Load ────────────────────────────────────────────────────────
   async function loadP2P() {
+    renderState('Loading P2P offers...', '', false);
     try {
       const res = await fetch(API, { credentials: 'same-origin' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      offers = await res.json();
-      usingMockData = false;
+      const payload = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(payload?.error || `HTTP ${res.status}`);
+      }
+      if (!Array.isArray(payload)) {
+        throw new Error('Unexpected P2P response format.');
+      }
+      offers = payload;
+      render();
     } catch (err) {
-      console.warn('[mp-p2p] API unavailable, using mock data:', err);
-      offers = [...MOCK_OFFERS];
-      usingMockData = true;
+      offers = [];
+      renderState('Unable to load P2P offers', err.message || 'Please try again.', true);
     }
-    render();
   }
 
   document.addEventListener('DOMContentLoaded', loadP2P);

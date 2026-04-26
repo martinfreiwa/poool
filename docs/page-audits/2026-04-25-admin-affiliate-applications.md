@@ -19,6 +19,8 @@ Follow-up fix on 2026-04-25: approval now accepts and persists the admin-provide
 
 Runtime recheck on 2026-04-25 used local authenticated admin, pending affiliate, and active affiliate sessions against `SERVER_PORT=8891`. The pending list, CSRF-bound approve/reject POSTs, admin-selected referral code/rate persistence, pending affiliate dashboard state, and active affiliate dashboard data all behaved as expected. Temporary local applicants and sessions were cleaned up after verification.
 
+Follow-up fix on 2026-04-26: the generic admin HTML page handler used by `/admin/affiliate-applications` now follows the existing page-specific admin pattern from `/admin/marketplace/compliance`: unauthenticated HTML page requests redirect to `/auth/login`, while admin API handlers still use `AdminUser` and keep JSON `401` behavior.
+
 ---
 
 ## Tested Scope
@@ -283,7 +285,7 @@ Use a page-specific extractor or rejection handler that redirects unauthenticate
 1. Align approve contract (backend payload + validation) OR remove the approve modal inputs.
 2. Fix `/pending` error handling (no silent empty list on DB failure).
 3. Make details modal fields match API (add `tax_id` + `user_name`, or hide fields).
-4. Remove inline `onclick` rendering patterns. Modal accessibility baseline was added in the 2026-04-25 fix pass.
+4. Recheck unauthenticated admin HTML navigation policy. Modal accessibility baseline was added in the 2026-04-25 fix pass, and inline row/details rendering was cleaned up in the 2026-04-26 fix pass.
 
 ---
 
@@ -319,3 +321,66 @@ Status: partially fixed
 
 Notes:
 The details, approve, and reject modals now expose dialog roles and labels, focus the first available control when opened, return focus on close, support `Escape`, and keep `Tab` focus inside the active modal. No affiliate approval, rejection, commission, authorization, or audit behavior was changed in this pass.
+
+---
+
+## Fix Pass: 2026-04-26
+
+Status: partially fixed
+
+### Fixed
+
+| Issue | Severity | Files Changed | Verification |
+|------|----------|---------------|--------------|
+| PAGE-ISSUE-0027: Inline onclick and HTML string rendering increase XSS/injection surface | Medium | `frontend/platform/admin/affiliate-applications.html`, `frontend/platform/admin/js/admin-affiliate-applications.js` | `node --check frontend/platform/admin/js/admin-affiliate-applications.js`; targeted `rg` scan found no `onclick=`, stale `openDetailsModal('...')`, details URL `innerHTML`, or unused `escapeHtml` patterns in this page/controller. |
+
+### Not Fixed
+
+| Issue | Reason | Decision Needed |
+|------|--------|-----------------|
+| PAGE-ISSUE-0029: Unauthenticated admin page GET returns JSON 401 instead of redirecting to login | Auth response policy affects all admin HTML pages, not just this page. Changing it locally could create inconsistent admin navigation semantics. | Decide whether admin HTML routes should redirect to `/auth/login`, a dedicated admin login route, or render a branded access-denied page. |
+
+### Tests Run
+
+| Command/Test | Result | Notes |
+|--------------|--------|-------|
+| `node --check frontend/platform/admin/js/admin-affiliate-applications.js` | Pass | Syntax validation for the changed page controller. |
+| `rg -n "onclick=|openDetailsModal\\('|details-url.*innerHTML|escapeHtml" frontend/platform/admin/js/admin-affiliate-applications.js frontend/platform/admin/affiliate-applications.html` | Pass | Command exited 1 because no targeted unsafe/stale patterns were found. |
+
+### Remaining Follow-Up
+
+1. Resolve the admin HTML unauthenticated-response policy for PAGE-ISSUE-0029.
+2. Run an authenticated browser keyboard smoke on the page before closing accessibility recheck.
+
+---
+
+## Fix Pass: 2026-04-26 Admin HTML Auth
+
+Status: fixed
+
+### Fixed
+
+| Issue | Severity | Files Changed | Verification |
+|------|----------|---------------|--------------|
+| PAGE-ISSUE-0029: Unauthenticated admin page GET returns JSON 401 instead of redirecting to login | Low | `backend/src/admin/pages.rs` | `rustfmt backend/src/admin/pages.rs --edition 2021`; `cd backend && cargo fmt --check`; `cd backend && cargo check` |
+
+### Not Fixed
+
+| Issue | Reason | Decision Needed |
+|------|--------|-----------------|
+| Authenticated browser keyboard recheck | Requires a running local backend and safe authenticated admin browser fixture. | Run a browser smoke for modal focus/keyboard behavior before closing accessibility recheck. |
+
+### Tests Run
+
+| Command/Test | Result | Notes |
+|--------------|--------|-------|
+| `rustfmt backend/src/admin/pages.rs --edition 2021` | Pass | Formatted the changed backend page handler. |
+| `cd backend && cargo fmt --check` | Pass | Formatting check passed. |
+| `cd backend && cargo check` | Pass | Backend compiled successfully. |
+| `SERVER_PORT=8894 PORT=8894 cargo run` | Blocked | Runtime smoke was blocked by unrelated dirty-work route conflict: duplicate `GET /api/admin/marketplace/trades/assets` registrations in `backend/src/admin/mod.rs`. |
+
+### Remaining Follow-Up
+
+1. Remove the unrelated duplicate marketplace trades assets route so local runtime smoke can start again.
+2. Run unauthenticated curl smoke for `/admin/affiliate-applications` and `/api/admin/rewards/affiliates/pending` once the unrelated route conflict is resolved.
+3. Run authenticated browser keyboard smoke before closing the accessibility recheck.

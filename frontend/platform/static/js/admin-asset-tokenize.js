@@ -1,247 +1,469 @@
 /**
- * Admin Asset Tokenize — Fetches pre-flight checks and handles tokenization.
- * Works on both localhost and production (relative URLs).
+ * Admin Asset Tokenize - safe API-backed preflight and tokenization.
  */
 (function () {
   'use strict';
 
   const TOKENIZE_API_BASE = '/api/admin/blockchain/tokenize/';
+  const CANDIDATES_API = '/api/admin/blockchain/tokenize-candidates';
 
-  // Get asset_id from URL query param
   const urlParams = new URLSearchParams(window.location.search);
-  const assetId = urlParams.get('id') || urlParams.get('asset_id');
+  let assetId = urlParams.get('id') || urlParams.get('asset_id');
+  let lastError = null;
 
   document.addEventListener('DOMContentLoaded', () => {
     if (!assetId) {
-      showError('No asset ID provided. Use ?id=<uuid> in the URL.');
+      loadTokenizeCandidates();
       return;
     }
     loadTokenizeCheck();
   });
 
+  async function fetchJSON(url, options = {}) {
+    const res = await fetch(url, {
+      credentials: 'include',
+      headers: { Accept: 'application/json', ...(options.headers || {}) },
+      ...options,
+    });
+    const contentType = res.headers.get('content-type') || '';
+    const body = contentType.includes('application/json')
+      ? await res.json()
+      : { error: await res.text() };
+    if (!res.ok) {
+      throw new Error(body.error || `HTTP ${res.status}`);
+    }
+    return body;
+  }
+
+  async function loadTokenizeCandidates() {
+    setBreadcrumbForPicker();
+    setEl('page-title', 'Select Asset to Tokenize');
+    try {
+      const data = await fetchJSON(CANDIDATES_API);
+      renderCandidatePicker(data.assets || []);
+    } catch (err) {
+      lastError = err;
+      console.error('Failed to load tokenization candidates:', err);
+      showError(`Failed to load tokenizable assets: ${err.message}`);
+    }
+  }
+
   async function loadTokenizeCheck() {
     try {
-      const res = await fetch(TOKENIZE_API_BASE + assetId, {
-        credentials: 'include',
-        headers: { 'Accept': 'application/json' }
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`HTTP ${res.status}: ${body}`);
-      }
-      const data = await res.json();
+      const data = await fetchJSON(TOKENIZE_API_BASE + encodeURIComponent(assetId));
       renderTokenizePage(data);
     } catch (err) {
+      lastError = err;
       console.error('Failed to load tokenize check:', err);
-      showError('Failed to load asset data: ' + err.message);
+      showError(`Failed to load asset data: ${err.message}`);
     }
   }
 
   function renderTokenizePage(data) {
-    // Page title
-    const title = document.getElementById('page-title');
-    if (title) title.textContent = `Tokenize: ${data.title}`;
+    setEl('page-title', `Tokenize: ${data.title}`);
 
     const breadcrumbName = document.getElementById('breadcrumb-asset-name');
     if (breadcrumbName) {
       breadcrumbName.textContent = data.title;
-      breadcrumbName.href = `/admin/asset-details?id=${data.asset_id}`;
+      breadcrumbName.href = `/admin/asset-details?id=${encodeURIComponent(data.asset_id)}`;
     }
 
-    // Asset summary
-    const totalValue = (data.total_value_cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-    const tokenPrice = (data.token_price_cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-    
-    setEl('summary-valuation', totalValue);
-    setEl('summary-price', tokenPrice);
-    setEl('summary-supply', data.tokens_total.toLocaleString());
+    setEl('summary-valuation', formatCurrency(data.total_value_cents));
+    setEl('summary-price', formatCurrency(data.token_price_cents));
+    setEl('summary-supply', Number(data.tokens_total || 0).toLocaleString());
+    setEl('summary-network', formatNetwork(data.chain_network));
 
-    // Network info
-    const network = getNetworkFromEnv();
-    setEl('summary-network', network.label);
-
-    // Already tokenized?
     if (data.already_tokenized) {
       renderAlreadyTokenized(data);
       return;
     }
 
-    // Pre-flight checklist
-    renderChecklist(data.checks, data);
+    const checklistCard = document.getElementById('checklist-card');
+    if (checklistCard) checklistCard.style.display = '';
+    renderChecklist(data.checks || {}, data);
+    renderDeployArea(data);
+  }
 
-    // Deploy button
+  function renderCandidatePicker(assets) {
+    const checklistCard = document.getElementById('checklist-card');
+    if (checklistCard) checklistCard.style.display = 'none';
+    clearSummaries();
+
     const deployArea = document.getElementById('deploy-area');
-    if (deployArea) {
-      const allPassed = data.checks.all_passed;
-      deployArea.innerHTML = `
-        <div style="margin-bottom: 16px;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--admin-accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-            <path d="M2 17l10 5 10-5" />
-            <path d="M2 12l10 5 10-5" />
-          </svg>
-        </div>
-        <p style="font-size: 14px; color: var(--admin-text-secondary); margin: 0 0 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
-          Tokenizing will call <strong>createAsset()</strong> on the POOOLProperty1155 smart contract on the Polygon blockchain.
-          This assigns an on-chain token ID and mints ${data.tokens_total.toLocaleString()} tokens.
-        </p>
-        <button class="deploy-btn-main" id="btn-tokenize" ${allPassed ? '' : 'disabled'} onclick="window._tokenize()">
-          🚀 Tokenize Asset — Deploy On-Chain
-        </button>
-        ${!allPassed ? '<p style="font-size: 12px; color: var(--admin-danger); margin: 12px 0 0;">All pre-flight checks must pass before tokenization.</p>' : ''}
-      `;
+    if (!deployArea) return;
+    deployArea.textContent = '';
+    deployArea.classList.add('deploy-button-area--picker');
+
+    const header = document.createElement('div');
+    header.className = 'tokenize-picker-header';
+
+    const title = document.createElement('h2');
+    title.textContent = 'Tokenizable Assets';
+    const sub = document.createElement('p');
+    sub.textContent = 'Select a published asset to review its production pre-flight checks before deployment.';
+    header.append(title, sub);
+    deployArea.appendChild(header);
+
+    if (!assets.length) {
+      const empty = document.createElement('p');
+      empty.className = 'tokenize-status tokenize-status--muted';
+      empty.textContent = 'No published assets are currently available for tokenization review.';
+      deployArea.appendChild(empty);
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'tokenize-candidate-list';
+    assets.forEach((asset) => {
+      const link = document.createElement('a');
+      link.className = 'tokenize-candidate';
+      link.href = `/admin/asset-tokenize?id=${encodeURIComponent(asset.asset_id)}`;
+
+      const main = document.createElement('div');
+      const name = document.createElement('strong');
+      name.textContent = asset.title;
+      const meta = document.createElement('span');
+      meta.textContent = `${formatStatus(asset.funding_status)} · ${Number(asset.tokens_total || 0).toLocaleString()} tokens · ${formatCurrency(asset.token_price_cents)} each`;
+      main.append(name, meta);
+
+      const badge = document.createElement('span');
+      badge.className = `admin-badge admin-badge--${asset.already_tokenized ? 'success' : 'warning'}`;
+      badge.textContent = asset.already_tokenized ? 'Tokenized' : 'Review';
+
+      link.append(main, badge);
+      list.appendChild(link);
+    });
+    deployArea.appendChild(list);
+  }
+
+  function renderDeployArea(data) {
+    const deployArea = document.getElementById('deploy-area');
+    if (!deployArea) return;
+
+    deployArea.classList.remove('deploy-button-area--picker');
+    deployArea.textContent = '';
+
+    const icon = document.createElement('div');
+    icon.className = 'deploy-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '⬢';
+
+    const description = document.createElement('p');
+    description.className = 'deploy-description';
+    description.append('Tokenizing will call ');
+    const method = document.createElement('strong');
+    method.textContent = 'deployAsset()';
+    description.append(method, ' on the configured AssetFactory contract. This assigns an on-chain token ID and mints ');
+    const supply = document.createElement('strong');
+    supply.textContent = Number(data.tokens_total || 0).toLocaleString();
+    description.append(supply, ' tokens.');
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'deploy-btn-main';
+    button.id = 'btn-tokenize';
+    button.disabled = !data.checks?.all_passed;
+    button.textContent = 'Tokenize Asset - Deploy On-Chain';
+    button.addEventListener('click', tokenizeAsset);
+
+    deployArea.append(icon, description, button);
+    if (!data.checks?.all_passed) {
+      const blocked = document.createElement('p');
+      blocked.className = 'tokenize-status tokenize-status--danger';
+      blocked.textContent = 'All production pre-flight checks must pass before tokenization.';
+      deployArea.appendChild(blocked);
     }
   }
 
   function renderChecklist(checks, data) {
     const list = document.getElementById('checklist');
     if (!list) return;
+    list.textContent = '';
 
     const items = [
-      { label: 'Asset Approved & Published', sub: 'Asset must be approved by an admin before tokenization.', pass: checks.asset_approved },
-      { label: 'Token Supply Defined', sub: `${data.tokens_total.toLocaleString()} tokens configured.`, pass: checks.has_token_supply },
-      { label: 'Token Price Set', sub: `Price: ${(data.token_price_cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} per token.`, pass: checks.has_price },
+      ['Asset Approved & Published', 'Asset must be approved by an admin before tokenization.', checks.asset_approved],
+      ['Token Supply Defined', `${Number(data.tokens_total || 0).toLocaleString()} tokens configured.`, checks.has_token_supply],
+      ['Token Price Set', `Price: ${formatCurrency(data.token_price_cents)} per token.`, checks.has_price],
+      ['Legal Documents Present', 'At least one asset document is attached for operator review.', checks.legal_documents_present],
+      ['Funding Status Ready', `Current status: ${formatStatus(data.funding_status)}.`, checks.funding_ready],
+      ['Metadata URI Ready', data.metadata_uri || 'Metadata endpoint will be generated for this asset.', checks.metadata_uri_ready],
+      ['Chain Configuration Ready', `${formatNetwork(data.chain_network)} deployment config is available.`, checks.chain_configured],
+      ['Operator Permission Verified', 'Current admin has the dedicated blockchain.tokenize permission.', checks.operator_can_tokenize],
+      ['Not Already Tokenized', checks.not_already_tokenized ? 'No chain token is currently stored.' : 'Asset already has chain metadata.', checks.not_already_tokenized],
     ];
 
-    // Show pre-flight checks
-    list.innerHTML = items.map(item => `
-      <div class="preflight-item">
-        <div class="preflight-icon preflight-icon--${item.pass ? 'pass' : 'fail'}">
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-            ${item.pass ? '<path d="M3 8l3.5 3.5L13 4" />' : '<path d="M4 4l8 8M12 4l-8 8" />'}
-          </svg>
-        </div>
-        <div style="flex: 1;">
-          <div class="preflight-label">${item.label}</div>
-          <div class="preflight-sublabel">${item.sub}</div>
-        </div>
-        <span class="admin-badge admin-badge--${item.pass ? 'success' : 'danger'}">${item.pass ? 'Pass' : 'Fail'}</span>
-      </div>
-    `).join('');
+    items.forEach(([label, sub, pass], index) => {
+      list.appendChild(createCheckItem(label, sub, Boolean(pass), index === items.length - 1));
+    });
+  }
 
-    // Tokenization status — separate, prominent status indicator
-    const isTokenized = !checks.not_already_tokenized;
-    list.innerHTML += `
-      <div class="preflight-item" style="border-top: 1px solid var(--admin-border); margin-top: 8px; padding-top: 16px;">
-        <div class="preflight-icon preflight-icon--${isTokenized ? 'pass' : 'fail'}">
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-            ${isTokenized ? '<path d="M3 8l3.5 3.5L13 4" />' : '<path d="M4 4l8 8M12 4l-8 8" />'}
-          </svg>
-        </div>
-        <div style="flex: 1;">
-          <div class="preflight-label">${isTokenized ? 'Tokenized' : 'Not Tokenized'}</div>
-          <div class="preflight-sublabel">${isTokenized ? 'Asset has an on-chain token ID.' : 'Asset has not been deployed on-chain yet.'}</div>
-        </div>
-        <span class="admin-badge admin-badge--${isTokenized ? 'success' : 'danger'}">${isTokenized ? 'Deployed' : 'Pending'}</span>
-      </div>
-    `;
+  function createCheckItem(label, sub, pass, separated) {
+    const item = document.createElement('div');
+    item.className = 'preflight-item';
+    if (separated) item.classList.add('preflight-item--separated');
+
+    const icon = document.createElement('div');
+    icon.className = `preflight-icon preflight-icon--${pass ? 'pass' : 'fail'}`;
+    icon.textContent = pass ? '✓' : '×';
+
+    const copy = document.createElement('div');
+    copy.className = 'preflight-copy';
+    const title = document.createElement('div');
+    title.className = 'preflight-label';
+    title.textContent = label;
+    const desc = document.createElement('div');
+    desc.className = 'preflight-sublabel';
+    desc.textContent = sub;
+    copy.append(title, desc);
+
+    const badge = document.createElement('span');
+    badge.className = `admin-badge admin-badge--${pass ? 'success' : 'danger'}`;
+    badge.textContent = pass ? 'Pass' : 'Fail';
+
+    item.append(icon, copy, badge);
+    return item;
   }
 
   function renderAlreadyTokenized(data) {
-    const network = getNetworkFromEnv();
-
-    // Hide checklist, show result
     const checklistCard = document.getElementById('checklist-card');
     if (checklistCard) checklistCard.style.display = 'none';
 
     const deployArea = document.getElementById('deploy-area');
     if (deployArea) {
-      deployArea.innerHTML = `
-        <div class="deploy-result">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-            <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#10b981" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" /></svg>
-            <span style="font-size: 16px; font-weight: 700; color: #10b981;">Asset Already Tokenized</span>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div>
-              <span style="font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase;">Token ID</span>
-              <div class="deploy-result-address">${data.chain_token_id || '—'}</div>
-            </div>
-            <div>
-              <span style="font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase;">Contract Address</span>
-              <div class="deploy-result-address">
-                <a href="${network.explorer}/address/${data.chain_contract_address}" target="_blank" style="color: var(--admin-accent); text-decoration: none;">
-                  ${data.chain_contract_address || '—'}
-                </a>
-              </div>
-            </div>
-          </div>
-          <div style="margin-top: 16px;">
-            <a href="/admin/blockchain-treasury" class="admin-btn admin-btn--secondary">
-              Go to Blockchain Treasury →
-            </a>
-          </div>
-        </div>
-      `;
+      deployArea.textContent = '';
+      const result = document.createElement('div');
+      result.className = 'deploy-result';
+
+      const heading = document.createElement('div');
+      heading.className = 'deploy-result-heading';
+      const mark = document.createElement('span');
+      mark.setAttribute('aria-hidden', 'true');
+      mark.textContent = '✓';
+      const label = document.createElement('span');
+      label.textContent = 'Asset Already Tokenized';
+      heading.append(mark, label);
+
+      const grid = document.createElement('div');
+      grid.className = 'deploy-result-grid';
+      grid.append(
+        resultField('Token ID', data.chain_token_id || '-'),
+        resultField('Contract Address', data.chain_contract_address || '-', data.explorer_url)
+      );
+
+      const footer = document.createElement('div');
+      footer.className = 'deploy-result-footer';
+      const treasury = document.createElement('a');
+      treasury.href = '/admin/blockchain-treasury';
+      treasury.className = 'admin-btn admin-btn--secondary';
+      treasury.textContent = 'Go to Blockchain Treasury';
+      footer.appendChild(treasury);
+
+      result.append(heading, grid, footer);
+      deployArea.appendChild(result);
     }
 
-    // Update timeline
     const tokenizeStep = document.getElementById('timeline-tokenize');
     if (tokenizeStep) {
       tokenizeStep.className = 'timeline-step timeline-step--done';
-      tokenizeStep.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 4" /></svg> Tokenized';
+      tokenizeStep.textContent = 'Tokenized';
     }
     const liveStep = document.getElementById('timeline-live');
-    if (liveStep) {
-      liveStep.className = 'timeline-step timeline-step--active';
+    if (liveStep) liveStep.className = 'timeline-step timeline-step--active';
+  }
+
+  function resultField(label, value, explorerUrl) {
+    const wrap = document.createElement('div');
+    const caption = document.createElement('span');
+    caption.className = 'deploy-result-label';
+    caption.textContent = label;
+    const valueBox = document.createElement('div');
+    valueBox.className = 'deploy-result-address';
+    if (explorerUrl && isAddress(value)) {
+      const link = document.createElement('a');
+      link.href = `${explorerUrl}/address/${encodeURIComponent(value)}`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = value;
+      valueBox.appendChild(link);
+    } else {
+      valueBox.textContent = value;
+    }
+    wrap.append(caption, valueBox);
+    return wrap;
+  }
+
+  async function tokenizeAsset() {
+    const confirmed = await confirmTokenize();
+    if (!confirmed) return;
+
+    const btn = document.getElementById('btn-tokenize');
+    setButtonBusy(btn, true);
+
+    try {
+      const data = await fetchJSON(TOKENIZE_API_BASE + encodeURIComponent(assetId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken(),
+        },
+      });
+      renderSuccess(data);
+      await loadTokenizeCheck();
+    } catch (err) {
+      lastError = err;
+      renderInlineError(`Tokenization failed: ${err.message}`);
+    } finally {
+      setButtonBusy(btn, false);
     }
   }
 
-  // ── Tokenize action ──────────────────────────────────────────
-  window._tokenize = async function () {
-    if (!confirm('Tokenize this asset on the Polygon blockchain?\n\nThis will call createAsset() on the smart contract and assign an on-chain token ID.')) return;
+  function renderSuccess(data) {
+    const deployArea = document.getElementById('deploy-area');
+    if (!deployArea) return;
+    const success = document.createElement('p');
+    success.className = 'tokenize-status tokenize-status--success';
+    success.textContent = `Asset tokenized. Token ID ${data.chain_token_id}; transaction ${data.chain_tx_hash}.`;
+    deployArea.appendChild(success);
+  }
 
-    const btn = document.getElementById('btn-tokenize');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Tokenizing…'; }
+  function renderInlineError(message) {
+    const deployArea = document.getElementById('deploy-area');
+    if (!deployArea) return;
+    const existing = deployArea.querySelector('.tokenize-status--danger');
+    if (existing) existing.remove();
+    const error = document.createElement('p');
+    error.className = 'tokenize-status tokenize-status--danger';
+    error.setAttribute('role', 'alert');
+    error.textContent = message;
+    deployArea.appendChild(error);
+  }
 
-    try {
-      const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-      const res = await fetch(TOKENIZE_API_BASE + assetId, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrf,
-        },
+  function confirmTokenize() {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'tokenize-modal-overlay';
+      overlay.setAttribute('role', 'presentation');
+
+      const dialog = document.createElement('div');
+      dialog.className = 'tokenize-modal';
+      dialog.setAttribute('role', 'dialog');
+      dialog.setAttribute('aria-modal', 'true');
+      dialog.setAttribute('aria-labelledby', 'tokenize-confirm-title');
+
+      const title = document.createElement('h2');
+      title.id = 'tokenize-confirm-title';
+      title.textContent = 'Deploy Asset On-Chain';
+      const body = document.createElement('p');
+      body.textContent = 'This will submit a tokenization transaction for the selected asset. Continue only after reviewing every pre-flight check.';
+
+      const actions = document.createElement('div');
+      actions.className = 'tokenize-modal-actions';
+      const cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = 'admin-btn admin-btn--secondary';
+      cancel.textContent = 'Cancel';
+      const confirm = document.createElement('button');
+      confirm.type = 'button';
+      confirm.className = 'admin-btn admin-btn--primary';
+      confirm.textContent = 'Deploy Asset';
+      actions.append(cancel, confirm);
+
+      const onKeydown = (event) => {
+        if (event.key === 'Escape' && document.body.contains(overlay)) close(false);
+      };
+      const close = (value) => {
+        document.removeEventListener('keydown', onKeydown);
+        overlay.remove();
+        resolve(value);
+      };
+      cancel.addEventListener('click', () => close(false));
+      confirm.addEventListener('click', () => close(true));
+      overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) close(false);
       });
-      const data = await res.json();
-      if (data.success) {
-        alert('✅ Asset tokenized successfully!\n\nToken ID: ' + data.chain_token_id + '\nTx: ' + data.chain_tx_hash);
-        location.reload();
-      } else {
-        alert('❌ Tokenization failed: ' + JSON.stringify(data));
-        if (btn) { btn.disabled = false; btn.textContent = '🚀 Tokenize Asset — Deploy On-Chain'; }
-      }
-    } catch (err) {
-      alert('❌ Error: ' + err.message);
-      if (btn) { btn.disabled = false; btn.textContent = '🚀 Tokenize Asset — Deploy On-Chain'; }
-    }
-  };
+      document.addEventListener('keydown', onKeydown);
 
-  // ── Helpers ─────────────────────────────────────────────────
+      dialog.append(title, body, actions);
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+      confirm.focus();
+    });
+  }
+
+  function showError(msg) {
+    const content = document.querySelector('.admin-content');
+    if (!content) return;
+    content.textContent = '';
+
+    const header = document.createElement('div');
+    header.className = 'admin-page-header';
+    const title = document.createElement('h1');
+    title.className = 'admin-page-title';
+    title.textContent = 'Tokenize Asset';
+    const subtitle = document.createElement('p');
+    subtitle.className = 'admin-page-subtitle tokenize-status--danger';
+    subtitle.setAttribute('role', 'alert');
+    subtitle.textContent = msg;
+    header.append(title, subtitle);
+    content.appendChild(header);
+  }
+
+  function setBreadcrumbForPicker() {
+    const breadcrumbName = document.getElementById('breadcrumb-asset-name');
+    if (breadcrumbName) {
+      breadcrumbName.textContent = 'Select Asset';
+      breadcrumbName.href = '/admin/assets';
+    }
+  }
+
+  function setButtonBusy(btn, busy) {
+    if (!btn) return;
+    btn.disabled = busy;
+    btn.setAttribute('aria-busy', busy ? 'true' : 'false');
+    btn.textContent = busy ? 'Tokenizing...' : 'Tokenize Asset - Deploy On-Chain';
+  }
+
+  function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (meta) return meta;
+    const cookie = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('csrf_token='));
+    return cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) : '';
+  }
+
   function setEl(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
   }
 
-  function showError(msg) {
-    const content = document.querySelector('.admin-content');
-    if (content) {
-      content.innerHTML = `
-        <div class="admin-page-header">
-          <h1 class="admin-page-title">Tokenize Asset</h1>
-          <p class="admin-page-subtitle" style="color: var(--admin-danger);">⚠️ ${msg}</p>
-        </div>
-      `;
-    }
+  function clearSummaries() {
+    ['summary-valuation', 'summary-price', 'summary-supply', 'summary-network'].forEach((id) => setEl(id, '-'));
   }
 
-  function getNetworkFromEnv() {
-    // We detect this from the page URL domain — production = mainnet, else testnet
-    const isProduction = window.location.hostname === 'platform.poool.app';
-    return {
-      label: isProduction ? 'Polygon PoS (Mainnet)' : 'Polygon Amoy (Testnet)',
-      explorer: isProduction ? 'https://polygonscan.com' : 'https://amoy.polygonscan.com',
-    };
+  function formatCurrency(cents) {
+    return ((Number(cents) || 0) / 100).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
   }
+
+  function formatStatus(status) {
+    return String(status || 'unknown').replace(/_/g, ' ');
+  }
+
+  function formatNetwork(network) {
+    return network === 'polygon' || network === 'polygon_mainnet'
+      ? 'Polygon PoS (Mainnet)'
+      : 'Polygon Amoy (Testnet)';
+  }
+
+  function isAddress(value) {
+    return /^0x[a-fA-F0-9]{40}$/.test(String(value || ''));
+  }
+
+  window.PooolAssetTokenize = {
+    reload: () => (assetId ? loadTokenizeCheck() : loadTokenizeCandidates()),
+    getLastError: () => lastError,
+  };
 })();

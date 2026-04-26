@@ -280,9 +280,12 @@ pub fn router() -> axum::Router<AppState> {
         .route("/admin/marketplace/alerts", get(page_admin_generic))
         .route(
             "/admin/marketplace/compliance.html",
-            get(page_admin_generic),
+            get(page_admin_marketplace_compliance),
         )
-        .route("/admin/marketplace/compliance", get(page_admin_generic))
+        .route(
+            "/admin/marketplace/compliance",
+            get(page_admin_marketplace_compliance),
+        )
         // ── JSON API ─────────────────────────────────────────────
         .route("/api/admin/stats/overview", get(api_admin_stats_overview))
         .route("/api/admin/search", get(api_admin_search))
@@ -689,6 +692,14 @@ pub fn router() -> axum::Router<AppState> {
             get(marketplace::api_admin_marketplace_recent_trades),
         )
         .route(
+            "/api/admin/marketplace/trades/assets",
+            get(marketplace::api_admin_marketplace_trade_assets),
+        )
+        .route(
+            "/api/admin/marketplace/trades/export.csv",
+            get(marketplace::api_admin_marketplace_trades_export_csv),
+        )
+        .route(
             "/api/admin/marketplace/trades",
             get(marketplace::api_admin_marketplace_trades),
         )
@@ -699,6 +710,10 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/marketplace/orders/:order_id",
             delete(marketplace::api_admin_marketplace_order_cancel),
+        )
+        .route(
+            "/api/admin/marketplace/orderbook/assets",
+            get(marketplace::api_admin_marketplace_orderbook_assets),
         )
         .route(
             "/api/admin/marketplace/orderbook/:asset_id",
@@ -757,6 +772,10 @@ pub fn router() -> axum::Router<AppState> {
             "/api/admin/marketplace/p2p",
             get(marketplace::api_admin_marketplace_p2p),
         )
+        .route(
+            "/api/admin/marketplace/p2p/:offer_id/cancel",
+            post(marketplace::api_admin_marketplace_cancel_p2p),
+        )
         // ── 6A.12: Alerts & Watchlist ────────────────────────────
         .route(
             "/api/admin/marketplace/alerts",
@@ -785,6 +804,10 @@ pub fn router() -> axum::Router<AppState> {
         .route(
             "/api/admin/blockchain/contracts/:address/detail",
             get(blockchain::api_admin_blockchain_clone_detail),
+        )
+        .route(
+            "/api/admin/blockchain/tokenize-candidates",
+            get(blockchain::api_admin_blockchain_tokenize_candidates),
         )
         .route(
             "/api/admin/blockchain/tokenize/:asset_id",

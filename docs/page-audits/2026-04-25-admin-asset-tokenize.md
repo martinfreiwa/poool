@@ -1,7 +1,7 @@
 # Page Audit: Asset Tokenize
 
 Date: 2026-04-25
-Status: needs_recheck
+Status: completed
 Auditor: ChatGPT/Codex
 Page URL: `/admin/asset-tokenize`
 Template: `frontend/platform/admin/asset-tokenize.html`
@@ -15,7 +15,7 @@ Backend Routes: `backend/src/admin/mod.rs`, `backend/src/admin/blockchain.rs`
 
 The page shell and eligibility fetch are implemented, but the core tokenization flow is not production-ready. The frontend POST sends an empty CSRF token on this admin template, the backend allows any `admin`/`super_admin` role to tokenize without fine-grained blockchain or asset-publish permission checks, and the irreversible on-chain deployment path is not protected against double-submit/race conditions or durable audit failures.
 
-Final status is `needs_recheck`.
+Final status is `completed` after the 2026-04-26 fix pass.
 
 ---
 
@@ -30,7 +30,7 @@ Final status is `needs_recheck`.
 - Blockchain schema support in `database/058_blockchain_integration.sql` and `database/059_onchain_balances.sql`
 - Test inventory search under `tests/`, `backend/src/`, and `frontend/platform/`
 
-No production application code was modified.
+2026-04-26 follow-up modified production code and added authenticated E2E coverage for the selected page.
 
 ---
 
@@ -66,13 +66,15 @@ No production application code was modified.
 | Native confirm dialog | `window.confirm(...)` | Require operator confirmation before chain deployment. | Yes | Not required | Works but is not a focus-managed platform confirmation. |
 | Success/error alerts | `window.alert(...)` | Communicate POST result. | Yes | POST API | Basic alerts only; JSON parse failures are not handled before `res.json()`. |
 | Treasury link | `/admin/blockchain-treasury` | Navigate to treasury for tokenized asset overview. | Yes | Page route exists | Statically wired. |
-| Sidebar Asset Tokenize link | `frontend/platform/static/js/admin-sidebar-loader.js` | Navigate to tokenization page. | Yes | Page route exists | Links to `/admin/asset-tokenize.html` without an asset id, producing the page error state. |
+| Sidebar Asset Tokenize link | `frontend/platform/static/js/admin-sidebar-loader.js` | Navigate to tokenization page. | Yes | Page route exists | Links to `/admin/asset-tokenize.html` without an asset id; the page now renders an authenticated tokenizable-asset picker. |
 
 ---
 
 ## Frontend Findings
 
 ### P1 - Tokenize POST cannot satisfy CSRF protection
+
+Status: fixed 2026-04-26. The page now reads the `csrf_token` cookie when no meta token exists, and authenticated E2E verifies POST without CSRF is rejected while browser tokenization succeeds with CSRF.
 
 Location:
 
@@ -98,6 +100,8 @@ Load the shared CSRF helper on the page or use the existing global `getCsrfToken
 
 ### P2 - Sidebar and contracts-page entrypoints open a dead error state
 
+Status: fixed 2026-04-26. Generic `/admin/asset-tokenize` now loads `/api/admin/blockchain/tokenize-candidates` and renders a safe asset picker instead of a missing-id error.
+
 Location:
 
 - Template/JS: `frontend/platform/static/js/admin-sidebar-loader.js:144`
@@ -121,6 +125,8 @@ Recommended fix:
 Create a tokenizable asset picker for the generic route, or remove generic links and keep only asset-specific links from review/detail pages.
 
 ### P2 - Dynamic HTML rendering is not consistently escaped
+
+Status: fixed 2026-04-26. Dynamic checklist, picker, result, status, and error content is now rendered with DOM nodes and `textContent`; explorer links are only created for validated addresses.
 
 Location:
 
@@ -148,6 +154,8 @@ Replace dynamic `innerHTML` blocks with DOM builders or a small `escapeHtml`/val
 
 ### P1 - Tokenization lacks fine-grained permission checks
 
+Status: fixed 2026-04-26. Added dedicated exact `blockchain.tokenize` permission, granted it to `super_admin`, and gate the page, candidate API, GET check API, and POST mutation with it.
+
 Location:
 
 - Backend: `backend/src/admin/blockchain.rs:325-329`, `backend/src/admin/blockchain.rs:394-398`
@@ -171,6 +179,8 @@ Add explicit permissions to the RBAC migration/permission catalog and enforce th
 
 ### P1 - Tokenization can double-deploy under concurrent requests
 
+Status: fixed 2026-04-26. Added `asset_tokenization_jobs` with a partial unique active-job guard, locks the asset row before claiming a job, and conditionally persists final metadata only while `chain_token_id IS NULL`.
+
 Location:
 
 - Backend: `backend/src/admin/blockchain.rs:401-409`, `backend/src/admin/blockchain.rs:458-543`
@@ -192,6 +202,8 @@ Recommended fix:
 Introduce a tokenization state/job table or row lock pattern that marks tokenization `in_progress` before calling the chain, with a unique/idempotency key per asset. Treat duplicate requests as conflict or return the existing job/result.
 
 ### P1 - Chain metadata update and audit log are not atomic or durable
+
+Status: fixed 2026-04-26. Asset metadata, mandatory `blockchain.tokenize` audit log, and job success state now commit in one transaction after a successful chain call.
 
 Location:
 
@@ -215,6 +227,8 @@ Use a database transaction for metadata and audit writes, remove silent audit fa
 
 ### P1 - Clone address parsing can persist the factory address as the asset contract
 
+Status: fixed 2026-04-26. Removed the factory-address fallback; production receipts must contain a parseable `AssetDeployed` clone address, and mocked E2E returns a validated clone address.
+
 Location:
 
 - Backend: `backend/src/admin/blockchain.rs:485-522`
@@ -236,6 +250,8 @@ Recommended fix:
 Require a valid deployed clone address from the expected event, validate `0x` address format, and store no success metadata until the clone address is known.
 
 ### P2 - Pre-flight checks are too thin for production tokenization
+
+Status: fixed 2026-04-26. The pre-flight API now includes document presence, funding readiness, metadata URI readiness, chain configuration, and operator permission checks in addition to the original asset/token checks.
 
 Location:
 
@@ -319,8 +335,32 @@ Extend the API response with explicit checks for compliance status, required doc
 
 ---
 
+## 2026-04-26 Fix Verification
+
+Severity fixed: 5 high, 3 medium.
+
+Implemented fixes:
+
+- Added exact `blockchain.tokenize` permission and page/API gates.
+- Added `asset_tokenization_jobs` idempotency guard for in-progress tokenization.
+- Made successful chain metadata, tokenization job state, and audit logging transactional and mandatory.
+- Removed clone-address fallback to the factory address.
+- Added explicit production pre-flight checks for legal documents, funding readiness, metadata URI, chain configuration, and operator permission.
+- Replaced unsafe dynamic rendering with DOM/textContent rendering.
+- Replaced the no-id dead state with an authenticated asset picker.
+- Added authenticated E2E coverage in `tests/e2e/test_admin_asset_tokenize.py`.
+
+Verification commands:
+
+- `node --check frontend/platform/static/js/admin-asset-tokenize.js` - passed.
+- `python3 -m py_compile tests/e2e/test_admin_asset_tokenize.py` - passed.
+- `cargo fmt --manifest-path backend/Cargo.toml --check` - passed.
+- `cargo check --manifest-path backend/Cargo.toml` - passed.
+- `psql ... -f database/086_admin_asset_tokenization_jobs.sql` - applied/confirmed locally.
+- `BASE_URL=http://127.0.0.1:8888 DATABASE_URL=postgres://martin@localhost/poool python3 -m pytest tests/e2e/test_admin_asset_tokenize.py -q` - passed, 1 test.
+
 ## Final Status
 
-`needs_recheck`
+`completed`
 
-Reason: The page is implemented enough to load and run static checks, but core tokenization is blocked by CSRF wiring and has high-risk backend authorization, idempotency, and audit durability gaps that must be fixed and verified before production use.
+Reason: The documented findings were fixed and verified with syntax, compile, migration, authenticated API, browser E2E, and scoped diff checks. The E2E uses `CHAIN_TOKENIZE_MOCK=true` to prove the full admin flow without submitting a real chain transaction.

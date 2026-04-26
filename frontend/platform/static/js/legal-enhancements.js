@@ -297,7 +297,10 @@
         try {
           const res = await fetch("/api/user/legal-accept", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "",
+            },
           });
           if (res.ok) {
             banner.style.animation = "none";

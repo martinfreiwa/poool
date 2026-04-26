@@ -270,6 +270,44 @@ Align the stats API with the community admin API permission helpers used elsewhe
 
 ## Final Status
 
-`needs_recheck`
+`fixed`
 
-Reason: The page is route-registered and page-level authorization exists, but primary dashboard data has documented correctness/security issues that need code fixes and authenticated runtime verification.
+Reason: The documented issues were fixed locally and verified with targeted authenticated E2E coverage.
+
+---
+
+## Fix Verification
+
+Date: 2026-04-26
+Status: fixed
+
+Changes verified:
+
+- `PAGE-ISSUE-0124`: Recent announcements are rendered by `frontend/platform/static/js/admin-community-index.js` with DOM construction and `textContent`; no feed-derived values are interpolated into `innerHTML`.
+- `PAGE-ISSUE-0125`: `GET /api/admin/community/stats` now propagates database errors and reads total XP from `community_profiles.xp_total`.
+- `PAGE-ISSUE-0126`: The overview fetches `/api/admin/community/announcements`, not `/api/community/feed`, and the E2E verifies a seeded general post does not render in the Recent Announcements table.
+- `PAGE-ISSUE-0127`: The stats API now calls `require_community_view_or_manage`.
+- `PAGE-ISSUE-0128`: Stats and announcement loaders have visible retryable error states.
+- `PAGE-ISSUE-0129`: Unused external HTMX and Alpine CDN scripts were removed from this page.
+
+Verification commands:
+
+| Command | Result |
+|---------|--------|
+| `node --check frontend/platform/static/js/admin-community-index.js` | Passed |
+| `python3 -m py_compile tests/e2e/test_admin_community_index.py` | Passed |
+| `cargo fmt --check` | Passed |
+| `cargo check` | Passed |
+| `BASE_URL=http://localhost:8896 DATABASE_URL=postgres://martin@localhost/poool COMMUNITY_DATABASE_URL=postgres://martin@localhost/poool_community python3 -m pytest tests/e2e/test_admin_community_index.py -q` | Passed, 4 tests |
+
+E2E coverage:
+
+- Creates a safe authenticated admin session.
+- Seeds community profile XP and announcement/general-post fixtures.
+- Verifies KPI API success and `total_xp` equals the `community_profiles.xp_total` sum.
+- Verifies Recent Announcements renders announcement rows only.
+- Verifies unsafe seeded markup does not execute or render as markup in the table.
+- Verifies visible retry states for stats and announcements API failures.
+- Verifies no critical console/network failures on normal load.
+- Verifies mobile smoke without horizontal overflow.
+- Cleans up seeded users, sessions, community profiles, and posts.

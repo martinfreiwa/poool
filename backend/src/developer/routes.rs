@@ -144,6 +144,7 @@ fn validate_draft_shape(
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod draft_validation_tests {
     use super::*;
 

@@ -9,6 +9,9 @@
   let currentAppId = null;
   let lastFocusedBeforeModal = null;
 
+  const REFERRAL_CODE_PATTERN = /^[A-Z0-9_-]{3,20}$/;
+  const REJECTION_REASON_MAX_LENGTH = 1000;
+
   const FOCUSABLE_SELECTOR = [
     'a[href]',
     'button:not([disabled])',
@@ -24,13 +27,16 @@
       const res = await fetch('/api/admin/rewards/affiliates/pending');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      pendingApps = data.pending || [];
+      if (!isValidPendingResponse(data)) {
+        throw new Error('Unexpected affiliate applications response.');
+      }
+
+      pendingApps = data.pending;
       renderPending();
-      updateKPIs(data.counts || {});
+      updateKPIs(data.counts);
     } catch (err) {
       console.error('Failed to load affiliate applications:', err);
-      document.getElementById('pending-body').innerHTML =
-        '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--admin-text-muted);">Failed to load applications. Please refresh.</td></tr>';
+      renderStateRow('Failed to load applications. Please refresh.', 32);
     }
   }
 
@@ -47,33 +53,23 @@
     }
 
     countEl.textContent = `${pendingApps.length} pending`;
+    tbody.replaceChildren();
 
-    tbody.innerHTML = pendingApps.map(app => {
+    pendingApps.forEach(app => {
       const date = app.created_at ? new Date(app.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-      const url = app.main_url
-        ? `<a href="${escapeHtml(app.main_url)}" target="_blank" rel="noopener" style="color:var(--admin-accent);text-decoration:none;">${truncate(app.main_url, 30)}</a>`
-        : '<span style="color:var(--admin-text-muted)">—</span>';
 
-      return `<tr>
-        <td>
-          <div style="font-weight:500;color:var(--admin-text-primary);font-size:13px;">${escapeHtml(app.email || '—')}</div>
-          <div style="font-size:11px;color:var(--admin-text-muted);margin-top:2px;">${escapeHtml(app.id || '').substring(0, 8)}…</div>
-        </td>
-        <td><span class="admin-badge admin-badge--info" style="font-size:11px;">${escapeHtml(app.traffic_source || '—')}</span></td>
-        <td style="color:var(--admin-text-secondary);font-size:13px;">${escapeHtml(app.audience_size || '—')}</td>
-        <td>${url}</td>
-        <td style="color:var(--admin-text-secondary);font-size:13px;">${escapeHtml(app.company_name || '—')}</td>
-        <td style="color:var(--admin-text-muted);font-size:12px;">${date}</td>
-        <td>
-          <div style="display:flex;gap:6px;">
-            <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="openDetailsModal('${app.id}')">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2a5 5 0 100 10A5 5 0 007 2zm0 0l5 5"/></svg>
-              Review Application
-            </button>
-          </div>
-        </td>
-      </tr>`;
-    }).join('');
+      const row = document.createElement('tr');
+      row.append(
+        buildApplicantCell(app),
+        buildTrafficCell(app),
+        buildTextCell(app.audience_size || '—', 'color:var(--admin-text-secondary);font-size:13px;'),
+        buildUrlCell(app.main_url),
+        buildTextCell(app.company_name || '—', 'color:var(--admin-text-secondary);font-size:13px;'),
+        buildTextCell(date, 'color:var(--admin-text-muted);font-size:12px;'),
+        buildActionCell(app)
+      );
+      tbody.appendChild(row);
+    });
   }
 
   // ── KPI Update ───────────────────────────────────────────────
@@ -89,6 +85,7 @@
     document.getElementById('approve-modal-email').textContent = email;
     document.getElementById('approve-referral-code').value = '';
     document.getElementById('approve-commission-rate').value = '50';
+    clearApproveErrors();
     openModal(document.getElementById('approve-modal'));
   };
 
@@ -100,9 +97,18 @@
   window.confirmApprove = async function () {
     const code = document.getElementById('approve-referral-code').value.trim().toUpperCase();
     const rate = parseInt(document.getElementById('approve-commission-rate').value);
+    clearApproveErrors();
 
-    if (!code) return alert('Referral code is required.');
-    if (isNaN(rate) || rate < 1 || rate > 450) return alert('Commission rate must be 1–450 bps.');
+    if (!REFERRAL_CODE_PATTERN.test(code)) {
+      setFieldError('approve-referral-error', 'Referral code must be 3-20 uppercase letters, numbers, underscores, or hyphens.');
+      document.getElementById('approve-referral-code').focus();
+      return;
+    }
+    if (isNaN(rate) || rate < 1 || rate > 450) {
+      setFieldError('approve-commission-error', 'Commission rate must be 1-450 bps.');
+      document.getElementById('approve-commission-rate').focus();
+      return;
+    }
 
     const btn = document.getElementById('approve-confirm-btn');
     btn.disabled = true;
@@ -135,6 +141,7 @@
     currentAppId = appId;
     document.getElementById('reject-modal-email').textContent = email;
     document.getElementById('reject-reason').value = '';
+    clearRejectErrors();
     openModal(document.getElementById('reject-modal'));
   };
 
@@ -145,7 +152,18 @@
 
   window.confirmReject = async function () {
     const reason = document.getElementById('reject-reason').value.trim();
-    if (!reason) return alert('A rejection reason is required.');
+    clearRejectErrors();
+
+    if (!reason) {
+      setFieldError('reject-reason-error', 'A rejection reason is required.');
+      document.getElementById('reject-reason').focus();
+      return;
+    }
+    if (reason.length > REJECTION_REASON_MAX_LENGTH) {
+      setFieldError('reject-reason-error', `Rejection reason must be ${REJECTION_REASON_MAX_LENGTH} characters or fewer.`);
+      document.getElementById('reject-reason').focus();
+      return;
+    }
 
     const btn = document.getElementById('reject-confirm-btn');
     btn.disabled = true;
@@ -174,13 +192,130 @@
   };
 
   // ── Helpers ──────────────────────────────────────────────────
-  function escapeHtml(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
   function truncate(str, len) {
     if (!str) return '';
     return str.length > len ? str.substring(0, len) + '…' : str;
+  }
+
+  function isValidPendingResponse(data) {
+    if (!data || !Array.isArray(data.pending) || !data.counts || typeof data.counts !== 'object') {
+      return false;
+    }
+
+    return ['pending', 'active', 'rejected'].every(key =>
+      Number.isInteger(data.counts[key]) && data.counts[key] >= 0
+    );
+  }
+
+  function renderStateRow(message, padding) {
+    const tbody = document.getElementById('pending-body');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 7;
+    cell.style.cssText = `text-align:center;padding:${padding}px;color:var(--admin-text-muted);`;
+    cell.textContent = message;
+    row.appendChild(cell);
+    tbody.replaceChildren(row);
+  }
+
+  function setFieldError(id, message) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = message;
+    el.style.display = 'block';
+  }
+
+  function clearFieldError(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = '';
+    el.style.display = 'none';
+  }
+
+  function clearApproveErrors() {
+    clearFieldError('approve-referral-error');
+    clearFieldError('approve-commission-error');
+  }
+
+  function clearRejectErrors() {
+    clearFieldError('reject-reason-error');
+  }
+
+  function safeExternalUrl(value) {
+    if (!value) return null;
+
+    try {
+      const url = new URL(String(value));
+      return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function applyStyle(el, style) {
+    if (style) el.style.cssText = style;
+    return el;
+  }
+
+  function buildTextCell(text, style) {
+    const cell = document.createElement('td');
+    applyStyle(cell, style);
+    cell.textContent = text;
+    return cell;
+  }
+
+  function buildApplicantCell(app) {
+    const cell = document.createElement('td');
+    const email = applyStyle(document.createElement('div'), 'font-weight:500;color:var(--admin-text-primary);font-size:13px;');
+    email.textContent = app.email || '—';
+
+    const id = applyStyle(document.createElement('div'), 'font-size:11px;color:var(--admin-text-muted);margin-top:2px;');
+    id.textContent = `${String(app.id || '').substring(0, 8)}…`;
+
+    cell.append(email, id);
+    return cell;
+  }
+
+  function buildTrafficCell(app) {
+    const cell = document.createElement('td');
+    const badge = applyStyle(document.createElement('span'), 'font-size:11px;');
+    badge.className = 'admin-badge admin-badge--info';
+    badge.textContent = app.traffic_source || '—';
+    cell.appendChild(badge);
+    return cell;
+  }
+
+  function buildUrlCell(rawUrl) {
+    const cell = document.createElement('td');
+    const url = safeExternalUrl(rawUrl);
+
+    if (!url) {
+      const empty = applyStyle(document.createElement('span'), 'color:var(--admin-text-muted)');
+      empty.textContent = '—';
+      cell.appendChild(empty);
+      return cell;
+    }
+
+    const link = applyStyle(document.createElement('a'), 'color:var(--admin-accent);text-decoration:none;');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = truncate(String(rawUrl), 30);
+    cell.appendChild(link);
+    return cell;
+  }
+
+  function buildActionCell(app) {
+    const cell = document.createElement('td');
+    const wrapper = applyStyle(document.createElement('div'), 'display:flex;gap:6px;');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'admin-btn admin-btn--secondary admin-btn--sm';
+    button.textContent = 'Review Application';
+    button.addEventListener('click', () => openDetailsModal(app.id));
+    wrapper.appendChild(button);
+    cell.appendChild(wrapper);
+    return cell;
   }
 
   function getFocusableElements(modal) {
@@ -254,7 +389,7 @@
     document.getElementById('details-date').textContent = app.created_at ? new Date(app.created_at).toLocaleString() : '—';
     document.getElementById('details-traffic').textContent = app.traffic_source || '—';
     document.getElementById('details-audience').textContent = app.audience_size || '—';
-    document.getElementById('details-url').innerHTML = app.main_url ? `<a href="${escapeHtml(app.main_url)}" target="_blank" style="color:var(--admin-accent)">${escapeHtml(app.main_url)}</a>` : '—';
+    renderDetailsUrl(app.main_url);
     document.getElementById('details-company').textContent = app.company_name || '—';
     document.getElementById('details-tax').textContent = app.tax_id || '—';
     document.getElementById('details-phone').textContent = app.phone_number || '—';
@@ -273,7 +408,30 @@
     closeModal(document.getElementById('details-modal'));
   };
 
+  function renderDetailsUrl(rawUrl) {
+    const container = document.getElementById('details-url');
+    const url = safeExternalUrl(rawUrl);
+    container.replaceChildren();
+
+    if (!url) {
+      container.textContent = '—';
+      return;
+    }
+
+    const link = applyStyle(document.createElement('a'), 'color:var(--admin-accent)');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = String(rawUrl);
+    container.appendChild(link);
+  }
+
   // ── Close modals on backdrop click ───────────────────────────
+  document.getElementById('details-close-btn').addEventListener('click', closeDetailsModal);
+  document.getElementById('approve-cancel-btn').addEventListener('click', closeApproveModal);
+  document.getElementById('approve-confirm-btn').addEventListener('click', confirmApprove);
+  document.getElementById('reject-cancel-btn').addEventListener('click', closeRejectModal);
+  document.getElementById('reject-confirm-btn').addEventListener('click', confirmReject);
   document.getElementById('approve-modal').addEventListener('click', function (e) {
     if (e.target === this) closeApproveModal();
   });

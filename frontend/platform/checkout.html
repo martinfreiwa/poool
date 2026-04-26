@@ -2,7 +2,7 @@
 extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "components/head.html" %}{% endwith
 %}
 
-<body id="checkout-body" class="fouc-guard">
+<body id="checkout-body" class="fouc-guard dom-ready">
   <!-- Custom POOOL Icon Styles -->
   <style>
     .poool-icon-custom {
@@ -346,6 +346,26 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
         var confirmBtn = document.getElementById("checkout-confirm-btn");
         if (confirmBtn) {
           confirmBtn.addEventListener("click", handleCheckout);
+        }
+
+        var bankTermsCheckbox = document.getElementById("bank-terms-checkbox");
+        if (bankTermsCheckbox) {
+          var bankTermsLabel = bankTermsCheckbox.closest("label");
+          document.addEventListener("click", function (event) {
+            if (!bankTermsLabel || bankTermsLabel.contains(event.target)) return;
+
+            var rect = bankTermsLabel.getBoundingClientRect();
+            var clickedInsideLabel =
+              event.clientX >= rect.left &&
+              event.clientX <= rect.right &&
+              event.clientY >= rect.top &&
+              event.clientY <= rect.bottom;
+
+            if (clickedInsideLabel) {
+              bankTermsCheckbox.checked = !bankTermsCheckbox.checked;
+              bankTermsCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+          }, true);
         }
       });
 
@@ -778,6 +798,9 @@ extra_css=['leaderboard', 'checkout', 'cart', 'mobile-cart'] %}{% include "compo
           var resp = await fetch("/checkout", {
             method: "POST",
             body: formData,
+            headers: {
+              "X-CSRF-Token": typeof window.getCsrfToken === "function" ? window.getCsrfToken() : "",
+            },
           });
 
           if (resp.ok) {

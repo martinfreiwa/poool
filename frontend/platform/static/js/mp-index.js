@@ -1,24 +1,110 @@
 /**
  * Marketplace Overview — mp-index.js
  * Fetches KPIs, Live Trades, and System Health from backend APIs.
- * Falls back to mock data if API is unavailable.
  */
 (function () {
   'use strict';
 
   const API_BASE = '/api/admin/marketplace';
+  let lastStatsError = null;
+  let lastTradesError = null;
+  let lastHealthError = null;
 
   // ===== API FETCHERS =====
 
   async function fetchJSON(url) {
-    try {
-      const res = await fetch(url, { credentials: 'same-origin' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      console.warn(`[mp-index] API fetch failed: ${url}`, err);
-      return null;
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const body = await res.json();
+        message = body.error || body.message || message;
+      } catch (_) {
+        // Response was not JSON; keep the HTTP status message.
+      }
+      throw new Error(message);
     }
+    return res.json();
+  }
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function formatCurrency(cents) {
+    return (Number(cents || 0) / 100).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  }
+
+  function firstSegment(value, fallback) {
+    const text = String(value || fallback || '');
+    return text.includes('@') ? text.split('@')[0] : text;
+  }
+
+  function shortId(value) {
+    return String(value || '').substring(0, 8) || 'unknown';
+  }
+
+  function clearElement(el) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+  }
+
+  function makeCell(text, className) {
+    const td = document.createElement('td');
+    if (className) td.className = className;
+    td.textContent = text;
+    return td;
+  }
+
+  function makeCodeCell(text) {
+    const td = document.createElement('td');
+    const code = document.createElement('code');
+    code.className = 'mp-inline-code';
+    code.textContent = text;
+    td.appendChild(code);
+    return td;
+  }
+
+  function renderTableMessage(message, tone) {
+    const tbody = document.getElementById('live-trades-body');
+    if (!tbody) return;
+    clearElement(tbody);
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 8;
+    cell.className = `mp-table-message${tone ? ` mp-table-message--${tone}` : ''}`;
+    cell.textContent = message;
+    row.appendChild(cell);
+    tbody.appendChild(row);
+  }
+
+  function renderHealthMessage(message, tone) {
+    const grid = document.getElementById('health-grid');
+    if (!grid) return;
+    clearElement(grid);
+    const item = document.createElement('div');
+    item.className = `mp-health-message${tone ? ` mp-health-message--${tone}` : ''}`;
+    item.textContent = message;
+    grid.appendChild(item);
+  }
+
+  function renderStatsError(error) {
+    const message = error && error.message ? error.message : 'Stats unavailable';
+    setText('kpi-trading-status', 'Unavailable');
+    setText('kpi-trading-subtext', message);
+    setText('kpi-open-orders', '--');
+    setText('kpi-open-orders-subtext', 'Open order count unavailable');
+    setText('kpi-volume', '--');
+    setText('kpi-volume-subtext', '24h volume unavailable');
+    setText('kpi-pending', '--');
+    setText('kpi-pending-subtext', 'Review queue unavailable');
+    const statusEl = document.getElementById('kpi-trading-status');
+    if (statusEl) statusEl.style.color = 'var(--admin-danger, #ef4444)';
   }
 
   // ===== RENDER KPI CARDS =====
@@ -28,26 +114,42 @@
     const openOrdersEl = document.getElementById('kpi-open-orders');
     const volumeEl = document.getElementById('kpi-volume');
     const pendingEl = document.getElementById('kpi-pending');
+    const tradingStatus = stats.trading_status || 'UNKNOWN';
 
     if (statusEl) {
-      statusEl.textContent = stats.trading_status;
-      statusEl.style.color = stats.trading_status === 'LIVE'
-        ? 'var(--admin-success)' : 'var(--admin-danger, #ef4444)';
+      statusEl.textContent = tradingStatus;
+      statusEl.style.color = tradingStatus === 'LIVE'
+        ? 'var(--admin-success)'
+        : tradingStatus === 'HALTED'
+          ? 'var(--admin-warning)'
+          : 'var(--admin-danger, #ef4444)';
     }
     if (openOrdersEl) {
-      openOrdersEl.textContent = stats.open_orders.toLocaleString();
+      openOrdersEl.textContent = Number(stats.open_orders || 0).toLocaleString();
     }
     if (volumeEl) {
-      volumeEl.textContent = '$' + (stats.volume_24h_cents / 100).toLocaleString('en-US', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      });
+      volumeEl.textContent = formatCurrency(stats.volume_24h_cents);
     }
     if (pendingEl) {
-      pendingEl.textContent = (stats.pending_reviews || 0).toLocaleString();
+      const pending = Number(stats.pending_reviews || 0);
+      pendingEl.textContent = pending.toLocaleString();
       pendingEl.style.color = (stats.pending_reviews || 0) > 0
         ? 'var(--admin-warning)' : 'var(--admin-text-primary)';
     }
+
+    setText(
+      'kpi-trading-subtext',
+      tradingStatus === 'LIVE'
+        ? 'Trading enabled'
+        : tradingStatus === 'HALTED'
+          ? 'Trading halted by kill-switch'
+          : 'Trading status could not be verified'
+    );
+    setText('kpi-open-orders-subtext', `${Number(stats.total_assets_trading || 0).toLocaleString()} active assets`);
+    setText('kpi-volume-subtext', `${Number(stats.trades_24h || 0).toLocaleString()} trades in the last 24h`);
+    setText('kpi-pending-subtext', Number(stats.pending_reviews || 0) > 0
+      ? 'Large orders awaiting review'
+      : 'No orders awaiting review');
   }
 
   // ===== RENDER TRADES TABLE =====
@@ -56,66 +158,110 @@
     const tbody = document.getElementById('live-trades-body');
     if (!tbody) return;
 
-    if (!trades || trades.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="8" style="text-align: center; color: var(--admin-text-muted); padding: 24px;">
-            No recent trades
-          </td>
-        </tr>`;
+    clearElement(tbody);
+
+    if (!Array.isArray(trades) || trades.length === 0) {
+      renderTableMessage('No recent trades', 'muted');
       return;
     }
 
-    tbody.innerHTML = trades.map(t => {
-      const time = new Date(t.executed_at).toLocaleTimeString('en-US', { hour12: false });
-      const total = (t.total_cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-      const price = (t.price_cents / 100).toFixed(2);
-      const assetName = t.asset_name || t.asset_id.substring(0, 8);
-      const buyerLabel = t.buyer_email ? t.buyer_email.split('@')[0] : t.buyer_id.substring(0, 8);
-      const sellerLabel = t.seller_email ? t.seller_email.split('@')[0] : t.seller_id.substring(0, 8);
-      // Determine side based on taker (simplified)
-      const sideClass = 'mp-side-buy';
+    trades.forEach((trade) => {
+      const row = document.createElement('tr');
+      const executed = trade.executed_at ? new Date(trade.executed_at) : null;
+      const time = executed && !Number.isNaN(executed.getTime())
+        ? executed.toLocaleTimeString('en-US', { hour12: false })
+        : '--';
+      const assetName = trade.asset_name || shortId(trade.asset_id);
+      const buyerLabel = firstSegment(trade.buyer_email, shortId(trade.buyer_id));
+      const sellerLabel = firstSegment(trade.seller_email, shortId(trade.seller_id));
 
-      return `
-        <tr>
-          <td style="font-variant-numeric: tabular-nums; font-family: monospace; font-size: 12px; color: var(--admin-text-muted);">${time}</td>
-          <td style="font-weight: 600; color: var(--admin-text-primary);">${assetName}</td>
-          <td><span class="${sideClass}">TRADE</span></td>
-          <td style="font-variant-numeric: tabular-nums;">$${price}</td>
-          <td style="font-variant-numeric: tabular-nums;">${t.quantity.toLocaleString()}</td>
-          <td style="font-weight: 600; font-variant-numeric: tabular-nums;">${total}</td>
-          <td><code style="font-size: 11px; padding: 2px 6px; background: var(--admin-code-bg); border-radius: 4px;">${buyerLabel}</code></td>
-          <td><code style="font-size: 11px; padding: 2px 6px; background: var(--admin-code-bg); border-radius: 4px;">${sellerLabel}</code></td>
-        </tr>
-      `;
-    }).join('');
+      row.appendChild(makeCell(time, 'mp-cell-muted mp-cell-tabular'));
+      row.appendChild(makeCell(assetName, 'mp-cell-strong'));
+
+      const sideCell = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className = 'mp-side-buy';
+      badge.textContent = 'TRADE';
+      sideCell.appendChild(badge);
+      row.appendChild(sideCell);
+
+      row.appendChild(makeCell(formatCurrency(trade.price_cents), 'mp-cell-tabular'));
+      row.appendChild(makeCell(Number(trade.quantity || 0).toLocaleString(), 'mp-cell-tabular'));
+      row.appendChild(makeCell(formatCurrency(trade.total_cents), 'mp-cell-strong mp-cell-tabular'));
+      row.appendChild(makeCodeCell(buyerLabel));
+      row.appendChild(makeCodeCell(sellerLabel));
+      tbody.appendChild(row);
+    });
   }
 
   // ===== RENDER SYSTEM HEALTH =====
 
+  function componentStatus(condition, degraded) {
+    if (condition) return 'ok';
+    return degraded ? 'warn' : 'error';
+  }
+
+  function setTopbarHealth(id, status, label) {
+    const dot = document.getElementById(id);
+    if (!dot) return;
+    dot.className = `admin-health-dot admin-health-dot--${status}`;
+    dot.title = label;
+  }
+
+  function updateTopbarHealth(health) {
+    const dbStatus = componentStatus(Boolean(health.database_connected), false);
+    const redisStatus = componentStatus(Boolean(health.redis_connected), true);
+    const wsStatus = health.websocket_status === 'healthy'
+      ? 'ok'
+      : health.websocket_status === 'not_tracked'
+        ? 'warn'
+        : 'error';
+
+    setTopbarHealth('health-dot-db', dbStatus, `Database: ${dbStatus}`);
+    setTopbarHealth('health-dot-matching', redisStatus, `Matching Engine: ${health.matching_engine_status || 'unknown'}`);
+    setTopbarHealth('health-dot-ws', wsStatus, `WebSocket Gateway: ${health.websocket_status || 'unknown'}`);
+  }
+
   function renderHealth(health) {
     const grid = document.getElementById('health-grid');
     if (!grid) return;
+    clearElement(grid);
+    updateTopbarHealth(health);
+
+    const databaseStatus = componentStatus(Boolean(health.database_connected), false);
+    const redisStatus = componentStatus(Boolean(health.redis_connected), true);
+    const matchingStatus = health.matching_engine_status === 'healthy'
+      ? 'ok'
+      : health.matching_engine_status === 'not_configured'
+        ? 'warn'
+        : 'error';
+    const websocketStatus = health.websocket_status === 'healthy'
+      ? 'ok'
+      : health.websocket_status === 'not_tracked'
+        ? 'warn'
+        : 'error';
 
     const items = [
       {
         label: 'Database Latency',
-        value: health.database_latency_ms.toFixed(1) + 'ms',
-        status: health.database_latency_ms < 50 ? 'ok' : health.database_latency_ms < 200 ? 'warn' : 'error'
+        value: Number(health.database_latency_ms || 0).toFixed(1) + 'ms',
+        status: databaseStatus
       },
       {
         label: 'Matching Engine',
-        value: health.matching_engine_status === 'healthy' ? '< 1ms' : health.matching_engine_status,
-        status: health.matching_engine_status === 'healthy' ? 'ok' : 'error'
+        value: health.matching_engine_status || 'unknown',
+        status: matchingStatus
       },
       {
         label: 'Active WebSockets',
-        value: health.active_ws_connections.toLocaleString(),
-        status: 'ok'
+        value: health.websocket_status === 'not_tracked'
+          ? 'Not tracked'
+          : Number(health.active_ws_connections || 0).toLocaleString(),
+        status: websocketStatus
       },
       {
         label: 'Order Queue Depth',
-        value: health.order_queue_depth.toLocaleString(),
+        value: Number(health.order_queue_depth || 0).toLocaleString(),
         status: health.order_queue_depth < 1000 ? 'ok' : 'warn'
       },
       {
@@ -130,93 +276,85 @@
       },
     ];
 
-    grid.innerHTML = items.map(h => `
-      <div class="mp-health-item">
-        <span class="mp-health-dot mp-health-dot--${h.status}"></span>
-        <span class="mp-health-label">${h.label}</span>
-        <span class="mp-health-value">${h.value}</span>
-      </div>
-    `).join('');
-  }
+    items.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'mp-health-item';
 
-  // ===== FALLBACK MOCK DATA =====
+      const dot = document.createElement('span');
+      dot.className = `mp-health-dot mp-health-dot--${item.status}`;
+      row.appendChild(dot);
 
-  function useMockData() {
-    renderKPIs({
-      trading_status: 'LIVE',
-      open_orders: 247,
-      volume_24h_cents: 128450000,
-      pending_approvals: 3
+      const label = document.createElement('span');
+      label.className = 'mp-health-label';
+      label.textContent = item.label;
+      row.appendChild(label);
+
+      const value = document.createElement('span');
+      value.className = 'mp-health-value';
+      value.textContent = item.value;
+      row.appendChild(value);
+
+      grid.appendChild(row);
     });
-
-    renderHealth({
-      database_latency_ms: 4,
-      matching_engine_status: 'healthy',
-      active_ws_connections: 1247,
-      order_queue_depth: 23,
-      redis_connected: true,
-      redis_latency_ms: 1.2,
-      last_trade_at: new Date().toISOString()
-    });
-
-    // Mock trades
-    const MOCK_TRADES = [
-      { time: '14:32:07', asset: 'Bali Villa Resort', side: 'BUY',  price: 52.40, qty: 120, buyer: 'USR-8291', seller: 'USR-4410' },
-      { time: '14:31:44', asset: 'Jakarta Office Tower', side: 'SELL', price: 105.00, qty: 50,  buyer: 'USR-1738', seller: 'USR-9203' },
-      { time: '14:31:12', asset: 'Surabaya Warehouse', side: 'BUY',  price: 23.75, qty: 400, buyer: 'USR-3384', seller: 'USR-7712' },
-    ];
-
-    const tbody = document.getElementById('live-trades-body');
-    if (tbody) {
-      tbody.innerHTML = MOCK_TRADES.map(t => {
-        const total = (t.price * t.qty).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-        const sideClass = t.side === 'BUY' ? 'mp-side-buy' : 'mp-side-sell';
-        return `
-          <tr>
-            <td style="font-variant-numeric: tabular-nums; font-family: monospace; font-size: 12px; color: var(--admin-text-muted);">${t.time}</td>
-            <td style="font-weight: 600; color: var(--admin-text-primary);">${t.asset}</td>
-            <td><span class="${sideClass}">${t.side}</span></td>
-            <td style="font-variant-numeric: tabular-nums;">$${t.price.toFixed(2)}</td>
-            <td style="font-variant-numeric: tabular-nums;">${t.qty.toLocaleString()}</td>
-            <td style="font-weight: 600; font-variant-numeric: tabular-nums;">${total}</td>
-            <td><code style="font-size: 11px; padding: 2px 6px; background: var(--admin-code-bg); border-radius: 4px;">${t.buyer}</code></td>
-            <td><code style="font-size: 11px; padding: 2px 6px; background: var(--admin-code-bg); border-radius: 4px;">${t.seller}</code></td>
-          </tr>
-        `;
-      }).join('');
-    }
   }
 
   // ===== INIT =====
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    // Try fetching real data from API
-    const [stats, trades, health] = await Promise.all([
+  async function refreshAll() {
+    const [statsResult, tradesResult, healthResult] = await Promise.allSettled([
       fetchJSON(`${API_BASE}/stats`),
       fetchJSON(`${API_BASE}/recent-trades`),
       fetchJSON(`${API_BASE}/health`),
     ]);
 
-    if (stats && health) {
-      renderKPIs(stats);
-      renderTrades(trades || []);
-      renderHealth(health);
+    if (statsResult.status === 'fulfilled') {
+      lastStatsError = null;
+      renderKPIs(statsResult.value);
     } else {
-      // API unavailable — fall back to mock data
-      console.info('[mp-index] Using mock data (API unavailable)');
-      useMockData();
+      lastStatsError = statsResult.reason;
+      console.warn('[mp-index] Stats unavailable', lastStatsError);
+      renderStatsError(lastStatsError);
     }
 
+    if (tradesResult.status === 'fulfilled') {
+      lastTradesError = null;
+      renderTrades(tradesResult.value);
+    } else {
+      lastTradesError = tradesResult.reason;
+      console.warn('[mp-index] Recent trades unavailable', lastTradesError);
+      renderTableMessage(`Recent trades unavailable: ${lastTradesError.message || 'request failed'}`, 'error');
+    }
+
+    if (healthResult.status === 'fulfilled') {
+      lastHealthError = null;
+      renderHealth(healthResult.value);
+    } else {
+      lastHealthError = healthResult.reason;
+      console.warn('[mp-index] Health unavailable', lastHealthError);
+      setTopbarHealth('health-dot-db', 'error', 'Database: health check unavailable');
+      setTopbarHealth('health-dot-matching', 'error', 'Matching Engine: health check unavailable');
+      setTopbarHealth('health-dot-ws', 'error', 'WebSocket Gateway: health check unavailable');
+      renderHealthMessage(`System health unavailable: ${lastHealthError.message || 'request failed'}`, 'error');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    renderTableMessage('Loading recent trades', 'muted');
+    renderHealthMessage('Checking system health', 'muted');
+    await refreshAll();
+
     // Auto-refresh every 30 seconds
-    setInterval(async () => {
-      const [s, t, h] = await Promise.all([
-        fetchJSON(`${API_BASE}/stats`),
-        fetchJSON(`${API_BASE}/recent-trades`),
-        fetchJSON(`${API_BASE}/health`),
-      ]);
-      if (s) renderKPIs(s);
-      if (t) renderTrades(t);
-      if (h) renderHealth(h);
-    }, 30_000);
+    setInterval(refreshAll, 30_000);
   });
+
+  window.PooolMarketplaceOverview = {
+    refreshAll,
+    getLastErrors() {
+      return {
+        stats: lastStatsError,
+        trades: lastTradesError,
+        health: lastHealthError
+      };
+    }
+  };
 })();

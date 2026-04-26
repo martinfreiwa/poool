@@ -793,16 +793,20 @@ mod tests {
 
     #[test]
     fn test_expiry_hours_clamping() {
+        fn clamp_expiry_hours(requested_hours: Option<i32>) -> i32 {
+            requested_hours.unwrap_or(48).clamp(1, 168)
+        }
+
         // Default 48h
-        let hours = None::<i32>.unwrap_or(48).max(1).min(168);
+        let hours = clamp_expiry_hours(None);
         assert_eq!(hours, 48);
 
         // Clamped to 1h min
-        let hours = Some(0).unwrap_or(48).max(1).min(168);
+        let hours = clamp_expiry_hours(Some(0));
         assert_eq!(hours, 1);
 
         // Clamped to 168h (7d) max
-        let hours = Some(500).unwrap_or(48).max(1).min(168);
+        let hours = clamp_expiry_hours(Some(500));
         assert_eq!(hours, 168);
     }
 

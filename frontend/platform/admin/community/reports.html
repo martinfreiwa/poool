@@ -8,12 +8,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Moderation Queue | Community Admin | POOOL</title>
   
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
+  <script defer src="/static/js/admin-community-reports.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
 </head>
@@ -46,7 +45,7 @@
             <p class="admin-page-subtitle">Review and manage user-reported content.</p>
           </div>
           <div>
-            <button class="admin-btn admin-btn--secondary" onclick="loadReports()">
+            <button class="admin-btn admin-btn--secondary" id="reports-refresh-btn" type="button">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
               Refresh
             </button>
@@ -82,12 +81,12 @@
   </div>
 
   <!-- Action Modal -->
-  <div id="action-modal" class="ds-modal" style="display: none; z-index: 1000;">
-    <div class="ds-modal__backdrop" onclick="closeActionModal()"></div>
-    <div class="ds-modal__content" style="max-width: 500px; background: white; border-radius: 12px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 24px; width: 100%; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);">
+  <div id="action-modal" class="ds-modal-overlay" style="z-index: 1000;" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc" aria-hidden="true">
+    <div class="ds-modal__backdrop" data-reports-close-modal></div>
+    <div class="ds-modal" style="max-width: 500px; background: white; border-radius: 12px; padding: 24px; width: 100%; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);" tabindex="-1">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #101828;" id="modal-title">Take Action</h3>
-        <button style="background: none; border: none; cursor: pointer; color: #667085;" onclick="closeActionModal()">
+        <button style="background: none; border: none; cursor: pointer; color: #667085;" type="button" data-reports-close-modal aria-label="Close action modal">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -100,165 +99,17 @@
         </p>
         
         <div style="margin-bottom: 20px;">
-          <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #344054;">Admin Notes (Required)</label>
-          <textarea id="modal-notes" rows="3" style="width: 100%; border: 1px solid #D0D5DD; border-radius: 8px; padding: 10px; font-family: inherit;" placeholder="Reason for this action..."></textarea>
+          <label for="modal-notes" style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #344054;">Admin Notes (Required)</label>
+          <textarea id="modal-notes" rows="3" maxlength="1000" required style="width: 100%; border: 1px solid #D0D5DD; border-radius: 8px; padding: 10px; font-family: inherit;" placeholder="Reason for this action..."></textarea>
+          <p id="modal-error" role="alert" style="display:none; margin:8px 0 0; color:#B42318; font-size:13px;"></p>
         </div>
         
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button style="padding: 10px 16px; border-radius: 8px; border: 1px solid #D0D5DD; background: white; font-weight: 500; cursor: pointer;" onclick="closeActionModal()">Cancel</button>
-          <button id="modal-confirm-btn" style="padding: 10px 16px; border-radius: 8px; border: none; background: #D92D20; color: white; font-weight: 500; cursor: pointer;" onclick="confirmAction()">Confirm Action</button>
+          <button style="padding: 10px 16px; border-radius: 8px; border: 1px solid #D0D5DD; background: white; font-weight: 500; cursor: pointer;" type="button" data-reports-close-modal>Cancel</button>
+          <button id="modal-confirm-btn" style="padding: 10px 16px; border-radius: 8px; border: none; background: #D92D20; color: white; font-weight: 500; cursor: pointer;" type="button">Confirm Action</button>
         </div>
       </div>
     </div>
   </div>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        loadReports();
-    });
-
-    async function loadReports() {
-        const tbody = document.getElementById('reports-table');
-        try {
-            const res = await fetch('/api/admin/community/reports');
-            if(res.ok) {
-                const reports = await res.json();
-                
-                if (reports.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--admin-text-muted);">No pending reports. The queue is empty! 🎉</td></tr>';
-                    // Update badge
-                    const badge = document.getElementById('com-reports-badge');
-                    if (badge) badge.style.display = 'none';
-                    return;
-                }
-                
-                let html = '';
-                reports.forEach(r => {
-                    const date = new Date(r.created_at).toLocaleString();
-                    // trunc content
-                    const truncContent = r.post_content.length > 100 ? r.post_content.substring(0, 100) + '...' : r.post_content;
-                    
-                    html += `
-                        <tr>
-                            <td>
-                                <div style="font-weight: 500; color: #101828;">${r.reporter_name}</div>
-                                <div style="font-size: 12px; color: #667085; font-family: monospace;">${r.reporter_id.substring(0, 8)}...</div>
-                            </td>
-                            <td>
-                                <span class="admin-badge" style="background:#FEF3F2; color:#B42318; border: 1px solid #FECDCA;">
-                                    ${r.reason}
-                                </span>
-                            </td>
-                            <td>
-                                <div style="font-size: 12px; color: #667085; margin-bottom: 4px;">Author: <span style="font-weight: 500; color: #344054;">${r.post_author_name}</span></div>
-                                <div style="font-size: 14px; max-width: 300px; white-space: normal; line-height: 1.4;">${truncContent}</div>
-                            </td>
-                            <td><span style="font-size: 13px; color: #667085;">${date}</span></td>
-                            <td style="text-align: right;">
-                                <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                                    <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="openActionModal('${r.id}', 'hide_post')">Hide Post</button>
-                                    <button class="admin-btn admin-btn--secondary admin-btn--sm" style="color:#d97706; border-color:#d97706;" onclick="openActionModal('${r.id}', 'warn_user')">Warn User</button>
-                                    <button class="admin-btn admin-btn--secondary admin-btn--sm" style="color:#b42318; border-color:#b42318;" onclick="openActionModal('${r.id}', 'ban_user')">Ban User</button>
-                                    <button class="admin-btn admin-btn--ghost admin-btn--sm" onclick="openActionModal('${r.id}', 'dismiss_report')">Dismiss</button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = html;
-                
-                // Update badge
-                const badge = document.getElementById('com-reports-badge');
-                if (badge) {
-                    badge.textContent = reports.length;
-                    badge.style.display = '';
-                }
-
-            } else {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:#D92D20;">Failed to load reports</td></tr>';
-            }
-        } catch(e) {
-            console.error("Failed to load reports", e);
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:#D92D20;">Error connecting to server</td></tr>';
-        }
-    }
-
-    function openActionModal(reportId, actionType) {
-        document.getElementById('modal-report-id').value = reportId;
-        document.getElementById('modal-action-type').value = actionType;
-        document.getElementById('modal-notes').value = '';
-        
-        const titleEl = document.getElementById('modal-title');
-        const descEl = document.getElementById('modal-desc');
-        const btn = document.getElementById('modal-confirm-btn');
-        
-        if (actionType === 'hide_post') {
-            titleEl.textContent = 'Hide Reported Post';
-            descEl.textContent = 'This will hide the post from the community feed. The author will be notified.';
-            btn.style.background = '#D92D20';
-            btn.textContent = 'Hide Post';
-        } else if (actionType === 'warn_user') {
-            titleEl.textContent = 'Warn User';
-            descEl.textContent = 'This will send a warning to the author and resolve the report.';
-            btn.style.background = '#d97706';
-            btn.textContent = 'Warn User';
-        } else if (actionType === 'ban_user') {
-            titleEl.textContent = 'Ban User';
-            descEl.textContent = 'This will permanently ban the author from the community and resolve the report.';
-            btn.style.background = '#b42318';
-            btn.textContent = 'Ban User';
-        } else {
-            titleEl.textContent = 'Dismiss Report';
-            descEl.textContent = 'This will mark the report as resolved without taking action against the post or author.';
-            btn.style.background = '#027A48';
-            btn.textContent = 'Dismiss Report';
-        }
-        
-        document.getElementById('action-modal').style.display = 'block';
-    }
-
-    function closeActionModal() {
-        document.getElementById('action-modal').style.display = 'none';
-    }
-
-    async function confirmAction() {
-        const reportId = document.getElementById('modal-report-id').value;
-        const actionType = document.getElementById('modal-action-type').value;
-        const notes = document.getElementById('modal-notes').value.trim();
-        
-        if (!notes) {
-            alert("Admin notes are required.");
-            return;
-        }
-        
-        const btn = document.getElementById('modal-confirm-btn');
-        btn.disabled = true;
-        btn.textContent = 'Processing...';
-        
-        try {
-            const res = await fetch(`/api/admin/community/reports/${reportId}/action`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: actionType,
-                    admin_notes: notes
-                })
-            });
-            
-            if (res.ok) {
-                closeActionModal();
-                loadReports(); // REFRESH
-            } else {
-                const err = await res.text();
-                alert("Failed: " + err);
-            }
-        } catch(e) {
-            console.error(e);
-            alert("Network error.");
-        } finally {
-            btn.disabled = false;
-        }
-    }
-  </script>
 </body>
 </html>

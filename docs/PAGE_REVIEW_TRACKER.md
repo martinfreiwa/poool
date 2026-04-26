@@ -88,57 +88,57 @@ This document is the human-readable view of `docs/page-review-tracker.yml`. It t
 - [ ] no obvious visual regressions
 
 ## Audit Snapshot
-Generated: 2026-04-25
+Generated: 2026-04-26
 
 | Metric | Count |
 | --- | --- |
 | Discovered page routes | 233 |
 | Discovered page templates | 134 |
 | Discovered supporting templates | 48 |
-| Missing tracker routes | 7 |
+| Missing tracker routes | 0 |
 | Missing page template entries | 0 |
 | Missing supporting template entries | 0 |
 | Tracker references to missing files | 0 |
 | Pages with stale reviews | 0 |
-| Pages with not-reviewed categories | 113 |
-| Pages with last_tested_date set | 49 |
+| Pages with not-reviewed categories | 95 |
+| Pages with last_tested_date set | 66 |
 
 ## Coverage Summary
 | Dimension | Counts |
 | --- | --- |
 | Business risk | critical: 16, high: 80, low: 42, medium: 25 |
 | Access level | admin: 70, authenticated user: 54, developer: 13, public: 23, unknown or needs verification: 2, verified investor: 1 |
-| Open issues | 67 |
+| Open issues | 69 |
 
 ## Page Inventory
 | ID | Name | URL | Last Tested | Access | Sensitivity | Risk | Review Statuses | Stale | Issues |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | admin.admins | Admins | /admin/admins | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 8 |
-| admin.affiliate-applications | Affiliate Applications | /admin/affiliate-applications | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: reviewed, functional: issues found | - | 8 |
+| admin.affiliate-applications | Affiliate Applications | /admin/affiliate-applications | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: reviewed, functional: fixed | - | 12 |
 | admin.affiliate-compliance-route | Affiliate compliance route | /admin/affiliate-compliance | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: not applicable, e2e: reviewed, functional: fixed | - | 2 |
 | admin.affiliate-finance | Affiliate Finance | /admin/affiliate-finance | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 5 |
 | admin.affiliate-fraud-route | Affiliate fraud route | /admin/affiliate-fraud | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 5 |
 | admin.approvals | Approvals | /admin/approvals | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: issues found, e2e: needs recheck, functional: issues found | - | 5 |
 | admin.asset-details | Asset Details | /admin/asset-details | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: fixed | - | 7 |
-| admin.asset-tokenize | Asset Tokenize | /admin/asset-tokenize | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 8 |
+| admin.asset-tokenize | Asset Tokenize | /admin/asset-tokenize | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 8 |
 | admin.assets | Assets | /admin/assets | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
 | admin.audit-logs | Audit Logs | /admin/audit-logs | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
-| admin.blockchain-contract-detail | Blockchain Contract Detail | /admin/blockchain-contract-detail | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
+| admin.blockchain-contract-detail | Blockchain Contract Detail | /admin/blockchain-contract-detail | 2026-04-26 | admin | admin-only data | critical | security: passed, accessibility: passed, e2e: passed, functional: passed | - | 9 |
 | admin.blockchain-contracts | Blockchain Contracts | /admin/blockchain-contracts | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
 | admin.blockchain-sync | Blockchain Sync | /admin/blockchain-sync | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
 | admin.blockchain-treasury | Blockchain Treasury | /admin/blockchain-treasury | 2026-04-24 | admin | admin-only data | critical | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
 | admin.community.amas | Community AMAS | /admin/community/amas | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
-| admin.community.announcements | Community Announcements | /admin/community/announcements | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
+| admin.community.announcements | Community Announcements | /admin/community/announcements | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
 | admin.community.badges | Community Badges | /admin/community/badges | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
 | admin.community.challenges | Community Challenges | /admin/community/challenges | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
 | admin.community.circle-detail | Community Circle Detail | /admin/community/circle-detail | 2026-04-25 | admin | admin-only data | high | security: needs recheck, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 5 |
 | admin.community.circles | Community Circles | /admin/community/circles | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
-| admin.community.comments | Community Comments | /admin/community/comments | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 8 |
-| admin.community.index | Community Index | /admin/community/ | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 6 |
+| admin.community.comments | Community Comments | /admin/community/comments | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 8 |
+| admin.community.index | Community Index | /admin/community/ | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
 | admin.community.leaderboard | Community Leaderboard | /admin/community/leaderboard | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 9 |
 | admin.community.post-detail | Community Post Detail | /admin/community/post-detail | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 6 |
 | admin.community.posts | Community Posts | /admin/community/posts | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
-| admin.community.reports | Community Reports | /admin/community/reports | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
+| admin.community.reports | Community Reports | /admin/community/reports | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 8 |
 | admin.community.user-detail | Community User Detail | /admin/community/user-detail | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
 | admin.community.users | Community Users | /admin/community/users | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
 | admin.deposits | Deposits | /admin/deposits | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
@@ -146,33 +146,33 @@ Generated: 2026-04-25
 | admin.developer-submissions | Developer Submissions | /admin/developer-submissions | 2026-04-25 | admin | admin-only data | high | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
 | admin.dividends | Dividends | /admin/dividends | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 2 |
 | admin.email-marketing | Email Marketing | /admin/email-marketing | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
-| admin.index | Index | /admin/ | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
+| admin.index | Index | /admin/ | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
 | admin.kyc | KYC | /admin/kyc | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: issues found, e2e: needs recheck, functional: issues found | - | 7 |
 | admin.marketplace.alerts | Marketplace Alerts | /admin/marketplace/alerts | 2026-04-25 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 7 |
 | admin.marketplace.analytics | Marketplace Analytics | /admin/marketplace/analytics | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 8 |
-| admin.marketplace.approvals | Marketplace Approvals | /admin/marketplace/approvals | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.marketplace.compliance | Marketplace Compliance | /admin/marketplace/compliance | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.marketplace.fees | Marketplace Fees | /admin/marketplace/fees | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.marketplace.index | Marketplace Index | /admin/marketplace/ | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.marketplace.orderbook | Marketplace Orderbook | /admin/marketplace/orderbook | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| admin.marketplace.approvals | Marketplace Approvals | /admin/marketplace/approvals | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: fixed, functional: fixed | - | 8 |
+| admin.marketplace.compliance | Marketplace Compliance | /admin/marketplace/compliance | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 6 |
+| admin.marketplace.fees | Marketplace Fees | /admin/marketplace/fees | - | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 9 |
+| admin.marketplace.index | Marketplace Index | /admin/marketplace/ | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
+| admin.marketplace.orderbook | Marketplace Orderbook | /admin/marketplace/orderbook | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
 | admin.marketplace.orders | Marketplace Orders | /admin/marketplace/orders | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
-| admin.marketplace.p2p | Marketplace P2P | /admin/marketplace/p2p | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| admin.marketplace.p2p | Marketplace P2P | /admin/marketplace/p2p | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 8 |
 | admin.marketplace.primary-escrow | Marketplace Primary Escrow | /admin/marketplace/primary-escrow | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
 | admin.marketplace.reconciliation | Marketplace Reconciliation | /admin/marketplace/reconciliation | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
-| admin.marketplace.settings | Marketplace Settings | /admin/marketplace/settings | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.marketplace.trades | Marketplace Trades | /admin/marketplace/trades | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.notifications | Notifications | /admin/notifications | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| admin.marketplace.settings | Marketplace Settings | /admin/marketplace/settings | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: needs recheck, e2e: needs recheck, functional: fixed | - | 10 |
+| admin.marketplace.trades | Marketplace Trades | /admin/marketplace/trades | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
+| admin.notifications | Notifications | /admin/notifications | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
 | admin.orders | Orders | /admin/orders | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
-| admin.reports | Reports | /admin/reports | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.rewards | Rewards | /admin/rewards | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.roles | Roles | /admin/roles | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.settings | Settings | /admin/settings | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.support | Support | /admin/support | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.support-ticket | Support Ticket | /admin/support-ticket | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.system | System | /admin/system | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| admin.reports | Reports | /admin/reports | 2026-04-26 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
+| admin.rewards | Rewards | /admin/rewards | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 3 |
+| admin.roles | Roles | /admin/roles | 2026-04-26 | admin | admin-only data | high | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
+| admin.settings | Settings | /admin/settings | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
+| admin.support | Support | /admin/support | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
+| admin.support-ticket | Support Ticket | /admin/support-ticket | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 1 |
+| admin.system | System | /admin/system | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 2 |
 | admin.treasury | Treasury | /admin/treasury | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
-| admin.user-details | User Details | /admin/user-details | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
-| admin.users | Users | /admin/users | - | admin | admin-only data | high | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
+| admin.user-details | User Details | /admin/user-details | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 2 |
+| admin.users | Users | /admin/users | 2026-04-26 | admin | admin-only data | high | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 2 |
 | affiliate.dashboard | Affiliate dashboard | /affiliate/dashboard | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | affiliate.materials | Affiliate materials | /affiliate/materials | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
 | affiliate.onboarding | Affiliate onboarding | /affiliate/onboarding | - | authenticated user | personal data | medium | security: not reviewed, accessibility: not reviewed, e2e: not reviewed, functional: not reviewed | - | 0 |
@@ -280,13 +280,8 @@ Generated: 2026-04-25
 ## Open Issues
 | Page | Issue ID | Category | Severity | Status | Title | Owner |
 | --- | --- | --- | --- | --- | --- | --- |
-| admin.admins | PAGE-ISSUE-0019 | security_review | high | open | Admin status update lacks fine-grained authorization and session revocation | unassigned |
-| admin.admins | PAGE-ISSUE-0020 | security_review | high | open | Session revocation lacks fine-grained authorization and protected-target guards | unassigned |
-| admin.admins | PAGE-ISSUE-0021 | security_review | high | open | Force password reset can report success after ignored DB failures | unassigned |
 | admin.admins | PAGE-ISSUE-0022 | security_review | medium | open | Invitation revoke/resend lack durable audit and state-transition handling | unassigned |
 | admin.admins | PAGE-ISSUE-0023 | security_review | medium | open | Admin directory staff PII and security posture reads are not audit logged | unassigned |
-| admin.affiliate-applications | PAGE-ISSUE-0027 | security_review | medium | open | Inline onclick and HTML string rendering increase XSS/injection surface | unassigned |
-| admin.affiliate-applications | PAGE-ISSUE-0029 | functional_review | low | open | Unauthenticated admin page GET returns JSON 401 instead of redirecting to login | unassigned |
 | admin.affiliate-finance | PAGE-ISSUE-0034 | security_review | high | open | Payout row action embeds profile data into inline JavaScript | unassigned |
 | admin.affiliate-finance | PAGE-ISSUE-0035 | functional_review | high | open | Payout can mark unsummed payable commissions as paid | unassigned |
 | admin.affiliate-finance | PAGE-ISSUE-0036 | functional_review | medium | open | Finance board hides tax-document payout gate | unassigned |
@@ -302,21 +297,7 @@ Generated: 2026-04-25
 | admin.approvals | PAGE-ISSUE-0046 | functional_review | high | open | Approval executors can fail or report false success | unassigned |
 | admin.approvals | PAGE-ISSUE-0047 | functional_review | medium | open | Approval queue can hide database failures | unassigned |
 | admin.approvals | PAGE-ISSUE-0048 | accessibility_review | medium | open | Reject flow and action buttons need accessible mutation states | unassigned |
-| admin.asset-tokenize | PAGE-ISSUE-0059 | functional_review | high | open | Tokenize POST cannot satisfy CSRF protection | unassigned |
-| admin.asset-tokenize | PAGE-ISSUE-0060 | security_review | high | open | Tokenization lacks fine-grained permissions | unassigned |
-| admin.asset-tokenize | PAGE-ISSUE-0061 | functional_review | high | open | Tokenization can double-deploy under concurrent requests | unassigned |
-| admin.asset-tokenize | PAGE-ISSUE-0062 | security_review | high | open | Chain metadata and audit log are not durable | unassigned |
-| admin.asset-tokenize | PAGE-ISSUE-0063 | functional_review | high | open | Clone parse fallback can store factory address | unassigned |
-| admin.asset-tokenize | PAGE-ISSUE-0064 | functional_review | medium | open | Generic tokenization links open missing-id error state | unassigned |
-| admin.asset-tokenize | PAGE-ISSUE-0065 | security_review | medium | open | Tokenization page renders API data with unsafe HTML interpolation | unassigned |
-| admin.asset-tokenize | PAGE-ISSUE-0066 | functional_review | medium | open | Pre-flight checks are too thin for production tokenization | unassigned |
 | admin.blockchain-treasury | PAGE-ISSUE-0001 | security_review | critical | open | Emergency pause/unpause sends an empty CSRF header |  |
-| admin.community.index | PAGE-ISSUE-0124 | security_review | high | open | Community overview renders feed data with raw HTML | unassigned |
-| admin.community.index | PAGE-ISSUE-0125 | functional_review | high | open | Community stats API masks DB failures and queries missing XP source | unassigned |
-| admin.community.index | PAGE-ISSUE-0126 | functional_review | medium | open | Recent Announcements panel reads the public feed | unassigned |
-| admin.community.index | PAGE-ISSUE-0127 | security_review | medium | open | Stats API lacks community permission gate | unassigned |
-| admin.community.index | PAGE-ISSUE-0128 | functional_review | medium | open | Community overview load failures are invisible | unassigned |
-| admin.community.index | PAGE-ISSUE-0129 | security_review | low | open | Community overview loads unused CDN scripts | unassigned |
 | admin.community.post-detail | PAGE-ISSUE-0147 | security_review | high | open | Post detail APIs lack community permission checks | unassigned |
 | admin.community.post-detail | PAGE-ISSUE-0148 | security_review | high | open | Admin post detail renderer injects community fields as HTML | unassigned |
 | admin.community.post-detail | PAGE-ISSUE-0149 | functional_review | high | open | Post moderation mutations are non-transactional and weakly audited | unassigned |
@@ -324,7 +305,6 @@ Generated: 2026-04-25
 | admin.community.post-detail | PAGE-ISSUE-0151 | accessibility_review | medium | open | Moderation actions rely on prompt alert confirm flows | unassigned |
 | admin.community.post-detail | PAGE-ISSUE-0152 | security_review | medium | open | Admin post detail loads unused external CDN scripts | unassigned |
 | admin.community.posts | PAGE-ISSUE-0139 | security_review | high | open | Community posts admin table injects unescaped user content | unassigned |
-| admin.community.reports | PAGE-ISSUE-0140 | security_review | high | open | Community reports admin table injects unescaped report content | unassigned |
 | admin.community.user-detail | PAGE-ISSUE-0142 | security_review | high | open | Community user detail page injects unescaped profile and moderation data | unassigned |
 | admin.community.users | PAGE-ISSUE-0141 | security_review | medium | open | Community users admin table injects unescaped profile data | unassigned |
 | admin.developer-submission-review | PAGE-ISSUE-0143 | security_review | medium | open | Developer submission review load error renders unescaped error text | unassigned |
@@ -345,7 +325,29 @@ Generated: 2026-04-25
 | admin.marketplace.alerts | PAGE-ISSUE-0171 | functional_review | medium | open | Alert list database failures return empty data | unassigned |
 | admin.marketplace.alerts | PAGE-ISSUE-0172 | functional_review | medium | open | Alert status transition semantics are weak | unassigned |
 | admin.marketplace.alerts | PAGE-ISSUE-0173 | accessibility_review | medium | open | Alerts page lacks loading empty and error states | unassigned |
+| admin.marketplace.fees | PAGE-ISSUE-0205 | security_review | high | open | Fee management routes do not enforce marketplace.manage | unassigned |
+| admin.marketplace.fees | PAGE-ISSUE-0206 | functional_review | high | open | Fee controls show success without persistence | unassigned |
+| admin.marketplace.fees | PAGE-ISSUE-0207 | functional_review | high | open | Fee list API masks database failures as empty state | unassigned |
+| admin.marketplace.fees | PAGE-ISSUE-0208 | functional_review | high | open | Fee resolver ignores accepted developer fee scope | unassigned |
+| admin.marketplace.fees | PAGE-ISSUE-0209 | functional_review | medium | open | Active fee configuration validation is ambiguous | unassigned |
+| admin.marketplace.fees | PAGE-ISSUE-0210 | security_review | medium | open | Stored fee data renders through raw HTML | unassigned |
+| admin.marketplace.fees | PAGE-ISSUE-0211 | security_review | medium | open | Fee mutations are not audit logged | unassigned |
+| admin.marketplace.fees | PAGE-ISSUE-0212 | functional_review | medium | open | Settlement and minimum fee fields lack backend support | unassigned |
+| admin.marketplace.fees | PAGE-ISSUE-0213 | accessibility_review | low | open | Fee page tabs lack accessible tab semantics | unassigned |
 | admin.marketplace.reconciliation | PAGE-ISSUE-0002 | functional_review | high | open | Reconciliation page displays mock mismatch data when the API fails |  |
+| admin.rewards | PAGE-ISSUE-0279 | security_review | high | open | Rewards management mutations lack granular permissions | unassigned |
+| admin.rewards | PAGE-ISSUE-0280 | functional_review | medium | open | Rewards affiliate approval button calls an unregistered endpoint | unassigned |
+| admin.rewards | PAGE-ISSUE-0281 | security_review | medium | open | Rewards application links do not restrict URL schemes | unassigned |
+| admin.roles | PAGE-ISSUE-0282 | functional_review | medium | open | Roles page falls back to demo data instead of showing authorization failure | unassigned |
+| admin.settings | PAGE-ISSUE-0283 | security_review | high | open | Platform settings and maintenance actions lack granular authorization | unassigned |
+| admin.support | PAGE-ISSUE-0284 | security_review | high | open | Support ticket list and bulk update APIs lack support permissions and audit logs | unassigned |
+| admin.support-ticket | PAGE-ISSUE-0285 | security_review | high | open | Support ticket detail and reply actions lack support permissions and durable audit | unassigned |
+| admin.system | PAGE-ISSUE-0286 | functional_review | high | open | System dashboard calls unregistered jobs, webhooks, sessions, and reset routes | unassigned |
+| admin.system | PAGE-ISSUE-0287 | security_review | high | open | System maintenance and session operations lack granular authorization and audit | unassigned |
+| admin.user-details | PAGE-ISSUE-0288 | security_review | critical | open | User detail PII, balance, and account mutations lack granular authorization | unassigned |
+| admin.user-details | PAGE-ISSUE-0289 | security_review | high | open | User profile update performs multi-table changes outside a transaction | unassigned |
+| admin.users | PAGE-ISSUE-0290 | functional_review | medium | open | Tracked clean URL /admin/users returns 404 instead of the users page | unassigned |
+| admin.users | PAGE-ISSUE-0291 | security_review | high | open | User directory exposes PII and status mutation without granular user permissions | unassigned |
 | marketplace.tax-report | PAGE-ISSUE-0003 | functional_review | low | open | Tax report route requires format despite route comment and path contract |  |
 
 ## Ambiguous Or Needs Verification

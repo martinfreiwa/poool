@@ -73,6 +73,7 @@ pub mod support; // Added support module
 mod templates;
 mod wallet;
 
+use admin::extractors::{AdminUser, ApiError};
 use auth::routes::AppState;
 use axum::{
     extract::{Path, State},
@@ -969,6 +970,20 @@ async fn apply_security_headers(
     req: axum::http::Request<axum::body::Body>,
     next: axum::middleware::Next,
 ) -> impl axum::response::IntoResponse {
+    let is_local_request = req
+        .headers()
+        .get(axum::http::header::HOST)
+        .and_then(|host| host.to_str().ok())
+        .map(|host| {
+            host.starts_with("localhost:")
+                || host == "localhost"
+                || host.starts_with("127.0.0.1:")
+                || host == "127.0.0.1"
+                || host.starts_with("[::1]:")
+                || host == "[::1]"
+        })
+        .unwrap_or(false);
+
     let mut response = next.run(req).await;
     let headers = response.headers_mut();
 
@@ -980,15 +995,17 @@ async fn apply_security_headers(
         axum::http::header::X_CONTENT_TYPE_OPTIONS,
         axum::http::HeaderValue::from_static("nosniff"),
     );
-    headers.insert(
-        axum::http::header::STRICT_TRANSPORT_SECURITY,
-        // Two-year max-age with includeSubDomains + preload — required
-        // thresholds for HSTS preload list submission. Any subdomain
-        // accidentally served over HTTP is caught by browsers that have
-        // the preload entry (plus our existing upgrade-insecure-requests
-        // CSP directive catches requests from TLS pages).
-        axum::http::HeaderValue::from_static("max-age=63072000; includeSubDomains; preload"),
-    );
+    if !is_local_request {
+        headers.insert(
+            axum::http::header::STRICT_TRANSPORT_SECURITY,
+            // Two-year max-age with includeSubDomains + preload — required
+            // thresholds for HSTS preload list submission. Any subdomain
+            // accidentally served over HTTP is caught by browsers that have
+            // the preload entry (plus our existing upgrade-insecure-requests
+            // CSP directive catches requests from TLS pages).
+            axum::http::HeaderValue::from_static("max-age=63072000; includeSubDomains; preload"),
+        );
+    }
     headers.insert(
         axum::http::header::CONTENT_SECURITY_POLICY,
         // BUG-003: Added https://www.youtube.com https://player.vimeo.com https://*.dropbox.com to frame-src to unblock video embeds
@@ -996,7 +1013,11 @@ async fn apply_security_headers(
         // (Stripe, Sentry, Quill v2, jsdelivr CDN bundles) use eval/new Function.
         // 'unsafe-inline' remains pending a template-wide nonce rollout that
         // replaces inline <script>/on* handlers. See security follow-up.
-        axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"),
+        if is_local_request {
+            axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' http: https: ws: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self';")
+        } else {
+            axum::http::HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://js.stripe.com https://browser.sentry-cdn.com https://cdnjs.cloudflare.com https://cdn.quilljs.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: wss: https://*.ingest.de.sentry.io; frame-src https://js.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com https://*.dropbox.com https://*.metabase.com; frame-ancestors 'none'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;")
+        },
     );
     headers.insert(
         axum::http::header::REFERRER_POLICY,
@@ -1168,26 +1189,32 @@ async fn api_user_legal_accept(
 ///
 /// Query params: ?from=YYYY-MM-DD&to=YYYY-MM-DD
 async fn api_admin_reports(
-    jar: CookieJar,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(report_type): axum::extract::Path<String>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
-) -> axum::response::Response {
-    // Admin auth check
-    if !auth::middleware::is_admin(&jar, &state.db).await {
-        return (
-            axum::http::StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"error": "Forbidden"})),
-        )
-            .into_response();
-    }
+    headers: axum::http::HeaderMap,
+) -> Result<axum::response::Response, ApiError> {
+    let report = resolve_admin_report(&report_type)?;
+    require_admin_report_permissions(&admin, &state.db, report).await?;
 
-    let date_from = params.get("from").cloned().unwrap_or_default();
-    let date_to = params.get("to").cloned().unwrap_or_default();
+    let date_range = parse_admin_report_date_range(
+        params.get("from").map(String::as_str),
+        params.get("to").map(String::as_str),
+    )?;
+    let is_preview = params.get("mode").is_some_and(|mode| mode == "preview");
+    let date_from = date_range
+        .from
+        .map(|date| date.to_string())
+        .unwrap_or_default();
+    let date_to = date_range
+        .to
+        .map(|date| date.to_string())
+        .unwrap_or_default();
 
     use sqlx::Row;
 
-    match report_type.as_str() {
+    let data: Vec<serde_json::Value> = match report.canonical_type {
         "financial-summary" | "monthly-financial" => {
             let rows = sqlx::query(
                 r#"SELECT
@@ -1198,19 +1225,18 @@ async fn api_admin_reports(
                      COUNT(*) as tx_count,
                      COALESCE(SUM(amount_cents), 0)::bigint as total_cents
                    FROM wallet_transactions
-                   WHERE ($1::text = '' OR created_at >= $1::date)
-                     AND ($2::text = '' OR created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR created_at >= $1::date)
+                     AND ($2::date IS NULL OR created_at <= ($2::date + interval '1 day'))
                    GROUP BY month, type, status, currency
                    ORDER BY month DESC, type"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "month": r.get::<String, _>("month"),
@@ -1221,9 +1247,7 @@ async fn api_admin_reports(
                         "total_cents": r.get::<i64, _>("total_cents"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "financial-summary", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "user-growth" => {
@@ -1233,19 +1257,18 @@ async fn api_admin_reports(
                      COUNT(*) as signups,
                      SUM(CASE WHEN email_verified THEN 1 ELSE 0 END) as verified
                    FROM users
-                   WHERE ($1::text = '' OR created_at >= $1::date)
-                     AND ($2::text = '' OR created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR created_at >= $1::date)
+                     AND ($2::date IS NULL OR created_at <= ($2::date + interval '1 day'))
                    GROUP BY signup_date
                    ORDER BY signup_date DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "date": r.get::<String, _>("signup_date"),
@@ -1253,9 +1276,7 @@ async fn api_admin_reports(
                         "verified": r.get::<i64, _>("verified"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "user-growth", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "kyc" | "kyc-status" => {
@@ -1267,18 +1288,17 @@ async fn api_admin_reports(
                      k.created_at::text, k.verified_at::text, k.expires_at::text
                    FROM kyc_records k
                    JOIN users u ON k.user_id = u.id
-                   WHERE ($1::text = '' OR k.created_at >= $1::date)
-                     AND ($2::text = '' OR k.created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR k.created_at >= $1::date)
+                     AND ($2::date IS NULL OR k.created_at <= ($2::date + interval '1 day'))
                    ORDER BY k.created_at DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "id": r.get::<String, _>("id"),
@@ -1293,9 +1313,7 @@ async fn api_admin_reports(
                         "expires_at": r.get::<Option<String>, _>("expires_at"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "kyc-status", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "aml" | "aml-compliance" => {
@@ -1310,18 +1328,17 @@ async fn api_admin_reports(
                    LEFT JOIN user_profiles p ON k.user_id = p.user_id
                    WHERE (k.pep_check_passed = true OR k.sanctions_check = true
                           OR k.status = 'rejected')
-                     AND ($1::text = '' OR k.created_at >= $1::date)
-                     AND ($2::text = '' OR k.created_at <= ($2::date + interval '1 day'))
+                     AND ($1::date IS NULL OR k.created_at >= $1::date)
+                     AND ($2::date IS NULL OR k.created_at <= ($2::date + interval '1 day'))
                    ORDER BY k.created_at DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "id": r.get::<String, _>("id"),
@@ -1334,9 +1351,7 @@ async fn api_admin_reports(
                         "created_at": r.get::<String, _>("created_at"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "aml-compliance", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "assets" | "asset-performance" => {
@@ -1349,18 +1364,17 @@ async fn api_admin_reports(
                      a.occupancy_rate_bps, a.featured, a.published,
                      a.created_at::text
                    FROM assets a
-                   WHERE ($1::text = '' OR a.created_at >= $1::date)
-                     AND ($2::text = '' OR a.created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR a.created_at >= $1::date)
+                     AND ($2::date IS NULL OR a.created_at <= ($2::date + interval '1 day'))
                    ORDER BY a.created_at DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     let total: i32 = r.get::<Option<i32>, _>("tokens_total").unwrap_or(0);
                     let available: i32 = r.get::<Option<i32>, _>("tokens_available").unwrap_or(0);
@@ -1385,9 +1399,7 @@ async fn api_admin_reports(
                         "created_at": r.get::<String, _>("created_at"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "asset-performance", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "investments" | "investment-summary" => {
@@ -1400,18 +1412,17 @@ async fn api_admin_reports(
                    FROM investments i
                    JOIN users u ON i.user_id = u.id
                    JOIN assets a ON i.asset_id = a.id
-                   WHERE ($1::text = '' OR i.purchased_at >= $1::date)
-                     AND ($2::text = '' OR i.purchased_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR i.purchased_at >= $1::date)
+                     AND ($2::date IS NULL OR i.purchased_at <= ($2::date + interval '1 day'))
                    ORDER BY i.purchased_at DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "id": r.get::<String, _>("id"),
@@ -1425,9 +1436,7 @@ async fn api_admin_reports(
                         "created_at": r.get::<String, _>("created_at"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "investment-summary", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "tax-pl" | "tax-reporting" => {
@@ -1438,18 +1447,17 @@ async fn api_admin_reports(
                      t.generated_at::text, t.pdf_url as report_url
                    FROM tax_reports t
                    JOIN users u ON t.user_id = u.id
-                   WHERE ($1::text = '' OR t.created_at >= $1::date)
-                     AND ($2::text = '' OR t.created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR t.created_at >= $1::date)
+                     AND ($2::date IS NULL OR t.created_at <= ($2::date + interval '1 day'))
                    ORDER BY t.created_at DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "email": r.get::<String, _>("email"),
@@ -1462,9 +1470,7 @@ async fn api_admin_reports(
                         "report_url": r.get::<Option<String>, _>("report_url"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "tax-reporting", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "tax-withholding" => {
@@ -1474,18 +1480,17 @@ async fn api_admin_reports(
                      t.generated_at::text, t.pdf_url as report_url
                    FROM tax_reports t
                    JOIN users u ON t.user_id = u.id
-                   WHERE ($1::text = '' OR t.created_at >= $1::date)
-                     AND ($2::text = '' OR t.created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR t.created_at >= $1::date)
+                     AND ($2::date IS NULL OR t.created_at <= ($2::date + interval '1 day'))
                    ORDER BY t.created_at DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "email": r.get::<String, _>("email"),
@@ -1496,9 +1501,7 @@ async fn api_admin_reports(
                         "report_url": r.get::<Option<String>, _>("report_url"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "tax-withholding", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "orders" | "order-summary" => {
@@ -1510,18 +1513,17 @@ async fn api_admin_reports(
                      o.created_at::text, o.completed_at::text
                    FROM orders o
                    JOIN users u ON o.user_id = u.id
-                   WHERE ($1::text = '' OR o.created_at >= $1::date)
-                     AND ($2::text = '' OR o.created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR o.created_at >= $1::date)
+                     AND ($2::date IS NULL OR o.created_at <= ($2::date + interval '1 day'))
                    ORDER BY o.created_at DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "id": r.get::<String, _>("id"),
@@ -1536,9 +1538,7 @@ async fn api_admin_reports(
                         "completed_at": r.get::<Option<String>, _>("completed_at"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "order-summary", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "rewards-liability" => {
@@ -1553,18 +1553,17 @@ async fn api_admin_reports(
                    JOIN users u ON rb.user_id = u.id
                    LEFT JOIN user_tiers ut ON rb.user_id = ut.user_id
                    LEFT JOIN tiers t ON ut.tier_id = t.id
-                   WHERE ($1::text = '' OR rb.updated_at >= $1::date)
-                     AND ($2::text = '' OR rb.updated_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR rb.updated_at >= $1::date)
+                     AND ($2::date IS NULL OR rb.updated_at <= ($2::date + interval '1 day'))
                    ORDER BY (rb.cashback + rb.referrals + rb.promotions) DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "email": r.get::<String, _>("email"),
@@ -1576,9 +1575,7 @@ async fn api_admin_reports(
                         "invested_12m_cents": r.get::<Option<i64>, _>("invested_12m"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "rewards-liability", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "referral-effectiveness" => {
@@ -1592,18 +1589,17 @@ async fn api_admin_reports(
                    FROM referral_tracking rt
                    JOIN users u1 ON rt.referrer_id = u1.id
                    JOIN users u2 ON rt.referred_id = u2.id
-                   WHERE ($1::text = '' OR rt.created_at >= $1::date)
-                     AND ($2::text = '' OR rt.created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR rt.created_at >= $1::date)
+                     AND ($2::date IS NULL OR rt.created_at <= ($2::date + interval '1 day'))
                    ORDER BY rt.created_at DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "referrer_email": r.get::<String, _>("referrer_email"),
@@ -1615,9 +1611,7 @@ async fn api_admin_reports(
                         "qualified_at": r.get::<Option<String>, _>("qualified_at"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "referral-effectiveness", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "multi-currency" => {
@@ -1633,10 +1627,9 @@ async fn api_admin_reports(
             )
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "currency": r.get::<String, _>("currency"),
@@ -1645,9 +1638,7 @@ async fn api_admin_reports(
                         "total_balance_cents": r.get::<i64, _>("total_balance_cents"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "multi-currency", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "invoices" | "invoice-summary" => {
@@ -1659,18 +1650,17 @@ async fn api_admin_reports(
                    FROM invoices i
                    JOIN orders o ON i.order_id = o.id
                    JOIN users u ON o.user_id = u.id
-                   WHERE ($1::text = '' OR i.issued_at >= $1::date)
-                     AND ($2::text = '' OR i.issued_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR i.issued_at >= $1::date)
+                     AND ($2::date IS NULL OR i.issued_at <= ($2::date + interval '1 day'))
                    ORDER BY i.issued_at DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "id": r.get::<String, _>("id"),
@@ -1684,9 +1674,7 @@ async fn api_admin_reports(
                         "issued_at": r.get::<Option<String>, _>("issued_at"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "invoice-summary", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "support" | "support-summary" => {
@@ -1697,18 +1685,17 @@ async fn api_admin_reports(
                      t.created_at::text, t.updated_at::text
                    FROM support_tickets t
                    JOIN users u ON t.user_id = u.id
-                   WHERE ($1::text = '' OR t.created_at >= $1::date)
-                     AND ($2::text = '' OR t.created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR t.created_at >= $1::date)
+                     AND ($2::date IS NULL OR t.created_at <= ($2::date + interval '1 day'))
                    ORDER BY t.created_at DESC"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "id": r.get::<String, _>("id"),
@@ -1720,9 +1707,7 @@ async fn api_admin_reports(
                         "updated_at": r.get::<Option<String>, _>("updated_at"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "support-summary", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "audit" | "audit-summary" => {
@@ -1734,19 +1719,18 @@ async fn api_admin_reports(
                      a.ip_address::text, a.created_at::text
                    FROM audit_logs a
                    LEFT JOIN users u ON a.actor_user_id = u.id
-                   WHERE ($1::text = '' OR a.created_at >= $1::date)
-                     AND ($2::text = '' OR a.created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR a.created_at >= $1::date)
+                     AND ($2::date IS NULL OR a.created_at <= ($2::date + interval '1 day'))
                    ORDER BY a.created_at DESC
                    LIMIT 5000"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "id": r.get::<String, _>("id"),
@@ -1758,9 +1742,7 @@ async fn api_admin_reports(
                         "created_at": r.get::<String, _>("created_at"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "audit-summary", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
         "wallet-transactions" => {
@@ -1774,19 +1756,18 @@ async fn api_admin_reports(
                    FROM wallet_transactions wt
                    JOIN wallets w ON wt.wallet_id = w.id
                    JOIN users u ON w.user_id = u.id
-                   WHERE ($1::text = '' OR wt.created_at >= $1::date)
-                     AND ($2::text = '' OR wt.created_at <= ($2::date + interval '1 day'))
+                   WHERE ($1::date IS NULL OR wt.created_at >= $1::date)
+                     AND ($2::date IS NULL OR wt.created_at <= ($2::date + interval '1 day'))
                    ORDER BY wt.created_at DESC
                    LIMIT 5000"#,
             )
-            .bind(&date_from)
-            .bind(&date_to)
+            .bind(date_range.from)
+            .bind(date_range.to)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default();
+            .map_err(|e| report_query_error(report.canonical_type, e))?;
 
-            let data: Vec<serde_json::Value> = rows
-                .iter()
+            rows.iter()
                 .map(|r| {
                     serde_json::json!({
                         "id": r.get::<String, _>("id"),
@@ -1801,25 +1782,230 @@ async fn api_admin_reports(
                         "created_at": r.get::<String, _>("created_at"),
                     })
                 })
-                .collect();
-
-            Json(serde_json::json!({"report_type": "wallet-transactions", "date_from": date_from, "date_to": date_to, "rows": data})).into_response()
+                .collect()
         }
 
-        _ => (
-            axum::http::StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({
-                "error": format!("Unknown report type: '{}'", report_type),
-                "available_types": [
-                    "financial-summary", "user-growth", "kyc-status", "aml-compliance",
-                    "asset-performance", "investment-summary", "order-summary",
-                    "rewards-liability", "referral-effectiveness", "multi-currency",
-                    "invoice-summary", "support-summary", "audit-summary", "wallet-transactions"
-                ]
-            })),
+        _ => return Err(ApiError::BadRequest("Unknown report type".to_string())),
+    };
+
+    if !is_preview {
+        log_admin_report_export(
+            &state.db,
+            &admin,
+            report,
+            &date_from,
+            &date_to,
+            data.len(),
+            headers
+                .get(axum::http::header::USER_AGENT)
+                .and_then(|value| value.to_str().ok()),
         )
-            .into_response(),
+        .await?;
     }
+
+    Ok(Json(serde_json::json!({
+        "report_type": report.canonical_type,
+        "date_from": date_from,
+        "date_to": date_to,
+        "rows": data
+    }))
+    .into_response())
+}
+
+#[derive(Clone, Copy)]
+struct AdminReportDefinition {
+    canonical_type: &'static str,
+    aliases: &'static [&'static str],
+    required_permissions: &'static [&'static str],
+}
+
+#[derive(Clone, Copy)]
+struct AdminReportDateRange {
+    from: Option<chrono::NaiveDate>,
+    to: Option<chrono::NaiveDate>,
+}
+
+const ADMIN_REPORTS: &[AdminReportDefinition] = &[
+    AdminReportDefinition {
+        canonical_type: "financial-summary",
+        aliases: &["monthly-financial"],
+        required_permissions: &["treasury.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "wallet-transactions",
+        aliases: &[],
+        required_permissions: &["treasury.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "invoice-summary",
+        aliases: &["invoices"],
+        required_permissions: &["treasury.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "multi-currency",
+        aliases: &[],
+        required_permissions: &["treasury.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "user-growth",
+        aliases: &[],
+        required_permissions: &[],
+    },
+    AdminReportDefinition {
+        canonical_type: "kyc-status",
+        aliases: &["kyc"],
+        required_permissions: &["kyc.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "audit-summary",
+        aliases: &["audit"],
+        required_permissions: &["audit.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "aml-compliance",
+        aliases: &["aml"],
+        required_permissions: &["kyc.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "investment-summary",
+        aliases: &["investments"],
+        required_permissions: &["treasury.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "asset-performance",
+        aliases: &["assets"],
+        required_permissions: &[],
+    },
+    AdminReportDefinition {
+        canonical_type: "order-summary",
+        aliases: &["orders"],
+        required_permissions: &["treasury.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "rewards-liability",
+        aliases: &[],
+        required_permissions: &[],
+    },
+    AdminReportDefinition {
+        canonical_type: "referral-effectiveness",
+        aliases: &[],
+        required_permissions: &[],
+    },
+    AdminReportDefinition {
+        canonical_type: "support-summary",
+        aliases: &["support"],
+        required_permissions: &["support.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "tax-reporting",
+        aliases: &["tax-pl"],
+        required_permissions: &["treasury.read"],
+    },
+    AdminReportDefinition {
+        canonical_type: "tax-withholding",
+        aliases: &[],
+        required_permissions: &["treasury.read"],
+    },
+];
+
+fn resolve_admin_report(report_type: &str) -> Result<&'static AdminReportDefinition, ApiError> {
+    ADMIN_REPORTS
+        .iter()
+        .find(|report| {
+            report.canonical_type == report_type || report.aliases.contains(&report_type)
+        })
+        .ok_or_else(|| {
+            ApiError::BadRequest(format!(
+                "Unknown report type. Available types: {}",
+                ADMIN_REPORTS
+                    .iter()
+                    .map(|report| report.canonical_type)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))
+        })
+}
+
+async fn require_admin_report_permissions(
+    admin: &AdminUser,
+    pool: &sqlx::PgPool,
+    report: &AdminReportDefinition,
+) -> Result<(), ApiError> {
+    admin.require_permission(pool, "reports.generate").await?;
+    for permission in report.required_permissions {
+        admin.require_permission(pool, permission).await?;
+    }
+    Ok(())
+}
+
+fn parse_admin_report_date_range(
+    from: Option<&str>,
+    to: Option<&str>,
+) -> Result<AdminReportDateRange, ApiError> {
+    fn parse_date(value: Option<&str>, name: &str) -> Result<Option<chrono::NaiveDate>, ApiError> {
+        let Some(value) = value.filter(|value| !value.trim().is_empty()) else {
+            return Ok(None);
+        };
+        chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d")
+            .map(Some)
+            .map_err(|_| ApiError::BadRequest(format!("Invalid {} date. Use YYYY-MM-DD.", name)))
+    }
+
+    let from = parse_date(from, "from")?;
+    let to = parse_date(to, "to")?;
+    if let (Some(from), Some(to)) = (from, to) {
+        if from > to {
+            return Err(ApiError::BadRequest(
+                "Invalid date range: from must be on or before to.".to_string(),
+            ));
+        }
+    }
+    Ok(AdminReportDateRange { from, to })
+}
+
+fn report_query_error(report_type: &str, error: sqlx::Error) -> ApiError {
+    tracing::error!("Failed to generate admin report {}: {}", report_type, error);
+    ApiError::Database(error)
+}
+
+async fn log_admin_report_export(
+    pool: &sqlx::PgPool,
+    admin: &AdminUser,
+    report: &AdminReportDefinition,
+    date_from: &str,
+    date_to: &str,
+    row_count: usize,
+    user_agent: Option<&str>,
+) -> Result<(), ApiError> {
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state, user_agent, metadata)
+           VALUES ($1, 'report.exported', 'admin_report', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(serde_json::json!({
+        "report_type": report.canonical_type,
+        "date_from": date_from,
+        "date_to": date_to,
+        "row_count": row_count,
+    }))
+    .bind(user_agent.unwrap_or(""))
+    .bind(serde_json::json!({
+        "report_type": report.canonical_type,
+        "row_count": row_count,
+    }))
+    .execute(pool)
+    .await
+    .map_err(|e| {
+        tracing::error!(
+            "Failed to audit admin report export {} for actor {}: {}",
+            report.canonical_type,
+            admin.user.id,
+            e
+        );
+        ApiError::Database(e)
+    })?;
+
+    Ok(())
 }
 
 /// GET /api/assets/:asset_id/metadata.json — public ERC-1155 metadata endpoint.

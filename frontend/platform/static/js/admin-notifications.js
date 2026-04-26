@@ -4,6 +4,9 @@
 let allNotifs = [];
 let filteredNotifs = [];
 let currentPage = 1;
+let isLoading = false;
+let loadError = "";
+let isBroadcasting = false;
 const PAGE_SIZE = 15;
 let sortField = "created_at";
 let sortOrder = "desc";
@@ -25,31 +28,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setupSorting();
   setupPagination();
+  updateSortState();
 });
 
 async function loadNotifications() {
+  isLoading = true;
+  loadError = "";
+  setStatsUnavailable();
+  renderTable();
+
   try {
-    const r = await fetch("/api/admin/notifications");
-    if (r.ok) {
-      const d = await r.json();
-      allNotifs = d.notifications || d;
-    } else {
-      console.error('Notifications API error:', r.status);
+    const response = await fetch("/api/admin/notifications");
+    const payload = await parseJsonResponse(response);
+    if (!response.ok) {
+      throw new Error(payload.error || `Notifications API returned ${response.status}`);
     }
-  } catch (e) {
-    console.error('Notifications fetch failed:', e);
-    if (window.Sentry) Sentry.captureException(e);
+    allNotifs = Array.isArray(payload.notifications) ? payload.notifications : [];
+    isLoading = false;
+    updateStats();
+    applyFilters();
+  } catch (error) {
+    console.error("Notifications fetch failed:", error);
+    if (window.Sentry) window.Sentry.captureException(error);
+    allNotifs = [];
+    filteredNotifs = [];
+    isLoading = false;
+    loadError = error.message || "Failed to load notifications.";
+    setStatsUnavailable();
+    updateCountLabel(0);
+    renderTable();
   }
-  updateStats();
-  applyFilters();
 }
 
 function setupSorting() {
-  const table = document.querySelector(".admin-table");
-  if (!table) return;
-  table.querySelectorAll("th[data-sort]").forEach((th) => {
-    th.style.cursor = "pointer";
-    th.addEventListener("click", () => {
+  document.querySelectorAll(".admin-table th[data-sort]").forEach((th) => {
+    const button = th.querySelector("button");
+    if (!button) return;
+    button.addEventListener("click", () => {
       const field = th.dataset.sort;
       if (sortField === field) {
         sortOrder = sortOrder === "asc" ? "desc" : "asc";
@@ -57,8 +72,19 @@ function setupSorting() {
         sortField = field;
         sortOrder = "asc";
       }
+      updateSortState();
       applyFilters();
     });
+  });
+}
+
+function updateSortState() {
+  document.querySelectorAll(".admin-table th[data-sort]").forEach((th) => {
+    if (th.dataset.sort === sortField) {
+      th.setAttribute("aria-sort", sortOrder === "asc" ? "ascending" : "descending");
+    } else {
+      th.setAttribute("aria-sort", "none");
+    }
   });
 }
 
@@ -79,27 +105,32 @@ function setupPagination() {
 }
 
 function applyFilters() {
+  if (isLoading || loadError) {
+    renderTable();
+    return;
+  }
+
   const search = (
     document.getElementById("notif-search")?.value || ""
   ).toLowerCase();
   const type = document.getElementById("filter-type")?.value || "";
   const read = document.getElementById("filter-read")?.value;
 
-  let result = allNotifs;
+  let result = allNotifs.slice();
   if (type) result = result.filter((n) => n.type === type);
   if (read === "true") result = result.filter((n) => n.is_read);
   else if (read === "false") result = result.filter((n) => !n.is_read);
-  if (search)
+  if (search) {
     result = result.filter((n) =>
-      `${n.title} ${n.message} ${n.user_email} ${n.user_name || ""}`
+      `${n.title || ""} ${n.message || ""} ${n.user_email || ""} ${n.user_name || ""}`
         .toLowerCase()
         .includes(search),
     );
+  }
 
-  // Sort
   result.sort((a, b) => {
-    let valA = a[sortField];
-    let valB = b[sortField];
+    const valA = sortValue(a[sortField]);
+    const valB = sortValue(b[sortField]);
     if (valA < valB) return sortOrder === "asc" ? -1 : 1;
     if (valA > valB) return sortOrder === "asc" ? 1 : -1;
     return 0;
@@ -107,10 +138,14 @@ function applyFilters() {
 
   filteredNotifs = result;
   currentPage = 1;
-  const notifCountEl = document.getElementById("notif-count-label");
-  if (notifCountEl)
-    notifCountEl.textContent = `${filteredNotifs.length} notifications`;
+  updateCountLabel(filteredNotifs.length);
   renderTable();
+}
+
+function sortValue(value) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "boolean") return value ? 1 : 0;
+  return String(value).toLowerCase();
 }
 
 function updateStats() {
@@ -121,102 +156,246 @@ function updateStats() {
     const t = new Date();
     return d.toDateString() === t.toDateString();
   }).length;
-  const statTotal = document.getElementById("stat-total");
-  const statUnread = document.getElementById("stat-unread");
-  const statReadRate = document.getElementById("stat-read-rate");
-  const statToday = document.getElementById("stat-today");
-  if (statTotal) statTotal.textContent = total;
-  if (statUnread) statUnread.textContent = unread;
-  if (statReadRate)
-    statReadRate.textContent =
-      total > 0 ? Math.round(((total - unread) / total) * 100) + "%" : "—";
-  if (statToday) statToday.textContent = today;
+  setText("stat-total", total);
+  setText("stat-unread", unread);
+  setText(
+    "stat-read-rate",
+    total > 0 ? `${Math.round(((total - unread) / total) * 100)}%` : "—",
+  );
+  setText("stat-today", today);
+}
+
+function setStatsUnavailable() {
+  ["stat-total", "stat-unread", "stat-read-rate", "stat-today"].forEach((id) =>
+    setText(id, "—"),
+  );
 }
 
 function renderTable() {
   const tbody = document.getElementById("notif-table-body");
   if (!tbody) return;
+  tbody.replaceChildren();
+
+  if (isLoading) {
+    tbody.appendChild(stateRow("Loading notifications…"));
+    updatePagination(1, 0);
+    return;
+  }
+
+  if (loadError) {
+    const row = stateRow(loadError, { isError: true, retry: true });
+    tbody.appendChild(row);
+    updatePagination(1, 0);
+    return;
+  }
 
   const totalPages = Math.max(1, Math.ceil(filteredNotifs.length / PAGE_SIZE));
   currentPage = Math.min(currentPage, totalPages);
   const start = (currentPage - 1) * PAGE_SIZE;
   const slice = filteredNotifs.slice(start, start + PAGE_SIZE);
+  updatePagination(totalPages, filteredNotifs.length);
 
   if (!slice.length) {
-    tbody.innerHTML =
-      '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--admin-text-muted);">No notifications found.</td></tr>';
+    tbody.appendChild(stateRow("No notifications found."));
     return;
   }
 
-  // Pagination UI
+  slice.forEach((notification) => tbody.appendChild(notificationRow(notification)));
+}
+
+function stateRow(message, options = {}) {
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 5;
+  td.style.textAlign = "center";
+  td.style.padding = "40px";
+  td.style.color = options.isError ? "var(--admin-danger)" : "var(--admin-text-muted)";
+  if (options.isError) td.setAttribute("role", "alert");
+
+  const messageEl = document.createElement("div");
+  messageEl.textContent = message;
+  td.appendChild(messageEl);
+
+  if (options.retry) {
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "admin-btn admin-btn--secondary admin-btn--sm";
+    retry.style.marginTop = "12px";
+    retry.textContent = "Retry";
+    retry.addEventListener("click", loadNotifications);
+    td.appendChild(retry);
+  }
+
+  tr.appendChild(td);
+  return tr;
+}
+
+function notificationRow(notification) {
+  const tr = document.createElement("tr");
+  if (!notification.is_read) tr.style.background = "var(--admin-accent-bg)";
+
+  const userCell = document.createElement("td");
+  const userInline = document.createElement("div");
+  userInline.className = "admin-user-inline";
+  const userText = document.createElement("div");
+  const name = document.createElement("div");
+  name.className = "admin-user-inline-name";
+  name.textContent = notification.user_name || "";
+  const email = document.createElement("div");
+  email.className = "admin-user-inline-email";
+  email.textContent = notification.user_email || "";
+  userText.append(name, email);
+  userInline.appendChild(userText);
+  userCell.appendChild(userInline);
+
+  const typeCell = document.createElement("td");
+  typeCell.appendChild(typeBadge(notification.type));
+
+  const titleCell = document.createElement("td");
+  const title = document.createElement("div");
+  title.style.fontWeight = notification.is_read ? "400" : "600";
+  title.style.color = "var(--admin-text-primary)";
+  title.style.marginBottom = "2px";
+  title.textContent = notification.title || "";
+  const message = document.createElement("div");
+  message.style.fontSize = "11px";
+  message.style.color = "var(--admin-text-muted)";
+  message.style.maxWidth = "300px";
+  message.style.overflow = "hidden";
+  message.style.textOverflow = "ellipsis";
+  message.style.whiteSpace = "nowrap";
+  message.textContent = notification.message || "";
+  titleCell.append(title, message);
+
+  const readCell = document.createElement("td");
+  const readBadge = document.createElement("span");
+  readBadge.className = notification.is_read
+    ? "admin-badge admin-badge--neutral"
+    : "admin-badge admin-badge--warning";
+  readBadge.textContent = notification.is_read ? "Read" : "Unread";
+  readCell.appendChild(readBadge);
+
+  const dateCell = document.createElement("td");
+  dateCell.style.fontSize = "12px";
+  dateCell.style.color = "var(--admin-text-muted)";
+  dateCell.style.whiteSpace = "nowrap";
+  dateCell.textContent = fmtDate(notification.created_at);
+
+  tr.append(userCell, typeCell, titleCell, readCell, dateCell);
+  return tr;
+}
+
+function updatePagination(totalPages, totalCount) {
   const info = document.getElementById("pagination-info");
-  if (info)
-    info.textContent = `Page ${currentPage} of ${totalPages} (${filteredNotifs.length} total)`;
+  if (info) info.textContent = `Page ${currentPage} of ${totalPages} (${totalCount} total)`;
   const prevBtn = document.getElementById("prev-page");
   const nextBtn = document.getElementById("next-page");
-  if (prevBtn) prevBtn.disabled = currentPage <= 1;
-  if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+  if (prevBtn) prevBtn.disabled = currentPage <= 1 || isLoading || !!loadError;
+  if (nextBtn) nextBtn.disabled = currentPage >= totalPages || isLoading || !!loadError;
+}
 
-  tbody.innerHTML = slice
-    .map(
-      (n) => `
-        <tr style="${!n.is_read ? "background:var(--admin-accent-bg);" : ""}">
-            <td><div class="admin-user-inline"><div><div class="admin-user-inline-name">${esc(n.user_name || "")}</div><div class="admin-user-inline-email">${esc(n.user_email || "")}</div></div></div></td>
-            <td>${typeBadge(n.type)}</td>
-            <td><div style="font-weight:${n.is_read ? "400" : "600"};color:var(--admin-text-primary);margin-bottom:2px;">${esc(n.title)}</div><div style="font-size:11px;color:var(--admin-text-muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(n.message || "")}</div></td>
-            <td>${n.is_read ? '<span class="admin-badge admin-badge--neutral">Read</span>' : '<span class="admin-badge admin-badge--warning">Unread</span>'}</td>
-            <td style="font-size:12px;color:var(--admin-text-muted);white-space:nowrap;">${fmtDate(n.created_at)}</td>
-        </tr>
-    `,
-    )
-    .join("");
+function updateCountLabel(count) {
+  setText("notif-count-label", `${count} notifications`);
 }
 
 async function sendBroadcast() {
-  const type = document.getElementById("broadcast-type").value;
-  const title = document.getElementById("broadcast-title").value.trim();
-  const message = document.getElementById("broadcast-message").value.trim();
+  if (isBroadcasting) return;
+
+  const type = document.getElementById("broadcast-type")?.value || "system";
+  const titleInput = document.getElementById("broadcast-title");
+  const messageInput = document.getElementById("broadcast-message");
+  const title = titleInput?.value.trim() || "";
+  const message = messageInput?.value.trim() || "";
+
   if (!title) {
-    alert("Please enter a notification title.");
+    setBroadcastStatus("Title is required.", "error");
+    titleInput?.focus();
     return;
   }
+  if (!message) {
+    setBroadcastStatus("Message is required.", "error");
+    messageInput?.focus();
+    return;
+  }
+
+  setBroadcastBusy(true);
+  setBroadcastStatus("Sending broadcast…", "status");
   try {
-    const r = await fetch("/api/admin/notifications/broadcast", {
+    const response = await fetch("/api/admin/notifications/broadcast", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, title, message }),
     });
-    if (r.ok) {
-      document.getElementById("broadcast-title").value = "";
-      document.getElementById("broadcast-message").value = "";
-      loadNotifications();
-      return;
-    } else {
-      const err = await r.json();
-      alert(err.error || "Failed to send broadcast");
+    const payload = await parseJsonResponse(response);
+    if (!response.ok) {
+      throw new Error(payload.error || "Failed to send broadcast.");
     }
-  } catch (e) {
-    alert("Network error sending broadcast");
+
+    titleInput.value = "";
+    messageInput.value = "";
+    setBroadcastStatus(
+      `Broadcast sent to ${payload.count || 0} recipients.`,
+      "success",
+    );
+    await loadNotifications();
+  } catch (error) {
+    setBroadcastStatus(error.message || "Network error sending broadcast.", "error");
+  } finally {
+    setBroadcastBusy(false);
   }
 }
 
-function typeBadge(t) {
-  const m = {
+function setBroadcastBusy(isBusy) {
+  isBroadcasting = isBusy;
+  const button = document.getElementById("broadcast-send-btn");
+  if (!button) return;
+  button.disabled = isBusy;
+  button.setAttribute("aria-busy", isBusy ? "true" : "false");
+  button.dataset.originalText = button.dataset.originalText || button.textContent.trim();
+  const textNode = Array.from(button.childNodes).find((node) => node.nodeType === Node.TEXT_NODE);
+  if (textNode) textNode.textContent = isBusy ? " Sending…" : " Send to All";
+}
+
+function setBroadcastStatus(message, type) {
+  const el = document.getElementById("broadcast-status");
+  if (!el) return;
+  el.textContent = message;
+  el.setAttribute("role", type === "error" ? "alert" : "status");
+  el.style.color = type === "error"
+    ? "var(--admin-danger)"
+    : type === "success"
+      ? "var(--admin-success)"
+      : "var(--admin-text-muted)";
+}
+
+function typeBadge(type) {
+  const badgeMap = {
     system: ["admin-badge--neutral", "System"],
     kyc: ["admin-badge--warning", "KYC"],
     investment: ["admin-badge--info", "Investment"],
     payout: ["admin-badge--success", "Payout"],
     promo: ["admin-badge--info", "Promo"],
   };
-  const [c, l] = m[t] || ["admin-badge--neutral", t];
-  return `<span class="admin-badge ${c}">${l}</span>`;
+  const [className, label] = badgeMap[type] || ["admin-badge--neutral", type || "Unknown"];
+  const badge = document.createElement("span");
+  badge.className = `admin-badge ${className}`;
+  badge.textContent = label;
+  return badge;
 }
-function esc(s) {
-  if (typeof s !== "string") return s || "";
-  const d = document.createElement("div");
-  d.textContent = s;
-  return d.innerHTML;
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = String(value);
 }
+
+async function parseJsonResponse(response) {
+  try {
+    return await response.json();
+  } catch (_error) {
+    return {};
+  }
+}
+
 function fmtDate(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-US", {
@@ -227,10 +406,11 @@ function fmtDate(iso) {
     minute: "2-digit",
   });
 }
+
 function debounce(fn, ms) {
   let t;
-  return function (...a) {
+  return function (...args) {
     clearTimeout(t);
-    t = setTimeout(() => fn.apply(this, a), ms);
+    t = setTimeout(() => fn.apply(this, args), ms);
   };
 }

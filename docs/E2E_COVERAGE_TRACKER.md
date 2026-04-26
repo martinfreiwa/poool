@@ -198,6 +198,7 @@ Cross-referenced against **61 admin HTML files** and **100+ admin API endpoints*
 | **A-2.10** | API: `/api/admin/investments` | Investments | 🖥️ | ⚪ Planned | Cross-reference check. |
 | **A-2.11** | API: `/api/admin/disputes` | Disputes Mgmt | 🖥️ | ⚪ Planned | Status update logic. |
 | **A-2.12** | API: `/api/admin/tax-reports` | Tax & Fiscal | 🖥️ | ⚪ Planned | Report generation. |
+| **A-2.13** | `/admin/affiliate-applications` + `/api/admin/rewards/affiliates/{pending,approve,reject}` | Affiliate Application Review | 🖥️📱 | 🔴 Gap Audited | 2026-04-26 report: `docs/automation-reports/2026-04-26-e2e-coverage-admin-affiliate-applications.md`. Existing affiliate scripts are stale, ignored, or bypass the admin UI; add pending-list/detail, approve/reject, CSRF, `affiliates.manage`, KYC gate, duplicate-code, state/audit, error-state, XSS, and keyboard/mobile coverage. |
 
 ### 3.3 Blockchain, Web3 & Tokenization
 | Flow ID | Target Route / HTML File | Feature Scope | Viewports | Status | Action Items |
@@ -454,3 +455,4 @@ npx playwright show-trace tests/e2e/traces/FAIL_*.zip
 | `/property/:slug` → `/cart` | Sold-out asset add-to-cart should show a deterministic sold-out error and must not insert zero-quantity cart rows. | PAGE-ISSUE-0014 |
 | `/support` ticket form | Attachment upload failure, GCS-disabled, invalid MIME, and successful attachment visibility should be covered. | PAGE-ISSUE-0015 |
 | `/rewards` commissions table | Export button should either download a real PDF/CSV or be absent/disabled until implemented. | PAGE-ISSUE-0016 |
+| `/admin/affiliate-applications` admin review | Pending list/detail, approve/reject mutations, CSRF denial, `affiliates.manage`, KYC gate, duplicate referral code, durable state/audit rows, error states, XSS fixtures, and modal keyboard/mobile behavior need committed E2E coverage. | 2026-04-26 E2E gap audit |

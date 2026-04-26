@@ -17,7 +17,7 @@ The admin Community Announcements page was audited and then fixed locally. The p
 
 Final status is `fixed_verified`.
 
-2026-04-25 fix update: a targeted Playwright E2E passed against the local backend. It signed up an admin fixture, granted `community.manage`, loaded `/admin/community/announcements`, verified `GET /api/admin/community/announcements` returns 200, verified publish without CSRF returns 403, and published through the UI, creating a row in `poool_community.posts`.
+2026-04-26 follow-up: the remaining production-readiness gaps were closed. Quill is now self-hosted from `/static/js/vendor/quill.min.js` and `/static/css/vendor/quill.snow.css`, announcement creation writes `posts`, `announcement_categories`, and `community_audit_logs` in one transaction, and `tests/e2e/test_admin_community_announcements.py` now persists the authenticated regression. The test passed against a fresh local backend on `http://localhost:8897`.
 
 ---
 
@@ -29,7 +29,7 @@ Final status is `fixed_verified`.
 - Backend route review for `/admin/community/announcements`, `/api/community/feed`, and `POST /api/admin/community/announcements`
 - Service/schema review for `posts`, `announcement_categories`, `community_profiles`, and `community_audit_logs`
 - Existing tests searched for admin announcement coverage
-- Targeted Playwright browser/API E2E against the patched local backend
+- Targeted Playwright browser/API E2E against the patched local backend, now committed as `tests/e2e/test_admin_community_announcements.py`
 
 ---
 
@@ -59,22 +59,22 @@ Final status is `fixed_verified`.
 | Breadcrumb Admin link | `.admin-breadcrumbs a[href="/admin/"]` | Navigate to admin home | Yes, link | Yes | Not runtime-tested |
 | Breadcrumb Community link | `.admin-breadcrumbs a[href="/admin/community/"]` | Navigate to community admin index | Yes, link | Yes via generic admin route | Not runtime-tested |
 | New Announcement button | line 67 inline `onclick` | Open create modal | Yes, direct style mutation | No backend needed | Works by static inspection; not keyboard/focus managed |
-| Live Announcements table | `#announcements-table` | Load announcement rows | Yes, calls `/api/community/feed` | Backend exists, but wrong endpoint for admin announcement inventory | Broken/partial: loads all public feed posts, not just announcements |
+| Live Announcements table | `#announcements-table` | Load announcement rows | Yes, calls `/api/admin/community/announcements` | Yes, admin announcement inventory endpoint | Verified by authenticated E2E |
 | Loading row | initial table row lines 89-92 | Show loading state before fetch | Yes | No backend needed | Present |
-| Empty row | inline JS line 216 | Show no-announcements state | Yes | Depends on feed response | Misleading because feed can be empty/non-empty independent of announcement inventory |
+| Empty row | inline JS | Show no-announcements state | Yes | Yes | Uses admin announcement inventory |
 | Error row | inline JS line 245 | Show load failure | Yes | Yes | Present, but no retry action |
-| Create modal | `#create-modal` | Dialog for publishing announcement | Partially wired by inline style handlers | API exists | Missing dialog semantics, focus trap, Escape close, backdrop close |
-| Close icon button | modal header line 114 | Close modal | Yes, inline `onclick` | No backend needed | Lacks accessible label |
+| Create modal | `#create-modal` | Dialog for publishing announcement | Yes, semantic dialog and keyboard/focus handling | API exists | Verified by authenticated E2E |
+| Close icon button | modal header | Close modal | Yes, with accessible label | No backend needed | Fixed |
 | Category select | `#ann-category` | Select DB-valid category | Yes | DB constraint matches options | Wired |
-| Quill editor | `#editor-container` | Rich-text content entry | Yes via CDN Quill | Backend sanitizes with Ammonia | CDN dependency and no backend content policy beyond sanitizer/DB length |
+| Quill editor | `#editor-container` | Rich-text content entry | Yes via self-hosted Quill | Backend sanitizes with Ammonia | Fixed |
 | Pin checkbox | `#ann-pin` | Publish announcement as pinned | Yes | `posts.is_pinned` exists | Wired |
-| Live Preview | `#preview-content`, `#preview-badge` | Preview current content/category | Yes | No backend needed | Uses `innerHTML` with editor HTML; admin-only preview but still should be constrained |
-| Cancel button | create form line 151 | Close modal | Yes, inline `onclick` | No backend needed | Lacks focus return handling |
-| Publish to Feed button | create form submit line 152 | POST announcement and refresh table | Yes | Route exists | Broken under CSRF middleware because request sends no `X-CSRF-Token` |
+| Live Preview | `#preview-content`, `#preview-badge` | Preview current content/category | Yes, uses text rendering | No backend needed | Fixed |
+| Cancel button | create form | Close modal | Yes | No backend needed | Focus return handling fixed |
+| Publish to Feed button | create form submit | POST announcement and refresh table | Yes, sends CSRF | Route exists | Verified by authenticated E2E |
 
 ---
 
-## Frontend Findings
+## Original Frontend Findings (Fixed)
 
 ### P1 - Publish request omits CSRF token
 
@@ -168,7 +168,7 @@ Move modal behavior into a page script function, add semantic dialog attributes 
 
 ---
 
-## Backend Findings
+## Original Backend Findings (Fixed)
 
 ### P1 - Announcement publish lacks fine-grained permission and audit logging
 
@@ -228,7 +228,7 @@ Add a server-side category enum/validator shared with admin UI choices.
 | Table load contract | Reviewed table fetch and `/api/community/feed` backend | Admin table lists announcements only | Fetch uses public feed and can include all post types | Fail |
 | Publish contract | Reviewed POST request and CSRF middleware | Publish sends CSRF header and creates announcement | Request omits `X-CSRF-Token`; global middleware should reject | Fail |
 | DB transaction support | Reviewed `service::create_announcement` | Multi-table write is transactional | `posts` and `announcement_categories` insert in one transaction | Pass |
-| Runtime browser test | Targeted Playwright E2E with signup admin fixture and direct local DB permission grant | Authenticated page load, API listing, CSRF rejection, and modal submit verified | Page loaded, GET returned 200, no-CSRF POST returned 403, UI publish created `poool_community.posts` row `195fdc2f-9183-4bcf-b389-972f02e85de3` | Pass |
+| Runtime browser test | `BASE_URL=http://localhost:8897 DATABASE_URL=postgres://martin@localhost/poool COMMUNITY_DATABASE_URL='dbname=poool_community user=martin host=localhost' python3 -m pytest tests/e2e/test_admin_community_announcements.py -q` | Authenticated page load, API listing, CSRF rejection, modal submit, post/category persistence, and audit log verified | 1 passed; GET returned 200, no-CSRF POST returned 403, UI publish created a `poool_community.posts` row and one `announcement.create` audit row | Pass |
 
 ---
 
@@ -237,8 +237,8 @@ Add a server-side category enum/validator shared with admin UI choices.
 - Fixed P1: Publish sends CSRF and a route-level no-CSRF check now rejects missing-token API calls.
 - Fixed P1: Admin table rows render with DOM APIs and text nodes instead of `innerHTML`.
 - Fixed P1: Publish requires `community.manage`.
-- Fixed P1: Publish writes `announcement.create` to `community_audit_logs`.
-- Residual P2: Quill still loads from a third-party CDN; HTMX was removed from this page.
+- Fixed P1: Publish writes `announcement.create` to `community_audit_logs` in the same transaction as the post/category writes.
+- Fixed P2: Quill is self-hosted for this page; HTMX was removed from this page.
 
 ---
 
@@ -246,16 +246,16 @@ Add a server-side category enum/validator shared with admin UI choices.
 
 - `posts` supports announcement content, sanitized content, pinned state, reaction/comment counts, and hidden state.
 - `announcement_categories` correctly constrains category values and cascades on post deletion.
-- `service::create_announcement` correctly wraps `posts` and `announcement_categories` writes in one transaction.
-- `community_audit_logs` is now used by announcement publishing.
+- `service::create_announcement` correctly wraps `posts`, `announcement_categories`, and `community_audit_logs` writes in one transaction.
+- `community_audit_logs` is now used by announcement publishing and asserted by E2E.
 - The admin inventory endpoint uses `service::get_announcements`, so it is not affected by public feed `community_profiles` joins.
 
 ---
 
 ## Missing Tests
 
-- Persist the targeted Playwright coverage as a committed test for `/admin/community/announcements`.
-- Add an integration assertion that publish persists one `posts` row plus one `announcement_categories` row and one `community_audit_logs` row.
+- Committed E2E coverage now exists for `/admin/community/announcements`.
+- Publish persistence is asserted for one `posts` row, one `announcement_categories` row, and one `community_audit_logs` row.
 - Authorization test proving non-community admins cannot publish once a fine-grained permission is added.
 - Regression test that the admin table lists only `post_type='announcement'`.
 - XSS regression test for content/category rendering in the admin table.
@@ -270,7 +270,7 @@ Add a server-side category enum/validator shared with admin UI choices.
 3. Replace the public feed table source with a dedicated admin announcement list endpoint.
 4. Render announcement rows with DOM APIs/text nodes instead of `innerHTML`.
 5. Upgrade modal accessibility and remove inline open/close handlers.
-6. Self-host Quill/HTMX or remove unused HTMX from this page.
+6. Self-host Quill/HTMX or remove unused HTMX from this page. Done.
 
 ---
 
@@ -278,4 +278,4 @@ Add a server-side category enum/validator shared with admin UI choices.
 
 `fixed_verified`
 
-Reason: The audit findings were fixed locally, but an authenticated admin browser/API pass is still required to verify the publish, listing, permission, audit-log, and modal flows end-to-end.
+Reason: The audit findings are fixed and covered by an authenticated browser/API regression for page load, admin list API, CSRF rejection, UI publish, community post/category persistence, and audit-log persistence.

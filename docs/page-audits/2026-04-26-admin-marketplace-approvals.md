@@ -1,7 +1,7 @@
 # Page Audit: Marketplace Approvals
 
 Date: 2026-04-26
-Status: needs_recheck
+Status: fixed; UI accessibility browser recheck recommended
 Auditor: ChatGPT/Codex
 Page URL: `/admin/marketplace/approvals`
 Template: `frontend/platform/admin/marketplace/approvals.html`
@@ -15,7 +15,46 @@ Backend Routes: `backend/src/admin/mod.rs`, `backend/src/admin/pages.rs`, `backe
 
 The page shell and route exist, and the frontend can load a pending-approval list from `/api/admin/marketplace/approvals`. The approval workflow is not production-ready. The reject endpoint has a critical financial bug that can inflate a buyer wallet balance and fails to release sell-order token holds. The approve endpoint also changes an order to `open` without a transaction, row lock, audit log, or orderbook insertion/broadcast. The API group relies only on the broad `AdminUser` extractor instead of enforcing `marketplace.manage`, and the UI hides API failures with mock approvals while rendering backend data through template-string `innerHTML`.
 
-Final status: `needs_recheck`.
+Fix status: fixed in local working tree on 2026-04-26; authenticated HTTP/DB E2E recheck passed. UI accessibility browser recheck remains recommended.
+
+Final status: `fixed_backend_e2e`; UI accessibility browser recheck recommended.
+
+---
+
+## Fix Applied
+
+Date fixed: 2026-04-26
+
+Files changed:
+
+- `backend/src/admin/marketplace.rs`
+- `backend/src/admin/pages.rs`
+- `frontend/platform/static/js/mp-approvals.js`
+- `frontend/platform/static/js/mp-toast.js`
+- `tests/e2e/test_admin_marketplace_approvals.py`
+
+What changed:
+
+- Reject now releases buy holds by decrementing `held_balance_cents` only, never by increasing `balance_cents`.
+- Reject now releases sell holds by decrementing `investments.held_tokens`.
+- Approve/reject now require `marketplace.manage`, lock the order row, run in a transaction, check state, and write durable audit logs.
+- Approve now inserts the opened order into Redis orderbook and broadcasts an orderbook update after the DB transaction commits.
+- Approval list now returns `review_reason` and `supply_impact_bps`.
+- Approval list now decodes real `assets.title` and `TIMESTAMPTZ` values correctly in the local PostgreSQL schema.
+- The approvals page now renders backend data with DOM APIs/text nodes instead of template-string `innerHTML`.
+- Mock approval fallback was removed and replaced with a visible retryable load error.
+- Approve/reject now use a focus-managed confirmation dialog, reject requires a reason, and mutation buttons expose disabled/`aria-busy` states.
+- Added an authenticated E2E fixture that seeds pending buy/sell orders and verifies approval/rejection via the real admin API.
+
+Verification:
+
+- `node --check frontend/platform/static/js/mp-approvals.js && node --check frontend/platform/static/js/mp-toast.js`
+- `cargo fmt --check`
+- `cargo check`
+- `cargo test --bin poool-backend admin::marketplace::tests`
+- `BASE_URL=http://localhost:8888 DATABASE_URL=postgres://martin@localhost/poool python3 -m pytest tests/e2e/test_admin_marketplace_approvals.py -q`
+
+Runtime result: targeted authenticated HTTP/DB E2E passed (`1 passed`). Local Redis was not configured, so the test verified orderbook visibility through the admin orderbook endpoint and asserted the API exposes `orderbook_synced`.
 
 ---
 

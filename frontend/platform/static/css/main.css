@@ -530,6 +530,13 @@ label {
 }
 
 @supports (view-transition-name: none) {
+  ::view-transition,
+  ::view-transition-group(*),
+  ::view-transition-image-pair(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    pointer-events: none;
+  }
 
   /* Sidebar stays perfectly static during page transitions.
      IMPORTANT: Only ONE element may have a given view-transition-name.

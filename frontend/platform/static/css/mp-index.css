@@ -33,3 +33,41 @@
   color: var(--admin-danger);
   font-weight: 600;
 }
+
+.mp-cell-muted {
+  color: var(--admin-text-muted);
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.mp-cell-strong {
+  color: var(--admin-text-primary);
+  font-weight: 600;
+}
+
+.mp-cell-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-inline-code {
+  background: var(--admin-code-bg);
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+.mp-table-message {
+  color: var(--admin-text-muted);
+  padding: 24px;
+  text-align: center;
+}
+
+.mp-table-message--error,
+.mp-health-message--error {
+  color: var(--admin-danger);
+}
+
+.mp-health-message {
+  color: var(--admin-text-muted);
+  padding: 18px;
+}

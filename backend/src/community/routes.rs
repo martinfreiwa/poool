@@ -492,6 +492,7 @@ async fn create_announcement(
     }
     let clean_html_len = clean_html.chars().count();
     let category = payload.category.clone();
+    let is_pinned = payload.is_pinned.unwrap_or(false);
 
     let post_id = service::create_announcement(
         &c_pool,
@@ -500,24 +501,14 @@ async fn create_announcement(
         clean_html,
         payload.category,
         payload.image_urls,
-        payload.is_pinned.unwrap_or(false),
+        is_pinned,
+        serde_json::json!({
+            "category": category,
+            "is_pinned": is_pinned,
+            "content_length": clean_html_len
+        }),
     )
     .await?;
-
-    crate::community::audit::log(
-        &c_pool,
-        user_id,
-        "announcement.create",
-        "announcement",
-        Some(post_id),
-        None,
-        Some(serde_json::json!({
-            "category": category,
-            "is_pinned": payload.is_pinned.unwrap_or(false),
-            "content_length": clean_html_len
-        })),
-    )
-    .await;
 
     Ok(Json(serde_json::json!({ "id": post_id })))
 }
@@ -527,12 +518,7 @@ async fn admin_list_announcements(
     State(state): State<AppState>,
     Query(query): Query<FeedQuery>,
 ) -> Result<impl IntoResponse, AppError> {
-    if !crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage").await
-    {
-        return Err(AppError::Forbidden(
-            "Missing permission: community.manage".to_string(),
-        ));
-    }
+    require_community_view_or_manage(&state, &admin).await?;
 
     if let Some(category) = query.category.as_deref() {
         if !category.is_empty() {
@@ -728,47 +714,41 @@ async fn get_comments(
 }
 
 async fn get_admin_stats(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_view_or_manage(&state, &admin).await?;
     let c_pool = get_community_pool(&state)?;
 
     let total_posts: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM posts")
         .fetch_one(&c_pool)
-        .await
-        .unwrap_or((0,));
+        .await?;
 
     let total_comments: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM comments")
         .fetch_one(&c_pool)
-        .await
-        .unwrap_or((0,));
+        .await?;
 
     let total_reactions: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM reactions")
         .fetch_one(&c_pool)
-        .await
-        .unwrap_or((0,));
+        .await?;
 
     let active_profiles: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM community_profiles")
         .fetch_one(&c_pool)
-        .await
-        .unwrap_or((0,));
+        .await?;
 
     let total_circles: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM circles")
         .fetch_one(&c_pool)
-        .await
-        .unwrap_or((0,));
+        .await?;
 
     let total_xp: (i64,) =
-        sqlx::query_as("SELECT COALESCE(SUM(current_xp), 0) FROM user_xp_totals")
+        sqlx::query_as("SELECT COALESCE(SUM(xp_total), 0) FROM community_profiles")
             .fetch_one(&c_pool)
-            .await
-            .unwrap_or((0,));
+            .await?;
 
     let pending_reports_count: (i64,) =
         sqlx::query_as("SELECT COUNT(*) FROM content_reports WHERE status = 'pending'")
             .fetch_one(&c_pool)
-            .await
-            .unwrap_or((0,));
+            .await?;
 
     Ok(Json(serde_json::json!({
         "total_posts": total_posts.0,
@@ -965,9 +945,11 @@ async fn create_content_report(
 }
 
 async fn get_reports(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_community_view_or_manage(&state, &admin).await?;
+
     let c_pool = get_community_pool(&state)?;
 
     let pending_reports = service::get_pending_reports(&c_pool).await?;
@@ -1046,14 +1028,36 @@ async fn get_reports(
 }
 
 async fn take_report_action(
-    _admin: crate::admin::extractors::AdminUser,
+    admin: crate::admin::extractors::AdminUser,
+    jar: CookieJar,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(report_id): Path<Uuid>,
     Json(payload): Json<models::AdminReportActionRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    require_csrf_header(&headers, &jar)?;
+    require_community_manage(&state, &admin).await?;
+
+    let notes = payload
+        .admin_notes
+        .as_deref()
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    if notes.is_empty() {
+        return Err(AppError::BadRequest(
+            "Admin notes are required.".to_string(),
+        ));
+    }
+    if notes.chars().count() > 1000 {
+        return Err(AppError::BadRequest(
+            "Admin notes must be 1000 characters or fewer.".to_string(),
+        ));
+    }
+
     let c_pool = get_community_pool(&state)?;
 
-    service::action_on_report(&c_pool, report_id, &payload.action, payload.admin_notes).await?;
+    service::action_on_report(&c_pool, report_id, admin.user.id, &payload.action, notes).await?;
 
     Ok(Json(serde_json::json!({ "success": true })))
 }

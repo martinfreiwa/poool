@@ -145,6 +145,17 @@ def _cleanup_ama(ama_id, question_id=None):
         conn.close()
 
 
+def _expect_modal_within_viewport(page, selector):
+    box = page.locator(selector).bounding_box()
+    viewport = page.viewport_size
+    assert box is not None
+    assert viewport is not None
+    assert box["x"] >= 0
+    assert box["y"] >= 0
+    assert box["x"] + box["width"] <= viewport["width"]
+    assert box["y"] + box["height"] <= viewport["height"]
+
+
 def test_admin_community_amas_create_moderate_and_audit(quality_page):
     user_id, session_token = _create_admin_session()
     page, tracker = quality_page
@@ -163,6 +174,17 @@ def test_admin_community_amas_create_moderate_and_audit(quality_page):
 
         page.locator("#open-ama-modal-btn").click()
         expect(page.locator("#ama-modal")).to_be_visible()
+        expect(page.locator("#ama-title")).to_be_focused()
+        page.locator("#close-ama-modal-btn").focus()
+        page.keyboard.press("Shift+Tab")
+        expect(page.locator("#create-ama-btn")).to_be_focused()
+        page.keyboard.press("Tab")
+        expect(page.locator("#close-ama-modal-btn")).to_be_focused()
+        page.keyboard.press("Escape")
+        expect(page.locator("#ama-modal")).not_to_be_visible()
+        expect(page.locator("#open-ama-modal-btn")).to_be_focused()
+
+        page.locator("#open-ama-modal-btn").click()
         expect(page.locator("#ama-title")).to_be_focused()
         page.locator("#ama-title").fill(title)
         page.locator("#ama-description").fill("Created by targeted admin AMA E2E test.")
@@ -183,8 +205,20 @@ def test_admin_community_amas_create_moderate_and_audit(quality_page):
         expect(page.locator("#ama-detail-panel")).to_be_visible()
         expect(page.get_by_text(question)).to_be_visible(timeout=10_000)
 
-        page.get_by_role("button", name="Answer").click()
+        answer_button = page.get_by_role("button", name="Answer")
+        answer_button.click()
         expect(page.locator("#answer-modal")).to_be_visible()
+        expect(page.locator("#answer-text")).to_be_focused()
+        page.locator("#close-answer-modal-btn").focus()
+        page.keyboard.press("Shift+Tab")
+        expect(page.locator("#submit-answer-btn")).to_be_focused()
+        page.keyboard.press("Tab")
+        expect(page.locator("#close-answer-modal-btn")).to_be_focused()
+        page.keyboard.press("Escape")
+        expect(page.locator("#answer-modal")).not_to_be_visible()
+        expect(answer_button).to_be_focused()
+
+        answer_button.click()
         expect(page.locator("#answer-text")).to_be_focused()
         page.locator("#answer-text").fill(answer)
         with page.expect_response("**/answer") as answer_response:
@@ -209,3 +243,22 @@ def test_admin_community_amas_create_moderate_and_audit(quality_page):
     finally:
         _cleanup_ama(ama_id, question_id)
         _cleanup_admin_session(user_id, session_token)
+
+
+def test_admin_community_amas_mobile_modal_smoke(admin_mobile_page):
+    page, tracker = admin_mobile_page
+
+    tracker.navigate_and_check(f"{BASE_URL}/admin/community/amas")
+    expect(page).to_have_title("Expert AMAs | Admin | POOOL")
+    expect(page.locator("#open-ama-modal-btn")).to_be_visible()
+    expect(page.locator("#amas-table")).to_be_visible()
+
+    page.locator("#open-ama-modal-btn").click()
+    expect(page.locator("#ama-modal")).to_be_visible()
+    expect(page.locator("#ama-title")).to_be_focused()
+    _expect_modal_within_viewport(page, "#ama-modal > div")
+    page.keyboard.press("Escape")
+    expect(page.locator("#ama-modal")).not_to_be_visible()
+    expect(page.locator("#open-ama-modal-btn")).to_be_focused()
+
+    tracker.assert_no_critical_errors()

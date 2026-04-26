@@ -39,10 +39,10 @@
           </nav>
         </div>
         <div class="admin-topbar-right">
-          <div class="admin-health-indicators" title="System Health">
-            <span class="admin-health-dot admin-health-dot--ok" title="Matching Engine"></span>
-            <span class="admin-health-dot admin-health-dot--ok" title="Database"></span>
-            <span class="admin-health-dot admin-health-dot--ok" title="WebSocket Gateway"></span>
+          <div class="admin-health-indicators" title="System Health" aria-label="System health indicators">
+            <span id="health-dot-matching" class="admin-health-dot admin-health-dot--warn" title="Matching Engine: loading"></span>
+            <span id="health-dot-db" class="admin-health-dot admin-health-dot--warn" title="Database: loading"></span>
+            <span id="health-dot-ws" class="admin-health-dot admin-health-dot--warn" title="WebSocket Gateway: loading"></span>
           </div>
         </div>
       </header>
@@ -64,8 +64,8 @@
                 <span class="mp-live-dot"></span>
               </div>
             </div>
-            <div class="admin-kpi-value" id="kpi-trading-status" style="color: var(--admin-success);">LIVE</div>
-            <span class="admin-kpi-subtext">All systems operational</span>
+            <div class="admin-kpi-value" id="kpi-trading-status">Loading</div>
+            <span class="admin-kpi-subtext" id="kpi-trading-subtext">Checking trading controls</span>
           </div>
 
           <!-- Open Orders -->
@@ -76,8 +76,8 @@
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h4l2.5 12h11.5a2 2 0 001.9-1.3L23 5H5.5"/><circle cx="9" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
               </div>
             </div>
-            <div class="admin-kpi-value" id="kpi-open-orders">247</div>
-            <span class="admin-kpi-change admin-kpi-change--up">↑ 12% vs yesterday</span>
+            <div class="admin-kpi-value" id="kpi-open-orders">--</div>
+            <span class="admin-kpi-change" id="kpi-open-orders-subtext">Awaiting API data</span>
           </div>
 
           <!-- 24h Volume -->
@@ -88,8 +88,8 @@
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
               </div>
             </div>
-            <div class="admin-kpi-value" id="kpi-volume">$1,284,500</div>
-            <span class="admin-kpi-change admin-kpi-change--up">↑ $342K vs 24h ago</span>
+            <div class="admin-kpi-value" id="kpi-volume">--</div>
+            <span class="admin-kpi-change" id="kpi-volume-subtext">Awaiting 24h trade volume</span>
           </div>
 
           <!-- Pending Approvals -->
@@ -100,8 +100,8 @@
                 <svg class="admin-nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </div>
             </div>
-            <div class="admin-kpi-value" id="kpi-pending" style="color: var(--admin-warning);">3</div>
-            <span class="admin-kpi-subtext">Large orders awaiting review</span>
+            <div class="admin-kpi-value" id="kpi-pending">--</div>
+            <span class="admin-kpi-subtext" id="kpi-pending-subtext">Awaiting review queue</span>
           </div>
         </div>
 

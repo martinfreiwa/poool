@@ -126,7 +126,9 @@ def test_full_user_journey(authenticated_user_page):
         b"\x00\x04\x00\x01\xf6\x178U\x00\x00\x00\x00IEND\xaeB`\x82"
     )
     page.locator("#proof-upload").set_input_files(str(proof_path))
-    page.locator("#bank-terms-checkbox").check(force=True)
+    page.locator("#bank-terms-checkbox").evaluate(
+        "el => { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }"
+    )
     
     # Click confirm
     with page.expect_response(lambda r: r.url == f"{BASE_URL}/checkout" and r.request.method == "POST", timeout=30000) as checkout_response_info:

@@ -17,6 +17,62 @@
   <script src="/static/js/csrf.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .ama-table-scroll {
+      overflow-x: auto;
+    }
+
+    @media (max-width: 640px) {
+      .ama-page-header {
+        align-items: stretch !important;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      #open-ama-modal-btn {
+        justify-content: center;
+        width: 100%;
+      }
+
+      #admin-sidebar-placeholder,
+      .admin-sidebar {
+        display: none !important;
+      }
+
+      .admin-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+
+      .admin-topbar {
+        position: static !important;
+      }
+
+      .admin-content {
+        position: relative;
+        z-index: 2;
+      }
+
+      #ama-modal > div,
+      #answer-modal > div {
+        border-radius: 12px !important;
+        box-sizing: border-box;
+        max-height: calc(100vh - 32px) !important;
+        max-width: calc(100% - 32px) !important;
+        padding: 20px !important;
+        width: calc(100% - 32px) !important;
+      }
+
+      [data-ama-form-grid] {
+        grid-template-columns: 1fr !important;
+      }
+
+      [data-ama-form-actions],
+      [data-answer-form-actions] {
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 
 <body class="admin-body dom-ready">
@@ -37,7 +93,7 @@
       </header>
 
       <div class="admin-content">
-        <div class="admin-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+        <div class="admin-page-header ama-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
           <div>
             <h1 class="admin-page-title">Expert AMAs</h1>
             <p class="admin-page-subtitle">Create, manage, and moderate Ask Me Anything sessions.</p>
@@ -52,7 +108,7 @@
 
         <!-- AMAs Table -->
         <div class="admin-card">
-          <div class="admin-card-body admin-card-body--flush">
+          <div class="admin-card-body admin-card-body--flush ama-table-scroll">
             <table class="admin-table">
               <thead>
                 <tr>
@@ -105,7 +161,7 @@
           <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Description</label>
           <textarea id="ama-description" class="admin-input" placeholder="What will the AMA cover?" rows="3" style="width:100%;resize:none;"></textarea>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div data-ama-form-grid style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
             <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Expert Name *</label>
             <input type="text" id="ama-expert-name" class="admin-input" placeholder="Dr. Ana Suarez" style="width:100%;" />
@@ -115,7 +171,7 @@
             <input type="text" id="ama-expert-title" class="admin-input" placeholder="Agricultural Economist" style="width:100%;" />
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div data-ama-form-grid style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
             <label style="display:block;font-size:13px;font-weight:500;color:#344054;margin-bottom:6px;">Scheduled Date & Time</label>
             <input type="datetime-local" id="ama-scheduled" class="admin-input" style="width:100%;" />
@@ -129,7 +185,7 @@
             </select>
           </div>
         </div>
-        <div style="display:flex;gap:12px;margin-top:8px;">
+        <div data-ama-form-actions style="display:flex;gap:12px;margin-top:8px;">
           <button class="admin-btn admin-btn--secondary" id="cancel-ama-modal-btn" type="button" style="flex:1;">Cancel</button>
           <button class="admin-btn admin-btn--primary" id="create-ama-btn" type="button" style="flex:1;">Create AMA</button>
         </div>
@@ -146,7 +202,7 @@
       </div>
       <div id="answer-question-text" style="font-size:14px;color:#344054;background:#F9FAFB;padding:12px 16px;border-radius:8px;margin-bottom:16px;line-height:1.5;"></div>
       <textarea id="answer-text" class="admin-input" placeholder="Type your expert answer..." rows="4" style="width:100%;resize:none;"></textarea>
-      <div style="display:flex;gap:12px;margin-top:12px;">
+      <div data-answer-form-actions style="display:flex;gap:12px;margin-top:12px;">
         <button class="admin-btn admin-btn--secondary" id="cancel-answer-modal-btn" type="button" style="flex:1;">Cancel</button>
         <button class="admin-btn admin-btn--primary" id="submit-answer-btn" type="button" style="flex:1;">Submit Answer</button>
       </div>
@@ -206,6 +262,8 @@
       });
 
       document.addEventListener('keydown', handleModalKeydown);
+      window.visualViewport?.addEventListener('resize', updateActiveModalViewport);
+      window.visualViewport?.addEventListener('scroll', updateActiveModalViewport);
       loadAmas();
     });
 
@@ -603,6 +661,7 @@
       if (!modal) return;
       _lastFocusedElement = document.activeElement;
       _activeModal = modal;
+      positionModalInVisualViewport(modal);
       modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
       setTimeout(() => (focusTarget || firstFocusable(modal))?.focus(), 0);
@@ -612,11 +671,37 @@
       if (!modal) return;
       modal.style.display = 'none';
       if (_activeModal === modal) _activeModal = null;
+      resetModalViewport(modal);
       document.body.style.overflow = '';
       if (_lastFocusedElement && typeof _lastFocusedElement.focus === 'function') {
         _lastFocusedElement.focus();
       }
       _lastFocusedElement = null;
+    }
+
+    function positionModalInVisualViewport(modal) {
+      if (!modal || !window.visualViewport) return;
+      const viewport = window.visualViewport;
+      modal.style.left = viewport.offsetLeft + 'px';
+      modal.style.top = viewport.offsetTop + 'px';
+      modal.style.right = 'auto';
+      modal.style.bottom = 'auto';
+      modal.style.width = viewport.width + 'px';
+      modal.style.height = viewport.height + 'px';
+    }
+
+    function resetModalViewport(modal) {
+      if (!modal) return;
+      modal.style.left = '0';
+      modal.style.top = '0';
+      modal.style.right = '0';
+      modal.style.bottom = '0';
+      modal.style.width = '';
+      modal.style.height = '';
+    }
+
+    function updateActiveModalViewport() {
+      if (_activeModal) positionModalInVisualViewport(_activeModal);
     }
 
     function handleModalKeydown(event) {

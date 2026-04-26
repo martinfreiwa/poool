@@ -300,13 +300,17 @@ mod tests {
 
     #[test]
     fn test_limit_clamping() {
-        let limit = Some(5000).unwrap_or(500).min(2000).max(1);
+        fn clamp_limit(requested_limit: Option<i32>) -> i32 {
+            requested_limit.unwrap_or(500).clamp(1, 2000)
+        }
+
+        let limit = clamp_limit(Some(5000));
         assert_eq!(limit, 2000);
 
-        let limit = Some(0).unwrap_or(500).min(2000).max(1);
+        let limit = clamp_limit(Some(0));
         assert_eq!(limit, 1);
 
-        let limit = None::<i32>.unwrap_or(500).min(2000).max(1);
+        let limit = clamp_limit(None);
         assert_eq!(limit, 500);
     }
 

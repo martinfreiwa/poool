@@ -14,7 +14,7 @@ Backend Routes: `backend/src/admin/mod.rs`, `backend/src/admin/pages.rs`, `backe
 
 ## Summary
 
-`/admin/` is registered to the admin dashboard and is protected by the `AdminUser` extractor in backend routing. The seven documented production-readiness findings have been fixed in code: dashboard data is rendered through DOM/text APIs, required stats reads now propagate DB errors, system health returns the fields the widget reads, dashboard failures show visible retry states, global search uses a minimal backend endpoint, the deposits label reflects the selected range, and unused third-party CDN scripts were removed.
+`/admin/` is registered to the admin dashboard and is protected by the `AdminUser` extractor in backend routing. The seven documented production-readiness findings have been fixed in code and rechecked with authenticated Playwright coverage on 2026-04-26: dashboard data is rendered through DOM/text APIs, required stats reads now propagate DB errors, system health returns the fields the widget reads, dashboard failures show visible retry states, global search uses a minimal backend endpoint, the deposits label reflects the selected range, the notification badge is populated from `unread_notifications`, and unused third-party CDN scripts were removed.
 
 Severity counts: P0 critical 0, P1 high 2, P2 medium 4, P3 low 1.
 
@@ -33,8 +33,8 @@ Severity counts: P0 critical 0, P1 high 2, P2 medium 4, P3 low 1.
 - Ran `BASE_URL=http://localhost:8893 python3 -m pytest tests/e2e -m admin --maxfail=5 -q --base-url http://localhost:8893`; the existing Playwright admin subset passed.
 - Ran authenticated `GET /api/admin/search?q=test` smoke against `localhost:8893`; the endpoint returned `200` with a capped `results` payload.
 - Checked `/static/js/admin-dashboard.js` and `/static/js/admin-global-search.js` on localhost after the E2E run; both returned 200 and passed `node --check`.
-- Added and ran targeted authenticated Playwright coverage for `/admin/` stats rendering, safe activity text rendering, system health contract fields, and server-side global search.
-- Optional mobile layout smoke remains outside the fixed issue set.
+- Added and ran targeted authenticated Playwright coverage for `/admin/` stats rendering, notification badge behavior, safe activity text rendering, visible stats failure/retry UI, system health contract fields, server-side global search, keyboard behavior, console/network health, and mobile layout.
+- Captured mobile recheck screenshot at `tests/e2e/screenshots/admin_dashboard_mobile_recheck_20260426_130029.png`.
 
 ---
 
@@ -59,9 +59,9 @@ Severity counts: P0 critical 0, P1 high 2, P2 medium 4, P3 low 1.
 |--------|---------------------|-------------------|-----------------|----------------|--------------|
 | Breadcrumb Admin link | `a[href="/admin/"]` | Navigate to dashboard. | Native link | `GET /admin/` | Route exists by static review. |
 | Global search | `#admin-global-search` | Search admin entities. | Yes | `GET /api/admin/search?q=...` | Fixed with minimal server-side search. |
-| Date range selector | `#dashboard-range` | Reload stats by range. | Yes | `GET /api/admin/stats/overview?range=` | Wired by static review; runtime not verified. |
+| Date range selector | `#dashboard-range` | Reload stats by range. | Yes | `GET /api/admin/stats/overview?range=` | Wired by static review; stats endpoint verified by authenticated E2E. |
 | Health dots | `#health-db`, `#health-psp`, `#health-kyc`, `#health-email` | Show service status. | Yes | `GET /api/admin/system` | Fixed; endpoint returns dashboard-compatible fields. |
-| Notification button/badge | `.admin-notification-btn`, `#notification-count` | Navigate to notifications and show count. | Navigation only | `/admin/notifications.html` | Badge has no page-local loader. |
+| Notification button/badge | `.admin-notification-btn`, `#notification-count` | Navigate to notifications and show count. | Yes | `/admin/notifications.html`, stats API `unread_notifications` | Fixed and verified by authenticated E2E. |
 | KPI cards | `#kpi-*` | Render operational metrics. | Yes | Stats API | Fixed; required query failures propagate and visible errors render. |
 | Activity feed | `#activity-feed` | Render audit events. | Yes, via DOM/text APIs | Stats API `recent_activity` | Fixed; malicious values render as text. |
 | Recent orders table | `#recent-orders-table` | Render recent orders. | Yes, via DOM/text APIs | Stats API `recent_orders` | Fixed. |
@@ -218,9 +218,9 @@ Track query result status and return degraded/error health when fallbacks are us
 | Admin search smoke | Authenticated `GET /api/admin/search?q=test` on `localhost:8893` | 200 minimal capped search payload | 200, `results` array with 10 records | Pass |
 | Dashboard JS asset | `curl -i http://localhost:8893/static/js/admin-dashboard.js` | 200 JavaScript asset | `200 OK` | Pass |
 | Global search JS asset | `curl -i http://localhost:8893/static/js/admin-global-search.js` | 200 JavaScript asset | `200 OK` | Pass |
-| Dashboard-specific Playwright regression | Included in the marked admin subset via `tests/e2e/test_admin_dashboard_index.py` | Stats render, malicious activity text is not HTML, system health fields exist, and global search uses `/api/admin/search` without broad list fetches | Passed | Pass |
-| Rust format/compile | `cargo fmt --check`; `cargo check` from `backend/` | No formatting or compile failures | Passed | Pass |
-| Optional mobile smoke | Open `/admin/` on a small viewport after fixes | No layout overlap or mobile-only console issues | Not included in the targeted regression test | Not run |
+| Dashboard-specific Playwright regression | `BASE_URL=http://127.0.0.1:8888 DATABASE_URL=postgres://martin@localhost/poool python3 -m pytest tests/e2e/test_admin_dashboard_index.py -q` | Stats render, notification badge updates, malicious activity text is not HTML, failure UI is visible/retryable, system health fields exist, global search uses `/api/admin/search` without broad list fetches, search/notification keyboard behavior works, no critical console/network errors, and mobile layout does not overflow | 3 passed in 2.62s; report at `tests/e2e/reports/report.html`; per-test JSON reports under `tests/e2e/reports/test_admin_dashboard_*_20260426_1300*.json`; mobile screenshot at `tests/e2e/screenshots/admin_dashboard_mobile_recheck_20260426_130029.png` | Pass |
+| Admin dashboard HTTP/HTML suite | `BASE_URL=http://127.0.0.1:8888 DATABASE_URL=postgres://martin@localhost/poool python3 tests/admin/test_admin_dashboard.py` | Existing admin dashboard suite passes | 305 passed, 0 failed, 88 warnings | Pass with warnings |
+| Rust compile | `cargo check` from `backend/` | No compile failures | Passed | Pass |
 
 ---
 
@@ -244,9 +244,9 @@ Track query result status and return degraded/error health when fallbacks are us
 
 ## Missing Tests
 
-- Optional: add a DB-fault injection test proving `/api/admin/stats/overview` does not return all-zero success on required query failure.
-- Optional: expand Playwright coverage to range changes, notification navigation, global search keyboard behavior, console capture, and mobile layout.
-- Covered by new targeted E2E: malicious dashboard values render as text, `/api/admin/system` exposes the dashboard contract fields, and global search uses a minimal server-side endpoint.
+- Optional: add a DB-fault injection unit/integration test proving `/api/admin/stats/overview` does not return all-zero success on required query failure.
+- Optional: expand Playwright coverage to every dashboard range selector option.
+- Covered by authenticated E2E: malicious dashboard values render as text, `/api/admin/system` exposes the dashboard contract fields, global search uses a minimal server-side endpoint, notification badge/navigation works, stats failure states are visible and retryable, console/network health is clean, and mobile layout does not overflow.
 
 ---
 
@@ -264,9 +264,9 @@ Track query result status and return degraded/error health when fallbacks are us
 
 ## Final Status
 
-`fixed_needs_browser_recheck`
+`fixed_e2e_verified`
 
-Reason: The code fixes compile and targeted static checks pass. Authenticated browser/mobile verification is still recommended after restarting the backend.
+Reason: The code fixes compile and targeted static checks pass. Authenticated browser/mobile E2E verification passed against the local backend on 2026-04-26.
 
 ---
 
@@ -287,11 +287,16 @@ Verification run:
 ```bash
 node --check frontend/platform/static/js/admin-dashboard.js
 node --check frontend/platform/static/js/admin-global-search.js
-cargo fmt --check
 cargo check
+BASE_URL=http://127.0.0.1:8888 DATABASE_URL=postgres://martin@localhost/poool python3 -m pytest tests/e2e/test_admin_dashboard_index.py -q
+BASE_URL=http://127.0.0.1:8888 DATABASE_URL=postgres://martin@localhost/poool python3 tests/admin/test_admin_dashboard.py
 python3 scripts/audit_page_review_tracker.py --write-md
 ```
 
-Remaining recheck:
+E2E evidence:
 
-- Restart the backend and run an authenticated browser/mobile pass for dashboard load, range changes, health dots, notification badge, global search keyboard behavior, visible API failure states, and console/network errors.
+- `tests/e2e/reports/report.html`
+- `tests/e2e/reports/test_admin_dashboard_loads_safely_and_searches_server_side_20260426_130027.json`
+- `tests/e2e/reports/test_admin_dashboard_stats_failure_shows_visible_retry_20260426_130028.json`
+- `tests/e2e/reports/test_admin_dashboard_mobile_viewport_recheck_20260426_130029.json`
+- `tests/e2e/screenshots/admin_dashboard_mobile_recheck_20260426_130029.png`

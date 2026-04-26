@@ -8,7 +8,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Notifications | Admin | POOOL</title>
   <meta name="description" content="POOOL Admin — Platform notifications management and broadcast." />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
@@ -19,6 +18,22 @@
   <script src="/static/js/admin-global-search.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
+  <style>
+    .notif-sort-btn {
+      background: transparent;
+      border: 0;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      padding: 0;
+      text-align: left;
+    }
+
+    .notif-sort-btn:focus-visible {
+      outline: 2px solid var(--admin-accent);
+      outline-offset: 3px;
+    }
+  </style>
 </head>
 
 <body class="admin-body dom-ready">
@@ -100,10 +115,11 @@
                     color: var(--admin-text-muted);
                     display: block;
                     margin-bottom: 4px;
-                  ">Type</label>
+                  " for="broadcast-type">Type</label>
               <select id="broadcast-type" class="admin-select">
                 <option value="system">System</option>
                 <option value="promo">Promo</option>
+                <option value="kyc">KYC</option>
                 <option value="investment">Investment</option>
                 <option value="payout">Payout</option>
               </select>
@@ -115,9 +131,9 @@
                     color: var(--admin-text-muted);
                     display: block;
                     margin-bottom: 4px;
-                  ">Title</label>
+                  " for="broadcast-title">Title</label>
               <input type="text" id="broadcast-title" placeholder="Notification title…" class="admin-input"
-                style="width: 100%" />
+                maxlength="255" autocomplete="off" style="width: 100%" />
             </div>
             <div style="flex: 2; min-width: 250px">
               <label style="
@@ -126,11 +142,11 @@
                     color: var(--admin-text-muted);
                     display: block;
                     margin-bottom: 4px;
-                  ">Message</label>
+                  " for="broadcast-message">Message</label>
               <input type="text" id="broadcast-message" placeholder="Notification message…" class="admin-input"
-                style="width: 100%" />
+                maxlength="2000" autocomplete="off" style="width: 100%" />
             </div>
-            <button class="admin-btn admin-btn--primary" id="broadcast-send-btn">
+            <button class="admin-btn admin-btn--primary" id="broadcast-send-btn" type="button">
               <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 2L9 11M18 2l-5 15-3-7-7-3 15-5z" />
@@ -138,6 +154,11 @@
               Send to All
             </button>
           </div>
+          <div id="broadcast-status" role="status" aria-live="polite" style="
+                margin-top: 12px;
+                font-size: 12px;
+                color: var(--admin-text-muted);
+              "></div>
         </div>
 
         <!-- Filters & Table -->
@@ -154,9 +175,9 @@
                 stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="6" />
                 <path d="M21 21l-4.35-4.35" />
-              </svg><input type="text" placeholder="Search…" id="notif-search" />
+              </svg><input type="text" placeholder="Search…" id="notif-search" aria-label="Search notifications" />
             </div>
-            <select id="filter-type" class="admin-select">
+            <select id="filter-type" class="admin-select" aria-label="Filter by notification type">
               <option value="">All Types</option>
               <option value="system">System</option>
               <option value="kyc">KYC</option>
@@ -164,7 +185,7 @@
               <option value="payout">Payout</option>
               <option value="promo">Promo</option>
             </select>
-            <select id="filter-read" class="admin-select">
+            <select id="filter-read" class="admin-select" aria-label="Filter by read status">
               <option value="">All</option>
               <option value="false">Unread</option>
               <option value="true">Read</option>
@@ -181,11 +202,11 @@
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th data-sort="user_name">User</th>
-                  <th data-sort="type">Type</th>
+                  <th data-sort="user_name" aria-sort="none"><button type="button" class="notif-sort-btn">User</button></th>
+                  <th data-sort="type" aria-sort="none"><button type="button" class="notif-sort-btn">Type</button></th>
                   <th>Title</th>
-                  <th data-sort="is_read">Read</th>
-                  <th data-sort="created_at">Date</th>
+                  <th data-sort="is_read" aria-sort="none"><button type="button" class="notif-sort-btn">Read</button></th>
+                  <th data-sort="created_at" aria-sort="descending"><button type="button" class="notif-sort-btn">Date</button></th>
                 </tr>
               </thead>
               <tbody id="notif-table-body">

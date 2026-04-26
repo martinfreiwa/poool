@@ -382,6 +382,11 @@
 
     // Dynamically update notification bell badge count across all admin pages
     async function updateNotificationBadges() {
+        const canFetchBadge = (permission) => {
+            const perms = window.adminPermissions;
+            return !!(perms && perms.loaded && perms.has(permission));
+        };
+
         try {
             // Fetch unread notification count
             const notifResp = await fetch("/api/admin/notifications");
@@ -464,6 +469,8 @@
 
         try {
             // Fetch pending affiliate applications count for sidebar badge
+            if (!canFetchBadge("affiliates.manage")) return;
+
             const affResp = await fetch("/api/admin/rewards/affiliates/pending");
             if (affResp.ok) {
                 const data = await affResp.json();
@@ -493,6 +500,7 @@
             setTimeout(updateNotificationBadges, 500);
         });
     }
+    document.addEventListener("admin:permissions-loaded", updateNotificationBadges);
 
     // ==== Sidebar Scroll Persistence ====
     // Save sidebar scroll position before navigating away

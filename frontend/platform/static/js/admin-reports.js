@@ -155,9 +155,9 @@ const REPORTS = [
     group: "tax",
     icon: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v16m-6-16v16M2 10h16M2 6h16M2 14h16" /></svg>',
     title: "Annual Investor P&L",
-    format: "PDF",
+    format: "CSV",
     accentColor: "var(--admin-accent)",
-    desc: "Calculated annual P&L, capital gains, and dividends for all investors. Tax-ready format.",
+    desc: "Calculated annual P&L, capital gains, and dividends for all investors. CSV export until PDF generation is available.",
     endpoint: "/api/admin/reports/tax-pl",
   },
   {
@@ -225,10 +225,11 @@ function reportCard(r) {
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2v9M4 8l4 4 4-4"/><path d="M2 14h12"/></svg>
                     Download ${r.format}
                 </button>
-                <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="previewReport('${r.id}')" title="Preview first 5 rows">
+                <button class="admin-btn admin-btn--secondary admin-btn--sm" onclick="previewReport('${r.id}')" title="Preview first 5 rows" aria-label="Preview ${esc(r.title)}">
                     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M1 8s3-6 7-6 7 6 7 6-3 6-7 6-7-6-7-6z"/><circle cx="8" cy="8" r="2.5"/></svg>
                 </button>
             </div>
+            <div id="report-status-${r.id}" aria-live="polite" style="min-height:16px;font-size:11px;color:var(--admin-text-muted);"></div>
         </div>
     `;
 }
@@ -238,61 +239,60 @@ async function downloadReport(id) {
   const report = REPORTS.find((r) => r.id === id);
   if (!report) return;
   const btn = document.getElementById(`dl-btn-${id}`);
+  if (!btn) return;
   const origHTML = btn.innerHTML;
+  setReportStatus(id, `Generating ${report.title}...`, "info");
+  setPageStatus(`Generating ${report.title}...`, "info");
   btn.innerHTML =
     '<div style="width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;vertical-align:middle;margin-right:4px;"></div>Generating…';
   btn.disabled = true;
-  const dateFrom = document.getElementById("range-from")?.value || "";
-  const dateTo = document.getElementById("range-to")?.value || "";
   try {
-    const url = `${report.endpoint}${dateFrom ? `?from=${dateFrom}&to=${dateTo}` : ""}`;
-    let resp = await fetch(url);
-    if (!resp.ok && report.fallbackEndpoint) {
-      resp = await fetch(
-        `${report.fallbackEndpoint}${dateFrom ? `?from=${dateFrom}&to=${dateTo}` : ""}`,
-      );
-    }
-    if (report.format === "PDF") {
-      window.open(url, "_blank");
-      showToast(`Generating PDF... check your browser downloads.`, "info");
-    } else if (report.format === "JSON") {
-      const data = await resp.json();
+    const data = await fetchReport(report);
+    const dateFrom = document.getElementById("range-from")?.value || "";
+    const dateTo = document.getElementById("range-to")?.value || "";
+    if (report.format === "JSON") {
       downloadJSON(data, `poool_${id}_${dateFrom}_${dateTo}.json`);
       showToast(`${report.title} downloaded!`, "success");
+      setReportStatus(id, `${report.title} downloaded.`, "success");
+      setPageStatus(`${report.title} downloaded.`, "success");
     } else {
-      const data = await resp.json();
       const rows = extractRows(data);
+      if (!rows.length) {
+        throw new Error("No rows available to export.");
+      }
       downloadCSV(rows, `poool_${id}_${dateFrom}_${dateTo}.csv`);
       showToast(`${report.title} downloaded!`, "success");
+      setReportStatus(id, `${report.title} downloaded.`, "success");
+      setPageStatus(`${report.title} downloaded.`, "success");
     }
   } catch (e) {
-    showToast(`Failed to generate ${report.title}.`, "danger");
+    const message = e?.message || `Failed to generate ${report.title}.`;
+    showToast(message, "danger");
+    setReportStatus(id, message, "danger");
+    setPageStatus(message, "danger");
+  } finally {
+    btn.innerHTML = origHTML;
+    btn.disabled = false;
   }
-  btn.innerHTML = origHTML;
-  btn.disabled = false;
 }
 
 // ─── Preview ──────────────────────────────────────────────────────────────────
 async function previewReport(id) {
   const report = REPORTS.find((r) => r.id === id);
   if (!report) return;
+  setReportStatus(id, `Loading preview for ${report.title}...`, "info");
+  setPageStatus(`Loading preview for ${report.title}...`, "info");
   document.getElementById("preview-title").textContent =
     `Preview: ${report.title}`;
-  const dateFrom = document.getElementById("range-from")?.value || "";
-  const dateTo = document.getElementById("range-to")?.value || "";
   let rows = [];
   try {
-    const url = `${report.endpoint}${dateFrom ? `?from=${dateFrom}&to=${dateTo}` : ""}`;
-    let resp = await fetch(url);
-    if (!resp.ok && report.fallbackEndpoint) {
-      const fallbackUrl = `${report.fallbackEndpoint}${dateFrom ? `?from=${dateFrom}&to=${dateTo}` : ""}`;
-      resp = await fetch(fallbackUrl);
-    }
-    if (!resp.ok) throw new Error();
-    const data = await resp.json();
+    const data = await fetchReport(report, "preview");
     rows = extractRows(data).slice(0, 5);
   } catch (e) {
-    showToast(`Failed to load preview for ${report.title}.`, "danger");
+    const message = e?.message || `Failed to load preview for ${report.title}.`;
+    showToast(message, "danger");
+    setReportStatus(id, message, "danger");
+    setPageStatus(message, "danger");
     return;
   }
   const section = document.getElementById("preview-section");
@@ -310,16 +310,50 @@ async function previewReport(id) {
       `Showing ${rows.length} of ${report.title} records. Set date range above before downloading.`;
     section.style.display = "";
     section.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    setReportStatus(id, `Preview loaded for ${report.title}.`, "success");
+    setPageStatus(`Preview loaded for ${report.title}.`, "success");
   } else {
-    showToast(`No data available for ${report.title}.`, "warning");
+    const message = `No data available for ${report.title}.`;
+    showToast(message, "warning");
+    setReportStatus(id, message, "warning");
+    setPageStatus(message, "warning");
   }
 }
 
 // ─── Data helpers ─────────────────────────────────────────────────────────────
+async function fetchReport(report, mode = "export") {
+  const dateFrom = document.getElementById("range-from")?.value || "";
+  const dateTo = document.getElementById("range-to")?.value || "";
+  const params = new URLSearchParams();
+  if (dateFrom) params.set("from", dateFrom);
+  if (dateTo) params.set("to", dateTo);
+  if (mode === "preview") params.set("mode", "preview");
+
+  const url = `${report.endpoint}${params.toString() ? `?${params.toString()}` : ""}`;
+  const resp = await fetch(url, { headers: { Accept: "application/json" } });
+  let payload = null;
+  try {
+    payload = await resp.json();
+  } catch (_e) {
+    // Keep the client message generic; server logs hold details.
+  }
+
+  if (!resp.ok) {
+    throw new Error(payload?.error || `Failed to generate ${report.title}.`);
+  }
+
+  if (!payload || !Array.isArray(payload.rows)) {
+    throw new Error(`Unexpected response while generating ${report.title}.`);
+  }
+
+  return payload;
+}
+
 function extractRows(data) {
   // The new /api/admin/reports/:type API returns { report_type, date_from, date_to, rows }
   if (data && Array.isArray(data.rows)) return data.rows;
   if (Array.isArray(data)) return data;
+  if (!data || typeof data !== "object") return [];
   const key = Object.keys(data).find(
     (k) => Array.isArray(data[k]) && data[k].length > 0,
   );
@@ -333,10 +367,10 @@ function downloadCSV(rows, filename) {
   }
   const headers = Object.keys(rows[0]);
   const csv = [
-    headers.join(","),
+    headers.map(csvCell).join(","),
     ...rows.map((r) =>
       headers
-        .map((h) => `"${String(r[h] ?? "").replace(/"/g, '""')}"`)
+        .map((h) => csvCell(r[h]))
         .join(","),
     ),
   ].join("\n");
@@ -352,15 +386,46 @@ function downloadJSON(data, filename) {
 
 function triggerDownload(blob, filename) {
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob);
+  a.href = url;
   a.download = filename;
   a.click();
+  URL.revokeObjectURL(url);
 }
 
 function showToast(msg, type = "success") {
   if(window.showPooolToast) {
     window.showPooolToast(null, msg, type);
   }
+}
+
+function setPageStatus(message, type = "info") {
+  const el = document.getElementById("reports-status");
+  if (!el) return;
+  el.textContent = message;
+  el.style.display = "";
+  el.style.borderColor = statusColor(type);
+  el.style.color = statusColor(type);
+}
+
+function setReportStatus(id, message, type = "info") {
+  const el = document.getElementById(`report-status-${id}`);
+  if (!el) return;
+  el.textContent = message;
+  el.style.color = statusColor(type);
+}
+
+function statusColor(type) {
+  if (type === "success") return "var(--admin-success)";
+  if (type === "danger") return "var(--admin-danger)";
+  if (type === "warning") return "var(--admin-warning)";
+  return "var(--admin-text-muted)";
+}
+
+function csvCell(value) {
+  let text = String(value ?? "");
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
 }
 
 function esc(s) {

@@ -5,6 +5,9 @@ use axum::{extract::State, Json};
 use serde::Serialize;
 use sqlx::PgPool;
 
+const BLOCKCHAIN_CONTROL_PERMISSION: &str = "blockchain.manage";
+const BLOCKCHAIN_TOKENIZE_PERMISSION: &str = "blockchain.tokenize";
+
 // ═══════════════════════════════════════════════════════════════
 // ── TYPES ─────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
@@ -70,6 +73,7 @@ pub struct CloneDetailResponse {
     pub total_supply: i32,
     pub tokens_sold: i32,
     pub is_paused: bool,
+    pub pause_state: String,
     pub holders: Vec<CloneHolder>,
 }
 
@@ -107,6 +111,9 @@ pub struct TokenizeCheckResponse {
     pub token_price_cents: i64,
     pub total_value_cents: i64,
     pub funding_status: String,
+    pub chain_network: String,
+    pub explorer_url: String,
+    pub metadata_uri: String,
     pub already_tokenized: bool,
     pub chain_token_id: Option<String>,
     pub chain_contract_address: Option<String>,
@@ -120,13 +127,386 @@ pub struct TokenizeChecks {
     pub asset_approved: bool,
     pub has_token_supply: bool,
     pub has_price: bool,
+    pub legal_documents_present: bool,
+    pub funding_ready: bool,
+    pub metadata_uri_ready: bool,
+    pub chain_configured: bool,
+    pub operator_can_tokenize: bool,
     pub not_already_tokenized: bool,
     pub all_passed: bool,
+}
+
+/// Candidate asset for the generic tokenization page picker.
+#[derive(Serialize)]
+pub struct TokenizeCandidate {
+    pub asset_id: String,
+    pub title: String,
+    pub funding_status: String,
+    pub tokens_total: i32,
+    pub token_price_cents: i64,
+    pub already_tokenized: bool,
+}
+
+/// Response for tokenizable asset candidates.
+#[derive(Serialize)]
+pub struct TokenizeCandidatesResponse {
+    pub assets: Vec<TokenizeCandidate>,
 }
 
 // ═══════════════════════════════════════════════════════════════
 // ── GET /api/admin/blockchain/treasury ────────────────────────
 // ═══════════════════════════════════════════════════════════════
+
+fn validate_contract_address(address: &str) -> Result<String, ApiError> {
+    let trimmed = address.trim();
+    let is_valid = trimmed.len() == 42
+        && trimmed.starts_with("0x")
+        && trimmed[2..].chars().all(|c| c.is_ascii_hexdigit());
+
+    if is_valid {
+        Ok(trimmed.to_ascii_lowercase())
+    } else {
+        Err(ApiError::BadRequest(
+            "Invalid contract address format".to_string(),
+        ))
+    }
+}
+
+async fn has_exact_permission(
+    pool: &PgPool,
+    user_id: uuid::Uuid,
+    permission: &str,
+) -> Result<bool, ApiError> {
+    sqlx::query_scalar::<_, bool>(
+        r#"
+        SELECT EXISTS(
+            SELECT 1
+            FROM user_roles ur
+            JOIN admin_permissions ap ON ap.role_id = ur.role_id
+            WHERE ur.user_id = $1
+              AND ur.is_active = TRUE
+              AND ap.permission = $2
+        )
+        "#,
+    )
+    .bind(user_id)
+    .bind(permission)
+    .fetch_one(pool)
+    .await
+    .map_err(ApiError::from)
+}
+
+pub async fn has_blockchain_tokenize_permission(pool: &PgPool, user_id: uuid::Uuid) -> bool {
+    has_exact_permission(pool, user_id, BLOCKCHAIN_TOKENIZE_PERMISSION)
+        .await
+        .unwrap_or(false)
+}
+
+async fn require_blockchain_tokenize_permission(
+    admin: &AdminUser,
+    pool: &PgPool,
+) -> Result<(), ApiError> {
+    if has_exact_permission(pool, admin.user.id, BLOCKCHAIN_TOKENIZE_PERMISSION).await? {
+        Ok(())
+    } else {
+        Err(ApiError::Forbidden(format!(
+            "Missing permission: {}",
+            BLOCKCHAIN_TOKENIZE_PERMISSION
+        )))
+    }
+}
+
+async fn require_blockchain_control_permission(
+    admin: &AdminUser,
+    pool: &PgPool,
+) -> Result<(), ApiError> {
+    if admin.is_super_admin(pool).await
+        || has_exact_permission(pool, admin.user.id, BLOCKCHAIN_CONTROL_PERMISSION).await?
+    {
+        Ok(())
+    } else {
+        Err(ApiError::Forbidden(format!(
+            "Missing permission: {}",
+            BLOCKCHAIN_CONTROL_PERMISSION
+        )))
+    }
+}
+
+async fn fetch_clone_asset(
+    pool: &PgPool,
+    normalized_address: &str,
+) -> Result<(uuid::Uuid, String, i32, i32, Option<bool>), ApiError> {
+    sqlx::query_as::<_, (uuid::Uuid, String, i32, i32, Option<bool>)>(
+        r#"
+        SELECT a.id, a.title, a.tokens_total, a.tokens_available, c.is_paused
+        FROM assets a
+        LEFT JOIN chain_contract_controls c
+          ON LOWER(c.contract_address) = LOWER(a.chain_contract_address)
+        WHERE LOWER(a.chain_contract_address) = LOWER($1)
+        "#,
+    )
+    .bind(normalized_address)
+    .fetch_optional(pool)
+    .await
+    .map_err(ApiError::from)?
+    .ok_or_else(|| ApiError::NotFound("EIP-1167 Clone not found mapped to this address".into()))
+}
+
+fn parse_cast_tx_hash(stdout: &str) -> String {
+    serde_json::from_str::<serde_json::Value>(stdout)
+        .ok()
+        .and_then(|v| {
+            v.get("transactionHash")
+                .and_then(|h| h.as_str().map(String::from))
+        })
+        .unwrap_or_else(|| stdout.trim().to_string())
+}
+
+fn explorer_url_for_network(network: &str) -> &'static str {
+    match network {
+        "polygon" | "polygon_mainnet" => "https://polygonscan.com",
+        _ => "https://amoy.polygonscan.com",
+    }
+}
+
+fn chain_tokenize_mock_enabled() -> bool {
+    std::env::var("CHAIN_TOKENIZE_MOCK")
+        .map(|value| value.eq_ignore_ascii_case("true") || value == "1")
+        .unwrap_or(false)
+}
+
+fn chain_configured_for_tokenize() -> bool {
+    chain_tokenize_mock_enabled()
+        || (std::env::var("CHAIN_CONTRACT_ADDRESS").is_ok()
+            && std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").is_ok()
+            && std::env::var("CHAIN_SETTLEMENT_ADDRESS").is_ok())
+}
+
+fn parse_clone_address_from_receipt(receipt_val: &serde_json::Value) -> Result<String, ApiError> {
+    let clone_address = receipt_val
+        .get("logs")
+        .and_then(|logs| logs.as_array())
+        .and_then(|logs| {
+            logs.iter().find_map(|log| {
+                let topics = log.get("topics")?.as_array()?;
+                if topics.len() < 2 {
+                    return None;
+                }
+                let topic0 = topics[0].as_str()?;
+                if topic0 != "0xf54b4b9b8f2bef47422e0fed45f313d33ca3c25388cb5034358aecb5dcd85714" {
+                    return None;
+                }
+                let addr_topic = topics[1].as_str()?;
+                if addr_topic.len() == 66 && addr_topic.starts_with("0x") {
+                    return Some(format!("0x{}", &addr_topic[26..]));
+                }
+                None
+            })
+        })
+        .ok_or_else(|| {
+            ApiError::Internal(
+                "Tokenization transaction did not emit a parseable clone address".to_string(),
+            )
+        })?;
+
+    validate_contract_address(&clone_address)
+}
+
+fn execute_asset_tokenization(
+    factory_address: &str,
+    settlement_address: &str,
+    metadata_uri: &str,
+    initial_supply: i32,
+) -> Result<(String, String, bool), ApiError> {
+    if chain_tokenize_mock_enabled() {
+        let tx_suffix = uuid::Uuid::new_v4().simple().to_string();
+        let clone_suffix = uuid::Uuid::new_v4().simple().to_string();
+        return Ok((
+            format!("0x{tx_suffix:0<64}"),
+            format!("0x{clone_suffix:0<40}"),
+            true,
+        ));
+    }
+
+    let private_key = std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").map_err(|_| {
+        ApiError::Internal("CHAIN_SETTLEMENT_PRIVATE_KEY not configured".to_string())
+    })?;
+    let rpc_url = std::env::var("CHAIN_RPC_URL")
+        .unwrap_or_else(|_| "https://rpc-amoy.polygon.technology".to_string());
+
+    let output = std::process::Command::new("cast")
+        .args([
+            "send",
+            factory_address,
+            "deployAsset(address,string,uint256,address)",
+            settlement_address,
+            metadata_uri,
+            &initial_supply.to_string(),
+            settlement_address,
+            "--private-key",
+            &private_key,
+            "--rpc-url",
+            &rpc_url,
+            "--json",
+        ])
+        .output()
+        .map_err(|e| ApiError::Internal(format!("Failed to execute cast: {}", e)))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(ApiError::Internal(format!(
+            "Tokenization failed: {}",
+            stderr
+        )));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let receipt_val: serde_json::Value = serde_json::from_str(&stdout).map_err(|e| {
+        ApiError::Internal(format!(
+            "Tokenization returned unparseable receipt JSON: {}",
+            e
+        ))
+    })?;
+    let tx_hash = receipt_val
+        .get("transactionHash")
+        .and_then(|h| h.as_str().map(String::from))
+        .ok_or_else(|| {
+            ApiError::Internal("Tokenization receipt missing transaction hash".to_string())
+        })?;
+    let clone_address = parse_clone_address_from_receipt(&receipt_val)?;
+
+    Ok((tx_hash, clone_address, false))
+}
+
+async fn mark_tokenization_job_failed(pool: &PgPool, job_id: uuid::Uuid, message: &str) {
+    if let Err(err) = sqlx::query(
+        r#"
+        UPDATE asset_tokenization_jobs
+        SET status = 'failed',
+            error_message = $2,
+            updated_at = NOW(),
+            completed_at = NOW()
+        WHERE id = $1
+        "#,
+    )
+    .bind(job_id)
+    .bind(message.chars().take(2000).collect::<String>())
+    .execute(pool)
+    .await
+    {
+        tracing::error!("Failed to mark tokenization job failed: {}", err);
+    }
+}
+
+fn execute_clone_control(address: &str, method: &str) -> Result<(String, bool), ApiError> {
+    if std::env::var("CHAIN_CONTROL_MOCK")
+        .map(|value| value.eq_ignore_ascii_case("true") || value == "1")
+        .unwrap_or(false)
+    {
+        let suffix = uuid::Uuid::new_v4().simple().to_string();
+        return Ok((format!("0x{suffix:0<64}"), true));
+    }
+
+    let private_key = std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").map_err(|_| {
+        ApiError::Internal("CHAIN_SETTLEMENT_PRIVATE_KEY not configured".to_string())
+    })?;
+    let rpc_url = std::env::var("CHAIN_RPC_URL")
+        .unwrap_or_else(|_| "https://rpc-amoy.polygon.technology".to_string());
+
+    let selector = match method {
+        "pause" => "pause()",
+        "unpause" => "unpause()",
+        _ => {
+            return Err(ApiError::BadRequest(
+                "Unsupported blockchain control action".to_string(),
+            ))
+        }
+    };
+
+    let output = std::process::Command::new("cast")
+        .args([
+            "send",
+            address,
+            selector,
+            "--private-key",
+            &private_key,
+            "--rpc-url",
+            &rpc_url,
+            "--json",
+        ])
+        .output()
+        .map_err(|e| ApiError::Internal(format!("Failed to execute cast: {}", e)))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(ApiError::Internal(format!(
+            "Clone {} failed: {}",
+            method, stderr
+        )));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    Ok((parse_cast_tx_hash(&stdout), false))
+}
+
+async fn persist_clone_control_result(
+    pool: &PgPool,
+    admin: &AdminUser,
+    asset_id: uuid::Uuid,
+    address: &str,
+    action: &str,
+    is_paused: bool,
+    tx_hash: &str,
+    mocked: bool,
+) -> Result<(), ApiError> {
+    let mut tx = pool.begin().await.map_err(ApiError::from)?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO chain_contract_controls (
+            contract_address, asset_id, is_paused, last_action,
+            last_tx_hash, updated_by, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        ON CONFLICT (contract_address) DO UPDATE SET
+            asset_id = EXCLUDED.asset_id,
+            is_paused = EXCLUDED.is_paused,
+            last_action = EXCLUDED.last_action,
+            last_tx_hash = EXCLUDED.last_tx_hash,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = NOW()
+        "#,
+    )
+    .bind(address)
+    .bind(asset_id)
+    .bind(is_paused)
+    .bind(action)
+    .bind(tx_hash)
+    .bind(admin.user.id)
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
+        VALUES ($1, $2, 'contract', $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(format!("blockchain.clone_{}", action))
+    .bind(asset_id)
+    .bind(serde_json::json!({
+        "contract_address": address,
+        "tx_hash": tx_hash,
+        "action": action,
+        "is_paused": is_paused,
+        "mocked": mocked,
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
+
+    tx.commit().await.map_err(ApiError::from)
+}
 
 /// Blockchain treasury overview — wallet, contracts, batches, chain stats.
 pub async fn api_admin_blockchain_treasury(
@@ -251,22 +631,16 @@ pub async fn api_admin_blockchain_treasury(
 
 /// Fetch EIP-1167 Clone details including its holder list mapped from DB.
 pub async fn api_admin_blockchain_clone_detail(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(address): axum::extract::Path<String>,
 ) -> Result<Json<CloneDetailResponse>, ApiError> {
     let pool = &state.db;
+    admin.require_permission(pool, "treasury.read").await?;
+    let normalized_address = validate_contract_address(&address)?;
 
     // 1. Find asset by contract address
-    let asset = sqlx::query_as::<_, (uuid::Uuid, String, i32, i32)>(
-        r#"SELECT id, title, tokens_total, tokens_available 
-           FROM assets WHERE LOWER(chain_contract_address) = LOWER($1)"#,
-    )
-    .bind(&address)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| ApiError::Internal(format!("DB Error: {}", e)))?
-    .ok_or_else(|| ApiError::NotFound("EIP-1167 Clone not found mapped to this address".into()))?;
+    let asset = fetch_clone_asset(pool, &normalized_address).await?;
 
     let asset_id = asset.0;
     let tokens_sold = asset.2 - asset.3;
@@ -282,17 +656,20 @@ pub async fn api_admin_blockchain_clone_detail(
             chrono::DateTime<chrono::Utc>,
         ),
     >(
-        r#"SELECT ob.user_id, u.email, u.chain_wallet_address, ob.balance, ob.last_synced_at 
+        r#"SELECT ob.user_id, u.email, u.chain_wallet_address, ob.balance, ob.last_synced_at
            FROM onchain_balances ob
            JOIN users u ON ob.user_id = u.id
-           WHERE ob.asset_id = $1 AND ob.balance > 0
+           WHERE ob.asset_id = $1
+             AND ob.balance > 0
+             AND u.chain_wallet_address IS NOT NULL
+             AND u.chain_wallet_address <> ''
            ORDER BY ob.balance DESC
            LIMIT 100"#,
     )
     .bind(asset_id)
     .fetch_all(pool)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::from)?;
 
     let holders = holders_rows
         .into_iter()
@@ -305,15 +682,61 @@ pub async fn api_admin_blockchain_clone_detail(
         })
         .collect();
 
-    // In a real app we'd fetch actual IS_PAUSED state from RPC, but we return false to keep it fast
+    let pause_state = match asset.4 {
+        Some(true) => "paused",
+        Some(false) => "live",
+        None => "unknown",
+    }
+    .to_string();
+
     Ok(Json(CloneDetailResponse {
         asset_id: asset_id.to_string(),
         title: asset.1,
-        contract_address: address,
+        contract_address: normalized_address,
         total_supply: asset.2,
         tokens_sold,
-        is_paused: false,
+        is_paused: asset.4.unwrap_or(false),
+        pause_state,
         holders,
+    }))
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── GET /api/admin/blockchain/tokenize-candidates ─────────────
+// ═══════════════════════════════════════════════════════════════
+
+/// List assets that can be inspected from the generic tokenization page.
+pub async fn api_admin_blockchain_tokenize_candidates(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<TokenizeCandidatesResponse>, ApiError> {
+    require_blockchain_tokenize_permission(&admin, &state.db).await?;
+
+    let rows = sqlx::query_as::<_, (uuid::Uuid, String, String, i32, i64, Option<String>)>(
+        r#"
+        SELECT id, title, funding_status, tokens_total, token_price_cents, chain_token_id
+        FROM assets
+        WHERE published = TRUE
+        ORDER BY chain_token_id IS NOT NULL, updated_at DESC, created_at DESC
+        LIMIT 100
+        "#,
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(ApiError::from)?;
+
+    Ok(Json(TokenizeCandidatesResponse {
+        assets: rows
+            .into_iter()
+            .map(|row| TokenizeCandidate {
+                asset_id: row.0.to_string(),
+                title: row.1,
+                funding_status: row.2,
+                tokens_total: row.3,
+                token_price_cents: row.4,
+                already_tokenized: row.5.is_some(),
+            })
+            .collect(),
     }))
 }
 
@@ -323,11 +746,12 @@ pub async fn api_admin_blockchain_clone_detail(
 
 /// Check tokenization eligibility for an asset.
 pub async fn api_admin_blockchain_tokenize_check(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
     axum::extract::Path(asset_id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<Json<TokenizeCheckResponse>, ApiError> {
     let pool = &state.db;
+    require_blockchain_tokenize_permission(&admin, pool).await?;
 
     let row = sqlx::query_as::<
         _,
@@ -342,12 +766,14 @@ pub async fn api_admin_blockchain_tokenize_check(
             Option<String>,
             Option<String>,
             bool,
+            i64,
         ),
     >(
         r#"SELECT 
             id, title, tokens_total, token_price_cents, total_value_cents,
             funding_status, chain_token_id, chain_contract_address, chain_tx_hash,
-            published
+            published,
+            (SELECT COUNT(*) FROM asset_documents ad WHERE ad.asset_id = assets.id) AS document_count
         FROM assets WHERE id = $1"#,
     )
     .bind(asset_id)
@@ -360,8 +786,29 @@ pub async fn api_admin_blockchain_tokenize_check(
     let asset_approved = row.9; // published
     let has_token_supply = row.2 > 0;
     let has_price = row.3 > 0;
+    let legal_documents_present = row.10 > 0;
+    let funding_ready = matches!(
+        row.5.as_str(),
+        "funding_open" | "funding_in_progress" | "funded" | "rented"
+    );
+    let network = std::env::var("CHAIN_NETWORK").unwrap_or_else(|_| "polygon_amoy".to_string());
+    let metadata_uri = format!(
+        "https://platform.poool.app/api/assets/{}/metadata.json",
+        asset_id
+    );
+    let metadata_uri_ready = true;
+    let chain_configured = chain_configured_for_tokenize();
+    let operator_can_tokenize = true;
     let not_already_tokenized = !already_tokenized;
-    let all_passed = asset_approved && has_token_supply && has_price && not_already_tokenized;
+    let all_passed = asset_approved
+        && has_token_supply
+        && has_price
+        && legal_documents_present
+        && funding_ready
+        && metadata_uri_ready
+        && chain_configured
+        && operator_can_tokenize
+        && not_already_tokenized;
 
     Ok(Json(TokenizeCheckResponse {
         asset_id: row.0.to_string(),
@@ -370,6 +817,9 @@ pub async fn api_admin_blockchain_tokenize_check(
         token_price_cents: row.3,
         total_value_cents: row.4,
         funding_status: row.5,
+        chain_network: network.clone(),
+        explorer_url: explorer_url_for_network(&network).to_string(),
+        metadata_uri,
         already_tokenized,
         chain_token_id: row.6,
         chain_contract_address: row.7,
@@ -377,6 +827,11 @@ pub async fn api_admin_blockchain_tokenize_check(
             asset_approved,
             has_token_supply,
             has_price,
+            legal_documents_present,
+            funding_ready,
+            metadata_uri_ready,
+            chain_configured,
+            operator_can_tokenize,
             not_already_tokenized,
             all_passed,
         },
@@ -397,15 +852,24 @@ pub async fn api_admin_blockchain_tokenize(
     axum::extract::Path(asset_id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let pool = &state.db;
+    require_blockchain_tokenize_permission(&admin, pool).await?;
 
-    // 1. Verify asset exists, is approved, has price/supply, and not already tokenized
-    let asset = sqlx::query_as::<_, (uuid::Uuid, String, i32, i64, bool, Option<String>)>(
-        "SELECT id, title, tokens_total, token_price_cents, published, chain_token_id FROM assets WHERE id = $1",
+    // 1. Claim an idempotency guard before any irreversible on-chain call.
+    let mut claim_tx = pool.begin().await.map_err(ApiError::from)?;
+    let asset = sqlx::query_as::<_, (uuid::Uuid, String, i32, i64, bool, Option<String>, String, i64)>(
+        r#"
+        SELECT id, title, tokens_total, token_price_cents, published, chain_token_id,
+               funding_status,
+               (SELECT COUNT(*) FROM asset_documents ad WHERE ad.asset_id = assets.id) AS document_count
+        FROM assets
+        WHERE id = $1
+        FOR UPDATE
+        "#,
     )
     .bind(asset_id)
-    .fetch_optional(pool)
+    .fetch_optional(&mut *claim_tx)
     .await
-    .map_err(|e| ApiError::Internal(format!("DB error: {}", e)))?
+    .map_err(ApiError::from)?
     .ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
 
     if asset.5.is_some() {
@@ -435,17 +899,73 @@ pub async fn api_admin_blockchain_tokenize(
         ));
     }
 
+    if !matches!(
+        asset.6.as_str(),
+        "funding_open" | "funding_in_progress" | "funded" | "rented"
+    ) {
+        return Err(ApiError::BadRequest(
+            "Asset funding status is not ready for tokenization".to_string(),
+        ));
+    }
+
+    if asset.7 <= 0 {
+        return Err(ApiError::BadRequest(
+            "At least one asset document is required before tokenization".to_string(),
+        ));
+    }
+
+    let inserted_job = sqlx::query_scalar::<_, uuid::Uuid>(
+        r#"
+        INSERT INTO asset_tokenization_jobs (asset_id, requested_by, status)
+        VALUES ($1, $2, 'in_progress')
+        ON CONFLICT (asset_id) WHERE status = 'in_progress' DO NOTHING
+        RETURNING id
+        "#,
+    )
+    .bind(asset_id)
+    .bind(admin.user.id)
+    .fetch_optional(&mut *claim_tx)
+    .await
+    .map_err(ApiError::from)?;
+
+    let Some(job_id) = inserted_job else {
+        return Err(ApiError::Conflict(
+            "Tokenization is already in progress for this asset".to_string(),
+        ));
+    };
+
+    claim_tx.commit().await.map_err(ApiError::from)?;
+
     // 2. Get chain config
-    let contract_address = std::env::var("CHAIN_CONTRACT_ADDRESS")
-        .map_err(|_| ApiError::Internal("CHAIN_CONTRACT_ADDRESS not configured".to_string()))?;
-    let private_key = std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").map_err(|_| {
-        ApiError::Internal("CHAIN_SETTLEMENT_PRIVATE_KEY not configured".to_string())
-    })?;
-    let rpc_url = std::env::var("CHAIN_RPC_URL")
-        .unwrap_or_else(|_| "https://rpc-amoy.polygon.technology".to_string());
+    let contract_address = match validate_contract_address(
+        &std::env::var("CHAIN_CONTRACT_ADDRESS")
+            .unwrap_or_else(|_| "0x0000000000000000000000000000000000000001".to_string()),
+    ) {
+        Ok(address) => address,
+        Err(err) => {
+            mark_tokenization_job_failed(pool, job_id, "Invalid CHAIN_CONTRACT_ADDRESS").await;
+            return Err(err);
+        }
+    };
     let network = std::env::var("CHAIN_NETWORK").unwrap_or_else(|_| "polygon_amoy".to_string());
-    let settlement_address = std::env::var("CHAIN_SETTLEMENT_ADDRESS")
-        .map_err(|_| ApiError::Internal("CHAIN_SETTLEMENT_ADDRESS not configured".to_string()))?;
+    let settlement_address = match validate_contract_address(
+        &std::env::var("CHAIN_SETTLEMENT_ADDRESS")
+            .unwrap_or_else(|_| "0x0000000000000000000000000000000000000002".to_string()),
+    ) {
+        Ok(address) => address,
+        Err(err) => {
+            mark_tokenization_job_failed(pool, job_id, "Invalid CHAIN_SETTLEMENT_ADDRESS").await;
+            return Err(err);
+        }
+    };
+
+    if !chain_tokenize_mock_enabled() && std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").is_err() {
+        mark_tokenization_job_failed(pool, job_id, "CHAIN_SETTLEMENT_PRIVATE_KEY not configured")
+            .await;
+        return Err(ApiError::Internal(
+            "CHAIN_SETTLEMENT_PRIVATE_KEY not configured".to_string(),
+        ));
+    }
 
     // 3. (Token ID is always 1 for EIP-1167 clones, so we don't generate one from UUID anymore)
 
@@ -455,74 +975,22 @@ pub async fn api_admin_blockchain_tokenize(
         asset_id
     );
 
-    let output = std::process::Command::new("cast")
-        .args([
-            "send",
-            &contract_address,
-            "deployAsset(address,string,uint256,address)",
-            &settlement_address,  // adminForClone
-            &metadata_uri,        // assetURI
-            &asset.2.to_string(), // initialSupply
-            &settlement_address,  // mintTo
-            "--private-key",
-            &private_key,
-            "--rpc-url",
-            &rpc_url,
-            "--json",
-        ])
-        .output()
-        .map_err(|e| ApiError::Internal(format!("Failed to execute cast: {}", e)))?;
+    let (tx_hash, clone_address, mocked) = match execute_asset_tokenization(
+        &contract_address,
+        &settlement_address,
+        &metadata_uri,
+        asset.2,
+    ) {
+        Ok(result) => result,
+        Err(err) => {
+            mark_tokenization_job_failed(pool, job_id, &format!("{err:?}")).await;
+            return Err(err);
+        }
+    };
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        tracing::error!("⛓️ createAsset failed for {}: {}", asset_id, stderr);
-        return Err(ApiError::Internal(format!(
-            "Tokenization failed: {}",
-            stderr
-        )));
-    }
-
-    // 5. Parse the tx hash and clone address from cast --json output
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let receipt_val: Option<serde_json::Value> = serde_json::from_str(&stdout).ok();
-
-    let tx_hash = receipt_val
-        .as_ref()
-        .and_then(|v| {
-            v.get("transactionHash")
-                .and_then(|h| h.as_str().map(String::from))
-        })
-        .unwrap_or_else(|| stdout.trim().to_string());
-
-    // Extract cloneAddress from the logs.
-    // topic[0] is keccak256("AssetDeployed(address,string,uint256,address)")
-    // topic[1] is the cloneAddress (indexed)
-    let clone_address = receipt_val
-        .as_ref()
-        .and_then(|v| v.get("logs").and_then(|logs| logs.as_array()))
-        .and_then(|logs| {
-            logs.iter().find_map(|log| {
-                let topics = log.get("topics")?.as_array()?;
-                if topics.len() >= 2 {
-                    let topic0 = topics[0].as_str()?;
-                    // Check if event is AssetDeployed(address,string,uint256,address)
-                    if topic0
-                        == "0xf54b4b9b8f2bef47422e0fed45f313d33ca3c25388cb5034358aecb5dcd85714"
-                    {
-                        let addr_topic = topics[1].as_str()?;
-                        // Convert padded topic "0x000000000000000000000000[address]" to "0x[address]"
-                        if addr_topic.len() == 66 {
-                            return Some(format!("0x{}", &addr_topic[26..]));
-                        }
-                    }
-                }
-                None
-            })
-        })
-        .unwrap_or_else(|| contract_address.clone()); // Fallback to factory if parsing fails, but ideally it works
-
-    // 6. Update the asset with on-chain metadata
-    sqlx::query(
+    // 6. Persist chain metadata and mandatory audit record atomically.
+    let mut tx = pool.begin().await.map_err(ApiError::from)?;
+    let updated = sqlx::query(
         r#"UPDATE assets SET
             chain_token_id = $1,
             chain_contract_address = $2,
@@ -530,7 +998,7 @@ pub async fn api_admin_blockchain_tokenize(
             chain_tx_hash = $4,
             chain_metadata_uri = $5,
             updated_at = NOW()
-        WHERE id = $6"#,
+        WHERE id = $6 AND chain_token_id IS NULL"#,
     )
     .bind("1") // token_id is now ALWAYS 1 for AssetFactory EIP-1167 clones
     .bind(&clone_address)
@@ -538,11 +1006,18 @@ pub async fn api_admin_blockchain_tokenize(
     .bind(&tx_hash)
     .bind(&metadata_uri)
     .bind(asset_id)
-    .execute(pool)
+    .execute(&mut *tx)
     .await
-    .map_err(|e| ApiError::Internal(format!("DB update failed: {}", e)))?;
+    .map_err(ApiError::from)?;
 
-    // 7. Audit log
+    if updated.rows_affected() != 1 {
+        mark_tokenization_job_failed(pool, job_id, "Asset was tokenized before final persistence")
+            .await;
+        return Err(ApiError::Conflict(
+            "Asset was tokenized before this request could finish".to_string(),
+        ));
+    }
+
     sqlx::query(
         r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
         VALUES ($1, 'blockchain.tokenize', 'asset', $2, $3)"#,
@@ -555,10 +1030,37 @@ pub async fn api_admin_blockchain_tokenize(
         "factory_address": contract_address,
         "chain_tx_hash": tx_hash,
         "chain_network": network,
+        "mocked": mocked,
     }))
-    .execute(pool)
+    .execute(&mut *tx)
     .await
-    .ok(); // Non-critical
+    .map_err(ApiError::from)?;
+
+    sqlx::query(
+        r#"
+        UPDATE asset_tokenization_jobs
+        SET status = 'succeeded',
+            chain_network = $2,
+            factory_address = $3,
+            clone_address = $4,
+            chain_tx_hash = $5,
+            metadata_uri = $6,
+            updated_at = NOW(),
+            completed_at = NOW()
+        WHERE id = $1
+        "#,
+    )
+    .bind(job_id)
+    .bind(&network)
+    .bind(&contract_address)
+    .bind(&clone_address)
+    .bind(&tx_hash)
+    .bind(&metadata_uri)
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::from)?;
+
+    tx.commit().await.map_err(ApiError::from)?;
 
     tracing::info!(
         "⛓️ ✅ Asset {} tokenized: token_id=1, contract={}, tx={}",
@@ -574,6 +1076,7 @@ pub async fn api_admin_blockchain_tokenize(
         "chain_contract_address": clone_address,
         "chain_tx_hash": tx_hash,
         "chain_network": network,
+        "mocked": mocked,
     })))
 }
 
@@ -1179,62 +1682,26 @@ pub async fn api_admin_blockchain_pause_clone(
     axum::extract::Path(address): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let pool = &state.db;
+    require_blockchain_control_permission(&admin, pool).await?;
+    let normalized_address = validate_contract_address(&address)?;
+    let asset = fetch_clone_asset(pool, &normalized_address).await?;
+    let (tx_hash, mocked) = execute_clone_control(&normalized_address, "pause")?;
 
-    let private_key = std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").map_err(|_| {
-        ApiError::Internal("CHAIN_SETTLEMENT_PRIVATE_KEY not configured".to_string())
-    })?;
-    let rpc_url = std::env::var("CHAIN_RPC_URL")
-        .unwrap_or_else(|_| "https://rpc-amoy.polygon.technology".to_string());
-
-    let output = std::process::Command::new("cast")
-        .args([
-            "send",
-            &address,
-            "pause()",
-            "--private-key",
-            &private_key,
-            "--rpc-url",
-            &rpc_url,
-            "--json",
-        ])
-        .output()
-        .map_err(|e| ApiError::Internal(format!("Failed to execute cast: {}", e)))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(ApiError::Internal(format!(
-            "Clone pause failed: {}",
-            stderr
-        )));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let tx_hash = serde_json::from_str::<serde_json::Value>(&stdout)
-        .ok()
-        .and_then(|v| {
-            v.get("transactionHash")
-                .and_then(|h| h.as_str().map(String::from))
-        })
-        .unwrap_or_else(|| stdout.trim().to_string());
-
-    // Audit log
-    sqlx::query(
-        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
-        VALUES ($1, 'blockchain.clone_pause', 'contract', NULL, $2)"#,
+    persist_clone_control_result(
+        pool,
+        &admin,
+        asset.0,
+        &normalized_address,
+        "pause",
+        true,
+        &tx_hash,
+        mocked,
     )
-    .bind(admin.user.id)
-    .bind(serde_json::json!({
-        "contract_address": address,
-        "tx_hash": tx_hash,
-        "action": "pause",
-    }))
-    .execute(pool)
-    .await
-    .ok();
+    .await?;
 
     tracing::warn!(
         "🚨 CLONE PAUSE on {} executed by admin {} — tx: {}",
-        address,
+        normalized_address,
         admin.user.id,
         tx_hash
     );
@@ -1243,7 +1710,8 @@ pub async fn api_admin_blockchain_pause_clone(
         "success": true,
         "tx_hash": tx_hash,
         "action": "paused",
-        "contract_address": address,
+        "contract_address": normalized_address,
+        "mocked": mocked,
     })))
 }
 
@@ -1254,61 +1722,26 @@ pub async fn api_admin_blockchain_unpause_clone(
     axum::extract::Path(address): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let pool = &state.db;
+    require_blockchain_control_permission(&admin, pool).await?;
+    let normalized_address = validate_contract_address(&address)?;
+    let asset = fetch_clone_asset(pool, &normalized_address).await?;
+    let (tx_hash, mocked) = execute_clone_control(&normalized_address, "unpause")?;
 
-    let private_key = std::env::var("CHAIN_SETTLEMENT_PRIVATE_KEY").map_err(|_| {
-        ApiError::Internal("CHAIN_SETTLEMENT_PRIVATE_KEY not configured".to_string())
-    })?;
-    let rpc_url = std::env::var("CHAIN_RPC_URL")
-        .unwrap_or_else(|_| "https://rpc-amoy.polygon.technology".to_string());
-
-    let output = std::process::Command::new("cast")
-        .args([
-            "send",
-            &address,
-            "unpause()",
-            "--private-key",
-            &private_key,
-            "--rpc-url",
-            &rpc_url,
-            "--json",
-        ])
-        .output()
-        .map_err(|e| ApiError::Internal(format!("Failed to execute cast: {}", e)))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(ApiError::Internal(format!(
-            "Clone unpause failed: {}",
-            stderr
-        )));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let tx_hash = serde_json::from_str::<serde_json::Value>(&stdout)
-        .ok()
-        .and_then(|v| {
-            v.get("transactionHash")
-                .and_then(|h| h.as_str().map(String::from))
-        })
-        .unwrap_or_else(|| stdout.trim().to_string());
-
-    sqlx::query(
-        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_state)
-        VALUES ($1, 'blockchain.clone_unpause', 'contract', NULL, $2)"#,
+    persist_clone_control_result(
+        pool,
+        &admin,
+        asset.0,
+        &normalized_address,
+        "unpause",
+        false,
+        &tx_hash,
+        mocked,
     )
-    .bind(admin.user.id)
-    .bind(serde_json::json!({
-        "contract_address": address,
-        "tx_hash": tx_hash,
-        "action": "unpause",
-    }))
-    .execute(pool)
-    .await
-    .ok();
+    .await?;
 
     tracing::warn!(
         "🔓 CLONE UNPAUSE on {} by admin {} — tx: {}",
-        address,
+        normalized_address,
         admin.user.id,
         tx_hash
     );
@@ -1317,7 +1750,8 @@ pub async fn api_admin_blockchain_unpause_clone(
         "success": true,
         "tx_hash": tx_hash,
         "action": "unpaused",
-        "contract_address": address,
+        "contract_address": normalized_address,
+        "mocked": mocked,
     })))
 }
 

@@ -34,11 +34,19 @@
     .preflight-icon--fail { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
     .preflight-label { font-size: 14px; font-weight: 600; color: var(--admin-text-primary); }
     .preflight-sublabel { font-size: 12px; color: var(--admin-text-muted); margin-top: 2px; }
+    .preflight-copy { flex: 1; min-width: 0; }
+    .preflight-item--separated { border-top: 1px solid var(--admin-border); margin-top: 8px; padding-top: 16px; }
     .deploy-button-area {
       text-align: center; padding: 40px 20px;
       border: 2px dashed var(--admin-border);
       border-radius: var(--admin-radius-lg);
       background: var(--admin-bg); margin-top: 24px;
+    }
+    .deploy-button-area--picker { text-align: left; border-style: solid; background: #fff; }
+    .deploy-icon { color: var(--admin-accent); font-size: 42px; line-height: 1; margin-bottom: 16px; }
+    .deploy-description {
+      font-size: 14px; color: var(--admin-text-secondary); margin: 0 auto 20px;
+      max-width: 560px;
     }
     .deploy-btn-main {
       display: inline-flex; align-items: center; gap: 10px;
@@ -62,6 +70,10 @@
       border-radius: var(--admin-radius-md);
       border: 1px solid var(--admin-border); margin-top: 8px;
     }
+    .deploy-result-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: #10b981; font-weight: 700; }
+    .deploy-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .deploy-result-label { font-size: 11px; font-weight: 600; color: var(--admin-text-muted); text-transform: uppercase; }
+    .deploy-result-footer { margin-top: 16px; }
     .asset-summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
     .asset-summary-item {
       padding: 16px; background: var(--admin-bg);
@@ -78,6 +90,37 @@
     .timeline-step--active { color: var(--admin-accent); background: rgba(99, 102, 241, 0.08); border-radius: 20px; }
     .timeline-step--pending { color: var(--admin-text-muted); }
     .timeline-arrow { color: var(--admin-text-muted); font-size: 12px; margin: 0 4px; }
+    .tokenize-picker-header h2 { margin: 0 0 6px; font-size: 18px; color: var(--admin-text-primary); }
+    .tokenize-picker-header p { margin: 0 0 18px; color: var(--admin-text-muted); font-size: 13px; }
+    .tokenize-candidate-list { display: grid; gap: 10px; }
+    .tokenize-candidate {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 14px 16px; border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-md); text-decoration: none; color: inherit;
+      background: var(--admin-bg);
+    }
+    .tokenize-candidate:hover { border-color: var(--admin-accent); }
+    .tokenize-candidate strong { display: block; font-size: 14px; color: var(--admin-text-primary); }
+    .tokenize-candidate span { font-size: 12px; color: var(--admin-text-muted); }
+    .tokenize-status { font-size: 12px; margin: 12px 0 0; }
+    .tokenize-status--muted { color: var(--admin-text-muted); }
+    .tokenize-status--danger { color: var(--admin-danger); }
+    .tokenize-status--success { color: var(--admin-success); }
+    .tokenize-modal-overlay {
+      position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center;
+      background: rgba(15, 23, 42, 0.5); padding: 20px;
+    }
+    .tokenize-modal {
+      width: min(480px, 100%); background: #fff; border: 1px solid var(--admin-border);
+      border-radius: var(--admin-radius-lg); padding: 22px; box-shadow: 0 20px 48px rgba(15, 23, 42, 0.24);
+    }
+    .tokenize-modal h2 { margin: 0 0 8px; font-size: 18px; color: var(--admin-text-primary); }
+    .tokenize-modal p { margin: 0; color: var(--admin-text-secondary); font-size: 14px; }
+    .tokenize-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    @media (max-width: 820px) {
+      .asset-summary-grid { grid-template-columns: 1fr 1fr; }
+      .deploy-result-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 

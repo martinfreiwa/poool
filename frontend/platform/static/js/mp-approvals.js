@@ -1,192 +1,468 @@
 /**
  * Pending Approvals — mp-approvals.js
- * Fetches orders with status=pending_review from the backend API.
- * Falls back to mock data if the API is unavailable.
+ * Owns the admin review queue for marketplace orders with status=pending_review.
  */
 (function () {
-  'use strict';
+  "use strict";
 
-  const API = '/api/admin/marketplace/approvals';
+  const API = "/api/admin/marketplace/approvals";
   let approvals = [];
-  let usingMockData = false;
+  let activeModal = null;
 
-  // ── Mock Data Fallback ──────────────────────────────────────────
-  const MOCK_APPROVALS = [
-    {
-      id: 'APR-001', user: 'USR-8291', userName: 'Daniel Hartono',
-      asset: 'Bali Villa Resort (BVRT)', side: 'BUY', qty: 2500, price: 52.40,
-      totalSupply: 10000, supplyPct: 25, reason: 'Exceeds 20% single-holder threshold', created: '2h ago',
-    },
-    {
-      id: 'APR-002', user: 'USR-3384', userName: 'Sri Widodo',
-      asset: 'Jakarta Office Tower (JOTX)', side: 'BUY', qty: 800, price: 105.00,
-      totalSupply: 3000, supplyPct: 26.7, reason: 'Order value >$50,000 requires manual review', created: '5h ago',
-    },
-    {
-      id: 'APR-003', user: 'USR-6643', userName: 'Rina Kusuma',
-      asset: 'Surabaya Warehouse (SWHS)', side: 'SELL', qty: 4000, price: 23.75,
-      totalSupply: 15000, supplyPct: 26.7, reason: 'Large sell — >20% of outstanding supply', created: '8h ago',
-    },
-  ];
-
-  function render() {
-    const grid = document.getElementById('approvals-grid');
-    const empty = document.getElementById('approvals-empty');
-    if (!grid) return;
-
-    // Update KPI
-    const kpi = document.getElementById('kpi-pending-count');
-    if (kpi) kpi.textContent = approvals.length;
-
-    if (approvals.length === 0) {
-      grid.style.display = 'none';
-      if (empty) empty.style.display = 'block';
-      return;
+  function el(tag, options = {}) {
+    const node = document.createElement(tag);
+    if (options.className) node.className = options.className;
+    if (options.id) node.id = options.id;
+    if (options.text !== undefined) node.textContent = options.text;
+    if (options.attrs) {
+      Object.entries(options.attrs).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) node.setAttribute(key, String(value));
+      });
     }
-    grid.style.display = 'grid';
-    if (empty) empty.style.display = 'none';
+    if (options.style) Object.assign(node.style, options.style);
+    return node;
+  }
 
-    grid.innerHTML = approvals.map((a, idx) => {
-      // Normalize fields for API vs mock
-      let orderId, user, userName, asset, side, qty, price, total, supplyPct, reason, created;
-      if (usingMockData) {
-        orderId = a.id; user = a.user; userName = a.userName; asset = a.asset;
-        side = a.side; qty = a.qty; price = a.price;
-        total = (a.qty * a.price).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
-        supplyPct = a.supplyPct; reason = a.reason; created = a.created;
-      } else {
-        orderId = a.id.substring(0, 8);
-        user = a.user_id.substring(0, 8);
-        userName = a.user_email ? a.user_email.split('@')[0] : user;
-        asset = a.asset_name || a.asset_id.substring(0, 8);
-        side = a.side.toUpperCase();
-        qty = a.quantity;
-        price = a.price_cents / 100;
-        total = (a.total_value_cents / 100).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
-        supplyPct = '—';
-        reason = 'Flagged for admin review';
-        created = timeAgo(a.created_at);
-      }
-      const sideClass = side === 'BUY' ? 'mp-side-buy' : 'mp-side-sell';
-      return `
-        <div class="mp-approval-card" data-idx="${idx}" id="approval-${idx}" style="animation-delay:${idx * 0.08}s;">
-          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-            <div>
-              <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                <code style="font-size:12px; padding:3px 8px; background:var(--admin-code-bg); border-radius:4px;">${orderId}</code>
-                <span class="admin-badge admin-badge--info"><span class="admin-badge-dot"></span>Pending Review</span>
-                <span style="font-size:12px; color:var(--admin-text-muted);">${created}</span>
-              </div>
-              <h3 style="font-size:18px; font-weight:700; color:var(--admin-text-primary); margin:0 0 4px;">${asset}</h3>
-              <p style="font-size:13px; color:var(--admin-text-secondary); margin:0;">
-                <code style="font-size:11px; padding:2px 6px; background:var(--admin-code-bg); border-radius:4px;">${user}</code>
-                ${userName} wants to <span class="${sideClass}" style="font-weight:700;">${side}</span>
-                <strong>${qty.toLocaleString()}</strong> tokens @ <strong>$${price.toFixed(2)}</strong>
-                = <strong>${total}</strong>
-              </p>
-            </div>
-            <div style="display:flex; gap:10px; align-items:flex-start;">
-              <button class="admin-btn admin-btn--success btn-approve" data-idx="${idx}" style="padding:10px 24px; font-size:14px; font-weight:600;">
-                ✓ Approve
-              </button>
-              <button class="admin-btn admin-btn--danger btn-reject" data-idx="${idx}" style="padding:10px 24px; font-size:14px; font-weight:600;">
-                ✕ Reject
-              </button>
-            </div>
-          </div>
-          <div class="mp-approval-warning">
-            ⚠️ ${reason}.
-          </div>
-          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:12px;">
-            <div>
-              <div style="font-size:11px; color:var(--admin-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Quantity</div>
-              <div style="font-size:16px; font-weight:700; color:var(--admin-text-primary); margin-top:2px;">${qty.toLocaleString()}</div>
-            </div>
-            <div>
-              <div style="font-size:11px; color:var(--admin-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Unit Price</div>
-              <div style="font-size:16px; font-weight:700; color:var(--admin-text-primary); margin-top:2px;">$${price.toFixed(2)}</div>
-            </div>
-            <div>
-              <div style="font-size:11px; color:var(--admin-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Total Value</div>
-              <div style="font-size:16px; font-weight:700; color:var(--admin-text-primary); margin-top:2px;">${total}</div>
-            </div>
-            <div>
-              <div style="font-size:11px; color:var(--admin-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Supply Impact</div>
-              <div style="font-size:16px; font-weight:700; color:var(--admin-danger); margin-top:2px;">${supplyPct}%</div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
+  function getCsrfToken() {
+    if (typeof window.getCsrfToken === "function") return window.getCsrfToken();
+    const value = `; ${document.cookie}`;
+    const parts = value.split("; csrf_token=");
+    return parts.length === 2 ? parts.pop().split(";").shift() : "";
+  }
 
-    // Bind buttons
-    document.querySelectorAll('.btn-approve').forEach(btn => {
-      btn.addEventListener('click', () => handleAction(parseInt(btn.dataset.idx), 'approve'));
+  function csrfHeaders(headers = {}) {
+    const token = getCsrfToken();
+    return token ? { ...headers, "X-CSRF-Token": token } : headers;
+  }
+
+  function formatMoney(cents) {
+    return ((Number(cents) || 0) / 100).toLocaleString(undefined, {
+      style: "currency",
+      currency: "USD",
     });
-    document.querySelectorAll('.btn-reject').forEach(btn => {
-      btn.addEventListener('click', () => handleAction(parseInt(btn.dataset.idx), 'reject'));
-    });
+  }
+
+  function formatPrice(cents) {
+    return `$${((Number(cents) || 0) / 100).toFixed(2)}`;
+  }
+
+  function formatBps(bps) {
+    if (bps === null || bps === undefined || Number.isNaN(Number(bps))) return "N/A";
+    return `${(Number(bps) / 100).toFixed(2)}%`;
+  }
+
+  function shortId(value) {
+    return String(value || "").slice(0, 8) || "unknown";
+  }
+
+  function userLabel(order) {
+    if (!order.user_email) return shortId(order.user_id);
+    return order.user_email.split("@")[0] || shortId(order.user_id);
   }
 
   function timeAgo(dateStr) {
-    const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-    if (diff < 60) return Math.floor(diff) + 's ago';
-    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-    return Math.floor(diff / 86400) + 'd ago';
+    const timestamp = new Date(dateStr).getTime();
+    if (!timestamp) return "unknown";
+    const diff = Math.max(0, (Date.now() - timestamp) / 1000);
+    if (diff < 60) return `${Math.floor(diff)}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
   }
 
-  async function handleAction(idx, action) {
-    const card = document.getElementById(`approval-${idx}`);
-    const btn = card?.querySelector(action === 'approve' ? '.btn-approve' : '.btn-reject');
-    if (!btn || btn.classList.contains('mp-btn-loading')) return;
+  function setPendingCount(count) {
+    const kpi = document.getElementById("kpi-pending-count");
+    if (kpi) kpi.textContent = String(count);
+  }
 
-    const originalHTML = btn.innerHTML;
-    btn.classList.add('mp-btn-loading');
-    btn.innerHTML = `<span class="mp-btn-text">${originalHTML}</span>`;
+  function setEmptyVisible(visible) {
+    const empty = document.getElementById("approvals-empty");
+    if (empty) empty.style.display = visible ? "block" : "none";
+  }
 
-    const approval = approvals[idx];
+  function clearGrid() {
+    const grid = document.getElementById("approvals-grid");
+    if (grid) grid.replaceChildren();
+    return grid;
+  }
 
-    // Try real API call
-    if (!usingMockData) {
-      try {
-        const realId = approval.id; // UUID from backend
-        const res = await fetch(`${API}/${realId}/${action}`, {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: `Admin ${action}ed` }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || `HTTP ${res.status}`);
-        }
-        // Success — animate out
-        animateRemoval(card, idx, action);
-        return;
-      } catch (err) {
-        btn.classList.remove('mp-btn-loading');
-        btn.innerHTML = originalHTML;
-        mpToast(`Failed: ${err.message}`, 'error');
-        return;
-      }
+  function renderLoading() {
+    const grid = clearGrid();
+    if (!grid) return;
+    setEmptyVisible(false);
+    grid.style.display = "grid";
+    const card = el("div", { className: "mp-approval-card" });
+    card.setAttribute("aria-live", "polite");
+    card.appendChild(el("h3", { text: "Loading pending approvals" }));
+    card.appendChild(el("p", {
+      text: "Checking marketplace orders that require manual review.",
+      style: { color: "var(--admin-text-secondary)", margin: "6px 0 0" },
+    }));
+    grid.appendChild(card);
+  }
+
+  function renderError(message) {
+    const grid = clearGrid();
+    if (!grid) return;
+    setPendingCount(0);
+    setEmptyVisible(false);
+    grid.style.display = "grid";
+
+    const card = el("div", {
+      className: "mp-approval-card",
+      attrs: { role: "alert" },
+      style: { borderColor: "var(--admin-danger)" },
+    });
+    card.appendChild(el("h3", { text: "Could not load pending approvals" }));
+    card.appendChild(el("p", {
+      text: message,
+      style: { color: "var(--admin-text-secondary)", margin: "6px 0 16px" },
+    }));
+    const retry = el("button", {
+      className: "admin-btn admin-btn--primary",
+      text: "Retry",
+      attrs: { type: "button" },
+    });
+    retry.addEventListener("click", loadApprovals);
+    card.appendChild(retry);
+    grid.appendChild(card);
+  }
+
+  function metric(label, value, danger = false) {
+    const box = el("div");
+    box.appendChild(el("div", {
+      text: label,
+      style: {
+        fontSize: "11px",
+        color: "var(--admin-text-muted)",
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+        fontWeight: "600",
+      },
+    }));
+    box.appendChild(el("div", {
+      text: value,
+      style: {
+        fontSize: "16px",
+        fontWeight: "700",
+        color: danger ? "var(--admin-danger)" : "var(--admin-text-primary)",
+        marginTop: "2px",
+      },
+    }));
+    return box;
+  }
+
+  function renderCard(order, idx) {
+    const side = String(order.side || "").toUpperCase();
+    const card = el("div", {
+      className: "mp-approval-card",
+      id: `approval-${idx}`,
+      attrs: { "data-idx": idx },
+      style: { animationDelay: `${idx * 0.08}s` },
+    });
+
+    const header = el("div", {
+      style: {
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        gap: "16px",
+        flexWrap: "wrap",
+      },
+    });
+
+    const details = el("div");
+    const meta = el("div", {
+      style: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px", flexWrap: "wrap" },
+    });
+    meta.appendChild(el("code", {
+      text: shortId(order.id),
+      style: { fontSize: "12px", padding: "3px 8px", background: "var(--admin-code-bg)", borderRadius: "4px" },
+    }));
+    const badge = el("span", { className: "admin-badge admin-badge--info" });
+    badge.appendChild(el("span", { className: "admin-badge-dot" }));
+    badge.appendChild(document.createTextNode("Pending Review"));
+    meta.appendChild(badge);
+    meta.appendChild(el("span", {
+      text: timeAgo(order.created_at),
+      style: { fontSize: "12px", color: "var(--admin-text-muted)" },
+    }));
+    details.appendChild(meta);
+
+    details.appendChild(el("h3", {
+      text: order.asset_name || shortId(order.asset_id),
+      style: {
+        fontSize: "18px",
+        fontWeight: "700",
+        color: "var(--admin-text-primary)",
+        margin: "0 0 4px",
+      },
+    }));
+
+    const summary = el("p", {
+      style: { fontSize: "13px", color: "var(--admin-text-secondary)", margin: "0" },
+    });
+    summary.appendChild(el("code", {
+      text: shortId(order.user_id),
+      style: { fontSize: "11px", padding: "2px 6px", background: "var(--admin-code-bg)", borderRadius: "4px" },
+    }));
+    summary.appendChild(document.createTextNode(` ${userLabel(order)} wants to `));
+    summary.appendChild(el("span", {
+      className: side === "BUY" ? "mp-side-buy" : "mp-side-sell",
+      text: side || "UNKNOWN",
+      style: { fontWeight: "700" },
+    }));
+    summary.appendChild(document.createTextNode(` ${(Number(order.quantity) || 0).toLocaleString()} tokens @ `));
+    summary.appendChild(el("strong", { text: formatPrice(order.price_cents) }));
+    summary.appendChild(document.createTextNode(" = "));
+    summary.appendChild(el("strong", { text: formatMoney(order.total_value_cents) }));
+    details.appendChild(summary);
+
+    const actions = el("div", {
+      style: { display: "flex", gap: "10px", alignItems: "flex-start" },
+    });
+    const approve = el("button", {
+      className: "admin-btn admin-btn--success btn-approve",
+      text: "Approve",
+      attrs: { type: "button", "data-idx": idx },
+      style: { padding: "10px 24px", fontSize: "14px", fontWeight: "600" },
+    });
+    const reject = el("button", {
+      className: "admin-btn admin-btn--danger btn-reject",
+      text: "Reject",
+      attrs: { type: "button", "data-idx": idx },
+      style: { padding: "10px 24px", fontSize: "14px", fontWeight: "600" },
+    });
+    approve.addEventListener("click", () => openConfirm(idx, "approve"));
+    reject.addEventListener("click", () => openConfirm(idx, "reject"));
+    actions.append(approve, reject);
+
+    header.append(details, actions);
+    card.appendChild(header);
+
+    const warning = el("div", { className: "mp-approval-warning" });
+    warning.appendChild(document.createTextNode(order.review_reason || "Flagged for admin review"));
+    card.appendChild(warning);
+
+    const metrics = el("div", {
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        gap: "12px",
+        marginTop: "12px",
+      },
+    });
+    metrics.append(
+      metric("Quantity", (Number(order.quantity) || 0).toLocaleString()),
+      metric("Unit Price", formatPrice(order.price_cents)),
+      metric("Total Value", formatMoney(order.total_value_cents)),
+      metric("Supply Impact", formatBps(order.supply_impact_bps), true),
+    );
+    card.appendChild(metrics);
+
+    return card;
+  }
+
+  function render() {
+    const grid = clearGrid();
+    if (!grid) return;
+
+    setPendingCount(approvals.length);
+    if (!approvals.length) {
+      grid.style.display = "none";
+      setEmptyVisible(true);
+      return;
     }
 
-    // Mock path
-    setTimeout(() => animateRemoval(card, idx, action), 1000);
+    grid.style.display = "grid";
+    setEmptyVisible(false);
+    approvals.forEach((approval, idx) => grid.appendChild(renderCard(approval, idx)));
   }
 
-  function animateRemoval(card, idx, action) {
-    card.style.transition = 'all 0.4s ease';
-    card.style.opacity = '0';
-    card.style.transform = 'translateX(40px)';
-    card.style.maxHeight = card.scrollHeight + 'px';
+  function setCardBusy(card, busy) {
+    if (!card) return;
+    card.querySelectorAll("button").forEach((button) => {
+      button.disabled = busy;
+      button.setAttribute("aria-busy", busy ? "true" : "false");
+    });
+  }
+
+  function closeModal() {
+    if (!activeModal) return;
+    const { overlay, returnFocus } = activeModal;
+    activeModal = null;
+    overlay.classList.add("closing");
+    overlay.addEventListener("animationend", () => overlay.remove(), { once: true });
+    if (returnFocus && typeof returnFocus.focus === "function") returnFocus.focus();
+  }
+
+  function trapModalKeydown(event) {
+    if (!activeModal) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeModal();
+      return;
+    }
+    if (event.key !== "Tab") return;
+
+    const focusable = activeModal.overlay.querySelectorAll(
+      'button, textarea, input, select, a[href], [tabindex]:not([tabindex="-1"])',
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  function openConfirm(idx, action) {
+    const order = approvals[idx];
+    if (!order || activeModal) return;
+
+    const returnFocus = document.activeElement;
+    const isReject = action === "reject";
+    const overlay = el("div", {
+      className: "mp-modal-overlay",
+      attrs: { role: "presentation" },
+    });
+    const modal = el("div", {
+      className: "mp-modal",
+      attrs: {
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-labelledby": "approval-modal-title",
+        "aria-describedby": "approval-modal-subtitle",
+      },
+    });
+    modal.appendChild(el("h2", {
+      id: "approval-modal-title",
+      className: "mp-modal-title",
+      text: isReject ? "Reject marketplace order" : "Approve marketplace order",
+    }));
+    modal.appendChild(el("p", {
+      id: "approval-modal-subtitle",
+      className: "mp-modal-subtitle",
+      text: isReject
+        ? "Rejecting releases the held balance or tokens and records the decision."
+        : "Approving opens the order for matching and records the decision.",
+    }));
+
+    const body = el("div", { className: "mp-modal-body" });
+    body.appendChild(el("p", {
+      text: `${order.asset_name || shortId(order.asset_id)} • ${String(order.side || "").toUpperCase()} ${(Number(order.quantity) || 0).toLocaleString()} tokens • ${formatMoney(order.total_value_cents)}`,
+      style: { marginTop: "0", color: "var(--admin-text-primary)", fontWeight: "600" },
+    }));
+
+    const label = el("label", {
+      className: "admin-form-label",
+      text: isReject ? "Rejection reason" : "Approval note",
+      attrs: { for: "approval-reason" },
+    });
+    const reason = el("textarea", {
+      id: "approval-reason",
+      className: "admin-textarea",
+      attrs: {
+        rows: "4",
+        maxlength: "500",
+        placeholder: isReject ? "Explain why this order is being rejected." : "Optional note for the audit log.",
+      },
+      style: { width: "100%" },
+    });
+    if (isReject) reason.required = true;
+    const status = el("div", {
+      attrs: { role: "status", "aria-live": "polite" },
+      style: { minHeight: "20px", marginTop: "8px", color: "var(--admin-danger)", fontSize: "13px" },
+    });
+    body.append(label, reason, status);
+    modal.appendChild(body);
+
+    const actions = el("div", { className: "mp-modal-actions" });
+    const cancel = el("button", {
+      className: "admin-btn admin-btn--secondary",
+      text: "Cancel",
+      attrs: { type: "button" },
+    });
+    const confirm = el("button", {
+      className: `admin-btn ${isReject ? "admin-btn--danger" : "admin-btn--success"}`,
+      text: isReject ? "Reject Order" : "Approve Order",
+      attrs: { type: "button" },
+    });
+    cancel.addEventListener("click", closeModal);
+    confirm.addEventListener("click", async () => {
+      const note = reason.value.trim();
+      if (isReject && !note) {
+        status.textContent = "A rejection reason is required.";
+        reason.focus();
+        return;
+      }
+      confirm.disabled = true;
+      cancel.disabled = true;
+      confirm.setAttribute("aria-busy", "true");
+      status.textContent = isReject ? "Rejecting order..." : "Approving order...";
+      try {
+        await submitAction(idx, action, note || (isReject ? "Rejected by admin" : "Approved by admin"));
+        closeModal();
+      } catch (error) {
+        confirm.disabled = false;
+        cancel.disabled = false;
+        confirm.setAttribute("aria-busy", "false");
+        status.textContent = error.message;
+      }
+    });
+    actions.append(cancel, confirm);
+    modal.appendChild(actions);
+    overlay.appendChild(modal);
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) closeModal();
+    });
+    overlay.addEventListener("keydown", trapModalKeydown);
+    document.body.appendChild(overlay);
+    activeModal = { overlay, returnFocus };
+    reason.focus();
+  }
+
+  async function submitAction(idx, action, reason) {
+    const approval = approvals[idx];
+    const card = document.getElementById(`approval-${idx}`);
+    if (!approval || !card) throw new Error("Approval record is no longer available.");
+
+    setCardBusy(card, true);
+    try {
+      const res = await fetch(`${API}/${approval.id}/${action}`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json().catch(() => ({}));
+      animateRemoval(card, idx, action, data);
+    } catch (error) {
+      setCardBusy(card, false);
+      window.mpToast?.(`Failed: ${error.message}`, "error");
+      throw error;
+    }
+  }
+
+  function animateRemoval(card, idx, action, data) {
+    card.style.transition = "all 0.4s ease";
+    card.style.opacity = "0";
+    card.style.transform = "translateX(40px)";
+    card.style.maxHeight = `${card.scrollHeight}px`;
 
     setTimeout(() => {
-      card.style.maxHeight = '0';
-      card.style.padding = '0';
-      card.style.margin = '0';
-      card.style.overflow = 'hidden';
+      card.style.maxHeight = "0";
+      card.style.padding = "0";
+      card.style.margin = "0";
+      card.style.overflow = "hidden";
 
       setTimeout(() => {
         approvals.splice(idx, 1);
@@ -194,27 +470,31 @@
       }, 300);
     }, 300);
 
-    if (action === 'approve') {
-      mpToast(`Order approved — execution queued`, 'success');
+    if (action === "approve") {
+      const syncNote = data && data.orderbook_synced === false ? " DB opened; orderbook sync pending." : "";
+      window.mpToast?.(`Order approved.${syncNote}`, "success");
     } else {
-      mpToast(`Order rejected — user will be notified`, 'warning');
+      window.mpToast?.("Order rejected and holds released.", "warning");
     }
   }
 
-  // ── Load ────────────────────────────────────────────────────────
   async function loadApprovals() {
+    renderLoading();
     try {
-      const res = await fetch(API, { credentials: 'same-origin' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      approvals = await res.json();
-      usingMockData = false;
-    } catch (err) {
-      console.warn('[mp-approvals] API unavailable, using mock data:', err);
-      approvals = [...MOCK_APPROVALS];
-      usingMockData = true;
+      const res = await fetch(API, { credentials: "same-origin" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      approvals = Array.isArray(data) ? data : [];
+      render();
+    } catch (error) {
+      console.warn("[mp-approvals] API unavailable:", error);
+      approvals = [];
+      renderError(error.message || "Unexpected load failure.");
     }
-    render();
   }
 
-  document.addEventListener('DOMContentLoaded', loadApprovals);
+  document.addEventListener("DOMContentLoaded", loadApprovals);
 })();

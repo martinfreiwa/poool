@@ -15,7 +15,7 @@ Backend Routes: `backend/src/admin/mod.rs`, `backend/src/community/routes.rs`, `
 
 The `/admin/community/amas` page has a working admin route and management surface for listing AMAs, creating AMAs, changing status, viewing questions, answering questions, and featuring questions. The documented CSRF, permission, draft-detail exposure, audit-log, validation, and modal accessibility issues were fixed on 2026-04-25.
 
-Targeted Playwright E2E now verifies the authenticated admin CRUD/moderation flow for create, status, detail, answer, feature, and community audit logs. Mobile layout remains a separate smoke target.
+Targeted Playwright E2E now verifies the authenticated admin CRUD/moderation flow for create, status, detail, answer, feature, community audit logs, modal keyboard behavior, and mobile modal layout.
 
 ---
 
@@ -38,6 +38,9 @@ Fixed:
 - Added accessible dialog semantics, focus management, Escape handling, Tab containment, and loading button states for the modals.
 - Fixed the shared admin fetch interceptor so it does not duplicate `X-CSRF-Token` when a page-level API wrapper already set it.
 - Added `tests/e2e/test_admin_community_amas.py` for the authenticated browser CRUD/moderation regression.
+- Added mobile-specific AMA page layout rules so the header action and modals remain clickable and contained on narrow visual viewports.
+- Anchored open modals to the browser visual viewport to avoid off-screen centering on mobile emulation.
+- Extended the AMA E2E with Tab trapping, Escape close/focus return, and authenticated mobile modal smoke coverage.
 
 Verification:
 
@@ -47,11 +50,11 @@ Verification:
 - `cargo test --no-run` passed with existing warnings.
 - Scoped `git diff --check` passed.
 - `BASE_URL=http://localhost:8895 DATABASE_URL=postgres://martin@localhost/poool COMMUNITY_DATABASE_URL=postgres://martin@localhost/poool_community python3 -m pytest tests/e2e/test_admin_community_amas.py -q` passed.
+- `BASE_URL=http://localhost:8896 DATABASE_URL=postgres://martin@localhost/poool COMMUNITY_DATABASE_URL=postgres://martin@localhost/poool_community python3 -m pytest tests/e2e/test_admin_community_amas.py -q` passed with 2 tests on 2026-04-26.
 
 Remaining recheck:
 
-- Mobile layout smoke for the table and modals.
-- Optional deeper keyboard smoke for Tab/Escape behavior across both modals.
+- None for the documented AMA production-readiness gaps.
 
 ---
 
@@ -341,6 +344,8 @@ Wrap status/answer/feature changes in service-level logic that captures previous
 | JS syntax | Extracted inline script and ran `node --check`. | No syntax errors. | Command exited 0. | Pass |
 | Existing test coverage scan | Ran `rg` for admin AMA route/test coverage. | Locate tests or document gap. | No relevant tests found. | Missing coverage |
 | Runtime browser/API test | Start backend and exercise page with admin session. | Page load, create, status, detail, answer, feature, audit-log evidence. | Targeted Playwright E2E passed against local backend on port 8895. | Pass |
+| Keyboard/browser recheck | Exercise create and answer modals with Tab, Shift+Tab, Escape, and focus-return assertions. | Focus stays trapped while open and returns to opener on Escape. | Extended Playwright E2E passed against local backend on port 8896. | Pass |
+| Mobile browser recheck | Load `/admin/community/amas` with mobile admin viewport, open create modal, verify focused field and modal bounds. | Page action is clickable and modal stays within viewport. | Initial E2E exposed mobile overlap/off-screen modal; scoped layout/visual viewport fix applied; rerun passed. | Pass |
 
 ---
 
@@ -393,4 +398,4 @@ Wrap status/answer/feature changes in service-level logic that captures previous
 
 `fixed_e2e_verified`
 
-Reason: The documented implementation findings were fixed and the targeted authenticated browser E2E now passes for the admin AMA CRUD/moderation path. Remaining coverage is limited to mobile layout and broader keyboard smoke.
+Reason: The documented implementation findings were fixed and the targeted authenticated browser E2E now passes for the admin AMA CRUD/moderation path, modal keyboard behavior, and mobile modal layout.

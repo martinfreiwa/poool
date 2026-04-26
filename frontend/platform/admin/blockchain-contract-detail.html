@@ -16,6 +16,7 @@
   <script src="/static/js/admin-theme.js"></script>
   <script src="/static/js/admin-permission-guard.js"></script>
   <script src="/static/js/admin-global-search.js"></script>
+  <script src="/static/js/poool-confirm.js"></script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/bundle.css" />
   <style>
@@ -71,7 +72,7 @@
               <h1 class="admin-page-title" id="page-asset-title">Loading...</h1>
               <div class="wallet-address-display" style="margin-top:4px;">
                   <span id="clone-address">Loading...</span>
-                  <button class="copy-btn" title="Copy Address" onclick="window._copyAddr(document.getElementById('clone-address').textContent)">
+                  <button id="copy-clone-address" class="copy-btn" type="button" title="Copy Address" aria-label="Copy contract address">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                   </button>
               </div>
@@ -79,7 +80,7 @@
           </div>
           <div style="display:flex; gap:12px;">
              <span id="kpi-live-status"></span>
-             <a id="contract-link" href="#" target="_blank" class="admin-btn admin-btn--secondary">View on PolygonScan</a>
+             <a id="contract-link" href="#" target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn--secondary">View on PolygonScan</a>
           </div>
         </div>
 
@@ -120,7 +121,7 @@
                 Reflects the `onchain_balances` DB table synchronized from Polygon events.
               </p>
             </div>
-            <button class="admin-btn admin-btn--secondary" onclick="window.location.reload();">Refresh Sync</button>
+            <button id="refresh-contract-detail" class="admin-btn admin-btn--secondary" type="button">Refresh Sync</button>
           </div>
           <div class="admin-card-body admin-card-body--flush">
             <table class="admin-table">
@@ -152,21 +153,18 @@
             These actions apply <strong>ONLY to this specific asset's contract</strong>.
           </p>
           <div style="display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 400px;">
-             <button id="btn-freeze-transfers" class="admin-btn admin-btn--danger" style="justify-content:center; padding:12px; font-weight:600;">Freeze Token Transfers (Pause)</button>
-             <button class="admin-btn admin-btn--secondary" style="justify-content:center; padding:12px; font-weight:600;">Trigger Manual On-Chain Netting</button>
+             <button id="btn-freeze-transfers" class="admin-btn admin-btn--danger" style="justify-content:center; padding:12px; font-weight:600;" disabled aria-disabled="true">Loading Contract State...</button>
+             <button id="btn-manual-netting" class="admin-btn admin-btn--secondary" style="justify-content:center; padding:12px; font-weight:600;" disabled aria-disabled="true" title="Manual contract-scoped netting is not available yet.">Manual On-Chain Netting Unavailable</button>
           </div>
+          <p id="manual-netting-note" style="font-size:12px;color:var(--admin-text-muted);margin:10px 0 0;">
+            Manual contract-scoped netting is disabled until the backend settlement workflow is implemented.
+          </p>
         </div>
 
       </div>
     </main>
   </div>
-  
-  <script>
-    window._copyAddr = function(text) {
-      if (!text) return;
-      navigator.clipboard.writeText(text);
-    };
-  </script>
+  <div id="contract-detail-status" role="status" aria-live="polite" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;"></div>
   <script src="/static/js/admin-blockchain-contract-detail.js"></script>
 </body>
 

@@ -1,9 +1,11 @@
 use super::extractors::AdminUser;
+use crate::auth::models::User;
 use crate::auth::routes::AppState;
 use axum::{
     extract::{Request, State},
     response::{IntoResponse, Redirect},
 };
+use axum_extra::extract::CookieJar;
 
 /// GET /admin/  Admin dashboard (protected, requires admin role).
 pub async fn page_admin_dashboard(
@@ -136,12 +138,37 @@ pub async fn page_admin_community_challenges(
     }
 }
 
+/// GET /admin/marketplace/compliance  Marketplace compliance exports.
+///
+/// This route intentionally uses the granular permission instead of `AdminUser`
+/// so the dedicated compliance role can access the report surface without
+/// broadening generic admin-page access.
+pub async fn page_admin_marketplace_compliance(
+    jar: CookieJar,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let Some(user) = crate::auth::middleware::get_current_user(&jar, &state.db).await else {
+        return Redirect::to("/auth/login").into_response();
+    };
+
+    if crate::auth::middleware::has_permission(&state.db, user.id, "marketplace.compliance").await {
+        render_admin_template(&state, "admin/marketplace/compliance.html")
+    } else {
+        Redirect::to("/admin/").into_response()
+    }
+}
+
 /// GET /admin/{any}.html  Serve admin sub-pages (protected).
 pub async fn page_admin_generic(
-    admin: AdminUser,
+    jar: CookieJar,
     State(state): State<AppState>,
     req: Request,
 ) -> impl IntoResponse {
+    let admin = match get_admin_page_user(&jar, &state).await {
+        Ok(user) => user,
+        Err(response) => return response,
+    };
+
     let path = req.uri().path();
     let relative = path.trim_start_matches('/');
 
@@ -160,25 +187,56 @@ pub async fn page_admin_generic(
     };
 
     if relative.starts_with("admin/community/")
-        && !crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.view")
-            .await
-        && !crate::auth::middleware::has_permission(&state.db, admin.user.id, "community.manage")
-            .await
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "community.view").await
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "community.manage").await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
+    if (relative == "admin/affiliate-applications"
+        || relative == "admin/affiliate-applications.html")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "affiliates.manage").await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
+    if (relative == "admin/notifications" || relative == "admin/notifications.html")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "notifications.view").await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
+    if (relative == "admin/reports" || relative == "admin/reports.html")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "reports.generate").await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
+    if (relative == "admin/marketplace/approvals" || relative == "admin/marketplace/approvals.html")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "marketplace.manage").await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
+    if (relative == "admin/asset-tokenize" || relative == "admin/asset-tokenize.html")
+        && !crate::admin::blockchain::has_blockchain_tokenize_permission(&state.db, admin.id).await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
+    if (relative == "admin/marketplace/"
+        || relative == "admin/marketplace/index"
+        || relative == "admin/marketplace/index.html")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "marketplace.view").await
     {
         return Redirect::to("/admin/").into_response();
     }
 
     if relative.starts_with("admin/marketplace/")
-        && !crate::auth::middleware::has_permission(&state.db, admin.user.id, "marketplace.view")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "marketplace.view").await
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "marketplace.manage").await
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "marketplace.compliance")
             .await
-        && !crate::auth::middleware::has_permission(&state.db, admin.user.id, "marketplace.manage")
-            .await
-        && !crate::auth::middleware::has_permission(
-            &state.db,
-            admin.user.id,
-            "marketplace.compliance",
-        )
-        .await
     {
         return Redirect::to("/admin/").into_response();
     }
@@ -186,8 +244,39 @@ pub async fn page_admin_generic(
     render_admin_template(&state, &file)
 }
 
+async fn get_admin_page_user(
+    jar: &CookieJar,
+    state: &AppState,
+) -> Result<User, axum::response::Response> {
+    let Some(user) = crate::auth::middleware::get_current_user(jar, &state.db).await else {
+        return Err(Redirect::to("/auth/login").into_response());
+    };
+
+    let is_admin = sqlx::query_scalar::<_, bool>(
+        r#"
+        SELECT EXISTS(
+            SELECT 1 FROM user_roles ur
+            JOIN roles r ON r.id = ur.role_id
+            WHERE ur.user_id = $1
+            AND r.name IN ('admin', 'super_admin')
+            AND ur.is_active = TRUE
+        )
+        "#,
+    )
+    .bind(user.id)
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(false);
+
+    if !is_admin {
+        return Err(Redirect::to("/admin/").into_response());
+    }
+
+    Ok(user)
+}
+
 /// Render an admin template. Admin access is assumed to be already verified
-/// by the `AdminUser` extractor.
+/// by the caller.
 fn render_admin_template(state: &AppState, file: &str) -> axum::response::Response {
     use std::io::Write;
     if let Ok(mut f) = std::fs::OpenOptions::new()

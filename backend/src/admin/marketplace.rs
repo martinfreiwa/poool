@@ -15,11 +15,16 @@ use axum::{
     extract::{Path, Query, State},
     Json,
 };
+use axum_extra::extract::CookieJar;
+use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
+use sqlx::{Postgres, QueryBuilder};
 use uuid::Uuid;
 
 use super::extractors::{AdminUser, ApiError};
+use crate::auth::models::User;
 use crate::auth::routes::AppState;
+use crate::marketplace::models::MarketOrder;
 
 // ═══════════════════════════════════════════════════════════════════
 // ── Request / Response types ──────────────────────────────────────
@@ -54,7 +59,18 @@ pub struct AdminTrade {
     pub quantity: i32,
     pub total_cents: i64,
     pub fee_cents: i64,
+    pub on_chain_status: String,
     pub executed_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Asset option for trade-history filters.
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[allow(missing_docs)]
+pub struct AdminTradeAsset {
+    pub id: Uuid,
+    pub title: String,
+    pub slug: String,
+    pub trade_count: i64,
 }
 
 /// An order record with admin-visible fields.
@@ -72,7 +88,7 @@ pub struct AdminOrder {
     pub quantity: i32,
     pub quantity_filled: i32,
     pub status: String,
-    pub created_at: chrono::NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// Query filters for trade history.
@@ -82,6 +98,8 @@ pub struct TradeFilters {
     pub asset_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
     pub side: Option<String>,
+    pub on_chain_status: Option<String>,
+    pub status: Option<String>,
     #[serde(alias = "_min_price_cents")]
     pub min_price_cents: Option<i64>,
     #[serde(alias = "_max_price_cents")]
@@ -93,6 +111,17 @@ pub struct TradeFilters {
     pub page: Option<i64>,
     pub per_page: Option<i64>,
     pub limit: Option<i64>,
+}
+
+struct ValidatedTradeFilters {
+    asset_id: Option<Uuid>,
+    user_id: Option<Uuid>,
+    side: Option<String>,
+    min_price_cents: Option<i64>,
+    max_price_cents: Option<i64>,
+    from_date: Option<NaiveDate>,
+    to_date_exclusive: Option<NaiveDate>,
+    on_chain_status: Option<String>,
 }
 
 /// Query filters for order listing.
@@ -132,11 +161,23 @@ pub struct AdminOrderbookLevel {
     pub order_count: i64,
 }
 
+/// Asset option for the admin orderbook selector.
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[allow(missing_docs)]
+pub struct AdminOrderbookAsset {
+    pub id: Uuid,
+    pub title: String,
+    pub slug: String,
+    pub active_orders: i64,
+}
+
 /// Admin orderbook view with aggregated levels and spread data.
 #[derive(Debug, Serialize)]
 #[allow(missing_docs)]
 pub struct AdminOrderbook {
     pub asset_id: Uuid,
+    pub asset_title: String,
+    pub asset_slug: String,
     pub bids: Vec<AdminOrderbookLevel>,
     pub asks: Vec<AdminOrderbookLevel>,
     pub spread_cents: Option<i64>,
@@ -148,11 +189,13 @@ pub struct AdminOrderbook {
 #[allow(missing_docs)]
 pub struct SystemHealth {
     pub database_latency_ms: f64,
+    pub database_connected: bool,
     pub redis_connected: bool,
     pub redis_latency_ms: Option<f64>,
     pub active_ws_connections: i64,
+    pub websocket_status: String,
     pub matching_engine_status: String,
-    pub last_trade_at: Option<chrono::NaiveDateTime>,
+    pub last_trade_at: Option<chrono::DateTime<chrono::Utc>>,
     pub order_queue_depth: i64,
 }
 
@@ -271,21 +314,28 @@ pub async fn api_admin_marketplace_stats(
     .await
     .map_err(ApiError::Database)?;
 
-    // Check trading status from Redis (or default to active)
+    // Check trading status from Redis (or default to active when Redis is not configured).
     let trading_status = if let Some(ref redis) = state.redis {
         match redis.get().await {
-            Ok(mut conn) => {
-                let status: Option<String> = redis::cmd("GET")
-                    .arg("marketplace:trading_enabled")
-                    .query_async(&mut *conn)
-                    .await
-                    .unwrap_or(None);
-                match status.as_deref() {
+            Ok(mut conn) => match redis::cmd("GET")
+                .arg("marketplace:trading_enabled")
+                .query_async::<Option<String>>(&mut *conn)
+                .await
+            {
+                Ok(status) => match status.as_deref() {
                     Some("false") | Some("0") => "HALTED".to_string(),
-                    _ => "LIVE".to_string(),
+                    Some("true") | Some("1") | None => "LIVE".to_string(),
+                    _ => "UNKNOWN".to_string(),
+                },
+                Err(e) => {
+                    tracing::warn!(error = %e, "Failed to read marketplace trading status from Redis");
+                    "UNKNOWN".to_string()
                 }
+            },
+            Err(e) => {
+                tracing::warn!(error = %e, "Failed to connect to Redis for marketplace trading status");
+                "UNKNOWN".to_string()
             }
-            Err(_) => "UNKNOWN".to_string(),
         }
     } else {
         "LIVE".to_string()
@@ -331,6 +381,7 @@ pub async fn api_admin_marketplace_recent_trades(
             t.quantity,
             COALESCE(t.total_cents, t.price_cents * t.quantity::BIGINT) AS total_cents,
             COALESCE(t.fee_cents, 0) AS fee_cents,
+            t.on_chain_status,
             t.executed_at
         FROM trade_history t
         LEFT JOIN assets a ON a.id = t.asset_id
@@ -351,34 +402,13 @@ pub async fn api_admin_marketplace_recent_trades(
 // ── 6A.5: Trade History with Filters + Pagination ─────────────────
 // ═══════════════════════════════════════════════════════════════════
 
-/// GET /api/admin/marketplace/trades — Paginated trade history with filters.
-pub async fn api_admin_marketplace_trades(
-    admin: AdminUser,
-    Query(filters): Query<TradeFilters>,
-    State(state): State<AppState>,
-) -> Result<Json<PaginatedResponse<AdminTrade>>, ApiError> {
-    admin
-        .require_permission(&state.db, "marketplace.view")
-        .await?;
-    let db = &state.db;
-    let page = filters.page.unwrap_or(1).max(1);
-    let per_page = filters
-        .per_page
-        .or(filters.limit)
-        .unwrap_or(25)
-        .clamp(1, 200);
-    let offset = (page - 1) * per_page;
-
-    // Build WHERE clause dynamically
-    let mut conditions: Vec<String> = vec![];
-    if let Some(aid) = filters.asset_id {
-        conditions.push(format!("t.asset_id = '{}'", aid));
-    }
+fn normalize_trade_filters(filters: &TradeFilters) -> Result<ValidatedTradeFilters, ApiError> {
     let side = filters
         .side
         .as_deref()
-        .map(str::to_ascii_lowercase)
-        .filter(|value| !value.trim().is_empty());
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_ascii_lowercase);
     if let Some(ref side) = side {
         if side != "buy" && side != "sell" {
             return Err(ApiError::BadRequest(
@@ -391,23 +421,13 @@ pub async fn api_admin_marketplace_trades(
             ));
         }
     }
-    if let Some(uid) = filters.user_id {
-        match side.as_deref() {
-            Some("buy") => conditions.push(format!("t.buyer_user_id = '{}'", uid)),
-            Some("sell") => conditions.push(format!("t.seller_user_id = '{}'", uid)),
-            _ => conditions.push(format!(
-                "(t.buyer_user_id = '{}' OR t.seller_user_id = '{}')",
-                uid, uid
-            )),
-        }
-    }
+
     if let Some(min_price_cents) = filters.min_price_cents {
         if min_price_cents < 0 {
             return Err(ApiError::BadRequest(
                 "min_price_cents must be non-negative".to_string(),
             ));
         }
-        conditions.push(format!("t.price_cents >= {}", min_price_cents));
     }
     if let Some(max_price_cents) = filters.max_price_cents {
         if max_price_cents < 0 {
@@ -415,7 +435,6 @@ pub async fn api_admin_marketplace_trades(
                 "max_price_cents must be non-negative".to_string(),
             ));
         }
-        conditions.push(format!("t.price_cents <= {}", max_price_cents));
     }
     if let (Some(min_price_cents), Some(max_price_cents)) =
         (filters.min_price_cents, filters.max_price_cents)
@@ -426,36 +445,123 @@ pub async fn api_admin_marketplace_trades(
             ));
         }
     }
-    if let Some(ref from_date) = filters.from_date {
-        let parsed = chrono::NaiveDate::parse_from_str(from_date, "%Y-%m-%d")
-            .map_err(|_| ApiError::BadRequest("from_date must use YYYY-MM-DD".to_string()))?;
-        conditions.push(format!("t.executed_at >= '{}'", parsed));
-    }
-    if let Some(ref to_date) = filters.to_date {
-        let parsed = chrono::NaiveDate::parse_from_str(to_date, "%Y-%m-%d")
-            .map_err(|_| ApiError::BadRequest("to_date must use YYYY-MM-DD".to_string()))?;
-        let exclusive_end = parsed.succ_opt().ok_or_else(|| {
-            ApiError::BadRequest("to_date is outside supported range".to_string())
-        })?;
-        conditions.push(format!("t.executed_at < '{}'", exclusive_end));
-    }
 
-    let where_clause = if conditions.is_empty() {
-        "1=1".to_string()
-    } else {
-        conditions.join(" AND ")
+    let from_date = parse_optional_date(&filters.from_date, "from_date")?;
+    let to_date = parse_optional_date(&filters.to_date, "to_date")?;
+    if let (Some(from_date), Some(to_date)) = (from_date, to_date) {
+        if from_date > to_date {
+            return Err(ApiError::BadRequest(
+                "from_date cannot be after to_date".to_string(),
+            ));
+        }
+    }
+    let to_date_exclusive = match to_date {
+        Some(date) => Some(date.succ_opt().ok_or_else(|| {
+            ApiError::BadRequest("to_date is outside supported range".to_string())
+        })?),
+        None => None,
     };
 
-    let count_sql = format!(
-        "SELECT COUNT(*)::BIGINT FROM trade_history t WHERE {}",
-        where_clause
-    );
-    let total: i64 = sqlx::query_scalar::<_, i64>(&count_sql)
+    let status = filters
+        .on_chain_status
+        .as_deref()
+        .or(filters.status.as_deref())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_ascii_lowercase);
+    if let Some(ref status) = status {
+        if !matches!(
+            status.as_str(),
+            "pending" | "submitted" | "confirmed" | "failed"
+        ) {
+            return Err(ApiError::BadRequest(
+                "on_chain_status must be pending, submitted, confirmed, or failed".to_string(),
+            ));
+        }
+    }
+
+    Ok(ValidatedTradeFilters {
+        asset_id: filters.asset_id,
+        user_id: filters.user_id,
+        side,
+        min_price_cents: filters.min_price_cents,
+        max_price_cents: filters.max_price_cents,
+        from_date,
+        to_date_exclusive,
+        on_chain_status: status,
+    })
+}
+
+fn push_trade_filter_sql<'args>(
+    query: &mut QueryBuilder<'args, Postgres>,
+    filters: &'args ValidatedTradeFilters,
+) {
+    if let Some(asset_id) = filters.asset_id {
+        query.push(" AND t.asset_id = ");
+        query.push_bind(asset_id);
+    }
+    if let Some(user_id) = filters.user_id {
+        match filters.side.as_deref() {
+            Some("buy") => {
+                query.push(" AND t.buyer_user_id = ");
+                query.push_bind(user_id);
+            }
+            Some("sell") => {
+                query.push(" AND t.seller_user_id = ");
+                query.push_bind(user_id);
+            }
+            _ => {
+                query.push(" AND (t.buyer_user_id = ");
+                query.push_bind(user_id);
+                query.push(" OR t.seller_user_id = ");
+                query.push_bind(user_id);
+                query.push(")");
+            }
+        }
+    }
+    if let Some(min_price_cents) = filters.min_price_cents {
+        query.push(" AND t.price_cents >= ");
+        query.push_bind(min_price_cents);
+    }
+    if let Some(max_price_cents) = filters.max_price_cents {
+        query.push(" AND t.price_cents <= ");
+        query.push_bind(max_price_cents);
+    }
+    if let Some(from_date) = filters.from_date {
+        query.push(" AND t.executed_at >= ");
+        query.push_bind(from_date);
+    }
+    if let Some(to_date_exclusive) = filters.to_date_exclusive {
+        query.push(" AND t.executed_at < ");
+        query.push_bind(to_date_exclusive);
+    }
+    if let Some(ref status) = filters.on_chain_status {
+        query.push(" AND t.on_chain_status = ");
+        query.push_bind(status.as_str());
+    }
+}
+
+async fn count_admin_trades(
+    db: &sqlx::PgPool,
+    filters: &ValidatedTradeFilters,
+) -> Result<i64, ApiError> {
+    let mut query =
+        QueryBuilder::<Postgres>::new("SELECT COUNT(*)::BIGINT FROM trade_history t WHERE 1=1");
+    push_trade_filter_sql(&mut query, filters);
+    query
+        .build_query_scalar()
         .fetch_one(db)
         .await
-        .map_err(ApiError::Database)?;
+        .map_err(ApiError::Database)
+}
 
-    let data_sql = format!(
+async fn fetch_admin_trades(
+    db: &sqlx::PgPool,
+    filters: &ValidatedTradeFilters,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<AdminTrade>, ApiError> {
+    let mut query = QueryBuilder::<Postgres>::new(
         r#"
         SELECT
             t.id,
@@ -469,22 +575,77 @@ pub async fn api_admin_marketplace_trades(
             t.quantity,
             COALESCE(t.total_cents, t.price_cents * t.quantity::BIGINT) AS total_cents,
             COALESCE(t.fee_cents, 0) AS fee_cents,
+            t.on_chain_status,
             t.executed_at
         FROM trade_history t
         LEFT JOIN assets a ON a.id = t.asset_id
         LEFT JOIN users bu ON bu.id = t.buyer_user_id
         LEFT JOIN users su ON su.id = t.seller_user_id
-        WHERE {}
-        ORDER BY t.executed_at DESC
-        LIMIT {} OFFSET {}
+        WHERE 1=1
         "#,
-        where_clause, per_page, offset
     );
-
-    let rows: Vec<AdminTrade> = sqlx::query_as(&data_sql)
+    push_trade_filter_sql(&mut query, filters);
+    query.push(" ORDER BY t.executed_at DESC LIMIT ");
+    query.push_bind(limit);
+    query.push(" OFFSET ");
+    query.push_bind(offset);
+    query
+        .build_query_as()
         .fetch_all(db)
         .await
-        .map_err(ApiError::Database)?;
+        .map_err(ApiError::Database)
+}
+
+/// GET /api/admin/marketplace/trades/assets — Assets that have trade history.
+pub async fn api_admin_marketplace_trade_assets(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<AdminTradeAsset>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
+
+    let rows: Vec<AdminTradeAsset> = sqlx::query_as(
+        r#"
+        SELECT
+            a.id,
+            a.title,
+            a.slug,
+            COUNT(t.id)::BIGINT AS trade_count
+        FROM trade_history t
+        JOIN assets a ON a.id = t.asset_id
+        GROUP BY a.id, a.title, a.slug
+        ORDER BY a.title ASC
+        LIMIT 1000
+        "#,
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    Ok(Json(rows))
+}
+
+/// GET /api/admin/marketplace/trades — Paginated trade history with filters.
+pub async fn api_admin_marketplace_trades(
+    admin: AdminUser,
+    Query(filters): Query<TradeFilters>,
+    State(state): State<AppState>,
+) -> Result<Json<PaginatedResponse<AdminTrade>>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
+    let page = filters.page.unwrap_or(1).max(1);
+    let per_page = filters
+        .per_page
+        .or(filters.limit)
+        .unwrap_or(25)
+        .clamp(1, 200);
+    let offset = (page - 1) * per_page;
+    let filters = normalize_trade_filters(&filters)?;
+
+    let total = count_admin_trades(&state.db, &filters).await?;
+    let rows = fetch_admin_trades(&state.db, &filters, per_page, offset).await?;
 
     let total_pages = if per_page > 0 {
         (total + per_page - 1) / per_page
@@ -499,6 +660,51 @@ pub async fn api_admin_marketplace_trades(
         per_page,
         total_pages,
     }))
+}
+
+/// GET /api/admin/marketplace/trades/export.csv — Filtered trade CSV export.
+pub async fn api_admin_marketplace_trades_export_csv(
+    admin: AdminUser,
+    Query(filters): Query<TradeFilters>,
+    State(state): State<AppState>,
+) -> Result<impl axum::response::IntoResponse, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
+
+    let filters = normalize_trade_filters(&filters)?;
+    let rows = fetch_admin_trades(&state.db, &filters, 10_000, 0).await?;
+    let mut csv = String::from(
+        "Trade_ID,Executed_At,Asset_ID,Asset_Name,Buyer_Email,Seller_Email,Price_Cents,Quantity,Fee_Cents,Total_Cents,On_Chain_Status\n",
+    );
+    for row in rows {
+        csv.push_str(&format!(
+            "{},{},{},{},{},{},{},{},{},{},{}\n",
+            row.id,
+            row.executed_at,
+            row.asset_id,
+            csv_escape(row.asset_name.unwrap_or_default()),
+            csv_escape(row.buyer_email.unwrap_or_default()),
+            csv_escape(row.seller_email.unwrap_or_default()),
+            row.price_cents,
+            row.quantity,
+            row.fee_cents,
+            row.total_cents,
+            csv_escape(row.on_chain_status)
+        ));
+    }
+
+    tracing::info!(admin_id = %admin.user.id, "Admin exported marketplace trade history CSV");
+
+    let headers = [
+        (axum::http::header::CONTENT_TYPE, "text/csv; charset=utf-8"),
+        (
+            axum::http::header::CONTENT_DISPOSITION,
+            "attachment; filename=\"marketplace_trades.csv\"",
+        ),
+    ];
+
+    Ok((headers, csv))
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -661,14 +867,62 @@ pub async fn api_admin_marketplace_order_cancel(
 // ── 6A.3: Admin Orderbook ─────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
 
+/// GET /api/admin/marketplace/orderbook/assets — Assets available in the orderbook selector.
+pub async fn api_admin_marketplace_orderbook_assets(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<AdminOrderbookAsset>>, ApiError> {
+    let db = &state.db;
+    admin.require_permission(db, "marketplace.view").await?;
+
+    let assets = sqlx::query_as::<_, AdminOrderbookAsset>(
+        r#"
+        SELECT
+            a.id,
+            a.title,
+            a.slug,
+            COUNT(mo.id)::BIGINT AS active_orders
+        FROM assets a
+        LEFT JOIN market_orders mo
+          ON mo.asset_id = a.id
+         AND mo.status IN ('open', 'partially_filled')
+        WHERE a.published = TRUE
+           OR EXISTS (
+                SELECT 1
+                FROM market_orders existing
+                WHERE existing.asset_id = a.id
+                  AND existing.status IN ('open', 'partially_filled')
+           )
+        GROUP BY a.id, a.title, a.slug
+        ORDER BY active_orders DESC, a.title ASC
+        LIMIT 100
+        "#,
+    )
+    .fetch_all(db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    Ok(Json(assets))
+}
+
 /// GET /api/admin/marketplace/orderbook/:asset_id — Aggregated orderbook.
 pub async fn api_admin_marketplace_orderbook(
-    _admin: AdminUser,
+    admin: AdminUser,
     Path(asset_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<AdminOrderbook>, ApiError> {
     let db = &state.db;
+    admin.require_permission(db, "marketplace.view").await?;
     let asset_uuid = ApiError::parse_uuid(&asset_id)?;
+
+    let asset: Option<(String, String)> =
+        sqlx::query_as("SELECT title, slug FROM assets WHERE id = $1")
+            .bind(asset_uuid)
+            .fetch_optional(db)
+            .await
+            .map_err(ApiError::Database)?;
+    let (asset_title, asset_slug) =
+        asset.ok_or_else(|| ApiError::NotFound("Asset not found".to_string()))?;
 
     // Aggregated bid levels
     let bid_levels: Vec<AdminOrderbookLevelRow> = sqlx::query_as(
@@ -743,6 +997,8 @@ pub async fn api_admin_marketplace_orderbook(
 
     Ok(Json(AdminOrderbook {
         asset_id: asset_uuid,
+        asset_title,
+        asset_slug,
         bids,
         asks,
         spread_cents,
@@ -759,22 +1015,108 @@ pub async fn api_admin_marketplace_orderbook_rebuild(
     admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let redis = state
-        .redis
-        .as_ref()
-        .ok_or_else(|| ApiError::Internal("Redis not configured".to_string()))?;
+    let db = &state.db;
+    admin.require_permission(db, "marketplace.manage").await?;
+
+    let Some(redis) = state.redis.as_ref() else {
+        let count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM market_orders WHERE status = 'open'")
+                .fetch_one(db)
+                .await
+                .map_err(ApiError::Database)?;
+
+        sqlx::query(
+            r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+               VALUES ($1, 'marketplace.orderbook.rebuilt', 'marketplace_orderbook', $2)"#,
+        )
+        .bind(admin.user.id)
+        .bind(serde_json::json!({
+            "success": true,
+            "redis_configured": false,
+            "orders_restored": count
+        }))
+        .execute(db)
+        .await
+        .map_err(ApiError::Database)?;
+
+        return Ok(Json(serde_json::json!({
+            "success": true,
+            "redis_configured": false,
+            "orders_restored": count,
+            "message": format!("Redis is not configured; verified {} open orders in PostgreSQL", count)
+        })));
+    };
+
+    let mut conn = redis
+        .get()
+        .await
+        .map_err(|e| ApiError::Internal(format!("Redis connection failed: {}", e)))?;
+    let lock_key = "admin:marketplace:orderbook:rebuild:lock";
+    let lock_result: Option<String> = redis::cmd("SET")
+        .arg(lock_key)
+        .arg(admin.user.id.to_string())
+        .arg("NX")
+        .arg("EX")
+        .arg(120)
+        .query_async(&mut *conn)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Redis rebuild lock failed: {}", e)))?;
+
+    if lock_result.is_none() {
+        return Err(ApiError::Conflict(
+            "Orderbook rebuild is already running".to_string(),
+        ));
+    }
 
     tracing::warn!(
         admin_id = %admin.user.id,
         "Admin triggered orderbook rebuild"
     );
 
-    let count = crate::marketplace::orderbook::rebuild_from_postgres(redis, &state.db)
-        .await
-        .map_err(|e| ApiError::Internal(format!("Orderbook rebuild failed: {}", e)))?;
+    let rebuild_result = crate::marketplace::orderbook::rebuild_from_postgres(redis, db).await;
+    let _release_result: Result<i32, redis::RedisError> = redis::cmd("DEL")
+        .arg(lock_key)
+        .query_async(&mut *conn)
+        .await;
+
+    let count = match rebuild_result {
+        Ok(count) => count,
+        Err(e) => {
+            let _ = sqlx::query(
+                r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+                   VALUES ($1, 'marketplace.orderbook.rebuild_failed', 'marketplace_orderbook', $2)"#,
+            )
+            .bind(admin.user.id)
+            .bind(serde_json::json!({
+                "success": false,
+                "error": e.to_string()
+            }))
+            .execute(db)
+            .await;
+            return Err(ApiError::Internal(format!(
+                "Orderbook rebuild failed: {}",
+                e
+            )));
+        }
+    };
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, new_state)
+           VALUES ($1, 'marketplace.orderbook.rebuilt', 'marketplace_orderbook', $2)"#,
+    )
+    .bind(admin.user.id)
+    .bind(serde_json::json!({
+        "success": true,
+        "redis_configured": true,
+        "orders_restored": count
+    }))
+    .execute(db)
+    .await
+    .map_err(ApiError::Database)?;
 
     Ok(Json(serde_json::json!({
         "success": true,
+        "redis_configured": true,
         "orders_restored": count,
         "message": format!("Orderbook rebuilt: {} orders restored from PostgreSQL", count)
     })))
@@ -828,18 +1170,20 @@ pub async fn api_admin_marketplace_toggle_trading(
 
 /// GET /api/admin/marketplace/health — DB latency, Redis, WS connections.
 pub async fn api_admin_marketplace_health(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<SystemHealth>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.view")
+        .await?;
     let db = &state.db;
 
     // DB latency
     let start = std::time::Instant::now();
-    let _: Option<i32> = sqlx::query_scalar("SELECT 1")
-        .fetch_optional(db)
+    let _: i32 = sqlx::query_scalar("SELECT 1")
+        .fetch_one(db)
         .await
-        .ok()
-        .flatten();
+        .map_err(ApiError::Database)?;
     let db_latency_ms = start.elapsed().as_secs_f64() * 1000.0;
 
     // Redis check
@@ -857,28 +1201,38 @@ pub async fn api_admin_marketplace_health(
         (false, None)
     };
 
-    // Last trade
-    let last_trade: Option<chrono::NaiveDateTime> =
+    let last_trade: Option<chrono::DateTime<chrono::Utc>> =
         sqlx::query_scalar("SELECT MAX(executed_at) FROM trade_history")
-            .fetch_optional(db)
+            .fetch_one(db)
             .await
-            .ok()
-            .flatten();
+            .map_err(ApiError::Database)?;
 
-    // Order queue depth
     let queue_depth: i64 = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM market_orders WHERE status IN ('open', 'partially_filled')",
     )
     .fetch_one(db)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::Database)?;
+
+    let websocket_status = "not_tracked".to_string();
+    let matching_engine_status = if state.redis.is_some() {
+        if redis_connected {
+            "healthy".to_string()
+        } else {
+            "degraded".to_string()
+        }
+    } else {
+        "not_configured".to_string()
+    };
 
     Ok(Json(SystemHealth {
         database_latency_ms: db_latency_ms,
+        database_connected: true,
         redis_connected,
         redis_latency_ms,
-        active_ws_connections: 0, // TODO: track via AtomicU64 counter
-        matching_engine_status: "healthy".to_string(),
+        active_ws_connections: 0,
+        websocket_status,
+        matching_engine_status,
         last_trade_at: last_trade,
         order_queue_depth: queue_depth,
     }))
@@ -995,18 +1349,7 @@ mod tests {
 
     #[test]
     fn test_marketplace_settings_defaults() {
-        let settings = MarketplaceSettings {
-            matching_algorithm: "price-time".into(),
-            tick_size_cents: 5,
-            min_order_size: 1,
-            max_order_size: 10000,
-            settlement_mode: "instant".into(),
-            max_gas_gwei: 5,
-            settlement_batch_size: 50,
-            trading_enabled: true,
-            maintenance_window: false,
-            weekend_trading: false,
-        };
+        let settings = default_marketplace_settings();
         let json_str = serde_json::to_string(&settings).unwrap();
         let parsed: MarketplaceSettings = serde_json::from_str(&json_str).unwrap();
         assert_eq!(parsed.tick_size_cents, 5);
@@ -1014,9 +1357,113 @@ mod tests {
     }
 
     #[test]
+    fn marketplace_settings_validation_accepts_defaults() {
+        let settings = default_marketplace_settings();
+        assert!(validate_marketplace_settings(&settings).is_ok());
+    }
+
+    #[test]
+    fn marketplace_settings_validation_rejects_unimplemented_algorithm() {
+        let mut settings = default_marketplace_settings();
+        settings.matching_algorithm = "pro-rata".into();
+        assert!(validate_marketplace_settings(&settings).is_err());
+    }
+
+    #[test]
+    fn marketplace_settings_validation_rejects_bad_settlement_mode() {
+        let mut settings = default_marketplace_settings();
+        settings.settlement_mode = "tomorrow".into();
+        assert!(validate_marketplace_settings(&settings).is_err());
+    }
+
+    #[test]
+    fn marketplace_settings_validation_rejects_zero_tick() {
+        let mut settings = default_marketplace_settings();
+        settings.tick_size_cents = 0;
+        assert!(validate_marketplace_settings(&settings).is_err());
+    }
+
+    #[test]
+    fn marketplace_settings_validation_rejects_min_greater_than_max() {
+        let mut settings = default_marketplace_settings();
+        settings.min_order_size = 100;
+        settings.max_order_size = 10;
+        assert!(validate_marketplace_settings(&settings).is_err());
+    }
+
+    #[test]
+    fn marketplace_settings_validation_rejects_invalid_gas_and_batch_bounds() {
+        let mut settings = default_marketplace_settings();
+        settings.max_gas_gwei = 0;
+        assert!(validate_marketplace_settings(&settings).is_err());
+
+        settings = default_marketplace_settings();
+        settings.settlement_batch_size = 10_001;
+        assert!(validate_marketplace_settings(&settings).is_err());
+    }
+
+    #[test]
     fn test_fee_bps_validation() {
-        assert!(500 >= 0 && 500 <= 1000);
-        assert!(!(1001 >= 0 && 1001 <= 1000));
+        let valid_bps = 500;
+        let invalid_bps = 1001;
+        assert!((0..=1000).contains(&valid_bps));
+        assert!(!(0..=1000).contains(&invalid_bps));
+    }
+
+    #[test]
+    fn order_hold_cents_multiplies_integer_minor_units() {
+        assert_eq!(order_hold_cents(10_500, 3).unwrap(), 31_500);
+    }
+
+    #[test]
+    fn order_hold_cents_allows_one_cent_order() {
+        assert_eq!(order_hold_cents(1, 1).unwrap(), 1);
+    }
+
+    #[test]
+    fn order_hold_cents_rejects_zero_price() {
+        assert!(order_hold_cents(0, 10).is_err());
+    }
+
+    #[test]
+    fn order_hold_cents_rejects_negative_price() {
+        assert!(order_hold_cents(-1, 10).is_err());
+    }
+
+    #[test]
+    fn order_hold_cents_rejects_zero_quantity() {
+        assert!(order_hold_cents(100, 0).is_err());
+    }
+
+    #[test]
+    fn order_hold_cents_rejects_negative_quantity() {
+        assert!(order_hold_cents(100, -1).is_err());
+    }
+
+    #[test]
+    fn order_hold_cents_rejects_overflow() {
+        assert!(order_hold_cents(i64::MAX, 2).is_err());
+    }
+
+    #[test]
+    fn approval_reason_trims_input() {
+        assert_eq!(
+            normalize_approval_reason(Some("  reviewed ".into()), "fallback").unwrap(),
+            "reviewed"
+        );
+    }
+
+    #[test]
+    fn approval_reason_uses_fallback_for_empty_input() {
+        assert_eq!(
+            normalize_approval_reason(Some("   ".into()), "fallback").unwrap(),
+            "fallback"
+        );
+    }
+
+    #[test]
+    fn approval_reason_rejects_long_input() {
+        assert!(normalize_approval_reason(Some("x".repeat(501)), "fallback").is_err());
     }
 }
 // ═══════════════════════════════════════════════════════════════════
@@ -1036,15 +1483,18 @@ pub struct PendingOrder {
     pub price_cents: i64,
     pub quantity: i32,
     pub total_value_cents: i64,
-    pub created_at: chrono::NaiveDateTime,
+    pub review_reason: String,
+    pub supply_impact_bps: Option<i32>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// GET /api/admin/marketplace/approvals — List orders awaiting admin approval.
 pub async fn api_admin_marketplace_approvals(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<PendingOrder>>, ApiError> {
     let db = &state.db;
+    admin.require_permission(db, "marketplace.manage").await?;
 
     let rows: Vec<PendingOrder> = sqlx::query_as(
         r#"SELECT
@@ -1052,11 +1502,20 @@ pub async fn api_admin_marketplace_approvals(
             o.user_id::TEXT,
             u.email AS user_email,
             o.asset_id::TEXT,
-            a.name AS asset_name,
+            a.title AS asset_name,
             o.side,
             o.price_cents,
             o.quantity,
             (o.price_cents * o.quantity::BIGINT) AS total_value_cents,
+            CASE
+                WHEN (o.price_cents * o.quantity::BIGINT) > 5000000 THEN 'Order value exceeds manual review threshold'
+                WHEN a.tokens_total > 0 AND (o.quantity * 10000 / a.tokens_total) > 500 THEN 'Order quantity exceeds 5% supply threshold'
+                ELSE 'Flagged for admin review'
+            END AS review_reason,
+            CASE
+                WHEN a.tokens_total > 0 THEN (o.quantity * 10000 / a.tokens_total)::INTEGER
+                ELSE NULL
+            END AS supply_impact_bps,
             o.created_at
         FROM market_orders o
         LEFT JOIN users u ON u.id = o.user_id
@@ -1079,6 +1538,33 @@ pub struct ApprovalRequest {
     pub reason: Option<String>,
 }
 
+fn normalize_approval_reason(reason: Option<String>, fallback: &str) -> Result<String, ApiError> {
+    let reason = reason
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| fallback.to_string());
+
+    if reason.len() > 500 {
+        return Err(ApiError::BadRequest(
+            "Reason must be 500 characters or fewer".into(),
+        ));
+    }
+
+    Ok(reason)
+}
+
+fn order_hold_cents(price_cents: i64, quantity: i32) -> Result<i64, ApiError> {
+    if price_cents <= 0 || quantity <= 0 {
+        return Err(ApiError::BadRequest(
+            "Order price and quantity must be positive".into(),
+        ));
+    }
+
+    price_cents
+        .checked_mul(quantity as i64)
+        .ok_or_else(|| ApiError::BadRequest("Order total exceeds supported limits".into()))
+}
+
 /// POST /api/admin/marketplace/approvals/:order_id/approve — Approve a pending order.
 pub async fn api_admin_marketplace_approve_order(
     admin: AdminUser,
@@ -1087,41 +1573,108 @@ pub async fn api_admin_marketplace_approve_order(
     Json(body): Json<ApprovalRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let db = &state.db;
+    admin.require_permission(db, "marketplace.manage").await?;
     let order_uuid =
         Uuid::parse_str(&order_id).map_err(|_| ApiError::BadRequest("Invalid order ID".into()))?;
+    let reason = normalize_approval_reason(body.reason, "Approved by admin")?;
 
-    let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM market_orders WHERE id = $1")
-            .bind(order_uuid)
-            .fetch_optional(db)
-            .await
-            .map_err(|e| ApiError::Internal(format!("DB error: {}", e)))?
-            .flatten();
+    let mut tx = db
+        .begin()
+        .await
+        .map_err(|e| ApiError::Internal(format!("Transaction start failed: {}", e)))?;
 
-    match status.as_deref() {
-        Some("pending_review") => {}
-        Some(_) => return Err(ApiError::BadRequest("Order is not pending review".into())),
-        None => return Err(ApiError::NotFound("Order not found".into())),
+    let order: MarketOrder = sqlx::query_as("SELECT * FROM market_orders WHERE id = $1 FOR UPDATE")
+        .bind(order_uuid)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?
+        .ok_or_else(|| ApiError::NotFound("Order not found".into()))?;
+
+    if order.status != "pending_review" {
+        return Err(ApiError::BadRequest("Order is not pending review".into()));
     }
 
-    sqlx::query(
-        "UPDATE market_orders SET status = 'open', updated_at = NOW(), cancel_reason = $2 WHERE id = $1",
+    let approved_order: MarketOrder = sqlx::query_as(
+        "UPDATE market_orders
+         SET status = 'open', updated_at = NOW(), cancel_reason = $2
+         WHERE id = $1 AND status = 'pending_review'
+         RETURNING *",
     )
     .bind(order_uuid)
-    .bind(body.reason.as_deref().unwrap_or("Approved by admin"))
-    .execute(db)
+    .bind(&reason)
+    .fetch_optional(&mut *tx)
     .await
-    .map_err(|e| ApiError::Internal(format!("Failed to approve: {}", e)))?;
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::Conflict("Order was already reviewed".into()))?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'marketplace.order.approved', 'market_order', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(order_uuid)
+    .bind(serde_json::json!({
+        "status": order.status,
+        "held_side": order.side,
+        "price_cents": order.price_cents,
+        "quantity": order.quantity
+    }))
+    .bind(serde_json::json!({
+        "status": approved_order.status,
+        "reason": reason,
+        "orderbook_sync": "queued"
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit()
+        .await
+        .map_err(|e| ApiError::Internal(format!("Commit failed: {}", e)))?;
+
+    let mut orderbook_synced = false;
+    if let Some(redis) = state.redis.as_ref() {
+        match crate::marketplace::orderbook::insert_order(redis, &approved_order).await {
+            Ok(()) => {
+                orderbook_synced = true;
+                crate::marketplace::websocket::broadcast_orderbook_update(
+                    db,
+                    Some(redis),
+                    approved_order.asset_id,
+                )
+                .await;
+            }
+            Err(e) => {
+                tracing::error!(
+                    order_id = %approved_order.id,
+                    error = %e,
+                    "Approved order opened in DB but Redis orderbook insert failed"
+                );
+                sentry::capture_message(
+                    "Approved marketplace order failed Redis orderbook insert",
+                    sentry::Level::Error,
+                );
+            }
+        }
+    } else {
+        tracing::warn!(
+            order_id = %approved_order.id,
+            "Approved order opened without Redis configured; sync worker cannot insert it"
+        );
+    }
 
     tracing::info!(
         admin_id = %admin.user.id,
         order_id = %order_id,
+        orderbook_synced,
         "Admin approved pending order"
     );
 
-    Ok(Json(
-        serde_json::json!({ "status": "approved", "order_id": order_id }),
-    ))
+    Ok(Json(serde_json::json!({
+        "status": "approved",
+        "order_id": order_id,
+        "orderbook_synced": orderbook_synced
+    })))
 }
 
 /// POST /api/admin/marketplace/approvals/:order_id/reject — Reject a pending order.
@@ -1132,54 +1685,103 @@ pub async fn api_admin_marketplace_reject_order(
     Json(body): Json<ApprovalRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let db = &state.db;
+    admin.require_permission(db, "marketplace.manage").await?;
     let order_uuid =
         Uuid::parse_str(&order_id).map_err(|_| ApiError::BadRequest("Invalid order ID".into()))?;
+    let reason = normalize_approval_reason(body.reason, "Rejected by admin")?;
 
     let mut tx = db
         .begin()
         .await
         .map_err(|e| ApiError::Internal(format!("Transaction start failed: {}", e)))?;
 
-    let row: Option<(String, String, i64, i32)> = sqlx::query_as(
-        "SELECT status, side, price_cents, quantity FROM market_orders WHERE id = $1 FOR UPDATE",
-    )
-    .bind(order_uuid)
-    .fetch_optional(&mut *tx)
-    .await
-    .map_err(|e| ApiError::Internal(format!("DB error: {}", e)))?;
+    let order: MarketOrder = sqlx::query_as("SELECT * FROM market_orders WHERE id = $1 FOR UPDATE")
+        .bind(order_uuid)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(ApiError::Database)?
+        .ok_or_else(|| ApiError::NotFound("Order not found".into()))?;
 
-    let (status, side, price_cents, quantity) = match row {
-        Some(r) => r,
-        None => return Err(ApiError::NotFound("Order not found".into())),
-    };
-
-    if status != "pending_review" {
+    if order.status != "pending_review" {
         return Err(ApiError::BadRequest("Order is not pending review".into()));
     }
-
-    let reason = body.reason.as_deref().unwrap_or("Rejected by admin");
 
     sqlx::query(
         "UPDATE market_orders SET status = 'rejected', updated_at = NOW(), cancel_reason = $2 WHERE id = $1",
     )
     .bind(order_uuid)
-    .bind(reason)
+    .bind(&reason)
     .execute(&mut *tx)
     .await
     .map_err(|e| ApiError::Internal(format!("Failed to reject: {}", e)))?;
 
-    // Refund held balance for buy orders
-    if side == "buy" {
-        let refund_cents = price_cents * quantity as i64;
-        sqlx::query(
-            "UPDATE wallets SET held_balance_cents = held_balance_cents - $1, balance_cents = balance_cents + $1 WHERE user_id = (SELECT user_id FROM market_orders WHERE id = $2)",
-        )
-        .bind(refund_cents)
-        .bind(order_uuid)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| ApiError::Internal(format!("Failed to refund: {}", e)))?;
+    match order.side.as_str() {
+        "buy" => {
+            let hold_cents = order_hold_cents(order.price_cents, order.quantity)?;
+            let result = sqlx::query(
+                "UPDATE wallets
+                 SET held_balance_cents = held_balance_cents - $1, updated_at = NOW()
+                 WHERE user_id = $2
+                   AND wallet_type = 'cash'
+                   AND currency = 'USD'
+                   AND held_balance_cents >= $1",
+            )
+            .bind(hold_cents)
+            .bind(order.user_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+
+            if result.rows_affected() != 1 {
+                return Err(ApiError::Conflict(
+                    "Held balance could not be released for this order".into(),
+                ));
+            }
+        }
+        "sell" => {
+            let result = sqlx::query(
+                "UPDATE investments
+                 SET held_tokens = held_tokens - $1, updated_at = NOW()
+                 WHERE user_id = $2
+                   AND asset_id = $3
+                   AND status != 'exited'
+                   AND held_tokens >= $1",
+            )
+            .bind(order.quantity)
+            .bind(order.user_id)
+            .bind(order.asset_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(ApiError::Database)?;
+
+            if result.rows_affected() != 1 {
+                return Err(ApiError::Conflict(
+                    "Held tokens could not be released for this order".into(),
+                ));
+            }
+        }
+        _ => return Err(ApiError::BadRequest("Unsupported order side".into())),
     }
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'marketplace.order.rejected', 'market_order', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(order_uuid)
+    .bind(serde_json::json!({
+        "status": order.status,
+        "side": order.side,
+        "price_cents": order.price_cents,
+        "quantity": order.quantity
+    }))
+    .bind(serde_json::json!({
+        "status": "rejected",
+        "reason": reason
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
 
     tx.commit()
         .await
@@ -1340,22 +1942,41 @@ pub struct AdminP2POffer {
     pub status: String,
     pub market_price_cents: Option<i64>,
     pub price_deviation_pct: Option<f64>,
-    pub created_at: chrono::NaiveDateTime,
-    pub expires_at: chrono::NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(missing_docs)]
+pub struct AdminCancelP2PRequest {
+    pub reason: String,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct AdminP2PCancelRow {
+    id: Uuid,
+    status: String,
+    asset_id: Uuid,
+    maker_user_id: Uuid,
+    taker_user_id: Uuid,
+    side: String,
+    price_cents: i64,
+    quantity: i32,
 }
 
 /// GET /api/admin/marketplace/p2p — List P2P offers with price deviation warnings.
 pub async fn api_admin_marketplace_p2p(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<AdminP2POffer>>, ApiError> {
     let db = &state.db;
+    admin.require_permission(db, "marketplace.view").await?;
 
     let offers: Vec<AdminP2POffer> = sqlx::query_as(
         r#"SELECT
             p.id::TEXT,
             p.asset_id::TEXT,
-            a.name AS asset_name,
+            a.title AS asset_name,
             mu.email AS maker_email,
             tu.email AS taker_email,
             p.side,
@@ -1384,9 +2005,101 @@ pub async fn api_admin_marketplace_p2p(
     )
     .fetch_all(db)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::Database)?;
 
     Ok(Json(offers))
+}
+
+/// POST /api/admin/marketplace/p2p/:offer_id/cancel — Admin-cancel a pending P2P offer.
+pub async fn api_admin_marketplace_cancel_p2p(
+    admin: AdminUser,
+    Path(offer_id): Path<Uuid>,
+    State(state): State<AppState>,
+    Json(body): Json<AdminCancelP2PRequest>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    let db = &state.db;
+    admin.require_permission(db, "marketplace.manage").await?;
+
+    let reason = body.reason.trim();
+    if reason.is_empty() {
+        return Err(ApiError::BadRequest(
+            "Cancellation reason is required".into(),
+        ));
+    }
+    if reason.len() > 500 {
+        return Err(ApiError::BadRequest(
+            "Cancellation reason must be 500 characters or fewer".into(),
+        ));
+    }
+
+    let mut tx = db
+        .begin()
+        .await
+        .map_err(|e| ApiError::Internal(format!("Transaction start failed: {}", e)))?;
+
+    let offer: AdminP2PCancelRow = sqlx::query_as(
+        r#"SELECT id, status, asset_id, maker_user_id, taker_user_id, side, price_cents, quantity
+           FROM p2p_offers
+           WHERE id = $1
+           FOR UPDATE"#,
+    )
+    .bind(offer_id)
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?
+    .ok_or_else(|| ApiError::NotFound("P2P offer not found".into()))?;
+
+    if offer.status != "pending" {
+        return Err(ApiError::Conflict(format!(
+            "Only pending P2P offers can be admin-cancelled; current status is {}",
+            offer.status
+        )));
+    }
+
+    sqlx::query(
+        "UPDATE p2p_offers SET status = 'admin_cancelled', updated_at = NOW() WHERE id = $1",
+    )
+    .bind(offer_id)
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, previous_state, new_state)
+           VALUES ($1, 'marketplace.p2p.admin_cancelled', 'p2p_offer', $2, $3, $4)"#,
+    )
+    .bind(admin.user.id)
+    .bind(offer_id)
+    .bind(serde_json::json!({
+        "status": offer.status,
+        "asset_id": offer.asset_id,
+        "maker_user_id": offer.maker_user_id,
+        "taker_user_id": offer.taker_user_id,
+        "side": offer.side,
+        "price_cents": offer.price_cents,
+        "quantity": offer.quantity
+    }))
+    .bind(serde_json::json!({
+        "status": "admin_cancelled",
+        "reason": reason
+    }))
+    .execute(&mut *tx)
+    .await
+    .map_err(ApiError::Database)?;
+
+    tx.commit().await.map_err(ApiError::Database)?;
+
+    tracing::info!(
+        admin_id = %admin.user.id,
+        offer_id = %offer.id,
+        "Admin cancelled P2P offer"
+    );
+
+    Ok(Json(serde_json::json!({
+        "offer_id": offer_id,
+        "status": "admin_cancelled",
+        "reason": reason
+    })))
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1545,7 +2258,7 @@ pub async fn api_admin_marketplace_add_watchlist(
 // ═══════════════════════════════════════════════════════════════════
 
 /// Marketplace settings read from Redis.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct MarketplaceSettings {
     pub matching_algorithm: String,
@@ -1560,13 +2273,8 @@ pub struct MarketplaceSettings {
     pub weekend_trading: bool,
 }
 
-/// GET /api/admin/marketplace/settings — Read all marketplace settings from Redis.
-pub async fn api_admin_marketplace_settings(
-    _admin: AdminUser,
-    State(state): State<AppState>,
-) -> Result<Json<MarketplaceSettings>, ApiError> {
-    // Try reading from Redis, fall back to defaults
-    let defaults = MarketplaceSettings {
+fn default_marketplace_settings() -> MarketplaceSettings {
+    MarketplaceSettings {
         matching_algorithm: "price-time".into(),
         tick_size_cents: 5,
         min_order_size: 1,
@@ -1577,7 +2285,82 @@ pub async fn api_admin_marketplace_settings(
         trading_enabled: true,
         maintenance_window: false,
         weekend_trading: false,
-    };
+    }
+}
+
+fn validate_marketplace_settings(settings: &MarketplaceSettings) -> Result<(), ApiError> {
+    if settings.matching_algorithm != "price-time" {
+        return Err(ApiError::BadRequest(
+            "matching_algorithm must be price-time".into(),
+        ));
+    }
+
+    if !matches!(
+        settings.settlement_mode.as_str(),
+        "instant" | "batched" | "manual"
+    ) {
+        return Err(ApiError::BadRequest(
+            "settlement_mode must be instant, batched, or manual".into(),
+        ));
+    }
+
+    if !(1..=1_000_000).contains(&settings.tick_size_cents) {
+        return Err(ApiError::BadRequest(
+            "tick_size_cents must be between 1 and 1,000,000".into(),
+        ));
+    }
+
+    if !(1..=1_000_000).contains(&settings.min_order_size) {
+        return Err(ApiError::BadRequest(
+            "min_order_size must be between 1 and 1,000,000".into(),
+        ));
+    }
+
+    if !(1..=1_000_000).contains(&settings.max_order_size) {
+        return Err(ApiError::BadRequest(
+            "max_order_size must be between 1 and 1,000,000".into(),
+        ));
+    }
+
+    if settings.min_order_size > settings.max_order_size {
+        return Err(ApiError::BadRequest(
+            "min_order_size cannot exceed max_order_size".into(),
+        ));
+    }
+
+    if !(1..=10_000).contains(&settings.max_gas_gwei) {
+        return Err(ApiError::BadRequest(
+            "max_gas_gwei must be between 1 and 10,000".into(),
+        ));
+    }
+
+    if !(1..=10_000).contains(&settings.settlement_batch_size) {
+        return Err(ApiError::BadRequest(
+            "settlement_batch_size must be between 1 and 10,000".into(),
+        ));
+    }
+
+    Ok(())
+}
+
+/// GET /api/admin/marketplace/settings — Read all marketplace settings from Redis.
+pub async fn api_admin_marketplace_settings(
+    admin: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Json<MarketplaceSettings>, ApiError> {
+    let can_view =
+        crate::auth::middleware::has_permission(&state.db, admin.user.id, "marketplace.view").await;
+    let can_manage =
+        crate::auth::middleware::has_permission(&state.db, admin.user.id, "marketplace.manage")
+            .await;
+    if !can_view && !can_manage {
+        return Err(ApiError::Forbidden(
+            "Missing permission: marketplace.view".into(),
+        ));
+    }
+
+    // Try reading from Redis, fall back to defaults
+    let defaults = default_marketplace_settings();
 
     if let Some(ref redis) = state.redis {
         let mut conn = match redis.get().await {
@@ -1618,6 +2401,11 @@ pub async fn api_admin_marketplace_save_settings(
     State(state): State<AppState>,
     Json(body): Json<MarketplaceSettings>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    admin
+        .require_permission(&state.db, "marketplace.manage")
+        .await?;
+    validate_marketplace_settings(&body)?;
+
     let redis = state
         .redis
         .as_ref()
@@ -1628,22 +2416,59 @@ pub async fn api_admin_marketplace_save_settings(
         .await
         .map_err(|e| ApiError::Internal(format!("Redis connection failed: {}", e)))?;
 
+    let previous_settings = {
+        let json_str: Result<Option<String>, redis::RedisError> = redis::cmd("GET")
+            .arg("marketplace:settings")
+            .query_async(&mut *conn)
+            .await;
+
+        match json_str {
+            Ok(Some(s)) => serde_json::from_str::<MarketplaceSettings>(&s)
+                .unwrap_or_else(|_| default_marketplace_settings()),
+            Ok(None) => default_marketplace_settings(),
+            Err(e) => {
+                return Err(ApiError::Internal(format!(
+                    "Redis settings read failed: {}",
+                    e
+                )));
+            }
+        }
+    };
+
     let json_str = serde_json::to_string(&body)
         .map_err(|e| ApiError::Internal(format!("Serialize failed: {}", e)))?;
 
-    let _: Result<(), redis::RedisError> = redis::cmd("SET")
+    redis::cmd("SET")
         .arg("marketplace:settings")
         .arg(&json_str)
-        .query_async(&mut *conn)
-        .await;
+        .query_async::<()>(&mut *conn)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Redis settings write failed: {}", e)))?;
 
     // Also sync the kill-switch flag
     let enabled_val = if body.trading_enabled { "1" } else { "0" };
-    let _: Result<(), redis::RedisError> = redis::cmd("SET")
+    redis::cmd("SET")
         .arg("marketplace:trading_enabled")
         .arg(enabled_val)
-        .query_async(&mut *conn)
-        .await;
+        .query_async::<()>(&mut *conn)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Redis trading flag write failed: {}", e)))?;
+
+    let previous_state = serde_json::to_value(previous_settings)
+        .map_err(|e| ApiError::Internal(format!("Audit serialization failed: {}", e)))?;
+    let new_state = serde_json::to_value(&body)
+        .map_err(|e| ApiError::Internal(format!("Audit serialization failed: {}", e)))?;
+
+    sqlx::query(
+        r#"INSERT INTO audit_logs (actor_user_id, action, entity_type, previous_state, new_state)
+           VALUES ($1, 'marketplace.settings.update', 'marketplace_settings', $2, $3)"#,
+    )
+    .bind(admin.user.id)
+    .bind(previous_state)
+    .bind(new_state)
+    .execute(&state.db)
+    .await
+    .map_err(ApiError::Database)?;
 
     tracing::info!(admin_id = %admin.user.id, "Admin saved marketplace settings");
     Ok(Json(serde_json::json!({ "status": "saved" })))
@@ -1662,44 +2487,153 @@ pub struct OjkReportQuery {
 #[derive(Debug, Deserialize)]
 #[allow(missing_docs)]
 pub struct TravelRuleQuery {
-    pub _from_date: Option<String>,
-    pub _to_date: Option<String>,
+    pub from_date: Option<String>,
+    pub to_date: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 #[allow(missing_docs)]
 pub struct TaxExportQuery {
-    pub _year: Option<String>,
+    pub year: Option<i32>,
+}
+
+fn csv_escape(value: impl AsRef<str>) -> String {
+    let value = value.as_ref();
+    if value.contains(',') || value.contains('"') || value.contains('\n') || value.contains('\r') {
+        format!("\"{}\"", value.replace('"', "\"\""))
+    } else {
+        value.to_string()
+    }
+}
+
+async fn require_marketplace_compliance(
+    jar: &CookieJar,
+    state: &AppState,
+) -> Result<User, ApiError> {
+    let user = crate::auth::middleware::get_current_user(jar, &state.db)
+        .await
+        .ok_or_else(|| ApiError::Unauthorized("Authentication required".to_string()))?;
+
+    if crate::auth::middleware::has_permission(&state.db, user.id, "marketplace.compliance").await {
+        Ok(user)
+    } else {
+        Err(ApiError::Forbidden(
+            "marketplace.compliance permission required".to_string(),
+        ))
+    }
+}
+
+fn parse_ojk_quarter(input: Option<String>) -> Result<(String, NaiveDate, NaiveDate), ApiError> {
+    let quarter = input.unwrap_or_else(|| {
+        let today = chrono::Utc::now().date_naive();
+        let q = ((today.month0() / 3) + 1).clamp(1, 4);
+        format!("{}-Q{}", today.year(), q)
+    });
+
+    let (year_str, q_str) = quarter
+        .split_once("-Q")
+        .ok_or_else(|| ApiError::BadRequest("quarter must use YYYY-QN".to_string()))?;
+    let year: i32 = year_str
+        .parse()
+        .map_err(|_| ApiError::BadRequest("quarter year must be numeric".to_string()))?;
+    let q: u32 = q_str
+        .parse()
+        .map_err(|_| ApiError::BadRequest("quarter must use Q1 through Q4".to_string()))?;
+    if !(1..=4).contains(&q) {
+        return Err(ApiError::BadRequest(
+            "quarter must use Q1 through Q4".to_string(),
+        ));
+    }
+
+    let start_month = (q - 1) * 3 + 1;
+    let start = NaiveDate::from_ymd_opt(year, start_month, 1)
+        .ok_or_else(|| ApiError::BadRequest("quarter is outside supported range".to_string()))?;
+    let end = if q == 4 {
+        NaiveDate::from_ymd_opt(year + 1, 1, 1)
+    } else {
+        NaiveDate::from_ymd_opt(year, start_month + 3, 1)
+    }
+    .ok_or_else(|| ApiError::BadRequest("quarter is outside supported range".to_string()))?;
+
+    Ok((format!("{}-Q{}", year, q), start, end))
+}
+
+fn parse_optional_date(value: &Option<String>, name: &str) -> Result<Option<NaiveDate>, ApiError> {
+    match value.as_deref().filter(|v| !v.trim().is_empty()) {
+        Some(raw) => NaiveDate::parse_from_str(raw, "%Y-%m-%d")
+            .map(Some)
+            .map_err(|_| ApiError::BadRequest(format!("{} must use YYYY-MM-DD", name))),
+        None => Ok(None),
+    }
 }
 
 /// GET /api/admin/marketplace/compliance/ojk-report - Returns basic quarterly metrics as CSV
 pub async fn api_admin_marketplace_compliance_ojk(
-    admin: AdminUser,
+    jar: CookieJar,
     Query(query): Query<OjkReportQuery>,
     State(state): State<AppState>,
 ) -> Result<impl axum::response::IntoResponse, ApiError> {
+    let user = require_marketplace_compliance(&jar, &state).await?;
     let db = &state.db;
+    let (current_quarter, start_date, end_date) = parse_ojk_quarter(query.quarter)?;
 
     let total_volume: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(SUM(price_cents * quantity::BIGINT), 0) FROM trade_history",
+        r#"
+        SELECT COALESCE(SUM(price_cents * quantity::BIGINT), 0)::BIGINT
+        FROM trade_history
+        WHERE executed_at >= $1::date
+          AND executed_at < $2::date
+        "#,
     )
+    .bind(start_date)
+    .bind(end_date)
     .fetch_one(db)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::Database)?;
 
-    let total_users: i64 = sqlx::query_scalar("SELECT COUNT(*)::BIGINT FROM users")
-        .fetch_one(db)
-        .await
-        .unwrap_or(0);
+    let total_users: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COUNT(*)::BIGINT
+        FROM users
+        WHERE created_at < $1::date
+        "#,
+    )
+    .bind(end_date)
+    .fetch_one(db)
+    .await
+    .map_err(ApiError::Database)?;
 
-    let current_quarter = query.quarter.unwrap_or_else(|| "2026-Q1".to_string());
+    let trade_count: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COUNT(*)::BIGINT
+        FROM trade_history
+        WHERE executed_at >= $1::date
+          AND executed_at < $2::date
+        "#,
+    )
+    .bind(start_date)
+    .bind(end_date)
+    .fetch_one(db)
+    .await
+    .map_err(ApiError::Database)?;
 
     let csv = format!(
-        "Metric,Value,Period\nTotal Trade Volume (cents),{},{}\nTotal Registered Users,{},{}\n",
-        total_volume, current_quarter, total_users, current_quarter
+        "Metric,Value,Period,Start_Date,End_Date\nTotal Trade Volume (cents),{},{},{},{}\nTotal Trades,{},{},{},{}\nTotal Registered Users,{},{},{},{}\n",
+        total_volume,
+        current_quarter,
+        start_date,
+        end_date,
+        trade_count,
+        current_quarter,
+        start_date,
+        end_date,
+        total_users,
+        current_quarter,
+        start_date,
+        end_date
     );
 
-    tracing::info!(admin_id = %admin.user.id, "Admin exported OJK Report (CSV)");
+    tracing::info!(admin_id = %user.id, quarter = %current_quarter, "Admin exported OJK Report (CSV)");
 
     let headers = [
         (axum::http::header::CONTENT_TYPE, "text/csv; charset=utf-8"),
@@ -1714,50 +2648,80 @@ pub async fn api_admin_marketplace_compliance_ojk(
 
 /// GET /api/admin/marketplace/compliance/travel-rule - Returns all trades for AML checks as CSV
 pub async fn api_admin_marketplace_compliance_travel_rule(
-    admin: AdminUser,
-    Query(_query): Query<TravelRuleQuery>,
+    jar: CookieJar,
+    Query(query): Query<TravelRuleQuery>,
     State(state): State<AppState>,
 ) -> Result<impl axum::response::IntoResponse, ApiError> {
+    let user = require_marketplace_compliance(&jar, &state).await?;
     let db = &state.db;
+    let from_date = parse_optional_date(&query.from_date, "from_date")?;
+    let to_date = parse_optional_date(&query.to_date, "to_date")?;
+    if let (Some(from_date), Some(to_date)) = (from_date, to_date) {
+        if from_date > to_date {
+            return Err(ApiError::BadRequest(
+                "from_date cannot be after to_date".to_string(),
+            ));
+        }
+    }
 
     let rows: Vec<(
         Uuid,
+        chrono::DateTime<chrono::Utc>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
         i64,
         i32,
-        chrono::NaiveDateTime,
-        Option<String>,
-        Option<String>,
+        i64,
     )> = sqlx::query_as(
         r#"
-        SELECT t.id, t.price_cents, t.quantity, t.executed_at, b.email, s.email 
+        SELECT
+            t.id,
+            t.executed_at,
+            b.email AS buyer_email,
+            s.email AS seller_email,
+            bp.display_name AS buyer_name,
+            sp.display_name AS seller_name,
+            t.price_cents,
+            t.quantity,
+            COALESCE(t.total_cents, t.price_cents * t.quantity::BIGINT) AS total_value_cents
         FROM trade_history t 
-        LEFT JOIN users b ON b.id = t.buyer_id
-        LEFT JOIN users s ON s.id = t.seller_id
-        ORDER BY t.executed_at DESC LIMIT 1000
+        LEFT JOIN users b ON b.id = t.buyer_user_id
+        LEFT JOIN users s ON s.id = t.seller_user_id
+        LEFT JOIN user_profiles bp ON bp.user_id = t.buyer_user_id
+        LEFT JOIN user_profiles sp ON sp.user_id = t.seller_user_id
+        WHERE ($1::date IS NULL OR t.executed_at >= $1::date)
+          AND ($2::date IS NULL OR t.executed_at < ($2::date + INTERVAL '1 day'))
+        ORDER BY t.executed_at DESC
+        LIMIT 10000
         "#,
     )
+    .bind(from_date)
+    .bind(to_date)
     .fetch_all(db)
     .await
-    .unwrap_or_default();
+    .map_err(ApiError::Database)?;
 
     let mut csv = String::from(
-        "Trade_ID,Executed_At,Buyer_Email,Seller_Email,Price_Cents,Quantity,Total_Value_Cents\n",
+        "Trade_ID,Executed_At,Buyer_Email,Seller_Email,Buyer_Name,Seller_Name,Price_Cents,Quantity,Total_Value_Cents\n",
     );
     for row in rows {
-        let total = row.1 * row.2 as i64;
         csv.push_str(&format!(
-            "{},{},{},{},{},{},{}\n",
+            "{},{},{},{},{},{},{},{},{}\n",
             row.0,
-            row.3,
-            row.4.unwrap_or_default(),
-            row.5.unwrap_or_default(),
             row.1,
-            row.2,
-            total
+            csv_escape(row.2.unwrap_or_default()),
+            csv_escape(row.3.unwrap_or_default()),
+            csv_escape(row.4.unwrap_or_default()),
+            csv_escape(row.5.unwrap_or_default()),
+            row.6,
+            row.7,
+            row.8
         ));
     }
 
-    tracing::info!(admin_id = %admin.user.id, "Admin exported AML Travel Rule Data");
+    tracing::info!(admin_id = %user.id, "Admin exported AML Travel Rule Data");
 
     let headers = [
         (axum::http::header::CONTENT_TYPE, "text/csv; charset=utf-8"),
@@ -1772,13 +2736,58 @@ pub async fn api_admin_marketplace_compliance_travel_rule(
 
 /// GET /api/admin/marketplace/compliance/tax-export - Returns basic tax liability data
 pub async fn api_admin_marketplace_compliance_tax(
-    admin: AdminUser,
-    Query(_query): Query<TaxExportQuery>,
-    State(_state): State<AppState>,
+    jar: CookieJar,
+    Query(query): Query<TaxExportQuery>,
+    State(state): State<AppState>,
 ) -> Result<impl axum::response::IntoResponse, ApiError> {
-    let csv = String::from("User_Email,Year,Total_Realized_Gains_Cents,Total_Dividends_Cents\nuser_placeholder@poool.app,2025,0,0\n");
+    let user = require_marketplace_compliance(&jar, &state).await?;
+    let db = &state.db;
+    let year = query.year.unwrap_or_else(|| chrono::Utc::now().year() - 1);
 
-    tracing::info!(admin_id = %admin.user.id, "Admin exported Tax Reports");
+    if !(2000..=2100).contains(&year) {
+        return Err(ApiError::BadRequest(
+            "year must be between 2000 and 2100".to_string(),
+        ));
+    }
+
+    let rows: Vec<(String, i32, i64, i64, i64, i64, String)> = sqlx::query_as(
+        r#"
+        SELECT
+            u.email,
+            tr.fiscal_year,
+            tr.total_investment_cents,
+            tr.total_dividends_cents,
+            tr.capital_gains_cents,
+            tr.withholding_tax_cents,
+            tr.status
+        FROM tax_reports tr
+        JOIN users u ON u.id = tr.user_id
+        WHERE tr.fiscal_year = $1
+        ORDER BY u.email ASC
+        "#,
+    )
+    .bind(year)
+    .fetch_all(db)
+    .await
+    .map_err(ApiError::Database)?;
+
+    let mut csv = String::from(
+        "User_Email,Year,Total_Investment_Cents,Total_Dividends_Cents,Capital_Gains_Cents,Withholding_Tax_Cents,Status\n",
+    );
+    for row in rows {
+        csv.push_str(&format!(
+            "{},{},{},{},{},{},{}\n",
+            csv_escape(row.0),
+            row.1,
+            row.2,
+            row.3,
+            row.4,
+            row.5,
+            csv_escape(row.6)
+        ));
+    }
+
+    tracing::info!(admin_id = %user.id, fiscal_year = year, "Admin exported Tax Reports");
 
     let headers = [
         (axum::http::header::CONTENT_TYPE, "text/csv; charset=utf-8"),

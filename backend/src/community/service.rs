@@ -176,6 +176,7 @@ pub async fn create_announcement(
     category: String,
     image_urls: Option<Vec<String>>,
     is_pinned: bool,
+    audit_details: serde_json::Value,
 ) -> Result<Uuid, AppError> {
     let mut tx = pool.begin().await?;
 
@@ -202,6 +203,19 @@ pub async fn create_announcement(
     )
     .bind(post_id)
     .bind(&category)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO community_audit_logs
+            (actor_user_id, action, entity_type, entity_id, target_user_id, details)
+        VALUES ($1, 'announcement.create', 'announcement', $2, NULL, $3)
+        "#,
+    )
+    .bind(user_id)
+    .bind(post_id)
+    .bind(audit_details)
     .execute(&mut *tx)
     .await?;
 
@@ -609,81 +623,187 @@ pub async fn get_pending_reports(pool: &PgPool) -> Result<Vec<ContentReport>, Ap
 pub async fn action_on_report(
     pool: &PgPool,
     report_id: Uuid,
+    actor_user_id: Uuid,
     action: &str,
-    notes: Option<String>,
+    notes: String,
 ) -> Result<(), AppError> {
     let mut tx = pool.begin().await?;
 
-    // Get the report to find the post relative to it.
-    // Use manual query approach instead of macro to ensure cross-db compat
-    let row = sqlx::query("SELECT post_id FROM content_reports WHERE id = $1")
+    use sqlx::Row;
+
+    let row = sqlx::query("SELECT post_id, status FROM content_reports WHERE id = $1 FOR UPDATE")
         .bind(report_id)
         .fetch_optional(&mut *tx)
         .await?
         .ok_or_else(|| AppError::NotFound("Report not found".into()))?;
 
-    use sqlx::Row;
     let post_id: Uuid = row.try_get("post_id")?;
+    let status: String = row.try_get("status")?;
+    if status != "pending" {
+        return Err(AppError::Conflict(
+            "Report has already been moderated".to_string(),
+        ));
+    }
 
-    match action {
+    let post =
+        sqlx::query("SELECT user_id, is_hidden, hidden_reason FROM posts WHERE id = $1 FOR UPDATE")
+            .bind(post_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Reported post not found".into()))?;
+    let author_id: Uuid = post.try_get("user_id")?;
+    let previous_is_hidden: bool = post.try_get("is_hidden")?;
+    let previous_hidden_reason: Option<String> = post.try_get("hidden_reason")?;
+
+    let (report_status, audit_action, action_details) = match action {
         "hide_post" => {
-            sqlx::query("UPDATE posts SET is_hidden = true, hidden_reason = 'Moderator action' WHERE id = $1")
+            let hidden_reason = format!("Hidden after report: {}", notes);
+            let result = sqlx::query(
+                "UPDATE posts SET is_hidden = true, hidden_reason = $1, updated_at = NOW() WHERE id = $2",
+            )
+                .bind(&hidden_reason)
                 .bind(post_id)
                 .execute(&mut *tx)
                 .await?;
-
-            sqlx::query("UPDATE content_reports SET status = 'resolved', admin_notes = $1, updated_at = NOW() WHERE id = $2")
-                .bind(notes)
-                .bind(report_id)
-                .execute(&mut *tx)
-                .await?;
-        }
-        "dismiss_report" => {
-            sqlx::query("UPDATE content_reports SET status = 'dismissed', admin_notes = $1, updated_at = NOW() WHERE id = $2")
-                .bind(&notes)
-                .bind(report_id)
-                .execute(&mut *tx)
-                .await?;
-        }
-        "warn_user" => {
-            let author_id: Option<Uuid> =
-                sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
-                    .bind(post_id)
-                    .fetch_optional(&mut *tx)
-                    .await?;
-            if let Some(uid) = author_id {
-                sqlx::query("UPDATE community_profiles SET warning_count = warning_count + 1 WHERE user_id = $1")
-                    .bind(uid)
-                    .execute(&mut *tx)
-                    .await?;
+            if result.rows_affected() != 1 {
+                return Err(AppError::NotFound("Reported post not found".into()));
             }
-            sqlx::query("UPDATE content_reports SET status = 'resolved', admin_notes = $1, updated_at = NOW() WHERE id = $2")
-                .bind(&notes)
-                .bind(report_id)
+
+            (
+                "resolved",
+                "report.hide_post",
+                serde_json::json!({
+                    "previous_post": {
+                        "is_hidden": previous_is_hidden,
+                        "hidden_reason": previous_hidden_reason,
+                    },
+                    "new_post": {
+                        "is_hidden": true,
+                        "hidden_reason": hidden_reason,
+                    }
+                }),
+            )
+        }
+        "dismiss_report" => (
+            "dismissed",
+            "report.dismiss",
+            serde_json::json!({
+                "previous_post": {
+                    "is_hidden": previous_is_hidden,
+                    "hidden_reason": previous_hidden_reason,
+                }
+            }),
+        ),
+        "warn_user" => {
+            ensure_community_profile(&mut *tx, author_id).await?;
+            let profile = sqlx::query(
+                "SELECT warning_count FROM community_profiles WHERE user_id = $1 FOR UPDATE",
+            )
+            .bind(author_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Community profile not found".into()))?;
+            let previous_warning_count: i32 = profile.try_get("warning_count")?;
+
+            let result = sqlx::query(
+                "UPDATE community_profiles SET warning_count = warning_count + 1, updated_at = NOW() WHERE user_id = $1",
+            )
+                .bind(author_id)
                 .execute(&mut *tx)
                 .await?;
+            if result.rows_affected() != 1 {
+                return Err(AppError::NotFound("Community profile not found".into()));
+            }
+
+            (
+                "resolved",
+                "report.warn_user",
+                serde_json::json!({
+                    "previous_profile": {
+                        "warning_count": previous_warning_count,
+                    },
+                    "new_profile": {
+                        "warning_count": previous_warning_count + 1,
+                    }
+                }),
+            )
         }
         "ban_user" => {
-            let author_id: Option<Uuid> =
-                sqlx::query_scalar("SELECT user_id FROM posts WHERE id = $1")
-                    .bind(post_id)
-                    .fetch_optional(&mut *tx)
-                    .await?;
-            if let Some(uid) = author_id {
-                sqlx::query("UPDATE community_profiles SET is_community_banned = true, ban_reason = $1 WHERE user_id = $2")
-                    .bind("Banned via report action")
-                    .bind(uid)
-                    .execute(&mut *tx)
-                    .await?;
-            }
-            sqlx::query("UPDATE content_reports SET status = 'resolved', admin_notes = $1, updated_at = NOW() WHERE id = $2")
+            ensure_community_profile(&mut *tx, author_id).await?;
+            let profile = sqlx::query(
+                "SELECT is_community_banned, ban_reason FROM community_profiles WHERE user_id = $1 FOR UPDATE",
+            )
+            .bind(author_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Community profile not found".into()))?;
+            let previous_is_banned: bool = profile.try_get("is_community_banned")?;
+            let previous_ban_reason: Option<String> = profile.try_get("ban_reason")?;
+
+            let result = sqlx::query(
+                "UPDATE community_profiles SET is_community_banned = true, ban_reason = $1, updated_at = NOW() WHERE user_id = $2",
+            )
                 .bind(&notes)
-                .bind(report_id)
+                .bind(author_id)
                 .execute(&mut *tx)
                 .await?;
+            if result.rows_affected() != 1 {
+                return Err(AppError::NotFound("Community profile not found".into()));
+            }
+
+            (
+                "resolved",
+                "report.ban_user",
+                serde_json::json!({
+                    "previous_profile": {
+                        "is_community_banned": previous_is_banned,
+                        "ban_reason": previous_ban_reason,
+                    },
+                    "new_profile": {
+                        "is_community_banned": true,
+                        "ban_reason": notes.clone(),
+                    }
+                }),
+            )
         }
         _ => return Err(AppError::BadRequest("Invalid action type".into())),
+    };
+
+    let report_result = sqlx::query(
+        "UPDATE content_reports SET status = $1, admin_notes = $2, updated_at = NOW() WHERE id = $3 AND status = 'pending'",
+    )
+        .bind(report_status)
+        .bind(&notes)
+        .bind(report_id)
+        .execute(&mut *tx)
+        .await?;
+    if report_result.rows_affected() != 1 {
+        return Err(AppError::Conflict(
+            "Report has already been moderated".to_string(),
+        ));
     }
+
+    sqlx::query(
+        r#"INSERT INTO community_audit_logs
+           (actor_user_id, action, entity_type, entity_id, target_user_id, details)
+           VALUES ($1, $2, 'content_report', $3, $4, $5)"#,
+    )
+    .bind(actor_user_id)
+    .bind(audit_action)
+    .bind(report_id)
+    .bind(author_id)
+    .bind(serde_json::json!({
+        "report_id": report_id,
+        "post_id": post_id,
+        "target_user_id": author_id,
+        "action": action,
+        "previous_report_status": status,
+        "new_report_status": report_status,
+        "admin_notes": notes,
+        "action_details": action_details,
+    }))
+    .execute(&mut *tx)
+    .await?;
 
     tx.commit().await?;
     Ok(())

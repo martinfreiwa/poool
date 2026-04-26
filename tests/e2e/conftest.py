@@ -488,6 +488,16 @@ def create_e2e_user(
             """,
             (user_id, kyc_status, user_id),
         )
+        cur.execute(
+            """
+            INSERT INTO user_consents (user_id, terms_version, ip_address, user_agent)
+            SELECT %s, COALESCE(
+                (SELECT value FROM platform_settings WHERE key = 'legal_terms_version'),
+                '1.0'
+            ), '127.0.0.1', 'POOOL E2E'
+            """,
+            (user_id,),
+        )
         for role in roles:
             cur.execute(
                 """

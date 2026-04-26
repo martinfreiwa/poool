@@ -8,8 +8,9 @@
 /// - All balance reads before writes use `SELECT ... FOR UPDATE`.
 /// - All monetary values are `i64` cents.
 /// - No `unwrap()` in production paths.
-use chrono::Utc;
+use chrono::{Datelike, Utc};
 use deadpool_redis::Pool as RedisPool;
+use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -19,6 +20,110 @@ use super::models::{
 };
 use super::{orderbook, validation};
 use crate::error::AppError;
+
+#[derive(Debug, Clone, Deserialize)]
+struct MarketplaceRuntimeSettings {
+    tick_size_cents: i64,
+    min_order_size: i32,
+    max_order_size: i32,
+    trading_enabled: bool,
+    maintenance_window: bool,
+    weekend_trading: bool,
+}
+
+impl Default for MarketplaceRuntimeSettings {
+    fn default() -> Self {
+        Self {
+            tick_size_cents: 5,
+            min_order_size: 1,
+            max_order_size: 10000,
+            trading_enabled: true,
+            maintenance_window: false,
+            weekend_trading: false,
+        }
+    }
+}
+
+async fn load_marketplace_runtime_settings(
+    redis: Option<&RedisPool>,
+) -> Result<MarketplaceRuntimeSettings, AppError> {
+    let Some(redis) = redis else {
+        return Ok(MarketplaceRuntimeSettings::default());
+    };
+
+    let mut conn = redis.get().await.map_err(|e| {
+        AppError::ServiceUnavailable(format!("Marketplace settings unavailable: {}", e))
+    })?;
+
+    let json_str: Option<String> = redis::cmd("GET")
+        .arg("marketplace:settings")
+        .query_async(&mut *conn)
+        .await
+        .map_err(|e| {
+            AppError::ServiceUnavailable(format!("Marketplace settings unavailable: {}", e))
+        })?;
+
+    let mut settings = match json_str {
+        Some(raw) => serde_json::from_str::<MarketplaceRuntimeSettings>(&raw).map_err(|e| {
+            AppError::ServiceUnavailable(format!("Marketplace settings are invalid: {}", e))
+        })?,
+        None => MarketplaceRuntimeSettings::default(),
+    };
+
+    let enabled: Option<String> = redis::cmd("GET")
+        .arg("marketplace:trading_enabled")
+        .query_async(&mut *conn)
+        .await
+        .map_err(|e| AppError::ServiceUnavailable(format!("Trading flag unavailable: {}", e)))?;
+    if let Some(value) = enabled {
+        settings.trading_enabled = value == "1" || value.eq_ignore_ascii_case("true");
+    }
+
+    Ok(settings)
+}
+
+fn validate_runtime_settings_for_order(
+    settings: &MarketplaceRuntimeSettings,
+    req: &SubmitOrderRequest,
+    price_cents: i64,
+) -> Result<(), AppError> {
+    if !settings.trading_enabled || settings.maintenance_window {
+        return Err(AppError::TradingDisabled);
+    }
+
+    if !settings.weekend_trading {
+        let weekday = Utc::now().weekday();
+        if weekday == chrono::Weekday::Sat || weekday == chrono::Weekday::Sun {
+            return Err(AppError::TradingDisabled);
+        }
+    }
+
+    if req.quantity < settings.min_order_size {
+        return Err(AppError::BadRequest(format!(
+            "Order quantity must be at least {} tokens.",
+            settings.min_order_size
+        )));
+    }
+
+    if req.quantity > settings.max_order_size {
+        return Err(AppError::BadRequest(format!(
+            "Order quantity cannot exceed {} tokens.",
+            settings.max_order_size
+        )));
+    }
+
+    if req.order_type == "limit"
+        && settings.tick_size_cents > 0
+        && price_cents % settings.tick_size_cents != 0
+    {
+        return Err(AppError::BadRequest(format!(
+            "Limit price must be a multiple of {} cents.",
+            settings.tick_size_cents
+        )));
+    }
+
+    Ok(())
+}
 
 // ═══════════════════════════════════════════════════════════════
 // ── ORDER CREATION ────────────────────────────────────────────
@@ -96,6 +201,8 @@ pub async fn create_order(
         }
     }
 
+    let runtime_settings = load_marketplace_runtime_settings(redis).await?;
+
     // ── Determine price ──────────────────────────────────────
     let price_cents = match req.order_type.as_str() {
         "limit" => req
@@ -144,6 +251,8 @@ pub async fn create_order(
             return Err(AppError::BadRequest("Invalid order type.".into()));
         }
     };
+
+    validate_runtime_settings_for_order(&runtime_settings, &req, price_cents)?;
 
     // Use checked_mul — saturating_mul would silently clamp to i64::MAX on
     // overflow, giving an attacker a way to place an order whose stored
