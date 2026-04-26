@@ -2010,52 +2010,126 @@ pages:
   data_sensitivity: admin-only data
   business_risk: critical
   owner: unassigned
-  notes: 2026-04-26 daily page audit in progress by ChatGPT/Codex.
+  notes: '2026-04-26 page audit report: docs/page-audits/2026-04-26-admin-blockchain-contracts.md. Static
+    and unauthenticated runtime audit found overbroad generic-admin page/API access, unsafe `innerHTML`
+    rendering of contract rows, swallowed treasury DB errors, missing copy feedback, unused external HTMX,
+    and missing authenticated E2E coverage.'
   reviews:
     security_review:
-      status: reviewed
-      last_review_date: '2026-04-24'
-      reviewer: Codex automation poool-page-reviews
-      reviewed_git_commit_sha: 3c10b5af0a24b4b817cf0c54bbb1bf28e4a27406
-      next_review_due_date: '2026-05-24'
-      evidence: 'Heartbeat 2026-04-24: tracker audit, localhost Playwright unauthenticated route smoke, curl header checks,
-        and static source review. Browser Use plugin guidance used, but in-app browser backend was unavailable in this session.'
-      findings_summary: 'Unauthenticated Playwright smoke returned 401 for /admin/blockchain-contracts. Static review: admin
-        page route protected; dashboard reads treasury API only.'
+      status: issues found
+      last_review_date: '2026-04-26'
+      reviewer: ChatGPT/Codex
+      reviewed_git_commit_sha: ''
+      next_review_due_date: null
+      evidence: Static review of frontend/platform/admin/blockchain-contracts.html, frontend/platform/static/js/admin-blockchain-contracts.js,
+        backend/src/admin/pages.rs, backend/src/admin/blockchain.rs, backend/src/admin/mod.rs, database/058_blockchain_integration.sql,
+        and database/085_admin_blockchain_contract_controls.sql; unauthenticated curl page/API smoke.
+      findings_summary: Page/API fail closed for unauthenticated users, but authenticated access is overbroad because generic
+        admins can load the blockchain contracts page and treasury API without a granular treasury/blockchain read permission.
+        Contract rows also render DB-sourced values through innerHTML.
     accessibility_review:
       status: needs recheck
-      last_review_date: '2026-04-24'
-      reviewer: Codex automation poool-page-reviews
-      reviewed_git_commit_sha: 3c10b5af0a24b4b817cf0c54bbb1bf28e4a27406
-      next_review_due_date: '2026-05-24'
-      evidence: 'Heartbeat 2026-04-24: tracker audit, localhost Playwright unauthenticated route smoke, curl header checks,
-        and static source review. Browser Use plugin guidance used, but in-app browser backend was unavailable in this session.'
-      findings_summary: Unauthenticated browser smoke completed where applicable, but full keyboard/focus/contrast checks
-        require authenticated page access and a11y tooling.
+      last_review_date: '2026-04-26'
+      reviewer: ChatGPT/Codex
+      reviewed_git_commit_sha: ''
+      next_review_due_date: null
+      evidence: Static review of KPI cards, table rows, copy button helper, links, loading/empty/error states, and shared
+        admin assets; authenticated browser/mobile/keyboard pass was not run.
+      findings_summary: Basic labels and links exist, but copy buttons provide no visible success/failure feedback and full
+        authenticated keyboard/mobile checks remain missing.
     e2e_review:
       status: needs recheck
-      last_review_date: '2026-04-24'
-      reviewer: Codex automation poool-page-reviews
-      reviewed_git_commit_sha: 3c10b5af0a24b4b817cf0c54bbb1bf28e4a27406
-      next_review_due_date: '2026-05-24'
-      evidence: 'Heartbeat 2026-04-24: tracker audit, localhost Playwright unauthenticated route smoke, curl header checks,
-        and static source review. Browser Use plugin guidance used, but in-app browser backend was unavailable in this session.'
-      findings_summary: 'Unauthenticated Playwright smoke returned 401 for /admin/blockchain-contracts. Static review: admin
-        page route protected; dashboard reads treasury API only. Authenticated happy-path and failure-state E2E still require
-        seeded credentials/test data.'
+      last_review_date: '2026-04-26'
+      reviewer: ChatGPT/Codex
+      reviewed_git_commit_sha: ''
+      next_review_due_date: null
+      evidence: Local curl smoke verified unauthenticated page redirect and API 401; node --check passed for page JS; tests
+        inventory found no dedicated contracts-list E2E.
+      findings_summary: Authenticated page render, permission denial, DB error-state, XSS regression, and mobile/keyboard paths
+        still need targeted E2E coverage with seeded tokenized assets.
     functional_review:
-      status: needs recheck
-      last_review_date: '2026-04-24'
-      reviewer: Codex automation poool-page-reviews
-      reviewed_git_commit_sha: 3c10b5af0a24b4b817cf0c54bbb1bf28e4a27406
-      next_review_due_date: '2026-05-24'
-      evidence: 'Heartbeat 2026-04-24: tracker audit, localhost Playwright unauthenticated route smoke, curl header checks,
-        and static source review. Browser Use plugin guidance used, but in-app browser backend was unavailable in this session.'
-      findings_summary: 'Unauthenticated Playwright smoke returned 401 for /admin/blockchain-contracts. Static review: admin
-        page route protected; dashboard reads treasury API only. Full authenticated primary-action verification still requires
-        seeded credentials/test data.'
-  issues: []
-  last_tested_date: '2026-04-24'
+      status: issues found
+      last_review_date: '2026-04-26'
+      reviewer: ChatGPT/Codex
+      reviewed_git_commit_sha: ''
+      next_review_due_date: null
+      evidence: Static review of template/JS/API/schema and unauthenticated curl smoke. The treasury handler and helpers were
+        inspected for response contract, query behavior, and data mapping.
+      findings_summary: Page loads from a real registered API and has loading/empty/error states, but treasury DB read failures
+        are silently converted into zero/empty data, paused clone state is absent from the list, and external/inline UI cleanup
+        remains.
+  issues:
+  - issue_id: PAGE-ISSUE-0292
+    review_category: security_review
+    severity: high
+    title: Blockchain contracts page and treasury API are overbroad
+    description: /admin/blockchain-contracts and GET /api/admin/blockchain/treasury only require a generic admin role, exposing
+      settlement wallet config, contract addresses, batch/trade counts, and tokenized asset inventory without a granular treasury
+      or blockchain read permission.
+    affected_page_route: /admin/blockchain-contracts
+    status: open
+    owner: unassigned
+    date_found: '2026-04-26'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: Add aligned page/API permission gates such as treasury.read, blockchain.manage, or a dedicated blockchain.view permission.
+  - issue_id: PAGE-ISSUE-0293
+    review_category: security_review
+    severity: high
+    title: Contract rows render DB fields through innerHTML
+    description: The contracts table interpolates asset title, ID, network, contract address, transaction hash, and explorer
+      URLs into template-string HTML and inline onclick handlers, creating admin XSS risk if any stored value is malicious.
+    affected_page_route: /admin/blockchain-contracts
+    status: open
+    owner: unassigned
+    date_found: '2026-04-26'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: Render rows with DOM/textContent, add event listeners for copy buttons, and validate address/hash/link patterns.
+  - issue_id: PAGE-ISSUE-0294
+    review_category: functional_review
+    severity: medium
+    title: Treasury API masks database failures as empty success
+    description: Treasury KPI queries use unwrap_or(0) and tokenized asset/batch helpers use unwrap_or_default(), so database,
+      schema, or query failures can render as a healthy empty contracts page instead of an operator-visible error.
+    affected_page_route: /admin/blockchain-contracts
+    status: open
+    owner: unassigned
+    date_found: '2026-04-26'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: Propagate database errors through ApiError and rely on the existing frontend non-OK error state.
+  - issue_id: PAGE-ISSUE-0295
+    review_category: accessibility_review
+    severity: low
+    title: Copy address action lacks visible feedback
+    description: The copy helper writes to the clipboard and only logs failures to the console; admins and assistive technology
+      receive no success or failure status.
+    affected_page_route: /admin/blockchain-contracts
+    status: open
+    owner: unassigned
+    date_found: '2026-04-26'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: Use a toast or aria-live status message and remove inline copy handlers.
+  - issue_id: PAGE-ISSUE-0296
+    review_category: functional_review
+    severity: low
+    title: Unused external HTMX dependency remains on admin blockchain page
+    description: The template loads htmx from unpkg.com, but the page contains no hx-* attributes or HTMX behavior.
+    affected_page_route: /admin/blockchain-contracts
+    status: open
+    owner: unassigned
+    date_found: '2026-04-26'
+    date_fixed: null
+    fixed_in_commit_or_pr: ''
+    recheck_required: true
+    notes: Remove the script or self-host it only if HTMX behavior is introduced.
+  last_tested_date: '2026-04-26'
 - id: admin.blockchain-sync
   page_type: page
   name: Blockchain Sync

@@ -510,10 +510,11 @@ async fn persist_clone_control_result(
 
 /// Blockchain treasury overview — wallet, contracts, batches, chain stats.
 pub async fn api_admin_blockchain_treasury(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(state): State<AppState>,
 ) -> Result<Json<BlockchainTreasuryResponse>, ApiError> {
     let pool = &state.db;
+    admin.require_permission(pool, "treasury.read").await?;
 
     // Load chain config from env
     let wallet_address =
@@ -545,31 +546,31 @@ pub async fn api_admin_blockchain_treasury(
         sqlx::query_scalar("SELECT COUNT(*) FROM assets WHERE chain_token_id IS NOT NULL")
             .fetch_one(pool)
             .await
-            .unwrap_or(0);
+            .map_err(ApiError::from)?;
 
     let total_assets: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM assets")
         .fetch_one(pool)
         .await
-        .unwrap_or(0);
+        .map_err(ApiError::from)?;
 
     // Query batch stats
     let total_batches: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM chain_settlement_batches")
         .fetch_one(pool)
         .await
-        .unwrap_or(0);
+        .map_err(ApiError::from)?;
 
     let confirmed_batches: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM chain_settlement_batches WHERE status = 'confirmed'",
     )
     .fetch_one(pool)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::from)?;
 
     let failed_batches: i64 =
         sqlx::query_scalar("SELECT COUNT(*) FROM chain_settlement_batches WHERE status = 'failed'")
             .fetch_one(pool)
             .await
-            .unwrap_or(0);
+            .map_err(ApiError::from)?;
 
     // Query trade settlement stats
     let confirmed_trades: i64 = sqlx::query_scalar(
@@ -577,33 +578,33 @@ pub async fn api_admin_blockchain_treasury(
     )
     .fetch_one(pool)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::from)?;
 
     let pending_trades: i64 =
         sqlx::query_scalar("SELECT COUNT(*) FROM trade_history WHERE on_chain_status = 'pending'")
             .fetch_one(pool)
             .await
-            .unwrap_or(0);
+            .map_err(ApiError::from)?;
 
     let submitted_trades: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM trade_history WHERE on_chain_status = 'submitted'",
     )
     .fetch_one(pool)
     .await
-    .unwrap_or(0);
+    .map_err(ApiError::from)?;
 
     // Query whitelisted users
     let whitelisted_users: i64 =
         sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE chain_wallet_address IS NOT NULL")
             .fetch_one(pool)
             .await
-            .unwrap_or(0);
+            .map_err(ApiError::from)?;
 
     // Fetch tokenized assets
-    let tokenized_assets = fetch_tokenized_assets(pool).await;
+    let tokenized_assets = fetch_tokenized_assets(pool).await?;
 
     // Fetch recent batches
-    let recent_batches = fetch_recent_batches(pool).await;
+    let recent_batches = fetch_recent_batches(pool).await?;
 
     Ok(Json(BlockchainTreasuryResponse {
         wallet_address,
@@ -1237,8 +1238,8 @@ pub async fn api_admin_blockchain_unpause(
 // ═══════════════════════════════════════════════════════════════
 
 /// Fetch all tokenized assets (assets with chain_token_id set).
-async fn fetch_tokenized_assets(pool: &PgPool) -> Vec<TokenizedAsset> {
-    sqlx::query_as::<
+async fn fetch_tokenized_assets(pool: &PgPool) -> Result<Vec<TokenizedAsset>, ApiError> {
+    let rows = sqlx::query_as::<
         _,
         (
             uuid::Uuid,
@@ -1263,26 +1264,28 @@ async fn fetch_tokenized_assets(pool: &PgPool) -> Vec<TokenizedAsset> {
     )
     .fetch_all(pool)
     .await
-    .unwrap_or_default()
-    .into_iter()
-    .map(|r| TokenizedAsset {
-        id: r.0.to_string(),
-        title: r.1,
-        chain_token_id: r.2,
-        chain_contract_address: r.3,
-        chain_network: r.4,
-        chain_tx_hash: r.5,
-        tokens_total: r.6,
-        tokens_available: r.7,
-        funding_status: r.8,
-        created_at: r.9.format("%b %d, %Y").to_string(),
-    })
-    .collect()
+    .map_err(ApiError::from)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| TokenizedAsset {
+            id: r.0.to_string(),
+            title: r.1,
+            chain_token_id: r.2,
+            chain_contract_address: r.3,
+            chain_network: r.4,
+            chain_tx_hash: r.5,
+            tokens_total: r.6,
+            tokens_available: r.7,
+            funding_status: r.8,
+            created_at: r.9.format("%b %d, %Y").to_string(),
+        })
+        .collect())
 }
 
 /// Fetch recent settlement batches.
-async fn fetch_recent_batches(pool: &PgPool) -> Vec<SettlementBatch> {
-    sqlx::query_as::<
+async fn fetch_recent_batches(pool: &PgPool) -> Result<Vec<SettlementBatch>, ApiError> {
+    let rows = sqlx::query_as::<
         _,
         (
             uuid::Uuid,
@@ -1306,21 +1309,23 @@ async fn fetch_recent_batches(pool: &PgPool) -> Vec<SettlementBatch> {
     )
     .fetch_all(pool)
     .await
-    .unwrap_or_default()
-    .into_iter()
-    .map(|r| SettlementBatch {
-        id: r.0.to_string(),
-        batch_size: r.1,
-        status: r.2,
-        tx_hash: r.3,
-        gas_used: r.4,
-        gas_price_gwei: r.5,
-        block_number: r.6,
-        error_message: r.7,
-        created_at: r.8.format("%b %d, %Y %H:%M").to_string(),
-        confirmed_at: r.9.map(|dt| dt.format("%b %d, %Y %H:%M").to_string()),
-    })
-    .collect()
+    .map_err(ApiError::from)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| SettlementBatch {
+            id: r.0.to_string(),
+            batch_size: r.1,
+            status: r.2,
+            tx_hash: r.3,
+            gas_used: r.4,
+            gas_price_gwei: r.5,
+            block_number: r.6,
+            error_message: r.7,
+            created_at: r.8.format("%b %d, %Y %H:%M").to_string(),
+            confirmed_at: r.9.map(|dt| dt.format("%b %d, %Y %H:%M").to_string()),
+        })
+        .collect())
 }
 
 /// Try to get a platform setting (non-async fallback).

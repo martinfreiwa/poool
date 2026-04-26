@@ -108,7 +108,7 @@ Generated: 2026-04-26
 | --- | --- |
 | Business risk | critical: 16, high: 80, low: 42, medium: 25 |
 | Access level | admin: 70, authenticated user: 54, developer: 13, public: 23, unknown or needs verification: 2, verified investor: 1 |
-| Open issues | 69 |
+| Open issues | 74 |
 
 ## Page Inventory
 | ID | Name | URL | Last Tested | Access | Sensitivity | Risk | Review Statuses | Stale | Issues |
@@ -124,7 +124,7 @@ Generated: 2026-04-26
 | admin.assets | Assets | /admin/assets | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
 | admin.audit-logs | Audit Logs | /admin/audit-logs | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: needs recheck, functional: fixed | - | 6 |
 | admin.blockchain-contract-detail | Blockchain Contract Detail | /admin/blockchain-contract-detail | 2026-04-26 | admin | admin-only data | critical | security: passed, accessibility: passed, e2e: passed, functional: passed | - | 9 |
-| admin.blockchain-contracts | Blockchain Contracts | /admin/blockchain-contracts | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
+| admin.blockchain-contracts | Blockchain Contracts | /admin/blockchain-contracts | 2026-04-26 | admin | admin-only data | critical | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: issues found | - | 5 |
 | admin.blockchain-sync | Blockchain Sync | /admin/blockchain-sync | 2026-04-24 | admin | admin-only data | critical | security: reviewed, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 0 |
 | admin.blockchain-treasury | Blockchain Treasury | /admin/blockchain-treasury | 2026-04-24 | admin | admin-only data | critical | security: issues found, accessibility: needs recheck, e2e: needs recheck, functional: needs recheck | - | 1 |
 | admin.community.amas | Community AMAS | /admin/community/amas | 2026-04-25 | admin | admin-only data | high | security: fixed, accessibility: fixed, e2e: fixed, functional: fixed | - | 7 |
@@ -297,6 +297,11 @@ Generated: 2026-04-26
 | admin.approvals | PAGE-ISSUE-0046 | functional_review | high | open | Approval executors can fail or report false success | unassigned |
 | admin.approvals | PAGE-ISSUE-0047 | functional_review | medium | open | Approval queue can hide database failures | unassigned |
 | admin.approvals | PAGE-ISSUE-0048 | accessibility_review | medium | open | Reject flow and action buttons need accessible mutation states | unassigned |
+| admin.blockchain-contracts | PAGE-ISSUE-0292 | security_review | high | open | Blockchain contracts page and treasury API are overbroad | unassigned |
+| admin.blockchain-contracts | PAGE-ISSUE-0293 | security_review | high | open | Contract rows render DB fields through innerHTML | unassigned |
+| admin.blockchain-contracts | PAGE-ISSUE-0294 | functional_review | medium | open | Treasury API masks database failures as empty success | unassigned |
+| admin.blockchain-contracts | PAGE-ISSUE-0295 | accessibility_review | low | open | Copy address action lacks visible feedback | unassigned |
+| admin.blockchain-contracts | PAGE-ISSUE-0296 | functional_review | low | open | Unused external HTMX dependency remains on admin blockchain page | unassigned |
 | admin.blockchain-treasury | PAGE-ISSUE-0001 | security_review | critical | open | Emergency pause/unpause sends an empty CSRF header |  |
 | admin.community.post-detail | PAGE-ISSUE-0147 | security_review | high | open | Post detail APIs lack community permission checks | unassigned |
 | admin.community.post-detail | PAGE-ISSUE-0148 | security_review | high | open | Admin post detail renderer injects community fields as HTML | unassigned |

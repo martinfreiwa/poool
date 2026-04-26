@@ -1,4 +1,6 @@
 (function () {
+  var POOOL_IMAGE_FALLBACK = "/static/images/icons/logo-pool.svg";
+
   function getCardFromElement(element) {
     return element ? element.closest(".property-card") : null;
   }
@@ -12,11 +14,79 @@
       var imageUrl = img.getAttribute("data-bg-image");
       if (!imageUrl) return;
 
-      img.style.backgroundImage = "url('" + imageUrl.replace(/'/g, "\\'") + "')";
-      img.style.backgroundSize = "cover";
-      img.style.backgroundPosition = "center center";
-      img.style.backgroundRepeat = "no-repeat";
+      setBackgroundImageWithFallback(img, imageUrl);
     });
+
+    root.querySelectorAll(".property-image").forEach(function (image) {
+      if (image.tagName === "IMG") {
+        initializeImageFallback(image);
+        return;
+      }
+
+      if (!image.dataset.bgImage) {
+        var inlineUrl = getInlineBackgroundUrl(image);
+        if (inlineUrl) {
+          setBackgroundImageWithFallback(image, inlineUrl);
+        }
+      }
+    });
+  }
+
+  function getInlineBackgroundUrl(element) {
+    var bg = element.style.backgroundImage || "";
+    var match = bg.match(/^url\((['"]?)(.*)\1\)$/);
+    return match ? match[2] : "";
+  }
+
+  function applyFallbackBackground(element) {
+    element.classList.add("property-image--fallback");
+    element.style.backgroundImage = "url('" + POOOL_IMAGE_FALLBACK + "')";
+    element.style.backgroundSize = "58% auto";
+    element.style.backgroundPosition = "center center";
+    element.style.backgroundRepeat = "no-repeat";
+  }
+
+  function setBackgroundImageWithFallback(element, imageUrl) {
+    element.style.backgroundImage = "url('" + imageUrl.replace(/'/g, "\\'") + "')";
+    element.style.backgroundSize = "cover";
+    element.style.backgroundPosition = "center center";
+    element.style.backgroundRepeat = "no-repeat";
+
+    if (element.dataset.imageFallbackReady === "true") return;
+    element.dataset.imageFallbackReady = "true";
+
+    var probe = new Image();
+    probe.onload = function () {
+      element.classList.remove("property-image--fallback");
+    };
+    probe.onerror = function () {
+      applyFallbackBackground(element);
+    };
+    probe.src = imageUrl;
+  }
+
+  function initializeImageFallback(image) {
+    if (image.dataset.imageFallbackReady === "true") return;
+    image.dataset.imageFallbackReady = "true";
+
+    image.addEventListener("error", function () {
+      if (image.dataset.usingFallback === "true") return;
+      image.dataset.usingFallback = "true";
+      image.classList.add("property-image--fallback");
+      image.src = POOOL_IMAGE_FALLBACK;
+    });
+
+    image.addEventListener("load", function () {
+      if (image.dataset.usingFallback !== "true") {
+        image.classList.remove("property-image--fallback");
+      }
+    });
+
+    if (image.complete && image.naturalWidth === 0) {
+      image.dataset.usingFallback = "true";
+      image.classList.add("property-image--fallback");
+      image.src = POOOL_IMAGE_FALLBACK;
+    }
   }
 
   function setActiveImage(container, newIndex) {

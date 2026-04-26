@@ -467,9 +467,21 @@ def create_e2e_user(
             ON CONFLICT (user_id, wallet_type, currency) DO UPDATE SET
                 balance_cents = EXCLUDED.balance_cents,
                 held_balance_cents = 0
+            RETURNING id
             """,
             (user_id, cash_balance_cents),
         )
+        cash_wallet_id = cur.fetchone()[0]
+        if cash_balance_cents:
+            cur.execute(
+                """
+                INSERT INTO wallet_transactions (
+                    wallet_id, type, status, amount_cents, currency, description, external_ref_id, completed_at
+                )
+                VALUES (%s, 'admin_credit', 'completed', %s, 'USD', 'E2E initial wallet funding', %s, NOW())
+                """,
+                (cash_wallet_id, cash_balance_cents, f"e2e-initial-funding:{user_id}"),
+            )
         cur.execute(
             """
             INSERT INTO wallets (user_id, wallet_type, currency, balance_cents, held_balance_cents)

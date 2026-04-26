@@ -49,17 +49,26 @@
                 <!-- 2. Categories Section -->
                 <div id="property-categories" class="categories-section">
                   <div class="category-badge">
-                    <img  src="/static/images/icons/Bed.svg" alt="Beds" class="badge-icon" width="24" height="24" />
+                    <img  src="/static/images/icons/Bed.svg" alt="Beds" class="badge-icon" width="16" height="16" />
                     <span class="badge-text">{{ asset.bedrooms | default(4) }}</span>
                   </div>
                   <div class="category-separator"></div>
                   <div class="category-badge">
-                    <img  src="/static/images/icons/bookmark-check.svg" alt="Ready" class="badge-icon" width="16" height="16" />
+                    <svg class="badge-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                      <path d="M9 9h.01"></path>
+                      <path d="M9 15h6"></path>
+                      <path d="M15 9h.01"></path>
+                    </svg>
                     <span class="badge-text">Ready</span>
                   </div>
                   <div class="category-separator"></div>
                   <div class="category-badge">
-                    <img  src="/static/images/prop-details/maximize-02.svg" alt="Area" class="badge-icon" width="16" height="16" />
+                    <svg class="badge-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 4h16v16H4z"></path>
+                      <path d="M9 4v16"></path>
+                      <path d="M4 9h16"></path>
+                    </svg>
                     <span class="badge-text">{% if asset.land_size_sqm %}{{ asset.land_size_sqm }} m²{% else %}128 m²{% endif %}</span>
                   </div>
                   <div class="category-separator"></div>
@@ -591,11 +600,11 @@
           <h1 class="mobile-property-title">{{ asset.title | default('Property Details') }}</h1>
         </div>
         <div class="mobile-categories">
-          <div class="mobile-category-badge"><img  src="/static/images/icons/Bed.svg" alt="Beds" width="24" height="24" /><span>{{ asset.bedrooms | default(4) }}</span></div>
+          <div class="mobile-category-badge"><img  src="/static/images/icons/Bed.svg" alt="Beds" width="16" height="16" /><span>{{ asset.bedrooms | default(4) }}</span></div>
           <div class="mobile-category-divider"></div>
-          <div class="mobile-category-badge"><img  src="/static/images/icons/bookmark-check.svg" alt="Ready" width="16" height="16" /><span>Ready</span></div>
+          <div class="mobile-category-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M9 9h.01"></path><path d="M9 15h6"></path><path d="M15 9h.01"></path></svg><span>Ready</span></div>
           <div class="mobile-category-divider"></div>
-          <div class="mobile-category-badge"><img  src="/static/images/prop-details/maximize-02.svg" alt="Area" width="16" height="16" /><span>{% if asset.land_size_sqm %}{{ asset.land_size_sqm }} m²{% else %}128 m²{% endif %}</span></div>
+          <div class="mobile-category-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#414651" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"></path><path d="M9 4v16"></path><path d="M4 9h16"></path></svg><span>{% if asset.land_size_sqm %}{{ asset.land_size_sqm }} m²{% else %}128 m²{% endif %}</span></div>
           <div class="mobile-category-divider"></div>
           <div class="mobile-category-badge"><img  src="/static/images/prop-details/markerpin.svg" alt="Location" width="16" height="16" /><span>{{ asset.location_city | default('Bali') }}, {{ asset.location_country | default('Indonesia') }}</span></div>
         </div>

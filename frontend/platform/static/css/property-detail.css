@@ -352,6 +352,18 @@
   filter: blur(0);
 }
 
+.gallery-img.poool-image-fallback,
+.lightbox-content.poool-image-fallback,
+.lightbox-thumb img.poool-image-fallback {
+  object-fit: contain;
+  padding: 56px;
+  background: #ffffff;
+}
+
+.lightbox-thumb img.poool-image-fallback {
+  padding: 10px;
+}
+
 /* Loading state for gallery images */
 .gallery-image {
   position: relative;
@@ -373,6 +385,10 @@
 .gallery-image.image-loaded {
   animation: none;
   background: transparent;
+}
+
+.gallery-image.poool-image-fallback-container {
+  background: #ffffff;
 }
 
 /* Gallery button components */
@@ -877,13 +893,12 @@ body.lightbox-open {
   flex-grow: 0;
 }
 
-/* Bed icon (24px per design) */
+/* Match compact v19 card metadata icons */
 .category-badge:nth-child(1) .badge-icon {
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
 }
 
-/* Ready, Area, Location icons (16px per design) */
 .category-badge:nth-child(3) .badge-icon,
 .category-badge:nth-child(5) .badge-icon,
 .category-badge:nth-child(7) .badge-icon {
@@ -913,6 +928,10 @@ body.lightbox-open {
 /* Category badge icons should be black */
 #property-categories .badge-icon {
   filter: brightness(0) !important;
+}
+
+#property-categories svg.badge-icon {
+  filter: none !important;
 }
 
 /* ===========================

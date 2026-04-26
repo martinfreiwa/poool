@@ -4,7 +4,8 @@
 {% if loop.index0 < 5 %}
 <div id="{{ gallery_ids[loop.index0] }}" class="gallery-image" onclick="openLightbox({{ loop.index0 }})">
   <img src="{{ img_url }}" alt="{{ asset.title }}" class="gallery-img" loading="{% if loop.index0 == 0 %}eager{% else %}lazy{% endif %}"
-    onload="this.classList.add('loaded'); this.parentElement.classList.add('image-loaded');" />
+    onload="this.classList.add('loaded'); this.parentElement.classList.add('image-loaded');"
+    onerror="window.applyPooolImageFallback && window.applyPooolImageFallback(this)" />
 </div>
 {% endif %}
 {% endfor %}

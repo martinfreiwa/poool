@@ -8,6 +8,40 @@ let touchStartX = 0;
 let touchStartY = 0;
 let touchDeltaX = 0;
 let isSwiping = false;
+const POOOL_IMAGE_FALLBACK = "/static/images/icons/logo-pool.svg";
+
+window.applyPooolImageFallback = function (img) {
+  if (!img || img.dataset.usingFallback === "true") return;
+  img.dataset.usingFallback = "true";
+  img.classList.add("poool-image-fallback", "loaded");
+  img.src = POOOL_IMAGE_FALLBACK;
+  if (img.parentElement) {
+    img.parentElement.classList.add("image-loaded", "poool-image-fallback-container");
+  }
+};
+
+function attachPooolImageFallback(img) {
+  if (!img || img.dataset.pooolFallbackReady === "true") return;
+  img.dataset.pooolFallbackReady = "true";
+  img.addEventListener("error", function () {
+    window.applyPooolImageFallback(img);
+  });
+  img.addEventListener("load", function () {
+    if (img.dataset.usingFallback !== "true") {
+      img.classList.add("loaded");
+      if (img.parentElement) img.parentElement.classList.add("image-loaded");
+    }
+  });
+  if (img.complete && img.naturalWidth === 0) {
+    window.applyPooolImageFallback(img);
+  }
+}
+
+function initializePropertyImageFallbacks(root) {
+  (root || document)
+    .querySelectorAll(".gallery-img, .lightbox-content, .lightbox-thumb img, .video-thumbnail")
+    .forEach(attachPooolImageFallback);
+}
 
 // Load ALL images from server-rendered hidden elements (not just the 5 visible)
 function getGalleryImages() {
@@ -49,6 +83,7 @@ function getGalleryImages() {
 
 // Initialize FAQ expansion monitoring
 document.addEventListener("DOMContentLoaded", function () {
+  initializePropertyImageFallbacks(document);
   initializeFAQExpansionMonitoring();
 });
 
@@ -95,9 +130,10 @@ function buildThumbnails() {
       "lightbox-thumb" + (idx === currentImageIndex ? " active" : "");
     thumb.setAttribute("aria-label", "Go to image " + (idx + 1));
     var img = document.createElement("img");
-    img.src = item.src;
     img.alt = item.caption || "";
     img.draggable = false;
+    attachPooolImageFallback(img);
+    img.src = item.src;
     thumb.appendChild(img);
     thumb.addEventListener("click", function () {
       goToImage(idx);
@@ -163,6 +199,7 @@ function openLightbox(index) {
   modal.style.display = "flex";
   modal.offsetHeight; // reflow
 
+  attachPooolImageFallback(img);
   img.src = galleryImages[currentImageIndex].src;
   updateCounter();
 
@@ -233,6 +270,7 @@ function animateImageTransition(direction) {
   img.style.opacity = "0";
 
   setTimeout(function () {
+    attachPooolImageFallback(img);
     img.src = galleryImages[currentImageIndex].src;
 
     img.style.transition = "none";

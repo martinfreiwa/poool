@@ -308,6 +308,7 @@
         <div class="property-image-container">
           <div
             class="property-image active"
+            data-bg-image="{{ asset.cover_image_url | default('/static/images/seed/villa1.webp') }}"
             style="background-image: url('{{ asset.cover_image_url | default('/static/images/seed/villa1.webp') }}'); background-size: cover; background-position: center;"
             aria-label="{{ asset.title }}"
           ></div>

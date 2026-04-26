@@ -93,8 +93,27 @@ def run_checkout_e2e():
         cur.execute("SELECT id FROM users WHERE email=%s", (TEST_EMAIL,))
         user_id = cur.fetchone()[0]
 
-        # Ensure the user has money and delete any stale cart items
-        cur.execute("UPDATE wallets SET balance_cents = 50000000 WHERE user_id = %s", (user_id,))
+        # Ensure the user has money and matching ledger state, then delete any stale cart items
+        cur.execute(
+            """
+            UPDATE wallets
+               SET balance_cents = 50000000
+             WHERE user_id = %s AND wallet_type = 'cash' AND currency = 'USD'
+             RETURNING id
+            """,
+            (user_id,),
+        )
+        wallet_id = cur.fetchone()[0]
+        cur.execute("DELETE FROM wallet_transactions WHERE wallet_id = %s", (wallet_id,))
+        cur.execute(
+            """
+            INSERT INTO wallet_transactions (
+                wallet_id, type, status, amount_cents, currency, description, external_ref_id, completed_at
+            )
+            VALUES (%s, 'admin_credit', 'completed', 50000000, 'USD', 'E2E checkout initial wallet funding', %s, NOW())
+            """,
+            (wallet_id, f"e2e-checkout-initial-funding:{user_id}"),
+        )
         cur.execute("DELETE FROM cart_items WHERE user_id = %s", (user_id,))
         
         # Grab a mock asset that is funding_in_progress

@@ -118,6 +118,17 @@
   pointer-events: auto;
 }
 
+.property-image--fallback {
+  background-color: #ffffff !important;
+  background-size: 58% auto !important;
+}
+
+img.property-image--fallback {
+  object-fit: contain !important;
+  padding: 48px;
+  background: #ffffff;
+}
+
 .property-card:hover .property-image.active {
   transform: scale(1.05);
 }

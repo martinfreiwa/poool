@@ -224,6 +224,13 @@ pub async fn page_admin_generic(
         return Redirect::to("/admin/").into_response();
     }
 
+    if (relative == "admin/blockchain-contracts"
+        || relative == "admin/blockchain-contracts.html")
+        && !crate::auth::middleware::has_permission(&state.db, admin.id, "treasury.read").await
+    {
+        return Redirect::to("/admin/").into_response();
+    }
+
     if (relative == "admin/marketplace/"
         || relative == "admin/marketplace/index"
         || relative == "admin/marketplace/index.html")

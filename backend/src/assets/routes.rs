@@ -730,9 +730,10 @@ pub async fn api_marketplace_tab(
 
         for (i, url) in urls.iter().take(5).enumerate() {
             let active = if i == 0 { " active" } else { "" };
+            let image_url = html_escape(&crate::storage::service::rewrite_gcs_url(url));
             images_html.push_str(&format!(
-                r#"<div class="property-image{}" style="background-image: url('{}'); background-size: cover; background-position: center;"></div>"#,
-                active, html_escape(&crate::storage::service::rewrite_gcs_url(url))
+                r#"<div class="property-image{}" data-bg-image="{}" style="background-image: url('{}'); background-size: cover; background-position: center;"></div>"#,
+                active, image_url, image_url
             ));
             dots_html.push_str(&format!(
                 r#"<div class="property-dot{}" data-property-id="{}" data-image-index="{}"></div>"#,
@@ -1039,9 +1040,10 @@ pub async fn api_commodities_tab(
 
         for (i, url) in urls.iter().take(5).enumerate() {
             let active = if i == 0 { " active" } else { "" };
+            let image_url = html_escape(&crate::storage::service::rewrite_gcs_url(url));
             images_html.push_str(&format!(
-                r#"<div class="property-image{}" style="background-image: url('{}'); background-size: cover; background-position: center;"></div>"#,
-                active, html_escape(&crate::storage::service::rewrite_gcs_url(url))
+                r#"<div class="property-image{}" data-bg-image="{}" style="background-image: url('{}'); background-size: cover; background-position: center;"></div>"#,
+                active, image_url, image_url
             ));
             dots_html.push_str(&format!(
                 r#"<div class="property-dot{}" data-property-id="{}" data-image-index="{}"></div>"#,

@@ -93,9 +93,27 @@ def run_wallet_e2e():
         cur.execute("SELECT id FROM users WHERE email=%s", (TEST_EMAIL,))
         user_id = cur.fetchone()[0]
 
-        # Reset user wallet to 100 USD
-        cur.execute("UPDATE wallets SET balance_cents = 10000 WHERE user_id = %s AND wallet_type = 'cash'", (user_id,))
-        cur.execute("DELETE FROM wallet_transactions WHERE wallet_id = (SELECT id FROM wallets WHERE user_id = %s AND wallet_type = 'cash' LIMIT 1)", (user_id,))
+        # Reset user wallet to 100 USD with a matching ledger entry.
+        cur.execute(
+            """
+            UPDATE wallets
+               SET balance_cents = 10000
+             WHERE user_id = %s AND wallet_type = 'cash' AND currency = 'USD'
+             RETURNING id
+            """,
+            (user_id,),
+        )
+        wallet_id = cur.fetchone()[0]
+        cur.execute("DELETE FROM wallet_transactions WHERE wallet_id = %s", (wallet_id,))
+        cur.execute(
+            """
+            INSERT INTO wallet_transactions (
+                wallet_id, type, status, amount_cents, currency, description, external_ref_id, completed_at
+            )
+            VALUES (%s, 'admin_credit', 'completed', 10000, 'USD', 'E2E wallet ledger initial funding', %s, NOW())
+            """,
+            (wallet_id, f"e2e-wallet-ledger-initial-funding:{user_id}"),
+        )
         conn.commit()
 
         # Step 1: Deposit Test

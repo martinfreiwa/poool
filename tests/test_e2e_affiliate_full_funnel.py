@@ -194,8 +194,27 @@ def main():
 
 
     section("4. Client Checkout: Commission Trigger")
-    # Fast-lane testing: Create an asset and give the client some money
-    cur.execute("UPDATE wallets SET balance_cents = 1000000 WHERE user_id = %s", (client_user_id,)) # $10,000
+    # Fast-lane testing: Create an asset and give the client ledger-backed money.
+    cur.execute(
+        """
+        UPDATE wallets
+           SET balance_cents = 1000000
+         WHERE user_id = %s AND wallet_type = 'cash' AND currency = 'USD'
+         RETURNING id
+        """,
+        (client_user_id,),
+    )
+    client_wallet_id = cur.fetchone()[0]
+    cur.execute("DELETE FROM wallet_transactions WHERE wallet_id = %s", (client_wallet_id,))
+    cur.execute(
+        """
+        INSERT INTO wallet_transactions (
+            wallet_id, type, status, amount_cents, currency, description, external_ref_id, completed_at
+        )
+        VALUES (%s, 'admin_credit', 'completed', 1000000, 'USD', 'E2E affiliate initial wallet funding', %s, NOW())
+        """,
+        (client_wallet_id, f"e2e-affiliate-initial-funding:{client_user_id}"),
+    )
     
     # We need a dummy asset for checkout
     asset_id = str(uuid.uuid4())
@@ -256,9 +275,26 @@ def main():
     cur.execute("SELECT id FROM wallets WHERE label = 'System Treasury Wallet' AND wallet_type = 'affiliate_treasury'")
     treasury = cur.fetchone()
     if not treasury:
-        cur.execute("INSERT INTO wallets (user_id, label, wallet_type, balance_cents, currency) VALUES (NULL, 'System Treasury Wallet', 'affiliate_treasury', 9999999, 'USD')")
+        cur.execute(
+            "INSERT INTO wallets (user_id, label, wallet_type, balance_cents, currency) VALUES (NULL, 'System Treasury Wallet', 'affiliate_treasury', 9999999, 'USD') RETURNING id"
+        )
+        treasury_wallet_id = cur.fetchone()[0]
     else:
-        cur.execute("UPDATE wallets SET balance_cents = 9999999 WHERE id = %s", (treasury[0],))
+        cur.execute("UPDATE wallets SET balance_cents = 9999999 WHERE id = %s RETURNING id", (treasury[0],))
+        treasury_wallet_id = cur.fetchone()[0]
+    cur.execute(
+        """
+        INSERT INTO wallet_transactions (
+            wallet_id, type, status, amount_cents, currency, description, external_ref_id, completed_at
+        )
+        SELECT %s, 'admin_credit', 'completed', 9999999 - COALESCE(SUM(amount_cents), 0),
+               'USD', 'E2E affiliate treasury funding adjustment', %s, NOW()
+          FROM wallet_transactions
+         WHERE wallet_id = %s AND status = 'completed'
+        HAVING 9999999 - COALESCE(SUM(amount_cents), 0) != 0
+        """,
+        (treasury_wallet_id, f"e2e-affiliate-treasury-funding:{treasury_wallet_id}", treasury_wallet_id),
+    )
     conn.commit()
 
     # Admin issues batch payout (s_aff is still 'admin')

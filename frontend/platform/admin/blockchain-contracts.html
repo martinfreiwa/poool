@@ -8,7 +8,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Live Contracts | Admin | POOOL</title>
   <meta name="description" content="POOOL Admin — View all deployed EIP-1167 smart contracts tracking properties on Polygon." />
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <link rel="stylesheet" href="/static/css/admin.css?v=1.0.1" />
   <script src="/static/js/user-data.js"></script>
   <link rel="stylesheet" href="/static/css/poool-dropdown.css" />
@@ -37,11 +36,30 @@
     .contract-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
     .contract-status-dot--live { background: #10b981; }
     .contract-status-dot--paused { background: #f59e0b; }
-    .token-supply-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--admin-border); min-width: 80px; margin-top: 4px;}
-    .token-supply-bar .sold { background: var(--admin-accent); }
-    .basescan-link { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: var(--admin-accent); text-decoration: none; display: flex; align-items: center; gap: 4px;}
-    .basescan-link:hover { text-decoration: underline; }
-  </style>
+	    .token-supply-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--admin-border); min-width: 80px; margin-top: 4px;}
+	    .token-supply-bar .sold { background: var(--admin-accent); }
+	    .basescan-link { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: var(--admin-accent); text-decoration: none; display: flex; align-items: center; gap: 4px;}
+	    .basescan-link:hover { text-decoration: underline; }
+	    .contracts-status {
+	      position: fixed;
+	      right: 24px;
+	      bottom: 24px;
+	      z-index: 1000;
+	      max-width: 320px;
+	      padding: 12px 14px;
+	      border-radius: 8px;
+	      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+	      font-size: 13px;
+	      font-weight: 600;
+	      opacity: 0;
+	      pointer-events: none;
+	      transform: translateY(8px);
+	      transition: opacity 160ms ease, transform 160ms ease;
+	    }
+	    .contracts-status.is-visible { opacity: 1; transform: translateY(0); }
+	    .contracts-status--success { background: var(--admin-success); color: #fff; }
+	    .contracts-status--error { background: var(--admin-danger); color: #fff; }
+	  </style>
 </head>
 
 <body class="admin-body dom-ready">
@@ -125,21 +143,10 @@
           </div>
         </div>
       </div>
-    </main>
-  </div>
-  
-  <script>
-    // Utility for copy to clipboard
-    window._copyAddr = function(text) {
-      if (!text) return;
-      navigator.clipboard.writeText(text).then(() => {
-        // UI feedback could go here
-      }).catch(err => {
-        console.error("Copy failed", err);
-      });
-    };
-  </script>
-  <script src="/static/js/admin-blockchain-contracts.js"></script>
-</body>
+	    </main>
+	  </div>
+	  <div id="contracts-status" class="contracts-status" role="status" aria-live="polite" aria-atomic="true"></div>
+	  <script src="/static/js/admin-blockchain-contracts.js"></script>
+	</body>
 
 </html>
