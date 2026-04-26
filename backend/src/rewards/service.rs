@@ -430,7 +430,7 @@ pub async fn get_campaign_breakdown(
     }
 
     // Sort by clicks descending
-    result.sort_by(|a, b| b.clicks.cmp(&a.clicks));
+    result.sort_by_key(|b| std::cmp::Reverse(b.clicks));
 
     Ok(result)
 }
